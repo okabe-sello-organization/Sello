@@ -78,8 +78,8 @@ fun celebrationLine(celebration: GoalCelebration): String? {
 @Composable
 fun CelebrationTicket(
     celebration: GoalCelebration,
-    land: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    land: Boolean = true
 ) {
     val line = celebrationLine(celebration) ?: return
     val places = when {

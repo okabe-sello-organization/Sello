@@ -120,11 +120,6 @@ sealed interface CorrectionNotice {
 
     data object GoalMovementUpdated : CorrectionNotice
 
-    /**
-     * A new aporte, or with [withdrawal] a retiro, storage confirmed: "Aporte anotado:
-     * 350.000". [amount] is null when it is saved but could not be read back.
-     */
-
     /** A goal marked lograda; with [canUndo] Deshacer returns it to 100 %, waiting. */
     data class GoalCompleted(
         val goalName: String,
@@ -137,6 +132,10 @@ sealed interface CorrectionNotice {
 
     data object GoalCompletionUndoTooLate : CorrectionNotice
 
+    /**
+     * A new aporte, or with [withdrawal] a retiro, storage confirmed: "Aporte anotado:
+     * 350.000". [amount] is null when it is saved but could not be read back.
+     */
     data class GoalMovementRecorded(
         val withdrawal: Boolean,
         val amount: MoneyTextValue?,

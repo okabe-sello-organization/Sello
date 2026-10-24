@@ -1187,7 +1187,7 @@ internal fun MetasNoticeBar(
     val celebration = notice.celebration
     if (celebration != null && celebrationLine(celebration) != null) {
         val land = remember(celebration) { lands(celebration) }
-        Box(Modifier.testTag(CORRECTION_NOTICE_TAG)) { CelebrationTicket(celebration, land) }
+        Box(Modifier.testTag(CORRECTION_NOTICE_TAG)) { CelebrationTicket(celebration, land = land) }
     } else {
         CorrectionNoticeBar(notice, onUndo)
     }
