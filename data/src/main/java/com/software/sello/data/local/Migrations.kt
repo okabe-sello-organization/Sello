@@ -4,6 +4,51 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
+ * Version 5 adds recurrence: schedules and their pauses, both empty, and the origin of an
+ * automatically recorded expense or income, absent on every existing row and on the
+ * copies kept for undo. Nothing that existed in version 4 is read, changed or removed.
+ */
+internal val Migration4To5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `schedule` (`id` TEXT NOT NULL, `kind` TEXT NOT NULL, " +
+                "`category_id` TEXT, `source_key` TEXT, `source_name` TEXT, " +
+                "`amount_minor` INTEGER NOT NULL, `currency` TEXT NOT NULL, `note` TEXT, " +
+                "`rule` TEXT NOT NULL, `rule_first` INTEGER NOT NULL, `rule_second` INTEGER, " +
+                "`start_date` TEXT NOT NULL, `end_date` TEXT, `sequence` INTEGER NOT NULL, " +
+                "`handled_date` TEXT, `handled_slot` INTEGER, `version` INTEGER NOT NULL, " +
+                "`created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`id`), FOREIGN KEY(`category_id`) REFERENCES `category`(`id`) " +
+                "ON UPDATE RESTRICT ON DELETE RESTRICT )"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_schedule_category_id` ON `schedule` (`category_id`)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_schedule_sequence` ON `schedule` (`sequence`)"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `schedule_pause` (`schedule_id` TEXT NOT NULL, " +
+                "`from_date` TEXT NOT NULL, `until_date` TEXT, " +
+                "PRIMARY KEY(`schedule_id`, `from_date`), FOREIGN KEY(`schedule_id`) " +
+                "REFERENCES `schedule`(`id`) ON UPDATE RESTRICT ON DELETE RESTRICT )"
+        )
+        for (table in listOf("expense", "income", "deleted_expense", "deleted_income")) {
+            db.execSQL("ALTER TABLE `$table` ADD COLUMN `origin_schedule_id` TEXT")
+            db.execSQL("ALTER TABLE `$table` ADD COLUMN `origin_date` TEXT")
+            db.execSQL("ALTER TABLE `$table` ADD COLUMN `origin_slot` INTEGER")
+        }
+        for (table in listOf("expense", "income")) {
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                    "`index_${table}_origin_schedule_id_origin_date_origin_slot` " +
+                    "ON `$table` (`origin_schedule_id`, `origin_date`, `origin_slot`)"
+            )
+        }
+    }
+}
+
+/**
  * Version 4 adds goals: their history, the copy kept for undoing a deleted movement and
  * Recibo's chosen goal, all empty. Nothing that existed in version 3 is read, changed or
  * removed.

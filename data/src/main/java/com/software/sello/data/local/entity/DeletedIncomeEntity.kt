@@ -41,7 +41,13 @@ data class DeletedIncomeEntity(
     @ColumnInfo(name = "created_at")
     val createdAt: Long,
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Long
+    val updatedAt: Long,
+    @ColumnInfo(name = "origin_schedule_id")
+    val originScheduleId: String?,
+    @ColumnInfo(name = "origin_date")
+    val originDate: String?,
+    @ColumnInfo(name = "origin_slot")
+    val originSlot: Int?
 ) {
     companion object {
         const val TABLE = "deleted_income"

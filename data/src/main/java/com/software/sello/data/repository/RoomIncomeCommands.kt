@@ -246,7 +246,10 @@ class RoomIncomeCommands internal constructor(
                     note = row.note,
                     version = row.version,
                     createdAt = row.createdAt,
-                    updatedAt = row.updatedAt
+                    updatedAt = row.updatedAt,
+                    originScheduleId = row.originScheduleId,
+                    originDate = row.originDate,
+                    originSlot = row.originSlot
                 )
             )
             val removed = database.incomeDao().delete(row.id, row.version)
@@ -273,7 +276,8 @@ class RoomIncomeCommands internal constructor(
                 ?: return Rejected(IncomeRejection.UndoExpired)
             val taken = kept.generation != profile.generation ||
                 database.incomeDao().byId(kept.incomeId) != null ||
-                database.incomeDao().countAtSequence(kept.sequence) != 0
+                database.incomeDao().countAtSequence(kept.sequence) != 0 ||
+                kept.originTaken()
             if (taken) return Rejected(IncomeRejection.UndoConflict)
 
             database.incomeDao().insert(
@@ -288,7 +292,10 @@ class RoomIncomeCommands internal constructor(
                     note = kept.note,
                     version = kept.version,
                     createdAt = kept.createdAt,
-                    updatedAt = kept.updatedAt
+                    updatedAt = kept.updatedAt,
+                    originScheduleId = kept.originScheduleId,
+                    originDate = kept.originDate,
+                    originSlot = kept.originSlot
                 )
             )
             val removed = database.deletedIncomeDao().remove(kept.deletionId)
@@ -320,4 +327,12 @@ class RoomIncomeCommands internal constructor(
                     Outcome.Success(receipt.value.incomeId?.let { receipt.value.committedIncome() })
             }
         }
+
+    /** A kept occurrence cannot come back while another income records the same origin. */
+    private suspend fun DeletedIncomeEntity.originTaken(): Boolean {
+        val schedule = originScheduleId ?: return false
+        val date = originDate ?: return false
+        val slot = originSlot ?: return false
+        return database.incomeDao().countAtOrigin(schedule, date, slot) != 0
+    }
 }

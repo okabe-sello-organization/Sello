@@ -1,0 +1,70 @@
+package com.software.sello.data.repository
+
+import android.database.SQLException
+import androidx.room.withTransaction
+import com.software.sello.data.local.SelloDatabase
+import com.software.sello.data.mapper.profileFrom
+import com.software.sello.data.mapper.toStored
+import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.ScheduleBook
+import com.software.sello.domain.port.ScheduleBookState
+import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.domain.port.StoredSchedule
+import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.flow
+
+/**
+ * Reads every schedule with its pauses in one transaction at one revision. A schedule
+ * that cannot be read fails the read: it is never left out, and a failed read is never
+ * "no schedules".
+ */
+class RoomScheduleReads(private val database: SelloDatabase) : ScheduleReads {
+    override suspend fun book(): Outcome<ScheduleBook, StorageFailure> = reading {
+        database.withTransaction {
+            val profile = when (val stored = profileFrom(database.profileDao().rows())) {
+                is Outcome.Success -> stored.value
+                is Outcome.Failure -> return@withTransaction stored
+            }
+            val pauses = database.scheduleDao().allPauses().groupBy { it.scheduleId }
+            // A pause cannot outlive its schedule: the foreign key refuses it.
+            val schedules = mutableListOf<StoredSchedule>()
+            for (row in database.scheduleDao().all()) {
+                when (val stored = row.toStored(pauses[row.id].orEmpty())) {
+                    is Outcome.Success -> schedules += stored.value
+                    is Outcome.Failure -> return@withTransaction stored
+                }
+            }
+            Outcome.Success(ScheduleBook(profile.generation, profile.revision, schedules))
+        }
+    }
+
+    override fun observe(): Flow<ScheduleBookState> = flow {
+        emit(ScheduleBookState.Loading)
+        var lastGood: ScheduleBook? = null
+        try {
+            // Every command moves the profile's revision in its transaction.
+            database.profileDao().changes().conflate().collect {
+                when (val read = book()) {
+                    is Outcome.Success -> {
+                        lastGood = read.value
+                        emit(ScheduleBookState.Ready(read.value))
+                    }
+
+                    is Outcome.Failure -> emit(ScheduleBookState.Failed(read.error, lastGood))
+                }
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (failure: SQLException) {
+            emit(ScheduleBookState.Failed(unavailable(failure), lastGood))
+        } catch (failure: IllegalStateException) {
+            emit(ScheduleBookState.Failed(unavailable(failure), lastGood))
+        }
+    }
+
+    private fun unavailable(failure: Exception) =
+        StorageFailure.Unavailable(failure.javaClass.simpleName)
+}

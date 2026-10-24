@@ -518,13 +518,13 @@ class IncomeCommandContractTest {
         ledger.elapsed = 7.hours + 1.seconds
         raw(
             "INSERT INTO income VALUES ('${uuid(555)}', '2026-10-08', 1, 700, 'COP', 'salary', " +
-                "NULL, NULL, 1, 0, 0)"
+                "NULL, NULL, 1, 0, 0, NULL, NULL, NULL)"
         )
         val sequenceTaken = ledger.incomes.restore(undo(deletion))
         raw("DELETE FROM income")
         raw(
             "INSERT INTO income VALUES ('${uuid(100)}', '2026-10-08', 9, 700, 'COP', 'salary', " +
-                "NULL, NULL, 1, 0, 0)"
+                "NULL, NULL, 1, 0, 0, NULL, NULL, NULL)"
         )
         val identifierTaken = ledger.incomes.restore(undo(deletion))
         raw("DELETE FROM income")

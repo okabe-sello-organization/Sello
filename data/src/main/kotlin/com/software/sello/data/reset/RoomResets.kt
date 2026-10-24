@@ -181,6 +181,8 @@ class RoomResets(
             goalDao().deleteFeatured()
             goalDao().deleteAllEvents()
             goalDao().deleteAll()
+            scheduleDao().deleteAllPauses()
+            scheduleDao().deleteAll()
             expenseDao().deleteAll()
             incomeDao().deleteAll()
             limitDao().deleteAllMonthLimits()

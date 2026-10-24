@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** In Progress
 - **Depends on:** SELLO-097, SELLO-004
 - **Gate:** G2
 
@@ -38,3 +38,18 @@ ARCHITECTURE §8 recurrence rules.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-098 --retain`.
+
+### Execution progress
+
+Delivered in three pull requests, as approved by the owner on 2026-10-24: schema 5 and
+reads; commands; catch-up and its triggers.
+
+- **Part 1, schema 5 and reads:** `schedule` and `schedule_pause` tables, and the origin
+  (`origin_schedule_id`, `origin_date`, `origin_slot`) of an automatically recorded
+  expense or income, unique, carried through delete and undo, with `UndoConflict` when
+  another entry already records it. Migration 4→5 keeps every row; `5.json` exported.
+  `ScheduleReads` reads every schedule with its pauses and checkpoint, failing on any
+  damaged column. Erase-all and restore remove schedules (version 2 backups carry none;
+  SELLO-099 adds them). Tests: `ScheduleStorageTest` (11), the 4→5 upgrade in
+  `ExportedSchemaOnDeviceTest`, schedules in the erase and restore contracts; seven
+  deliberate breaks each fail a test. Still to come: commands (part 2), catch-up (part 3).

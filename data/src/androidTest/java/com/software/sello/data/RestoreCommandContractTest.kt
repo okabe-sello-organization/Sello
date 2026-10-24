@@ -157,6 +157,36 @@ class RestoreCommandContractTest {
         ledger.categories.submit(ledger.createCategory("Mercado", finite(50_000)))
         ledger.expenses.create(ledger.createExpense(100, "2026-10-05", 7_000))
         ledger.expenses.create(ledger.createExpense(100, "2026-10-06", 8_000))
+        // A paused recurring payment in Mercado, as SELLO-098 stores one. Version 2
+        // backups carry no schedules, so a restore leaves none.
+        ledger.database.insertRaw(
+            "schedule",
+            "id" to uuid(300),
+            "kind" to "payment",
+            "category_id" to uuid(100),
+            "source_key" to null,
+            "source_name" to null,
+            "amount_minor" to 7_000L,
+            "currency" to "COP",
+            "note" to null,
+            "rule" to "monthly",
+            "rule_first" to 5,
+            "rule_second" to null,
+            "start_date" to "2026-10-05",
+            "end_date" to null,
+            "sequence" to 0L,
+            "handled_date" to "2026-10-05",
+            "handled_slot" to 1,
+            "version" to 1L,
+            "created_at" to 0L,
+            "updated_at" to 0L
+        )
+        ledger.database.insertRaw(
+            "schedule_pause",
+            "schedule_id" to uuid(300),
+            "from_date" to "2026-10-07",
+            "until_date" to null
+        )
     }
 
     private fun everyRow(): List<List<String>> = listOf(
@@ -165,6 +195,8 @@ class RestoreCommandContractTest {
         ledger.rows("month_limit", "category_id", "month"),
         ledger.rows("expense", "id", "category_id", "effective_date", "sequence", "amount_minor"),
         ledger.rows("income", "id", "effective_date", "sequence", "amount_minor", "source_key"),
+        ledger.rows("schedule", "id", "category_id", "handled_date"),
+        ledger.rows("schedule_pause", "schedule_id", "from_date"),
         ledger.rows("profile", "financial_zone", "generation", "revision")
     )
 
@@ -204,6 +236,8 @@ class RestoreCommandContractTest {
                     "${uuid(103)}|${uuid(1)}|2026-10-03|3|5000"
                 ),
                 listOf("${uuid(201)}|2026-10-01|1|200000|salary"),
+                emptyList(),
+                emptyList(),
                 // The backup's zone, a new generation and the next revision.
                 listOf("America/Lima|2|${revision + 1}")
             ),

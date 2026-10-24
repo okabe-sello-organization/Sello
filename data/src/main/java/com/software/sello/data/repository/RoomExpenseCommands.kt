@@ -260,7 +260,10 @@ class RoomExpenseCommands internal constructor(
                     note = row.note,
                     version = row.version,
                     createdAt = row.createdAt,
-                    updatedAt = row.updatedAt
+                    updatedAt = row.updatedAt,
+                    originScheduleId = row.originScheduleId,
+                    originDate = row.originDate,
+                    originSlot = row.originSlot
                 )
             )
             val removed = database.expenseDao().delete(row.id, row.version)
@@ -288,7 +291,8 @@ class RoomExpenseCommands internal constructor(
                 ?: return Rejected(ExpenseRejection.UndoExpired)
             val taken = kept.generation != profile.generation ||
                 database.expenseDao().byId(kept.expenseId) != null ||
-                database.expenseDao().countAtSequence(kept.sequence) != 0
+                database.expenseDao().countAtSequence(kept.sequence) != 0 ||
+                kept.originTaken()
             if (taken) return Rejected(ExpenseRejection.UndoConflict)
 
             database.expenseDao().insert(
@@ -302,7 +306,10 @@ class RoomExpenseCommands internal constructor(
                     note = kept.note,
                     version = kept.version,
                     createdAt = kept.createdAt,
-                    updatedAt = kept.updatedAt
+                    updatedAt = kept.updatedAt,
+                    originScheduleId = kept.originScheduleId,
+                    originDate = kept.originDate,
+                    originSlot = kept.originSlot
                 )
             )
             val removed = database.deletedExpenseDao().remove(kept.deletionId)
@@ -330,5 +337,13 @@ class RoomExpenseCommands internal constructor(
             is Outcome.Success ->
                 Outcome.Success(receipt.value.expenseId?.let { receipt.value.committedExpense() })
         }
+    }
+
+    /** A kept occurrence cannot come back while another expense records the same origin. */
+    private suspend fun DeletedExpenseEntity.originTaken(): Boolean {
+        val schedule = originScheduleId ?: return false
+        val date = originDate ?: return false
+        val slot = originSlot ?: return false
+        return database.expenseDao().countAtOrigin(schedule, date, slot) != 0
     }
 }

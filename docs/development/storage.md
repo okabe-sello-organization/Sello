@@ -3,7 +3,7 @@
 Rules: [architecture](../../ARCHITECTURE.md) §§4, 5, 7.
 
 One Room database, `sello.db`, in the app's private storage, is the only place
-financial facts live. Its schema is version 4; every version is exported to
+financial facts live. Its schema is version 5; every version is exported to
 `data/schemas/com.software.sello.data.local.SelloDatabase/`.
 
 ## What is stored
@@ -14,8 +14,8 @@ financial facts live. Its schema is version 4; every version is exported to
 | `category` | Name, name key, icon key, archived flag, version, audit times | `id`; unique `name_key` |
 | `default_limit` | A category's default limit from a month onwards | (`category_id`, `effective_month`) |
 | `month_limit` | The limit set for one category in one month | (`category_id`, `month`) |
-| `expense` | Category, effective date, sequence, amount, note, version, audit times | `id`; unique `sequence`; read by (`effective_date`, `sequence`) |
-| `income` | Effective date, sequence, amount, source key and name, note, version, audit times | `id`; unique `sequence`; read by (`effective_date`, `sequence`) |
+| `expense` | Category, effective date, sequence, amount, note, version, audit times, and the origin of one a schedule recorded | `id`; unique `sequence`; unique origin; read by (`effective_date`, `sequence`) |
+| `income` | Effective date, sequence, amount, source key and name, note, version, audit times, origin | `id`; unique `sequence`; unique origin; read by (`effective_date`, `sequence`) |
 | `operation_receipt` | Proof that an operation committed: kind, input digest, generation, revision, subject | `operation_id` |
 | `deleted_expense` | What the last deleted expense was, column for column, with the generation and time of the deletion | `deletion_id`, the deletion's operation identifier |
 | `deleted_income` | The same for the last deleted income | `deletion_id` |
@@ -23,8 +23,10 @@ financial facts live. Its schema is version 4; every version is exported to
 | `goal_event` | A goal's history: each target (`target`) and movement (`contribution`, `withdrawal`) with amount, date (movements only), the day it was recorded, note, version, audit times | `id`; unique (`goal_id`, `sequence`), the recording order |
 | `deleted_goal_event` | What a deleted goal movement was, for its undo | `deletion_id` |
 | `featured_goal` | The goal chosen for Recibo, if any | `id` is always 1 |
+| `schedule` | A recurring payment (category) or income (source): amount, note, repeat rule, start and end, creation order, the last occurrence catch-up handled, version, audit times | `id`; unique `sequence` |
+| `schedule_pause` | One pause of a schedule: its first day and the day it resumed, if it did | (`schedule_id`, `from_date`) |
 
-There are no recurrence, investment, widget or capture tables, and no
+There are no investment, widget or capture tables, and no
 preference such as theme or category order: those are not financial and stay out
 of Room, in the DataStore file `sello-preferences` (`DataStoreUserPreferences`). A
 preference that cannot be read falls back to the last good value or the default and
@@ -145,6 +147,16 @@ Goals (SELLO-087) are stored as their history: stamps and percentages are worked
 from it by `GoalPolicy` and never stored ([goal rules](../testing/goal-examples.md)).
 Backups (format version 2), restore and erase-all carry the goal tables with the rest
 (SELLO-088).
+
+Schedules (SELLO-098) are stored as their terms; their occurrences are worked out by
+`SchedulePolicy` and never stored ([recurrence rules](../testing/recurrence-examples.md)).
+An expense or income a schedule records carries its origin, `origin_schedule_id`,
+`origin_date` and `origin_slot`: all three or none, unique, kept in the copy for undo,
+and with no foreign key, so the entry outlives its schedule. A schedule's
+`handled_date` and `handled_slot` are the last occurrence catch-up dealt with; it and
+every earlier one are never recorded again, even after their entry was deleted.
+Backups (format version 2), restore and erase-all do not carry schedules yet
+(SELLO-099).
 
 ## Not here yet
 
