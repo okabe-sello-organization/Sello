@@ -9,6 +9,17 @@ from pathlib import Path
 GATES = ("G0", "G1", "G2", "G3")
 MINIMUM_GATE = "G1"
 
+
+def local_gate(required):
+    """The gate a local run executes by default for work that requires [required].
+
+    The hosted run executes the device suites on the real merge result before anything
+    merges (ADR 0009), so the local requirement for a G2 ticket is the host gate G1.
+    G3 stays whole: only the owner's machine holds the production signing key (ADR 0016).
+    G0 stays G0: documentation needs no Gradle.
+    """
+    return required if required in ("G0", "G3") else MINIMUM_GATE
+
 HOST_TASKS = (
     "ktlintCheck", ":domain:test", ":data:testDebugUnitTest", ":design-system:testDebugUnitTest",
     ":app:testDebugUnitTest", ":catalog:testDebugUnitTest", "lintDebug",

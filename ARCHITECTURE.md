@@ -406,7 +406,9 @@ Integration references: [build variants/source sets][build-variants] and
   restore preference failure, and reset fencing before MVP release. Later gates
   include recurrence restart, withdrawal-not-loss, FX races, and milestone history.
 - **MUST** gate code changes with architecture/static checks, unit tests, lint, and
-  debug/release assembly; affected device flows and migration tests run in CI.
+  debug/release assembly; affected device flows and migration tests run in CI. The
+  required local run is that host gate; the hosted check runs the device suites
+  (ADR 0014, amended 2026-10-24).
   [ADR 0014](docs/decisions/0014-change-aware-quality-gates.md) permits Python/Git-only
   G0 for documentation advancing no ticket and explicit dependency-aware G2 device
   scope. Shared/build/unknown inputs require full device coverage; nightly/manual
