@@ -15,9 +15,9 @@ import json  # noqa: E402
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run the gate the canonical ticket requires. Checks cannot be skipped or downgraded.",
+        description="Run the canonical ticket's local gate: the host gate G1 (G3 whole for a release ticket); the hosted run adds the device suites. Checks cannot be skipped or downgraded.",
     )
-    parser.add_argument("--affected", metavar="BASE", help="Local ticket: select affected device modules since BASE; default ticket runs are full.")
+    parser.add_argument("--affected", metavar="BASE", help="Local ticket: run its device gate with the device modules affected since BASE; the default runs the host gate only.")
     parser.add_argument("--ci-plan", metavar="BASE", help="Print the exact hosted plan, including gate and selected groups.")
     parser.add_argument("ticket", nargs="?", help="Ticket ID, for example SELLO-017")
     parser.add_argument(
@@ -34,7 +34,7 @@ def main():
     )
     parser.add_argument(
         "--gate", choices=gates.GATES[1:],
-        help="Run a higher gate than the ticket requires. A lower one is refused.",
+        help="Run a higher gate than the local default, for example G2 to run every device suite locally. A lower one is refused.",
     )
     parser.add_argument(
         "--retain", action="store_true",

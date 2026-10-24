@@ -109,10 +109,10 @@ The host gate runs every module's tests, ktlint, lint and the assemblies; its ex
 task list is in the [board README](../tickets/README.md):
 
 ```bash
-./scripts/verify-ticket SELLO-0XX             # the ticket's own gate
-./scripts/verify-ticket SELLO-0XX --gate G1   # G1 only if the ticket minimum permits it
-./scripts/verify-ticket SELLO-0XX --affected origin/main --retain  # affected G2 scope
-./scripts/verify-ticket --merge-candidate origin/main  # G0 for eligible docs, otherwise G2
+./scripts/verify-ticket SELLO-0XX             # the local requirement: host gate G1 (G3 whole for a release)
+./scripts/verify-ticket SELLO-0XX --gate G2   # add every device suite locally
+./scripts/verify-ticket SELLO-0XX --affected origin/main --retain  # add the affected device suites
+./scripts/verify-ticket --merge-candidate origin/main  # G0 for eligible docs, otherwise G1 locally
 ```
 
 Inspect actual compiler versions independently of Gradle's embedded Kotlin:
@@ -247,9 +247,9 @@ digests, and writes standard full reports plus the source parts under
 only when host is the sole selected part (G0/G1). Re-run the complete workflow for a fresh comparison; retrying
 only a failed group cannot reuse successful groups from a previous attempt.
 The pinned `actions/download-artifact` v8.0.2 reads the current run without new
-credentials or GitHub permissions. Normal local `verify-ticket` commands still
-execute the whole assigned gate on one device. Add `--affected BASE` to a ticket
-command for targeted device coverage; `--gate G2` always forces every device suite.
+credentials or GitHub permissions. Normal local `verify-ticket` commands execute
+the host gate; the hosted run executes the device suites. Add `--affected BASE` to a
+ticket command for targeted device coverage locally; `--gate G2` forces every device suite.
 Reports use schema v2 with full/affected/documents scope, compared base/paths and
 exact selected modules. Targeted verification is not reported as full G2; historical
 schema-v1 reports remain readable.

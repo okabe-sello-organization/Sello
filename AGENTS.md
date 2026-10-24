@@ -87,9 +87,11 @@ even where its text says otherwise. MUST/SHOULD/COULD have the meanings defined 
   changes. Follow the [quality gates guide](docs/development/quality-gates.md) for profiles,
   evidence and bootstrap exceptions. For ticket completion, run
   `./scripts/verify-ticket <ticket> --retain` and record fresh Quality run evidence
-  before Review/Done. Default ticket commands run the full assigned gate. For
-  dependency-aware device selection, use `--affected <PR base>` and retain the
-  explicit affected scope; `--gate G2` always forces full device coverage. Pure
+  before Review/Done. The required local run is the host gate G1 for every ticket,
+  G3 whole for a release ticket; a ticket's device suites run hosted, on the real
+  merge result, before anything merges. Run the device tests you wrote or changed
+  as focused tests. `--gate G2` or `--affected <PR base>` runs device suites locally
+  too when a change is risky on a device; retain the explicit scope. Pure
   documentation advancing no ticket uses `--merge-candidate <base>` (G0), never
   a fabricated ticket or a ticket downgrade. Follow ADR 0014 and the quality gates
   guide for the selection rules. Never weaken tests, disable checks, apply a blanket warning

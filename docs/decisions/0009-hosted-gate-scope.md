@@ -47,11 +47,14 @@ ticket advancement selects full devices. Host tasks remain complete in every G1/
 
 ## Local parity and evidence
 
-`verify-ticket <ticket>` still runs the full ticket gate. Add `--affected BASE`
-for dependency-aware device selection; choose/fetch the real PR base, not a later
-commit hiding changed inputs. `--gate G2` always forces all four device suites.
-The candidate command `--merge-candidate BASE` derives G0/G2 automatically; a
-higher explicit gate is allowed. Individual ticket G1/G2/G3 minima still apply.
+`verify-ticket <ticket>` runs the local requirement: the host gate G1, or G3 whole
+for a release ticket (ADR 0014, amendment of 2026-10-24; before it the local default
+was the full ticket gate). The hosted G2 above is where a ticket's device suites
+execute. Add `--affected BASE` for dependency-aware device selection locally;
+choose/fetch the real PR base, not a later commit hiding changed inputs. `--gate G2`
+always forces all four device suites. The candidate command `--merge-candidate BASE`
+derives G0 for documents and otherwise runs G1 locally; a higher explicit gate is
+allowed. A G3 ticket still needs the owner's whole G3 run.
 
 New schema-v2 reports name full/affected/documents, base, changed paths and exact
 selected modules. Each CI part is bound to the same selection, revision, inputs,

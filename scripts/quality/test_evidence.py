@@ -109,8 +109,12 @@ class EvidenceTests(unittest.TestCase):
         field = evidence.quality_run_line(self.root, "SELLO-005")
         self.assert_rejected("report is for SELLO-004", identifier="SELLO-005", field=field)
 
-    def test_lower_gate_does_not_satisfy_a_higher_one(self):
-        self.assert_rejected("G1 does not satisfy G2", gate="G2")
+    def test_host_gate_report_completes_a_device_ticket(self):
+        # The device suites of a G2 ticket run hosted, on the merge result (ADR 0009/0014).
+        self.check(gate="G2")
+
+    def test_host_gate_report_does_not_complete_a_release_ticket(self):
+        self.assert_rejected("G1 does not satisfy G3", gate="G3")
 
     def test_higher_gate_satisfies_a_lower_one(self):
         code, path = self.verify(gate="G2")

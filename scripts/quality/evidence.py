@@ -1,9 +1,11 @@
 """Completion evidence: retain a passing quality report and validate it later.
 
 Shared by tickets.py (Review/Done validation) and CI. A retained report is accepted
-only if it is well formed, passed, belongs to the ticket, ran a sufficient gate, is
-the exact file the ticket's `Quality run` field names, and still matches the
-ticket's acceptance text. A ticket entering Review or Done must also be bound to the
+only if it is well formed, passed, belongs to the ticket, ran at least the local
+requirement (gates.local_gate: the host gate G1, or G3 whole for a release ticket;
+the device suites of a G2 ticket run hosted on the merge result), is the exact file
+the ticket's `Quality run` field names, and still matches the ticket's acceptance
+text. A ticket entering Review or Done must also be bound to the
 change set under verification: the report's change fingerprint must be one the
 candidate contains (fingerprint.candidate_changes). An already-Done ticket keeps its
 historical snapshot. The hosted run on the merge result verifies the combination.
@@ -15,6 +17,7 @@ import subprocess
 from pathlib import Path
 
 import fingerprint
+import gates
 import selection
 import tickets
 
@@ -148,9 +151,10 @@ def check(root, ticket_id, ticket_gate, quality_run, fresh, base=None, migrated=
         if record["exit_code"] != 0:
             raise EvidenceError(f"check {record['name']} exited {record['exit_code']} in a report marked passed")
     required = max(ticket_gate, MINIMUM_GATE, key=GATES.index)
+    minimum = gates.local_gate(required)
     executed = report["gate"]["executed"]
-    if GATES.index(executed) < GATES.index(required):
-        raise EvidenceError(f"{executed} does not satisfy {required}")
+    if GATES.index(executed) < GATES.index(minimum):
+        raise EvidenceError(f"{executed} does not satisfy {minimum}")
     if executed == "G3" and not any(
         record["name"] == "release-production" and record["exit_code"] == 0 for record in report["checks"]
     ):

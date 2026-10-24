@@ -128,11 +128,28 @@ class RunnerTests(unittest.TestCase):
                       ticket("SELLO-004", status="Backlog", dependencies="SELLO-003"))
         self.assert_refused(self.run_ticket(), "SELLO-003 is Review")
 
-    def test_gate_cannot_be_downgraded(self):
+    def test_device_ticket_runs_the_host_gate_locally_by_default(self):
         self.set_epic(ticket("SELLO-003", status="Done"),
                       ticket("SELLO-004", dependencies="SELLO-003", gate="G2"))
+        code, path = self.run_ticket()  # no device attached: none is needed
+        report = self.report(path)
+        self.assertEqual(0, code)
+        self.assertEqual({"required": "G2", "executed": "G1"}, report["gate"])
+        self.assertEqual("gradle-host", report["checks"][-1]["name"])
+        self.assertNotIn("gradle-device", self.harness.executed)
+        self.assertEqual([], report["devices"])
+        self.assertEqual([], report["coverage"]["device_modules"])
+
+    def test_gate_cannot_be_downgraded_below_the_local_requirement(self):
+        self.set_epic(ticket("SELLO-003", status="Done"),
+                      ticket("SELLO-004", dependencies="SELLO-003", gate="G2"))
+        self.assert_refused(self.run_ticket(gate="G0"), "requires at least G1")
+
+    def test_release_gate_stays_whole_locally(self):
+        self.set_epic(ticket("SELLO-003", status="Done"),
+                      ticket("SELLO-004", dependencies="SELLO-003", gate="G3"))
         self.devices = [DEVICE]
-        self.assert_refused(self.run_ticket(gate="G1"), "requires G2")
+        self.assert_refused(self.run_ticket(gate="G2"), "requires at least G3")
 
     def test_higher_gate_is_permitted(self):
         self.devices = [DEVICE]
@@ -153,7 +170,7 @@ class RunnerTests(unittest.TestCase):
     def test_device_gate_without_device_is_refused(self):
         self.set_epic(ticket("SELLO-003", status="Done"),
                       ticket("SELLO-004", dependencies="SELLO-003", gate="G2"))
-        self.assert_refused(self.run_ticket(), "no connected device")
+        self.assert_refused(self.run_ticket(gate="G2"), "no connected device")
 
     def test_release_gate_without_device_is_refused(self):
         self.set_epic(ticket("SELLO-003", status="Done"),
