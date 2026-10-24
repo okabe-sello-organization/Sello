@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Done
+- **Status:** In Progress
 - **Depends on:** SELLO-089, SELLO-004
 - **Gate:** G2
 
