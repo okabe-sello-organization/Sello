@@ -1,0 +1,177 @@
+{
+  "schema_version": 2,
+  "coverage": {
+    "mode": "full",
+    "base": "a4f34e2a14f9518c5b94bfd22d1f18475021b301",
+    "changed_paths": [],
+    "device_modules": [
+      "data",
+      "design-system",
+      "app",
+      "catalog"
+    ]
+  },
+  "run_id": "20261024T200938Z-043cee08",
+  "ticket": "SELLO-091",
+  "gate": {
+    "required": "G2",
+    "executed": "G2"
+  },
+  "outcome": "passed",
+  "failures": [],
+  "warnings": [
+    "gradle-host: 34 lint warnings",
+    "tested an uncommitted working tree, not a clean commit"
+  ],
+  "snapshot": {
+    "head": "a4f34e2a14f9518c5b94bfd22d1f18475021b301",
+    "dirty": true,
+    "dirty_files": [
+      "docs/tickets/E17-goals/SELLO-091/artifacts/aporte-recorded.png",
+      "docs/tickets/E17-goals/SELLO-091/artifacts/aporte.png",
+      "docs/tickets/E17-goals/SELLO-091/artifacts/correction.png",
+      "docs/tickets/E17-goals/SELLO-091/artifacts/goal-chips.png",
+      "docs/tickets/E17-goals/SELLO-091/artifacts/goal-dock.png",
+      "docs/tickets/E17-goals/SELLO-091/artifacts/retiro-over-saved.png"
+    ],
+    "fingerprint": {
+      "algorithm": "sha256",
+      "value": "cbdc46b6d4ed175f82c54fc7d5f1d21b45ce9cc33167955f281af4a8e1a7ae5c",
+      "files": 988
+    },
+    "changes": {
+      "algorithm": "sha256",
+      "base": "52a377b316a24eb64e14b98af4bb3fb9ef1ca167",
+      "value": "6e78c243356a91f03951200b0e925bdfe94d02350bfbe69e9af5282577a12a27",
+      "paths": 25
+    },
+    "acceptance": "5d60cc577aa533b929707a67743f2810ba825947afa834bdd5dcb6803f4f233b"
+  },
+  "environment": {
+    "os": "Linux x86_64",
+    "python": "3.14.8",
+    "java": "openjdk version \"25.0.3\" 2026-04-21",
+    "git": "git version 2.56.0",
+    "gradle": "9.5.0",
+    "agp": "9.3.3",
+    "kotlin": "2.4.20"
+  },
+  "devices": [
+    {
+      "serial": "emulator-5720",
+      "api": "30",
+      "model": "sdk_gphone_x86_64"
+    }
+  ],
+  "checks": [
+    {
+      "name": "tickets-check",
+      "command": "python3 scripts/quality/tickets.py check --skip-evidence",
+      "log": "tickets-check.log",
+      "started_at": "2026-10-24T20:09:38+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T20:09:38+00:00"
+    },
+    {
+      "name": "quality-tests",
+      "command": "python3 -m unittest discover -s scripts/quality -p test_*.py",
+      "log": "quality-tests.log",
+      "started_at": "2026-10-24T20:09:38+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T20:09:48+00:00"
+    },
+    {
+      "name": "performance-tests",
+      "command": "python3 -m unittest discover -s scripts/performance -p test_*.py",
+      "log": "performance-tests.log",
+      "started_at": "2026-10-24T20:09:48+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T20:09:49+00:00"
+    },
+    {
+      "name": "architecture",
+      "command": "python3 scripts/quality/architecture.py",
+      "log": "architecture.log",
+      "started_at": "2026-10-24T20:09:49+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T20:09:50+00:00"
+    },
+    {
+      "name": "links",
+      "command": "python3 scripts/quality/links.py",
+      "log": "links.log",
+      "started_at": "2026-10-24T20:09:50+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T20:09:50+00:00"
+    },
+    {
+      "name": "gradle-host",
+      "command": "./gradlew ktlintCheck :domain:test :data:testDebugUnitTest :design-system:testDebugUnitTest :app:testDebugUnitTest :catalog:testDebugUnitTest lintDebug :app:assembleDebug :app:assembleRelease :catalog:assembleDebug --continue",
+      "log": "gradle-host.log",
+      "started_at": "2026-10-24T20:09:50+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T20:10:46+00:00",
+      "results": {
+        "suites": 78,
+        "tests": 854,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "fresh_results": false,
+      "lint": {
+        "reports": 5,
+        "errors": 0,
+        "warnings": 34
+      }
+    },
+    {
+      "name": "gradle-device",
+      "command": "./gradlew :data:connectedDebugAndroidTest :design-system:connectedDebugAndroidTest :app:connectedDebugAndroidTest :catalog:connectedDebugAndroidTest --continue",
+      "log": "gradle-device.log",
+      "started_at": "2026-10-24T20:10:46+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T20:19:27+00:00",
+      "modules": {
+        "data": {
+          "suites": 1,
+          "tests": 269,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "design-system": {
+          "suites": 1,
+          "tests": 144,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app": {
+          "suites": 1,
+          "tests": 380,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "catalog": {
+          "suites": 1,
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "results": {
+        "suites": 4,
+        "tests": 814,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "fresh_results": true
+    }
+  ],
+  "started_at": "2026-10-24T20:09:38+00:00",
+  "finished_at": "2026-10-24T20:19:27+00:00"
+}

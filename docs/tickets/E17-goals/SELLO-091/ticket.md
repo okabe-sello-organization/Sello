@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-089, SELLO-004
 - **Gate:** G2
 
@@ -37,3 +37,23 @@ v2 Aportar page.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-091 --retain`.
+
+### Execution progress
+
+- **Decisions taken while delivering (owner asked to continue, 2026-10-24):** the form
+  closes back where it was opened and says "Aporte anotado: …" or "Retiro anotado: …";
+  a correction keeps the movement's goal and kind, so the switch and the chips are
+  fixed while correcting; deleting a movement uses the one shared Deshacer, as for
+  expenses and income. Stamp celebrations after an aporte are SELLO-092's.
+- `GoalPolicy.withMovement` checks a new or corrected movement against the goal's
+  history before it is sent, by the commands' own rules: a retiro above what is saved
+  (MT08) and a correction or deletion a later retiro needs (MT15, MT16) wait with the
+  reason.
+- `SelloChip` takes a softer trailing text (the goal's percentage).
+- `ExpenseCorrections` offers the shared Deshacer for goal movements too, in their own
+  words, through `GoalCommands`.
+- `GoalMovementRoute`, `GoalMovementViewModel` and `GoalMovementScreen`: Aportar / Retirar
+  on the entry layout with the Sello pad, the date pill (past only), goal chips with their
+  percentage, "Llevas … guardados en esta meta." and the note; the correction form with
+  Borrar. Metas' **Aportar a una meta**, the goal's **Aportar a esta meta**, **Retirar
+  dinero** and its movement rows now open it.
