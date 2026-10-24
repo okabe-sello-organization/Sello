@@ -1,0 +1,169 @@
+{
+  "schema_version": 2,
+  "coverage": {
+    "mode": "full",
+    "base": "a81c6be21cf019ad0fda1dd074a61f759beee7bb",
+    "changed_paths": [],
+    "device_modules": [
+      "data",
+      "design-system",
+      "app",
+      "catalog"
+    ]
+  },
+  "run_id": "20261024T215119Z-c07a8e17",
+  "ticket": "SELLO-097",
+  "gate": {
+    "required": "G2",
+    "executed": "G2"
+  },
+  "outcome": "passed",
+  "failures": [],
+  "warnings": [
+    "gradle-host: 34 lint warnings"
+  ],
+  "snapshot": {
+    "head": "a81c6be21cf019ad0fda1dd074a61f759beee7bb",
+    "dirty": false,
+    "dirty_files": [],
+    "fingerprint": {
+      "algorithm": "sha256",
+      "value": "b0bd4f873ace7bd5fa02af3b1f2934dc29d927d1795ab11f42d503b30a3f39f3",
+      "files": 985
+    },
+    "changes": {
+      "algorithm": "sha256",
+      "base": "52a377b316a24eb64e14b98af4bb3fb9ef1ca167",
+      "value": "62d6e332c0e44ac3236a290efe0ca14c6c113b9fc963172d9894edaed6629636",
+      "paths": 4
+    },
+    "acceptance": "60062f42df8069235f12bbda930939369041cb18c544dc34940f82fe3ac6f08b"
+  },
+  "environment": {
+    "os": "Linux x86_64",
+    "python": "3.14.8",
+    "java": "openjdk version \"25.0.3\" 2026-04-21",
+    "git": "git version 2.56.0",
+    "gradle": "9.5.0",
+    "agp": "9.3.3",
+    "kotlin": "2.4.20"
+  },
+  "devices": [
+    {
+      "serial": "emulator-5700",
+      "api": "30",
+      "model": "sdk_gphone_x86_64"
+    }
+  ],
+  "checks": [
+    {
+      "name": "tickets-check",
+      "command": "python3 scripts/quality/tickets.py check --skip-evidence",
+      "log": "tickets-check.log",
+      "started_at": "2026-10-24T21:51:20+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T21:51:20+00:00"
+    },
+    {
+      "name": "quality-tests",
+      "command": "python3 -m unittest discover -s scripts/quality -p test_*.py",
+      "log": "quality-tests.log",
+      "started_at": "2026-10-24T21:51:20+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T21:51:30+00:00"
+    },
+    {
+      "name": "performance-tests",
+      "command": "python3 -m unittest discover -s scripts/performance -p test_*.py",
+      "log": "performance-tests.log",
+      "started_at": "2026-10-24T21:51:30+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T21:51:31+00:00"
+    },
+    {
+      "name": "architecture",
+      "command": "python3 scripts/quality/architecture.py",
+      "log": "architecture.log",
+      "started_at": "2026-10-24T21:51:31+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T21:51:32+00:00"
+    },
+    {
+      "name": "links",
+      "command": "python3 scripts/quality/links.py",
+      "log": "links.log",
+      "started_at": "2026-10-24T21:51:32+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T21:51:32+00:00"
+    },
+    {
+      "name": "gradle-host",
+      "command": "./gradlew ktlintCheck :domain:test :data:testDebugUnitTest :design-system:testDebugUnitTest :app:testDebugUnitTest :catalog:testDebugUnitTest lintDebug :app:assembleDebug :app:assembleRelease :catalog:assembleDebug --continue",
+      "log": "gradle-host.log",
+      "started_at": "2026-10-24T21:51:32+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T21:51:33+00:00",
+      "results": {
+        "suites": 78,
+        "tests": 855,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "fresh_results": false,
+      "lint": {
+        "reports": 5,
+        "errors": 0,
+        "warnings": 34
+      }
+    },
+    {
+      "name": "gradle-device",
+      "command": "./gradlew :data:connectedDebugAndroidTest :design-system:connectedDebugAndroidTest :app:connectedDebugAndroidTest :catalog:connectedDebugAndroidTest --continue",
+      "log": "gradle-device.log",
+      "started_at": "2026-10-24T21:51:33+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-24T22:00:07+00:00",
+      "modules": {
+        "data": {
+          "suites": 1,
+          "tests": 269,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "design-system": {
+          "suites": 1,
+          "tests": 143,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "app": {
+          "suites": 1,
+          "tests": 373,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "catalog": {
+          "suites": 1,
+          "tests": 21,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0
+        }
+      },
+      "results": {
+        "suites": 4,
+        "tests": 806,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "fresh_results": true
+    }
+  ],
+  "started_at": "2026-10-24T21:51:19+00:00",
+  "finished_at": "2026-10-24T22:00:08+00:00"
+}
