@@ -794,6 +794,10 @@
     <string name="goal_completion_too_late">Ya no se puede deshacer. La meta quedó lograda.</string>
     <string name="goal_reached_mark" formatted="false">Llegaste al 100 %. Márcala como lograda para ganar el último sello.</string>
     <string name="goal_mark_complete">Marcar como lograda</string>
+    <!-- Recibo's goal (SELLO-093) -->
+    <string name="recibo_goal_open">%1$s, %2$s por ciento. Ver meta</string>
+    <string name="recibo_goal_contribute">Aportar a %s</string>
+    <string name="recibo_goal_reached" formatted="false">Llegó al 100 %</string>
     <string name="goal_done_ask_title">¿Ya la lograste?</string>
     <string name="goal_done_ask_body">Si llegaste a tu meta por fuera de Sello, márcala como lograda.</string>
     <string name="goal_lograda_title">¡Lo lograste!</string>

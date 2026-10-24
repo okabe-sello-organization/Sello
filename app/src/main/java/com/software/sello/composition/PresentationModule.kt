@@ -19,6 +19,7 @@ import com.software.sello.feature.goals.GoalDetailViewModel
 import com.software.sello.feature.goals.GoalEditorViewModel
 import com.software.sello.feature.goals.GoalMovementViewModel
 import com.software.sello.feature.goals.MetasViewModel
+import com.software.sello.feature.goals.ReciboGoalViewModel
 import com.software.sello.feature.income.IncomeFormViewModel
 import com.software.sello.feature.income.IncomeHistoryViewModel
 import com.software.sello.feature.recibo.CategoryDetailViewModel
@@ -110,6 +111,19 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
         )
     }
     initializer { ReciboViewModel(koin.get(), koin.get(), koin.get(), koin.get()) }
+    initializer {
+        ReciboGoalViewModel(
+            createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
     initializer {
         MetasViewModel(
             createSavedStateHandle(),
