@@ -4,21 +4,26 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationKind
+import com.software.sello.domain.model.RepeatRule
+import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryEdit
 import com.software.sello.domain.port.ChangeCategoryIcon
 import com.software.sello.domain.port.ChangeGoalTarget
+import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.CreateIncome
+import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteIncome
+import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.EditGoal
 import com.software.sello.domain.port.EditGoalMovement
@@ -26,11 +31,15 @@ import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalEdit
+import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.RestoreIncome
+import com.software.sello.domain.port.ResumeSchedule
+import com.software.sello.domain.port.ScheduleCommand
+import com.software.sello.domain.port.ScheduleEdit
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.UnarchiveCategory
@@ -229,6 +238,54 @@ internal fun inputDigest(command: GoalCommand): String {
         is UndoGoalCompletion -> listOf(command.completionId.value)
 
         is FeatureGoal -> listOf(command.goalId.value)
+    }
+    val head = listOf(command.kind.key, "1", command.generation.toString())
+    return digest(*(head + subject + change).toTypedArray())
+}
+
+internal val ScheduleCommand.kind: OperationKind
+    get() = when (this) {
+        is CreateSchedule -> OperationKind.CreateSchedule
+        is ChangeSchedule -> OperationKind.ChangeSchedule
+        is PauseSchedule -> OperationKind.PauseSchedule
+        is ResumeSchedule -> OperationKind.ResumeSchedule
+        is DeleteSchedule -> OperationKind.DeleteSchedule
+    }
+
+private val ScheduledEntry.fields: List<String>
+    get() = when (this) {
+        is ScheduledEntry.Payment -> listOf("payment", categoryId.value)
+
+        is ScheduledEntry.Income -> listOf(
+            "income",
+            source.key,
+            (source as? IncomeSource.Other)?.name?.value.orEmpty()
+        )
+    } + amount.fields + note.fields
+
+private val RepeatRule.fields: List<String>
+    get() = when (this) {
+        is RepeatRule.Monthly -> listOf("monthly", day.toString(), "")
+        is RepeatRule.TwiceMonthly -> listOf("twice_monthly", first.toString(), second.toString())
+        is RepeatRule.EveryDays -> listOf("every_days", days.toString(), "")
+        is RepeatRule.EveryWeeks -> listOf("every_weeks", weeks.toString(), "")
+    }
+
+internal fun inputDigest(command: ScheduleCommand): String {
+    val subject = when (command) {
+        is ScheduleEdit -> listOf(command.scheduleId.value, command.expectedVersion.toString())
+        is CreateSchedule -> emptyList()
+    }
+    val change = when (command) {
+        is CreateSchedule ->
+            command.entry.fields + command.rule.fields +
+                listOf(command.start.toString(), command.end?.toString().orEmpty())
+
+        is ChangeSchedule ->
+            command.entry.fields + command.rule.fields +
+                listOf(command.start.toString(), command.end?.toString().orEmpty())
+
+        is PauseSchedule, is ResumeSchedule, is DeleteSchedule -> emptyList()
     }
     val head = listOf(command.kind.key, "1", command.generation.toString())
     return digest(*(head + subject + change).toTypedArray())

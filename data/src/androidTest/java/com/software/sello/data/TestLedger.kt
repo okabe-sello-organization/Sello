@@ -14,6 +14,7 @@ import com.software.sello.data.repository.RoomIncomeCommands
 import com.software.sello.data.repository.RoomIncomeReads
 import com.software.sello.data.repository.RoomMonthlySnapshots
 import com.software.sello.data.repository.RoomResumenSnapshots
+import com.software.sello.data.repository.RoomScheduleCommands
 import com.software.sello.data.repository.RoomScheduleReads
 import com.software.sello.data.repository.UndoWindow
 import com.software.sello.domain.model.BudgetLimit
@@ -45,6 +46,7 @@ import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import java.time.Instant
 import java.time.LocalDate
@@ -108,6 +110,7 @@ class TestLedger(
     lateinit var goals: GoalCommands
     lateinit var goalReads: GoalReads
     lateinit var scheduleReads: ScheduleReads
+    lateinit var schedules: ScheduleCommands
 
     /** A fresh handle on the same file, as after a process restart. */
     fun open() {
@@ -121,6 +124,7 @@ class TestLedger(
         goals = RoomGoalCommands(database, auditClock, clock, ids, undo) { elapsed }
         goalReads = RoomGoalReads(database)
         scheduleReads = RoomScheduleReads(database)
+        schedules = RoomScheduleCommands(database, auditClock, clock, ids)
         reads = RoomCategoryReads(database)
         snapshots = RoomMonthlySnapshots(database, clock, computation)
         resumen = RoomResumenSnapshots(database, clock, computation)
