@@ -18,15 +18,19 @@ import com.software.sello.designsystem.component.SelloDock
 import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
+import com.software.sello.feature.goals.CompletionState
+import com.software.sello.feature.goals.GoalDetailAction
 import com.software.sello.feature.goals.GoalDetailScreen
 import com.software.sello.feature.goals.GoalDetailState
 import com.software.sello.feature.goals.GoalDetailViewModel
 import com.software.sello.feature.goals.GoalPin
+import com.software.sello.feature.goals.LogradaMoment
 import com.software.sello.feature.goals.MetasAction
 import com.software.sello.feature.goals.MetasBandTotal
 import com.software.sello.feature.goals.MetasScreen
 import com.software.sello.feature.goals.MetasState
 import com.software.sello.feature.goals.MetasViewModel
+import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 
@@ -93,6 +97,15 @@ internal fun MetasDestination(
             padding = padding
         )
     }
+    LogradaMoment(
+        ready?.completion ?: CompletionState.Idle,
+        onDone = { model.onAction(MetasAction.CelebrationDone) },
+        onView = {
+            val plate = (ready?.completion as? CompletionState.Celebrating)?.plate
+            model.onAction(MetasAction.CelebrationDone)
+            plate?.goalId?.takeIf { it.isNotEmpty() }?.let(onOpenGoal)
+        }
+    )
     BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect(ShellTab.Recibo.id) }
 }
 
@@ -112,7 +125,8 @@ internal fun GoalDestination(
     onContribute: (() -> Unit)? = null,
     onWithdraw: (() -> Unit)? = null,
     onEditMovement: ((String) -> Unit)? = null,
-    notice: (@Composable () -> Unit)? = null
+    notice: (@Composable () -> Unit)? = null,
+    celebration: GoalCelebration? = null
 ) {
     val model: GoalDetailViewModel = viewModel(factory = viewModels)
     val detail by model.state.collectAsStateWithLifecycle()
@@ -152,9 +166,14 @@ internal fun GoalDestination(
             months = monthNames(),
             padding = padding,
             onWithdraw = onWithdraw,
-            onEditMovement = onEditMovement.takeIf { active }
+            onEditMovement = onEditMovement.takeIf { active },
+            landing = celebration?.earned.orEmpty().toSet(),
+            relighting = celebration?.relit.orEmpty().toSet()
         )
     }
+    LogradaMoment(ready?.completion ?: CompletionState.Idle, {
+        model.onAction(GoalDetailAction.CelebrationDone)
+    })
 }
 
 /** Metas' own action: green with the flag, so it cannot be taken for Anotar. */

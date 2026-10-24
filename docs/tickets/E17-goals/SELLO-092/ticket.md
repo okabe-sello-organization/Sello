@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-091, SELLO-004
 - **Gate:** G2
 
@@ -37,3 +37,19 @@ v2 celebrations page.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-092 --retain`.
+
+### Execution progress
+
+- **Decisions taken while delivering (owner asked to continue, 2026-10-24):** the stamp
+  lands once per confirmed save; reopening or redrawing the goal while the notice is said
+  shows it already down. Deshacer lasts 10 seconds after the big moment, 30 with TalkBack.
+  A target change that earns a stamp says "Meta actualizada" with the stamp line. The
+  Metas ticket follows the v2 layout (stamps left, dashed tear, text right).
+- `MilestonePlace` relights a kept stamp ("De vuelta en el 50 %"); `MilestoneRow` lands
+  or relights several places; `StampTicket` takes the v2 horizontal layout.
+- `GoalMovementViewModel` and `GoalEditorViewModel` build a `GoalCelebration` from the
+  receipt's `GoalChange`, never from a replay or a save found after an unknown outcome.
+- `GoalCompleter` sends one `CompleteGoal`, opens `LogradaMoment` only after the receipt
+  and recovers an unknown outcome with its own operation; `ExpenseCorrections` offers
+  Deshacer through `UndoGoalCompletion`. Marcar como lograda is on the goal page at 100 %,
+  on the Metas card and in Editar meta ("¿Ya la lograste?", MT26).

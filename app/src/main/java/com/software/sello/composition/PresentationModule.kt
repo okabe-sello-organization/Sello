@@ -110,10 +110,23 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
         )
     }
     initializer { ReciboViewModel(koin.get(), koin.get(), koin.get(), koin.get()) }
-    initializer { MetasViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer {
+        MetasViewModel(
+            createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
     initializer {
         GoalEditorViewModel(
             createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
             koin.get(),
             koin.get(),
             koin.get(),
@@ -135,6 +148,8 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     initializer {
         GoalDetailViewModel(
             createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
             koin.get(),
             koin.get(),
             koin.get(),

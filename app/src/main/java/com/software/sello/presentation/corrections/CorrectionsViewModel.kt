@@ -14,6 +14,9 @@ class CorrectionsViewModel(private val corrections: ExpenseCorrections) : ViewMo
 
     fun undo() = corrections.undo()
 
+    /** Whether a celebration's stamps come down now: once per save. */
+    fun lands(celebration: GoalCelebration): Boolean = corrections.lands(celebration)
+
     /** The app is back in view: time passed that waiting alone did not count. */
     fun returned() = corrections.refresh()
 }

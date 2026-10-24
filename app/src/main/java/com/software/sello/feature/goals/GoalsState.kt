@@ -25,7 +25,9 @@ sealed interface MetasState {
         val completed: List<CompletedGoalModel>,
         /** The financial day it was read on, for writing dates. */
         val today: LocalDate,
-        val stale: Boolean = false
+        val stale: Boolean = false,
+        /** Marcar como lograda in progress, or its big moment on screen. */
+        val completion: CompletionState = CompletionState.Idle
     ) : MetasState {
         val empty: Boolean get() = goals.isEmpty() && completed.isEmpty()
     }
@@ -59,7 +61,9 @@ data class GoalCardModel(
     val saved: MoneyTextValue,
     val target: MoneyTextValue,
     val targetMonth: YearMonth?,
-    val places: List<PlaceModel>
+    val places: List<PlaceModel>,
+    /** At its target and waiting: the card carries Marcar como lograda. */
+    val reached: Boolean = false
 )
 
 /** A completed goal's row: what it held and the day it was completed. */
@@ -76,6 +80,11 @@ sealed interface MetasAction {
     data object Retry : MetasAction
 
     data class Open(val id: String) : MetasAction
+
+    data class MarkComplete(val id: String) : MetasAction
+
+    /** The big moment is closed. */
+    data object CelebrationDone : MetasAction
 }
 
 /** One goal: progress, stamps, facts, aportes by month and its movements. */
@@ -96,7 +105,9 @@ sealed interface GoalDetailState {
         val busy: Boolean = false,
         val confirmingDelete: Boolean = false,
         val error: GoalDetailError? = null,
-        val allMovements: Boolean = false
+        val allMovements: Boolean = false,
+        /** Marcar como lograda in progress, or its big moment on screen. */
+        val completion: CompletionState = CompletionState.Idle
     ) : GoalDetailState
 }
 
@@ -130,6 +141,17 @@ data class GoalDetailModel(
         get() = places.count { it.look == PlaceLook.Earned || it.look == PlaceLook.Kept }
 
     val kept: List<PlaceModel> get() = places.filter { it.look == PlaceLook.Kept }
+
+    /** The goal as Marcar como lograda sends it, with what its plate will say. */
+    fun completionTarget(): CompletionTarget = CompletionTarget(
+        goalId = id,
+        version = version,
+        generation = generation,
+        name = name,
+        iconKey = iconKey,
+        saved = saved,
+        contributions = movements.count { it.kind == GoalMovementKind.Contribution }
+    )
 }
 
 /** [missing] is zero when the place is the Meta, reached and waiting to be marked. */
@@ -176,4 +198,9 @@ sealed interface GoalDetailAction {
     data object Delete : GoalDetailAction
 
     data object ShowAllMovements : GoalDetailAction
+
+    data object MarkComplete : GoalDetailAction
+
+    /** The big moment is closed. */
+    data object CelebrationDone : GoalDetailAction
 }

@@ -3,6 +3,7 @@ package com.software.sello.feature.goals
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
+import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovement
@@ -22,6 +23,7 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.ChangeGoalTarget
 import com.software.sello.domain.port.CommittedGoal
+import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.EditGoal
@@ -31,14 +33,23 @@ import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.feature.expense.HandExpenseCommands
+import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.presentation.corrections.CorrectionNotice
+import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -69,9 +80,20 @@ class GoalEditorViewModelTest {
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
     private val viajeId = "00000000-0000-4000-9000-000000000001"
 
+    private val scheduler = TestCoroutineScheduler()
+    private lateinit var corrections: ExpenseCorrections
+
     @Before
     fun main() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
+        corrections = ExpenseCorrections(
+            HandExpenseCommands(),
+            HandIncomeCommands(),
+            commands,
+            { 5.hours + scheduler.currentTime.milliseconds },
+            ids,
+            CoroutineScope(Dispatchers.Main)
+        )
         reads.read = Outcome.Success(GoalBoard(3, 9, emptyList(), null))
     }
 
@@ -126,7 +148,7 @@ class GoalEditorViewModelTest {
     }
 
     private fun model(saved: SavedStateHandle = SavedStateHandle()) =
-        GoalEditorViewModel(saved, reads, commands, clock, money, ids)
+        GoalEditorViewModel(saved, reads, commands, clock, money, ids, corrections) { false }
 
     private fun GoalEditorViewModel.type(vararg keys: String) {
         onAction(GoalEditorAction.OpenPad)
@@ -279,6 +301,70 @@ class GoalEditorViewModelTest {
         val sent = commands.sent.single() as ChangeGoalTarget
         assertEquals(pesos(4_000_000) to 4L, sent.target to sent.expectedVersion)
         assertEquals(GoalEditorResult.Updated, model.state.value.result)
+    }
+
+    /** What storage answers for a target change that did [change] to the stamps. */
+    private fun targetChanged(change: GoalChange?, replayed: Boolean = false) =
+        GoalCommandOutcome.Committed(
+            CommittedGoal(
+                OperationReceipt(
+                    OperationId.of(ids.next()).value(),
+                    OperationKind.ChangeGoalTarget,
+                    3,
+                    10,
+                    Instant.EPOCH
+                ),
+                GoalId.of(viajeId).value(),
+                change
+            ),
+            replayed
+        )
+
+    @Test
+    fun mt18ATargetChangeThatReachesSeventyFivePercentCelebratesItOnceSaved() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        model.onAction(GoalEditorAction.ClearAmount)
+        model.type("2", "000", "000")
+        commands.pause = true
+
+        model.onAction(GoalEditorAction.Submit)
+        assertNull(corrections.notice.value)
+        commands.release(
+            targetChanged(GoalChange(listOf(GoalPlace.ThreeQuarters), emptyList(), false))
+        )
+
+        val notice = corrections.notice.value as CorrectionNotice.GoalTargetChanged
+        assertEquals(
+            GoalCelebration(
+                viajeId,
+                "Viaje a la costa",
+                listOf(GoalPlace.ThreeQuarters),
+                emptyList(),
+                false
+            ),
+            notice.celebration.copy(missing = null)
+        )
+        assertEquals("290.000", notice.celebration.missing!!.digits)
+        assertEquals(GoalEditorResult.Updated, model.state.value.result)
+    }
+
+    @Test
+    fun mt17ATargetChangeThatEarnsNothingOrIsAReplayCelebratesNothing() = runTest {
+        val raised = model(editing(goal(3_000_000, 1_710_000)))
+        raised.onAction(GoalEditorAction.ClearAmount)
+        raised.type("4", "000", "000")
+        commands.queue += targetChanged(GoalChange(emptyList(), emptyList(), false))
+        raised.onAction(GoalEditorAction.Submit)
+        assertNull(corrections.notice.value)
+
+        val replay = model(editing(goal(3_000_000, 1_710_000)))
+        replay.onAction(GoalEditorAction.ClearAmount)
+        replay.type("2", "000", "000")
+        commands.queue += targetChanged(change = null, replayed = true)
+        replay.onAction(GoalEditorAction.Submit)
+
+        assertNull(corrections.notice.value)
+        assertEquals(GoalEditorResult.Updated, replay.state.value.result)
     }
 
     @Test
@@ -472,5 +558,24 @@ class GoalEditorViewModelTest {
             GoalIcons.options.map { it.key }
         )
         assertEquals(GoalPlace.entries, model.state.value.places.map { it.place.place })
+    }
+
+    @Test
+    fun mt26AGoalReachedOutsideSelloIsMarkedFromEditAndTheFormEndsAfterTheMoment() = runTest {
+        // 1.710.000 of 3.000.000, 57 %: marked lograda as it is stored.
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        model.onAction(GoalEditorAction.NameChanged("Otro nombre"))
+
+        model.onAction(GoalEditorAction.MarkComplete)
+
+        val sent = commands.sent.single() as CompleteGoal
+        assertEquals(GoalId.of(viajeId).value() to 4L, sent.goalId to sent.expectedVersion)
+        val moment = model.state.value.completion as CompletionState.Celebrating
+        assertEquals(
+            "Viaje a la costa" to "1.710.000",
+            moment.plate.name to moment.plate.saved.digits
+        )
+        model.onAction(GoalEditorAction.CelebrationDone)
+        assertEquals(GoalEditorResult.Updated, model.state.value.result)
     }
 }

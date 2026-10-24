@@ -2,10 +2,12 @@ package com.software.sello.presentation.corrections
 
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteIncome
@@ -23,6 +25,7 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.RestoreIncome
+import com.software.sello.domain.port.UndoGoalCompletion
 import java.time.YearMonth
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -117,13 +120,54 @@ sealed interface CorrectionNotice {
 
     data object GoalMovementUpdated : CorrectionNotice
 
+    /** A goal marked lograda; with [canUndo] Deshacer returns it to 100 %, waiting. */
+    data class GoalCompleted(
+        val goalName: String,
+        val canUndo: Boolean,
+        val undoing: Boolean = false,
+        val undoFailed: Boolean = false
+    ) : CorrectionNotice
+
+    data class GoalCompletionUndone(val goalName: String) : CorrectionNotice
+
+    data object GoalCompletionUndoTooLate : CorrectionNotice
+
     /**
      * A new aporte, or with [withdrawal] a retiro, storage confirmed: "Aporte anotado:
      * 350.000". [amount] is null when it is saved but could not be read back.
      */
-    data class GoalMovementRecorded(val withdrawal: Boolean, val amount: MoneyTextValue?) :
-        CorrectionNotice
+    data class GoalMovementRecorded(
+        val withdrawal: Boolean,
+        val amount: MoneyTextValue?,
+        val celebration: GoalCelebration? = null
+    ) : CorrectionNotice
+
+    /** A new target, storage confirmed, that earned or relit a stamp (rule 7, MT18). */
+    data class GoalTargetChanged(val celebration: GoalCelebration) : CorrectionNotice
 }
+
+/** The stamps a confirmed save earned, if this notice says so. */
+val CorrectionNotice.celebration: GoalCelebration?
+    get() = when (this) {
+        is CorrectionNotice.GoalMovementRecorded -> celebration
+        is CorrectionNotice.GoalTargetChanged -> celebration
+        else -> null
+    }
+
+/**
+ * What one confirmed save did to a goal's stamps, to be celebrated once: places
+ * [earned] for the first time, places [relit] after a withdrawal or a target change, and
+ * whether the Meta was [reachedMeta], waiting to be marked. [missing] is what is still
+ * left for the target. Never made for a replay or a save found after an unknown outcome.
+ */
+data class GoalCelebration(
+    val goalId: String,
+    val goalName: String,
+    val earned: List<GoalPlace>,
+    val relit: List<GoalPlace>,
+    val reachedMeta: Boolean,
+    val missing: MoneyTextValue? = null
+)
 
 /** How a deletion ended. Only [Deleted] means the expense is gone. */
 enum class DeleteResult { Deleted, Gone, Changed, DataChanged, Failed }
@@ -157,11 +201,12 @@ class ExpenseCorrections(
         val deletionId: OperationId,
         val generation: Long,
         val until: Duration,
-        val undoOperation: OperationId
+        val undoOperation: OperationId,
+        val goalName: String = ""
     )
 
     /** What the deletion on offer removed. */
-    private enum class Kind { Expense, Income, GoalMovement }
+    private enum class Kind { Expense, Income, GoalMovement, GoalCompletion }
 
     /** How an attempt to undo ended. [Retry]: nothing was restored and nothing forbids it. */
     private enum class Undone { Restored, TooLate, Blocked, Retry }
@@ -171,17 +216,20 @@ class ExpenseCorrections(
 
     private var pending: Pending? = null
     private var ending: Job? = null
+    private var landed: GoalCelebration? = null
 
     /** The offer in the words of what was deleted. */
     private fun offer(
         kind: Kind,
         canUndo: Boolean,
         undoing: Boolean = false,
-        failed: Boolean = false
+        failed: Boolean = false,
+        goalName: String = ""
     ) = when (kind) {
         Kind.Expense -> CorrectionNotice.Deleted(canUndo, undoing, failed)
         Kind.Income -> CorrectionNotice.IncomeDeleted(canUndo, undoing, failed)
         Kind.GoalMovement -> CorrectionNotice.GoalMovementDeleted(canUndo, undoing, failed)
+        Kind.GoalCompletion -> CorrectionNotice.GoalCompleted(goalName, canUndo, undoing, failed)
     }
 
     /** Whether an offer is on screen, and if so whether it can be taken and is being taken. */
@@ -189,6 +237,7 @@ class ExpenseCorrections(
         is CorrectionNotice.Deleted -> now.canUndo to now.undoing
         is CorrectionNotice.IncomeDeleted -> now.canUndo to now.undoing
         is CorrectionNotice.GoalMovementDeleted -> now.canUndo to now.undoing
+        is CorrectionNotice.GoalCompleted -> now.canUndo to now.undoing
         else -> null
     }
 
@@ -264,14 +313,15 @@ class ExpenseCorrections(
         kind: Kind,
         operation: OperationId,
         generation: Long,
-        until: Duration?
+        until: Duration?,
+        goalName: String = ""
     ): DeleteResult {
         if (until == null) {
             pending = null
-            show(offer(kind, canUndo = false), monotonic.elapsed() + NOTICE)
+            show(offer(kind, canUndo = false, goalName = goalName), monotonic.elapsed() + NOTICE)
         } else {
-            pending = Pending(kind, operation, generation, until, operation())
-            show(offer(kind, canUndo = true), until)
+            pending = Pending(kind, operation, generation, until, operation(), goalName)
+            show(offer(kind, canUndo = true, goalName = goalName), until)
         }
         return DeleteResult.Deleted
     }
@@ -283,7 +333,8 @@ class ExpenseCorrections(
         if (!canUndo || undoing) return
         // Once asked, the answer decides what is said next, not the time running out.
         ending?.cancel()
-        shown.value = offer(offered.kind, canUndo = true, undoing = true)
+        shown.value =
+            offer(offered.kind, canUndo = true, undoing = true, goalName = offered.goalName)
         scope.launch {
             settle(
                 offered,
@@ -291,6 +342,7 @@ class ExpenseCorrections(
                     Kind.Expense -> restore(offered)
                     Kind.Income -> restoreIncome(offered)
                     Kind.GoalMovement -> restoreGoalMovement(offered)
+                    Kind.GoalCompletion -> undoCompletion(offered)
                 }
             )
         }
@@ -343,6 +395,7 @@ class ExpenseCorrections(
                     Kind.Expense -> CorrectionNotice.Restored
                     Kind.Income -> CorrectionNotice.IncomeRestored
                     Kind.GoalMovement -> CorrectionNotice.GoalMovementRestored
+                    Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndone(offered.goalName)
                 }
             )
 
@@ -351,19 +404,24 @@ class ExpenseCorrections(
                     Kind.Expense -> CorrectionNotice.UndoBlocked
                     Kind.Income -> CorrectionNotice.IncomeUndoBlocked
                     Kind.GoalMovement -> CorrectionNotice.GoalMovementUndoBlocked
+                    Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndoTooLate
                 }
             )
 
             // Nothing was restored and nothing forbids it: it can be asked again while
             // the time lasts.
             outcome == Undone.Retry && monotonic.elapsed() < offered.until ->
-                show(offer(kind, canUndo = true, failed = true), offered.until)
+                show(
+                    offer(kind, canUndo = true, failed = true, goalName = offered.goalName),
+                    offered.until
+                )
 
             else -> said(
                 when (kind) {
                     Kind.Expense -> CorrectionNotice.UndoTooLate
                     Kind.Income -> CorrectionNotice.IncomeUndoTooLate
                     Kind.GoalMovement -> CorrectionNotice.GoalMovementUndoTooLate
+                    Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndoTooLate
                 }
             )
         }
@@ -405,11 +463,65 @@ class ExpenseCorrections(
         }
     }
 
+    /**
+     * Marks a goal lograda and offers Deshacer, in its name, for the time [command] asked.
+     * It runs to its end even if the caller is cancelled meanwhile.
+     */
+    suspend fun completeGoal(command: CompleteGoal, goalName: String): GoalCommandOutcome =
+        scope.async {
+            val outcome = goals.submit(command)
+            if (outcome is GoalCommandOutcome.Committed) {
+                goalCompleted(outcome.goal.receipt, goalName)
+            }
+            outcome
+        }.await()
+
+    /** A completion committed, as found again after its outcome was not known. */
+    fun goalCompleted(receipt: OperationReceipt, goalName: String) {
+        val until = goals.completionUndoOffer()
+            ?.takeIf { it.operationId == receipt.operationId }?.until
+        deleted(Kind.GoalCompletion, receipt.operationId, receipt.generation, until, goalName)
+    }
+
+    private suspend fun undoCompletion(offered: Pending): Undone {
+        val command =
+            UndoGoalCompletion(offered.undoOperation, offered.generation, offered.deletionId)
+        return when (val outcome = goals.submit(command)) {
+            is GoalCommandOutcome.Committed -> Undone.Restored
+
+            is GoalCommandOutcome.OutcomeUnknown -> {
+                val found = (goals.find(offered.undoOperation) as? Outcome.Success)?.value
+                if (found != null) Undone.Restored else Undone.Retry
+            }
+
+            is GoalCommandOutcome.Rejected -> when (outcome.reason) {
+                GoalRejection.UndoExpired -> Undone.TooLate
+                GoalRejection.UndoConflict, is GoalRejection.StaleGeneration -> Undone.Blocked
+                else -> Undone.Retry
+            }
+        }
+    }
+
     /** A screen reports that a correction of a goal's movement was saved. */
     fun goalMovementUpdated() = said(CorrectionNotice.GoalMovementUpdated)
 
     /** A screen reports a new aporte or retiro its receipt confirmed, read back from storage. */
     fun goalMovementRecorded(notice: CorrectionNotice.GoalMovementRecorded) = said(notice)
+
+    /**
+     * Whether [celebration]'s stamps come down now: only the first time a screen asks, so
+     * reopening the goal or redrawing it while the notice is said does not land them again.
+     * Each save makes its own celebration, so a later save lands again.
+     */
+    fun lands(celebration: GoalCelebration): Boolean {
+        if (landed === celebration) return false
+        landed = celebration
+        return true
+    }
+
+    /** A screen reports a new target whose receipt earned or relit a stamp. */
+    fun goalTargetChanged(celebration: GoalCelebration) =
+        said(CorrectionNotice.GoalTargetChanged(celebration))
 
     /** A screen reports that an edit of an expense was saved. */
     fun updated() = said(CorrectionNotice.Updated)

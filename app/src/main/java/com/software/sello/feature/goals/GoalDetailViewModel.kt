@@ -14,6 +14,8 @@ import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.platform.ScreenReader
+import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.money.MoneyFormatter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +40,9 @@ class GoalDetailViewModel(
     private val commands: GoalCommands,
     clock: FinancialClock,
     money: MoneyFormatter,
-    private val ids: RecordIdSource
+    private val ids: RecordIdSource,
+    corrections: ExpenseCorrections,
+    screenReader: ScreenReader
 ) : ViewModel() {
     private class Ui(val busy: Boolean = false, val error: GoalDetailError? = null)
 
@@ -46,6 +50,8 @@ class GoalDetailViewModel(
     private val goalId: String = saved[KEY_GOAL] ?: ""
     private val attempts = MutableStateFlow(0)
     private val ui = MutableStateFlow(Ui())
+    private val completer =
+        GoalCompleter(saved, commands, corrections, ids, clock, screenReader, viewModelScope)
 
     private val _deleted = MutableStateFlow(saved.get<Boolean>(KEY_DELETED) ?: false)
 
@@ -55,16 +61,17 @@ class GoalDetailViewModel(
     val state: StateFlow<GoalDetailState> = combine(
         attempts.flatMapLatest { reads.observeBoard() },
         clock.today,
-        ui,
+        combine(ui, completer.state, ::Pair),
         saved.getStateFlow(KEY_CONFIRM, false),
         saved.getStateFlow(KEY_ALL, false)
-    ) { board, today, ui, confirming, all ->
+    ) { board, today, (ui, completion), confirming, all ->
         when (val state = render.detail(board, goalId, today.date)) {
             is GoalDetailState.Ready -> state.copy(
-                busy = ui.busy,
-                error = ui.error,
+                busy = ui.busy || completion == CompletionState.Busy,
+                error = ui.error ?: (completion as? CompletionState.Failed)?.error,
                 confirmingDelete = confirming && state.goal.completedOn != null,
-                allMovements = all
+                allMovements = all,
+                completion = completion
             )
 
             else -> state
@@ -81,7 +88,9 @@ class GoalDetailViewModel(
 
     fun onAction(action: GoalDetailAction) {
         when (action) {
-            GoalDetailAction.Retry -> if (ui.value.error == GoalDetailError.Unknown) {
+            GoalDetailAction.Retry -> if (completer.state.value is CompletionState.Failed) {
+                completer.retry()
+            } else if (ui.value.error == GoalDetailError.Unknown) {
                 viewModelScope.launch { recover() }
             } else {
                 ui.value = Ui()
@@ -99,7 +108,18 @@ class GoalDetailViewModel(
             GoalDetailAction.Delete -> delete()
 
             GoalDetailAction.ShowAllMovements -> saved[KEY_ALL] = true
+
+            GoalDetailAction.MarkComplete -> markComplete()
+
+            GoalDetailAction.CelebrationDone -> completer.done()
         }
+    }
+
+    /** Marcar como lograda: offered once the goal reached its target (rule 8). */
+    private fun markComplete() {
+        val goal = ready()?.goal ?: return
+        if (!free() || goal.completedOn != null || goal.next?.reached != true) return
+        completer.complete(goal.completionTarget())
     }
 
     private fun ready(): GoalDetailState.Ready? = state.value as? GoalDetailState.Ready
