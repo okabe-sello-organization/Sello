@@ -1,6 +1,7 @@
 package com.software.sello.data.repository
 
 import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationKind
@@ -290,6 +291,20 @@ internal fun inputDigest(command: ScheduleCommand): String {
     val head = listOf(command.kind.key, "1", command.generation.toString())
     return digest(*(head + subject + change).toTypedArray())
 }
+
+/** A catch-up batch is the history it was written into and the origins it recorded. */
+internal fun catchUpDigest(generation: Long, origins: List<EntryOrigin>): String = digest(
+    *(
+        listOf(OperationKind.CatchUpSchedules.key, "1", generation.toString()) +
+            origins.flatMap {
+                listOf(
+                    it.schedule.value,
+                    it.occurrence.date.toString(),
+                    it.occurrence.slot.toString()
+                )
+            }
+        ).toTypedArray()
+)
 
 private fun digest(vararg fields: String): String {
     val sha256 = MessageDigest.getInstance("SHA-256")

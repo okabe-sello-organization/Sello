@@ -155,6 +155,8 @@ An expense or income a schedule records carries its origin, `origin_schedule_id`
 and with no foreign key, so the entry outlives its schedule. A schedule's
 `handled_date` and `handled_slot` are the last occurrence catch-up dealt with; it and
 every earlier one are never recorded again, even after their entry was deleted.
+Catch-up writes those entries and moves the checkpoints in one transaction per batch,
+with a `schedule.catch_up` receipt that has no subject ([commands](commands.md#catch-up)).
 Backups (format version 2), restore and erase-all do not carry schedules yet
 (SELLO-099).
 

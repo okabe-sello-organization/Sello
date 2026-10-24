@@ -44,6 +44,16 @@ zone change triggers a recompute but cannot change the financial zone.
   Switching sessions restarts the process after a write fence closes; see
   [sandbox](sandbox.md).
 
+## Catch-up
+
+`CatchUpRunner` is created with the graph and runs `CatchUpSchedules` in
+`ApplicationScope` ([recurrence rules](../testing/recurrence-examples.md), rule 6): once
+the schedule book is first read, whenever `FinancialClock.today` changes (midnight, a
+return to the foreground on a new day, sandbox time) and after every committed change,
+such as a saved schedule. One run at a time; triggers during a run make one more run,
+not one each. There is no WorkManager job and no notification: a process that is not
+running records nothing until it runs again. Today is read once per run.
+
 ## Composition
 
 The `composition` package is the only place in `:app` that references `:data` or

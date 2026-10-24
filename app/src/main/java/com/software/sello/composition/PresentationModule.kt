@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.software.sello.data.backup.BackupBounds
 import com.software.sello.domain.port.AppRestart
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.usecase.CatchUpSchedules
 import com.software.sello.feature.backup.BackupSession
 import com.software.sello.feature.backup.BackupViewModel
 import com.software.sello.feature.backup.RestoreSession
@@ -24,6 +25,7 @@ import com.software.sello.feature.income.IncomeHistoryViewModel
 import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.ReciboViewModel
+import com.software.sello.feature.recurrence.CatchUpRunner
 import com.software.sello.feature.reset.ResetSession
 import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.resumen.ResumenViewModel
@@ -62,6 +64,9 @@ fun presentationModule(): Module = module {
     }
     // Likewise an erase committed by an earlier process is finished at start.
     single(createdAtStart = true) { ResetSession(get(), get(), get<CoroutineScope>()) }
+    // Recurring payments and incomes are recorded from the moment the graph exists.
+    single { CatchUpSchedules(get(), get()) }
+    single(createdAtStart = true) { CatchUpRunner(get(), get(), get(), get<CoroutineScope>()) }
 }
 
 /**
