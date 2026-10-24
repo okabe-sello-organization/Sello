@@ -65,6 +65,14 @@ data class GoalMovementId private constructor(val value: String) {
     }
 }
 
+/** A recurring payment's or income's identity. It survives changes, pauses and its end. */
+@ConsistentCopyVisibility
+data class ScheduleId private constructor(val value: String) {
+    companion object {
+        fun of(raw: String): Outcome<ScheduleId, RecordIdError> = canonical(raw, ::ScheduleId)
+    }
+}
+
 /**
  * The identity of one attempt to change something. The caller chooses it before
  * submitting and keeps it, so the same attempt can be recognized, replayed or looked
