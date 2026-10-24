@@ -57,4 +57,11 @@ class DateLabelsTest {
         assertEquals("dic 2026", labels.monthYear(java.time.YearMonth.of(2026, 12)))
         assertEquals("ene 2027", labels.monthYear(java.time.YearMonth.of(2027, 1)))
     }
+
+    @Test
+    fun aProjectedMonthIsItsShortNameAndTwoDigitYear() {
+        assertEquals("may 27", labels.monthShortYear(java.time.YearMonth.of(2027, 5)))
+        assertEquals("dic 28", labels.monthShortYear(java.time.YearMonth.of(2028, 12)))
+        assertEquals("ene 07", labels.monthShortYear(java.time.YearMonth.of(2107, 1)))
+    }
 }

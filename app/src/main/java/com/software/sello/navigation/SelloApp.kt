@@ -66,6 +66,8 @@ import com.software.sello.feature.backup.RestoreViewModel
 import com.software.sello.feature.category.CategoryEditorRoot
 import com.software.sello.feature.category.CategoryManagementRoot
 import com.software.sello.feature.expense.ExpenseEntryRoot
+import com.software.sello.feature.goals.GoalEditorResult
+import com.software.sello.feature.goals.GoalEditorRoot
 import com.software.sello.feature.goals.GoalMovementRoot
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.feature.income.IncomeHistoryScreen
@@ -211,6 +213,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 onOpenGoal = { id ->
                     navigation.navigate(GoalRoute(id)) { launchSingleTop = true }
                 },
+                onCreate = { navigation.navigate(GoalEditorRoute()) { launchSingleTop = true } },
                 onContribute = {
                     navigation.navigate(GoalMovementRoute()) { launchSingleTop = true }
                 },
@@ -228,6 +231,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                         navigation.currentBackStackEntry?.destination?.hasRoute<GoalRoute>()
                     if (onGoal == true) navigation.popBackStack()
                 },
+                onEdit = { navigation.navigate(GoalEditorRoute(id)) { launchSingleTop = true } },
                 onContribute = {
                     navigation.navigate(GoalMovementRoute(id)) { launchSingleTop = true }
                 },
@@ -243,6 +247,20 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 },
                 notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
             )
+        }
+        composable<GoalEditorRoute> {
+            GoalEditorRoot(viewModels) { result ->
+                val onEditor =
+                    navigation.currentBackStackEntry?.destination?.hasRoute<GoalEditorRoute>()
+                if (onEditor == true) {
+                    // A deleted goal has no page to go back to: Metas shows the rest.
+                    if (result == GoalEditorResult.Deleted) {
+                        navigation.popBackStack<MetasRoute>(inclusive = false)
+                    } else {
+                        navigation.popBackStack()
+                    }
+                }
+            }
         }
         composable<GoalMovementRoute> {
             GoalMovementRoot(viewModels) {

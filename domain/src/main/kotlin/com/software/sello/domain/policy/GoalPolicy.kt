@@ -131,6 +131,27 @@ object GoalPolicy {
     }
 
     /**
+     * The goal as it would stand with [target] recorded [today], while editing: a stamp
+     * earned under the old target and no longer reached shows kept (rule 7). The same
+     * target changes nothing. Nothing is written.
+     */
+    fun withTarget(
+        history: GoalHistory,
+        target: TransactionAmount,
+        today: LocalDate
+    ): Outcome<GoalProgress, GoalHistoryError> {
+        val current = (
+            history.events.filterIsInstance<GoalTargetChange>()
+                .maxByOrNull(GoalTargetChange::sequence)
+            )?.target
+        if (current == target) return progress(history)
+        val next = (history.events.maxOfOrNull(GoalEvent::sequence) ?: -1) + 1
+        return progress(
+            history.copy(events = history.events + GoalTargetChange(target, next, today))
+        )
+    }
+
+    /**
      * The goal as it would stand with [movement]: in its own place when it corrects one
      * already recorded (the same identifier), else at the end of the history. Checked
      * before a form sends it, by the same rules as the commands (rule 1, MT08, MT15).
@@ -142,15 +163,8 @@ object GoalPolicy {
         val existing = history.events.filterIsInstance<GoalMovement>()
             .firstOrNull { it.id == movement.id }
         val events = if (existing != null) {
-            history.events.map {
-                if (it ==
-                    existing
-                ) {
-                    movement.copy(sequence = existing.sequence)
-                } else {
-                    it
-                }
-            }
+            val corrected = movement.copy(sequence = existing.sequence)
+            history.events.map { event -> if (event == existing) corrected else event }
         } else {
             val next = (history.events.maxOfOrNull(GoalEvent::sequence) ?: -1) + 1
             history.events + movement.copy(sequence = next)

@@ -162,7 +162,7 @@ private fun ColumnScope.Ready(
         onEditMovement.takeIf { goal.completedOn == null }
     )
     if (goal.completedOn != null) {
-        val consequences = deleteConsequences(goal.movements.size)
+        val consequences = deleteConsequencesText(goal.movements.size)
         DangerSlip(
             title = stringResource(R.string.goal_delete_title),
             consequences = consequences,
@@ -185,7 +185,7 @@ private fun ColumnScope.Ready(
 
 /** "Se borran la meta y sus 6 movimientos. …", the count in bold. */
 @Composable
-private fun deleteConsequences(count: Int): AnnotatedString {
+internal fun deleteConsequencesText(count: Int): AnnotatedString {
     if (count == 0) return AnnotatedString(stringResource(R.string.goal_delete_consequences_none))
     val movements = pluralStringResource(R.plurals.goal_delete_movements, count, count)
     val sentence = stringResource(R.string.goal_delete_consequences, movements)

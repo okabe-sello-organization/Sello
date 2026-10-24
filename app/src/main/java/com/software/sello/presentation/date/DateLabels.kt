@@ -42,6 +42,10 @@ class DateLabels(
     /** "dic 2026", as a goal's target month. */
     fun monthYear(month: YearMonth): String = "${months[month.monthValue - 1]} ${month.year}"
 
+    /** "may 27", as under a stamp the plan projects. */
+    fun monthShortYear(month: YearMonth): String =
+        "${months[month.monthValue - 1]} ${(month.year % 100).toString().padStart(2, '0')}"
+
     /** A real moment in [zone], always with its year: "22 oct 2026, 2:30 p. m.". */
     fun moment(at: Instant, zone: ZoneId, format: String): String {
         val local = at.atZone(zone)

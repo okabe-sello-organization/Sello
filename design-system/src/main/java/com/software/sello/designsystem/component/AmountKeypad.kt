@@ -1,5 +1,10 @@
 package com.software.sello.designsystem.component
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -8,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -169,3 +175,38 @@ private val HardwareDigits = mapOf(
     Key.NumPad0 to 0, Key.NumPad1 to 1, Key.NumPad2 to 2, Key.NumPad3 to 3, Key.NumPad4 to 4,
     Key.NumPad5 to 5, Key.NumPad6 to 6, Key.NumPad7 to 7, Key.NumPad8 to 8, Key.NumPad9 to 9
 )
+
+/**
+ * The Sello pad sliding up over a form, as when typing a goal's amount: [doneLabel]
+ * ("Listo") closes it through [onDone], and each key is reported as on [AmountKeypad].
+ * Reduced motion shows and hides it without moving.
+ */
+@Composable
+fun SlidingKeypad(
+    visible: Boolean,
+    doneLabel: String,
+    onDone: () -> Unit,
+    onDigit: (Int) -> Unit,
+    onTripleZero: () -> Unit,
+    onBackspace: () -> Unit,
+    onClearAll: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val reduced = SelloTheme.reducedMotion
+    AnimatedVisibility(
+        visible = visible,
+        modifier = modifier,
+        enter = if (reduced) EnterTransition.None else slideInVertically { it },
+        exit = if (reduced) ExitTransition.None else slideOutVertically { it }
+    ) {
+        Column(
+            Modifier.fillMaxWidth().background(SelloTheme.colors.desk)
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+        ) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                SelloButton(doneLabel, onDone, kind = ButtonKind.Text)
+            }
+            AmountKeypad(onDigit, onTripleZero, onBackspace, onClearAll, onSubmit = onDone)
+        }
+    }
+}

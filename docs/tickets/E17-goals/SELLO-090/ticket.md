@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-089, SELLO-004
 - **Gate:** G2
 
@@ -37,3 +37,22 @@ v2 create page; approved examples.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-090 --retain`.
+
+### Execution progress
+
+- **Decisions taken while delivering (owner asked to continue, 2026-10-24):** after
+  Crear meta the form returns to Metas, after Guardar cambios to the goal, after Borrar
+  to Metas; leaving with changes asks first, as the category editor does; a target month
+  can be chosen from next month up to 50 years ahead. **¿Ya la lograste? / Marcar como
+  lograda** is completion, delivered with its Deshacer in SELLO-092, so the edit form
+  does not show it yet.
+- `GoalPolicy.withTarget` previews the goal under a new target while editing, so earned
+  stamps show "logrado" (kept ones too, rule 7) and the pace counts only what is missing.
+- Design system: `GoalIconCircle` (the large icon circle, dashed before an icon is
+  chosen) and `SlidingKeypad` (the Sello pad sliding up with Listo; reduced motion shows
+  it without moving).
+- `GoalEditorRoute`, `GoalEditorViewModel` and `GoalEditorScreen`: name (40 characters,
+  counter, text kept when too long), the ten goal icons, the amount on the pad, Para
+  cuándo, the plan and the stamps with projected months, Borrar esta meta with the
+  confirm slip; a completed goal offers only deletion. SELLO-089's **+**, **Crear una
+  meta** and edit pencil now open it.

@@ -849,6 +849,54 @@ class GoalPolicyTest {
         assertEquals(50L, after.percentage)
     }
 
+    // --- Editing a goal's target (SELLO-090) ---
+
+    @Test
+    fun mt17APreviewedHigherTargetKeepsTheStampEarnedUnderTheOldOne() {
+        val goal = viaje().apply {
+            aporte(750_000)
+            aporte(960_000)
+        }
+
+        val preview = GoalPolicy.withTarget(goal.history(), amount(4_000_000), today).valueOrFail()
+
+        assertEquals(42L, preview.percentage)
+        assertEquals(listOf(earned(), kept(), empty, empty), preview.states())
+        assertEquals(listOf(earned(), earned(), empty, empty), goal.progress().states())
+    }
+
+    @Test
+    fun mt18APreviewedLowerTargetReachesTheNextPlace() {
+        val goal = viaje().apply { aporte(1_710_000) }
+
+        val preview = GoalPolicy.withTarget(goal.history(), amount(2_000_000), today).valueOrFail()
+
+        assertEquals(85L, preview.percentage)
+        assertEquals(listOf(earned(), earned(), earned(), empty), preview.states())
+    }
+
+    @Test
+    fun mt35ThePaceForAnEditUsesThePreviewedTarget() {
+        val goal = Recorder(10_000_000, today).apply { aporte(2_000_000) }
+        val preview =
+            GoalPolicy.withTarget(goal.history(), amount(20_000_000), today).valueOrFail()
+
+        val pace = GoalPolicy.pace(amount(20_000_000), preview, today, YearMonth.of(2028, 12))!!
+
+        assertEquals(Money.cop(692_308), pace.monthly)
+        assertEquals(26, pace.months)
+    }
+
+    @Test
+    fun previewingTheSameTargetChangesNothing() {
+        val goal = viaje().apply { aporte(1_710_000) }
+
+        assertEquals(
+            goal.progress(),
+            GoalPolicy.withTarget(goal.history(), amount(3_000_000), today).valueOrFail()
+        )
+    }
+
     private companion object {
         fun amount(pesos: Long) = TransactionAmount.of(Money.cop(pesos)).valueOrFail()
     }

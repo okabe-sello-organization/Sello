@@ -23,6 +23,10 @@ data object MetasRoute
 @Serializable
 data class GoalRoute(val goalId: String)
 
+/** Nueva meta, or with [goalId] Editar meta. The form reads the goal itself. */
+@Serializable
+data class GoalEditorRoute(val goalId: String? = null)
+
 /**
  * Aportar, or with [withdrawal] Retirar, to [goalId] when it is chosen already; with
  * [movementId] the correction of that recorded movement. The form reads both itself.

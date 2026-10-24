@@ -91,14 +91,7 @@ class GoalsRenderModel(private val money: MoneyFormatter) {
         )
     }
 
-    private fun places(progress: GoalProgress) = progress.places.map { place ->
-        when (val state = place.state) {
-            PlaceState.Empty -> PlaceModel(place.place, PlaceLook.Empty, null)
-            PlaceState.Ready -> PlaceModel(place.place, PlaceLook.Ready, null)
-            is PlaceState.Earned -> PlaceModel(place.place, PlaceLook.Earned, state.on)
-            is PlaceState.Kept -> PlaceModel(place.place, PlaceLook.Kept, state.on)
-        }
-    }
+    private fun places(progress: GoalProgress) = progress.placeModels()
 
     private fun detail(
         board: GoalBoard,
@@ -183,5 +176,15 @@ class GoalsRenderModel(private val money: MoneyFormatter) {
 
         GoalMovementKind.Withdrawal ->
             Money(-movement.amount.money.minorUnits, movement.amount.money.currency)
+    }
+}
+
+/** The four places as they are drawn, with the day each stamp was earned. */
+internal fun GoalProgress.placeModels(): List<PlaceModel> = places.map { place ->
+    when (val state = place.state) {
+        PlaceState.Empty -> PlaceModel(place.place, PlaceLook.Empty, null)
+        PlaceState.Ready -> PlaceModel(place.place, PlaceLook.Ready, null)
+        is PlaceState.Earned -> PlaceModel(place.place, PlaceLook.Earned, state.on)
+        is PlaceState.Kept -> PlaceModel(place.place, PlaceLook.Kept, state.on)
     }
 }

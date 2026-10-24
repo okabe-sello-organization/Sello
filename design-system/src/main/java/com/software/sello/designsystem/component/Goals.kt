@@ -622,3 +622,40 @@ fun StampTicket(
         Text(detail, color = SelloTheme.colors.inkSoft)
     }
 }
+
+/**
+ * A goal's icon in a large green circle, beside its name while creating or editing it.
+ * Before an icon is chosen the circle is empty and dashed, with a soft flag. Decorative:
+ * the icon strip says which icon is chosen.
+ */
+@Composable
+fun GoalIconCircle(icon: SelloIcon?, modifier: Modifier = Modifier) {
+    val colors = SelloTheme.colors
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier.size(64.dp).drawBehind {
+            if (icon != null) {
+                drawCircle(colors.semantic.gain)
+            } else {
+                val stroke = 2.dp.toPx()
+                drawCircle(
+                    colors.outline,
+                    radius = size.minDimension / 2 - stroke / 2,
+                    style = Stroke(
+                        stroke,
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(4.dp.toPx(), 3.dp.toPx())
+                        )
+                    )
+                )
+            }
+        }
+    ) {
+        Icon(
+            (icon ?: SelloIcon.Flag).painter(),
+            contentDescription = null,
+            tint = if (icon != null) colors.semantic.onGain else colors.inkSoft,
+            modifier = Modifier.size(30.dp)
+        )
+    }
+}
