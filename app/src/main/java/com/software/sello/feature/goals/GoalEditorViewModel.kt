@@ -3,6 +3,7 @@ package com.software.sello.feature.goals
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalName
@@ -29,11 +30,17 @@ import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.platform.ScreenReader
+import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.YearMonth
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -50,7 +57,9 @@ class GoalEditorViewModel(
     private val commands: GoalCommands,
     private val clock: FinancialClock,
     private val money: MoneyFormatter,
-    private val ids: RecordIdSource
+    private val ids: RecordIdSource,
+    private val corrections: ExpenseCorrections,
+    screenReader: ScreenReader
 ) : ViewModel() {
     private val goalId: String? = saved[KEY_GOAL]
     private var generation: Long? = null
@@ -60,14 +69,19 @@ class GoalEditorViewModel(
     private var version: Long = 0
 
     private val mutable = MutableStateFlow(GoalEditorState(editing = goalId != null))
-    val state: StateFlow<GoalEditorState> = mutable.asStateFlow()
+    private val completer =
+        GoalCompleter(saved, commands, corrections, ids, clock, screenReader, viewModelScope)
+
+    val state: StateFlow<GoalEditorState> =
+        combine(mutable, completer.state) { form, completion -> form.copy(completion = completion) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, mutable.value)
 
     init {
         load()
     }
 
     fun onAction(action: GoalEditorAction) {
-        val now = mutable.value
+        val now = state.value
         val editable = !now.loading && !now.loadFailed && !now.busy && !now.completed &&
             now.result == null
         when (action) {
@@ -111,6 +125,7 @@ class GoalEditorViewModel(
             }
 
             GoalEditorAction.Retry -> when {
+                completer.state.value is CompletionState.Failed -> completer.retry()
                 now.busy -> Unit
                 saved.get<String>(KEY_OP) != null -> viewModelScope.launch { recover() }
                 else -> load()
@@ -133,7 +148,37 @@ class GoalEditorViewModel(
             GoalEditorAction.CancelDelete -> if (!now.busy) set(KEY_CONFIRM, false)
 
             GoalEditorAction.Delete -> if (now.confirmDelete && !now.busy) delete()
+
+            GoalEditorAction.MarkComplete -> markComplete(now)
+
+            GoalEditorAction.CelebrationDone -> {
+                completer.done()
+                finish(GoalEditorResult.Updated)
+            }
         }
+    }
+
+    /**
+     * ¿Ya la lograste?: a goal reached outside Sello is marked lograda from here, at any
+     * percentage (rule 8, MT26). It is the goal as stored, not the draft.
+     */
+    private fun markComplete(now: GoalEditorState) {
+        val summary = stored ?: return
+        val generation = generation ?: return
+        if (now.busy || now.completed || now.result != null) return
+        if (saved.get<String>(KEY_OP) != null) return
+        val goal = summary.history.goal
+        completer.complete(
+            CompletionTarget(
+                goalId = goal.id.value,
+                version = version,
+                generation = generation,
+                name = goal.name.value,
+                iconKey = goal.icon.value,
+                saved = money.format(summary.progress.saved),
+                contributions = summary.progress.contributions
+            )
+        )
     }
 
     private fun set(key: String, value: Any?) {
@@ -359,7 +404,7 @@ class GoalEditorViewModel(
         outcome: GoalCommandOutcome
     ): Boolean = when (outcome) {
         is GoalCommandOutcome.Committed -> {
-            committed(step, outcome.goal.goalId)
+            committed(step, outcome.goal.goalId, outcome.goal.change)
             true
         }
 
@@ -389,7 +434,11 @@ class GoalEditorViewModel(
         }
     }
 
-    private fun committed(step: String, id: GoalId) {
+    /**
+     * A receipt for [step]. [change] is what this save did to the stamps, absent for a
+     * replay or a save found after an unknown outcome, which are never celebrated.
+     */
+    private fun committed(step: String, id: GoalId, change: GoalChange? = null) {
         saved[KEY_OP] = null
         saved[KEY_STEP] = null
         when (step) {
@@ -398,8 +447,32 @@ class GoalEditorViewModel(
             STEP_DELETE -> finish(GoalEditorResult.Deleted)
 
             // Each saved part raises the goal's version by one.
-            else -> version += 1
+            else -> {
+                version += 1
+                if (step == STEP_TARGET && change != null) celebrate(change)
+            }
         }
+    }
+
+    /** The modest celebration of a stamp a new target earned or relit (rule 7, MT18, MT19). */
+    private fun celebrate(change: GoalChange) {
+        if (change.earned.isEmpty() && change.relit.isEmpty() && !change.reachedMeta) return
+        val summary = stored ?: return
+        val target = target() ?: return
+        val name = (GoalName.of(name()) as? Outcome.Success)?.value ?: return
+        val after = GoalPolicy.withTarget(summary.history, target, clock.today.value.date)
+        corrections.goalTargetChanged(
+            GoalCelebration(
+                goalId = summary.history.goal.id.value,
+                goalName = name.value,
+                earned = change.earned,
+                relit = change.relit,
+                reachedMeta = change.reachedMeta,
+                missing = (after as? Outcome.Success)?.value?.let {
+                    money.format(GoalPolicy.missing(it))
+                }
+            )
+        )
     }
 
     /** Certain: nothing was written, so this attempt is over. */

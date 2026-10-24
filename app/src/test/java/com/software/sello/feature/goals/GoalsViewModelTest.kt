@@ -20,6 +20,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.CommittedGoal
+import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalBoard
@@ -32,18 +33,25 @@ import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.GoalUndoOffer
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.feature.expense.HandExpenseCommands
+import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
 import java.time.LocalDate
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -72,8 +80,22 @@ class GoalsViewModelTest {
     private val viajeId = "00000000-0000-4000-9000-000000000001"
     private val celularId = "00000000-0000-4000-9000-000000000002"
 
+    /** The test's virtual time, which the notices' clock follows so they end when they should. */
+    private val scheduler = TestCoroutineScheduler()
+    private lateinit var corrections: ExpenseCorrections
+
     @Before
-    fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
+    fun main() {
+        Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
+        corrections = ExpenseCorrections(
+            HandExpenseCommands(),
+            HandIncomeCommands(),
+            commands,
+            { 5.hours + scheduler.currentTime.milliseconds },
+            ids,
+            CoroutineScope(Dispatchers.Main)
+        )
+    }
 
     @After
     fun reset() = Dispatchers.resetMain()
@@ -116,7 +138,7 @@ class GoalsViewModelTest {
     )
 
     private fun detail(saved: SavedStateHandle = SavedStateHandle(mapOf("goalId" to viajeId))) =
-        GoalDetailViewModel(saved, reads, commands, clock, money, ids)
+        GoalDetailViewModel(saved, reads, commands, clock, money, ids, corrections) { false }
 
     private fun TestScope.watch(model: GoalDetailViewModel) =
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
@@ -128,7 +150,10 @@ class GoalsViewModelTest {
 
     @Test
     fun metasFollowsTheBoardAndRetryObservesItAgain() = runTest {
-        val model = MetasViewModel(reads, clock, money)
+        val model =
+            MetasViewModel(SavedStateHandle(), reads, commands, clock, money, ids, corrections) {
+                false
+            }
         watch(model)
         reads.board.value = GoalBoardState.Failed(StorageFailure.Unavailable("x"), null)
         assertEquals(MetasState.Failed, model.state.value)
@@ -290,6 +315,36 @@ class GoalsViewModelTest {
         assertTrue(ready(again).allMovements)
     }
 
+    @Test
+    fun mt23AtOneHundredPercentMarcarComoLogradaCompletesAndShowsTheMoment() = runTest {
+        // MT05: 2.950.000 + 110.000 = 3.060.000 of 3.000.000, the Meta waiting.
+        reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        val model = detail()
+        watch(model)
+        assertEquals(true, ready(model).goal.next?.reached)
+
+        model.onAction(GoalDetailAction.MarkComplete)
+        model.onAction(GoalDetailAction.MarkComplete)
+
+        val sent = commands.sent.single() as CompleteGoal
+        assertEquals(GoalId.of(viajeId).value() to 4L, sent.goalId to sent.expectedVersion)
+        val moment = ready(model).completion as CompletionState.Celebrating
+        assertEquals("3.060.000" to 1, moment.plate.saved.digits to moment.plate.contributions)
+        model.onAction(GoalDetailAction.CelebrationDone)
+        assertEquals(CompletionState.Idle, ready(model).completion)
+    }
+
+    @Test
+    fun belowItsTargetAGoalIsNotMarkedFromItsPage() = runTest {
+        reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000))
+        val model = detail()
+        watch(model)
+
+        model.onAction(GoalDetailAction.MarkComplete)
+
+        assertEquals(emptyList<GoalCommand>(), commands.sent)
+    }
+
     private fun committed() = GoalCommandOutcome.Committed(
         CommittedGoal(
             OperationReceipt(
@@ -375,7 +430,10 @@ class HandGoalCommands : GoalCommands {
 
     override fun movementUndoOffer(): GoalUndoOffer? = undoOffer()
 
-    override fun completionUndoOffer(): GoalUndoOffer? = null
+    /** What [completionUndoOffer] says is on offer. */
+    var completionOffer: () -> GoalUndoOffer? = { null }
+
+    override fun completionUndoOffer(): GoalUndoOffer? = completionOffer()
 
     override suspend fun find(operationId: OperationId): Outcome<CommittedGoal?, StorageFailure> {
         asked += operationId

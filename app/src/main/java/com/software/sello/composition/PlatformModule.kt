@@ -13,11 +13,13 @@ import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.platform.AndroidDocumentReader
 import com.software.sello.platform.AndroidDocumentWriter
+import com.software.sello.platform.AndroidScreenReader
 import com.software.sello.platform.AndroidTimeSignals
 import com.software.sello.platform.ApplicationScope
 import com.software.sello.platform.ProcessAppRestart
 import com.software.sello.platform.ProcessFinancialZone
 import com.software.sello.platform.RandomRecordIds
+import com.software.sello.platform.ScreenReader
 import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemDispatcherProvider
 import com.software.sello.platform.SystemFinancialClock
@@ -63,6 +65,7 @@ fun androidModule(context: Context): Module = module {
     single<DocumentWriter> { AndroidDocumentWriter(context.contentResolver, get()) }
     single<DocumentReader> { AndroidDocumentReader(context.contentResolver, get()) }
     single<AppRestart> { ProcessAppRestart(context) }
+    single<ScreenReader> { AndroidScreenReader(context) }
 }
 
 fun productionModules(
