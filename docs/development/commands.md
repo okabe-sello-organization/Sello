@@ -157,6 +157,27 @@ The receipt's subject is always the goal. The rules are the approved
 `GoalReads` reads every goal with its progress, and Recibo's goal after the fallback
 rule, at one revision; one goal that cannot be read fails the read.
 
+## Schedules
+
+`ScheduleCommands` and `RoomScheduleCommands` (SELLO-098) follow the same steps with the
+`schedule.*` kinds: create, change, pause, resume and delete. The receipt's subject is
+the schedule; every write raises its version. The rules are the approved
+[recurrence examples](../testing/recurrence-examples.md).
+
+- **No command records an occurrence.** Catch-up alone does, so a command that would
+  change what it still has to record (change, pause, delete) is refused with
+  `CatchUpPending` while an occurrence up to today is due and unrecorded.
+- **Dates:** a new schedule starts today or later; a new rule or start, after today,
+  and pauses before it no longer apply. The entry and the end alone keep the rule and
+  its anchor. An end before today is refused. A payment stays a payment.
+- **Pause and resume** write `schedule_pause` rows: a pause from today (or the start),
+  ended on the day it is resumed, which counts again. Resumed the day it began, it
+  leaves nothing.
+- **Deleting** removes the schedule and its pauses; every entry it recorded stays.
+- **Archiving a category** pauses each of its payment schedules from that day, in the
+  same transaction, and is refused with `SchedulesPending` while one has an
+  unrecorded occurrence, so nothing is ever recorded into an archived category.
+
 ## Guarantees and how they are kept
 
 - **One operation, one record.** The receipt's primary key is the operation
