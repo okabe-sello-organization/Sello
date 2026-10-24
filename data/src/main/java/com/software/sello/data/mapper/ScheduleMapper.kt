@@ -127,3 +127,81 @@ internal fun ScheduleEntity.toStored(
         updatedAt = Instant.ofEpochMilli(updatedAt)
     )
 }
+
+/** The stored columns of what a schedule records: kind, category, source key and name. */
+internal class StoredEntry(
+    val kind: String,
+    val categoryId: String?,
+    val sourceKey: String?,
+    val sourceName: String?,
+    val amountMinor: Long,
+    val currency: String,
+    val note: String?
+)
+
+internal val ScheduledEntry.stored: StoredEntry
+    get() = when (this) {
+        is ScheduledEntry.Payment -> StoredEntry(
+            ScheduleEntity.PAYMENT,
+            categoryId.value,
+            null,
+            null,
+            amount.money.minorUnits,
+            amount.money.currency.code,
+            note?.value
+        )
+
+        is ScheduledEntry.Income -> StoredEntry(
+            ScheduleEntity.INCOME,
+            null,
+            source.key,
+            (source as? IncomeSource.Other)?.name?.value,
+            amount.money.minorUnits,
+            amount.money.currency.code,
+            note?.value
+        )
+    }
+
+/** The stored columns of a rule: its key, its first number and, twice a month, its second. */
+internal class StoredRule(val rule: String, val first: Int, val second: Int?)
+
+internal val RepeatRule.stored: StoredRule
+    get() = when (this) {
+        is RepeatRule.Monthly -> StoredRule(ScheduleEntity.MONTHLY, day, null)
+        is RepeatRule.TwiceMonthly -> StoredRule(ScheduleEntity.TWICE_MONTHLY, first, second)
+        is RepeatRule.EveryDays -> StoredRule(ScheduleEntity.EVERY_DAYS, days, null)
+        is RepeatRule.EveryWeeks -> StoredRule(ScheduleEntity.EVERY_WEEKS, weeks, null)
+    }
+
+/** A new schedule's row: version 1, nothing handled yet. */
+internal fun Schedule.toNewEntity(sequence: Long, at: Instant): ScheduleEntity {
+    val entry = entry.stored
+    val rule = recurrence.rule.stored
+    return ScheduleEntity(
+        id = id.value,
+        kind = entry.kind,
+        categoryId = entry.categoryId,
+        sourceKey = entry.sourceKey,
+        sourceName = entry.sourceName,
+        amountMinor = entry.amountMinor,
+        currency = entry.currency,
+        note = entry.note,
+        rule = rule.rule,
+        ruleFirst = rule.first,
+        ruleSecond = rule.second,
+        startDate = EffectiveDates.storedText(recurrence.start),
+        endDate = recurrence.end?.let(EffectiveDates::storedText),
+        sequence = sequence,
+        handledDate = null,
+        handledSlot = null,
+        version = 1,
+        createdAt = at.toEpochMilli(),
+        updatedAt = at.toEpochMilli()
+    )
+}
+
+internal fun SchedulePause.toEntity(scheduleId: ScheduleId) = SchedulePauseEntity(
+    scheduleId = scheduleId.value,
+    fromDate = EffectiveDates.storedText(from),
+    untilDate = until?.let(EffectiveDates::storedText)
+)

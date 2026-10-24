@@ -112,6 +112,12 @@ sealed interface CategoryRejection {
 
     data object NotArchived : CategoryRejection
 
+    /**
+     * A recurring payment in this category still has occurrences due up to today that
+     * catch-up has not recorded; archiving now would leave them nowhere to go.
+     */
+    data object SchedulesPending : CategoryRejection
+
     /** Limits are not set ahead of time. */
     data class FutureMonth(val currentMonth: YearMonth) : CategoryRejection
 

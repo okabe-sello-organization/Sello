@@ -52,4 +52,14 @@ reads; commands; catch-up and its triggers.
   damaged column. Erase-all and restore remove schedules (version 2 backups carry none;
   SELLO-099 adds them). Tests: `ScheduleStorageTest` (11), the 4→5 upgrade in
   `ExportedSchemaOnDeviceTest`, schedules in the erase and restore contracts; seven
-  deliberate breaks each fail a test. Still to come: commands (part 2), catch-up (part 3).
+  deliberate breaks each fail a test. Merged as #120.
+- **Part 2, commands:** `ScheduleCommands` creates, changes, pauses, resumes and deletes
+  a schedule with operation identifiers, versions, receipts and replays like every
+  command. A new schedule starts today or later; a new rule or start after today, with
+  pauses before it dropped; a payment stays a payment. Change, pause and delete wait
+  while catch-up has an occurrence due (`CatchUpPending`); deleting keeps every entry
+  the schedule recorded. Archiving a category pauses its payment schedules from that
+  day, and waits (`SchedulesPending`) while one has an unrecorded occurrence.
+  `SchedulePolicy.due` gives what catch-up has still to record. Tests:
+  `ScheduleCommandContractTest` (13, RE17, RE18, RE21, RE23), three `due` examples
+  (RE10, RE11, two slots); eight deliberate breaks each fail a test.

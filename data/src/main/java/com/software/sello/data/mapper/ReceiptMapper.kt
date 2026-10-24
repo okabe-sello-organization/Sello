@@ -9,14 +9,15 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.StorageFailure
 import java.time.Instant
 
 /**
  * A stored receipt, decoded. The subject is the record the operation changed: an
  * expense for the four expense kinds, an income for the four income kinds, a goal for
- * the goal kinds, none for a restore or reset of the whole history, a category for
- * every other kind.
+ * the goal kinds, a schedule for the schedule kinds, none for a restore or reset of the
+ * whole history, a category for every other kind.
  */
 internal class StoredReceipt(
     val receipt: OperationReceipt,
@@ -24,7 +25,8 @@ internal class StoredReceipt(
     val expenseId: ExpenseId? = null,
     val categoryId: CategoryId? = null,
     val incomeId: IncomeId? = null,
-    val goalId: GoalId? = null
+    val goalId: GoalId? = null,
+    val scheduleId: ScheduleId? = null
 )
 
 private val sha256Hex = Regex("[0-9a-f]{64}")
@@ -47,6 +49,9 @@ private val IncomeKinds = setOf(
 
 /** The kinds whose subject is a goal. */
 private val GoalKinds = OperationKind.entries.filter { it.key.startsWith("goal.") }.toSet()
+
+/** The kinds whose subject is a schedule. */
+private val ScheduleKinds = OperationKind.entries.filter { it.key.startsWith("schedule.") }.toSet()
 
 internal fun OperationReceiptEntity.toStored(): Outcome<StoredReceipt, StorageFailure.Integrity> =
     decodeRow(OperationReceiptEntity.TABLE, operationId) {
@@ -81,6 +86,13 @@ internal fun OperationReceiptEntity.toStored(): Outcome<StoredReceipt, StorageFa
                     receipt,
                     inputDigest,
                     goalId = valid("subject_id", GoalId.of(subject))
+                )
+
+            in ScheduleKinds ->
+                StoredReceipt(
+                    receipt,
+                    inputDigest,
+                    scheduleId = valid("subject_id", ScheduleId.of(subject))
                 )
 
             in IncomeKinds ->

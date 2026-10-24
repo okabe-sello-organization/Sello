@@ -3,6 +3,7 @@ package com.software.sello.data.repository
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.entity.CategoryEntity
 import com.software.sello.data.local.entity.DefaultLimitEntity
+import com.software.sello.data.local.entity.ScheduleEntity
 import com.software.sello.data.mapper.StoredReceipt
 import com.software.sello.data.mapper.decodeAll
 import com.software.sello.data.mapper.toDomain
@@ -15,9 +16,11 @@ import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.CategoryBudgetPolicy
 import com.software.sello.domain.policy.EffectiveDates
+import com.software.sello.domain.policy.SchedulePolicy
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.CategoryCommand
@@ -112,6 +115,43 @@ class RoomCategoryCommands(
 
     private fun refused(reason: CategoryRejection) = Written.Refused(Rejected(reason))
 
+    /**
+     * Archiving pauses every recurring payment in the category from today (rule 9), so
+     * nothing is ever recorded into it. Refused, before any write, while one still has
+     * an occurrence due that catch-up has not recorded. Null when done.
+     */
+    private suspend fun pauseSchedules(categoryId: String, now: Instant): Written.Refused? {
+        val today = clock.today.value.date
+        val schedules = database.scheduleDao().ofCategory(categoryId).map { row ->
+            when (val stored = row.toStored(database.scheduleDao().pauses(row.id))) {
+                is Outcome.Success -> row to stored.value
+                is Outcome.Failure -> return Written.Refused(failed(stored.error))
+            }
+        }
+        val pending = schedules.any { (_, stored) ->
+            SchedulePolicy.due(stored.schedule.recurrence, stored.handled, today, limit = 1)
+                .isNotEmpty()
+        }
+        if (pending) return refused(CategoryRejection.SchedulesPending)
+        for ((row, stored) in schedules) {
+            val recurrence = stored.schedule.recurrence
+            val alreadyPaused = recurrence.pauses.lastOrNull()?.let { it.until == null } == true
+            if (alreadyPaused) continue
+            val from = maxOf(today, recurrence.start)
+            database.scheduleDao().insertPause(
+                SchedulePause(from, null).toEntity(stored.schedule.id)
+            )
+            val touched = database.scheduleDao().touch(
+                row.id,
+                row.version,
+                nextCounter(row.version, ScheduleEntity.TABLE, row.id, "version"),
+                now.toEpochMilli()
+            )
+            check(touched == 1) { "The schedule changed inside the transaction that read it" }
+        }
+        return null
+    }
+
     private suspend fun create(command: CreateCategory, month: YearMonth, now: Instant): Written {
         if (database.categoryDao().byNameKey(command.name.uniquenessKey) != null) {
             return refused(CategoryRejection.NameTaken)
@@ -157,6 +197,7 @@ class RoomCategoryCommands(
 
             is ArchiveCategory -> {
                 if (category.archived) return refused(CategoryRejection.AlreadyArchived)
+                pauseSchedules(id.value, now)?.let { return it }
                 val from = CategoryBudgetPolicy.pausedFrom(month)
                 limits.insert(DefaultLimit(id, from, AutomaticBudget.Paused).toEntity())
                 next.copy(archived = true)

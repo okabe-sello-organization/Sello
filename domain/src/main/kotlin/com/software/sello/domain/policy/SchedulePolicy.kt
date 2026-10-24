@@ -33,6 +33,27 @@ object SchedulePolicy {
         .take(limit.coerceAtLeast(0))
         .toList()
 
+    /**
+     * The occurrences of [recurrence] after [handled] and up to [today], oldest first, at
+     * most [limit]: what catch-up still has to record (rules 4 and 6). With [handled]
+     * absent, everything from the start is due.
+     */
+    fun due(
+        recurrence: Recurrence,
+        handled: Occurrence?,
+        today: LocalDate,
+        limit: Int = Int.MAX_VALUE
+    ): List<Occurrence> {
+        val from = handled?.date ?: recurrence.start
+        // Up to two occurrences on the handled date itself come before what is due.
+        return occurrences(recurrence, from, today, limit.coerceAtMost(Int.MAX_VALUE - 2) + 2)
+            .filter { handled == null || it.isAfter(handled) }
+            .take(limit.coerceAtLeast(0))
+    }
+
+    private fun Occurrence.isAfter(other: Occurrence) =
+        date.isAfter(other.date) || (date == other.date && slot > other.slot)
+
     /** A new schedule starts today or later (rule 3). */
     fun newStart(start: LocalDate, today: LocalDate): Outcome<LocalDate, ScheduleStartError> =
         if (start.isBefore(today)) {

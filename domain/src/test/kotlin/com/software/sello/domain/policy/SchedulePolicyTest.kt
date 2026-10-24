@@ -211,6 +211,56 @@ class SchedulePolicyTest {
     }
 
     @Test
+    fun re10AfterTheLastCatchUpTheMissedOccurrencesAreDueOnTheirOwnDates() {
+        // Rent monthly on the 5th; bus every week from 26 September, last handled 3 October.
+        val rent = recurrence(monthly(5), "2026-09-01")
+        val bus = recurrence(RepeatRule.EveryWeeks.of(1).valueOrFail(), "2026-09-26")
+        val today = d("2026-10-24")
+
+        assertEquals(
+            listOf(Occurrence(d("2026-10-05"), 1)),
+            SchedulePolicy.due(rent, Occurrence(d("2026-09-05"), 1), today)
+        )
+        assertEquals(
+            all("2026-10-10", "2026-10-17", "2026-10-24"),
+            SchedulePolicy.due(bus, Occurrence(d("2026-10-03"), 1), today).map { it.date }
+        )
+    }
+
+    @Test
+    fun re11AllMissedOccurrencesAreDueInBoundedBatches() {
+        val cafe = recurrence(RepeatRule.EveryDays.of(1).valueOrFail(), "2026-07-01")
+        val today = d("2026-10-24")
+        val all = SchedulePolicy.due(cafe, Occurrence(d("2026-07-31"), 1), today)
+        val first = SchedulePolicy.due(cafe, Occurrence(d("2026-07-31"), 1), today, limit = 50)
+        val second = SchedulePolicy.due(cafe, first.last(), today, limit = 50)
+
+        assertEquals(85, all.size)
+        assertEquals(d("2026-08-01") to d("2026-09-19"), first.first().date to first.last().date)
+        assertEquals(35, second.size)
+        assertEquals(d("2026-09-20") to d("2026-10-24"), second.first().date to second.last().date)
+    }
+
+    @Test
+    fun nothingHandledYetMeansEverythingFromTheStartIsDueAndASlotSplitIsResumed() {
+        val rule = recurrence(twice(30, 31), "2027-02-01")
+
+        assertEquals(
+            listOf(Occurrence(d("2027-02-28"), 1), Occurrence(d("2027-02-28"), 2)),
+            SchedulePolicy.due(rule, null, d("2027-03-01"))
+        )
+        // A batch that stopped between the two slots of one date resumes at the second.
+        assertEquals(
+            listOf(Occurrence(d("2027-02-28"), 2)),
+            SchedulePolicy.due(rule, Occurrence(d("2027-02-28"), 1), d("2027-03-01"))
+        )
+        assertEquals(
+            emptyList<Occurrence>(),
+            SchedulePolicy.due(rule, Occurrence(d("2027-02-28"), 2), d("2027-03-01"))
+        )
+    }
+
+    @Test
     fun aNewScheduleStartsTodayOrLater() {
         val today = d("2026-10-22")
         assertEquals(

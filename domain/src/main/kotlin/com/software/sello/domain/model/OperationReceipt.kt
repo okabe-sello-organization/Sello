@@ -30,6 +30,11 @@ enum class OperationKind(val key: String) {
     UndoGoalCompletion("goal.undo_completion"),
     DeleteGoal("goal.delete"),
     FeatureGoal("goal.feature"),
+    CreateSchedule("schedule.create"),
+    ChangeSchedule("schedule.change"),
+    PauseSchedule("schedule.pause"),
+    ResumeSchedule("schedule.resume"),
+    DeleteSchedule("schedule.delete"),
 
     /** The whole financial history replaced by a backup. It has no single subject. */
     RestoreHistory("history.restore"),
