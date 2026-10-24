@@ -88,9 +88,10 @@ def context(root, base, event):
         # A release ticket is verified at G3; CI's part of it signs with a throwaway key.
         gate = "G3"
         scope = selection.coverage(resolved.stdout.strip(), candidate["coverage"]["changed_paths"], gate)
-    for identifier in required:
-        if required[identifier] != "G0":
-            runner.resolve_gate(tickets, identifier, gate)
+    for identifier, minimum in required.items():
+        # Hosted execution meets each ticket's own gate; the local default (G1) does not apply here.
+        if minimum != "G0" and gates.GATES.index(gate) < gates.GATES.index(minimum):
+            raise runner.Refusal(f"{identifier} requires {minimum}; hosted {gate} would be a downgrade")
     gates.plan(gate)  # unavailable gates cannot be executed in parts either
     return {"base": resolved.stdout.strip(), "event": event, "gate": gate, "tickets": required,
             "session": session(), "coverage": scope, "groups": selection.groups(scope)}

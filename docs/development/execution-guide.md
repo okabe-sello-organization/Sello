@@ -59,9 +59,10 @@ tests already exist, document the actual selector. A no-matching-tests result is
 not a pass. For a no-test configuration/docs change, verify the actual config/links
 and run its gate instead of fabricating behavior red→green.
 G0/G1/G2/G3 commands are in [README.md](../tickets/README.md#gate-profiles). Run the assigned
-gate after focused tests. Default ticket commands use full coverage; `--affected
-BASE` opts into the documented dependency-aware device scope. An explicit `--gate
-G2` forces full device coverage. Do not replace gate evidence with a focused task.
+gate after focused tests. Default ticket commands run the host gate G1; the hosted
+`quality` check runs the device suites on the merge result. `--affected BASE` runs
+the documented dependency-aware device scope locally; an explicit `--gate G2` runs
+every device suite. Do not replace gate evidence with a focused task.
 
 ## Device and process restoration
 

@@ -77,3 +77,34 @@ rerun; that run already existed and is the one that protects `main`. Tests cover
 the same edit on a moved `main`, the same file edited elsewhere, a different edit,
 reordered lines, bookkeeping-only edits, exclusions, binary and untracked files,
 committed and working trees, the first-parent chain, and a merge group event.
+
+## Amendment 2026-10-24 — the required local run is the host gate
+
+**Owner:** project owner (user) · **Status:** user-authorized implementation.
+
+Measured on 2026-10-24: a local G2 took about 8.5 minutes, 8 of them device suites
+(app 315 s, design-system 153 s, catalog 35 s, data 14 s), and the same device suites
+ran again hosted on the pull request (10 min) and once more in the merge queue on the
+real merge result (10 min). The local copy was the one the executor waited for, and
+the one that needed an emulator on a shared machine.
+
+From this amendment the required local run is the host gate G1 for G1 and G2
+tickets: ktlint, every host test, lint and the assemblies, plus the Python checks. A
+release ticket still runs G3 whole locally, because only the owner's machine holds the
+production key (ADR 0016). The ticket's `Gate` keeps its meaning: what must pass
+before the ticket merges. The hosted `quality` check executes that gate, G2 with
+dependency-aware device scope, on the pull request and in the merge queue, and
+nothing merges without it. `verify-ticket <ticket>` therefore executes G1 by default
+and refuses anything below it; `--gate G2` and `--affected BASE` run device suites
+locally on request. The evidence validator accepts a G1 report for a G2 ticket and
+still requires G3 for a release ticket. Unticketed `--merge-candidate` runs G0 for
+documents and G1 otherwise; CI derives its own gate and is unchanged.
+
+What the records prove: `quality-report.json` proves the host gate ran on the
+ticket's change set; the `quality` check on the merge commit, kept by GitHub, proves
+the device suites passed on what actually merged. Together they replace the former
+local G2 report. Consequences: no local emulator is needed for ordinary tickets; a
+device failure now surfaces on the hosted run, so executors run the device tests they
+wrote or changed as focused tests and use `--affected origin/main` to reproduce a red
+hosted run. The earlier sentence "default local ticket commands remain full" no
+longer applies.

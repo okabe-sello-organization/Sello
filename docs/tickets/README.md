@@ -91,8 +91,9 @@ gate on it before merging. Only a conflict GitHub reports needs a manual merge a
    architecture's boundaries, without activating deferred features.
 2. Behavior changes have a meaningful failing test first, then passing evidence;
    build or documentation tasks show negative/configuration/link checks instead.
-3. The ticket's tests and gate pass on the integrated branch, run through
-   `./scripts/verify-ticket <ticket> --retain`, with the `Quality run` line recorded.
+3. The ticket's tests and host gate pass on the integrated branch, run through
+   `./scripts/verify-ticket <ticket> --retain`, with the `Quality run` line recorded;
+   its device suites pass in the hosted `quality` check on the merge result.
    A skipped gate is an outstanding requirement, not a pass.
 4. Existing journeys still work: no successful stubs, inaccessible placeholders,
    destructive migrations, compile failures or failed read → zero.
@@ -112,7 +113,7 @@ gate on it before merging. Only a conflict GitHub reports needs a manual merge a
 - **Red / Green:** exact commands, behavioral failure, passing rerun; docs-only rationale if applicable
 - **Gate results:** actual assigned gate command, counts, reports, warnings/failures
 - **Quality run:** the line printed by --retain: run ID, gate, snapshot, report path and sha256
-- **Device / Artifact:** device/API/config/build and executed journey, or justified inapplicability
+- **Device / Artifact:** device/API/config/build and executed journey when one ran locally; otherwise name the hosted check that runs the device suites, or justify inapplicability
 - **Review:** self-review, and the pull request whose merge is the reviewer's approval
 ```
 
@@ -128,16 +129,19 @@ one. A later acceptance edit still fails the check. Do not add this field by han
 
 ## Gate profiles
 
-Use the environment from [setup](../development/setup.md). The runner derives the
-gate from `ticket.md`; it cannot be downgraded or skipped
-([quality gates guide](../development/quality-gates.md)).
+Use the environment from [setup](../development/setup.md). The ticket's gate is what
+must pass before it merges. Locally, the runner executes the host gate G1 for G1 and
+G2 tickets and G3 whole for a release ticket; the hosted `quality` check executes a
+G2 ticket's device suites on the real merge result. Nothing can be downgraded below
+that or skipped ([quality gates guide](../development/quality-gates.md)).
 
 - **G0 — documentation:** ticket structure, quality-tool tests, architecture rules
   and the Markdown link check, Python/Git only. Selected by `--merge-candidate BASE`
   only when every changed path is documentation and no ticket advances. It cannot
   complete a ticket.
 - **G1 — integrated host:** G0 plus the Gradle command below, run by
-  `./scripts/verify-ticket SELLO-0XX`. `scripts/quality/gates.py` owns the task list;
+  `./scripts/verify-ticket SELLO-0XX`; the local requirement of every G1 and G2
+  ticket. `scripts/quality/gates.py` owns the task list;
   a test keeps this block identical to it.
 
 ```bash
@@ -149,8 +153,9 @@ gate from `ticket.md`; it cannot be downgraded or skipped
 - **G2 — affected device boundaries:** G1 plus real-Room/Compose tests on a pinned
   API-30 emulator or device: `:data:connectedDebugAndroidTest`,
   `:design-system:connectedDebugAndroidTest`, `:app:connectedDebugAndroidTest` and
-  `:catalog:connectedDebugAndroidTest`. The runner refuses to start without a
-  connected device. `--affected BASE` selects impacted modules and their consumers:
+  `:catalog:connectedDebugAndroidTest`. Hosted on every pull request and merge
+  queue entry; locally with `--gate G2` or `--affected BASE`, which refuse to start
+  without a connected device. `--affected BASE` selects impacted modules and their consumers:
   app → app; catalog → catalog; data/domain → data/app; design-system →
   design-system/app/catalog; mixed changes union, shared/build/tooling/unknown
   changes require all four. `--gate G2` always forces all four. Every selected suite

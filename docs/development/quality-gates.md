@@ -14,15 +14,21 @@ SELLO-004 on follows this flow; unticketed work still runs the gates.
    prerequisites before Ready.
 2. Implement within owned boundaries; run meaningful focused red→green tests.
 3. Update the branch with `main` once and resolve any conflict. Then run
-   `./scripts/verify-ticket SELLO-017 --retain`. It derives the minimum G1/G2/G3
-   profile from `ticket.md`, executes the required checks and writes
-   `quality-report.json` into the ticket folder. Default ticket commands execute
-   full coverage; `--affected BASE` opts into dependency-aware G2 device scope;
-   `--gate G2` always forces full coverage. No skip or downgrade option exists.
+   `./scripts/verify-ticket SELLO-017 --retain`. It reads the ticket's gate from
+   `ticket.md`, executes the local requirement and writes `quality-report.json`
+   into the ticket folder. The local requirement is the host gate G1 for G1 and G2
+   tickets, and G3 whole for a release ticket; a G2 ticket's device suites run
+   hosted, on the real merge result (step 5). `--gate G2` runs every device suite
+   locally too; `--affected BASE` runs the dependency-aware subset. Nothing can be
+   skipped or downgraded below the local requirement.
 4. Paste the printed `Quality run` line into `evidence.md`, write the other fields
    and `handoff.md`, set the status, run `python3 scripts/quality/tickets.py check`.
 5. Open the final pull request with the ticket already Done. Partial PRs keep it In
-   Progress and describe the remaining work.
+   Progress and describe the remaining work. The hosted `quality` check runs the
+   ticket's gate, G2 with dependency-aware device scope, on the pull request and
+   again in the merge queue on the real merge result. A red run there is the
+   ticket's own failure: fix it on the branch, run `--retain` again, update the
+   field, and ask for the merge again.
 
 ## Done is proposed, merging approves
 
@@ -34,6 +40,10 @@ reaches `main` without their go-ahead and passing required checks.
 - **The approval is the merge.** The `Review` field names the PR and says its merge
   is the acceptance. It must not claim an approval, date or hosted run that has not
   happened.
+- **The retained report proves the host gate; the hosted check proves the device
+  suites.** `quality-report.json` binds the ticket's change set and records the G1
+  run (G3 for a release). The `quality` check on the pull request and on the merge
+  commit is the record of the device suites, and it is what blocks the merge.
 - **The last ticket of an epic carries the epic too**, in the same commit.
 - **On the branch, Done means "proposed".** Do not start work that depends on the
   ticket from an unmerged branch.
@@ -97,14 +107,16 @@ Standing rules for the runner, validator and CI; a change to the tooling must ke
 - **Validator:** `python3 scripts/quality/tickets.py check` validates structure,
   dependencies and statuses, then opens the retained report of every Review/Done
   ticket from SELLO-004 on and rejects a missing, malformed, failed, wrong-ticket,
-  lower-gate, edited or stale one. `--base <sha>` checks a candidate against it.
+  edited or stale one, or one below the local requirement (G1, or G3 for a release
+  ticket). `--base <sha>` checks a candidate against it.
 - **Link check:** `python3 scripts/quality/links.py` fails on any relative Markdown
   link or heading anchor that does not resolve. It is part of G0.
 - **CI:** the `quality` check runs the same entrypoint and then the validator against
   the base, on every run. Eligible documentation advancing no ticket gets G0. Other
   PRs get G2 with dependency-aware device scope; shared/unknown changes get full
-  devices. Code pushes to main keep G1 for trusted cache publication; documentation
-  pushes get G0. Nightly and manual runs execute full G2. Merge queue entries
+  devices. This hosted G2 is where a ticket's device suites execute; the local
+  requirement is G1 (ADR 0014, amendment of 2026-10-24). Code pushes to main keep
+  G1 for trusted cache publication; documentation pushes get G0. Nightly and manual runs execute full G2. Merge queue entries
   (`merge_group`) are planned like pull requests from the group's base. There is no
   path filter; the check always reports.
 
@@ -128,12 +140,12 @@ a device that does not answer within 20 seconds is refused. Fetch the intended P
 before selecting affected coverage.
 
 ```bash
-./scripts/verify-ticket SELLO-017            # run the gate the ticket requires
-./scripts/verify-ticket SELLO-017 --gate G2  # run a higher gate; lower is refused
-./scripts/verify-ticket SELLO-017 --retain   # full assigned gate -> quality-report.json
-./scripts/verify-ticket SELLO-017 --affected origin/main --retain  # affected device scope
-./scripts/verify-ticket --merge-candidate origin/main  # derive candidate G0/G2 and scope
-./scripts/verify-ticket --merge-candidate origin/main --gate G2  # force full G2
+./scripts/verify-ticket SELLO-017            # the local requirement: host gate G1 (G3 whole for a release)
+./scripts/verify-ticket SELLO-017 --gate G2  # add every device suite locally; below G1 is refused
+./scripts/verify-ticket SELLO-017 --retain   # local requirement -> quality-report.json
+./scripts/verify-ticket SELLO-017 --affected origin/main --retain  # add the affected device suites
+./scripts/verify-ticket --merge-candidate origin/main  # unticketed: G0 for documents, otherwise G1 locally
+./scripts/verify-ticket --merge-candidate origin/main --gate G2  # force full G2 locally
 python3 scripts/quality/tickets.py check     # completion validation
 python3 scripts/quality/tickets.py status    # the board, on demand
 python3 scripts/quality/links.py             # relative links and anchors
@@ -170,7 +182,8 @@ Recovering from failures:
 | Message | Meaning and action |
 | --- | --- |
 | `REFUSED: Unknown ticket` / `prerequisite ... is not Done` | Nothing ran. Fix the ID or finish the prerequisite; do not verify out of order. |
-| `REFUSED: ... would be a downgrade` | The ticket's gate is the minimum. Remove `--gate` or pass a higher one. |
+| `REFUSED: ... would be a downgrade` | The local requirement (G1, or G3 for a release ticket) is the minimum. Remove `--gate` or pass a higher one. |
+| Red `quality` check on the PR or in the merge queue | The device suites or the merge result failed where the local run did not look. Read the Actions log, fix on the branch, run `--retain` again, update `Quality run`, and ask for the merge again; the queue drops a red entry. To reproduce locally, boot the emulator and run `--affected origin/main`. |
 | `REFUSED: No working java` / `Android SDK not found` | Export the setup environment in this shell. |
 | `REFUSED: ... no connected device` | Boot the isolated emulator from setup; test-APK assembly is not a substitute. |
 | `release-production` failed: no signed release APK | G3 needs the owner's `sello.signing.*` entries; see [release](../release/README.md). |

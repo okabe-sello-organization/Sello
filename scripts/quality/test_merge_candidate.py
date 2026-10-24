@@ -72,13 +72,15 @@ class MergeCandidateTests(unittest.TestCase):
         self.assertEqual([], self.harness.executed)
         self.assertIn("Unknown base revision", self.stream.getvalue())
 
-    def test_active_ticket_is_verified_at_its_own_gate(self):
+    def test_active_ticket_is_verified_at_its_local_gate(self):
         self.set_statuses("Done", "In Progress")
         code, paths = self.run_candidate()
         reports = self.reports(paths)
         self.assertEqual(0, code)
         self.assertEqual(["SELLO-004", "SELLO-005"], [report["ticket"] for report in reports])
-        self.assertEqual(["G1", "G2"], [report["gate"]["executed"] for report in reports])
+        self.assertEqual(["G1", "G2"], [report["gate"]["required"] for report in reports])
+        self.assertEqual(["G1", "G1"], [report["gate"]["executed"] for report in reports])
+        self.assertNotIn("gradle-device", self.harness.executed)
 
     def test_requested_gate_applies_to_every_ticket(self):
         self.set_statuses("In Progress")
@@ -88,7 +90,11 @@ class MergeCandidateTests(unittest.TestCase):
 
     def test_one_failing_ticket_fails_the_candidate(self):
         self.set_statuses("Done", "In Progress")
-        self.harness.exit_codes["gradle-device"] = 1
+
+        def fail_the_second_host_gate(name):
+            if name == "gradle-host" and self.harness.executed.count("gradle-host") == 2:
+                self.harness.exit_codes["gradle-host"] = 1
+        self.harness.during = fail_the_second_host_gate
         code, paths = self.run_candidate()
         self.assertNotEqual(0, code)
         self.assertEqual(["passed", "failed"], [report["outcome"] for report in self.reports(paths)])

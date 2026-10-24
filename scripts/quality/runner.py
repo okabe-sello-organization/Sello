@@ -1,6 +1,8 @@
 """Ticket quality runner: derive the gate from the canonical ticket, run it, write a report.
 
-There is deliberately no option to skip a check or accept a lower gate. A refusal
+There is deliberately no option to skip a check or accept a gate below the local
+requirement: the host gate G1, or G3 whole for a release ticket (gates.local_gate).
+The device suites a G2 ticket needs run hosted, on the real merge result. A refusal
 (unknown ticket, unfinished prerequisite, missing toolchain/device, unavailable gate)
 exits nonzero before anything runs; a failed or incomplete check exits nonzero with
 a report whose outcome is "failed".
@@ -58,10 +60,11 @@ def resolve_gate(tickets, ticket_id, requested_gate):
         if status != "Done":
             raise Refusal(f"{ticket_id} cannot be verified: prerequisite {dependency} is {status}, not Done")
     required = max(ticket.gate, gates.MINIMUM_GATE, key=rank)
+    minimum = gates.local_gate(required)
     if requested_gate is None:
-        return required, required
-    if rank(requested_gate) < rank(required):
-        raise Refusal(f"{ticket_id} requires {required}; {requested_gate} would be a downgrade")
+        return required, minimum
+    if rank(requested_gate) < rank(minimum):
+        raise Refusal(f"{ticket_id} requires at least {minimum}; {requested_gate} would be a downgrade")
     return required, requested_gate
 
 
@@ -234,6 +237,8 @@ def run(ticket_id, root, requested_gate=None, execute=default_execute,
             required, executed = "G0", "G0"
         else:
             required, executed = resolve_gate(load_tickets(root), ticket_id, requested_gate)
+            if requested_gate is None and affected_base:
+                executed = required  # --affected asks for the ticket's own device gate, narrowed
         if coverage is None:
             base = resolve_base(root, affected_base or "HEAD")
             coverage = selection.coverage(base, changed_paths(root, base) if affected_base else (),
@@ -365,7 +370,7 @@ def run_merge_candidate(base, root, requested_gate=None, stream=sys.stderr, **op
         return 2, []
     worst, paths = 0, []
     for identifier in selected:
-        chosen = requested_gate or (candidate["gate"] if identifier == UNTICKETED else None)
+        chosen = requested_gate or (gates.local_gate(candidate["gate"]) if identifier == UNTICKETED else None)
         scope = None
         if requested_gate is None:
             executed = chosen or resolve_gate(load_tickets(root), identifier, None)[1]

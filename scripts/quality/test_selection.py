@@ -91,9 +91,19 @@ class LocalSelectionTests(unittest.TestCase):
         self.assertEqual({'app'},set(report['checks'][-1]['modules']))
         self.assertIn('coverage affected (app)',evidence.retain(self.root,path))
 
-    def test_explicit_g2_and_default_ticket_commands_still_run_every_device_module(self):
+    def test_default_ticket_command_runs_the_host_gate_without_devices(self):
         write(self.root,'app/src/Main.kt','fun main() = println(42)\n')
-        for options in ({},{'affected_base':self.base,'requested_gate':'G2'}):
+        code,path=self.run_ticket()
+        report=evidence.load(path)
+        self.assertEqual(0,code)
+        self.assertEqual({'required':'G2','executed':'G1'},report['gate'])
+        self.assertEqual('full',report['coverage']['mode'])
+        self.assertEqual([],report['coverage']['device_modules'])
+        self.assertNotIn('gradle-device',self.harness.executed)
+
+    def test_explicit_g2_runs_every_device_module_even_with_a_base(self):
+        write(self.root,'app/src/Main.kt','fun main() = println(42)\n')
+        for options in ({'requested_gate':'G2'},{'affected_base':self.base,'requested_gate':'G2'}):
             code,path=self.run_ticket(**options)
             self.assertEqual(0,code)
             self.assertEqual('full',evidence.load(path)['coverage']['mode'])
@@ -151,7 +161,7 @@ class LocalSelectionTests(unittest.TestCase):
 
     def test_local_gate_identifies_only_the_selected_device(self):
         with patch.dict(os.environ,{'ANDROID_SERIAL':DEVICE['serial']}):
-            code,path=runner.run('SELLO-004',self.root,execute=self.harness.execute,
+            code,path=runner.run('SELLO-004',self.root,requested_gate='G2',execute=self.harness.execute,
                       environment=lambda root:{},devices=lambda:[DEVICE,dict(DEVICE,serial='other')],stream=io.StringIO())
         self.assertEqual(0,code)
         self.assertEqual([DEVICE],evidence.load(path)['devices'])
