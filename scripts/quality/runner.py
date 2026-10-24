@@ -122,6 +122,9 @@ def default_environment(root):
     }
 
 
+DEVICE_QUERY_SECONDS = 20
+
+
 def default_devices():
     adb = shutil.which("adb")
     sdk = sdk_directory(REPOSITORY)
@@ -131,11 +134,24 @@ def default_devices():
         return []
     listing = subprocess.run([adb, "devices"], capture_output=True, text=True).stdout
     serials = [line.split()[0] for line in listing.splitlines()[1:] if line.split()[1:2] == ["device"]]
+    # With ANDROID_SERIAL set, no other device is asked anything: one busy elsewhere,
+    # such as a phone running another checkout's tests, must not hold this gate.
+    selected = os.environ.get("ANDROID_SERIAL")
+    if selected:
+        serials = [serial for serial in serials if serial == selected]
 
     def prop(serial, name):
-        return subprocess.run(
-            [adb, "-s", serial, "shell", "getprop", name], capture_output=True, text=True
-        ).stdout.strip()
+        # A device that does not answer is reported without the value, and the gate
+        # then refuses it, instead of waiting for it forever.
+        try:
+            return subprocess.run(
+                [adb, "-s", serial, "shell", "getprop", name],
+                capture_output=True,
+                text=True,
+                timeout=DEVICE_QUERY_SECONDS,
+            ).stdout.strip()
+        except subprocess.TimeoutExpired:
+            return ""
 
     return [
         {"serial": serial, "api": prop(serial, "ro.build.version.sdk"), "model": prop(serial, "ro.product.model")}

@@ -122,7 +122,9 @@ signing completes a G3 ticket ([ADR 0016](../decisions/0016-release-gate-signing
 
 Prerequisites: Python 3 and Git for G0. G1/G2 also need the environment from
 [setup](setup.md): JDK 25 on PATH and ANDROID_HOME or sdk.dir; G2 needs an isolated
-booted API-30 emulator with the default 320x640 profile. Fetch the intended PR base
+booted API-30 emulator with the default 320x640 profile. With `ANDROID_SERIAL` set the
+runner asks only that device, so other attached devices, busy or not, never hold a gate;
+a device that does not answer within 20 seconds is refused. Fetch the intended PR base
 before selecting affected coverage.
 
 ```bash

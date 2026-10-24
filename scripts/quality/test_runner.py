@@ -217,3 +217,51 @@ class RunnerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DefaultDevicesTests(unittest.TestCase):
+    """Which devices the runner asks about before a device gate, and for how long."""
+
+    LISTING = "List of devices attached\nR5GYC4FA50N\tdevice\nemulator-5740\tdevice\n\n"
+
+    def setUp(self):
+        self.asked = []
+        which = patch.object(runner.shutil, "which", return_value="/sdk/adb")
+        which.start()
+        self.addCleanup(which.stop)
+        self.silent = set()
+
+    def run_adb(self, argv, **kwargs):
+        if argv[1:] == ["devices"]:
+            return runner.subprocess.CompletedProcess(argv, 0, self.LISTING, "")
+        serial = argv[2]
+        self.asked.append(serial)
+        if serial in self.silent:
+            raise runner.subprocess.TimeoutExpired(argv, kwargs.get("timeout"))
+        value = {"ro.build.version.sdk": "30", "ro.product.model": "model"}[argv[-1]]
+        return runner.subprocess.CompletedProcess(argv, 0, value + "\n", "")
+
+    def devices(self, serial):
+        with patch.dict(os.environ, {"ANDROID_SERIAL": serial}), \
+                patch.object(runner.subprocess, "run", side_effect=self.run_adb):
+            return runner.default_devices()
+
+    def test_with_a_selected_device_no_other_device_is_asked(self):
+        devices = self.devices("emulator-5740")
+
+        self.assertEqual([{"serial": "emulator-5740", "api": "30", "model": "model"}], devices)
+        self.assertEqual({"emulator-5740"}, set(self.asked))
+
+    def test_without_a_selection_every_device_is_still_asked(self):
+        devices = self.devices("")
+
+        self.assertEqual(["R5GYC4FA50N", "emulator-5740"], [d["serial"] for d in devices])
+        self.assertEqual({"R5GYC4FA50N", "emulator-5740"}, set(self.asked))
+
+    def test_a_device_that_does_not_answer_is_reported_without_an_api_instead_of_waiting(self):
+        self.silent = {"emulator-5740"}
+
+        devices = self.devices("emulator-5740")
+
+        self.assertEqual([{"serial": "emulator-5740", "api": "", "model": ""}], devices)
+
