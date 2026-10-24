@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.CompletedGoalRow
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.GoalCard
@@ -40,6 +41,7 @@ import com.software.sello.designsystem.component.GoalsBandTotal
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MilestoneState
+import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.icon.SelloIcon
@@ -110,20 +112,36 @@ fun MetasScreen(
                 }
                 if (state.empty) item { EmptyMetas() }
                 items(state.goals, key = { it.id }) { goal ->
-                    GoalCard(
-                        name = goal.name,
-                        icon = goalIcon(goal.iconKey),
-                        percentage = stringResource(R.string.goal_percent, goal.percentage),
-                        saved = goal.saved,
-                        target = stringResource(R.string.goal_target_of, goal.target.digits),
-                        date = goal.targetMonth?.let(dates::monthYear)
-                            ?: stringResource(R.string.goal_no_date),
-                        progress = barFill(goal.percentage),
-                        places = goal.places.map { milestone(it) },
-                        onOpen = { onAction(MetasAction.Open(goal.id)) },
-                        modifier = Modifier.testTag("metas.goal.${goal.id}"),
-                        flagged = goal.targetMonth != null
-                    )
+                    Column {
+                        GoalCard(
+                            name = goal.name,
+                            icon = goalIcon(goal.iconKey),
+                            percentage = stringResource(R.string.goal_percent, goal.percentage),
+                            saved = goal.saved,
+                            target = stringResource(R.string.goal_target_of, goal.target.digits),
+                            date = goal.targetMonth?.let(dates::monthYear)
+                                ?: stringResource(R.string.goal_no_date),
+                            progress = barFill(goal.percentage),
+                            places = goal.places.map { milestone(it) },
+                            onOpen = { onAction(MetasAction.Open(goal.id)) },
+                            modifier = Modifier.testTag("metas.goal.${goal.id}"),
+                            flagged = goal.targetMonth != null
+                        )
+                        // At its target the card carries Marcar como lograda (v2 celebrations).
+                        if (goal.reached) {
+                            SelloButton(
+                                stringResource(R.string.goal_mark_complete),
+                                { onAction(MetasAction.MarkComplete(goal.id)) },
+                                Modifier.fillMaxWidth().padding(top = 8.dp)
+                                    .testTag("metas.markComplete.${goal.id}"),
+                                icon = SelloIcon.Check,
+                                enabled = state.completion == CompletionState.Idle ||
+                                    state.completion is CompletionState.Failed,
+                                loading = state.completion == CompletionState.Busy,
+                                tone = ButtonTone.Gain
+                            )
+                        }
+                    }
                 }
                 items(state.completed, key = { it.id }) { goal ->
                     val land = remember(goal.id) { goal.id !in landed }

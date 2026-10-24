@@ -39,6 +39,10 @@ class DateLabels(
         return if (date.year == today.year) plain else "$plain ${date.year}"
     }
 
+    /** "23 oct 2026", always with its year, as on a lograda plate. */
+    fun dayMonthYear(date: LocalDate): String =
+        "${date.dayOfMonth} ${months[date.monthValue - 1]} ${date.year}"
+
     /** "dic 2026", as a goal's target month. */
     fun monthYear(month: YearMonth): String = "${months[month.monthValue - 1]} ${month.year}"
 

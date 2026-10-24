@@ -87,7 +87,24 @@ class GoalsRenderModel(private val money: MoneyFormatter) {
             saved = money.format(progress.saved),
             target = money.format(progress.target.money),
             targetMonth = goal.targetMonth,
-            places = places(progress)
+            places = places(progress),
+            reached = progress.state(GoalPlace.Meta) == PlaceState.Ready
+        )
+    }
+
+    /** The active goal [id] as Marcar como lograda sends it, or null. */
+    fun completionTarget(board: GoalBoard, id: String): CompletionTarget? {
+        val summary = board.goals.firstOrNull { it.history.goal.id.value == id } ?: return null
+        val goal = summary.history.goal
+        if (goal.completedOn != null) return null
+        return CompletionTarget(
+            goalId = goal.id.value,
+            version = goal.version,
+            generation = board.generation,
+            name = goal.name.value,
+            iconKey = goal.icon.value,
+            saved = money.format(summary.progress.saved),
+            contributions = summary.progress.contributions
         )
     }
 

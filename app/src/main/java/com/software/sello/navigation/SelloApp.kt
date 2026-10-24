@@ -1,6 +1,7 @@
 package com.software.sello.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -66,9 +67,11 @@ import com.software.sello.feature.backup.RestoreViewModel
 import com.software.sello.feature.category.CategoryEditorRoot
 import com.software.sello.feature.category.CategoryManagementRoot
 import com.software.sello.feature.expense.ExpenseEntryRoot
+import com.software.sello.feature.goals.CelebrationTicket
 import com.software.sello.feature.goals.GoalEditorResult
 import com.software.sello.feature.goals.GoalEditorRoot
 import com.software.sello.feature.goals.GoalMovementRoot
+import com.software.sello.feature.goals.celebrationLine
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.feature.income.IncomeHistoryScreen
 import com.software.sello.feature.income.IncomeHistoryViewModel
@@ -94,6 +97,8 @@ import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.CorrectionsViewModel
+import com.software.sello.presentation.corrections.GoalCelebration
+import com.software.sello.presentation.corrections.celebration
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.MonthNames
 import com.software.sello.presentation.month.monthNames
@@ -217,7 +222,9 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 onContribute = {
                     navigation.navigate(GoalMovementRoute()) { launchSingleTop = true }
                 },
-                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
+                notice = notice?.let {
+                    { MetasNoticeBar(it, corrections::undo, corrections::lands) }
+                }
             )
         }
         composable<GoalRoute> { entry ->
@@ -245,7 +252,10 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                         launchSingleTop = true
                     }
                 },
-                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } },
+                celebration = remember(notice) {
+                    notice?.celebration?.takeIf { it.goalId == id && corrections.lands(it) }
+                }
             )
         }
         composable<GoalEditorRoute> {
@@ -1087,6 +1097,30 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
         CorrectionNotice.GoalMovementUpdated ->
             SelloNotice(stringResource(R.string.goal_movement_updated), tagged)
 
+        is CorrectionNotice.GoalCompleted -> SelloNotice(
+            message = if (notice.undoFailed) {
+                stringResource(R.string.correction_undo_failed)
+            } else {
+                stringResource(R.string.goal_completed, notice.goalName)
+            },
+            modifier = tagged,
+            actionLabel = stringResource(R.string.correction_undo).takeIf { notice.canUndo },
+            onAction = onUndo.takeIf { notice.canUndo },
+            busy = notice.undoing,
+            spoken = when {
+                notice.undoFailed -> stringResource(R.string.correction_undo_failed)
+                notice.canUndo -> stringResource(R.string.goal_completed_spoken, notice.goalName)
+                else -> stringResource(R.string.goal_completed, notice.goalName)
+            },
+            confirmation = !notice.undoFailed
+        )
+
+        is CorrectionNotice.GoalCompletionUndone ->
+            SelloNotice(stringResource(R.string.goal_completion_undone, notice.goalName), tagged)
+
+        CorrectionNotice.GoalCompletionUndoTooLate ->
+            SelloNotice(stringResource(R.string.goal_completion_too_late), tagged)
+
         is CorrectionNotice.GoalMovementRecorded -> {
             val amount = notice.amount
             val (said, plain) = if (notice.withdrawal) {
@@ -1094,12 +1128,34 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
             } else {
                 R.string.notice_goal_contribution to R.string.notice_goal_contribution_plain
             }
-            SelloNotice(
-                message = amount?.let { stringResource(said, it.digits) } ?: stringResource(plain),
-                modifier = tagged,
-                spoken = amount?.let { stringResource(said, it.spoken) } ?: stringResource(plain),
-                confirmation = true
-            )
+            val message = amount?.let { stringResource(said, it.digits) } ?: stringResource(plain)
+            val spoken = amount?.let { stringResource(said, it.spoken) } ?: stringResource(plain)
+            val celebration = notice.celebration
+            val line = celebration?.let { celebrationLine(it) }
+            when {
+                line != null -> SelloNotice(
+                    message = stringResource(R.string.goal_celebration_notice, message, line),
+                    modifier = tagged,
+                    spoken = stringResource(R.string.goal_celebration_notice, spoken, line),
+                    confirmation = true
+                )
+
+                else -> SelloNotice(message, tagged, spoken = spoken, confirmation = true)
+            }
+        }
+
+        is CorrectionNotice.GoalTargetChanged -> {
+            val message = stringResource(R.string.notice_goal_target_changed)
+            val line = celebrationLine(notice.celebration)
+            if (line != null) {
+                SelloNotice(
+                    message = stringResource(R.string.goal_celebration_notice, message, line),
+                    modifier = tagged,
+                    confirmation = true
+                )
+            } else {
+                SelloNotice(message, tagged, confirmation = true)
+            }
         }
 
         is CorrectionNotice.IncomeRecorded -> {
@@ -1115,6 +1171,25 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
                 confirmation = true
             )
         }
+    }
+}
+
+/**
+ * The notice on Metas: a stamp a confirmed aporte earned lands on a paper ticket, as the
+ * goal's own stamps are not in view there; anything else is said as everywhere.
+ */
+@Composable
+internal fun MetasNoticeBar(
+    notice: CorrectionNotice,
+    onUndo: () -> Unit,
+    lands: (GoalCelebration) -> Boolean
+) {
+    val celebration = notice.celebration
+    if (celebration != null && celebrationLine(celebration) != null) {
+        val land = remember(celebration) { lands(celebration) }
+        Box(Modifier.testTag(CORRECTION_NOTICE_TAG)) { CelebrationTicket(celebration, land = land) }
+    } else {
+        CorrectionNoticeBar(notice, onUndo)
     }
 }
 

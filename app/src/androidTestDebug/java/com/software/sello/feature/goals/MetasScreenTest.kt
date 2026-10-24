@@ -24,6 +24,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -52,11 +53,14 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
+import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.navigation.MetasDestination
 import com.software.sello.navigation.ShellState
+import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
@@ -73,6 +77,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.koin.core.context.GlobalContext
 
 /**
  * Metas and a goal as they are drawn: the tab's own green dock only once its screen
@@ -174,7 +179,19 @@ class MetasScreenTest {
         onContribute: (() -> Unit)? = null
     ) {
         val factory = viewModelFactory {
-            initializer { MetasViewModel(Reads(GoalBoardState.Ready(board)), clock, money) }
+            initializer {
+                // The running app's own commands and notices: nothing here sends one.
+                val koin = GlobalContext.get()
+                MetasViewModel(
+                    SavedStateHandle(),
+                    Reads(GoalBoardState.Ready(board)),
+                    koin.get<GoalCommands>(),
+                    clock,
+                    money,
+                    koin.get<RecordIdSource>(),
+                    koin.get<ExpenseCorrections>()
+                ) { false }
+            }
         }
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {

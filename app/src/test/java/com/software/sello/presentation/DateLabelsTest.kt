@@ -64,4 +64,10 @@ class DateLabelsTest {
         assertEquals("dic 28", labels.monthShortYear(java.time.YearMonth.of(2028, 12)))
         assertEquals("ene 07", labels.monthShortYear(java.time.YearMonth.of(2107, 1)))
     }
+
+    @Test
+    fun aPlateDateAlwaysCarriesItsYear() {
+        assertEquals("23 oct 2026", labels.dayMonthYear(LocalDate.of(2026, 10, 23)))
+        assertEquals("1 ene 2027", labels.dayMonthYear(LocalDate.of(2027, 1, 1)))
+    }
 }

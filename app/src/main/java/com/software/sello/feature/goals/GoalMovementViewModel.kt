@@ -3,6 +3,7 @@ package com.software.sello.feature.goals
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalHistoryError
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementId
@@ -29,6 +30,7 @@ import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.Instant
 import java.time.LocalDate
@@ -472,7 +474,8 @@ class GoalMovementViewModel(
             is GoalCommandOutcome.Committed -> committed(
                 step,
                 outcome.goal.receipt,
-                announced = true
+                announced = true,
+                change = outcome.goal.change
             )
 
             is GoalCommandOutcome.OutcomeUnknown -> recover()
@@ -548,8 +551,18 @@ class GoalMovementViewModel(
         }
     }
 
-    private fun committed(step: String, receipt: OperationReceipt, announced: Boolean) {
+    /**
+     * [change] is what storage says the save did to the stamps; null for a replay or a
+     * save found after an unknown outcome, which are never celebrated.
+     */
+    private fun committed(
+        step: String,
+        receipt: OperationReceipt,
+        announced: Boolean,
+        change: GoalChange? = null
+    ) {
         saved[OPERATION] = null
+        val amount = (draft.value.amount.toTransactionAmount() as? Outcome.Success)?.value
         when (step) {
             STEP_DELETE -> if (!announced) corrections.goalMovementDeleted(receipt)
 
@@ -558,12 +571,30 @@ class GoalMovementViewModel(
             else -> corrections.goalMovementRecorded(
                 CorrectionNotice.GoalMovementRecorded(
                     withdrawal = step == STEP_WITHDRAW,
-                    amount = (draft.value.amount.toTransactionAmount() as? Outcome.Success)
-                        ?.value?.let { money.format(it.money) }
+                    amount = amount?.let { money.format(it.money) },
+                    celebration = change?.let { celebration(it, amount) }
                 )
             )
         }
         progress.update { it.copy(busy = false, error = null, closed = true) }
+    }
+
+    /** What to celebrate for [change], with what is left for the target after the aporte. */
+    private fun celebration(change: GoalChange, amount: TransactionAmount?): GoalCelebration? {
+        if (change.earned.isEmpty() && change.relit.isEmpty() && !change.reachedMeta) return null
+        val goal = summary(readable(board.value), draft.value.goalId) ?: return null
+        val after = amount?.let {
+            val movement = candidate(draft.value, it, null, clock.today.value.date)
+            (GoalPolicy.withMovement(goal.history, movement) as? Outcome.Success)?.value
+        }
+        return GoalCelebration(
+            goalId = goal.history.goal.id.value,
+            goalName = goal.history.goal.name.value,
+            earned = change.earned,
+            relit = change.relit,
+            reachedMeta = change.reachedMeta,
+            missing = after?.let { money.format(GoalPolicy.missing(it)) }
+        )
     }
 
     companion object {

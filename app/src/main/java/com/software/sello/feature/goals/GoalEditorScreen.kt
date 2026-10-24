@@ -36,12 +36,14 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
+import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.DangerSlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
+import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FittedMoneyText
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.GoalIconCircle
@@ -150,6 +152,7 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
             }
         }
     }
+    LogradaMoment(state.completion, { onAction(GoalEditorAction.CelebrationDone) })
     if (state.choosingMonth) MonthSheet(state, onAction, months)
     if (state.confirmDelete) {
         ConfirmSlip(
@@ -208,6 +211,9 @@ private fun ColumnScope.Form(
         Plan(state, onAction, dates)
         Stamps(state, dates)
     }
+    if (state.editing && !state.completed) {
+        DoneAsk(state, onAction)
+    }
     if (state.editing) {
         DangerSlip(
             title = stringResource(R.string.goal_delete_title),
@@ -215,6 +221,50 @@ private fun ColumnScope.Form(
             actionLabel = stringResource(R.string.goal_delete_action),
             onAction = { onAction(GoalEditorAction.AskToDelete) },
             modifier = Modifier.testTag(GOAL_EDITOR_DELETE_TAG)
+        )
+    }
+}
+
+/** ¿Ya la lograste?: for a goal reached outside Sello, at any percentage (MT26). */
+@Composable
+private fun DoneAsk(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit) {
+    Slip(Modifier.fillMaxWidth().testTag("goal.editor.doneAsk"), pinked = false) {
+        Text(
+            stringResource(R.string.goal_done_ask_title),
+            Modifier.semantics { heading() },
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            stringResource(R.string.goal_done_ask_body),
+            Modifier.padding(vertical = 8.dp),
+            style = MaterialTheme.typography.bodyMedium,
+            color = SelloTheme.colors.inkSoft
+        )
+        if (state.completion is CompletionState.Failed) {
+            FieldMessageText(
+                FieldMessage(
+                    stringResource(
+                        if ((state.completion as CompletionState.Failed).error ==
+                            GoalDetailError.Unknown
+                        ) {
+                            R.string.goal_error_unknown
+                        } else {
+                            R.string.goal_error_not_saved
+                        }
+                    )
+                )
+            )
+        }
+        SelloButton(
+            stringResource(R.string.goal_mark_complete),
+            { onAction(GoalEditorAction.MarkComplete) },
+            Modifier.fillMaxWidth().testTag(GOAL_EDITOR_MARK_COMPLETE_TAG),
+            kind = ButtonKind.Outlined,
+            icon = SelloIcon.Check,
+            enabled = !state.busy && state.result == null &&
+                state.completion !is CompletionState.Celebrating,
+            loading = state.completion == CompletionState.Busy,
+            tone = ButtonTone.Gain
         )
     }
 }
@@ -443,3 +493,4 @@ const val GOAL_EDITOR_PAD_TAG = "goal.editor.pad"
 const val GOAL_EDITOR_SUBMIT_TAG = "goal.editor.submit"
 const val GOAL_EDITOR_DELETE_TAG = "goal.editor.delete"
 const val GOAL_EDITOR_MONTHS_TAG = "goal.editor.months"
+const val GOAL_EDITOR_MARK_COMPLETE_TAG = "goal.editor.markComplete"

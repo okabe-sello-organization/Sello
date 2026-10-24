@@ -9,6 +9,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +34,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
@@ -68,7 +70,8 @@ data class MilestoneSpec(
 
 /**
  * One stamp place. [diameter] is 60dp on cards and 66dp in the celebration; [ink] replaces the
- * state's colour where the place sits on green.
+ * state's colour where the place sits on green. [land] brings an earned stamp down once;
+ * [relight] lights a stamp earned again from its kept ink instead.
  */
 @Composable
 fun MilestonePlace(
@@ -76,7 +79,8 @@ fun MilestonePlace(
     modifier: Modifier = Modifier,
     land: Boolean = false,
     diameter: Dp = 60.dp,
-    ink: Color? = null
+    ink: Color? = null,
+    relight: Boolean = false
 ) {
     val colors = SelloTheme.colors
     val reduced = SelloTheme.reducedMotion
@@ -94,17 +98,26 @@ fun MilestonePlace(
             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
         }
     }
+    // Back above a kept stamp: it lights up again in place, from the kept ink to the
+    // earned green. Nothing new is earned, so there is no haptic.
+    val lit = remember { Animatable(if (relight && !reduced) 0f else 1f) }
+    LaunchedEffect(relight) {
+        if (relight && !reduced) lit.animateTo(1f, SelloMotion.emphasized())
+    }
     LaunchedEffect(reduced) {
         if (reduced) {
             progress.snapTo(1f)
             ring.snapTo(1f)
+            lit.snapTo(1f)
         }
     }
     val earned = spec.state == MilestoneState.Earned || spec.state == MilestoneState.Kept
+    val keptInk = colors.semantic.gain.copy(alpha = KEPT_ALPHA)
     val color = ink ?: when (spec.state) {
         MilestoneState.Empty -> colors.outline
-        MilestoneState.Kept -> colors.semantic.gain.copy(alpha = 0.42f)
-        else -> colors.semantic.gain
+        MilestoneState.Kept -> keptInk
+        MilestoneState.Earned -> lerp(keptInk, colors.semantic.gain, lit.value)
+        MilestoneState.Ready -> colors.semantic.gain
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -187,15 +200,21 @@ fun MilestonePlace(
 fun MilestoneRow(
     places: List<MilestoneSpec>,
     modifier: Modifier = Modifier,
-    landingIndex: Int? = null
+    landingIndex: Int? = null,
+    landing: Set<Int> = setOfNotNull(landingIndex),
+    relighting: Set<Int> = emptySet()
 ) {
     Row(
         modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        places.forEachIndexed { index, spec -> MilestonePlace(spec, land = index == landingIndex) }
+        places.forEachIndexed { index, spec ->
+            MilestonePlace(spec, land = index in landing, relight = index in relighting)
+        }
     }
 }
+
+private const val KEPT_ALPHA = 0.42f
 
 @Composable
 fun GoalPill(
@@ -603,6 +622,11 @@ private val TicketShape = GenericShape { size, _ ->
     close()
 }
 
+/**
+ * The paper ticket a save notice becomes when a stamp is earned where the goal's own
+ * stamps are not in view: the stamps on the left, a dashed tear, then [title] and
+ * [detail]. Two stamps sit smaller, side by side; with [land] the last one comes down.
+ */
 @Composable
 fun StampTicket(
     places: List<MilestoneSpec>,
@@ -611,15 +635,42 @@ fun StampTicket(
     modifier: Modifier = Modifier,
     land: Boolean = false
 ) {
-    Column(
-        modifier.fillMaxWidth().clip(
-            TicketShape
-        ).background(SelloTheme.colors.paper).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+    val colors = SelloTheme.colors
+    Row(
+        modifier.fillMaxWidth()
+            .shadow(12.dp, TicketShape, ambientColor = colors.ink, spotColor = colors.ink)
+            .background(colors.paper)
+            .height(IntrinsicSize.Min)
+            .padding(start = 18.dp, top = 12.dp, end = 16.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        MilestoneRow(places, landingIndex = if (land) places.lastIndex else null)
-        Text(title, fontWeight = FontWeight.W800)
-        Text(detail, color = SelloTheme.colors.inkSoft)
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            places.forEachIndexed { index, spec ->
+                MilestonePlace(
+                    spec,
+                    land = land && index == places.lastIndex,
+                    diameter = if (places.size > 1) 46.dp else 54.dp
+                )
+            }
+        }
+        Column(
+            Modifier.weight(1f).fillMaxHeight().drawBehind {
+                drawLine(
+                    colors.rule,
+                    Offset.Zero,
+                    Offset(0f, size.height),
+                    strokeWidth = 2.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(
+                        floatArrayOf(4.dp.toPx(), 3.dp.toPx())
+                    )
+                )
+            }.padding(start = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)
+        ) {
+            Text(title, fontWeight = FontWeight.W800)
+            Text(detail, color = colors.inkSoft, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
 

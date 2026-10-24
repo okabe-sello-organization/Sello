@@ -84,7 +84,9 @@ data class GoalEditorState(
     val confirmDiscard: Boolean = false,
     /** Editing: something differs from what is stored. */
     val changed: Boolean = false,
-    val result: GoalEditorResult? = null
+    val result: GoalEditorResult? = null,
+    /** ¿Ya la lograste?: Marcar como lograda in progress, or its big moment on screen. */
+    val completion: CompletionState = CompletionState.Idle
 ) {
     /**
      * Crear meta waits for a name, an icon and an amount; Guardar cambios also for a
@@ -143,4 +145,9 @@ sealed interface GoalEditorAction {
     data object CancelDelete : GoalEditorAction
 
     data object Delete : GoalEditorAction
+
+    data object MarkComplete : GoalEditorAction
+
+    /** The big moment is closed: the form ends and the goal shows it is lograda. */
+    data object CelebrationDone : GoalEditorAction
 }

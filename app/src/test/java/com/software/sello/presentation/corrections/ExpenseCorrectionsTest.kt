@@ -2,9 +2,11 @@ package com.software.sello.presentation.corrections
 
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovementId
+import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome.OutcomeUnknown
@@ -18,6 +20,7 @@ import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.IncomeUndoOffer
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.RestoreGoalMovement
+import com.software.sello.domain.port.UndoGoalCompletion
 import com.software.sello.domain.port.UndoOffer
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
@@ -645,5 +648,97 @@ class ExpenseCorrectionsTest {
         assertEquals(true, outcome is GoalCommandOutcome.Rejected)
         assertNull(afterRefusal)
         assertEquals(CorrectionNotice.GoalMovementUpdated, notice)
+    }
+
+    @Test
+    fun aStampLandsOnceHoweverOftenTheGoalIsOpenedWhileItIsSaid() = test {
+        val half =
+            GoalCelebration(
+                uuid(301),
+                "Viaje a la costa",
+                listOf(GoalPlace.Half),
+                emptyList(),
+                false
+            )
+        corrections.goalMovementRecorded(
+            CorrectionNotice.GoalMovementRecorded(false, null, celebration = half)
+        )
+        val shown = notice!!.celebration!!
+
+        val first = corrections.lands(shown)
+        val reopened = corrections.lands(shown)
+        corrections.goalMovementRecorded(
+            CorrectionNotice.GoalMovementRecorded(
+                false,
+                null,
+                celebration = half.copy(earned = listOf(GoalPlace.ThreeQuarters))
+            )
+        )
+
+        assertEquals(listOf(true, false), listOf(first, reopened))
+        // A later aporte is a new save, and its stamp lands.
+        assertEquals(true, corrections.lands(notice!!.celebration!!))
+    }
+
+    // --- Completing a goal: Deshacer for the time the completion asked ---
+
+    private fun completion(undoFor: Duration = 14.seconds) = CompleteGoal(
+        OperationId.of(uuid(950)).let { (it as Outcome.Success).value },
+        7,
+        (GoalId.of(uuid(301)) as Outcome.Success).value,
+        5,
+        undoFor
+    )
+
+    private suspend fun complete(undoFor: Duration = 14.seconds): GoalCommandOutcome {
+        val command = completion(undoFor)
+        val at = monotonic.elapsed()
+        goals.completionOffer = {
+            GoalUndoOffer(command.operationId, command.goalId, at + undoFor)
+                .takeIf { monotonic.elapsed() < it.until }
+        }
+        return corrections.completeGoal(command, "Celular nuevo")
+    }
+
+    @Test
+    fun aCompletedGoalOffersDeshacerInItsNameForTheTimeAsked() = test {
+        val outcome = complete(undoFor = 14.seconds)
+
+        assertEquals(true, outcome is GoalCommandOutcome.Committed)
+        assertEquals(listOf<Any>(completion(14.seconds)), goals.sent)
+        assertEquals(CorrectionNotice.GoalCompleted("Celular nuevo", canUndo = true), notice)
+        advanceTimeBy(13_999)
+        runCurrent()
+        assertEquals(CorrectionNotice.GoalCompleted("Celular nuevo", canUndo = true), notice)
+        advanceTimeBy(1)
+        runCurrent()
+        assertNull(notice)
+    }
+
+    @Test
+    fun mt24DeshacerReturnsTheGoalThroughItsOwnUndoCommand() = test {
+        complete()
+        advanceTimeBy(3_000)
+
+        corrections.undo()
+        runCurrent()
+
+        val sent = goals.sent.last() as UndoGoalCompletion
+        assertEquals(
+            listOf(uuid(500), 7L, uuid(950)),
+            listOf(sent.operationId.value, sent.generation, sent.completionId.value)
+        )
+        assertEquals(CorrectionNotice.GoalCompletionUndone("Celular nuevo"), notice)
+    }
+
+    @Test
+    fun mt25ADeshacerTooLateLeavesTheGoalFinal() = test {
+        complete()
+        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.UndoExpired)
+
+        corrections.undo()
+        runCurrent()
+
+        assertEquals(CorrectionNotice.GoalCompletionUndoTooLate, notice)
     }
 }

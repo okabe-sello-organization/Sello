@@ -3,6 +3,7 @@ package com.software.sello.feature.goals
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
+import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalEvent
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
@@ -10,6 +11,7 @@ import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementId
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalName
+import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.GoalTargetChange
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
@@ -37,6 +39,7 @@ import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
@@ -423,5 +426,68 @@ class GoalMovementViewModelTest {
         typed.onAction(GoalMovementAction.DiscardConfirmed)
         assertTrue(typed.state.value.closed)
         assertEquals(emptyList<GoalCommand>(), commands.sent)
+    }
+
+    private fun committedWith(change: GoalChange?, replayed: Boolean = false) =
+        GoalCommandOutcome.Committed(
+            CommittedGoal(
+                OperationReceipt(
+                    OperationId.of(ids.next()).value(),
+                    OperationKind.RecordGoalMovement,
+                    3,
+                    10,
+                    Instant.EPOCH
+                ),
+                GoalId.of(celular).value(),
+                change
+            ),
+            replayed
+        )
+
+    @Test
+    fun anAporteThatEarnsAStampCarriesItToBeCelebratedWithWhatIsLeft() = runTest {
+        val model = model(goal = celular)
+        // 450.000 + 300.000 = 750.000 of 1.200.000: past 50 % (600.000), 450.000 left.
+        model.keys("3", "0", "0", "000")
+        commands.queue += committedWith(GoalChange(listOf(GoalPlace.Half), emptyList(), false))
+
+        model.onAction(GoalMovementAction.Submit)
+
+        val notice = corrections.notice.value as CorrectionNotice.GoalMovementRecorded
+        assertEquals(
+            GoalCelebration(celular, "Celular nuevo", listOf(GoalPlace.Half), emptyList(), false),
+            notice.celebration?.copy(missing = null)
+        )
+        assertEquals("450.000", notice.celebration!!.missing!!.digits)
+    }
+
+    @Test
+    fun aReplayOrAnAporteWithoutAStampCelebratesNothing() = runTest {
+        val replay = model(goal = celular)
+        replay.keys("3", "0", "0", "000")
+        commands.queue += committedWith(change = null, replayed = true)
+        replay.onAction(GoalMovementAction.Submit)
+        assertNull((corrections.notice.value as CorrectionNotice.GoalMovementRecorded).celebration)
+
+        val plain = model(goal = celular)
+        plain.keys("1", "000")
+        commands.queue += committedWith(GoalChange(emptyList(), emptyList(), false))
+        plain.onAction(GoalMovementAction.Submit)
+        assertNull((corrections.notice.value as CorrectionNotice.GoalMovementRecorded).celebration)
+    }
+
+    @Test
+    fun aSaveFoundAfterAnUnknownOutcomeIsNotCelebrated() = runTest {
+        val model = model(goal = celular)
+        model.keys("3", "0", "0", "000")
+        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Success(
+            committedWith(GoalChange(listOf(GoalPlace.Half), emptyList(), false)).goal
+        )
+
+        model.onAction(GoalMovementAction.Submit)
+
+        assertTrue(model.state.value.closed)
+        assertNull((corrections.notice.value as CorrectionNotice.GoalMovementRecorded).celebration)
     }
 }

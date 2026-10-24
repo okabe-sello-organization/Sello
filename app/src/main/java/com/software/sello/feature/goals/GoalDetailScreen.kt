@@ -35,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ColumnsChart
@@ -73,7 +74,9 @@ fun GoalDetailScreen(
     months: MonthNames,
     padding: PaddingValues,
     onWithdraw: (() -> Unit)? = null,
-    onEditMovement: ((String) -> Unit)? = null
+    onEditMovement: ((String) -> Unit)? = null,
+    landing: Set<GoalPlace> = emptySet(),
+    relighting: Set<GoalPlace> = emptySet()
 ) {
     val spacing = SelloTheme.spacing
     Column(
@@ -111,7 +114,9 @@ fun GoalDetailScreen(
                 dates,
                 months,
                 onWithdraw,
-                onEditMovement
+                onEditMovement,
+                landing,
+                relighting
             )
         }
     }
@@ -124,7 +129,9 @@ private fun ColumnScope.Ready(
     dates: DateLabels,
     months: MonthNames,
     onWithdraw: (() -> Unit)?,
-    onEditMovement: ((String) -> Unit)?
+    onEditMovement: ((String) -> Unit)?,
+    landing: Set<GoalPlace>,
+    relighting: Set<GoalPlace>
 ) {
     val goal = state.goal
     state.error?.let { error ->
@@ -151,7 +158,7 @@ private fun ColumnScope.Ready(
             Modifier.testTag("goal.stale")
         )
     }
-    Hero(goal, state, dates, months)
+    Hero(goal, state, dates, months, onAction, landing, relighting)
     if (goal.completedOn == null) Facts(goal, dates)
     Aportes(goal, months)
     Movements(
@@ -204,7 +211,10 @@ private fun Hero(
     goal: GoalDetailModel,
     state: GoalDetailState.Ready,
     dates: DateLabels,
-    months: MonthNames
+    months: MonthNames,
+    onAction: (GoalDetailAction) -> Unit,
+    landing: Set<GoalPlace>,
+    relighting: Set<GoalPlace>
 ) {
     val colors = SelloTheme.colors
     Slip(Modifier.fillMaxWidth().testTag("goal.hero")) {
@@ -257,7 +267,13 @@ private fun Hero(
                 style = MaterialTheme.typography.bodySmall
             )
         }
-        MilestoneRow(goal.places.map { milestone(it) }, Modifier.testTag("goal.stamps"))
+        // A confirmed save lands what it earned and lights again what came back, in place.
+        MilestoneRow(
+            goal.places.map { milestone(it) },
+            Modifier.testTag("goal.stamps"),
+            landing = goal.places.indices.filter { goal.places[it].place in landing }.toSet(),
+            relighting = goal.places.indices.filter { goal.places[it].place in relighting }.toSet()
+        )
         goal.kept.forEach { kept ->
             FactLine(
                 AnnotatedString(
@@ -283,7 +299,7 @@ private fun Hero(
 
                     next == null -> ""
 
-                    next.reached -> stringResource(R.string.goal_reached)
+                    next.reached -> stringResource(R.string.goal_reached_mark)
 
                     else -> stringResource(
                         R.string.goal_next,
@@ -298,6 +314,17 @@ private fun Hero(
             ),
             Modifier.testTag("goal.next")
         )
+        if (completedOn == null && next?.reached == true) {
+            SelloButton(
+                stringResource(R.string.goal_mark_complete),
+                { onAction(GoalDetailAction.MarkComplete) },
+                Modifier.fillMaxWidth().padding(top = 8.dp).testTag(GOAL_MARK_COMPLETE_TAG),
+                icon = SelloIcon.Check,
+                enabled = !state.busy,
+                loading = state.completion == CompletionState.Busy,
+                tone = ButtonTone.Gain
+            )
+        }
     }
 }
 
@@ -456,3 +483,4 @@ fun GoalPin(state: GoalDetailState.Ready, onAction: (GoalDetailAction) -> Unit) 
 private const val SHORT_LIST = 4
 
 const val GOAL_DETAIL_TAG = "goal.detail"
+const val GOAL_MARK_COMPLETE_TAG = "goal.markComplete"
