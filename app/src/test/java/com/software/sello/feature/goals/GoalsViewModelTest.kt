@@ -359,7 +359,7 @@ class HandGoalCommands : GoalCommands {
                 OperationReceipt(
                     command.operationId,
                     OperationKind.DeleteGoal,
-                    3,
+                    command.generation,
                     10,
                     Instant.EPOCH
                 ),
@@ -370,7 +370,10 @@ class HandGoalCommands : GoalCommands {
         )
     }
 
-    override fun movementUndoOffer(): GoalUndoOffer? = null
+    /** What [movementUndoOffer] says is on offer. */
+    var undoOffer: () -> GoalUndoOffer? = { null }
+
+    override fun movementUndoOffer(): GoalUndoOffer? = undoOffer()
 
     override fun completionUndoOffer(): GoalUndoOffer? = null
 

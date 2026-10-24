@@ -18,6 +18,7 @@ import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
+import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
@@ -74,6 +75,7 @@ class CategoryDetailViewModelTest {
         val corrections = ExpenseCorrections(
             commands,
             HandIncomeCommands(),
+            HandGoalCommands(),
             // The clock moves with the test's own time, so a notice shown ends when it should.
             { testScheduler.currentTime.milliseconds },
             { uuid(nextOperation++) },

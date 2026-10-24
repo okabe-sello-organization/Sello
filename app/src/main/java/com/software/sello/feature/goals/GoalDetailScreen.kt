@@ -1,6 +1,7 @@
 package com.software.sello.feature.goals
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -70,7 +72,8 @@ fun GoalDetailScreen(
     dates: DateLabels,
     months: MonthNames,
     padding: PaddingValues,
-    onWithdraw: (() -> Unit)? = null
+    onWithdraw: (() -> Unit)? = null,
+    onEditMovement: ((String) -> Unit)? = null
 ) {
     val spacing = SelloTheme.spacing
     Column(
@@ -102,7 +105,14 @@ fun GoalDetailScreen(
                 )
             }
 
-            is GoalDetailState.Ready -> Ready(state, onAction, dates, months, onWithdraw)
+            is GoalDetailState.Ready -> Ready(
+                state,
+                onAction,
+                dates,
+                months,
+                onWithdraw,
+                onEditMovement
+            )
         }
     }
 }
@@ -113,7 +123,8 @@ private fun ColumnScope.Ready(
     onAction: (GoalDetailAction) -> Unit,
     dates: DateLabels,
     months: MonthNames,
-    onWithdraw: (() -> Unit)?
+    onWithdraw: (() -> Unit)?,
+    onEditMovement: ((String) -> Unit)?
 ) {
     val goal = state.goal
     state.error?.let { error ->
@@ -143,7 +154,13 @@ private fun ColumnScope.Ready(
     Hero(goal, state, dates, months)
     if (goal.completedOn == null) Facts(goal, dates)
     Aportes(goal, months)
-    Movements(state, onAction, dates, onWithdraw.takeIf { goal.completedOn == null })
+    Movements(
+        state,
+        onAction,
+        dates,
+        onWithdraw.takeIf { goal.completedOn == null },
+        onEditMovement.takeIf { goal.completedOn == null }
+    )
     if (goal.completedOn != null) {
         val consequences = deleteConsequencesText(goal.movements.size)
         DangerSlip(
@@ -339,7 +356,8 @@ private fun Movements(
     state: GoalDetailState.Ready,
     onAction: (GoalDetailAction) -> Unit,
     dates: DateLabels,
-    onWithdraw: (() -> Unit)?
+    onWithdraw: (() -> Unit)?,
+    onEditMovement: ((String) -> Unit)?
 ) {
     val goal = state.goal
     Slip(Modifier.fillMaxWidth().testTag("goal.movements"), pinked = false) {
@@ -381,7 +399,11 @@ private fun Movements(
                     stringResource(R.string.goal_movement_note, day, it)
                 } ?: day,
                 amount = movement.amount,
-                modifier = Modifier.testTag("goal.movement.${movement.id}"),
+                modifier = Modifier.testTag("goal.movement.${movement.id}").then(
+                    onEditMovement?.let { edit ->
+                        Modifier.clickable(role = Role.Button) { edit(movement.id) }
+                    } ?: Modifier
+                ),
                 milestone = earned.lastOrNull()?.let { place ->
                     milestone(goal.places.first { it.place == place })
                 },

@@ -46,8 +46,9 @@ import com.software.sello.designsystem.theme.SelloMotion
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
- * One choice in a set: a category, an income source. It looks 36dp tall, grows with the
- * font size and always takes a 48dp touch target. Put the set in a [ChipFlow] so it is announced as one group.
+ * One choice in a set: a category, an income source, a goal with its percentage as
+ * [trailing]. It looks 36dp tall, grows with the font size and always takes a 48dp touch
+ * target. Put the set in a [ChipFlow] so it is announced as one group.
  */
 @Composable
 fun SelloChip(
@@ -56,7 +57,8 @@ fun SelloChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: SelloIcon? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    trailing: String? = null
 ) {
     val colors = SelloTheme.colors
     val spec = if (SelloTheme.reducedMotion) snap() else SelloMotion.quick<Color>()
@@ -96,8 +98,19 @@ fun SelloChip(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
+        if (trailing != null) {
+            Text(
+                text = trailing,
+                style = MaterialTheme.typography.bodyMedium,
+                color = content.copy(alpha = TRAILING_ALPHA),
+                maxLines = 1
+            )
+        }
     }
 }
+
+/** A trailing detail, such as a goal's percentage, is softer than the choice it follows. */
+private const val TRAILING_ALPHA = 0.72f
 
 /**
  * The chip that ends a set of choices to create a new one, such as Nueva after the

@@ -27,6 +27,17 @@ data class GoalRoute(val goalId: String)
 @Serializable
 data class GoalEditorRoute(val goalId: String? = null)
 
+/**
+ * Aportar, or with [withdrawal] Retirar, to [goalId] when it is chosen already; with
+ * [movementId] the correction of that recorded movement. The form reads both itself.
+ */
+@Serializable
+data class GoalMovementRoute(
+    val goalId: String? = null,
+    val withdrawal: Boolean = false,
+    val movementId: String? = null
+)
+
 /** Nonfinancial controls reachable from Recibo's settings action. */
 @Serializable
 data object SettingsRoute

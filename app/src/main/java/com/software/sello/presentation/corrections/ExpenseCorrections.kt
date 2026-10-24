@@ -7,16 +7,21 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.GoalCommandOutcome
+import com.software.sello.domain.port.GoalCommands
+import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RestoreExpense
+import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.RestoreIncome
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -96,17 +101,39 @@ sealed interface CorrectionNotice {
 
     /** The same for a new income: "Ingreso anotado: 2.000.000". */
     data class IncomeRecorded(val amount: MoneyTextValue?) : CorrectionNotice
+
+    /** The same as [Deleted], [Restored], [UndoTooLate], [UndoBlocked] and [Updated], for a goal's movement. */
+    data class GoalMovementDeleted(
+        val canUndo: Boolean,
+        val undoing: Boolean = false,
+        val undoFailed: Boolean = false
+    ) : CorrectionNotice
+
+    data object GoalMovementRestored : CorrectionNotice
+
+    data object GoalMovementUndoTooLate : CorrectionNotice
+
+    data object GoalMovementUndoBlocked : CorrectionNotice
+
+    data object GoalMovementUpdated : CorrectionNotice
+
+    /**
+     * A new aporte, or with [withdrawal] a retiro, storage confirmed: "Aporte anotado:
+     * 350.000". [amount] is null when it is saved but could not be read back.
+     */
+    data class GoalMovementRecorded(val withdrawal: Boolean, val amount: MoneyTextValue?) :
+        CorrectionNotice
 }
 
 /** How a deletion ended. Only [Deleted] means the expense is gone. */
 enum class DeleteResult { Deleted, Gone, Changed, DataChanged, Failed }
 
 /**
- * Deleting an expense or an income, undoing that, and what is said about the last
- * correction. One instance serves the whole process, so the offer to undo is the same
+ * Deleting an expense, an income or a goal's movement, undoing that, and what is said
+ * about the last correction. One instance serves the whole process, so the offer to undo is the same
  * whatever screen is showing and however often it is redrawn, and a deletion is
  * finished and offered even if the screen that asked for it is gone. There is one
- * offer for both kinds, as in storage: a later deletion takes its place. (It is named
+ * offer for every kind, as in storage: a later deletion takes its place. (It is named
  * for expenses because it started with them.)
  *
  * The time to undo belongs to the commands; this only stops showing the offer when
@@ -116,6 +143,7 @@ enum class DeleteResult { Deleted, Gone, Changed, DataChanged, Failed }
 class ExpenseCorrections(
     private val commands: ExpenseCommands,
     private val incomes: IncomeCommands,
+    private val goals: GoalCommands,
     private val monotonic: MonotonicClock,
     private val ids: RecordIdSource,
     private val scope: CoroutineScope
@@ -125,12 +153,15 @@ class ExpenseCorrections(
      * attempt whose outcome was not known is asked again and never done twice.
      */
     private class Pending(
-        val income: Boolean,
+        val kind: Kind,
         val deletionId: OperationId,
         val generation: Long,
         val until: Duration,
         val undoOperation: OperationId
     )
+
+    /** What the deletion on offer removed. */
+    private enum class Kind { Expense, Income, GoalMovement }
 
     /** How an attempt to undo ended. [Retry]: nothing was restored and nothing forbids it. */
     private enum class Undone { Restored, TooLate, Blocked, Retry }
@@ -143,20 +174,21 @@ class ExpenseCorrections(
 
     /** The offer in the words of what was deleted. */
     private fun offer(
-        income: Boolean,
+        kind: Kind,
         canUndo: Boolean,
         undoing: Boolean = false,
         failed: Boolean = false
-    ) = if (income) {
-        CorrectionNotice.IncomeDeleted(canUndo, undoing, failed)
-    } else {
-        CorrectionNotice.Deleted(canUndo, undoing, failed)
+    ) = when (kind) {
+        Kind.Expense -> CorrectionNotice.Deleted(canUndo, undoing, failed)
+        Kind.Income -> CorrectionNotice.IncomeDeleted(canUndo, undoing, failed)
+        Kind.GoalMovement -> CorrectionNotice.GoalMovementDeleted(canUndo, undoing, failed)
     }
 
     /** Whether an offer is on screen, and if so whether it can be taken and is being taken. */
     private fun offerShown(): Pair<Boolean, Boolean>? = when (val now = shown.value) {
         is CorrectionNotice.Deleted -> now.canUndo to now.undoing
         is CorrectionNotice.IncomeDeleted -> now.canUndo to now.undoing
+        is CorrectionNotice.GoalMovementDeleted -> now.canUndo to now.undoing
         else -> null
     }
 
@@ -187,7 +219,7 @@ class ExpenseCorrections(
         }
         if (!committed) return@async DeleteResult.Failed
         val until = commands.undoOffer()?.takeIf { it.deletionId == operation }?.until
-        deleted(income = false, operation, generation, until)
+        deleted(Kind.Expense, operation, generation, until)
     }.await()
 
     /** The same for an income. */
@@ -199,7 +231,7 @@ class ExpenseCorrections(
 
     fun incomeDeleted(receipt: OperationReceipt) {
         val until = incomes.undoOffer()?.takeIf { it.deletionId == receipt.operationId }?.until
-        deleted(income = true, receipt.operationId, receipt.generation, until)
+        deleted(Kind.Income, receipt.operationId, receipt.generation, until)
     }
 
     suspend fun deleteIncome(
@@ -224,22 +256,22 @@ class ExpenseCorrections(
         }
         if (!committed) return@async DeleteResult.Failed
         val until = incomes.undoOffer()?.takeIf { it.deletionId == operation }?.until
-        deleted(income = true, operation, generation, until)
+        deleted(Kind.Income, operation, generation, until)
     }.await()
 
     /** A deletion committed. With [until] it can be undone until then; without, it is only said. */
     private fun deleted(
-        income: Boolean,
+        kind: Kind,
         operation: OperationId,
         generation: Long,
         until: Duration?
     ): DeleteResult {
         if (until == null) {
             pending = null
-            show(offer(income, canUndo = false), monotonic.elapsed() + NOTICE)
+            show(offer(kind, canUndo = false), monotonic.elapsed() + NOTICE)
         } else {
-            pending = Pending(income, operation, generation, until, operation())
-            show(offer(income, canUndo = true), until)
+            pending = Pending(kind, operation, generation, until, operation())
+            show(offer(kind, canUndo = true), until)
         }
         return DeleteResult.Deleted
     }
@@ -251,9 +283,16 @@ class ExpenseCorrections(
         if (!canUndo || undoing) return
         // Once asked, the answer decides what is said next, not the time running out.
         ending?.cancel()
-        shown.value = offer(offered.income, canUndo = true, undoing = true)
+        shown.value = offer(offered.kind, canUndo = true, undoing = true)
         scope.launch {
-            settle(offered, if (offered.income) restoreIncome(offered) else restore(offered))
+            settle(
+                offered,
+                when (offered.kind) {
+                    Kind.Expense -> restore(offered)
+                    Kind.Income -> restoreIncome(offered)
+                    Kind.GoalMovement -> restoreGoalMovement(offered)
+                }
+            )
         }
     }
 
@@ -297,26 +336,80 @@ class ExpenseCorrections(
     private fun settle(offered: Pending, outcome: Undone) {
         // A later deletion took this one's place while it was being undone.
         if (pending !== offered) return
-        val income = offered.income
+        val kind = offered.kind
         when {
             outcome == Undone.Restored -> said(
-                if (income) CorrectionNotice.IncomeRestored else CorrectionNotice.Restored
+                when (kind) {
+                    Kind.Expense -> CorrectionNotice.Restored
+                    Kind.Income -> CorrectionNotice.IncomeRestored
+                    Kind.GoalMovement -> CorrectionNotice.GoalMovementRestored
+                }
             )
 
             outcome == Undone.Blocked -> said(
-                if (income) CorrectionNotice.IncomeUndoBlocked else CorrectionNotice.UndoBlocked
+                when (kind) {
+                    Kind.Expense -> CorrectionNotice.UndoBlocked
+                    Kind.Income -> CorrectionNotice.IncomeUndoBlocked
+                    Kind.GoalMovement -> CorrectionNotice.GoalMovementUndoBlocked
+                }
             )
 
             // Nothing was restored and nothing forbids it: it can be asked again while
             // the time lasts.
             outcome == Undone.Retry && monotonic.elapsed() < offered.until ->
-                show(offer(income, canUndo = true, failed = true), offered.until)
+                show(offer(kind, canUndo = true, failed = true), offered.until)
 
             else -> said(
-                if (income) CorrectionNotice.IncomeUndoTooLate else CorrectionNotice.UndoTooLate
+                when (kind) {
+                    Kind.Expense -> CorrectionNotice.UndoTooLate
+                    Kind.Income -> CorrectionNotice.IncomeUndoTooLate
+                    Kind.GoalMovement -> CorrectionNotice.GoalMovementUndoTooLate
+                }
             )
         }
     }
+
+    /**
+     * Deletes a goal's movement and offers to undo it, in the movement's own words. It runs
+     * to its end even if the caller is cancelled meanwhile.
+     */
+    suspend fun deleteGoalMovement(command: DeleteGoalMovement): GoalCommandOutcome = scope.async {
+        val outcome = goals.submit(command)
+        if (outcome is GoalCommandOutcome.Committed) goalMovementDeleted(outcome.goal.receipt)
+        outcome
+    }.await()
+
+    /** A movement's deletion committed, as found again after its outcome was not known. */
+    fun goalMovementDeleted(receipt: OperationReceipt) {
+        val until = goals.movementUndoOffer()
+            ?.takeIf { it.operationId == receipt.operationId }?.until
+        deleted(Kind.GoalMovement, receipt.operationId, receipt.generation, until)
+    }
+
+    private suspend fun restoreGoalMovement(offered: Pending): Undone {
+        val command =
+            RestoreGoalMovement(offered.undoOperation, offered.generation, offered.deletionId)
+        return when (val outcome = goals.submit(command)) {
+            is GoalCommandOutcome.Committed -> Undone.Restored
+
+            is GoalCommandOutcome.OutcomeUnknown -> {
+                val found = (goals.find(offered.undoOperation) as? Outcome.Success)?.value
+                if (found != null) Undone.Restored else Undone.Retry
+            }
+
+            is GoalCommandOutcome.Rejected -> when (outcome.reason) {
+                GoalRejection.UndoExpired -> Undone.TooLate
+                GoalRejection.UndoConflict, is GoalRejection.StaleGeneration -> Undone.Blocked
+                else -> Undone.Retry
+            }
+        }
+    }
+
+    /** A screen reports that a correction of a goal's movement was saved. */
+    fun goalMovementUpdated() = said(CorrectionNotice.GoalMovementUpdated)
+
+    /** A screen reports a new aporte or retiro its receipt confirmed, read back from storage. */
+    fun goalMovementRecorded(notice: CorrectionNotice.GoalMovementRecorded) = said(notice)
 
     /** A screen reports that an edit of an expense was saved. */
     fun updated() = said(CorrectionNotice.Updated)
@@ -338,7 +431,10 @@ class ExpenseCorrections(
 
     /** A screen reports a category change its receipt confirmed. */
     fun categoryChanged(notice: CorrectionNotice) {
-        require(notice !is CorrectionNotice.Deleted && notice !is CorrectionNotice.IncomeDeleted) {
+        require(
+            notice !is CorrectionNotice.Deleted && notice !is CorrectionNotice.IncomeDeleted &&
+                notice !is CorrectionNotice.GoalMovementDeleted
+        ) {
             "An offer to undo is not a statement"
         }
         said(notice)

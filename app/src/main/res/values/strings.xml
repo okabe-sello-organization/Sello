@@ -705,6 +705,40 @@
     <string name="goal_error_check">Comprobar</string>
     <string name="goal_error_retry">Reintentar</string>
 
+    <!-- Aportar / Retirar (SELLO-091) -->
+    <string name="goal_movement_deleted">Movimiento borrado</string>
+    <string name="goal_movement_deleted_spoken">Movimiento borrado. Puedes deshacerlo durante 6 segundos.</string>
+    <string name="goal_movement_restored">Movimiento restaurado</string>
+    <string name="goal_movement_too_late">Ya no se puede deshacer. El movimiento quedó borrado.</string>
+    <string name="goal_movement_undo_blocked">No se pudo deshacer porque tu meta cambió. El movimiento quedó borrado.</string>
+    <string name="goal_movement_updated">Movimiento actualizado</string>
+    <string name="notice_goal_contribution">Aporte anotado: %1$s</string>
+    <string name="notice_goal_contribution_plain">Aporte anotado</string>
+    <string name="notice_goal_withdrawal">Retiro anotado: %1$s</string>
+    <string name="notice_goal_withdrawal_plain">Retiro anotado</string>
+    <string name="goal_movement_contribute">Aportar</string>
+    <string name="goal_movement_withdraw">Retirar</string>
+    <string name="goal_movement_edit_contribution">Corregir aporte</string>
+    <string name="goal_movement_edit_withdrawal">Corregir retiro</string>
+    <string name="goal_movement_contribution_label">Aporte en pesos</string>
+    <string name="goal_movement_withdrawal_label">Retiro en pesos</string>
+    <string name="goal_movement_over_saved">Más de lo guardado (%s)</string>
+    <string name="goal_movement_amount_invalid">Escribe un monto entero entre 1 y 999.999.999.999.</string>
+    <string name="goal_movement_goal">Meta</string>
+    <string name="goal_movement_saved_fact">Llevas %s guardados en esta meta.</string>
+    <string name="goal_movement_choose_goal">Elige a qué meta va.</string>
+    <string name="goal_movement_no_goals">No tienes metas activas. Crea una en Metas.</string>
+    <string name="goal_movement_blocked">No se puede: el retiro de %1$s del %2$s usa este aporte. Borra o corrige ese retiro primero.</string>
+    <string name="goal_movement_record_contribution">Aportar</string>
+    <string name="goal_movement_record_withdrawal">Registrar retiro</string>
+    <string name="goal_movement_note_spoken">Nota del movimiento</string>
+    <string name="goal_movement_discard_title">¿Descartar este movimiento?</string>
+    <string name="goal_movement_not_saved">No se guardó. Puedes intentarlo de nuevo.</string>
+    <string name="goal_movement_data_changed">Tus datos cambiaron mientras escribías. No se anotó nada.</string>
+    <string name="goal_movement_gone">Esta meta o este movimiento ya no está.</string>
+    <string name="goal_movement_changed">La meta cambió mientras escribías. Revisa y vuelve a intentarlo.</string>
+    <string name="goal_movement_completed">Esta meta ya está lograda: no se puede cambiar.</string>
+    <string name="goal_movement_not_deleted">No se borró. El movimiento sigue ahí.</string>
     <!-- Nueva meta and Editar meta (SELLO-090) -->
     <string name="goal_icon_home">Casa</string>
     <string name="goal_icon_flight">Viaje</string>

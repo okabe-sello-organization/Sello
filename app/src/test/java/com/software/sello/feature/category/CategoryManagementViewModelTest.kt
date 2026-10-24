@@ -33,6 +33,7 @@ import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
+import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
@@ -160,6 +161,7 @@ class CategoryManagementViewModelTest {
         notices = ExpenseCorrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
+            HandGoalCommands(),
             { Duration.ZERO },
             { uuid(nextId++) },
             CoroutineScope(Dispatchers.Main)
