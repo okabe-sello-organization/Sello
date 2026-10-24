@@ -45,7 +45,8 @@ internal fun MetasDestination(
     onOpenSettings: () -> Unit,
     onOpenGoal: (String) -> Unit,
     onCreate: (() -> Unit)? = null,
-    onContribute: (() -> Unit)? = null
+    onContribute: (() -> Unit)? = null,
+    notice: (@Composable () -> Unit)? = null
 ) {
     val model: MetasViewModel = viewModel(factory = viewModels)
     val metas by model.state.collectAsStateWithLifecycle()
@@ -57,6 +58,7 @@ internal fun MetasDestination(
         onAction = onShell,
         navigation = tabs,
         titleOnly = stringResource(R.string.metas_title),
+        notice = notice,
         band = ready?.band?.let { band -> { MetasBandTotal(band, names) } },
         actions = {
             if (onCreate != null) {
@@ -108,7 +110,9 @@ internal fun GoalDestination(
     onBack: () -> Unit,
     onEdit: (() -> Unit)? = null,
     onContribute: (() -> Unit)? = null,
-    onWithdraw: (() -> Unit)? = null
+    onWithdraw: (() -> Unit)? = null,
+    onEditMovement: ((String) -> Unit)? = null,
+    notice: (@Composable () -> Unit)? = null
 ) {
     val model: GoalDetailViewModel = viewModel(factory = viewModels)
     val detail by model.state.collectAsStateWithLifecycle()
@@ -123,6 +127,7 @@ internal fun GoalDestination(
         navigation = null,
         onBack = onBack,
         titleOnly = ready?.goal?.name ?: stringResource(R.string.goal_title_fallback),
+        notice = notice,
         band = if (active) {
             { GoalPin(ready!!, model::onAction) }
         } else {
@@ -146,7 +151,8 @@ internal fun GoalDestination(
             dates = dateLabels(),
             months = monthNames(),
             padding = padding,
-            onWithdraw = onWithdraw
+            onWithdraw = onWithdraw,
+            onEditMovement = onEditMovement.takeIf { active }
         )
     }
 }

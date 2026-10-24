@@ -10,6 +10,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
@@ -68,6 +69,7 @@ class ExpenseEditViewModelTest {
         corrections = ExpenseCorrections(
             commands,
             HandIncomeCommands(),
+            HandGoalCommands(),
             { Duration.ZERO },
             { uuid(nextId++) },
             CoroutineScope(Dispatchers.Main)

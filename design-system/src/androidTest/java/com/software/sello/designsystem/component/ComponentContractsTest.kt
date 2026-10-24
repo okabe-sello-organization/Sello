@@ -562,6 +562,27 @@ class ComponentContractsTest {
     }
 
     @Test
+    fun aGoalChipCarriesItsPercentageAfterTheNameAndIsReadWithIt() {
+        rule.inEveryScheme(content = {
+            SelloChip(
+                "Viaje a la costa",
+                selected = false,
+                onClick = {},
+                icon = SelloIcon.Flight,
+                modifier = Modifier.testTag("chip"),
+                trailing = "57 %"
+            )
+        }) {
+            val name = rule.onNodeWithText("Viaje a la costa", useUnmergedTree = true)
+                .getUnclippedBoundsInRoot()
+            val share = rule.onNodeWithText("57 %", useUnmergedTree = true)
+                .getUnclippedBoundsInRoot()
+            assertTrue("$share after $name", share.left >= name.right)
+            rule.onNodeWithTag("chip").assertTextContains("57 %")
+        }
+    }
+
+    @Test
     fun addChipIsAReachableButtonAtDoubleFont() {
         var added = 0
         rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {

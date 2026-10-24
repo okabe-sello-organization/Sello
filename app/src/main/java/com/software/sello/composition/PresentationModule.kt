@@ -16,6 +16,7 @@ import com.software.sello.feature.category.CategoryEditorViewModel
 import com.software.sello.feature.category.CategoryManagementViewModel
 import com.software.sello.feature.expense.ExpenseEntryViewModel
 import com.software.sello.feature.goals.GoalDetailViewModel
+import com.software.sello.feature.goals.GoalMovementViewModel
 import com.software.sello.feature.goals.MetasViewModel
 import com.software.sello.feature.income.IncomeFormViewModel
 import com.software.sello.feature.income.IncomeHistoryViewModel
@@ -50,7 +51,7 @@ fun presentationModule(): Module = module {
         val scope = CoroutineScope(
             get<CoroutineScope>().coroutineContext + get<DispatcherProvider>().main
         )
-        ExpenseCorrections(get(), get(), get(), get(), scope)
+        ExpenseCorrections(get(), get(), get(), get(), get(), scope)
     }
     // A save runs for as long as the process, not the screen that started it.
     single { BackupSession(get(), get(), get(), get(), get<CoroutineScope>()) }
@@ -109,6 +110,17 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     }
     initializer { ReciboViewModel(koin.get(), koin.get(), koin.get(), koin.get()) }
     initializer { MetasViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer {
+        GoalMovementViewModel(
+            createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
     initializer {
         GoalDetailViewModel(
             createSavedStateHandle(),

@@ -23,6 +23,7 @@ import com.software.sello.feature.expense.HandIncomeReads
 import com.software.sello.feature.expense.incomeId
 import com.software.sello.feature.expense.storedIncome
 import com.software.sello.feature.expense.uuid
+import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.resumen.resumenSnapshot
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -83,6 +84,7 @@ class IncomeFormViewModelTest {
         corrections = ExpenseCorrections(
             HandExpenseCommands(),
             commands,
+            HandGoalCommands(),
             { Duration.ZERO },
             { uuid(nextId++) },
             CoroutineScope(Dispatchers.Main)

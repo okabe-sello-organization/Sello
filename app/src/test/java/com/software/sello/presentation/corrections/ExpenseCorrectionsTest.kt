@@ -1,21 +1,30 @@
 package com.software.sello.presentation.corrections
 
+import com.software.sello.domain.model.GoalId
+import com.software.sello.domain.model.GoalMovementId
+import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome.OutcomeUnknown
 import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.GoalCommandOutcome
+import com.software.sello.domain.port.GoalRejection
+import com.software.sello.domain.port.GoalUndoOffer
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.IncomeUndoOffer
 import com.software.sello.domain.port.MonotonicClock
+import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.UndoOffer
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.feature.expense.expenseId
 import com.software.sello.feature.expense.incomeId
 import com.software.sello.feature.expense.uuid
+import com.software.sello.feature.goals.HandGoalCommands
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
@@ -42,12 +51,20 @@ class ExpenseCorrectionsTest {
     private val scope = TestScope()
     private val commands = HandExpenseCommands()
     private val incomes = HandIncomeCommands()
+    private val goals = HandGoalCommands()
     private var slept: Duration = Duration.ZERO
     private val monotonic =
         MonotonicClock { 5.hours + scope.testScheduler.currentTime.milliseconds + slept }
     private var nextId = 500
     private val corrections =
-        ExpenseCorrections(commands, incomes, monotonic, { uuid(nextId++) }, scope.backgroundScope)
+        ExpenseCorrections(
+            commands,
+            incomes,
+            goals,
+            monotonic,
+            { uuid(nextId++) },
+            scope.backgroundScope
+        )
 
     private val storageFailed =
         Rejected(ExpenseRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")))
@@ -527,5 +544,106 @@ class ExpenseCorrectionsTest {
 
         assertEquals(answers.map { it.second to null }, results)
         assertEquals(CorrectionNotice.IncomeUpdated, notice)
+    }
+
+    // --- Goal movements: the same offer, the goal's own commands and words ---
+
+    private fun movementDeletion(generation: Long = 7) = DeleteGoalMovement(
+        OperationId.of(uuid(900)).let { (it as Outcome.Success).value },
+        generation,
+        (GoalId.of(uuid(301)) as Outcome.Success).value,
+        4,
+        (GoalMovementId.of(uuid(302)) as Outcome.Success).value,
+        1
+    )
+
+    private suspend fun deleteMovement(generation: Long = 7): GoalCommandOutcome {
+        deletedAt = monotonic.elapsed()
+        val command = movementDeletion(generation)
+        goals.undoOffer = {
+            GoalUndoOffer(command.operationId, command.goalId, deletedAt + 6.seconds)
+                .takeIf { monotonic.elapsed() < it.until }
+        }
+        return corrections.deleteGoalMovement(command)
+    }
+
+    @Test
+    fun deletingAGoalMovementOffersUndoInItsOwnWords() = test {
+        val outcome = deleteMovement()
+
+        assertEquals(true, outcome is GoalCommandOutcome.Committed)
+        assertEquals(listOf<Any>(movementDeletion()), goals.sent)
+        assertEquals(CorrectionNotice.GoalMovementDeleted(canUndo = true), notice)
+        assertEquals(emptyList<Any>(), commands.deleted)
+    }
+
+    @Test
+    fun undoingADeletedMovementRestoresItThroughTheGoalCommandsOnly() = test {
+        deleteMovement(generation = 7)
+        advanceTimeBy(2_000)
+
+        corrections.undo()
+        runCurrent()
+
+        val sent = goals.sent.last() as RestoreGoalMovement
+        assertEquals(
+            listOf(uuid(500), 7L, uuid(900)),
+            listOf(sent.operationId.value, sent.generation, sent.deletionId.value)
+        )
+        assertEquals(emptyList<Any>(), commands.restored)
+        assertEquals(emptyList<Any>(), incomes.restored)
+        assertEquals(CorrectionNotice.GoalMovementRestored, notice)
+    }
+
+    @Test
+    fun aMovementOfferEndsAtSixSecondsAndALateOrBlockedUndoSaysSoAboutTheMovement() = test {
+        deleteMovement()
+        advanceTimeBy(5_999)
+        runCurrent()
+        val before = notice
+        advanceTimeBy(1)
+        runCurrent()
+        val after = notice
+        deleteMovement()
+        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.UndoExpired)
+        corrections.undo()
+        runCurrent()
+        val late = notice
+        deleteMovement()
+        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.UndoConflict)
+        corrections.undo()
+        runCurrent()
+
+        assertEquals(CorrectionNotice.GoalMovementDeleted(canUndo = true), before)
+        assertNull(after)
+        assertEquals(CorrectionNotice.GoalMovementUndoTooLate, late)
+        assertEquals(CorrectionNotice.GoalMovementUndoBlocked, notice)
+    }
+
+    @Test
+    fun anExpenseDeletionTakesAMovementOffersPlaceAndUndoThenGoesToTheExpense() = test {
+        deleteMovement()
+        advanceTimeBy(1_000)
+
+        delete(expense = 101)
+        corrections.undo()
+        runCurrent()
+
+        assertEquals(1, commands.restored.size)
+        assertEquals(1, goals.sent.size)
+        assertEquals(CorrectionNotice.Restored, notice)
+    }
+
+    @Test
+    fun aRefusedMovementDeletionOffersNothingAndASavedMovementIsSaidForAMoment() = test {
+        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.MovementMissing)
+
+        val outcome = deleteMovement()
+        val afterRefusal = notice
+        corrections.goalMovementUpdated()
+
+        assertEquals(true, outcome is GoalCommandOutcome.Rejected)
+        assertNull(afterRefusal)
+        assertEquals(CorrectionNotice.GoalMovementUpdated, notice)
     }
 }

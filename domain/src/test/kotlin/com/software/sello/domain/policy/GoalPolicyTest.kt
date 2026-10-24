@@ -785,6 +785,70 @@ class GoalPolicyTest {
         )
     }
 
+    // --- Checking a movement before it is sent (SELLO-091) ---
+
+    private fun candidate(kind: GoalMovementKind, pesos: Long) = GoalMovement(
+        GoalMovementId.of("00000000-0000-4000-8000-999999999999").valueOrFail(),
+        kind,
+        amount(pesos),
+        today,
+        Long.MAX_VALUE,
+        today,
+        null,
+        1,
+        Instant.EPOCH,
+        Instant.EPOCH
+    )
+
+    @Test
+    fun mt08ARetiroAboveWhatIsSavedIsRefusedWithWhatIsAvailable() {
+        val goal = viaje().apply { aporte(1_710_000) }
+        val retiro = candidate(GoalMovementKind.Withdrawal, 1_710_001)
+
+        assertEquals(
+            GoalHistoryError.WithdrawalAboveSaved(retiro.id, Money.cop(1_710_000)),
+            GoalPolicy.withMovement(goal.history(), retiro).errorOrFail()
+        )
+        assertEquals(
+            Money.cop(0),
+            GoalPolicy.withMovement(
+                goal.history(),
+                candidate(GoalMovementKind.Withdrawal, 1_710_000)
+            ).valueOrFail().saved
+        )
+    }
+
+    @Test
+    fun mt15CorrectingAnAporteALaterRetiroNeedsIsRefusedNamingThatRetiro() {
+        val goal = viaje()
+        val aporte = goal.aporte(500_000)
+        val retiro = goal.retiro(300_000)
+
+        assertEquals(
+            Money.cop(0),
+            GoalPolicy.withMovement(goal.history(), aporte.copy(amount = amount(300_000)))
+                .valueOrFail().saved
+        )
+        assertEquals(
+            GoalHistoryError.WithdrawalAboveSaved(retiro.id, Money.cop(299_999)),
+            GoalPolicy.withMovement(goal.history(), aporte.copy(amount = amount(299_999)))
+                .errorOrFail()
+        )
+    }
+
+    @Test
+    fun aNewAporteIsAddedAtTheEndOfTheHistory() {
+        val goal = viaje().apply { aporte(1_000_000) }
+
+        val after = GoalPolicy.withMovement(
+            goal.history(),
+            candidate(GoalMovementKind.Contribution, 500_000)
+        ).valueOrFail()
+
+        assertEquals(Money.cop(1_500_000), after.saved)
+        assertEquals(50L, after.percentage)
+    }
+
     private companion object {
         fun amount(pesos: Long) = TransactionAmount.of(Money.cop(pesos)).valueOrFail()
     }

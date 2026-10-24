@@ -11,6 +11,7 @@ import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.SnapshotState
+import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
@@ -79,6 +80,7 @@ class ExpenseFormViewModelTest {
         ExpenseCorrections(
             commands,
             HandIncomeCommands(),
+            HandGoalCommands(),
             {
                 Duration.ZERO
             },

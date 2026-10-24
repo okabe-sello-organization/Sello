@@ -66,6 +66,7 @@ import com.software.sello.feature.backup.RestoreViewModel
 import com.software.sello.feature.category.CategoryEditorRoot
 import com.software.sello.feature.category.CategoryManagementRoot
 import com.software.sello.feature.expense.ExpenseEntryRoot
+import com.software.sello.feature.goals.GoalMovementRoot
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.feature.income.IncomeHistoryScreen
 import com.software.sello.feature.income.IncomeHistoryViewModel
@@ -207,10 +208,17 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 onShell = shell::onAction,
                 tabs = tabs,
                 onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
-                onOpenGoal = { id -> navigation.navigate(GoalRoute(id)) { launchSingleTop = true } }
+                onOpenGoal = { id ->
+                    navigation.navigate(GoalRoute(id)) { launchSingleTop = true }
+                },
+                onContribute = {
+                    navigation.navigate(GoalMovementRoute()) { launchSingleTop = true }
+                },
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
             )
         }
-        composable<GoalRoute> {
+        composable<GoalRoute> { entry ->
+            val id = entry.toRoute<GoalRoute>().goalId
             GoalDestination(
                 state = state,
                 viewModels = viewModels,
@@ -219,8 +227,29 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     val onGoal =
                         navigation.currentBackStackEntry?.destination?.hasRoute<GoalRoute>()
                     if (onGoal == true) navigation.popBackStack()
-                }
+                },
+                onContribute = {
+                    navigation.navigate(GoalMovementRoute(id)) { launchSingleTop = true }
+                },
+                onWithdraw = {
+                    navigation.navigate(GoalMovementRoute(id, withdrawal = true)) {
+                        launchSingleTop = true
+                    }
+                },
+                onEditMovement = { movement ->
+                    navigation.navigate(GoalMovementRoute(id, movementId = movement)) {
+                        launchSingleTop = true
+                    }
+                },
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
             )
+        }
+        composable<GoalMovementRoute> {
+            GoalMovementRoot(viewModels) {
+                val onForm =
+                    navigation.currentBackStackEntry?.destination?.hasRoute<GoalMovementRoute>()
+                if (onForm == true) navigation.popBackStack()
+            }
         }
         composable<ResumenCategoryRoute> { entry ->
             val id = entry.toRoute<ResumenCategoryRoute>().categoryId
@@ -1003,6 +1032,54 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
                 message = expenseRecorded(notice.amount?.digits, category),
                 modifier = tagged,
                 spoken = expenseRecorded(notice.amount?.spoken, category),
+                confirmation = true
+            )
+        }
+
+        is CorrectionNotice.GoalMovementDeleted -> SelloNotice(
+            message = stringResource(
+                if (notice.undoFailed) {
+                    R.string.correction_undo_failed
+                } else {
+                    R.string.goal_movement_deleted
+                }
+            ),
+            modifier = tagged,
+            actionLabel = stringResource(R.string.correction_undo).takeIf { notice.canUndo },
+            onAction = onUndo.takeIf { notice.canUndo },
+            busy = notice.undoing,
+            spoken = stringResource(
+                when {
+                    notice.undoFailed -> R.string.correction_undo_failed
+                    notice.canUndo -> R.string.goal_movement_deleted_spoken
+                    else -> R.string.goal_movement_deleted
+                }
+            )
+        )
+
+        CorrectionNotice.GoalMovementRestored ->
+            SelloNotice(stringResource(R.string.goal_movement_restored), tagged)
+
+        CorrectionNotice.GoalMovementUndoTooLate ->
+            SelloNotice(stringResource(R.string.goal_movement_too_late), tagged)
+
+        CorrectionNotice.GoalMovementUndoBlocked ->
+            SelloNotice(stringResource(R.string.goal_movement_undo_blocked), tagged)
+
+        CorrectionNotice.GoalMovementUpdated ->
+            SelloNotice(stringResource(R.string.goal_movement_updated), tagged)
+
+        is CorrectionNotice.GoalMovementRecorded -> {
+            val amount = notice.amount
+            val (said, plain) = if (notice.withdrawal) {
+                R.string.notice_goal_withdrawal to R.string.notice_goal_withdrawal_plain
+            } else {
+                R.string.notice_goal_contribution to R.string.notice_goal_contribution_plain
+            }
+            SelloNotice(
+                message = amount?.let { stringResource(said, it.digits) } ?: stringResource(plain),
+                modifier = tagged,
+                spoken = amount?.let { stringResource(said, it.spoken) } ?: stringResource(plain),
                 confirmation = true
             )
         }

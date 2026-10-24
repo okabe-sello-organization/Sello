@@ -130,6 +130,34 @@ object GoalPolicy {
         )
     }
 
+    /**
+     * The goal as it would stand with [movement]: in its own place when it corrects one
+     * already recorded (the same identifier), else at the end of the history. Checked
+     * before a form sends it, by the same rules as the commands (rule 1, MT08, MT15).
+     */
+    fun withMovement(
+        history: GoalHistory,
+        movement: GoalMovement
+    ): Outcome<GoalProgress, GoalHistoryError> {
+        val existing = history.events.filterIsInstance<GoalMovement>()
+            .firstOrNull { it.id == movement.id }
+        val events = if (existing != null) {
+            history.events.map {
+                if (it ==
+                    existing
+                ) {
+                    movement.copy(sequence = existing.sequence)
+                } else {
+                    it
+                }
+            }
+        } else {
+            val next = (history.events.maxOfOrNull(GoalEvent::sequence) ?: -1) + 1
+            history.events + movement.copy(sequence = next)
+        }
+        return progress(history.copy(events = events))
+    }
+
     /** What [after] changed against [before]: a goal with no [before] earned nothing yet. */
     fun change(before: GoalProgress?, after: GoalProgress): GoalChange {
         fun earnedIn(progress: GoalProgress?, place: GoalPlace) =
