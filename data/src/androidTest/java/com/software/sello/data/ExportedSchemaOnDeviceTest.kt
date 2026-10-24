@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.software.sello.data.local.Migration1To2
 import com.software.sello.data.local.Migration2To3
 import com.software.sello.data.local.Migration3To4
+import com.software.sello.data.local.Migration4To5
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.openSelloDatabase
 import com.software.sello.data.repository.RoomFinancialProfileStore
@@ -224,6 +225,94 @@ class ExportedSchemaOnDeviceTest {
     }
 
     @Test
+    fun upgradingFromVersionFourKeepsEveryRowAndAddsOnlyEmptySchedulesAndOrigins() {
+        val withOrigin = listOf("expense", "income", "deleted_expense", "deleted_income")
+        val tables = versionOneTables + "deleted_expense" + "deleted_income" + "goal" +
+            "goal_event" + "deleted_goal_event" + "featured_goal"
+        fun SupportSQLiteDatabase.rowsOf(columns: (String) -> String) =
+            tables.associateWith { table ->
+                query("SELECT ${columns(table)} FROM $table").use { cursor ->
+                    buildList {
+                        while (cursor.moveToNext()) {
+                            add(
+                                (0 until cursor.columnCount).joinToString("|") {
+                                    cursor.getString(it) ?: "null"
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        val before = helper.createDatabase(name, 4).use { exported ->
+            exported.execSQL(
+                "INSERT INTO profile (id, financial_zone, generation, revision, created_at) " +
+                    "VALUES (1, 'America/Bogota', 4, 17, 0)"
+            )
+            exported.execSQL(
+                "INSERT INTO category VALUES ('${uuid(1)}', 'Hogar', 'hogar', 'home', 0, 3, 10, 20)"
+            )
+            exported.execSQL(
+                "INSERT INTO expense VALUES ('${uuid(2)}', '${uuid(1)}', '2026-10-05', 5, " +
+                    "950000, 'COP', 'Arriendo', 2, 30, 40)"
+            )
+            exported.execSQL(
+                "INSERT INTO income VALUES ('${uuid(3)}', '2026-10-01', 2, 1600000, 'COP', " +
+                    "'salary', NULL, NULL, 1, 30, 40)"
+            )
+            exported.execSQL(
+                "INSERT INTO deleted_expense VALUES ('${uuid(9)}', 4, 50, '${uuid(4)}', " +
+                    "'${uuid(1)}', '2026-10-02', 3, 10000, 'COP', NULL, 1, 30, 40)"
+            )
+            exported.execSQL(
+                "INSERT INTO goal VALUES ('${uuid(
+                    5
+                )}', 'Viaje', 'flight', NULL, NULL, 2, 1, 30, 40)"
+            )
+            exported.execSQL(
+                "INSERT INTO goal_event VALUES ('${uuid(6)}', '${uuid(5)}', 0, 'target', " +
+                    "3000000, 'COP', NULL, '2026-10-02', NULL, 1, 30, 40)"
+            )
+            exported.execSQL("INSERT INTO featured_goal VALUES (1, '${uuid(5)}')")
+            exported.rowsOf { "*" }
+        }
+
+        // Room compares the result with the exported version 5 schema and fails on any difference.
+        helper.runMigrationsAndValidate(name, 5, true, Migration4To5).use { upgraded ->
+            val kept = upgraded.rowsOf { table ->
+                // The rows as they were, column for column, without the new columns.
+                upgraded.query("PRAGMA table_info($table)").use { info ->
+                    buildList {
+                        while (info.moveToNext()) {
+                            val column = info.getString(info.getColumnIndexOrThrow("name"))
+                            if (!column.startsWith("origin_")) add("`$column`")
+                        }
+                    }
+                }.joinToString(", ")
+            }
+            val origins = withOrigin.associateWith { table ->
+                upgraded.query(
+                    "SELECT COUNT(*) FROM $table WHERE origin_schedule_id IS NOT NULL OR " +
+                        "origin_date IS NOT NULL OR origin_slot IS NOT NULL"
+                ).use { count ->
+                    count.moveToFirst()
+                    count.getInt(0)
+                }
+            }
+            val scheduleRows = listOf("schedule", "schedule_pause").sumOf { table ->
+                upgraded.query("SELECT COUNT(*) FROM $table").use { count ->
+                    count.moveToFirst()
+                    count.getInt(0)
+                }
+            }
+
+            assertEquals(8, before.values.sumOf { rows -> rows.size })
+            assertEquals(before, kept)
+            assertEquals(withOrigin.associateWith { 0 }, origins)
+            assertEquals(0, scheduleRows)
+        }
+    }
+
+    @Test
     fun aVersionOneDatabaseOpenedByThisBuildIsUpgradedThroughEveryVersionAndReadsTheSameData() =
         runBlocking {
             versionOneWithHistory()
@@ -242,12 +331,12 @@ class ExportedSchemaOnDeviceTest {
                 profile
             )
             assertEquals(listOf(48_700L), expenses.map { it.amountMinor })
-            assertEquals(4, version)
+            assertEquals(5, version)
         }
 
     @Test
     fun aDatabaseBuiltFromTheExportedCurrentSchemaOpensAndKeepsItsRows() = runBlocking {
-        helper.createDatabase(name, 4).use { exported ->
+        helper.createDatabase(name, 5).use { exported ->
             exported.execSQL(
                 "INSERT INTO profile (id, financial_zone, generation, revision, created_at) " +
                     "VALUES (1, 'America/Bogota', 4, 17, 0)"

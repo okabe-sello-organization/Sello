@@ -14,6 +14,7 @@ import com.software.sello.data.local.dao.IncomeDao
 import com.software.sello.data.local.dao.LimitDao
 import com.software.sello.data.local.dao.OperationReceiptDao
 import com.software.sello.data.local.dao.ProfileDao
+import com.software.sello.data.local.dao.ScheduleDao
 import com.software.sello.data.local.entity.CategoryEntity
 import com.software.sello.data.local.entity.DefaultLimitEntity
 import com.software.sello.data.local.entity.DeletedExpenseEntity
@@ -27,13 +28,16 @@ import com.software.sello.data.local.entity.IncomeEntity
 import com.software.sello.data.local.entity.MonthLimitEntity
 import com.software.sello.data.local.entity.OperationReceiptEntity
 import com.software.sello.data.local.entity.ProfileEntity
+import com.software.sello.data.local.entity.ScheduleEntity
+import com.software.sello.data.local.entity.SchedulePauseEntity
 import kotlin.coroutines.CoroutineContext
 
 /**
  * The financial database. Version 1 is the first schema; every later change raises
  * the version, exports its schema to `data/schemas` and ships a tested migration.
  * Version 2 added `deleted_expense`; version 3 added `deleted_income`; version 4 added
- * goals: `goal`, `goal_event`, `deleted_goal_event` and `featured_goal`.
+ * goals: `goal`, `goal_event`, `deleted_goal_event` and `featured_goal`; version 5
+ * added `schedule`, `schedule_pause` and the origin of a recorded entry.
  */
 @Database(
     entities = [
@@ -49,9 +53,11 @@ import kotlin.coroutines.CoroutineContext
         GoalEntity::class,
         GoalEventEntity::class,
         DeletedGoalEventEntity::class,
-        FeaturedGoalEntity::class
+        FeaturedGoalEntity::class,
+        ScheduleEntity::class,
+        SchedulePauseEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class SelloDatabase : RoomDatabase() {
@@ -75,6 +81,8 @@ abstract class SelloDatabase : RoomDatabase() {
 
     abstract fun deletedGoalEventDao(): DeletedGoalEventDao
 
+    abstract fun scheduleDao(): ScheduleDao
+
     companion object {
         const val FILE_NAME = "sello.db"
     }
@@ -92,6 +100,6 @@ internal fun openSelloDatabase(
 ): SelloDatabase =
     Room.databaseBuilder(context.applicationContext, SelloDatabase::class.java, fileName)
         .openHelperFactory(NonDestructiveOpenHelperFactory())
-        .addMigrations(Migration1To2, Migration2To3, Migration3To4)
+        .addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5)
         .setQueryCoroutineContext(queries)
         .build()

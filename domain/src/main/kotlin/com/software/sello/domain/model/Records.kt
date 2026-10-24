@@ -7,6 +7,7 @@ import java.time.LocalDate
  * A recorded expense. [date] is the effective day in the financial zone. [sequence]
  * orders records that share a day and never changes once assigned. [createdAt] is the
  * real moment it was first added and is kept through edits; [version] starts at 1.
+ * [origin] is present only when a schedule recorded it, and edits never change it.
  */
 data class Expense(
     val id: ExpenseId,
@@ -17,10 +18,13 @@ data class Expense(
     val note: Note?,
     val version: Long,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
+    val origin: EntryOrigin? = null
 )
 
-/** A manually declared inflow. Ordering, audit and version fields mean the same as on [Expense]. */
+/**
+ * A declared inflow. Ordering, audit, version and [origin] mean the same as on [Expense].
+ */
 data class Income(
     val id: IncomeId,
     val date: LocalDate,
@@ -30,5 +34,6 @@ data class Income(
     val note: Note?,
     val version: Long,
     val createdAt: Instant,
-    val updatedAt: Instant
+    val updatedAt: Instant,
+    val origin: EntryOrigin? = null
 )

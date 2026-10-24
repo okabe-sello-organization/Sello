@@ -143,7 +143,10 @@ class ExpenseCommandContractTest {
         note = "Pan",
         version = 1,
         createdAt = auditMillis.toEpochMilli(),
-        updatedAt = auditMillis.toEpochMilli()
+        updatedAt = auditMillis.toEpochMilli(),
+        originScheduleId = null,
+        originDate = null,
+        originSlot = null
     )
 
     @Test

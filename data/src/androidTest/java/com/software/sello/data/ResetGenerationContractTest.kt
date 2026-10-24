@@ -107,6 +107,35 @@ class ResetGenerationContractTest {
                 Note.of("Quincena").valueOrFail()
             )
         )
+        // A recurring payment in Mercado, paused, as SELLO-098 stores one.
+        ledger.database.insertRaw(
+            "schedule",
+            "id" to uuid(200),
+            "kind" to "payment",
+            "category_id" to uuid(100),
+            "source_key" to null,
+            "source_name" to null,
+            "amount_minor" to 7_000L,
+            "currency" to "COP",
+            "note" to "Mercado semanal",
+            "rule" to "every_weeks",
+            "rule_first" to 1,
+            "rule_second" to null,
+            "start_date" to "2026-10-05",
+            "end_date" to null,
+            "sequence" to 0L,
+            "handled_date" to null,
+            "handled_slot" to null,
+            "version" to 1L,
+            "created_at" to 0L,
+            "updated_at" to 0L
+        )
+        ledger.database.insertRaw(
+            "schedule_pause",
+            "schedule_id" to uuid(200),
+            "from_date" to "2026-10-07",
+            "until_date" to null
+        )
         files.restoreFolder.mkdirs()
         File(files.restoreFolder, "restored.json").writeText("{\"Mercado\": 7000}")
         setAside.forEach { it.writeBytes(ByteArray(64) { 7 }) }
@@ -119,7 +148,9 @@ class ResetGenerationContractTest {
         "expense",
         "income",
         "deleted_expense",
-        "deleted_income"
+        "deleted_income",
+        "schedule",
+        "schedule_pause"
     ).associateWith { ledger.long("SELECT COUNT(*) FROM $it") }
 
     private fun everyRow(): List<List<String>> = listOf(

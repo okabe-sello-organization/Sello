@@ -163,3 +163,10 @@ data class Schedule(val id: ScheduleId, val entry: ScheduledEntry, val recurrenc
  * and 1 otherwise. With the schedule's identity it is the occurrence's origin (rule 4).
  */
 data class Occurrence(val date: LocalDate, val slot: Int)
+
+/**
+ * Where an automatically recorded expense or income came from: its schedule and the
+ * occurrence it records (rule 4). Each origin is recorded at most once; a manual entry
+ * has none.
+ */
+data class EntryOrigin(val schedule: ScheduleId, val occurrence: Occurrence)

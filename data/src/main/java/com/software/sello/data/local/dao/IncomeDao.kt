@@ -21,6 +21,13 @@ interface IncomeDao {
     @Query("SELECT COUNT(*) FROM income WHERE sequence = :sequence")
     suspend fun countAtSequence(sequence: Long): Int
 
+    /** How many income rows record this schedule occurrence: one or none. */
+    @Query(
+        "SELECT COUNT(*) FROM income WHERE origin_schedule_id = :scheduleId " +
+            "AND origin_date = :date AND origin_slot = :slot"
+    )
+    suspend fun countAtOrigin(scheduleId: String, date: String, slot: Int): Int
+
     /**
      * Changes the income only while it is still at [expectedVersion]. Returns how many
      * rows changed: one, or none when the income is gone or was changed meanwhile.

@@ -8,7 +8,9 @@ import androidx.room.PrimaryKey
 
 /**
  * Dates are ISO `yyyy-MM-dd` text, so text order is date order. A category with
- * expenses cannot be deleted or re-keyed: there is no cascade.
+ * expenses cannot be deleted or re-keyed: there is no cascade. The origin columns are
+ * all present for an expense a schedule recorded and all absent otherwise; an origin
+ * occurs at most once. They have no foreign key: the expense outlives its schedule.
  */
 @Entity(
     tableName = "expense",
@@ -24,7 +26,8 @@ import androidx.room.PrimaryKey
     indices = [
         Index("effective_date", "sequence"),
         Index("category_id", "effective_date"),
-        Index(value = ["sequence"], unique = true)
+        Index(value = ["sequence"], unique = true),
+        Index(value = ["origin_schedule_id", "origin_date", "origin_slot"], unique = true)
     ]
 )
 data class ExpenseEntity(
@@ -48,7 +51,13 @@ data class ExpenseEntity(
     @ColumnInfo(name = "created_at")
     val createdAt: Long,
     @ColumnInfo(name = "updated_at")
-    val updatedAt: Long
+    val updatedAt: Long,
+    @ColumnInfo(name = "origin_schedule_id")
+    val originScheduleId: String?,
+    @ColumnInfo(name = "origin_date")
+    val originDate: String?,
+    @ColumnInfo(name = "origin_slot")
+    val originSlot: Int?
 ) {
     companion object {
         const val TABLE = "expense"

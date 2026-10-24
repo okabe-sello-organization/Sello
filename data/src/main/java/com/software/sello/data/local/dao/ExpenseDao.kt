@@ -76,6 +76,13 @@ interface ExpenseDao {
     @Query("SELECT COUNT(*) FROM expense WHERE sequence = :sequence")
     suspend fun countAtSequence(sequence: Long): Int
 
+    /** How many expense rows record this schedule occurrence: one or none. */
+    @Query(
+        "SELECT COUNT(*) FROM expense WHERE origin_schedule_id = :scheduleId " +
+            "AND origin_date = :date AND origin_slot = :slot"
+    )
+    suspend fun countAtOrigin(scheduleId: String, date: String, slot: Int): Int
+
     /**
      * Changes the expense only while it is still at [expectedVersion]. Returns how many
      * rows changed: one, or none when the expense is gone or was changed meanwhile.

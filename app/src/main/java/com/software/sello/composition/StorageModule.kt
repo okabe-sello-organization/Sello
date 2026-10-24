@@ -33,6 +33,7 @@ import com.software.sello.domain.port.Resets
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.platform.deviceZone
 import java.time.ZoneId
 import kotlinx.coroutines.runBlocking
@@ -103,6 +104,7 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<IncomeReads> { storage.incomeReads }
     single<GoalCommands> { storage.goalCommands(get(), get(), get(), get()) }
     single<GoalReads> { storage.goalReads }
+    single<ScheduleReads> { storage.scheduleReads }
     single<BackupExports> { storage.backupExports(get(), get(), get(), get()) }
     single<Restores> { storage.restores(get(), get(), get(), get(), get()) }
     // A new history after an erase takes the device's zone, read when the erase commits.

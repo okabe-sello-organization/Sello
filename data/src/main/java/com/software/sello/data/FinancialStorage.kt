@@ -22,6 +22,7 @@ import com.software.sello.data.repository.RoomIncomeCommands
 import com.software.sello.data.repository.RoomIncomeReads
 import com.software.sello.data.repository.RoomMonthlySnapshots
 import com.software.sello.data.repository.RoomResumenSnapshots
+import com.software.sello.data.repository.RoomScheduleReads
 import com.software.sello.data.repository.UndoWindow
 import com.software.sello.data.repository.discardKeptCopies
 import com.software.sello.data.repository.reading
@@ -52,6 +53,7 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.Resets
 import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleReads
 import java.io.File
 import java.time.ZoneId
 import kotlin.coroutines.CoroutineContext
@@ -102,6 +104,9 @@ class FinancialStorage internal constructor(
         RoomGoalCommands(database, audit, clock, ids, undoWindow(monotonic), monotonic)
 
     val goalReads: GoalReads = RoomGoalReads(database)
+
+    /** Recurring payments and incomes with their pauses and catch-up checkpoints. */
+    val scheduleReads: ScheduleReads = RoomScheduleReads(database)
 
     /** One offer to undo for the whole storage, whichever workflow asks for it first. */
     private var undo: UndoWindow? = null

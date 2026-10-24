@@ -119,13 +119,13 @@ class FinancialStorageOnDeviceTest {
         TestData.execute(
             "INSERT INTO deleted_expense VALUES ('00000000-0000-4000-8000-000000000001', 1, 0, " +
                 "'00000000-0000-4000-8000-000000000002', '00000000-0000-4000-8000-000000000003', " +
-                "'2026-10-03', 1, 48700, 'COP', NULL, 1, 0, 0)"
+                "'2026-10-03', 1, 48700, 'COP', NULL, 1, 0, 0, NULL, NULL, NULL)"
         )
 
         TestData.execute(
             "INSERT INTO deleted_income VALUES ('00000000-0000-4000-8000-000000000004', 1, 0, " +
                 "'00000000-0000-4000-8000-000000000005', '2026-10-03', 1, 150000, 'COP', " +
-                "'salary', NULL, NULL, 1, 0, 0)"
+                "'salary', NULL, NULL, 1, 0, 0, NULL, NULL, NULL)"
         )
 
         val opened = openStorage(context, ZoneId.of("Pacific/Kiritimati"), koin.get(), koin.get())
