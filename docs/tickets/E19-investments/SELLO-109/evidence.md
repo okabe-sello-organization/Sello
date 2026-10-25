@@ -22,7 +22,8 @@
   bar's gap, the whole caption); the three-tab guard (`NavigationStateTest`) failed until
   the tab was deliberately added with SELLO-110.
 - **Gate results:** `./scripts/verify-ticket SELLO-109 --retain` passed G1 full on
-  `1f000a6`: see the quality run. The whole app device suite passed 471/471 on
+  `1f000a6`: 1164 host tests in 104 suites, zero failures; lint 0 errors and 34 warnings,
+  as on `main`. The whole app device suite passed 471/471 on
   `sello_e19b_api30` (API 30) on `696b70f` (the same code before the last `main` merge,
   which only brought SELLO-111's identical squash); the hosted check runs every device
   suite on the merge result.
