@@ -100,6 +100,8 @@ class IncomeJourneyTest {
                 "SELECT amount_minor, source_key, version FROM income"
             )
         )
+        // Back on the history, the list is read again before the row is there.
+        rule.awaitTag("income.line.$id")
         rule.onNodeWithTag("income.line.$id").performScrollTo().performClick()
         rule.awaitText("Editar ingreso")
         rule.onNodeWithTag("income.delete").press()
