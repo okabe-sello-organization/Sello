@@ -74,7 +74,16 @@ enum class Figure(val label: String) {
     Margin("margen"),
 
     /** Recibo's daily figure, from the margin while something is set aside. */
-    PerDay("por día")
+    PerDay("por día"),
+
+    /** Plan del mes (rule 13): income still expected this month, `F`; 0 when none. */
+    Expected("esperado"),
+
+    /** Plan del mes: recorded plus expected income, `I + F`. */
+    Planned("planeado"),
+
+    /** Plan del mes: planned income less the category budgets, `I + F − A`. */
+    PlanUnassigned("sin asignar en el plan")
 }
 
 /** [pesos] in [month] for [figure], as given by [source]: an approved example ID or a hand derivation. */
