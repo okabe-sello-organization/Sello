@@ -240,7 +240,8 @@ private fun Rows(
             stringResource(
                 if (state.total == null) R.string.inversiones_list else R.string.inversiones_where
             ),
-            style = MaterialTheme.typography.titleSmall,
+            // A sentence, not a figure: tabular figures would widen its comma.
+            style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = null),
             modifier = Modifier.semantics { heading() }.padding(bottom = 8.dp)
         )
         if (state.total != null && valued.isNotEmpty()) {
