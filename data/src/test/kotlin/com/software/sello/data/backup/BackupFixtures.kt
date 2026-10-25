@@ -158,10 +158,25 @@ fun g01() = BackupContents(
         incomes = listOf(income(201, "2026-10-01", 1, 200_000)),
         goals = emptyList(),
         featuredGoal = null,
-        schedules = emptyList()
+        schedules = emptyList(),
+        investments = emptyList(),
+        usdRates = emptyList()
     ),
     preferences = darkVioletaAlphabetical
 )
+
+/**
+ * A version 3 file as Sello now writes the same data: version 4, with no investments and
+ * no rates after the schedules, and nothing else changed.
+ */
+fun writtenAsVersion4(version3: String): String {
+    val closing = "\n  },\n  \"preferences\""
+    check(version3.split(closing).size == 2 && version3.contains("\"version\": 3,"))
+    return version3.replace("\"version\": 3,", "\"version\": 4,").replace(
+        closing,
+        ",\n    \"investments\": [],\n    \"usdRates\": []$closing"
+    )
+}
 
 fun resource(name: String): ByteArray =
     requireNotNull(BackupFixtures::class.java.getResourceAsStream("/backup/$name")) {

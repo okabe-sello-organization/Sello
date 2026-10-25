@@ -132,10 +132,10 @@ class ScheduleBackupTest {
     }
 
     @Test
-    fun `the same contents always make the same file`() {
+    fun `the same contents always make the same file, as version 4`() {
         val plan = codec.read(file.toByteArray()).value()
 
-        assertEquals(file, String(codec.encode(plan.contents).value()))
+        assertEquals(writtenAsVersion4(file), String(codec.encode(plan.contents).value()))
     }
 
     @Test

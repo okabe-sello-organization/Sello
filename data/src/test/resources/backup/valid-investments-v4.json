@@ -1,0 +1,201 @@
+{
+  "format": "sello-backup",
+  "version": 4,
+  "exportedAt": "2026-10-25T15:00:00Z",
+  "financial": {
+    "sourceRevision": 20,
+    "zone": "America/Bogota",
+    "categories": [],
+    "defaultLimits": [],
+    "monthLimits": [],
+    "expenses": [],
+    "incomes": [],
+    "goals": [],
+    "featuredGoal": null,
+    "schedules": [],
+    "investments": [
+      {
+        "id": "00000000-0000-4000-8000-000000000301",
+        "name": "Fondo",
+        "description": "Fondo de inversión colectiva",
+        "icon": "savings",
+        "currency": "COP",
+        "createdAt": "2025-05-03T14:00:00Z",
+        "updatedAt": "2026-10-14T13:00:00Z",
+        "movements": [
+          {
+            "id": "00000000-0000-4000-8000-000000000401",
+            "sequence": 0,
+            "kind": "contribution",
+            "amount": 3000000,
+            "currency": "COP",
+            "date": "2025-05-03",
+            "note": null,
+            "createdAt": "2025-05-03T14:00:00Z",
+            "updatedAt": "2025-05-03T14:00:00Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000402",
+            "sequence": 1,
+            "kind": "valuation",
+            "amount": 3000000,
+            "currency": "COP",
+            "date": "2025-05-03",
+            "note": null,
+            "createdAt": "2025-05-03T14:00:00Z",
+            "updatedAt": "2025-05-03T14:00:00Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000403",
+            "sequence": 2,
+            "kind": "contribution",
+            "amount": 3000000,
+            "currency": "COP",
+            "date": "2025-11-03",
+            "note": null,
+            "createdAt": "2025-11-03T15:30:00Z",
+            "updatedAt": "2025-11-03T15:30:00Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000404",
+            "sequence": 4,
+            "kind": "withdrawal",
+            "amount": 500000,
+            "currency": "COP",
+            "date": "2026-08-03",
+            "note": "Matrícula",
+            "createdAt": "2026-08-03T16:00:00Z",
+            "updatedAt": "2026-08-04T09:15:30.250Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000405",
+            "sequence": 5,
+            "kind": "valuation",
+            "amount": 5242000,
+            "currency": "COP",
+            "date": "2026-10-14",
+            "note": null,
+            "createdAt": "2026-10-14T13:00:00Z",
+            "updatedAt": "2026-10-14T13:00:00Z"
+          }
+        ]
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000302",
+        "name": "Ecopetrol",
+        "description": null,
+        "icon": "trending_up",
+        "currency": "COP",
+        "createdAt": "2026-03-02T15:00:00Z",
+        "updatedAt": "2026-10-09T12:00:00Z",
+        "movements": [
+          {
+            "id": "00000000-0000-4000-8000-000000000411",
+            "sequence": 0,
+            "kind": "contribution",
+            "amount": 3000000,
+            "currency": "COP",
+            "date": "2026-03-02",
+            "note": null,
+            "createdAt": "2026-03-02T15:00:00Z",
+            "updatedAt": "2026-03-02T15:00:00Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000412",
+            "sequence": 1,
+            "kind": "valuation",
+            "amount": 3000000,
+            "currency": "COP",
+            "date": "2026-03-02",
+            "note": null,
+            "createdAt": "2026-03-02T15:00:00Z",
+            "updatedAt": "2026-03-02T15:00:00Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000413",
+            "sequence": 2,
+            "kind": "dividend",
+            "amount": 89000,
+            "currency": "COP",
+            "date": "2026-06-15",
+            "note": "Dividendo ordinario",
+            "createdAt": "2026-06-15T17:00:00Z",
+            "updatedAt": "2026-06-15T17:00:00Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000414",
+            "sequence": 3,
+            "kind": "dividend",
+            "amount": 89000,
+            "currency": "COP",
+            "date": "2026-09-15",
+            "note": null,
+            "createdAt": "2026-09-15T17:00:00Z",
+            "updatedAt": "2026-09-15T17:00:00Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000415",
+            "sequence": 4,
+            "kind": "valuation",
+            "amount": 3050000,
+            "currency": "COP",
+            "date": "2026-10-09",
+            "note": null,
+            "createdAt": "2026-10-09T12:00:00Z",
+            "updatedAt": "2026-10-09T12:00:00Z"
+          }
+        ]
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000303",
+        "name": "Acciones EE. UU.",
+        "description": "Broker",
+        "icon": "show_chart",
+        "currency": "USD",
+        "createdAt": "2026-10-20T16:00:00Z",
+        "updatedAt": "2026-10-20T16:00:00Z",
+        "movements": [
+          {
+            "id": "00000000-0000-4000-8000-000000000421",
+            "sequence": 0,
+            "kind": "contribution",
+            "amount": 100000,
+            "currency": "USD",
+            "date": "2026-10-20",
+            "note": null,
+            "createdAt": "2026-10-20T16:00:00Z",
+            "updatedAt": "2026-10-20T16:00:00Z"
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000422",
+            "sequence": 1,
+            "kind": "valuation",
+            "amount": 105050,
+            "currency": "USD",
+            "date": "2026-10-20",
+            "note": null,
+            "createdAt": "2026-10-20T16:00:00Z",
+            "updatedAt": "2026-10-20T16:00:00Z"
+          }
+        ]
+      }
+    ],
+    "usdRates": [
+      {
+        "id": "00000000-0000-4000-8000-000000000501",
+        "rateHundredths": 400000,
+        "date": "2026-10-15",
+        "sequence": 0,
+        "createdAt": "2026-10-15T14:00:00Z"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000502",
+        "rateHundredths": 415025,
+        "date": "2026-10-20",
+        "sequence": 1,
+        "createdAt": "2026-10-20T16:00:00Z"
+      }
+    ]
+  },
+  "preferences": null
+}

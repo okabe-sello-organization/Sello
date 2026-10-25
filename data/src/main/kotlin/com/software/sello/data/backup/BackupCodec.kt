@@ -9,6 +9,8 @@ import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalTargetChange
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InvestmentHistory
+import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduledEntry
@@ -32,9 +34,12 @@ object BackupFormat {
     const val FORMAT = "sello-backup"
 
     /** What this app writes. */
-    const val VERSION = 3L
+    const val VERSION = 4L
 
-    /** What it reads: version 1 (no goals), version 2 (no schedules) and its own. */
+    /**
+     * What it reads: version 1 (no goals), version 2 (no schedules), version 3 (no
+     * investments) and its own.
+     */
     val READABLE = 1L..VERSION
     const val MIME_TYPE = "application/json"
 
@@ -46,7 +51,7 @@ object BackupFormat {
 }
 
 /**
- * Writes version 3 backups and reads versions 1 to 3. Reading never touches storage:
+ * Writes version 4 backups and reads versions 1 to 4. Reading never touches storage:
  * a file either becomes a [BackupPlan] or is rejected whole with the first problem found.
  */
 class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
@@ -55,7 +60,7 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
      * out a backup it would itself refuse to restore.
      */
     fun encode(contents: BackupContents): Outcome<ByteArray, BackupRejection> {
-        val text = writer.encodeToString(BackupFileV3.serializer(), contents.toWire())
+        val text = writer.encodeToString(BackupFileV4.serializer(), contents.toWire())
         val bytes = "$text\n".toByteArray(Charsets.UTF_8)
         return when (val check = read(bytes)) {
             is Outcome.Success -> Outcome.Success(bytes)
@@ -90,14 +95,15 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
         }
         val file = try {
             when (version) {
-                1L -> reader.decodeFromString(
-                    BackupFileV1.serializer(),
-                    text
-                ).asVersion2().asVersion3()
+                1L -> reader.decodeFromString(BackupFileV1.serializer(), text)
+                    .asVersion2().asVersion3().asVersion4()
 
-                2L -> reader.decodeFromString(BackupFileV2.serializer(), text).asVersion3()
+                2L -> reader.decodeFromString(BackupFileV2.serializer(), text)
+                    .asVersion3().asVersion4()
 
-                else -> reader.decodeFromString(BackupFileV3.serializer(), text)
+                3L -> reader.decodeFromString(BackupFileV3.serializer(), text).asVersion4()
+
+                else -> reader.decodeFromString(BackupFileV4.serializer(), text)
             }
         } catch (failure: SerializationException) {
             return Outcome.Failure(BackupRejection.Malformed(pathOf(failure)))
@@ -172,13 +178,15 @@ private fun BudgetLimit.kind() = when (this) {
  * Records are written in a fixed order, so the same data always makes the same file:
  * categories by creation then identifier, limits by category then month, records by
  * date then sequence, goals by creation then identifier, each goal's history by
- * recording position, schedules by creation order, each schedule's pauses by first day.
+ * recording position, schedules by creation order, each schedule's pauses by first day,
+ * investments by creation then identifier, each one's movements by recording position,
+ * and rates by the order they were entered.
  */
-internal fun BackupContents.toWire(): BackupFileV3 = BackupFileV3(
+internal fun BackupContents.toWire(): BackupFileV4 = BackupFileV4(
     format = BackupFormat.FORMAT,
     version = JsonPrimitive(BackupFormat.VERSION),
     exportedAt = exportedAt.toString(),
-    financial = FinancialV3(
+    financial = FinancialV4(
         sourceRevision = JsonPrimitive(financial.revision),
         zone = financial.zone.id,
         categories = financial.categories
@@ -253,7 +261,19 @@ internal fun BackupContents.toWire(): BackupFileV3 = BackupFileV3(
             .sortedWith(compareBy({ it.goal.createdAt }, { it.goal.id.value }))
             .map { history -> history.toWire() },
         featuredGoal = financial.featuredGoal?.value,
-        schedules = financial.schedules.sortedBy { it.sequence }.map { it.toWire() }
+        schedules = financial.schedules.sortedBy { it.sequence }.map { it.toWire() },
+        investments = financial.investments
+            .sortedWith(compareBy({ it.investment.createdAt }, { it.investment.id.value }))
+            .map { it.toWire() },
+        usdRates = financial.usdRates.sortedBy { it.sequence }.map {
+            UsdRateV4(
+                id = it.id.value,
+                rateHundredths = JsonPrimitive(it.rate.hundredths),
+                date = EffectiveDates.storedText(it.date),
+                sequence = JsonPrimitive(it.sequence),
+                createdAt = it.createdAt.toString()
+            )
+        }
     ),
     preferences = preferences?.let {
         PreferencesV1(
@@ -354,3 +374,31 @@ private fun StoredSchedule.toWire(): ScheduleV3 {
         updatedAt = updatedAt.toString()
     )
 }
+
+private fun InvestmentHistory.toWire(): InvestmentV4 = InvestmentV4(
+    id = investment.id.value,
+    name = investment.name.value,
+    description = investment.description?.value,
+    icon = investment.icon.value,
+    currency = investment.currency.code,
+    createdAt = investment.createdAt.toString(),
+    updatedAt = investment.updatedAt.toString(),
+    movements = movements.sortedBy { it.sequence }.map {
+        InvestmentMovementV4(
+            id = it.id.value,
+            sequence = JsonPrimitive(it.sequence),
+            kind = when (it.kind) {
+                InvestmentMovementKind.Contribution -> WireNames.CONTRIBUTION
+                InvestmentMovementKind.Withdrawal -> WireNames.WITHDRAWAL
+                InvestmentMovementKind.Dividend -> WireNames.DIVIDEND
+                InvestmentMovementKind.Valuation -> WireNames.VALUATION
+            },
+            amount = JsonPrimitive(it.amount.money.minorUnits),
+            currency = it.amount.money.currency.code,
+            date = EffectiveDates.storedText(it.date),
+            note = it.note?.value,
+            createdAt = it.createdAt.toString(),
+            updatedAt = it.updatedAt.toString()
+        )
+    }
+)

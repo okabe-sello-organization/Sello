@@ -9,7 +9,6 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PlaceState
 import com.software.sello.domain.policy.GoalPolicy
 import java.time.LocalDate
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -60,10 +59,13 @@ class GoalBackupTest {
     }
 
     @Test
-    fun `a file with goals is written back byte for byte, as version 3`() {
+    fun `a file with goals is written back byte for byte, as version 4`() {
         val plan = codec.read(goals.toByteArray()).value()
 
-        assertArrayEquals(resource("valid-goals-v3.json"), codec.encode(plan.contents).value())
+        assertEquals(
+            writtenAsVersion4(String(resource("valid-goals-v3.json"))),
+            String(codec.encode(plan.contents).value())
+        )
     }
 
     @Test

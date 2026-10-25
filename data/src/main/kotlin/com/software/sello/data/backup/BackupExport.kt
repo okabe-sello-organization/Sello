@@ -77,6 +77,12 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
     }
     val pauses = scheduleDao().allPauses().groupBy { it.scheduleId }
     val schedules = scheduleDao().all().decodeAll { it.toStored(pauses[it.id].orEmpty()) }
+    // In recording order, as a file writes them; the reads replay them by date instead.
+    val movements = investmentDao().allMovements().sortedBy { it.sequence }
+        .groupBy { it.investmentId }
+    val investments = investmentDao().all()
+        .decodeAll { it.toHistory(movements[it.id].orEmpty()) }
+    val rates = investmentDao().rates().decodeAll { it.toDomain() }
     return Outcome.Success(
         FinancialSnapshot(
             zone = profile.zone,
@@ -88,7 +94,9 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
             incomes = incomes.orReturn { return it },
             goals = goals.orReturn { return it },
             featuredGoal = featured,
-            schedules = schedules.orReturn { return it }
+            schedules = schedules.orReturn { return it },
+            investments = investments.orReturn { return it },
+            usdRates = rates.orReturn { return it }
         )
     )
 }
@@ -144,7 +152,8 @@ class BackupExport(
                         expenses = file.value.counts.expenses,
                         incomes = file.value.counts.incomes,
                         goals = file.value.counts.goals,
-                        schedules = file.value.counts.schedules
+                        schedules = file.value.counts.schedules,
+                        investments = file.value.counts.investments
                     )
                 )
             )

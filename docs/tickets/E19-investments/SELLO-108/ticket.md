@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-107, SELLO-004
 - **Gate:** G2
 
@@ -34,3 +34,13 @@ A backup with investments restores with the same figures.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-108 --retain`.
+
+### Execution progress
+
+- **2026-10-25:** backup format version 4 carries investments (with their movements nested,
+  in recording order) and USD rates as exact integer hundredths (`rateHundredths`);
+  versions 1–3 still restore with none. Validation refuses bounds, currencies, duplicate
+  ids and positions, text forms, and any history `InvestmentPolicy` refuses, changing
+  nothing. Restore inserts them in the replacing transaction; erase clears them; export
+  reads them in the same snapshot; the restore and erase previews count investments.
+  Built by a delegated agent on SELLO-107's storage and reviewed here.

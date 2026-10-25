@@ -6,9 +6,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 to 3, documented in docs/data/backup-format.md.
+ * The wire shapes of versions 1 to 4, documented in docs/data/backup-format.md.
  * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
- * is version 2 plus `financial.schedules` and each expense's and income's `origin`. These classes
+ * is version 2 plus `financial.schedules` and each expense's and income's `origin`;
+ * version 4 is version 3 plus `financial.investments` and `financial.usdRates`. These classes
  * are the file and nothing else: they never become Room entities or domain values
  * without going through BackupValidation. Every property is required, including the
  * nullable ones, and the JSON configuration refuses unknown keys. Numbers and flags
@@ -303,6 +304,99 @@ internal fun BackupFileV2.asVersion3() = BackupFileV3(
         goals = financial.goals,
         featuredGoal = financial.featuredGoal,
         schedules = emptyList()
+    ),
+    preferences = preferences
+)
+
+@Serializable
+internal data class BackupFileV4(
+    val format: String,
+    val version: JsonElement,
+    val exportedAt: String,
+    val financial: FinancialV4,
+    val preferences: PreferencesV1?
+)
+
+@Serializable
+internal data class FinancialV4(
+    val sourceRevision: JsonElement,
+    val zone: String,
+    val categories: List<CategoryV1>,
+    val defaultLimits: List<DefaultLimitV1>,
+    val monthLimits: List<MonthLimitV1>,
+    val expenses: List<ExpenseV3>,
+    val incomes: List<IncomeV3>,
+    val goals: List<GoalV2>,
+    val featuredGoal: String?,
+    val schedules: List<ScheduleV3>,
+    val investments: List<InvestmentV4>,
+    val usdRates: List<UsdRateV4>
+)
+
+/**
+ * An investment in `COP` or `USD` and its whole history, in recording order. Value, gain
+ * and return are not here: they are worked out from [movements].
+ */
+@Serializable
+internal data class InvestmentV4(
+    val id: String,
+    val name: String,
+    val description: String?,
+    val icon: String,
+    val currency: String,
+    val createdAt: String,
+    val updatedAt: String,
+    val movements: List<InvestmentMovementV4>
+)
+
+/**
+ * `kind` is `contribution`, `withdrawal`, `dividend` or `valuation`; `amount` is whole
+ * minor units of `currency`, the investment's: pesos, or USD cents.
+ */
+@Serializable
+internal data class InvestmentMovementV4(
+    val id: String,
+    val sequence: JsonElement,
+    val kind: String,
+    val amount: JsonElement,
+    val currency: String,
+    val date: String,
+    val note: String?,
+    val createdAt: String,
+    val updatedAt: String
+)
+
+/**
+ * One entered USD rate: pesos per dollar as whole hundredths, `415025` for 4.150,25,
+ * never a decimal number. `sequence` is the order rates were entered in.
+ */
+@Serializable
+internal data class UsdRateV4(
+    val id: String,
+    val rateHundredths: JsonElement,
+    val date: String,
+    val sequence: JsonElement,
+    val createdAt: String
+)
+
+/** A version 3 file read as version 4: no investments and no rates. */
+internal fun BackupFileV3.asVersion4() = BackupFileV4(
+    format = format,
+    version = version,
+    exportedAt = exportedAt,
+    financial = FinancialV4(
+        sourceRevision = financial.sourceRevision,
+        zone = financial.zone,
+        categories = financial.categories,
+        defaultLimits = financial.defaultLimits,
+        monthLimits = financial.monthLimits,
+        expenses = financial.expenses,
+        incomes = financial.incomes,
+        goals = financial.goals,
+        featuredGoal = financial.featuredGoal,
+        schedules = financial.schedules,
+        investments = emptyList(),
+        usdRates = emptyList()
     ),
     preferences = preferences
 )

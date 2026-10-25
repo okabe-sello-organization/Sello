@@ -8,7 +8,9 @@ import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.Income
+import com.software.sello.domain.model.InvestmentHistory
 import com.software.sello.domain.model.MonthLimit
+import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.port.StoredSchedule
 import java.time.Instant
 import java.time.ZoneId
@@ -31,7 +33,14 @@ data class FinancialSnapshot(
     /** Recibo's chosen goal, one of [goals], or null. */
     val featuredGoal: GoalId?,
     /** Recurring payments and incomes in creation order, with their pauses and checkpoints. */
-    val schedules: List<StoredSchedule>
+    val schedules: List<StoredSchedule>,
+    /**
+     * Each investment with every movement in recording order, the earliest created first.
+     * Its next recording position is not carried: a restore puts it after the last one.
+     */
+    val investments: List<InvestmentHistory>,
+    /** Every entered USD rate, as entered; never changed by a restore. */
+    val usdRates: List<UsdRateEntry>
 ) {
     val counts: BackupCounts
         get() = BackupCounts(
@@ -43,7 +52,10 @@ data class FinancialSnapshot(
             incomes = incomes.size,
             goals = goals.size,
             goalEvents = goals.sumOf { it.events.size },
-            schedules = schedules.size
+            schedules = schedules.size,
+            investments = investments.size,
+            investmentMovements = investments.sumOf { it.movements.size },
+            usdRates = usdRates.size
         )
 }
 
@@ -72,7 +84,10 @@ data class BackupCounts(
     val incomes: Int,
     val goals: Int,
     val goalEvents: Int,
-    val schedules: Int
+    val schedules: Int,
+    val investments: Int,
+    val investmentMovements: Int,
+    val usdRates: Int
 )
 
 /**
@@ -114,10 +129,16 @@ sealed interface BackupRejection {
 
     data class InvalidValue(val path: String) : BackupRejection
 
-    /** Only COP can be recorded in this version; any other currency rejects the file. */
+    /**
+     * Only COP can be recorded, except that an investment and its movements may be USD;
+     * any other currency, or a movement not in its investment's, rejects the file.
+     */
     data class UnsupportedCurrency(val path: String) : BackupRejection
 
-    /** Outside 1 to 999.999.999.999 COP for one expense or income (ADR 0003). */
+    /**
+     * Outside 1 to 999.999.999.999 COP for one expense or income (ADR 0003), or outside
+     * 1 to 999.999.999.999 minor units for an investment movement (0 allowed for a value).
+     */
     data class AmountOutOfRange(val path: String) : BackupRejection
 
     data class DuplicateId(val path: String) : BackupRejection
