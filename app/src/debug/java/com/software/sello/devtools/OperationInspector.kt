@@ -6,6 +6,7 @@ import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.IncomeCommands
+import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.ScheduleCommands
 
 /**
@@ -18,6 +19,7 @@ class OperationInspector(
     private val incomes: IncomeCommands,
     private val categories: CategoryCommands,
     private val goals: GoalCommands,
+    private val investments: InvestmentCommands,
     private val schedules: ScheduleCommands
 ) {
     suspend fun stored(entry: LoggedOperation): StoredOutcome {
@@ -27,6 +29,9 @@ class OperationInspector(
             entry.kind.startsWith("Ingreso") -> incomes.find(entry.operation).map { it?.receipt }
 
             entry.kind.startsWith("Meta") -> goals.find(entry.operation).map { it?.receipt }
+
+            entry.kind.startsWith("Inversión") ->
+                investments.find(entry.operation).map { it?.receipt }
 
             entry.kind.startsWith("Programado") -> schedules.find(entry.operation).map {
                 it?.receipt

@@ -14,13 +14,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The whole scenario corpus on real Room, goals and schedules included, with the app's own
- * catch-up. Each scenario runs fresh, then again cut
+ * The whole scenario corpus on real Room, goals, schedules, investments and rates included,
+ * with the app's own catch-up. Each scenario runs fresh, then again cut
  * off after a committed step whose checkpoint was lost and resumed in a new process;
  * both runs must leave the same history and every `Verify` must match. Each check's
  * line is written to the log under [TAG] as the run's evidence. Each finished scenario
  * is also saved as a backup and restored into a new installation, where its last
- * check must find the same figures.
+ * check must find the same figures; an investment scenario's last check is not, until
+ * backups carry investments (SELLO-108).
  */
 @RunWith(AndroidJUnit4::class)
 class TemporalScenarioCorpusTest {
@@ -83,7 +84,21 @@ class TemporalScenarioCorpusTest {
         rows(
             "SELECT c.name, m.month, m.kind, m.limit_minor FROM month_limit m " +
                 "JOIN category c ON c.id = m.category_id ORDER BY c.name, m.month"
-        ) + goals(withVersions = true)
+        ) + goals(withVersions = true) + investments()
+
+    /**
+     * Each investment, its movements in recording order and the rates in the order they
+     * were entered, without identifiers or audit times.
+     */
+    private fun SandboxGraph.investments(): List<String> = rows(
+        "SELECT name, icon_key, currency, next_sequence, version FROM investment ORDER BY name"
+    ) +
+        rows(
+            "SELECT i.name, m.sequence, m.kind, m.amount_minor, m.currency, m.effective_date, " +
+                "m.version FROM investment_movement m " +
+                "JOIN investment i ON i.id = m.investment_id ORDER BY i.name, m.sequence"
+        ) +
+        rows("SELECT rate_hundredths, effective_date, sequence FROM usd_rate ORDER BY sequence")
 
     /** Each schedule with its checkpoint, and its pauses. */
     private fun SandboxGraph.schedules(withVersions: Boolean): List<String> = rows(
@@ -174,9 +189,13 @@ class TemporalScenarioCorpusTest {
         val report = mutableListOf<String>()
         Scenarios.all.forEach { scenario ->
             val last = scenario.steps.indexOfLast { it is ScenarioStep.Verify }
+            // Backups do not carry investments or rates until SELLO-108, so a restore leaves
+            // none: an investment scenario's last check, which reads them, is not run again.
+            // Its other rows are still compared, and `figures` leaves investments out.
+            val investing = scenario.steps.any { it is ScenarioStep.Investment }
             // Only a final check sees the whole history; earlier ones were taken mid-run. A
             // later step that is meant to be refused changes nothing.
-            val checkable = last >= 0 && scenario.steps.drop(last + 1).none {
+            val checkable = !investing && last >= 0 && scenario.steps.drop(last + 1).none {
                 it.writes && it.expect == Expect.Saved
             }
             val sandbox = graph(scenario)
@@ -201,8 +220,12 @@ class TemporalScenarioCorpusTest {
             assertEquals(scenario.key, before, sandbox.figures())
 
             if (!checkable) {
-                report += "${scenario.key}: backup ${bytes.size} bytes restored; " +
-                    "same rows; no check follows its last saved change"
+                report += "${scenario.key}: backup ${bytes.size} bytes restored; same rows; " +
+                    if (investing) {
+                        "investments are not in backups until SELLO-108, last check not rerun"
+                    } else {
+                        "no check follows its last saved change"
+                    }
                 return@forEach
             }
             // After the restart a restore asks for, the last check runs on restored rows.

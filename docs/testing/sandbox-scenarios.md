@@ -3,9 +3,10 @@
 Every scenario the debug sandbox replays, with its stable ID, version, seed, steps and
 expected figures. The same definitions (`app/src/debug/.../devtools/Scenarios.kt`) run
 live in **Sello Herramientas** and in `TemporalScenarioCorpusTest`, and each ends with a
-`Verify` step that reads the real Recibo/Resumen snapshots and, for goals, the real goal
-board. Expected values are copied from the approved [financial examples](mvp-financial-examples.md)
-or [goal examples](goal-examples.md) and name their ID;
+`Verify` step that reads the real Recibo/Resumen snapshots and, for goals and investments,
+the real goal and investment boards. Expected values are copied from the approved
+[financial examples](mvp-financial-examples.md), [goal examples](goal-examples.md) or
+[investment examples](investment-examples.md) and name their ID;
 where a scenario has no approved example, the value is derived by hand from the steps
 and says so. None is computed by the code being checked.
 
@@ -52,6 +53,11 @@ data only: no scenario needs personal data or a local setting.
 | `borrar-programado@1` | 11 | 2026-10-01 · Bogotá | Rent schedule deleted on 10 Oct | 5 Oct stays as an expense, nothing on 5 Nov, schedule gone (RE24) | `RecurrenceScenarioRunnerTest`, corpus |
 | `ocurrencia-borrada@1` | 16 | 2026-10-01 · Bogotá | The rent also entered by hand; the recorded one deleted on 6 Oct | Oct spent 1.900.000, the manual one is no occurrence (RE16); not recorded again on 7 Oct, checkpoint still 5 Oct, 5 Nov comes (RE15) | corpus |
 | `pagos-previstos@1` | 15 | 2026-10-01 · Bogotá | Hogar 1.000.000, 400.000 spent; on 22 Oct rent of 200.000 due on the 28th, then more spending; catch-up on 28 Oct | Reserved 200.000, margin 400.000, 40.000 per day (RE25); margin 0 (RE27); −50.000 (RE28); remaining −80.000, margin −280.000 (RE29); on 28 Oct nothing reserved and the margin still −280.000 (RE26) | corpus |
+| `inversiones-pagina@1` | 42 | 2025-05-03 · Bogotá | The four investments of the v2 page over 18 months, the clock moving between movements; a double tap; Cripto's only value deleted; Parqueadero and CDT deleted | Fondo 6.000.000 from the 3 May 2025 value, 0,0 % (rule 5, IN15); Parqueadero +1.350.000, +7,5 % (IN02); CDT +7,5 % (IN03); Fondo −258.000, −4,3 %, since May 2025 (IN04); Ecopetrol +7,6 %, 9 movements (IN05, IN23); total 38.038.000, +5,6 %, values 12 Jun – 14 Oct (IN06); Cripto Sin valor, total unchanged (IN17); Fondo and Ecopetrol −30.000, −0,3 % (IN07) | corpus |
+| `valor-arrastrado@1` | 31 | 2026-09-01 · Bogotá | A value carried forward, a retiro above it, a backdated aporte, a dividend, recording order on one day, the sign of a gain | 6.000.000 "del 1 oct", +20,0 % (IN08); 4.000.000 (IN09); 4.000.001 refused `AboveValue`, 4.000.000 accepted, V 0 (IN10); +16,0 % (IN11); +17,0 % (IN14); V stays 3.800.000 (IN12, by hand after IN14); 4.500.000 and 4.000.000 (IN13); 0,0 % (IN15); −0,0 % Pierde (IN16); a 13-digit aporte never sent (IN26) | corpus |
+| `dolares@1` | 28 | 2026-10-20 · Bogotá | The page's four entered with past dates; Acciones EE. UU. in USD; new rates | IN06 again; refused `RateRequired` without a rate (IN33); USD +50,50, +5,1 % (IN27); total 42.397.838, +5,5 %, "dólar a 4.150,25 del 20 oct" (IN28); rates 0,99 and 100.000,01 never sent, tomorrow `FutureDate` (IN32); USD 10.000.000.000,00 never sent (IN34); at 4.000,00 the total 42.240.000, own return still +5,1 % (IN29); 4.010,00 the same day replaces it (IN30); 3.900,00 dated earlier joins the history only (IN31) | corpus |
+| `correcciones@1` | 27 | 2026-09-01 · Bogotá | Corrections replayed before they are saved; Deshacer of a deleted movement | Only aporte refused `LastContribution` (IN22); a value before the first aporte `BeforeFirstContribution` (IN25); tomorrow `FutureDate` (IN24); deleting the aporte a retiro needs `AboveValue` (IN19); the retiro raised to 7.000.000 `AboveValue` (IN20); retiro deleted, V 6.000.000, Deshacer back to IN09 (IN21); retiro then aporte deleted, +25,0 % (IN19, by hand); retiro corrected to 1.500.000 (by hand); an investment deleted (IN23) | corpus |
+| `sin-valor@1` | 9 | 2026-10-20 · Bogotá | Every value deleted, COP and USD; a retiro without a value | Retiro refused `NoValue` (IN18); both Sin valor, no total and no rate line (IN17, IN35); with a value the retiro is accepted: −200.000, −10,0 %, no rate line (IN18, rule 13, by hand) | `InvestmentSandboxGraphTest`, corpus |
 | `plan-del-mes@1` | 9 | 2026-10-01 · Bogotá | Hogar 2.800.000, 2.000.000 recorded; on 22 Oct a salary of 1.000.000 expected on the 30th; catch-up on 30 Oct | Income 2.000.000, expected 1.000.000, planned 3.000.000, unassigned in the plan 200.000, recorded unassigned −800.000 (RE35); remaining 2.800.000 and 280.000 per day, unchanged (RE37); on 30 Oct income 3.000.000, expected 0, unassigned 200.000 (RE36) | corpus |
 
 Restart and undo under financial time are covered outside the corpus:
@@ -67,8 +73,10 @@ is exercised by `CategoryDetailJourneyTest.editingTheCurrentLimitRefreshesItsCha
 
 `TemporalScenarioCorpusTest` runs every scenario fresh, then again interrupted after
 a committed step whose checkpoint was lost, and requires the same receipts, expenses,
-incomes, categories, limits, goals, goal movements and Recibo's choice from both runs,
-and every `Verify` to match.
+incomes, categories, limits, goals, goal movements, Recibo's choice, investments, their
+movements and the USD rates from both runs, and every `Verify` to match. Its backup test
+restores every scenario and compares the rows; backups do not carry investments until
+SELLO-108, so an investment scenario's last check is not run again after the restore.
 
 Goal checks read the stamps as the goal's page draws them: `ganado`, `guardado` (earned,
 no longer reached), `vacío` and `esperando` (the Meta reached, not yet marked). Deshacer
@@ -86,6 +94,34 @@ marks with a zero Deshacer window, so its Deshacer is too late (MT25) without an
 3. Add its row here. Changing the steps or seed of an existing scenario needs a new
    version, because each step's operation is derived from ID, version, seed and index.
 4. A feature that adds a financial capability adds its live scenario here (architecture §9).
+
+## Investments
+
+The *Inversiones* scenarios take their figures from the approved
+[investment examples](investment-examples.md) and name them (IN02–IN35); a figure an
+example leaves open is derived by hand in its `source`. They use only the real path:
+
+- An investment step (`Investment`, `Movement`, `EditMovement`, `DeleteMovement`,
+  `UndoMovementDelete`, `DeleteInvestment`, `SetRate`) sends the app's investment
+  commands, fenced, faulted and logged like every write. Amounts are minor units of the
+  investment's currency: pesos, or USD cents. Movements are dated on the sandbox's day,
+  or earlier with `on`; an amount or rate outside its bounds is never sent.
+- A correction names the movement a step recorded by its place: a creation's first
+  aporte is 0 and its first value 1, and each saved movement step takes the next. The
+  movement at that place is read through `InvestmentReads`. A deletion tried again
+  after it committed is answered from its receipt, the lookup the app recovers with.
+- A check reads `InvestmentReads.board()`: each investment's value and its date,
+  contributed, withdrawn, dividends, gain and return (`gana`, `pierde` or `sin
+  ganancia`, in tenths), and the overview's total in pesos with its rate and value
+  dates, or "todavía no hay valores anotados" (IN35). After a restore an investment is
+  found by its name, unique within a scenario.
+- Deshacer runs on real elapsed time, six seconds as in the app: `correcciones` undoes
+  right after deleting, late in the scenario, so the corpus's cut and resume never falls
+  between them.
+
+The rate's bounds at storage and in backups (IN32's second half), USD conversion bounds
+(rule 16), goals beside investments (IN36) and the screens are tested outside the
+sandbox, in `:domain`, `:data` and the SELLO-109–111 tests.
 
 ## Recurrence
 

@@ -11,6 +11,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private val RE = Regex("RE\\d\\d")
+private val IN = Regex("IN\\d\\d")
+
+/**
+ * Whether step [of] recorded a movement a correction can name: a saved movement step, or
+ * a saved creation's first aporte or, with [firstValue], its first value.
+ */
+private fun recordsMovement(scenario: Scenario, of: Int, firstValue: Boolean): Boolean =
+    when (val target = scenario.steps[of]) {
+        is ScenarioStep.Investment -> target.expect == Expect.Saved
+        is ScenarioStep.Movement -> target.expect == Expect.Saved && !firstValue
+        else -> false
+    }
 
 class ScenarioDefinitionTest {
     @Test
@@ -37,6 +49,8 @@ class ScenarioDefinitionTest {
             val goalNames = mutableSetOf<String>()
             val schedules = mutableSetOf<String>()
             val notes = mutableSetOf<String>()
+            val investments = mutableSetOf<String>()
+            val investmentNames = mutableSetOf<String>()
             scenario.steps.forEachIndexed { index, step ->
                 when (step) {
                     is AdvanceTo -> {
@@ -92,6 +106,15 @@ class ScenarioDefinitionTest {
                             assertTrue("${scenario.key} $it", it.goal in goals)
                             assertEquals("${scenario.key} $it", 4, it.stamps.size)
                             assertTrue("${scenario.key} $it", it.source.contains(Regex("MT\\d\\d")))
+                        }
+                        // Each investment check names an investment made before it and the
+                        // investment example its values come from, as does the overview.
+                        step.investments.forEach {
+                            assertTrue("${scenario.key} $it", it.investment in investments)
+                            assertTrue("${scenario.key} $it", it.source.contains(IN))
+                        }
+                        step.portfolio?.let {
+                            assertTrue("${scenario.key} $it", it.source.contains(IN))
                         }
                     }
 
@@ -156,6 +179,38 @@ class ScenarioDefinitionTest {
                         assertTrue("${scenario.key} $step", step.category in categories)
 
                     ScenarioStep.CatchUp -> Unit
+
+                    // Keys and names of saved investments are unique: a restored history is
+                    // checked by name. A refused creation may share the key it then gets.
+                    is ScenarioStep.Investment -> if (step.expect == Expect.Saved) {
+                        assertTrue(
+                            "${scenario.key} $step",
+                            investments.add(step.key) && investmentNames.add(step.name)
+                        )
+                    }
+
+                    is ScenarioStep.Movement ->
+                        assertTrue("${scenario.key} $step", step.investment in investments)
+
+                    is ScenarioStep.EditMovement -> assertTrue(
+                        "${scenario.key} $step",
+                        recordsMovement(scenario, step.of, step.firstValue) && step.of < index
+                    )
+
+                    is ScenarioStep.DeleteMovement -> assertTrue(
+                        "${scenario.key} $step",
+                        recordsMovement(scenario, step.of, step.firstValue) && step.of < index
+                    )
+
+                    is ScenarioStep.UndoMovementDelete -> assertTrue(
+                        "${scenario.key} $step",
+                        scenario.steps[step.of] is ScenarioStep.DeleteMovement && step.of < index
+                    )
+
+                    is ScenarioStep.DeleteInvestment ->
+                        assertTrue("${scenario.key} $step", step.investment in investments)
+
+                    is ScenarioStep.SetRate -> Unit
                 }
             }
         }
@@ -306,6 +361,82 @@ class ScenarioDefinitionTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun scriptedInvestmentVersionsFollowTheChangesBeforeThem() {
+        // An investment starts at version 1; each saved movement, correction, deletion of
+        // a movement or Deshacer adds one, and a rate changes none (repository rule).
+        Scenarios.all.forEach { scenario ->
+            val versions = mutableMapOf<String, Long>()
+            fun keyOf(of: Int): String = when (val target = scenario.steps[of]) {
+                is ScenarioStep.Investment -> target.key
+                is ScenarioStep.Movement -> target.investment
+                else -> error("${scenario.key} step ${of + 1} records no movement")
+            }
+            fun read(investment: String, version: Long, saved: Boolean, step: ScenarioStep) {
+                assertEquals("${scenario.key} $step", versions[investment], version)
+                if (saved) versions[investment] = version + 1
+            }
+            scenario.steps.forEach { step ->
+                val saved = step.expect == Expect.Saved
+                when (step) {
+                    is ScenarioStep.Investment -> if (saved) versions[step.key] = 1
+
+                    is ScenarioStep.Movement -> read(step.investment, step.version, saved, step)
+
+                    is ScenarioStep.EditMovement -> read(keyOf(step.of), step.version, saved, step)
+
+                    is ScenarioStep.DeleteMovement ->
+                        read(keyOf(step.of), step.version, saved, step)
+
+                    is ScenarioStep.UndoMovementDelete -> if (saved) {
+                        val deletion = scenario.steps[step.of] as ScenarioStep.DeleteMovement
+                        val investment = keyOf(deletion.of)
+                        versions[investment] = versions.getValue(investment) + 1
+                    }
+
+                    is ScenarioStep.DeleteInvestment -> {
+                        read(step.investment, step.version, false, step)
+                        if (saved) versions.remove(step.investment)
+                    }
+
+                    else -> Unit
+                }
+            }
+        }
+    }
+
+    @Test
+    fun theInvestmentExamplesTheSandboxCoversEachHaveACheck() {
+        val named = Scenarios.all.flatMap { it.steps }.filterIsInstance<ScenarioStep.Verify>()
+            .flatMap { verify ->
+                verify.investments.map { it.source } + listOfNotNull(verify.portfolio?.source)
+            }
+            .flatMap { source -> IN.findAll(source).map { it.value }.toList() }
+            .toSet()
+        // The refusals (IN10, IN18–IN20, IN22, IN24–IN26, IN32–IN34) are steps that
+        // expect them; these are the figures read back.
+        val covered = (2..21) + listOf(23, 27, 28, 29, 30, 31, 35)
+        assertEquals(
+            emptyList<String>(),
+            covered.map { "IN%02d".format(it) }.filter { it !in named }
+        )
+        val refusals = Scenarios.all.flatMap { it.steps }.map { it.expect }
+            .filterIsInstance<Expect.Rejected>().map { it.reason }.toSet()
+        assertTrue(
+            "$refusals",
+            refusals.containsAll(
+                listOf(
+                    "AboveValue",
+                    "NoValue",
+                    "RateRequired",
+                    "LastContribution",
+                    "BeforeFirstContribution",
+                    "FutureDate"
+                )
+            )
+        )
     }
 
     @Test

@@ -101,11 +101,13 @@ private fun told(outcome: Any): String = when (outcome) {
     is CategoryCommandOutcome.Committed -> saved(outcome.replayed)
     is GoalCommandOutcome.Committed -> saved(outcome.replayed)
     is ScheduleCommandOutcome.Committed -> saved(outcome.replayed)
+    is InvestmentCommandOutcome.Committed -> saved(outcome.replayed)
     is ExpenseCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     is IncomeCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     is CategoryCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     is GoalCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     is ScheduleCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
+    is InvestmentCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     else -> "Desconocido"
 }
 
