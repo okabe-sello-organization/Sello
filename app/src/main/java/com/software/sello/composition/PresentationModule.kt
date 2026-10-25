@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.software.sello.data.backup.BackupBounds
 import com.software.sello.domain.port.AppRestart
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.usecase.CatchUpNow
 import com.software.sello.domain.usecase.CatchUpSchedules
 import com.software.sello.feature.backup.BackupSession
 import com.software.sello.feature.backup.BackupViewModel
@@ -72,6 +73,7 @@ fun presentationModule(): Module = module {
     // Recurring payments and incomes are recorded from the moment the graph exists.
     single { CatchUpSchedules(get(), get()) }
     single(createdAtStart = true) { CatchUpRunner(get(), get(), get(), get<CoroutineScope>()) }
+    single<CatchUpNow> { get<CatchUpRunner>() }
 }
 
 /**
@@ -121,6 +123,7 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     initializer {
         CategoryManagementViewModel(
             createSavedStateHandle(),
+            koin.get(),
             koin.get(),
             koin.get(),
             koin.get(),

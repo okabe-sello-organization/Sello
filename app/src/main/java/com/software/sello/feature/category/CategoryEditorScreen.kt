@@ -577,6 +577,8 @@ private fun SaveError.text(editing: Boolean) = when (this) {
     SaveError.Conflict -> R.string.category_edit_conflict
 
     SaveError.CategoryGone -> R.string.category_edit_gone
+
+    SaveError.PaymentsPending -> R.string.category_archive_payments_pending
 }
 
 const val EDITOR_LOADING_TAG = "category-editor:loading"

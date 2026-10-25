@@ -1,6 +1,7 @@
 package com.software.sello.data
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.data.repository.RoomScheduleCatchUp
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
@@ -436,6 +437,31 @@ class ScheduleCommandContractTest {
         assertEquals(CategoryCommandOutcome.Rejected(CategoryRejection.SchedulesPending), archived)
         assertEquals(emptyList<String>(), pauses())
         assertEquals("0", ledger.rows("category", "archived").single())
+    }
+
+    /**
+     * What the category screen then does (owner, 2026-10-25): catch-up records the 10 Oct
+     * rent, and archiving again under a new operation, at the version read before, pauses
+     * the rent from the archive day.
+     */
+    @Test
+    fun afterCatchUpRecordsWhatWasDueTheSameVersionArchives() = runBlocking {
+        start("2026-10-09")
+        committed(submit(create("2026-10-09", monthly(10))))
+        ledger.goTo("2026-10-12")
+        ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, hogar, 1))
+
+        RoomScheduleCatchUp(ledger.database, { ledger.audit }, { uuid(ledger.nextRecord++) })
+            .recordDue(LocalDate.parse("2026-10-12"), 50)
+        val archived = ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, hogar, 1))
+
+        assertTrue("$archived", archived is CategoryCommandOutcome.Committed)
+        assertEquals(
+            listOf("2026-10-10|950000"),
+            ledger.rows("expense", "effective_date", "amount_minor")
+        )
+        assertEquals(listOf("$rent|2026-10-12|null"), pauses())
+        assertEquals("1", ledger.rows("category", "archived").single())
     }
 
     @Test

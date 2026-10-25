@@ -17,6 +17,11 @@ sealed interface CatchUpStop {
 /** What one catch-up recorded, oldest first, and why it stopped early, if it did. */
 data class CatchUpResult(val recorded: List<RecordedOccurrence>, val stopped: CatchUpStop?)
 
+/** Catch-up run now by something that needs it done first, after any run under way. */
+fun interface CatchUpNow {
+    suspend fun run(): CatchUpResult
+}
+
 /**
  * Records every occurrence due up to today, with no age limit, in batches of [BATCH]
  * (rule 6). Each committed batch stays committed whatever happens to the next, and

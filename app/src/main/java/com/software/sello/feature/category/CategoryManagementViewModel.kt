@@ -28,6 +28,7 @@ import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.UnarchiveCategory
+import com.software.sello.domain.usecase.CatchUpNow
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -63,7 +64,8 @@ class CategoryManagementViewModel(
     private val session: MonthSession,
     private val ids: RecordIdSource,
     money: MoneyFormatter,
-    private val notices: ExpenseCorrections
+    private val notices: ExpenseCorrections,
+    private val catchUp: CatchUpNow
 ) : ViewModel() {
     /** The limit a month has, or that it has none of its own to show. */
     private sealed interface StoredLimit {
@@ -539,18 +541,46 @@ class CategoryManagementViewModel(
         val id = categoryId ?: return
         mutable.update { it.copy(busy = true, saveError = null, archiveQuestion = null) }
         viewModelScope.launch {
-            val operation = operation(if (stored.archived) STEP_UNARCHIVE else STEP_ARCHIVE)
-            val command = if (stored.archived) {
-                UnarchiveCategory(operation, generation, id, stored.version)
-            } else {
-                ArchiveCategory(operation, generation, id, stored.version)
+            if (stored.archived) {
+                val operation = operation(STEP_UNARCHIVE)
+                val command = UnarchiveCategory(operation, generation, id, stored.version)
+                if (committed(commands.submit(command), operation)) {
+                    saved[KEY_OPERATION] = null
+                    archived(unarchived = true)
+                }
+                return@launch
             }
-            if (committed(commands.submit(command), operation)) {
+            var operation = operation(STEP_ARCHIVE)
+            var outcome = commands.submit(
+                ArchiveCategory(operation, generation, id, stored.version)
+            )
+            if (outcome.waitsForPayments()) {
+                // A fixed payment of the category is due and not recorded yet (rule 9):
+                // Sello records what is due, then archives under a new operation, since
+                // the refused one wrote nothing.
                 saved[KEY_OPERATION] = null
-                archived(unarchived = stored.archived)
+                if (catchUp.run().stopped != null) {
+                    render { it.copy(busy = false, saveError = SaveError.PaymentsPending) }
+                    return@launch
+                }
+                operation = operation(STEP_ARCHIVE)
+                outcome =
+                    commands.submit(ArchiveCategory(operation, generation, id, stored.version))
+                if (outcome.waitsForPayments()) {
+                    saved[KEY_OPERATION] = null
+                    render { it.copy(busy = false, saveError = SaveError.PaymentsPending) }
+                    return@launch
+                }
+            }
+            if (committed(outcome, operation)) {
+                saved[KEY_OPERATION] = null
+                archived(unarchived = false)
             }
         }
     }
+
+    private fun CategoryCommandOutcome.waitsForPayments() =
+        this is CategoryCommandOutcome.Rejected && reason == CategoryRejection.SchedulesPending
 
     private fun archived(unarchived: Boolean) {
         notices.categoryChanged(

@@ -3,6 +3,7 @@ package com.software.sello.feature.recurrence
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.domain.usecase.CatchUpNow
 import com.software.sello.domain.usecase.CatchUpResult
 import com.software.sello.domain.usecase.CatchUpSchedules
 import kotlinx.coroutines.CoroutineScope
@@ -38,7 +39,7 @@ class CatchUpRunner(
     clock: FinancialClock,
     reads: ScheduleReads,
     scope: CoroutineScope
-) {
+) : CatchUpNow {
     private val lock = Mutex()
     private val mutable = MutableStateFlow<CatchUpState>(CatchUpState.Idle)
     val state: StateFlow<CatchUpState> = mutable.asStateFlow()
@@ -55,7 +56,7 @@ class CatchUpRunner(
     }
 
     /** One catch-up now, after any that is running. */
-    suspend fun run(): CatchUpResult = lock.withLock {
+    override suspend fun run(): CatchUpResult = lock.withLock {
         mutable.value = CatchUpState.Running
         catchUp.run().also { mutable.value = CatchUpState.Finished(it) }
     }
