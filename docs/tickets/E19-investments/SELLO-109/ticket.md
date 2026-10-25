@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-107, SELLO-004
 - **Gate:** G2
 
@@ -52,5 +52,7 @@ Focused tests, then `./scripts/verify-ticket SELLO-109 --retain`.
   `InvestmentRow` without a click until rows open something. Storage is bound in
   composition, and in debug builds investment commands go through the sandbox's fence
   and fault injectors.
-- **Still open:** the tab in the bar, the **+**, the dock and opening a row arrive with
-  SELLO-110, whose pull request closes this ticket.
+- **Part 2 (2026-10-25), with SELLO-110:** the tab is in the bar with **+**, the dock
+  (**Agregar inversión** when empty, **Anotar movimiento** in ink otherwise), rows opening
+  the investment and the total's rate line opening Dólar; the list's heading lost its
+  tabular comma. SELLO-110's pull request closes this ticket.
