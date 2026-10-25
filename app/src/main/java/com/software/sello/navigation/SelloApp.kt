@@ -95,6 +95,9 @@ import com.software.sello.feature.recibo.ReciboScreen
 import com.software.sello.feature.recibo.ReciboState
 import com.software.sello.feature.recibo.ReciboViewModel
 import com.software.sello.feature.recibo.UpcomingPaymentsRoot
+import com.software.sello.feature.recurrence.CatchUpNoticeBar
+import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
+import com.software.sello.feature.recurrence.CatchUpRecordedRoot
 import com.software.sello.feature.recurrence.ScheduleEditorRoot
 import com.software.sello.feature.recurrence.SchedulesRoot
 import com.software.sello.feature.reset.ResetRoot
@@ -202,6 +205,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 },
                 // Opened from the month on screen: that is the month whose limit it edits.
                 onShowAllExpenses = { id -> navigation.navigate(CategoryExpensesRoute(id)) },
+                onOpenRecorded = { navigation.navigate(CatchUpRoute) { launchSingleTop = true } },
                 onOpenReserved = {
                     navigation.navigate(UpcomingPaymentsRoute) { launchSingleTop = true }
                 },
@@ -506,6 +510,41 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 )
             }
         }
+        composable<CatchUpRoute> {
+            val model: CatchUpNoticeViewModel = viewModel(factory = viewModels)
+            ShellScreen(
+                state,
+                monthNames(),
+                shell::onAction,
+                navigation = null,
+                onBack = { navigation.popBackStack() },
+                screenTitle = stringResource(R.string.catch_up_title),
+                pastMonthRibbon = false,
+                // Listo dismisses the notice; Back keeps it.
+                dock = SelloDock(
+                    label = stringResource(R.string.catch_up_done_description),
+                    actionLabel = stringResource(R.string.catch_up_done),
+                    onClick = model::done,
+                    icon = SelloIcon.Check
+                ),
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
+            ) { padding ->
+                CatchUpRecordedRoot(
+                    viewModels,
+                    padding,
+                    onEdit = { id, income ->
+                        navigation.navigate(
+                            if (income) IncomeEditRoute(id) else ExpenseEditRoute(id)
+                        )
+                    },
+                    onClosed = {
+                        val onList =
+                            navigation.currentBackStackEntry?.destination?.hasRoute<CatchUpRoute>()
+                        if (onList == true) navigation.popBackStack()
+                    }
+                )
+            }
+        }
         composable<ScheduleRoute> {
             ScheduleEditorRoot(viewModels) {
                 val onEditor =
@@ -683,10 +722,13 @@ private fun ReciboDestination(
     onEditExpense: (String) -> Unit,
     onEditCategory: (String) -> Unit,
     onShowAllExpenses: (String) -> Unit,
+    onOpenRecorded: () -> Unit,
     onOpenReserved: () -> Unit,
     onCreateCategory: () -> Unit
 ) {
     val recibo: ReciboViewModel = viewModel(factory = viewModels)
+    val catchUp: CatchUpNoticeViewModel = viewModel(factory = viewModels)
+    val catchUpState by catchUp.state.collectAsStateWithLifecycle()
     val detail: CategoryDetailViewModel = viewModel(factory = viewModels)
     val goal: ReciboGoalViewModel = viewModel(factory = viewModels)
     val reciboState by recibo.state.collectAsStateWithLifecycle()
@@ -707,7 +749,9 @@ private fun ReciboDestination(
             state = state,
             names = names,
             onAction = onShell,
-            notice = notice?.let { { StampNoticeBar(it, onUndo, lands) } },
+            // A correction just made is said first; what catch-up recorded waits under it.
+            notice = notice?.let { { StampNoticeBar(it, onUndo, lands) } }
+                ?: { CatchUpNoticeBar(catchUpState, onOpenRecorded) },
             navigation = tabs,
             actions = {
                 IconButton(

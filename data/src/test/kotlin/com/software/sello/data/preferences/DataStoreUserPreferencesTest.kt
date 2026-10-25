@@ -232,6 +232,50 @@ class DataStoreUserPreferencesTest {
     }
 
     @Test
+    fun whenTheCatchUpNoticeWasSeenSurvivesANewAdapterAndALaterTimeReplacesIt() = runTest {
+        val data = HandDataStore()
+        val first = Instant.parse("2026-10-22T14:00:00.250Z")
+        val later = Instant.parse("2026-10-29T08:30:00Z")
+
+        assertEquals(
+            PreferenceRead.Ready(null),
+            DataStoreUserPreferences(data).observeCatchUpNoticeSeen().first()
+        )
+        assertEquals(
+            PreferenceWrite.Saved,
+            DataStoreUserPreferences(data).markCatchUpNoticeSeen(first)
+        )
+        assertEquals(
+            PreferenceRead.Ready(first),
+            DataStoreUserPreferences(data).observeCatchUpNoticeSeen().first()
+        )
+        DataStoreUserPreferences(data).markCatchUpNoticeSeen(later)
+        assertEquals(
+            PreferenceRead.Ready(later),
+            DataStoreUserPreferences(data).observeCatchUpNoticeSeen().first()
+        )
+        // Never part of what a reset of appearance or order touches.
+        assertEquals(
+            PreferenceRead.Ready(AppearancePreference()),
+            DataStoreUserPreferences(data).observeAppearance().first()
+        )
+    }
+
+    @Test
+    fun aCatchUpNoticeThatCannotBeReadOrKeptFailsVisibly() = runTest {
+        val preferences = DataStoreUserPreferences(UnavailableDataStore())
+
+        assertEquals(
+            PreferenceRead.Failed<Instant?>(PreferenceFailure.Unavailable, null),
+            preferences.observeCatchUpNoticeSeen().first()
+        )
+        assertEquals(
+            PreferenceWrite.Failed(PreferenceFailure.Unavailable),
+            preferences.markCatchUpNoticeSeen(Instant.EPOCH)
+        )
+    }
+
+    @Test
     fun aDamagedDismissalIsVisibleAsInvalid() = runTest {
         val raw =
             mutablePreferencesOf(stringPreferencesKey("resumen_suggestion_dismissed_v1") to "x")

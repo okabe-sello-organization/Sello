@@ -69,6 +69,13 @@ interface ExpenseDao {
     @Query("SELECT category_id FROM expense ORDER BY sequence DESC LIMIT 1")
     suspend fun lastAddedCategory(): String?
 
+    /** Every expense a schedule recorded that was created after [since], by date. */
+    @Query(
+        "SELECT * FROM expense WHERE origin_schedule_id IS NOT NULL AND created_at > :since " +
+            "ORDER BY effective_date, sequence"
+    )
+    suspend fun recordedAfter(since: Long): List<ExpenseEntity>
+
     @Query("SELECT * FROM expense WHERE id = :id")
     suspend fun byId(id: String): ExpenseEntity?
 
