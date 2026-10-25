@@ -27,6 +27,7 @@ synthetic.
 | [Income](income.html) | Locked 2026-10-15 |
 | [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16 |
 | [Inversiones](inversiones.html) | Locked 2026-10-16 (Later increment) |
+| [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
 
 ## Recibo / Home
@@ -43,7 +44,8 @@ the same on every tab except Metas (see Metas).
   `10 días, incluido hoy` below it. Always shown in the current month, including
   `0 por día`.
 - While a payment is reserved, a small footnote at the bottom:
-  `Incluye 200.000 separado para 1 pago previsto ›`. It opens the list of payments.
+  `Incluye 200.000 separado para 1 pago previsto ›`. It opens the list of payments
+  ([Pagos e ingresos fijos](#pagos-e-ingresos-fijos)).
   It disappears when nothing is reserved.
 - The bottom edge is the v1.1 pinked shape (sharp teeth, 10dp × 5dp). The tear line
   keeps its punched notches.
@@ -56,7 +58,7 @@ the same on every tab except Metas (see Metas).
 | Spending equal to the limit | Al límite | neutral | — |
 | Spending above the limit | Excedido | loss | Signed red remainder, e.g. −80.000; link **Ajustar presupuesto** |
 | Reserved payments use up what is left | Sin margen | neutral | Big number 0 |
-| Reserved payments are more than what is left | Revisar | warn | Label **Falta para tus pagos**, positive shortfall (e.g. 50.000), one sentence `Quedan 100.000 y tus pagos previstos suman 150.000.`, link **Ajustar presupuesto** |
+| Reserved payments are more than what is left | Revisar | warn | Label **Falta para tus pagos**, positive shortfall (e.g. 50.000), one sentence `Quedan 100.000 y tus pagos previstos suman 150.000.`, link **Ajustar presupuesto**. Already over the limit (RE29): `Pasaste tu límite por 80.000 y tus pagos previstos suman 200.000.` |
 | No finite limit | Sin límite | neutral | Label **Has gastado este mes**; no per-day line |
 
 **Goal:** one pill, 56dp tall. The pill itself is the progress bar: it fills with
@@ -128,6 +130,8 @@ in gain green with a `+`.
 - **Saved:** the form closes and Home shows a short confirmation above Anotar, for
   example **Gasto anotado: 48.700 en Comida**, with the numbers already updated. Ink
   background, paper text, as v1.1's notice. No undo for new entries.
+- **Se repite** (added 2026-10-25, [Pagos e ingresos fijos](#pagos-e-ingresos-fijos)):
+  one more row under the note turns the entry into a schedule.
 
 **Rejected during the review:** the system keyboard for amounts (layout jumps after the
 note closes, no `000`), the four-column pad, darker-paper and outlined delete keys, the
@@ -153,7 +157,8 @@ which days → one suggestion. The month in progress is never projected.
   a fact, not a failure. A past month asks "¿Cómo cerró septiembre?" and compares full
   months.
 - **Income** (right after the hero): Ingresos anotados, Ingresos menos gastos and Sin
-  asignar a categorías as receipt lines, then **Ver ingresos y su destino ›**.
+  asignar a categorías as receipt lines, then **Ver ingresos y su destino ›** and, since
+  2026-10-25, **Pagos e ingresos fijos ›**.
 - **Mes a mes:** "Un mes normal" (average of the full months shown) first, then
   v1.1 columns: past months in `pastBar`, the month in progress striped and marked
   `*`, one dashed limit line, values printed only on the highest and current
@@ -406,6 +411,61 @@ are edited from their list. **Borrar esta inversión** is its own card with the 
 **Rejected during the review:** the Metas-band overview with one ticket per investment,
 a message on the overview for an investment without a value, a four-way switch in the
 top bar, a type pill with a sheet, and withdrawals above the last recorded value.
+
+## Pagos e ingresos fijos
+
+Locked 2026-10-25 by owner delegation (SELLO-114): the owner answered the open choices
+and asked the executor to lock the page on those answers; the owner reviews it in the
+pull request. Rules are [SELLO-096's](../../testing/recurrence-examples.md); ADR 0017
+keeps everything on opening, with no notification or background work.
+
+- **Reached from** Configuración (**Tus datos → Pagos e ingresos fijos**, with the counts)
+  and Resumen's income slip (**Pagos e ingresos fijos ›**). Recibo's reserved footnote
+  opens the upcoming payments.
+- **Creating (owner):** **Se repite** in the locked entry, a row under the note, off by
+  default. It opens a sheet: **Cada mes** (a day, 1–31), **Dos veces al mes** (two
+  days), **Cada semana o más** (1–52 weeks) or **Cada cierto número de días** (1–365),
+  then **Termina: Nunca / En una fecha**, and **Próximo: …** with "Se anota solo en su
+  fecha." The start is the entry's date: today or later while Se repite is on, never
+  earlier. The button reads **Guardar pago fijo / Guardar ingreso fijo**; a schedule
+  starting today is recorded at once and shows in the notice. Confirmation: "Pago fijo
+  guardado: Arriendo, el 5 de cada mes".
+- **The list:** title **Pagos e ingresos fijos**, **+** opening the entry with Se repite
+  on, a **Pagos / Ingresos** switch, a dashed **Previsto en octubre** plan (what already
+  went through, what is still to come in soft ink, the month's sum under one rule; never
+  a recorded total), then one row per schedule (icon, name, category, rule, next date,
+  amount; still to come in soft ink; **En pausa** stamped and dimmed) and **Terminados**.
+  Empty: "Nada se repite todavía" with **Anotar algo que se repite**.
+- **Changing a schedule:** tapping a row opens the entry layout titled **Pago fijo /
+  Ingreso fijo**: amount, category or source, note, Se repite, "Los cambios aplican desde
+  mañana. Lo que ya se anotó no cambia.", **Pausar** (with the next date) or, while
+  paused, an **En pausa** slip with **Reanudar**, and a danger card **Borrar este pago
+  fijo** whose confirm slip says "Los gastos ya anotados no se borran." A schedule paused
+  by archiving its category says so.
+- **Editing a recorded entry (owner):** saving a new amount, category or note on an entry
+  a schedule recorded asks **¿Cambiar también los siguientes?** with **Solo este** and
+  **Este y los siguientes** (the schedule changes from tomorrow; recorded ones stay) and
+  **Volver a editar**. A date change alone, or an entry whose schedule is gone, asks
+  nothing.
+- **Upcoming payments:** **Pagos previstos**, a pinked slip "Separado en octubre" with the
+  reserved sum and count, then each payment (name, category, date, amount) opening its
+  schedule, and **Ver todos los pagos fijos ›**.
+- **The notice (owner):** after a catch-up that recorded something, a bar above Anotar on
+  Recibo, "Sello anotó 4 pagos fijos" (or "ingresos fijos", or "pagos e ingresos fijos")
+  with **Ver**. It stays across openings until **Listo** on **Lo que Sello anotó**, which
+  lists each entry with its date and amount, opening its edit. One deleted leaves the
+  list; when none is left the bar goes away. Back keeps it.
+- **Revisar already over the limit (owner, RE29):** "Pasaste tu límite por 80.000 y tus
+  pagos previstos suman 200.000."
+- Every screen has default, empty, loading, failed-read, large-text and dark frames.
+
+**Rejected:** a separate schedule editor reached only from the list (the owner chose Se
+repite in the entry), editing a recorded entry on its own only or with a link to its
+schedule (the owner chose Solo este / Este y los siguientes), a slip on Recibo or a bar
+that clears when viewed (the owner chose the bar with Listo), "Te pasaste en … y aún
+faltan …" and a signed "Quedan −80.000" for RE29, reaching schedules from Resumen or
+Configuración alone, v1.1's swipe to pause or delete (hidden from TalkBack users), and
+"Cada 15 días" as a shortcut (every 15 days is not twice a month, SELLO-096).
 
 ## Changes to the decision documents
 
