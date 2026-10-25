@@ -108,6 +108,17 @@ class ReciboGoalJourneyTest {
     }
 
     @Test
+    fun withNoCategoriesYetTheFirstUseScreenStillShowsTheGoal() {
+        TestData.reset()
+        val fondo = TestCommands.createGoal("Fondo", 1_000_000)
+        TestCommands.recordGoalMovement(fondo, 250_000)
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+
+        rule.awaitText("Dale forma a tu mes")
+        rule.awaitDescription("Fondo, 25 por ciento. Ver meta")
+    }
+
+    @Test
     fun onAPastMonthNoGoalIsShown() {
         openRecibo()
         rule.awaitTag(RECIBO_GOAL_TAG)

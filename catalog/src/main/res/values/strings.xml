@@ -295,4 +295,9 @@
     <string name="catalog_demo_cuanto_necesitas">Cuánto necesitas</string>
     <string name="catalog_demo_listo">Listo</string>
     <string name="catalog_demo_abrir_teclado">Escribir el monto</string>
+    <string name="catalog_example_goals_band">Goals band total</string>
+    <string name="catalog_demo_guardado_en_metas">Guardado en metas</string>
+    <string name="catalog_demo_mas_2_010_000_en_octubre">2.010.000 en octubre</string>
+    <string name="catalog_demo_sin_aportes_este_mes">Un mes sin aportes: solo el total, sin segunda línea.</string>
+    <string name="catalog_demo_dock_de_metas">Dock de Metas</string>
 </resources>

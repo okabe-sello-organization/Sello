@@ -63,6 +63,7 @@ class CatalogExamplesTest {
                 "feedback.slip-skeleton",
                 "feedback.danger-and-ticket",
                 "feedback.celebration",
+                "goals.band",
                 "goals.milestones",
                 "goals.goal-pill",
                 "goals.goal-form",

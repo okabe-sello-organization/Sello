@@ -75,7 +75,8 @@ import kotlinx.coroutines.launch
 /**
  * Recibo: what is left this month and where it is going. [selectedCategoryId] marks
  * the category whose detail is shown beside it, when there is room for both. [goal] is
- * drawn under the month's answer; it is read apart, so the answer never waits on it.
+ * drawn under the month's answer, or under the first-use card; it is read apart, so the
+ * answer never waits on it.
  */
 @Composable
 fun ReciboScreen(
@@ -125,14 +126,18 @@ fun ReciboScreen(
                 SlipSkeleton()
             }
 
-            ReciboState.FirstRun -> EmptySlip(
-                title = stringResource(R.string.recibo_first_run_title),
-                body = stringResource(R.string.recibo_first_run_body),
-                modifier = Modifier.testTag(RECIBO_FIRST_RUN_TAG),
-                actionLabel = stringResource(R.string.recibo_create_category),
-                onAction = { onAction(ReciboAction.CreateCategory) },
-                icon = SelloIcon.ReceiptLong
-            )
+            ReciboState.FirstRun -> {
+                EmptySlip(
+                    title = stringResource(R.string.recibo_first_run_title),
+                    body = stringResource(R.string.recibo_first_run_body),
+                    modifier = Modifier.testTag(RECIBO_FIRST_RUN_TAG),
+                    actionLabel = stringResource(R.string.recibo_create_category),
+                    onAction = { onAction(ReciboAction.CreateCategory) },
+                    icon = SelloIcon.ReceiptLong
+                )
+                // A goal needs no category: Recibo shows it here too (rule 12).
+                goal()
+            }
 
             is ReciboState.Month -> {
                 if (state.stale) {

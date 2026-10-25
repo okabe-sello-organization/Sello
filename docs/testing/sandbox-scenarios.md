@@ -41,6 +41,7 @@ data only: no scenario needs personal data or a local setting.
 | `metas-retiros@1` | 9 | 2026-10-23 · Bogotá | Withdrawals and faded stamps | 1.710.001 refused `AboveSaved` (MT08); 1.310.000: 43 %, 50 % kept (MT07); 1.510.000: 50 %, lit again (MT10); 0: 25 % and 50 % kept (MT09) | corpus |
 | `metas-objetivo@1` | 10 | 2026-10-23 · Bogotá | Target changes from 1.710.000 of 3.000.000 | 4.000.000: 42 %, 50 % kept (MT17); 2.000.000: 85 %, 75 % earned (MT18); 1.700.000: 100 %, Meta waiting (MT19) | corpus |
 | `metas-lograda@1` | 15 | 2026-10-23 · Bogotá | Recibo's goal, Marcar como lograda and Deshacer | Best completion on Recibo (MT28), then the choice (MT29); Deshacer back to 102 % waiting (MT24); marked at 37 % with four stamps (MT26), Recibo falls back (MT30); completed, nothing on Recibo (MT23, rule 12) | corpus |
+| `metas-tarde@1` | 5 | 2026-10-23 · Bogotá | Deshacer after its window | Marcar with a zero window, then Deshacer refused `UndoExpired`; the goal stays lograda at 100 % with four stamps (MT25) | corpus |
 
 Restart and undo under financial time are covered outside the corpus:
 `TimeControlsJourneyTest` steps the financial day a year forward with an undo offer
@@ -61,8 +62,8 @@ and every `Verify` to match.
 Goal checks read the stamps as the goal's page draws them: `ganado`, `guardado` (earned,
 no longer reached), `vacío` and `esperando` (the Meta reached, not yet marked). Deshacer
 runs on real elapsed time, as in the app: `metas-lograda` undoes right after marking, late
-in the scenario, so the corpus's cut and resume never falls between them. A Deshacer too
-late (MT25) is covered by the goal command tests, not by waiting here.
+in the scenario, so the corpus's cut and resume never falls between them. `metas-tarde`
+marks with a zero Deshacer window, so its Deshacer is too late (MT25) without any waiting.
 
 ## Adding a scenario
 
