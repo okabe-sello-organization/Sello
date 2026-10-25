@@ -19,7 +19,6 @@ data object ResumenRoute
 @Serializable
 data object MetasRoute
 
-
 /** One goal's detail. The screen reads the goal itself. */
 @Serializable
 data class GoalRoute(val goalId: String)

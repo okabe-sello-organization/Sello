@@ -652,7 +652,13 @@ fun InvestmentRow(
                 }
             }
             .then(
-                if (onOpen == null) Modifier else Modifier.clickable(role = Role.Button, onClick = onOpen)
+                if (onOpen ==
+                    null
+                ) {
+                    Modifier
+                } else {
+                    Modifier.clickable(role = Role.Button, onClick = onOpen)
+                }
             )
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

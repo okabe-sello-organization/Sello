@@ -27,9 +27,14 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
     /** The rate as the app writes it: "4.150,25". */
     fun rate(rate: UsdRate): String = money.decimal(rate.hundredths, Currency.USD.scale)
 
-    private fun overview(board: InvestmentBoard, today: LocalDate, stale: Boolean): InversionesState {
+    private fun overview(
+        board: InvestmentBoard,
+        today: LocalDate,
+        stale: Boolean
+    ): InversionesState {
         val overview = when (val worked = board.overview) {
             is Outcome.Success -> worked.value
+
             // Never guessed at another rate, never left out: the rows still show.
             is Outcome.Failure -> when (worked.error) {
                 PortfolioError.MissingRate -> return InversionesState.Ready(

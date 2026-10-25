@@ -26,14 +26,14 @@ import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
+import com.software.sello.domain.port.IncomeCommandOutcome
+import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentReads
-import com.software.sello.domain.port.IncomeCommandOutcome
-import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
@@ -298,11 +298,9 @@ class FaultyCategoryInsightsSnapshots(
         }
 }
 
-/** Metas, the goal page and Recibo's goal share the sandbox's read-failure control. */
-class FaultyInvestmentReads(
-    private val reads: InvestmentReads,
-    private val faults: DebugFaults
-) : InvestmentReads by reads {
+/** Inversiones, an investment and Dólar share the sandbox's read-failure control. */
+class FaultyInvestmentReads(private val reads: InvestmentReads, private val faults: DebugFaults) :
+    InvestmentReads by reads {
     override fun observeBoard(): Flow<InvestmentBoardState> = channelFlow {
         var lastGood: InvestmentBoard? = null
         launch {
@@ -317,6 +315,7 @@ class FaultyInvestmentReads(
     }
 }
 
+/** Metas, the goal page and Recibo's goal share the sandbox's read-failure control. */
 class FaultyGoalReads(private val reads: GoalReads, private val faults: DebugFaults) :
     GoalReads by reads {
     override fun observeBoard(): Flow<GoalBoardState> = channelFlow {
