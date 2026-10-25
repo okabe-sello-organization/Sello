@@ -84,7 +84,7 @@ class CategorySemanticsTest {
                             free,
                             { opened += id },
                             Modifier.testTag(id),
-                            amountPrefix = "gastado"
+                            amountCaption = "gastado"
                         )
                     }
                 }
