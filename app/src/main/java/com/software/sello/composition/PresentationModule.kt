@@ -63,7 +63,7 @@ fun presentationModule(): Module = module {
         val scope = CoroutineScope(
             get<CoroutineScope>().coroutineContext + get<DispatcherProvider>().main
         )
-        ExpenseCorrections(get(), get(), get(), get(), get(), scope)
+        ExpenseCorrections(get(), get(), get(), get(), get(), get(), scope)
     }
     // A save runs for as long as the process, not the screen that started it.
     single { BackupSession(get(), get(), get(), get(), get<CoroutineScope>()) }

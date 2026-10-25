@@ -3,6 +3,8 @@ package com.software.sello.feature.investments
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.InvestmentId
 import com.software.sello.domain.model.OperationId
+import com.software.sello.domain.model.OperationKind
+import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PortfolioOverview
 import com.software.sello.domain.model.StorageFailure
@@ -16,6 +18,7 @@ import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentEdit
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.InvestmentUndoOffer
@@ -75,21 +78,41 @@ class HandInvestmentReads(
         Outcome.Success(null)
 }
 
-/** Commands as a test answers them: [answers] in turn, and [found] for find. */
+/**
+ * Commands as a test answers them: [answers] in turn, then committed with a receipt for
+ * the command's own operation; [found] for find and [undoOffer] for the offer.
+ */
 class HandInvestmentCommands : InvestmentCommands {
     val sent = mutableListOf<InvestmentCommand>()
     val answers = ArrayDeque<InvestmentCommandOutcome>()
     var found: Outcome<CommittedInvestment?, StorageFailure> = Outcome.Success(null)
     val asked = mutableListOf<OperationId>()
 
+    /** What [movementUndoOffer] says is on offer. */
+    var undoOffer: () -> InvestmentUndoOffer? = { null }
+
     override suspend fun submit(command: InvestmentCommand): InvestmentCommandOutcome {
         sent += command
-        return answers.removeFirst()
+        return answers.removeFirstOrNull() ?: InvestmentCommandOutcome.Committed(
+            CommittedInvestment(
+                OperationReceipt(
+                    command.operationId,
+                    OperationKind.RecordInvestmentMovement,
+                    command.generation,
+                    10,
+                    Instant.EPOCH
+                ),
+                (command as? InvestmentEdit)?.investmentId
+            ),
+            replayed = false
+        )
     }
 
-    override fun movementUndoOffer(): InvestmentUndoOffer? = null
+    override fun movementUndoOffer(): InvestmentUndoOffer? = undoOffer()
 
-    override suspend fun find(operationId: OperationId): Outcome<CommittedInvestment?, StorageFailure> {
+    override suspend fun find(
+        operationId: OperationId
+    ): Outcome<CommittedInvestment?, StorageFailure> {
         asked += operationId
         return found
     }

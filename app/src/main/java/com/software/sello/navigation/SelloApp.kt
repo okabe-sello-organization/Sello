@@ -104,6 +104,7 @@ import com.software.sello.feature.reset.ResetRoot
 import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.reset.back
 import com.software.sello.feature.resumen.ResumenRoot
+import com.software.sello.feature.investments.InvestmentMovementNoticeBar
 import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.settings.SettingsRoot
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
@@ -111,6 +112,7 @@ import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewMo
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.CorrectionsViewModel
 import com.software.sello.presentation.corrections.GoalCelebration
+import com.software.sello.presentation.corrections.InvestmentMovementNotice
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.corrections.celebration
 import com.software.sello.presentation.date.dateLabels
@@ -1389,6 +1391,8 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
             }
             SelloNotice(message, tagged, confirmation = true)
         }
+
+        is InvestmentMovementNotice -> InvestmentMovementNoticeBar(notice, onUndo, tagged)
 
         is CorrectionNotice.IncomeRecorded -> {
             val amount = notice.amount
