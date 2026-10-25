@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** In Progress
 - **Depends on:** SELLO-096, SELLO-004
 - **Gate:** G1
 
@@ -40,3 +40,20 @@ The [gap list](../../../design/v2/gaps/recurrence.md) (owner decision, 2026-10-2
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-114 --retain`.
+
+### Execution progress
+
+- **Owner decisions, 2026-10-25:** the owner answered the open choices and delegated the
+  lock to the executor, reviewing in the pull request: schedules are reached from
+  Configuración and Resumen's income slip; a schedule is made with **Se repite** in the
+  locked entry; saving a change to a recorded entry asks **Solo este / Este y los
+  siguientes**; the notice is a bar above Anotar that opens a list and stays until
+  **Listo**; RE29's Revisar sentence is "Pasaste tu límite por 80.000 y tus pagos previstos
+  suman 200.000."
+- **Pages:** `docs/design/v2/fijos.html` (Se repite and its rule sheet, the list, changing,
+  pausing and deleting, editing a recorded entry, upcoming payments, the notice and its
+  list, where schedules are reached from), each screen with default, empty, loading,
+  failed-read, large-text and dark frames; Recibo gains RE29 and the notice as states.
+  The README records the section as locked by delegation, with the rejected options;
+  `components.html` gains five parts (Exists, Extend or New). Mock-only icons: autorenew,
+  pause, play_arrow and event_busy, bundled when SELLO-100 needs them.
