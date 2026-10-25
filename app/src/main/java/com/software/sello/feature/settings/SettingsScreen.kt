@@ -41,7 +41,8 @@ fun SettingsRoot(
     contentPadding: PaddingValues,
     onOpenBackup: () -> Unit,
     onOpenReset: () -> Unit,
-    onOpenSchedules: () -> Unit
+    onOpenSchedules: () -> Unit,
+    onOpenRate: () -> Unit
 ) {
     val model: SettingsViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
@@ -51,7 +52,8 @@ fun SettingsRoot(
         contentPadding,
         onOpenBackup,
         onOpenReset,
-        onOpenSchedules
+        onOpenSchedules,
+        onOpenRate
     )
 }
 
@@ -64,6 +66,7 @@ fun SettingsScreen(
     onOpenBackup: () -> Unit,
     onOpenReset: () -> Unit,
     onOpenSchedules: () -> Unit,
+    onOpenRate: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -87,7 +90,7 @@ fun SettingsScreen(
         }
         AppearanceControls(state, onAction)
         CategoryOrderingControls(state, onAction)
-        DataControls(state, onOpenBackup, onOpenReset, onOpenSchedules)
+        DataControls(state, onOpenBackup, onOpenReset, onOpenSchedules, onOpenRate)
     }
 }
 
@@ -96,7 +99,8 @@ private fun DataControls(
     state: SettingsState,
     onOpenBackup: () -> Unit,
     onOpenReset: () -> Unit,
-    onOpenSchedules: () -> Unit
+    onOpenSchedules: () -> Unit,
+    onOpenRate: () -> Unit
 ) {
     val value = when (val backup = state.backup) {
         BackupLine.Loading -> ""
@@ -127,6 +131,23 @@ private fun DataControls(
             icon = SelloIcon.Autorenew,
             onClick = onOpenSchedules,
             modifier = Modifier.testTag(SETTINGS_SCHEDULES_TAG)
+        )
+        LeaderLine(
+            label = stringResource(R.string.usd_rate_title),
+            value = "",
+            caption = when (val rate = state.rate) {
+                RateLine.Loading -> ""
+                RateLine.Unreadable -> stringResource(R.string.settings_rate_unreadable)
+                RateLine.None -> stringResource(R.string.settings_rate_none)
+                is RateLine.Read -> stringResource(
+                    R.string.settings_rate_current,
+                    rate.rate,
+                    dateLabels().shortDay(rate.date, rate.date)
+                )
+            },
+            icon = SelloIcon.AccountBalance,
+            onClick = onOpenRate,
+            modifier = Modifier.testTag(SETTINGS_RATE_TAG)
         )
         LeaderLine(
             label = stringResource(R.string.settings_backup),
@@ -265,3 +286,4 @@ const val SETTINGS_BACKUP_TAG = "settings:backup"
 const val SETTINGS_RESET_TAG = "settings:reset"
 
 const val SETTINGS_SCHEDULES_TAG = "settings:schedules"
+const val SETTINGS_RATE_TAG = "settings:rate"
