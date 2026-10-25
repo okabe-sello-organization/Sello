@@ -10,7 +10,7 @@
 Inversiones is a main tab leading with value, a Gana/Pierde stamp and the signed simple return.
 
 ### Deliverables
-The v2 overview with capital and gain, distribution, each value's date, and missing-value handling.
+The v2 overview with capital and gain, distribution, each value's date, and missing-value handling. Reuses `TitleBar`, `AnswerSlip`, `Stamp`, `PerformanceLine`, `LeaderLine`, `Footnote`, `SplitBar`, `InvestmentRow`, `EmptySlip` and the ink dock ([gap list](../../../design/v2/gaps/inversiones.md)); extends `AnswerSlip` so Pierde keeps the value in ink, fixes the spacing of the big percentage's comma, gives `SplitBar` its gap, and draws the no-value circle dashed with its caption whole.
 
 ### Acceptance criteria
 - The total converts USD at the current rate and says its date.

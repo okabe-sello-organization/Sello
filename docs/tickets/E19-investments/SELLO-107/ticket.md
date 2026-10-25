@@ -10,7 +10,7 @@
 Investments and their history live in Room, exactly, in COP or USD, with a dated app-wide rate.
 
 ### Deliverables
-Domain models and policies, schema migration, commands with receipts and undo, reads with typed failures.
+Domain models and policies, schema migration, commands with receipts and undo, reads with typed failures. Per the [gap list](../../../design/v2/gaps/inversiones.md): USD amounts beside the COP-only `TransactionAmount`, a decimal rate type and an undo kind for investment movements.
 
 ### Acceptance criteria
 - Decimal rates, never floating point; amounts exact in their currency.

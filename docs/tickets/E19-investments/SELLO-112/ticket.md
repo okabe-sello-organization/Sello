@@ -10,7 +10,7 @@
 Sandbox scenarios and catalog states exercise investments through the real paths.
 
 ### Deliverables
-Scenarios for returns, missing values, USD and corrections; catalog examples for new components.
+Scenarios for returns, missing values, USD and corrections; catalog examples for the extensions SELLO-109 to SELLO-111 make, and device tests for the parts that have none: `SplitBar`, `RecordedValuesChart` and the ink dock ([gap list](../../../design/v2/gaps/inversiones.md)).
 
 ### Acceptance criteria
 - Synthetic data, real commands; none ships in the release build.

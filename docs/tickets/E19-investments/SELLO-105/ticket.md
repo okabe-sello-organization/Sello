@@ -38,3 +38,16 @@ The screens have been worked on outside these tickets (owner, 2026-10-23); [ADR 
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-105 --retain`.
+
+### Execution progress
+
+- **Audit, 2026-10-25:** [gap list](../../../design/v2/gaps/inversiones.md) at `main` `c8d0b4c`,
+  checked in the code, the app and the catalog on an API-30 emulator
+  ([screenshots](artifacts)). The drawing mostly exists from the v2 component pass
+  (`PerformanceLine`, `InvestmentRow`, `RecordedValuesChart`, `SplitBar`, the ink dock);
+  there is no investment in the domain, storage, backup, tab or sandbox, and no other
+  branch or pull request holds investment work. USD has no design.
+- **Tickets revised, owner-approved 2026-10-25:** the owner answered the open rules and
+  delegated the USD design lock; SELLO-106 also designs what the page lacks, SELLO-107,
+  SELLO-109, SELLO-110, SELLO-111 and SELLO-112 name the parts they reuse and extend, and
+  SELLO-110 now follows SELLO-111 because a USD investment asks for the rate first.
