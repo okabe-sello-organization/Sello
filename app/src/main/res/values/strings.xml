@@ -867,7 +867,10 @@
         <item quantity="one">Sello anotó %d ingreso fijo</item>
         <item quantity="other">Sello anotó %d ingresos fijos</item>
     </plurals>
-    <string name="catch_up_both">Sello anotó %1$d pagos e ingresos fijos</string>
+    <plurals name="catch_up_both">
+        <item quantity="one">Sello anotó %d pago o ingreso fijo</item>
+        <item quantity="other">Sello anotó %d pagos e ingresos fijos</item>
+    </plurals>
     <string name="catch_up_view">Ver</string>
     <string name="catch_up_title">Lo que Sello anotó</string>
     <plurals name="catch_up_heading">

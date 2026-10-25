@@ -190,7 +190,7 @@ fun CatchUpNoticeBar(state: CatchUpNoticeState, onView: () -> Unit) {
     val message = when {
         ready.incomes == 0 -> pluralStringResource(R.plurals.catch_up_payments, count, count)
         ready.payments == 0 -> pluralStringResource(R.plurals.catch_up_incomes, count, count)
-        else -> stringResource(R.string.catch_up_both, count)
+        else -> pluralStringResource(R.plurals.catch_up_both, count, count)
     }
     SelloNotice(
         message = message,
