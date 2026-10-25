@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
@@ -23,10 +25,16 @@ import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -127,22 +135,26 @@ fun InvestmentEditorScreen(
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            var viewport by remember { mutableIntStateOf(0) }
             Column(
-                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
+                Modifier.weight(1f).fillMaxWidth().onSizeChanged { viewport = it.height }
+                    .verticalScroll(rememberScrollState())
                     .padding(vertical = SelloTheme.spacing.md)
                     .testTag(INVESTMENT_EDITOR_TAG),
                 verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
             ) {
-                when {
-                    state.loading -> SlipSkeleton(Modifier.testTag("investment.editor.loading"))
+                CompositionLocalProvider(LocalFormViewport provides viewport) {
+                    when {
+                        state.loading -> SlipSkeleton(Modifier.testTag("investment.editor.loading"))
 
-                    state.loadFailed -> ErrorSlip(
-                        stringResource(R.string.investment_editor_load_failed),
-                        { onAction(InvestmentEditorAction.Retry) },
-                        Modifier.testTag("investment.editor.failed")
-                    )
+                        state.loadFailed -> ErrorSlip(
+                            stringResource(R.string.investment_editor_load_failed),
+                            { onAction(InvestmentEditorAction.Retry) },
+                            Modifier.testTag("investment.editor.failed")
+                        )
 
-                    else -> Form(state, onAction, dates)
+                        else -> Form(state, onAction, dates)
+                    }
                 }
             }
             if (!state.loading && !state.loadFailed) {
@@ -428,10 +440,17 @@ private fun Figure(
     spoken: String,
     tag: String,
     onOpen: () -> Unit,
-    startSize: Int = 40
+    startSize: Int = 40,
+    typing: Boolean = false
 ) {
+    // While the pad is open on this figure, keep it in view as the pad slides up and the
+    // form above it shrinks.
+    val requester = remember { BringIntoViewRequester() }
+    val viewport = LocalFormViewport.current
+    LaunchedEffect(typing, viewport) { if (typing) requester.bringIntoView() }
     Column(
         Modifier.fillMaxWidth()
+            .bringIntoViewRequester(requester)
             .clickable(role = Role.Button, onClick = onOpen)
             .semantics(mergeDescendants = true) { contentDescription = spoken }
             .testTag(tag)
@@ -448,6 +467,9 @@ private fun Figure(
         }
     }
 }
+
+/** The height of the form's scrolling part, which shrinks while the pad slides up. */
+private val LocalFormViewport = compositionLocalOf { 0 }
 
 @Composable
 private fun figureSpoken(label: String, value: MoneyTextValue?): String =
@@ -501,7 +523,8 @@ private fun FirstContribution(
             state.firstContribution,
             figureSpoken(label, state.firstContribution),
             INVESTMENT_EDITOR_FIRST_TAG,
-            { onAction(InvestmentEditorAction.OpenPad(InvestmentField.First)) }
+            { onAction(InvestmentEditorAction.OpenPad(InvestmentField.First)) },
+            typing = state.padField == InvestmentField.First
         )
         val message = limitMessage(state, InvestmentField.First)
             ?: if (state.firstContribution != null && !state.firstReady) {
@@ -539,7 +562,8 @@ private fun FirstContribution(
                 figureSpoken(valueLabel, state.otherValue),
                 INVESTMENT_EDITOR_VALUE_TAG,
                 { onAction(InvestmentEditorAction.OpenPad(InvestmentField.Value)) },
-                startSize = 31
+                startSize = 31,
+                typing = state.padField == InvestmentField.Value
             )
             limitMessage(state, InvestmentField.Value)?.let { FieldMessageText(it) }
         }
@@ -578,7 +602,8 @@ private fun RateFirst(
                 ?: stringResource(R.string.investment_editor_rate_empty),
             INVESTMENT_EDITOR_RATE_TAG,
             { onAction(InvestmentEditorAction.OpenPad(InvestmentField.Rate)) },
-            startSize = 31
+            startSize = 31,
+            typing = state.padField == InvestmentField.Rate
         )
         when {
             state.rateProblem == RateProblem.BelowMinimum -> R.string.usd_rate_below

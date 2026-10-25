@@ -207,6 +207,33 @@ class InvestmentEditorScreenTest {
         assertEquals(InvestmentEditorAction.Delete, actions.last())
     }
 
+    @Test
+    fun theFieldBeingTypedStaysAboveThePadOnASmallWindow() {
+        var state by mutableStateOf(dollarsNoRate)
+        rule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1.3f)) {
+                SelloTheme(reducedMotion = true) {
+                    Box(Modifier.requiredSize(320.dp, 640.dp)) {
+                        InvestmentEditorScreen(state) { actions += it }
+                    }
+                }
+            }
+        }
+        for (field in listOf(InvestmentField.First, InvestmentField.Rate)) {
+            state = dollarsNoRate.copy(padField = field)
+            rule.waitForIdle()
+            val tag = if (field == InvestmentField.First) {
+                INVESTMENT_EDITOR_FIRST_TAG
+            } else {
+                INVESTMENT_EDITOR_RATE_TAG
+            }
+            val typed = rule.onNodeWithTag(tag).getUnclippedBoundsInRoot()
+            val pad = rule.onNodeWithTag(INVESTMENT_EDITOR_PAD_TAG).getUnclippedBoundsInRoot()
+            assertTrue("$field at $typed, pad at $pad", typed.bottom <= pad.top + 0.5.dp)
+            assertTrue("$field at $typed", typed.top >= 0.dp)
+        }
+    }
+
     private data class Look(val ink: SelloInk, val dark: Boolean, val scale: Float, val width: Int)
 
     @Test
