@@ -181,6 +181,28 @@ class CatchUpNoticeViewModelTest {
         assertFalse(reopened.closed.value)
     }
 
+    /** RE38: 2 recorded at opening, not dismissed; the day changes and 1 more: 3 listed. */
+    @Test
+    fun re38whatIsNotDismissedAddsUpAcrossRunsUntilListo() {
+        records.entries.value = listOf(
+            bus(51, "2026-10-21", "2026-10-22T14:00:00Z"),
+            bus(52, "2026-10-22", "2026-10-22T14:00:00Z")
+        )
+        val model = model()
+        assertEquals(2, (model.state.value as CatchUpNoticeState.Ready).items.size)
+
+        clock.goTo("2026-10-23")
+        records.entries.value += bus(53, "2026-10-23", "2026-10-23T00:00:01Z")
+        assertEquals(3, (model.state.value as CatchUpNoticeState.Ready).items.size)
+
+        auditNow = Instant.parse("2026-10-23T09:00:00Z")
+        model.done()
+        assertEquals(
+            emptyList<RecordedItem>(),
+            (model.state.value as CatchUpNoticeState.Ready).items
+        )
+    }
+
     @Test
     fun aListoThatCannotBeKeptLeavesTheNoticeAndTheList() {
         records.entries.value = listOf(rent("2026-10-22T14:00:00Z"))
