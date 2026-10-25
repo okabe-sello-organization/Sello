@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -33,9 +35,14 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
+/** How much a receipt line stands out: softer for what is only expected, strong for a result. */
+enum class LineEmphasis { Normal, Soft, Strong }
+
 /**
  * A receipt line: label, dotted leader, value. For two to six facts. Read as one node,
- * "label, value". Put a [MoneyText] in [value] for amounts.
+ * "label, value". Put a [MoneyText] in [value] for amounts. A [LineEmphasis.Soft] line
+ * draws its label and, by default, its value in the soft ink; a [LineEmphasis.Strong]
+ * one sets its label in black weight, and the value should match.
  */
 @Composable
 fun LeaderLine(
@@ -44,6 +51,7 @@ fun LeaderLine(
     icon: SelloIcon? = null,
     caption: String? = null,
     onClick: (() -> Unit)? = null,
+    emphasis: LineEmphasis = LineEmphasis.Normal,
     value: @Composable () -> Unit
 ) {
     val minHeight = when {
@@ -69,7 +77,17 @@ fun LeaderLine(
                     )
                 }
                 Column {
-                    Text(label, style = MaterialTheme.typography.bodyLarge)
+                    val body = MaterialTheme.typography.bodyLarge
+                    val soft = emphasis == LineEmphasis.Soft
+                    Text(
+                        label,
+                        style = if (emphasis == LineEmphasis.Strong) {
+                            body.copy(fontWeight = FontWeight.W900)
+                        } else {
+                            body
+                        },
+                        color = if (soft) SelloTheme.colors.inkSoft else Color.Unspecified
+                    )
                     if (caption != null) {
                         Text(
                             caption,
@@ -80,7 +98,16 @@ fun LeaderLine(
                 }
             }
         },
-        value = value
+        value = {
+            if (emphasis == LineEmphasis.Soft) {
+                CompositionLocalProvider(
+                    LocalContentColor provides SelloTheme.colors.inkSoft,
+                    value
+                )
+            } else {
+                value()
+            }
+        }
     )
 }
 
@@ -107,9 +134,23 @@ fun LeaderLine(
     }
 }
 
+/** How a [TotalLine] closes what is above it. */
+enum class TotalRule {
+    /** A receipt's total: a double rule and a bold label. */
+    Double,
+
+    /** A plan's sum: one firm rule and the label as any other line. */
+    Single
+}
+
 /** The closing line of a receipt: a double rule, a bold label and the total. */
 @Composable
-fun TotalLine(label: String, modifier: Modifier = Modifier, value: @Composable () -> Unit) {
+fun TotalLine(
+    label: String,
+    modifier: Modifier = Modifier,
+    rule: TotalRule = TotalRule.Double,
+    value: @Composable () -> Unit
+) {
     val ink = SelloTheme.colors.ink
     LeaderLayout(
         modifier = modifier
@@ -117,16 +158,19 @@ fun TotalLine(label: String, modifier: Modifier = Modifier, value: @Composable (
             .padding(top = 6.dp)
             .drawBehind {
                 val line = 1.dp.toPx()
-                drawLine(ink, Offset(0f, line / 2), Offset(size.width, line / 2), line)
-                drawLine(ink, Offset(0f, line * 2.5f), Offset(size.width, line * 2.5f), line)
+                if (rule == TotalRule.Single) {
+                    drawLine(ink, Offset(0f, line), Offset(size.width, line), line * 2)
+                } else {
+                    drawLine(ink, Offset(0f, line / 2), Offset(size.width, line / 2), line)
+                    drawLine(ink, Offset(0f, line * 2.5f), Offset(size.width, line * 2.5f), line)
+                }
             }
             .padding(top = 10.dp, bottom = 8.dp)
             .semantics(mergeDescendants = true) {},
         start = {
-            Text(
-                label,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W700)
-            )
+            val body = MaterialTheme.typography.bodyLarge
+            val bold = rule == TotalRule.Double
+            Text(label, style = if (bold) body.copy(fontWeight = FontWeight.W700) else body)
         },
         value = value
     )

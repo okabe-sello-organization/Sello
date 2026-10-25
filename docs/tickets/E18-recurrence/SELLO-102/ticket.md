@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-098, SELLO-004
 - **Gate:** G2
 
@@ -37,3 +37,27 @@ v2 Income; `IncomeHistoryScreen` and the `IncomeHistoryScreenTest` assertion tha
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-102 --retain`.
+
+### Execution progress
+
+- **Owner decision, 2026-10-24:** the footnote says "Lo esperado se anota solo en su
+  fecha." (catch-up records it; the person does not), replacing the reference's "Lo
+  esperado pasa a anotado cuando lo registras." in the README and `income.js`.
+- **Rule:** `IncomePlanPolicy` (domain) takes each income schedule's occurrences still to
+  come this month after its checkpoint, and sums by BG3: Planeado `I + F`, Sin asignar
+  en el plan `I + F − A`, exact, an overflow a failure. Nothing expected, no plan.
+- **Screen:** `IncomeHistoryViewModel.plan` shows it for the month in progress only, and
+  only when the month's summary and the schedules were read at the same revision, so an
+  income catch-up has just recorded is never both recorded and expected. A failed read
+  is a failed plan with Reintentar, never no plan. The plan sits under the hero, or under
+  the empty slip when nothing is recorded yet.
+- **Design system:** `PlanSlip`, `ExpectedChip`, `LeaderLine` emphasis (`Soft`,
+  `Strong`) and `TotalLine` rule (`Single`); `AddChip` now uses the same dashed outline.
+  Catalog *Plan slip and expected chip* (all themes, large-text previews) and three rows
+  in `components.html`.
+- **Tests:** domain `IncomePlanPolicyTest` (5: RE35/BG-E08, RE36/BG-E09, which schedules
+  count, overflow, a negative plan); `IncomeHistoryViewModelTest` (+7); device
+  `PlanPartsTest` (3) and `IncomeHistoryScreenTest` (+5). Red: the policy tests failed on
+  the stub; deliberate breaks of the revision check, the month check, a failed read
+  shown as none, the sign, the tag's description, a tappable chip and the plan not drawn
+  each fail a test.

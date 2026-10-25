@@ -87,7 +87,14 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
         ResumenViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get(), koin.get())
     }
     initializer {
-        IncomeHistoryViewModel(koin.get(), koin.get(), koin.get(), koin.get(), koin.get())
+        IncomeHistoryViewModel(
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
     }
     initializer {
         IncomeFormViewModel(

@@ -417,6 +417,16 @@
     <string name="income_empty_body">Sello funciona sin ingresos. Si los anotas, verás cuánto tiene un presupuesto y cuánto no.</string>
     <string name="income_more">Ver más ingresos</string>
     <string name="income_edit_description">Editar %1$s: %2$s, %3$s</string>
+    <string name="income_plan_tag">Plan del mes</string>
+    <string name="income_plan_caption">Incluye lo que esperas recibir</string>
+    <string name="income_plan_recorded">Anotado</string>
+    <string name="income_plan_expected">Esperado</string>
+    <string name="income_plan_planned">Planeado</string>
+    <string name="income_plan_unassigned">Sin asignar en el plan</string>
+    <string name="income_plan_item">%1$s · %2$s ·</string>
+    <string name="income_plan_item_spoken">%1$s esperado el %2$s: %3$s</string>
+    <string name="income_plan_footnote">Lo esperado se anota solo en su fecha.</string>
+    <string name="income_plan_failed">No pudimos leer lo que esperas recibir. Tus registros siguen guardados.</string>
     <string name="tab_recibo">Recibo</string>
     <string name="tab_resumen">Resumen</string>
     <string name="navigation_back">Volver</string>

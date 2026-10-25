@@ -83,6 +83,7 @@
     <string name="catalog_example_comparison">Same-days comparison</string>
     <string name="catalog_example_ranking">Category spending ranking</string>
     <string name="catalog_example_suggestion">Dismissible suggestion</string>
+    <string name="catalog_example_plan_slip">Plan slip and expected chip</string>
     <string name="catalog_example_split_charts">Split, partial-month and recorded values</string>
     <string name="catalog_example_milestones">Milestone states and projections</string>
     <string name="catalog_example_goal_pill">Recibo goal and reached row</string>
@@ -179,6 +180,18 @@
     <string name="catalog_demo_accion_sintetica_ajustar_cafe" formatted="false">Acción sintética: ajustar Café</string>
     <string name="catalog_demo_mostrar_sugerencia" formatted="false">Mostrar sugerencia</string>
     <string name="catalog_demo_la_elegibilidad_y_el_descarte_mensual_pertenecen" formatted="false">La elegibilidad y el descarte mensual pertenecen al producto; aquí solo se muestra el componente.</string>
+    <string name="catalog_demo_plan_del_mes" formatted="false">Plan del mes</string>
+    <string name="catalog_demo_incluye_lo_que_esperas_recibir" formatted="false">Incluye lo que esperas recibir</string>
+    <string name="catalog_demo_anotado" formatted="false">Anotado</string>
+    <string name="catalog_demo_esperado" formatted="false">Esperado</string>
+    <string name="catalog_demo_planeado" formatted="false">Planeado</string>
+    <string name="catalog_demo_sin_asignar_en_el_plan" formatted="false">Sin asignar en el plan</string>
+    <string name="catalog_demo_salario_vie_30_oct" formatted="false">Salario · vie 30 oct ·</string>
+    <string name="catalog_demo_salario_esperado_el_vie_30_oct" formatted="false">Salario esperado el vie 30 oct: 1.000.000 pesos</string>
+    <string name="catalog_demo_arriendo_sab_31_oct" formatted="false">Arriendo cobrado · sáb 31 oct ·</string>
+    <string name="catalog_demo_arriendo_esperado_el_sab_31_oct" formatted="false">Arriendo cobrado esperado el sáb 31 oct: 650.000 pesos</string>
+    <string name="catalog_demo_lo_esperado_se_anota_solo_en_su_fecha" formatted="false">Lo esperado se anota solo en su fecha.</string>
+    <string name="catalog_demo_con_mas_presupuestado_que_el_plan" formatted="false">Con más presupuestado que el plan, la línea fuerte va firmada y en rojo.</string>
     <string name="catalog_demo_vacio_logrado_conservado_100_pendiente_de_marcar" formatted="false">Vacío · logrado · conservado · 100 % pendiente de marcar</string>
     <string name="catalog_demo_50_por_ciento_sello_conservado_tras_un" formatted="false">50 por ciento, sello conservado tras un retiro</string>
     <string name="catalog_demo_100_por_ciento_pendiente_de_marcar_como" formatted="false">100 por ciento, pendiente de marcar como lograda</string>
