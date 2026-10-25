@@ -12,6 +12,8 @@ import com.software.sello.data.repository.RoomGoalCommands
 import com.software.sello.data.repository.RoomGoalReads
 import com.software.sello.data.repository.RoomIncomeCommands
 import com.software.sello.data.repository.RoomIncomeReads
+import com.software.sello.data.repository.RoomInvestmentCommands
+import com.software.sello.data.repository.RoomInvestmentReads
 import com.software.sello.data.repository.RoomMonthlySnapshots
 import com.software.sello.data.repository.RoomResumenSnapshots
 import com.software.sello.data.repository.RoomScheduleCommands
@@ -43,6 +45,8 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ResumenSnapshots
@@ -111,6 +115,8 @@ class TestLedger(
     lateinit var goalReads: GoalReads
     lateinit var scheduleReads: ScheduleReads
     lateinit var schedules: ScheduleCommands
+    lateinit var investments: InvestmentCommands
+    lateinit var investmentReads: InvestmentReads
 
     /** A fresh handle on the same file, as after a process restart. */
     fun open() {
@@ -125,6 +131,8 @@ class TestLedger(
         goalReads = RoomGoalReads(database)
         scheduleReads = RoomScheduleReads(database)
         schedules = RoomScheduleCommands(database, auditClock, clock, ids)
+        investments = RoomInvestmentCommands(database, auditClock, clock, ids, undo)
+        investmentReads = RoomInvestmentReads(database)
         reads = RoomCategoryReads(database)
         snapshots = RoomMonthlySnapshots(database, clock, computation)
         resumen = RoomResumenSnapshots(database, clock, computation)

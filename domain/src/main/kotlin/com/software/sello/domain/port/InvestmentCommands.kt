@@ -150,6 +150,12 @@ sealed interface InvestmentRejection {
 
     data class FutureDate(val today: LocalDate) : InvestmentRejection
 
+    /** A date the history cannot hold (before year 0000). */
+    data object InvalidDate : InvestmentRejection
+
+    /** An aporte, retiro or dividend of 0: only a recorded value may be 0 (rule 2). */
+    data object InvalidAmount : InvestmentRejection
+
     /** An amount is not in the investment's currency. */
     data object CurrencyMismatch : InvestmentRejection
 
