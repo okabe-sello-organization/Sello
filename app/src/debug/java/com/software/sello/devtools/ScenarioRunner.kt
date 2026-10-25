@@ -545,7 +545,7 @@ class ScenarioRunner(
             }
 
             is MarkLograda -> goalCommand(loaded, step.goal) { id ->
-                CompleteGoal(operation, generation, id, step.version, UNDO_FOR)
+                CompleteGoal(operation, generation, id, step.version, step.undoFor ?: UNDO_FOR)
             }
 
             is UndoLograda -> goal(
@@ -1302,7 +1302,9 @@ class ScenarioRunner(
             is GoalTarget ->
                 "Objetivo de ${step.goal}: ${pesos(step.pesos)} (versión ${step.version})"
 
-            is MarkLograda -> "Marcar ${step.goal} como lograda (versión ${step.version})"
+            is MarkLograda ->
+                "Marcar ${step.goal} como lograda (versión ${step.version})" +
+                    (step.undoFor?.let { ", Deshacer durante ${it.inWholeSeconds} s" } ?: "")
 
             is UndoLograda -> "Deshacer la meta lograda del paso ${step.of + 1}"
 

@@ -4,7 +4,7 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-10-24 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
+**Snapshot:** 2026-10-25 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
 Epics E01–E08, E12, E13, E15 and E17 are Done; E16 and E18 have work under way. Each ticket's
 own `handoff.md` and `evidence.md` under [docs/tickets](../tickets/README.md) carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -61,15 +61,13 @@ evidence and retained report. This file no longer repeats them.
 - SELLO-074 ([E14](../tickets/E14-assistive-technology/README.md)): the manual
   TalkBack, Switch Access and keyboard pass, moved post-MVP by the owner on
   2026-10-23. E13 is done without it.
-- SELLO-079, SELLO-083, SELLO-084 and SELLO-099–114 ([E16](../tickets/E16-v2-today-gaps/README.md), [E18](../tickets/E18-recurrence/README.md), [E19](../tickets/E19-investments/README.md)):
-  the rest of today's v2 screens (SELLO-080–082 are done; the SELLO-079 audit credits
-  them), then recurrence (storage and catch-up are in; backups, screens and the sandbox
-  remain) and Inversiones, released with Metas as `0.2.0`; decisions in
+- SELLO-079, SELLO-083, SELLO-084, SELLO-100–114 ([E16](../tickets/E16-v2-today-gaps/README.md), [E18](../tickets/E18-recurrence/README.md), [E19](../tickets/E19-investments/README.md)):
+  the rest of today's v2 screens (SELLO-080–082 and SELLO-117 are done; the SELLO-079
+  audit credits them), then recurrence (storage, catch-up, backups and the sandbox's
+  write fence are in; screens and sandbox scenarios remain) and Inversiones, released
+  with Metas as `0.2.0`; decisions in
   [ADR 0017](../decisions/0017-goals-recurrence-investments.md). Each epic starts by
   verifying what already exists.
-- In debug builds, schedule commands do not yet go through the sandbox's write fence,
-  faults and log, as goal commands now do (SELLO-094); SELLO-104 covers recurrence in
-  the sandbox.
 - Signed carryover (E09), legacy import (E10) and the assistive-technology pass (E14)
   stay on the post-MVP roadmap.
 

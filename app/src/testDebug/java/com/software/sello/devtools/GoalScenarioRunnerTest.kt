@@ -19,6 +19,8 @@ import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.UndoGoalCompletion
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -50,7 +52,8 @@ class GoalScenarioRunnerTest {
             MarkLograda("viaje", 3),
             UndoLograda(4),
             ChooseForRecibo("viaje"),
-            Retiro("viaje", 100_000, 5)
+            Retiro("viaje", 100_000, 5),
+            MarkLograda("viaje", 6, undoFor = Duration.ZERO)
         )
     )
     private val ledger = Ledger()
@@ -124,7 +127,10 @@ class GoalScenarioRunnerTest {
             listOf(GoalMovementKind.Withdrawal, 5L, Money.cop(100_000)),
             listOf(retiro.kind, retiro.expectedVersion, retiro.amount.money)
         )
-        assertEquals(8, sent.size)
-        assertEquals(7, ledger.writes.size)
+        // The longest window the app offers by default; a step may ask for none at all.
+        assertEquals(34.seconds, complete.undoFor)
+        assertEquals(Duration.ZERO, (sent[8] as CompleteGoal).undoFor)
+        assertEquals(9, sent.size)
+        assertEquals(8, ledger.writes.size)
     }
 }

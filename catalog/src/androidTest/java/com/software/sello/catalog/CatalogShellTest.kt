@@ -1,11 +1,13 @@
 package com.software.sello.catalog
 
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -17,6 +19,7 @@ import androidx.compose.ui.unit.width
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.catalog.foundations.tokenTag
 import com.software.sello.catalog.foundations.typeTag
+import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -68,6 +71,16 @@ class CatalogShellTest {
         open("foundations.icons")
         rule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
         rule.onNodeWithTag(exampleLinkTag("foundations.icons")).assertExists()
+    }
+
+    @Test
+    fun theScaffoldExampleShowsMetasGreenDockOnRequest() {
+        open("navigation.scaffold")
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Anotar"))
+
+        rule.onNodeWithTag("scaffold:metas-dock").performScrollTo().performClick()
+
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Aportar a una meta"))
     }
 
     @Test

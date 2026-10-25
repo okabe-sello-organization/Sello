@@ -35,6 +35,10 @@ const SCENES = {
   saved:    { spend: "saved", label: "Restante del presupuesto", hero: 351300, status: "ok", daily: 35100, days: 10, reserved: 200000, payments: 1, toast: "Gasto anotado: 48.700 en Comida" },
   tight:    { spend: "tight", label: "Restante del presupuesto", hero: 0, status: "tight", daily: 0, days: 10, reserved: 100000, payments: 1 },
   short:    { spend: "tight", label: "Falta para tus pagos", hero: 50000, status: "short", daily: 0, days: 10, reserved: 150000, payments: 1, left: 100000, action: "Ajustar presupuesto" },
+  // RE29 (SELLO-114): already 80.000 over the limit with 200.000 reserved: Revisar, not Excedido.
+  shortOver: { spend: "over", label: "Falta para tus pagos", hero: 280000, status: "short", daily: 0, days: 10, reserved: 200000, payments: 1, left: -80000, action: "Ajustar presupuesto" },
+  // RE10 (SELLO-114): Sello recorded four payments on opening; the notice stays until Listo.
+  recorded: { spend: "paid", label: "Restante del presupuesto", hero: 400000, status: "ok", daily: 40000, days: 10, notice: "Sello anotó 4 pagos fijos" },
   over:     { spend: "over", label: "Restante del presupuesto", hero: -80000, status: "over", daily: 0, days: 10, action: "Ajustar presupuesto" },
   equal:    { spend: "equal", label: "Restante del presupuesto", hero: 0, status: "equal", daily: 0, days: 10 },
   // September, closed: 1.000.000 − 920.000. No per-day line, no reservations, no goal.
@@ -51,7 +55,9 @@ function answer(s) {
   const long = fmt(s.hero).length > 8;
   let h = `<section class="slip pinked" aria-label="Tu mes"><div class="answer-head"><span class="label">${s.label}</span>${stamp(s.status)}</div><div class="hero ${long ? "long" : ""}">${money(s.hero)}</div>`;
   if (s.closed) h += `<p class="closed-note">${s.closed}</p>`;
-  if (s.status === "short") h += `<p class="answer-note">Quedan ${fmt(s.left)} y tus pagos previstos suman ${fmt(s.reserved)}.</p>`;
+  if (s.status === "short") h += s.left < 0
+    ? `<p class="answer-note">Pasaste tu límite por ${fmt(-s.left)} y tus pagos previstos suman ${fmt(s.reserved)}.</p>`
+    : `<p class="answer-note">Quedan ${fmt(s.left)} y tus pagos previstos suman ${fmt(s.reserved)}.</p>`;
   if (s.daily !== undefined || s.reserved) {
     h += `<div class="tear" aria-hidden="true"></div>`;
     if (s.daily !== undefined) h += `<p class="daily-big"><b>${money(s.daily)}</b><span>por día</span></p><span class="caption">${s.days} días, incluido hoy</span>`;
@@ -97,12 +103,14 @@ const STATES = [
   { title: "After saving · brief confirmation", scene: "saved" },
   { title: "Sin margen · payments use up what is left", scene: "tight" },
   { title: "Revisar · payments are more than what is left", scene: "short" },
+  { title: "Revisar · already over, payments still reserved (RE29, added 2026-10-25)", scene: "shortOver" },
   { title: "Excedido · over the limit", scene: "over" },
   { title: "Al límite · spending equals the limit", scene: "equal" },
   { title: "Sin límite · no finite limits", scene: "nolimit" },
   { title: "Early month · review invitation", scene: "early" },
   { title: "A past month · September", scene: "past" },
   { title: "Another goal reached 100 %", scene: "reachedOther" },
+  { title: "After opening · Sello recorded payments (added 2026-10-25)", scene: "recorded" },
   { title: "Today's scope · no Metas, no recurrence", scene: "today", tabs: 2 },
   { title: "First use", special: "empty" },
   { title: "Loading", special: "loading" },
@@ -117,7 +125,7 @@ function render() {
     const s = d.scene ? SCENES[d.scene] : null;
     const body = d.special ? special(d.special) : homeBody(s);
     const scale = d.large ? 2 : Number(o.scale);
-    return `<div class="frame-card"><h3>${d.title}</h3><div class="phone"><div class="app ${scale >= 1.6 ? "large" : ""}" data-ink="${o.ink}" data-theme="${o.theme}" style="--scale:${scale}">${appShell({ month: s?.month, body, tabs: d.tabs ?? Number(o.tabs), toast: s?.toast, active: 0, current: s?.current })}</div></div></div>`;
+    return `<div class="frame-card"><h3>${d.title}</h3><div class="phone"><div class="app ${scale >= 1.6 ? "large" : ""}" data-ink="${o.ink}" data-theme="${o.theme}" style="--scale:${scale}">${appShell({ month: s?.month, body, tabs: d.tabs ?? Number(o.tabs), toast: s?.toast, notice: s?.notice, active: 0, current: s?.current })}</div></div></div>`;
   }).join("");
 }
 document.querySelectorAll(".controls select").forEach(s => s.addEventListener("change", render));

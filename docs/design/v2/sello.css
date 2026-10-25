@@ -673,3 +673,54 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .cmp-sw{display:grid;grid-template-columns:28px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;font-size:.9em}
 .cmp-sw i{grid-row:span 2;width:28px;height:28px;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
 .cmp-sw small{color:var(--soft);font-size:.8em}
+
+/* Recurrence (SELLO-114): Se repite, the rule sheet, schedule rows, the notice and the choice. */
+.toast.notice .icon{color:var(--brandsoft)}
+.app[data-theme=dark] .toast.notice .icon{color:var(--brand)}
+.rep-pill .icon{color:var(--brand)}
+.rule-sheet h2{margin:0 2px 10px;font-size:1.1em;font-weight:800}
+.rule-sheet .chips{flex-wrap:wrap;max-height:none;margin-bottom:10px}
+.rule-sheet .form-label{display:block;margin:6px 2px 6px;font-size:.86em;font-weight:800;color:var(--soft)}
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 6px}
+.day-grid button{min-height:36px;border:0;border-radius:99px;background:var(--alt);color:var(--ink);font-weight:700;font-size:.93em}
+.day-grid button[aria-pressed=true]{background:var(--brand);color:var(--onbrand)}
+.stepper{display:flex;align-items:center;gap:12px;margin:0 2px 8px;font-weight:700}
+.stepper button{width:44px;height:44px;border:0;border-radius:12px;background:var(--brandsoft);color:var(--onbrandsoft);font-size:1.3em;font-weight:800}
+.stepper b{min-width:2ch;text-align:center;font-size:1.3em}
+.rule-next{display:flex;gap:8px;align-items:center;margin:8px 2px 12px;color:var(--soft);font-size:.9em}
+.rule-next .icon{width:1.3em;height:1.3em;color:var(--brand);flex:none}
+.rule-next b{color:var(--ink)}
+.rule-actions{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.rule-actions button{min-height:48px;border-radius:12px;font-weight:800;font-size:1em}
+.rule-actions .ghost{border:2px solid var(--outline);background:none;color:var(--ink)}
+.rule-actions .go{border:0;background:var(--brand);color:var(--onbrand)}
+.fx-row{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;min-height:60px;width:100%;border:0;border-bottom:1px solid var(--rule);background:none;padding:6px 0;text-align:left;color:var(--ink)}
+.fx-row.last{border-bottom:0}
+.fx-row .fx-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--alt);color:var(--brand)}
+.fx-row .fx-ic .icon{width:19px;height:19px}
+.fx-row span.fx-text{display:grid;gap:2px;min-width:0}
+.fx-row span.fx-text b{font-weight:800}
+.fx-row small{color:var(--soft);font-size:.86em}
+.fx-row>b{font-weight:800}
+.fx-row.soon>b{color:var(--soft);font-weight:700}
+.fx-row.income>b{color:var(--gain)}
+.fx-row.paused{opacity:.72}
+.fx-row .chev{width:1.2em;height:1.2em;color:var(--outline)}
+.stamp.small{font-size:.72em;padding:2px 6px 0;border-width:2px}
+.fx-group{margin:14px 2px 2px;font-size:.86em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--soft)}
+.confirm-actions .go{border:0;background:var(--brand);color:var(--onbrand)}
+.confirm .back-link{display:block;margin:10px auto 0;min-height:44px;border:0;background:none;color:var(--brand);font-weight:800}
+.setting-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;min-height:56px;width:100%;border:0;background:none;padding:4px 0;text-align:left;color:var(--ink)}
+.setting-row .icon{width:1.4em;height:1.4em;color:var(--brand)}
+.setting-row span{display:grid}
+.setting-row small{color:var(--soft);font-size:.86em}
+.setting-row .chev{color:var(--outline)}
+.app.large .fx-row{grid-template-columns:auto 1fr auto}
+.app.large .fx-row>b{grid-column:2}
+.app.large .day-grid{grid-template-columns:repeat(4,1fr)}
+
+.app.large .plan-slip .leader{flex-wrap:wrap}
+.app.large .plan-slip .leader .dots{display:none}
+.app.large .plan-slip .leader b{margin-left:auto}
+.fx-row .stamp.small{justify-self:end}
+.app.large .fx-row .stamp.small{grid-column:2;justify-self:start}

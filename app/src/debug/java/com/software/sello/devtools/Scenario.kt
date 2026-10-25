@@ -5,6 +5,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.UUID
+import kotlin.time.Duration
 
 /**
  * A synthetic history to replay in the sandbox, one step at a time, through the app's
@@ -272,11 +273,16 @@ sealed interface ScenarioStep {
         override val expect: Expect = Expect.Saved
     ) : ScenarioStep
 
-    /** Marcar como lograda on [goal], read at [version]. */
+    /**
+     * Marcar como lograda on [goal], read at [version]. [undoFor] is how long Deshacer is
+     * offered, in real elapsed time; null is the longest the app offers. Zero makes the
+     * window over at once, so a later Deshacer is too late (MT25) without any waiting.
+     */
     data class MarkLograda(
         val goal: String,
         val version: Long,
-        override val expect: Expect = Expect.Saved
+        override val expect: Expect = Expect.Saved,
+        val undoFor: Duration? = null
     ) : ScenarioStep
 
     /** Deshacer the completion step [of] made, while it is on offer. */
