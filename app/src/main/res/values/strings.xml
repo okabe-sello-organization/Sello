@@ -859,6 +859,33 @@
     <!-- Recurring payments and incomes (SELLO-100, docs/design/v2 Pagos e ingresos fijos) -->
     <string name="repeat_title">Se repite</string>
     <string name="schedules_title">Pagos e ingresos fijos</string>
+    <plurals name="catch_up_payments">
+        <item quantity="one">Sello anotó %d pago fijo</item>
+        <item quantity="other">Sello anotó %d pagos fijos</item>
+    </plurals>
+    <plurals name="catch_up_incomes">
+        <item quantity="one">Sello anotó %d ingreso fijo</item>
+        <item quantity="other">Sello anotó %d ingresos fijos</item>
+    </plurals>
+    <plurals name="catch_up_both">
+        <item quantity="one">Sello anotó %d pago o ingreso fijo</item>
+        <item quantity="other">Sello anotó %d pagos e ingresos fijos</item>
+    </plurals>
+    <string name="catch_up_view">Ver</string>
+    <string name="catch_up_title">Lo que Sello anotó</string>
+    <plurals name="catch_up_heading">
+        <item quantity="one">Sello anotó esto</item>
+        <item quantity="other">Sello anotó estos %d</item>
+    </plurals>
+    <string name="catch_up_intro">Cada uno en su fecha, desde la última vez que lo revisaste. Revisa que estén bien; toca uno para corregirlo o borrarlo.</string>
+    <string name="catch_up_income">Ingreso</string>
+    <string name="catch_up_row_spoken">%1$s, %2$s, %3$s. Editar</string>
+    <string name="catch_up_done">Listo</string>
+    <string name="catch_up_done_description">Listo, ya revisé lo que Sello anotó</string>
+    <string name="catch_up_empty_title">Ya no queda nada por revisar</string>
+    <string name="catch_up_empty_body">Lo que Sello anotó ya no está o ya lo revisaste.</string>
+    <string name="catch_up_failed_title">No pudimos leer lo que Sello anotó</string>
+    <string name="catch_up_failed">Lo anotado sigue guardado en tu mes. Vuelve a intentarlo.</string>
     <string name="schedules_payments">Pagos</string>
     <string name="schedules_incomes">Ingresos</string>
     <string name="schedules_add_payment">Agregar pago fijo</string>
