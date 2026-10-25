@@ -4,6 +4,7 @@ import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.ExpenseCommands
+import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.IncomeCommands
 
 /**
@@ -14,12 +15,14 @@ import com.software.sello.domain.port.IncomeCommands
 class OperationInspector(
     private val expenses: ExpenseCommands,
     private val incomes: IncomeCommands,
-    private val categories: CategoryCommands
+    private val categories: CategoryCommands,
+    private val goals: GoalCommands
 ) {
     suspend fun stored(entry: LoggedOperation): StoredOutcome {
         val found: Outcome<OperationReceipt?, *> = when {
             entry.kind.startsWith("Gasto") -> expenses.find(entry.operation).map { it?.receipt }
             entry.kind.startsWith("Ingreso") -> incomes.find(entry.operation).map { it?.receipt }
+            entry.kind.startsWith("Meta") -> goals.find(entry.operation).map { it?.receipt }
             else -> categories.find(entry.operation).map { it?.receipt }
         }
         return when (found) {

@@ -20,6 +20,12 @@ import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
+import com.software.sello.domain.port.GoalBoard
+import com.software.sello.domain.port.GoalBoardState
+import com.software.sello.domain.port.GoalCommand
+import com.software.sello.domain.port.GoalCommandOutcome
+import com.software.sello.domain.port.GoalCommands
+import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.MonthlySnapshots
@@ -34,8 +40,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
 
-/** The failure a simulated read reports; its reason names it as simulated. */
-val SimulatedReadFailure = SnapshotFailure.Storage(StorageFailure.Unavailable("SimulatedFault"))
+/** The storage failure a simulated read reports; its reason names it as simulated. */
+val SimulatedStorageFailure = StorageFailure.Unavailable("SimulatedFault")
+
+/** [SimulatedStorageFailure] as a month snapshot reports it. */
+val SimulatedReadFailure = SnapshotFailure.Storage(SimulatedStorageFailure)
 
 /** Thrown into a caller by [Fault.InterruptAfterSave], after the write committed. */
 class SimulatedInterruption :
@@ -81,9 +90,11 @@ private fun told(outcome: Any): String = when (outcome) {
     is ExpenseCommandOutcome.Committed -> saved(outcome.replayed)
     is IncomeCommandOutcome.Committed -> saved(outcome.replayed)
     is CategoryCommandOutcome.Committed -> saved(outcome.replayed)
+    is GoalCommandOutcome.Committed -> saved(outcome.replayed)
     is ExpenseCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     is IncomeCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     is CategoryCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
+    is GoalCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     else -> "Desconocido"
 }
 
@@ -166,6 +177,22 @@ class FaultyCategoryCommands(
     ) { commands.submit(command) }
 }
 
+/** Every goal command, logged with what its caller was told. */
+class FaultyGoalCommands(
+    private val commands: GoalCommands,
+    private val faults: DebugFaults,
+    private val log: OperationLog
+) : GoalCommands by commands {
+    override suspend fun submit(command: GoalCommand): GoalCommandOutcome = faulted(
+        faults,
+        log,
+        command.operationId,
+        "Meta: ${command::class.simpleName}",
+        GoalCommandOutcome.OutcomeUnknown(command.operationId),
+        ::told
+    ) { commands.submit(command) }
+}
+
 /**
  * Passes Recibo's reads through, and for each read failure armed tells the open reads
  * that the latest read failed, with the last good snapshot kept, as a real failed read
@@ -226,4 +253,21 @@ class FaultyCategoryInsightsSnapshots(
                 send(state)
             }
         }
+}
+
+/** Metas, the goal page and Recibo's goal share the sandbox's read-failure control. */
+class FaultyGoalReads(private val reads: GoalReads, private val faults: DebugFaults) :
+    GoalReads by reads {
+    override fun observeBoard(): Flow<GoalBoardState> = channelFlow {
+        var lastGood: GoalBoard? = null
+        launch {
+            faults.readFailures.collect {
+                send(GoalBoardState.Failed(SimulatedStorageFailure, lastGood))
+            }
+        }
+        reads.observeBoard().collect { state ->
+            if (state is GoalBoardState.Ready) lastGood = state.board
+            send(state)
+        }
+    }
 }

@@ -11,6 +11,9 @@ import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
+import com.software.sello.domain.port.GoalCommand
+import com.software.sello.domain.port.GoalCommandOutcome
+import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.RestoreExpense
@@ -66,4 +69,14 @@ class FencedCategoryCommands(
     override suspend fun submit(command: CategoryCommand) = fence.write {
         commands.submit(command)
     }.also { if (it is CategoryCommandOutcome.Committed && !it.replayed) saved() }
+}
+
+class FencedGoalCommands(
+    private val commands: GoalCommands,
+    private val fence: WriteFence,
+    private val saved: () -> Unit
+) : GoalCommands by commands {
+    override suspend fun submit(command: GoalCommand): GoalCommandOutcome = fence.write {
+        commands.submit(command)
+    }.also { if (it is GoalCommandOutcome.Committed && !it.replayed) saved() }
 }

@@ -9,11 +9,14 @@ import com.software.sello.devtools.DebugFaults
 import com.software.sello.devtools.FaultyCategoryCommands
 import com.software.sello.devtools.FaultyCategoryInsightsSnapshots
 import com.software.sello.devtools.FaultyExpenseCommands
+import com.software.sello.devtools.FaultyGoalCommands
+import com.software.sello.devtools.FaultyGoalReads
 import com.software.sello.devtools.FaultyIncomeCommands
 import com.software.sello.devtools.FaultyMonthlySnapshots
 import com.software.sello.devtools.FaultyResumenSnapshots
 import com.software.sello.devtools.FencedCategoryCommands
 import com.software.sello.devtools.FencedExpenseCommands
+import com.software.sello.devtools.FencedGoalCommands
 import com.software.sello.devtools.FencedIncomeCommands
 import com.software.sello.devtools.OperationInspector
 import com.software.sello.devtools.OperationLog
@@ -37,6 +40,8 @@ import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
+import com.software.sello.domain.port.GoalCommands
+import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ResumenSnapshots
@@ -151,8 +156,17 @@ class DebugComposition(
                         saved
                     )
                 }
+                single<GoalCommands> {
+                    val real = get<FinancialStorage>().goalCommands(get(), get(), get(), get())
+                    FencedGoalCommands(
+                        if (sandbox) FaultyGoalCommands(real, faults, log) else real,
+                        fence,
+                        saved
+                    )
+                }
                 if (time != null) {
                     single<FinancialClock> { time.clock }
+                    single<GoalReads> { FaultyGoalReads(get<FinancialStorage>().goalReads, faults) }
                     single<CategoryInsightsSnapshots> {
                         FaultyCategoryInsightsSnapshots(
                             get<FinancialStorage>().categoryInsights(
@@ -185,13 +199,15 @@ class DebugComposition(
                         val diagnostics = SandboxDiagnostics(
                             faults,
                             log,
-                            OperationInspector(get(), get(), get()),
+                            OperationInspector(get(), get(), get(), get()),
                             store::read
                         )
                         ScenarioRunner(
                             Scenarios.find(session.scenario),
                             profile.generation,
                             time,
+                            get(),
+                            get(),
                             get(),
                             get(),
                             get(),
