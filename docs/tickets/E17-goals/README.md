@@ -15,3 +15,9 @@ change category budgets.
 SELLO-089–094 reuse the goal components the design system and catalog already have and
 add only the listed extensions; SELLO-094's catalog part shrinks to those extensions and
 the missing device tests. No ticket was removed.
+
+**Owner decision (2026-10-25):** what E17 left open after closing (the Metas dock and
+goals band in the catalog, two stamps landing one after the other, a Deshacer too late
+replayed in the sandbox) is finished in a new ticket, SELLO-115, which reopened the epic
+until it merged. Recibo's first use shows the goal: rule 12 hides it only with no active
+goal or on a past month.

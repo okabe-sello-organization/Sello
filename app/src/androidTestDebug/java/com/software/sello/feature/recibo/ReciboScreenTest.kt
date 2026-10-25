@@ -246,6 +246,25 @@ class ReciboScreenTest {
     }
 
     @Test
+    fun theFirstRunStillShowsTheGoalUnderItsCard() {
+        rule.setContent {
+            SelloTheme(reducedMotion = true) {
+                ReciboScreen(
+                    ReciboState.FirstRun,
+                    { actions += it },
+                    PaddingValues(12.dp),
+                    goal = { Text("Meta en Recibo", Modifier.testTag("goal")) }
+                )
+            }
+        }
+
+        rule.onNodeWithText("Dale forma a tu mes").assertIsDisplayed()
+        val card = rule.onNodeWithTag(RECIBO_FIRST_RUN_TAG).getUnclippedBoundsInRoot()
+        val goal = rule.onNodeWithTag("goal").assertIsDisplayed().getUnclippedBoundsInRoot()
+        assertTrue("$goal under $card", goal.top >= card.bottom)
+    }
+
+    @Test
     fun theFirstRunOffersToCreateCategoriesAndNothingThatDoesNotExistYet() {
         show(ReciboState.FirstRun)
 

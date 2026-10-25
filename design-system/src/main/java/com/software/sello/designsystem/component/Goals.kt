@@ -63,6 +63,7 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloMotion
 import com.software.sello.designsystem.theme.SelloTheme
+import kotlinx.coroutines.delay
 
 /** Kept acknowledges an historical crossing; Ready is not a completed goal. */
 enum class MilestoneState { Empty, Earned, Kept, Ready }
@@ -77,8 +78,9 @@ data class MilestoneSpec(
 
 /**
  * One stamp place. [diameter] is 60dp on cards and 66dp in the celebration; [ink] replaces the
- * state's colour where the place sits on green. [land] brings an earned stamp down once;
- * [relight] lights a stamp earned again from its kept ink instead.
+ * state's colour where the place sits on green. [land] brings an earned stamp down once,
+ * after [landDelayMillis] so stamps earned together come down in turn; [relight] lights a
+ * stamp earned again from its kept ink instead. Reduced motion shows it at once.
  */
 @Composable
 fun MilestonePlace(
@@ -87,7 +89,8 @@ fun MilestonePlace(
     land: Boolean = false,
     diameter: Dp = 60.dp,
     ink: Color? = null,
-    relight: Boolean = false
+    relight: Boolean = false,
+    landDelayMillis: Long = 0
 ) {
     val colors = SelloTheme.colors
     val reduced = SelloTheme.reducedMotion
@@ -97,6 +100,7 @@ fun MilestonePlace(
     LaunchedEffect(land) {
         if (land) {
             if (!reduced) {
+                delay(landDelayMillis)
                 progress.animateTo(1f, SelloMotion.stamp())
                 ring.animateTo(1f, SelloMotion.emphasized())
             } else {
@@ -215,13 +219,22 @@ fun MilestoneRow(
         modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        val landingOrder = landing.sorted()
         places.forEachIndexed { index, spec ->
-            MilestonePlace(spec, land = index in landing, relight = index in relighting)
+            MilestonePlace(
+                spec,
+                land = index in landing,
+                relight = index in relighting,
+                landDelayMillis = landingOrder.indexOf(index).coerceAtLeast(0) * LAND_STAGGER_MILLIS
+            )
         }
     }
 }
 
 private const val KEPT_ALPHA = 0.42f
+
+/** Between stamps earned together, as on the v2 celebrations page. */
+private const val LAND_STAGGER_MILLIS = 160L
 
 /**
  * Recibo's goal: the pill itself is the progress bar, filled to [progress] with a brand
@@ -724,7 +737,7 @@ private val TicketShape = GenericShape { size, _ ->
 /**
  * The paper ticket a save notice becomes when a stamp is earned where the goal's own
  * stamps are not in view: the stamps on the left, a dashed tear, then [title] and
- * [detail]. Two stamps sit smaller, side by side; with [land] the last one comes down.
+ * [detail]. Two stamps sit smaller, side by side; with [land] they come down in turn.
  */
 @Composable
 fun StampTicket(
@@ -748,8 +761,9 @@ fun StampTicket(
             places.forEachIndexed { index, spec ->
                 MilestonePlace(
                     spec,
-                    land = land && index == places.lastIndex,
-                    diameter = if (places.size > 1) 46.dp else 54.dp
+                    land = land,
+                    diameter = if (places.size > 1) 46.dp else 54.dp,
+                    landDelayMillis = index * LAND_STAGGER_MILLIS
                 )
             }
         }

@@ -34,6 +34,7 @@ import com.software.sello.designsystem.component.GoalCard
 import com.software.sello.designsystem.component.GoalIconCircle
 import com.software.sello.designsystem.component.GoalPill
 import com.software.sello.designsystem.component.GoalPinPill
+import com.software.sello.designsystem.component.GoalsBandTotal
 import com.software.sello.designsystem.component.IconChoice
 import com.software.sello.designsystem.component.IconChoiceStrip
 import com.software.sello.designsystem.component.InvestmentRow
@@ -629,5 +630,30 @@ fun GoalFormExample() {
             onBackspace = { digits = digits.dropLast(1) },
             onClearAll = { digits = "" }
         )
+    }
+}
+
+@Composable
+fun GoalsBandExample() {
+    val strings = LocalResources.current
+    // The frame's ribbon gives the band its side margins; this strip stands in for it.
+    val ribbon = Modifier.fillMaxWidth().background(SelloTheme.colors.band)
+        .padding(horizontal = 16.dp, vertical = 8.dp)
+    ExampleStack {
+        Column(ribbon) {
+            GoalsBandTotal(
+                strings.getString(R.string.catalog_demo_guardado_en_metas),
+                copFixture(2_760_000),
+                strings.getString(R.string.catalog_demo_mas_2_010_000_en_octubre)
+            )
+        }
+        ExampleCaption(strings.getString(R.string.catalog_demo_sin_aportes_este_mes))
+        Column(ribbon) {
+            GoalsBandTotal(
+                strings.getString(R.string.catalog_demo_guardado_en_metas),
+                copFixture(2_760_000),
+                null
+            )
+        }
     }
 }
