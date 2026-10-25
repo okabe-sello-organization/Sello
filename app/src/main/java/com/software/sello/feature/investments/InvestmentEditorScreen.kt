@@ -207,7 +207,7 @@ private fun Submit(state: InvestmentEditorState, onAction: (InvestmentEditorActi
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
             .testTag(INVESTMENT_EDITOR_SUBMIT_TAG),
         icon = if (state.editing) SelloIcon.Check else SelloIcon.TrendingUp,
-        enabled = state.canSubmit || unknown && !state.busy,
+        enabled = state.canSubmit || (unknown && !state.busy),
         loading = state.busy,
         tone = ButtonTone.Ink
     )
@@ -294,9 +294,13 @@ private fun SaveError(error: InvestmentSaveError, onAction: (InvestmentEditorAct
 @Composable
 private fun textMessage(error: InvestmentTextError?, hint: String, empty: Boolean): FieldMessage? =
     when (error) {
-        InvestmentTextError.TooLong -> FieldMessage(stringResource(R.string.investment_editor_too_long))
+        InvestmentTextError.TooLong -> FieldMessage(
+            stringResource(R.string.investment_editor_too_long)
+        )
+
         InvestmentTextError.NotAllowed ->
             FieldMessage(stringResource(R.string.investment_editor_not_allowed))
+
         null -> if (empty) FieldMessage(hint, isError = false) else null
     }
 
@@ -363,7 +367,10 @@ private fun Identity(state: InvestmentEditorState, onAction: (InvestmentEditorAc
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun CurrencyChoice(state: InvestmentEditorState, onAction: (InvestmentEditorAction) -> Unit) {
+private fun CurrencyChoice(
+    state: InvestmentEditorState,
+    onAction: (InvestmentEditorAction) -> Unit
+) {
     Column(Modifier.padding(top = 12.dp).testTag(INVESTMENT_EDITOR_CURRENCY_TAG)) {
         Text(
             stringResource(R.string.investment_editor_currency),
@@ -483,7 +490,9 @@ private fun FirstContribution(
             FieldPill(
                 text = dates.day(state.date, state.today),
                 icon = SelloIcon.Event,
-                onClick = { onAction(InvestmentEditorAction.OpenDatePicker(InvestmentField.First)) },
+                onClick = {
+                    onAction(InvestmentEditorAction.OpenDatePicker(InvestmentField.First))
+                },
                 modifier = Modifier.testTag(INVESTMENT_EDITOR_DATE_TAG),
                 enabled = state.editable
             )
@@ -586,7 +595,10 @@ private fun RateFirst(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FormDatePicker(state: InvestmentEditorState, onAction: (InvestmentEditorAction) -> Unit) {
+private fun FormDatePicker(
+    state: InvestmentEditorState,
+    onAction: (InvestmentEditorAction) -> Unit
+) {
     val shown = if (state.datePicker == InvestmentField.Rate) state.rateDate else state.date
     val picker = rememberDatePickerState(
         initialSelectedDateMillis = shown.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),

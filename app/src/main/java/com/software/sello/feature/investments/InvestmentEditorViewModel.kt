@@ -142,14 +142,18 @@ class InvestmentEditorViewModel(
 
             is InvestmentEditorAction.DatePicked -> {
                 val field = now.datePicker
-                if (editable && field != null && InvestmentPolicy.acceptsDate(action.date, now.today)) {
+                if (editable && field != null &&
+                    InvestmentPolicy.acceptsDate(action.date, now.today)
+                ) {
                     saved[if (field == InvestmentField.Rate) KEY_RATE_DATE else KEY_DATE] =
                         action.date.toString()
                 }
                 set(KEY_PICKER, null)
             }
 
-            InvestmentEditorAction.Submit -> if (now.canSubmit && saved.get<String>(KEY_OP) == null) {
+            InvestmentEditorAction.Submit -> if (now.canSubmit &&
+                saved.get<String>(KEY_OP) == null
+            ) {
                 if (now.editing && !now.changed) {
                     progress.update { it.copy(saveError = InvestmentSaveError.Unchanged) }
                 } else {
@@ -204,14 +208,20 @@ class InvestmentEditorViewModel(
         drafts.update { it + 1 }
     }
 
-    private fun readable(state: InvestmentBoardState = board.value): InvestmentBoard? = when (state) {
-        InvestmentBoardState.Loading -> null
-        is InvestmentBoardState.Ready -> state.board
-        is InvestmentBoardState.Failed -> state.lastGood
-    }
+    private fun readable(state: InvestmentBoardState = board.value): InvestmentBoard? =
+        when (state) {
+            InvestmentBoardState.Loading -> null
+            is InvestmentBoardState.Ready -> state.board
+            is InvestmentBoardState.Failed -> state.lastGood
+        }
 
     private fun stored(read: InvestmentBoard? = readable()): InvestmentSummary? =
-        investmentId?.let { id -> read?.investments?.firstOrNull { it.history.investment.id.value == id } }
+        investmentId?.let { id ->
+            read?.investments?.firstOrNull {
+                it.history.investment.id.value ==
+                    id
+            }
+        }
 
     /**
      * Each read: the generation a command must carry and, when editing, the investment
@@ -379,15 +389,19 @@ class InvestmentEditorViewModel(
 
     private fun chosenCurrency(summary: InvestmentSummary?): Currency =
         summary?.history?.investment?.currency
-            ?: saved.get<String>(KEY_CURRENCY)?.let { code -> Currency.entries.first { it.code == code } }
+            ?: saved.get<String>(KEY_CURRENCY)?.let { code ->
+                Currency.entries.first {
+                    it.code ==
+                        code
+                }
+            }
             ?: Currency.COP
 
     private fun date(key: String, today: LocalDate): LocalDate =
         saved.get<String>(key)?.let(LocalDate::parse) ?: today
 
-    private fun rate(): UsdRate? =
-        decimalDraft(InvestmentField.Rate).hundredths()
-            ?.let { (UsdRate.ofHundredths(it) as? Outcome.Success)?.value }
+    private fun rate(): UsdRate? = decimalDraft(InvestmentField.Rate).hundredths()
+        ?.let { (UsdRate.ofHundredths(it) as? Outcome.Success)?.value }
 
     private fun textError(error: TextError?): InvestmentTextError? = when (error) {
         is TextError.TooLong -> InvestmentTextError.TooLong
@@ -433,8 +447,8 @@ class InvestmentEditorViewModel(
         val text = name()
         val about = description()
         return InvestmentEditorState(
-            loading = read == null && board !is InvestmentBoardState.Failed ||
-                editing && read != null && saved.get<Boolean>(KEY_DRAFTED) != true,
+            loading = (read == null && board !is InvestmentBoardState.Failed) ||
+                (editing && read != null && saved.get<Boolean>(KEY_DRAFTED) != true),
             loadFailed = board is InvestmentBoardState.Failed && read == null,
             editing = editing,
             name = text,
@@ -486,7 +500,11 @@ class InvestmentEditorViewModel(
     private fun submit(now: InvestmentEditorState) {
         val read = readable() ?: return
         val name = (InvestmentName.of(name()) as? Outcome.Success)?.value ?: return
-        val description = (InvestmentDescription.of(description()) as? Outcome.Success ?: return).value
+        val description = (
+            InvestmentDescription.of(
+                description()
+            ) as? Outcome.Success ?: return
+            ).value
         val icon = saved.get<String>(KEY_ICON)?.let { (IconKey.of(it) as? Outcome.Success)?.value }
             ?: return
         val generation = saved.get<Long>(KEY_GENERATION) ?: read.generation
@@ -547,10 +565,7 @@ class InvestmentEditorViewModel(
     }
 
     /** The operation is saved before the command leaves, so this attempt is recognised whatever happens. */
-    private fun send(
-        step: String,
-        command: (OperationId) -> InvestmentCommand
-    ) {
+    private fun send(step: String, command: (OperationId) -> InvestmentCommand) {
         val operation = (OperationId.of(ids.next()) as Outcome.Success).value
         saved[KEY_OP] = operation.value
         saved[KEY_STEP] = step
@@ -558,7 +573,11 @@ class InvestmentEditorViewModel(
         viewModelScope.launch { settle(step, operation, commands.submit(command(operation))) }
     }
 
-    private suspend fun settle(step: String, operation: OperationId, outcome: InvestmentCommandOutcome) {
+    private suspend fun settle(
+        step: String,
+        operation: OperationId,
+        outcome: InvestmentCommandOutcome
+    ) {
         when (outcome) {
             is InvestmentCommandOutcome.Committed -> committed(step, outcome.change.investmentId)
 
@@ -664,7 +683,9 @@ class InvestmentEditorViewModel(
             InvestmentEditorResult.Created(stored.removePrefix("created:"))
 
         stored == "updated" -> InvestmentEditorResult.Updated
+
         stored == "deleted" -> InvestmentEditorResult.Deleted
+
         else -> InvestmentEditorResult.Discarded
     }
 
