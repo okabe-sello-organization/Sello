@@ -94,6 +94,7 @@ import com.software.sello.feature.recibo.ReciboAction
 import com.software.sello.feature.recibo.ReciboScreen
 import com.software.sello.feature.recibo.ReciboState
 import com.software.sello.feature.recibo.ReciboViewModel
+import com.software.sello.feature.recibo.UpcomingPaymentsRoot
 import com.software.sello.feature.recurrence.CatchUpNoticeBar
 import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
 import com.software.sello.feature.recurrence.CatchUpRecordedRoot
@@ -205,6 +206,9 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 // Opened from the month on screen: that is the month whose limit it edits.
                 onShowAllExpenses = { id -> navigation.navigate(CategoryExpensesRoute(id)) },
                 onOpenRecorded = { navigation.navigate(CatchUpRoute) { launchSingleTop = true } },
+                onOpenReserved = {
+                    navigation.navigate(UpcomingPaymentsRoute) { launchSingleTop = true }
+                },
                 onEditCategory = { id ->
                     navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString())) {
                         launchSingleTop = true
@@ -482,6 +486,30 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 )
             }
         }
+        composable<UpcomingPaymentsRoute> {
+            ShellScreen(
+                state,
+                monthNames(),
+                shell::onAction,
+                navigation = null,
+                onBack = { navigation.popBackStack() },
+                screenTitle = stringResource(R.string.upcoming_screen_title),
+                pastMonthRibbon = false,
+                entryDock = false,
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
+            ) { padding ->
+                UpcomingPaymentsRoot(
+                    viewModels,
+                    padding,
+                    onOpenSchedule = { id ->
+                        navigation.navigate(ScheduleRoute(id)) { launchSingleTop = true }
+                    },
+                    onAllSchedules = {
+                        navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
+                    }
+                )
+            }
+        }
         composable<CatchUpRoute> {
             val model: CatchUpNoticeViewModel = viewModel(factory = viewModels)
             ShellScreen(
@@ -695,6 +723,7 @@ private fun ReciboDestination(
     onEditCategory: (String) -> Unit,
     onShowAllExpenses: (String) -> Unit,
     onOpenRecorded: () -> Unit,
+    onOpenReserved: () -> Unit,
     onCreateCategory: () -> Unit
 ) {
     val recibo: ReciboViewModel = viewModel(factory = viewModels)
@@ -769,6 +798,7 @@ private fun ReciboDestination(
                         is ReciboAction.OpenCategory -> onShell(ShellAction.OpenCategory(action.id))
                         is ReciboAction.EditCategory -> onEditCategory(action.id)
                         ReciboAction.Retry -> Unit
+                        ReciboAction.OpenReserved -> onOpenReserved()
                     }
                     recibo.onAction(action)
                 },

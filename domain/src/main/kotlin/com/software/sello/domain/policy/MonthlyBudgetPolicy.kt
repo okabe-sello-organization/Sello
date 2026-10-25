@@ -16,6 +16,7 @@ import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.model.PastVerdict
+import com.software.sello.domain.model.ReservedPayment
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.Verdict
 import com.software.sello.domain.port.FinancialDay
@@ -94,7 +95,8 @@ object MonthlyBudgetPolicy {
         generation: Long,
         revision: Long,
         categories: List<CategoryInMonth>,
-        expenses: List<Expense>
+        expenses: List<Expense>,
+        reserved: List<ReservedPayment> = emptyList()
     ): Outcome<MonthlySnapshot, SnapshotFailure> {
         val currentMonth = YearMonth.from(today.date)
         if (month > currentMonth) return Outcome.Failure(SnapshotFailure.FutureMonth(currentMonth))
@@ -155,9 +157,25 @@ object MonthlyBudgetPolicy {
                     is Outcome.Failure -> return assessed
                 }
                 val availableDays = month.lengthOfMonth() - today.date.dayOfMonth + 1
+                // Payments still to come are reserved in the month in progress only; the
+                // daily figure is then from the margin they leave (rule 12).
+                val reservation = when (
+                    val reserving = ReservationPolicy.reservation(
+                        budget.remaining,
+                        if (isCurrent) reserved else emptyList()
+                    )
+                ) {
+                    is Outcome.Success -> reserving.value
+                    is Outcome.Failure -> return Outcome.Failure(SnapshotFailure.Unrepresentable)
+                }
                 OverallBudget.Limited(
                     budget,
-                    if (isCurrent) allowance(budget.remaining, availableDays) else null
+                    if (isCurrent) {
+                        allowance(reservation?.margin ?: budget.remaining, availableDays)
+                    } else {
+                        null
+                    },
+                    reservation
                 )
             }
         }

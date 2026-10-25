@@ -58,6 +58,42 @@ data class LimitedBudget(
  */
 data class DailyAllowance(val amount: Money, val availableDays: Int)
 
+/** One payment a schedule still has to record this month (recurrence-examples rule 11). */
+data class ReservedPayment(
+    val schedule: ScheduleId,
+    val categoryId: CategoryId,
+    val note: Note?,
+    val occurrence: Occurrence,
+    val amount: TransactionAmount
+)
+
+/** How the reserved payments compare with what is left (ADR 0012 BG1, rule 12). */
+enum class ReservedStanding {
+    /** Something is left after them: the recorded verdict stands. */
+    Enough,
+
+    /** They take exactly what is left: "Sin margen". */
+    NoMargin,
+
+    /** They take more than what is left, even past the limit: "Revisar". */
+    Short
+}
+
+/**
+ * The payments reserved in the month in progress: their [total] `Q`, the [margin]
+ * `M = R − Q` the headline shows and its [standing]. While [ReservedStanding.Short],
+ * [shortfall] is `−M`, what is missing for them ("Falta para tus pagos"), and
+ * [overLimitBy] is `−R` once spending is past the limit. Never recorded money.
+ */
+data class Reservation(
+    val payments: List<ReservedPayment>,
+    val total: Money,
+    val margin: Money,
+    val standing: ReservedStanding,
+    val shortfall: Money? = null,
+    val overLimitBy: Money? = null
+)
+
 /** The month as a whole. */
 sealed interface OverallBudget {
     /** No category has a finite limit this month: "Has gastado / Sin límite". Not a zero budget. */
@@ -67,7 +103,12 @@ sealed interface OverallBudget {
      * [budget] is the sum of the finite limits against everything spent, including
      * spending in categories without a limit. [allowance] exists only in the current month.
      */
-    data class Limited(val budget: LimitedBudget, val allowance: DailyAllowance?) : OverallBudget
+    data class Limited(
+        val budget: LimitedBudget,
+        val allowance: DailyAllowance?,
+        /** Only in the month in progress, while a payment is reserved; [allowance] is from its margin. */
+        val reservation: Reservation? = null
+    ) : OverallBudget
 }
 
 /**
