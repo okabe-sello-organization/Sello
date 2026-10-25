@@ -13,10 +13,12 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.RecordedOccurrence
+import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.ResumeSchedule
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.usecase.CatchUpSchedules
@@ -226,6 +228,30 @@ class ScheduleCatchUpContractTest {
 
         assertEquals(CatchUpBatch.Recorded(emptyList()), batch("2026-10-07"))
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM expense"))
+    }
+
+    /**
+     * RE15's second half (rule 4): Deshacer brings the deleted rent back with its origin,
+     * and catch-up still never records the 5 October rent again.
+     */
+    @Test
+    fun re15anUndoneDeletionComesBackWithItsOriginAndIsNotRecordedTwice() = runBlocking {
+        categories()
+        val rent =
+            schedule("2026-10-01", RepeatRule.Monthly.of(5).valueOrFail(), payment(100, 950_000))
+        val recorded = (batch("2026-10-05") as CatchUpBatch.Recorded).occurrences.single()
+        ledger.goTo("2026-10-06")
+        val deletion = ledger.operation()
+        ledger.expenses.delete(
+            DeleteExpense(deletion, 1, (recorded as RecordedOccurrence.Payment).expenseId, 1)
+        )
+
+        val undone = ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
+
+        assertTrue("$undone", undone is ExpenseCommandOutcome.Committed)
+        assertEquals(listOf("2026-10-05|1|950000|${uuid(100)}|null|${rent.value}"), expenses())
+        assertEquals(CatchUpBatch.Recorded(emptyList()), batch("2026-10-07"))
+        assertEquals(listOf("0|2026-10-05|1"), checkpoints())
     }
 
     /** RE16: a manual entry is never taken for the scheduled one. */
