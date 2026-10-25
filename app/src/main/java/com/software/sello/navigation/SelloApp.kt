@@ -436,6 +436,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
             val history by model.state.collectAsStateWithLifecycle()
             val today by model.today.collectAsStateWithLifecycle()
             val split by model.split.collectAsStateWithLifecycle()
+            val plan by model.plan.collectAsStateWithLifecycle()
             ShellScreen(
                 state,
                 monthNames(),
@@ -455,6 +456,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 IncomeHistoryScreen(
                     history,
                     split,
+                    plan,
                     today,
                     model::onAction,
                     { navigation.navigate(IncomeEntryRoute) },

@@ -26,15 +26,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -134,23 +129,7 @@ fun AddChip(
             .heightIn(min = 36.dp)
             .clip(SelloTheme.shapes.control)
             .background(colors.paper)
-            .drawWithContent {
-                drawContent()
-                val stroke = 1.5.dp.toPx()
-                val corner = 10.dp.toPx() - stroke / 2
-                drawRoundRect(
-                    color = colors.brand,
-                    topLeft = Offset(stroke / 2, stroke / 2),
-                    size = Size(size.width - stroke, size.height - stroke),
-                    cornerRadius = CornerRadius(corner),
-                    style = Stroke(
-                        stroke,
-                        pathEffect = PathEffect.dashPathEffect(
-                            floatArrayOf(5.dp.toPx(), 4.dp.toPx())
-                        )
-                    )
-                )
-            }
+            .dashedOutline(colors.brand, 1.5.dp, 10.dp)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp)
     ) {

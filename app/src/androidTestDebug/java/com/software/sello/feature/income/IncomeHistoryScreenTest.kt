@@ -4,15 +4,18 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -56,7 +59,30 @@ class IncomeHistoryScreenTest {
         allocatedShare = 2f / 3f
     )
 
-    private fun show(state: IncomeHistoryState, split: IncomeSplit?, fontScale: Float = 1f) {
+    /** BG-E08: 2.000.000 recorded, a salary of 1.000.000 expected on 30 October. */
+    private val plan = IncomePlanView(
+        recorded = pesos("2.000.000"),
+        expected = pesos("1.000.000"),
+        planned = pesos("3.000.000"),
+        unassigned = pesos("200.000"),
+        over = false,
+        items = listOf(
+            ExpectedLine(
+                "s1.2026-10-30.1",
+                "salary",
+                null,
+                LocalDate.of(2026, 10, 30),
+                pesos("1.000.000")
+            )
+        )
+    )
+
+    private fun show(
+        state: IncomeHistoryState,
+        split: IncomeSplit?,
+        fontScale: Float = 1f,
+        plan: IncomePlanState = IncomePlanState.None
+    ) {
         rule.setContent {
             val density = LocalDensity.current.density
             CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
@@ -64,6 +90,7 @@ class IncomeHistoryScreenTest {
                     IncomeHistoryScreen(
                         state,
                         split,
+                        plan,
                         today,
                         { actions += it },
                         { created++ },
@@ -91,8 +118,8 @@ class IncomeHistoryScreenTest {
         rule.onNodeWithText("En presupuestos de categorías").assertIsDisplayed()
         rule.onNodeWithText("Sin asignar").assertIsDisplayed()
         rule.onNodeWithTag("income.overBasis").assertDoesNotExist()
-        // No plan, no expected income and no suggestion: recurrence does not exist.
-        rule.onNodeWithText("Plan del mes").assertDoesNotExist()
+        // Nothing is expected: no plan. And no suggestion here.
+        rule.onNodeWithTag("income.plan").assertDoesNotExist()
         rule.onNodeWithText("Una sugerencia").assertDoesNotExist()
     }
 
@@ -184,5 +211,95 @@ class IncomeHistoryScreenTest {
         rule.onNodeWithText("Entró en octubre").assertIsDisplayed()
         rule.onNodeWithTag("income.unassigned").performScrollTo().assertIsDisplayed()
         rule.onNodeWithTag("income.line.i1").performScrollTo().assertIsDisplayed()
+    }
+
+    // --- Plan del mes ---
+
+    @Test
+    fun bgE08thePlanAddsTheExpectedSalaryApartAndWhatCameInStaysRecordedOnly() {
+        show(
+            ready().copy(total = pesos("2.000.000")),
+            split.copy(income = pesos("2.000.000"), unallocated = minus("800.000")),
+            plan = IncomePlanState.Shown(plan)
+        )
+
+        // The hero is what was recorded: 2.000.000, still 800.000 short.
+        rule.onNodeWithContentDescription("menos 800.000 pesos").assertIsDisplayed()
+        rule.onNodeWithTag("income.plan").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("PLAN DEL MES").assertIsDisplayed()
+        rule.onNodeWithText("Incluye lo que esperas recibir").assertIsDisplayed()
+        listOf(
+            "Anotado" to "2.000.000 pesos",
+            "Esperado" to "1.000.000 pesos",
+            "Planeado" to "3.000.000 pesos",
+            "Sin asignar en el plan" to "200.000 pesos"
+        ).forEach { (label, amount) ->
+            // One line, read as its label and then its amount.
+            rule.onNode(says(label) and says(amount)).assertExists()
+        }
+        rule.onNodeWithContentDescription("Salario esperado el vie 30 oct: 1.000.000 pesos")
+            .performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Lo esperado se anota solo en su fecha.").performScrollTo()
+            .assertIsDisplayed()
+        // Expected money is in no total: the list still ends at what was recorded.
+        rule.onNodeWithText("Total").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun aPlanAboveWhatTheBudgetsLeaveIsSigned() {
+        show(
+            ready(),
+            split,
+            plan = IncomePlanState.Shown(
+                plan.copy(unassigned = minus("1.300.000"), over = true)
+            )
+        )
+
+        rule.onNodeWithTag("income.plan.unassigned").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithContentDescription("menos 1.300.000 pesos").assertIsDisplayed()
+    }
+
+    @Test
+    fun aMonthWithNothingRecordedYetStillShowsWhatIsExpected() {
+        show(
+            ready(lines = emptyList()).copy(total = pesos("0")),
+            split = null,
+            plan = IncomePlanState.Shown(plan.copy(recorded = pesos("0")))
+        )
+
+        rule.onNodeWithText("Aún no anotas ingresos en octubre").assertIsDisplayed()
+        rule.onNodeWithTag("income.plan").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun aPlanThatCouldNotBeReadSaysSoAndCanBeReadAgain() {
+        show(ready(), split, plan = IncomePlanState.Failed)
+
+        rule.onNodeWithTag("income.plan").assertDoesNotExist()
+        rule.onNodeWithText(
+            "No pudimos leer lo que esperas recibir. Tus registros siguen guardados."
+        ).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag("income.plan.failed").performScrollTo()
+        rule.onNodeWithText("Reintentar").performScrollTo().performClick()
+
+        assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.Retry), actions)
+    }
+
+    @Test
+    fun atTwiceTheFontSizeThePlanAndItsChipCanBeReached() {
+        show(ready(), split, fontScale = 2f, plan = IncomePlanState.Shown(plan))
+
+        rule.onNodeWithTag("income.plan.unassigned").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithContentDescription("Salario esperado el vie 30 oct: 1.000.000 pesos")
+            .performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag("income.history").performScrollToNode(hasTestTag("income.line.i1"))
+        rule.onNodeWithTag("income.line.i1").assertIsDisplayed()
+    }
+
+    /** A node, merged as it is read, whose text or description is [part]. */
+    private fun says(part: String) = SemanticsMatcher("says \"$part\"") { node ->
+        node.config.getOrNull(SemanticsProperties.Text).orEmpty().any { it.text == part } ||
+            node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty()
+                .any { it == part }
     }
 }

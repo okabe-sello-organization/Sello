@@ -120,6 +120,12 @@ private fun SuggestionExamplePreview(
 
 @ExampleThemePreviews
 @Composable
+private fun PlanSlipExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { PlanSlipExample() }
+
+@ExampleThemePreviews
+@Composable
 private fun SplitChartsExamplePreview(
     @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
 ) = Frame(theme) { SplitChartsExample() }

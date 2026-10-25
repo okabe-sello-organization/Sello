@@ -25,6 +25,7 @@ class CatalogExamplesTest {
                 "paper.answer-slip",
                 "paper.footnotes",
                 "paper.suggestion",
+                "paper.plan-slip",
                 "stamps.stamp",
                 "money.money-text",
                 "money.counting",

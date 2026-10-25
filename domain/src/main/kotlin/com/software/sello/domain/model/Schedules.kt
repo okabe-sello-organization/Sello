@@ -170,3 +170,25 @@ data class Occurrence(val date: LocalDate, val slot: Int)
  * has none.
  */
 data class EntryOrigin(val schedule: ScheduleId, val occurrence: Occurrence)
+
+/** One income a schedule is still expected to record this month (rule 13). */
+data class ExpectedIncome(
+    val schedule: ScheduleId,
+    val source: IncomeSource,
+    val note: Note?,
+    val occurrence: Occurrence,
+    val amount: TransactionAmount
+)
+
+/**
+ * The month's plan (ADR 0012 BG3): [recorded] income `I`, [expected] `F`, [planned]
+ * `I + F` and what that plan leaves without a category budget, [unassigned]
+ * `I + F − A`, signed. Expected money never enters recorded totals.
+ */
+data class IncomePlan(
+    val recorded: Money,
+    val expected: Money,
+    val planned: Money,
+    val unassigned: Money,
+    val items: List<ExpectedIncome>
+)

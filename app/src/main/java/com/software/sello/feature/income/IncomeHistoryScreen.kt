@@ -2,10 +2,12 @@ package com.software.sello.feature.income
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,14 +18,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
+import com.software.sello.designsystem.component.ExpectedChip
 import com.software.sello.designsystem.component.LeaderLine
+import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.PlanSlip
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
@@ -32,6 +39,7 @@ import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
+import com.software.sello.designsystem.component.TotalRule
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.date.dateLabels
@@ -47,6 +55,7 @@ import java.time.LocalDate
 fun IncomeHistoryScreen(
     state: IncomeHistoryState,
     split: IncomeSplit?,
+    plan: IncomePlanState,
     today: LocalDate,
     onAction: (IncomeHistoryAction) -> Unit,
     onCreate: () -> Unit,
@@ -91,8 +100,10 @@ fun IncomeHistoryScreen(
                         modifier = Modifier.testTag("income.empty")
                     )
                 }
+                planItem(plan, today, onAction)
             } else {
                 item { CameIn(state, split, months.inSentence(state.month)) }
+                planItem(plan, today, onAction)
                 item {
                     Slip(Modifier.fillMaxWidth().testTag("income.list"), pinked = false) {
                         Text(
@@ -138,6 +149,89 @@ fun IncomeHistoryScreen(
                 }
             }
         }
+    }
+}
+
+private fun LazyListScope.planItem(
+    plan: IncomePlanState,
+    today: LocalDate,
+    onAction: (IncomeHistoryAction) -> Unit
+) {
+    when (plan) {
+        IncomePlanState.None -> Unit
+
+        IncomePlanState.Failed -> item {
+            ErrorSlip(
+                stringResource(R.string.income_plan_failed),
+                { onAction(IncomeHistoryAction.Retry) },
+                modifier = Modifier.testTag("income.plan.failed")
+            )
+        }
+
+        is IncomePlanState.Shown -> item { MonthPlan(plan.plan, today) }
+    }
+}
+
+/**
+ * Plan del mes: what is recorded, what is still expected, both together and what that
+ * leaves unassigned, then each expected income. Apart from the records, in a dashed
+ * box: none of it is in a total until catch-up records it on its date.
+ */
+@Composable
+private fun MonthPlan(plan: IncomePlanView, today: LocalDate) {
+    val colors = SelloTheme.colors
+    val dates = dateLabels()
+    PlanSlip(
+        tag = stringResource(R.string.income_plan_tag),
+        caption = stringResource(R.string.income_plan_caption),
+        modifier = Modifier.testTag("income.plan")
+    ) {
+        LeaderLine(stringResource(R.string.income_plan_recorded)) { MoneyText(plan.recorded) }
+        LeaderLine(
+            stringResource(R.string.income_plan_expected),
+            emphasis = LineEmphasis.Soft
+        ) { MoneyText(plan.expected, fontWeight = FontWeight.W700) }
+        TotalLine(stringResource(R.string.income_plan_planned), rule = TotalRule.Single) {
+            MoneyText(plan.planned)
+        }
+        LeaderLine(
+            stringResource(R.string.income_plan_unassigned),
+            emphasis = LineEmphasis.Strong,
+            modifier = Modifier.testTag("income.plan.unassigned")
+        ) {
+            MoneyText(
+                plan.unassigned,
+                color = if (plan.over) colors.semantic.loss else colors.ink,
+                fontWeight = FontWeight.W900
+            )
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(top = SelloTheme.spacing.sm)
+        ) {
+            plan.items.forEach { item ->
+                val source = incomeSourceLabel(item.sourceKey, item.sourceName)
+                val date = dates.day(item.date, today)
+                ExpectedChip(
+                    text = stringResource(R.string.income_plan_item, source, date),
+                    amount = item.amount,
+                    spoken = stringResource(
+                        R.string.income_plan_item_spoken,
+                        source,
+                        date,
+                        item.amount.spoken
+                    ),
+                    modifier = Modifier.testTag("income.plan.item.${item.key}")
+                )
+            }
+        }
+        Text(
+            stringResource(R.string.income_plan_footnote),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.inkSoft,
+            modifier = Modifier.padding(top = SelloTheme.spacing.sm)
+        )
     }
 }
 

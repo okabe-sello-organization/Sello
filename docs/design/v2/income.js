@@ -38,7 +38,7 @@ function plan(s) {
   if (!s.expected) return "";
   const f = s.expected.reduce((a, x) => a + x[2], 0);
   const items = s.expected.map(([src, date, n]) => `<span class="exp-chip">${icon("event")}${src} · ${date} · <b>${money(n)}</b></span>`).join("");
-  return `<section class="plan-slip"><div class="plan-head"><span class="plan-tag">Plan del mes</span><span class="caption">Incluye lo que esperas recibir</span></div>${leaderLine("Anotado", s.recorded)}${leaderLine("Esperado", f, "plan")}<div class="plan-total">${leaderLine("Planeado", s.recorded + f)}</div>${leaderLine("Sin asignar en el plan", s.recorded + f - s.budgets, "strong")}<div class="exp-list">${items}</div><p class="plan-foot">Lo esperado pasa a anotado cuando lo registras.</p></section>`;
+  return `<section class="plan-slip"><div class="plan-head"><span class="plan-tag">Plan del mes</span><span class="caption">Incluye lo que esperas recibir</span></div>${leaderLine("Anotado", s.recorded)}${leaderLine("Esperado", f, "plan")}<div class="plan-total">${leaderLine("Planeado", s.recorded + f)}</div>${leaderLine("Sin asignar en el plan", s.recorded + f - s.budgets, "strong")}<div class="exp-list">${items}</div><p class="plan-foot">Lo esperado se anota solo en su fecha.</p></section>`;
 }
 
 function history(list = INCOMES) {

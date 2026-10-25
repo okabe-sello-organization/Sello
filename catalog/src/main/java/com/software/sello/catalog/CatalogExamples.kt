@@ -44,6 +44,7 @@ import com.software.sello.catalog.components.NavigationBarExample
 import com.software.sello.catalog.components.NoteComposerExample
 import com.software.sello.catalog.components.NoticeExample
 import com.software.sello.catalog.components.PastMonthRibbonExample
+import com.software.sello.catalog.components.PlanSlipExample
 import com.software.sello.catalog.components.RankingExample
 import com.software.sello.catalog.components.ScaffoldExample
 import com.software.sello.catalog.components.SettingsControlsExample
@@ -165,6 +166,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         CatalogGroup.Paper,
         R.string.catalog_example_suggestion
     ) { SuggestionExample() },
+    CatalogExample(
+        "paper.plan-slip",
+        CatalogGroup.Paper,
+        R.string.catalog_example_plan_slip
+    ) { PlanSlipExample() },
     CatalogExample(
         "stamps.stamp",
         CatalogGroup.Stamps,

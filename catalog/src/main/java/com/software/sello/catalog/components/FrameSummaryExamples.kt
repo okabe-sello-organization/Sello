@@ -1,12 +1,15 @@
 package com.software.sello.catalog.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,13 +36,16 @@ import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.ComparisonBar
 import com.software.sello.designsystem.component.ComparisonSlip
 import com.software.sello.designsystem.component.EntryDock
+import com.software.sello.designsystem.component.ExpectedChip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.Footnote
 import com.software.sello.designsystem.component.LeaderLine
+import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MonthBar
 import com.software.sello.designsystem.component.PastMonthRibbon
+import com.software.sello.designsystem.component.PlanSlip
 import com.software.sello.designsystem.component.ReviewInvitation
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
@@ -55,6 +61,7 @@ import com.software.sello.designsystem.component.SuggestionNote
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TitleBar
 import com.software.sello.designsystem.component.TotalLine
+import com.software.sello.designsystem.component.TotalRule
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -545,6 +552,103 @@ fun SuggestionExample() {
             strings.getString(
                 R.string.catalog_demo_la_elegibilidad_y_el_descarte_mensual_pertenecen
             )
+        )
+    }
+}
+
+/**
+ * Plan del mes as the income screen draws it: receipt lines in their three weights, a
+ * single-rule sum and one dashed chip per expected income. Then a plan the budgets
+ * exceed.
+ */
+@Composable
+fun PlanSlipExample() {
+    val strings = LocalResources.current
+    ExampleStack {
+        ExamplePlan(
+            recorded = 2_000_000,
+            expected = 1_000_000,
+            unassigned = 200_000,
+            chips = listOf(
+                Triple(
+                    R.string.catalog_demo_salario_vie_30_oct,
+                    R.string.catalog_demo_salario_esperado_el_vie_30_oct,
+                    1_000_000L
+                )
+            )
+        )
+        ExampleCaption(strings.getString(R.string.catalog_demo_con_mas_presupuestado_que_el_plan))
+        ExamplePlan(
+            recorded = 500_000,
+            expected = 1_650_000,
+            unassigned = -650_000,
+            chips = listOf(
+                Triple(
+                    R.string.catalog_demo_salario_vie_30_oct,
+                    R.string.catalog_demo_salario_esperado_el_vie_30_oct,
+                    1_000_000L
+                ),
+                Triple(
+                    R.string.catalog_demo_arriendo_sab_31_oct,
+                    R.string.catalog_demo_arriendo_esperado_el_sab_31_oct,
+                    650_000L
+                )
+            )
+        )
+    }
+}
+
+@Composable
+private fun ExamplePlan(
+    recorded: Long,
+    expected: Long,
+    unassigned: Long,
+    chips: List<Triple<Int, Int, Long>>
+) {
+    val strings = LocalResources.current
+    val colors = SelloTheme.colors
+    PlanSlip(
+        strings.getString(R.string.catalog_demo_plan_del_mes),
+        strings.getString(R.string.catalog_demo_incluye_lo_que_esperas_recibir)
+    ) {
+        LeaderLine(strings.getString(R.string.catalog_demo_anotado)) {
+            MoneyText(copFixture(recorded))
+        }
+        LeaderLine(
+            strings.getString(R.string.catalog_demo_esperado),
+            emphasis = LineEmphasis.Soft
+        ) { MoneyText(copFixture(expected), fontWeight = FontWeight.W700) }
+        TotalLine(strings.getString(R.string.catalog_demo_planeado), rule = TotalRule.Single) {
+            MoneyText(copFixture(recorded + expected))
+        }
+        LeaderLine(
+            strings.getString(R.string.catalog_demo_sin_asignar_en_el_plan),
+            emphasis = LineEmphasis.Strong
+        ) {
+            MoneyText(
+                copFixture(unassigned),
+                color = if (unassigned < 0) colors.semantic.loss else colors.ink,
+                fontWeight = FontWeight.W900
+            )
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(top = SelloTheme.spacing.sm)
+        ) {
+            chips.forEach { (text, spoken, pesos) ->
+                ExpectedChip(
+                    strings.getString(text),
+                    copFixture(pesos),
+                    strings.getString(spoken)
+                )
+            }
+        }
+        Text(
+            strings.getString(R.string.catalog_demo_lo_esperado_se_anota_solo_en_su_fecha),
+            style = MaterialTheme.typography.bodySmall,
+            color = colors.inkSoft,
+            modifier = Modifier.padding(top = SelloTheme.spacing.sm)
         )
     }
 }

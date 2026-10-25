@@ -194,11 +194,12 @@ goal or investment records never do.
 - **Suggestion:** the Resumen tinted note: "1.000.000 de lo que entró aún no tiene un
   presupuesto. Podrías darle un destino: ahorro, ocio o una reserva, con su propia
   categoría." → **Asignar a una categoría ›**. Not shown for a closed month.
-- **Plan del mes** (future, once recurring income exists): a dashed box with
-  "Incluye lo que esperas recibir", receipt lines **Anotado**, **Esperado** (softer),
-  a total rule, **Planeado** and **Sin asignar en el plan** in bold, then each expected
-  income as a dashed chip (📅 Salario · vie 30 oct · 1.000.000) and "Lo esperado pasa a
-  anotado cuando lo registras." Expected money never enters recorded totals.
+- **Plan del mes** (the month in progress, while a fixed income is still expected): a
+  dashed box with "Incluye lo que esperas recibir", receipt lines **Anotado**,
+  **Esperado** (softer), a total rule, **Planeado** and **Sin asignar en el plan** in
+  bold, then each expected income as a dashed chip (📅 Salario · vie 30 oct · 1.000.000)
+  and "Lo esperado se anota solo en su fecha." Expected money never enters recorded
+  totals.
 - **Lo que entró:** each income with source, date, note and amount, tap to edit; no
   divider under the last entry; a total line with a solid rule.
 - **States:** no income ("Sello funciona sin ingresos"), loading, failed read (never

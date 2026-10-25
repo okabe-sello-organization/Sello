@@ -1,11 +1,25 @@
 package com.software.sello.feature.income
 
 import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.Money
+import com.software.sello.domain.model.Occurrence
+import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.Recurrence
+import com.software.sello.domain.model.RepeatRule
+import com.software.sello.domain.model.Schedule
+import com.software.sello.domain.model.ScheduleId
+import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleBook
+import com.software.sello.domain.port.ScheduleBookState
+import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.feature.expense.HandIncomeReads
 import com.software.sello.feature.expense.incomeId
 import com.software.sello.feature.expense.storedIncome
@@ -15,6 +29,8 @@ import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
+import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -53,7 +69,17 @@ class IncomeHistoryViewModelTest {
         override fun observe(month: YearMonth) = summary(month)
     }
 
-    private fun history() = IncomeHistoryViewModel(reads, session, snapshots, money, clock)
+    /** The schedules, as the history observes them. */
+    private val book = MutableStateFlow<ScheduleBookState>(ScheduleBookState.Loading)
+
+    private val schedules = object : ScheduleReads {
+        override suspend fun book() = error("The history observes")
+
+        override fun observe() = book
+    }
+
+    private fun history() =
+        IncomeHistoryViewModel(reads, session, snapshots, schedules, money, clock)
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -147,5 +173,151 @@ class IncomeHistoryViewModelTest {
 
         assertNull(loading)
         assertEquals("200.000 pesos", model.split.value!!.unallocated.spoken)
+    }
+
+    // --- Plan del mes: ADR 0012's BG-E08 and BG-E09, recurrence examples RE35 and RE36 ---
+
+    private val created = Instant.parse("2026-10-01T08:00:00Z")
+
+    private fun <T> Outcome<T, *>.value() = (this as Outcome.Success).value
+
+    /** A salary of 1.000.000 on the 30th, from [start]; [handled] is its checkpoint. */
+    private fun salary(handled: String? = null, start: String = "2026-10-01") = StoredSchedule(
+        Schedule(
+            ScheduleId.of("00000000-0000-4000-8000-000000000001").value(),
+            ScheduledEntry.Income(
+                IncomeSource.Salary,
+                TransactionAmount.of(Money.cop(1_000_000)).value(),
+                null
+            ),
+            Recurrence.of(
+                RepeatRule.Monthly.of(30).value(),
+                LocalDate.parse(start),
+                null,
+                emptyList()
+            ).value()
+        ),
+        sequence = 1,
+        handled = handled?.let { Occurrence(LocalDate.parse(it), 1) },
+        version = 1,
+        createdAt = created,
+        updatedAt = created
+    )
+
+    private fun book(revision: Long, vararg stored: StoredSchedule) =
+        ScheduleBookState.Ready(ScheduleBook(1, revision, stored.toList()))
+
+    /** The month's summary at [revision]: [income] came in, budgets take [allocated]. */
+    private fun summary(revision: Long, income: Long, allocated: Long = 2_800_000) =
+        ResumenSnapshotState.Ready(
+            resumenSnapshot(income = income).let {
+                it.copy(
+                    budget = it.budget.copy(revision = revision),
+                    allocated = Money.cop(allocated),
+                    unallocated = Money.cop(income - allocated)
+                )
+            }
+        )
+
+    @Test
+    fun bgE08theExpectedSalaryIsPlannedApartFromWhatCameIn() {
+        val model = history()
+        summary(october).value = summary(revision = 7, income = 2_000_000)
+        book.value = book(7, salary())
+
+        val plan = (model.plan.value as IncomePlanState.Shown).plan
+        assertEquals("2.000.000 pesos", plan.recorded.spoken)
+        assertEquals("1.000.000 pesos", plan.expected.spoken)
+        assertEquals("3.000.000 pesos", plan.planned.spoken)
+        assertEquals("200.000 pesos", plan.unassigned.spoken)
+        assertEquals(false, plan.over)
+        assertEquals(
+            listOf(LocalDate.parse("2026-10-30") to "1.000.000 pesos"),
+            plan.items.map { it.date to it.amount.spoken }
+        )
+        // What came in is untouched: still 800.000 short of the budgets.
+        assertEquals("menos 800.000 pesos", model.split.value!!.unallocated.spoken)
+    }
+
+    @Test
+    fun bgE09onceRecordedTheSalaryIsNeverAlsoExpected() {
+        val model = history()
+        summary(october).value = summary(revision = 7, income = 2_000_000)
+        book.value = book(7, salary())
+
+        // Catch-up records the salary at revision 8. The summary is read first.
+        summary(october).value = summary(revision = 8, income = 3_000_000)
+        val between = (model.plan.value as IncomePlanState.Shown).plan
+        book.value = book(8, salary(handled = "2026-10-30"))
+
+        // The plan read at 7 stays until both are at 8: never 3.000.000 and 1.000.000.
+        assertEquals("2.000.000 pesos", between.recorded.spoken)
+        assertEquals("1.000.000 pesos", between.expected.spoken)
+        assertEquals(IncomePlanState.None, model.plan.value)
+    }
+
+    @Test
+    fun aPlanWaitsForTheSummaryAtTheSchedulesRevision() {
+        val model = history()
+        book.value = book(8, salary())
+        summary(october).value = summary(revision = 7, income = 2_000_000)
+        val behind = model.plan.value
+
+        summary(october).value = summary(revision = 8, income = 2_000_000)
+
+        assertEquals(IncomePlanState.None, behind)
+        assertTrue(model.plan.value is IncomePlanState.Shown)
+    }
+
+    @Test
+    fun moreBudgetedThanThePlanIsSigned() {
+        val model = history()
+        summary(october).value = summary(revision = 7, income = 500_000)
+        book.value = book(7, salary())
+
+        val plan = (model.plan.value as IncomePlanState.Shown).plan
+        // 500.000 + 1.000.000 − 2.800.000.
+        assertEquals("menos 1.300.000 pesos", plan.unassigned.spoken)
+        assertEquals(true, plan.over)
+    }
+
+    @Test
+    fun aPastMonthHasNoPlan() {
+        val model = history()
+        val september = YearMonth.of(2026, 9)
+        session.select(september)
+        summary(september).value = summary(revision = 7, income = 2_000_000)
+        // From September, and catch-up has not yet recorded 30 September.
+        book.value = book(7, salary(start = "2026-09-01"))
+
+        assertEquals(IncomePlanState.None, model.plan.value)
+    }
+
+    @Test
+    fun withNothingExpectedThereIsNoPlan() {
+        val model = history()
+        summary(october).value = summary(revision = 7, income = 2_000_000)
+        book.value = book(7)
+
+        assertEquals(IncomePlanState.None, model.plan.value)
+    }
+
+    @Test
+    fun aFailedReadIsAFailedPlanNeverNoneAndRetryReadsAgain() {
+        val model = history()
+        summary(october).value = summary(revision = 7, income = 2_000_000)
+        book.value = ScheduleBookState.Failed(StorageFailure.Unavailable("x"), null)
+        val schedulesFailed = model.plan.value
+
+        book.value = book(7, salary())
+        summary(october).value = ResumenSnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        val summaryFailed = model.plan.value
+
+        summary(october).value = summary(revision = 7, income = 2_000_000)
+        model.onAction(IncomeHistoryAction.Retry)
+
+        assertEquals(IncomePlanState.Failed, schedulesFailed)
+        assertEquals(IncomePlanState.Failed, summaryFailed)
+        assertTrue(model.plan.value is IncomePlanState.Shown)
     }
 }
