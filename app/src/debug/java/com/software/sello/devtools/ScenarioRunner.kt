@@ -50,6 +50,7 @@ import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.policy.IncomePlanPolicy
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
@@ -1162,6 +1163,30 @@ class ScenarioRunner(
 
                 else -> limited?.budget?.remaining?.let(::pesos)
                     ?: overall?.let { "sin límite" }
+            }
+        }
+
+        Figure.Expected, Figure.Planned, Figure.PlanUnassigned -> {
+            // As income history puts it together: the month's summary and the schedules,
+            // through the app's own plan policy. Nothing expected is no plan.
+            val summary = (summaries.read(month) as? Outcome.Success)?.value
+            val book = (schedules.reads.book() as? Outcome.Success)?.value
+            val read = if (summary == null || book == null) {
+                null
+            } else {
+                IncomePlanPolicy.plan(
+                    summary.income,
+                    summary.allocated,
+                    IncomePlanPolicy.expected(book.schedules, month)
+                ) as? Outcome.Success
+            }
+            val plan = read?.value
+            when {
+                read == null -> null
+                plan == null -> if (figure == Figure.Expected) pesos(0) else "sin plan"
+                figure == Figure.Expected -> pesos(plan.expected)
+                figure == Figure.Planned -> pesos(plan.planned)
+                else -> pesos(plan.unassigned)
             }
         }
 

@@ -1408,6 +1408,59 @@ object Scenarios {
         )
     )
 
+    /**
+     * RE35–RE37 (ADR 0012 BG-E08, BG-E09): 2.000.000 recorded, budgets of 2.800.000 and a
+     * salary of 1.000.000 expected on vie 30 oct. The plan shows 3.000.000 and 200.000
+     * unassigned while Recibo does not move; on the 30th catch-up records the salary and
+     * the plan goes, with nothing counted twice.
+     */
+    val IncomePlan = Scenario(
+        id = "plan-del-mes",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = LocalDate.of(2026, 10, 1),
+        title = "Programados · Plan del mes",
+        summary = "RE35–RE37: el salario del 30 se espera: planeado 3.000.000, sin asignar en " +
+            "el plan 200.000, Recibo igual. RE36: registrado el 30, el plan se va.",
+        steps = listOf(
+            Category("hogar", "Hogar", "home", 2_800_000),
+            Income(2_000_000, "salary"),
+            AdvanceTo(LocalDate.of(2026, 10, 22)),
+            Schedule("salario", Scheduled.Income("salary", 1_000_000, "Salario"), Every.Month(30)),
+            CatchUp,
+            Verify(
+                listOf(
+                    Check(Oct, Figure.Income, 2_000_000, "RE35: Anotado"),
+                    Check(Oct, Figure.Expected, 1_000_000, "RE35: Esperado"),
+                    Check(Oct, Figure.Planned, 3_000_000, "RE35: Planeado"),
+                    Check(Oct, Figure.PlanUnassigned, 200_000, "RE35, BG-E08"),
+                    Check(Oct, Figure.Unallocated, -800_000, "RE35: sin asignar anotado"),
+                    Check(Oct, Figure.Remaining, 2_800_000, "RE37: Recibo no cambia por F"),
+                    Check(Oct, Figure.PerDay, 280_000, "RE37: 2.800.000 / 10 días")
+                )
+            ),
+            AdvanceTo(LocalDate.of(2026, 10, 30)),
+            CatchUp,
+            Verify(
+                listOf(
+                    Check(Oct, Figure.Income, 3_000_000, "RE36, BG-E09"),
+                    Check(Oct, Figure.Expected, 0, "RE36: el plan se va"),
+                    Check(Oct, Figure.Unallocated, 200_000, "RE36: sin doble ingreso")
+                ),
+                occurrences = listOf(
+                    OccurrenceCheck(
+                        "salario",
+                        LocalDate.of(2026, 10, 22),
+                        LocalDate.of(2026, 10, 30),
+                        listOf(Recorded(LocalDate.of(2026, 10, 30), 1_000_000)),
+                        "RE36"
+                    )
+                )
+            )
+        )
+    )
+
     val all: List<Scenario> = listOf(
         CategoryDetail,
         G01,
@@ -1433,7 +1486,8 @@ object Scenarios {
         ArchivePauses,
         DeleteKeepsEntries,
         DeletedOccurrence,
-        Reservations
+        Reservations,
+        IncomePlan
     )
 
     fun find(key: String?): Scenario? = all.firstOrNull { it.key == key }
