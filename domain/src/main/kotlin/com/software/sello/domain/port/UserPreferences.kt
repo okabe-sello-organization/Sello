@@ -8,6 +8,7 @@ import com.software.sello.domain.model.CorrectionAnnouncementPreference
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.ThemePreference
+import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 
 /** A preference could not be read or written; it is never a financial-storage failure. */
@@ -52,3 +53,14 @@ interface SuggestionPreferences {
     fun observeDismissedSuggestion(): Flow<PreferenceRead<DismissedSuggestion?>>
     suspend fun dismissSuggestion(dismissed: DismissedSuggestion): PreferenceWrite
 }
+
+/**
+ * When the catch-up notice was last dismissed with Listo, on the audit clock that also
+ * stamps what catch-up records; null before the first time.
+ */
+interface CatchUpNoticePreferences {
+    fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>>
+
+    suspend fun markCatchUpNoticeSeen(at: Instant): PreferenceWrite
+}
+

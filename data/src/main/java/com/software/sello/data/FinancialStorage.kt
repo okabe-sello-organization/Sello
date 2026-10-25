@@ -1,5 +1,7 @@
 package com.software.sello.data
 
+import com.software.sello.domain.port.ScheduleRecordReads
+import com.software.sello.data.repository.RoomScheduleRecordReads
 import android.content.Context
 import com.software.sello.data.backup.BackupExport
 import com.software.sello.data.backup.RoomBackupSnapshots
@@ -122,6 +124,8 @@ class FinancialStorage internal constructor(
 
     /** Recurring payments and incomes with their pauses and catch-up checkpoints. */
     val scheduleReads: ScheduleReads = RoomScheduleReads(database)
+
+    val scheduleRecordReads: ScheduleRecordReads = RoomScheduleRecordReads(database)
 
     /** One offer to undo for the whole storage, whichever workflow asks for it first. */
     private var undo: UndoWindow? = null

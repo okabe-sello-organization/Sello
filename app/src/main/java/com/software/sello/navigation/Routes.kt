@@ -67,6 +67,10 @@ data class IncomeEntryRoute(val repeat: Boolean = false)
 @Serializable
 data class SchedulesRoute(val income: Boolean = false)
 
+/** Lo que Sello anotó: what catch-up recorded since the notice was dismissed. */
+@Serializable
+data object CatchUpRoute
+
 /** Changing one schedule. The screen reads the schedule itself. */
 @Serializable
 data class ScheduleRoute(val scheduleId: String)

@@ -1,5 +1,6 @@
 package com.software.sello.composition
 
+import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
 import android.content.Context
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
@@ -232,6 +233,9 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get(),
             koin.get()
         )
+    }
+    initializer {
+        CatchUpNoticeViewModel(koin.get(), koin.get(), koin.get(), koin.get(), koin.get(), koin.get())
     }
     initializer {
         SchedulesViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get(), koin.get())

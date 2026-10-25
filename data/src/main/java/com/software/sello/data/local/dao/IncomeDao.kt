@@ -10,6 +10,13 @@ interface IncomeDao {
     @Insert
     suspend fun insert(income: IncomeEntity)
 
+    /** Every income a schedule recorded that was created after [since], by date. */
+    @Query(
+        "SELECT * FROM income WHERE origin_schedule_id IS NOT NULL AND created_at > :since " +
+            "ORDER BY effective_date, sequence"
+    )
+    suspend fun recordedAfter(since: Long): List<IncomeEntity>
+
     @Query("SELECT * FROM income WHERE id = :id")
     suspend fun byId(id: String): IncomeEntity?
 

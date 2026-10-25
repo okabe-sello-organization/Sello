@@ -1,5 +1,6 @@
 package com.software.sello.data.preferences
 
+import com.software.sello.domain.port.CatchUpNoticePreferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -59,6 +60,7 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
     CategoryOrderingPreferences,
     CorrectionAnnouncementPreferences,
     SuggestionPreferences,
+    CatchUpNoticePreferences,
     BackupRecords,
     PreferenceReset {
     private val readAttempt = MutableStateFlow(0L)
@@ -109,6 +111,12 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
 
     override suspend fun dismissSuggestion(dismissed: DismissedSuggestion): PreferenceWrite =
         write { this[SUGGESTION_DISMISSED] = "${dismissed.month}|${dismissed.categoryId.value}" }
+
+    override fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>> =
+        observe { stored -> Decoded.Value(stored[CATCH_UP_NOTICE_SEEN]?.let(Instant::ofEpochMilli)) }
+
+    override suspend fun markCatchUpNoticeSeen(at: Instant): PreferenceWrite =
+        write { this[CATCH_UP_NOTICE_SEEN] = at.toEpochMilli() }
 
     override fun observeBackups(): Flow<PreferenceRead<BackupRecord>> = observe(::backups)
 
@@ -279,6 +287,7 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         val PAST_EXPENSE_SEEN = booleanPreferencesKey("past_expense_correction_seen_v1")
         val PAST_LIMIT_SEEN = booleanPreferencesKey("past_limit_correction_seen_v1")
         val SUGGESTION_DISMISSED = stringPreferencesKey("resumen_suggestion_dismissed_v1")
+        val CATCH_UP_NOTICE_SEEN = longPreferencesKey("catch_up_notice_seen_v1")
         val BACKUP_UNFINISHED = booleanPreferencesKey("backup_unfinished_v1")
         val BACKUP_AT = longPreferencesKey("backup_last_at_v1")
         val BACKUP_NAME = stringPreferencesKey("backup_last_name_v1")
