@@ -17,8 +17,9 @@ import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -46,7 +47,9 @@ class DataStoreUserPreferencesPersistenceTest {
             assertEquals(PreferenceWrite.Saved, first.dismissPastExpenseAnnouncement())
             assertEquals(PreferenceWrite.Saved, first.dismissPastLimitAnnouncement())
         } finally {
-            firstScope.cancel()
+            // Wait until the first DataStore is gone: opening the same file while it is
+            // still closing fails with "multiple DataStores active for the same file".
+            firstScope.coroutineContext.job.cancelAndJoin()
         }
 
         val reopenedScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -74,7 +77,7 @@ class DataStoreUserPreferencesPersistenceTest {
                 reopened.observeCorrectionAnnouncements().first()
             )
         } finally {
-            reopenedScope.cancel()
+            reopenedScope.coroutineContext.job.cancelAndJoin()
             file.delete()
         }
     }
