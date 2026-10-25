@@ -80,7 +80,8 @@ class CatchUpOnOpeningTest {
                 BudgetLimit.finite(Money.cop(200_000)).value()
             )
         )
-        val transporte: CategoryId = (category as CategoryCommandOutcome.Committed).change.categoryId
+        val transporte: CategoryId =
+            (category as CategoryCommandOutcome.Committed).change.categoryId
         val created = sandbox.koin.get<ScheduleCommands>().submit(
             CreateSchedule(
                 operation(),

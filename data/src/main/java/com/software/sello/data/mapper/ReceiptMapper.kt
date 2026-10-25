@@ -78,7 +78,9 @@ internal fun OperationReceiptEntity.toStored(): Outcome<StoredReceipt, StorageFa
                     expenseId = valid("subject_id", ExpenseId.of(subject))
                 )
 
-            OperationKind.RestoreHistory, OperationKind.ResetHistory, OperationKind.CatchUpSchedules -> {
+            OperationKind.RestoreHistory,
+            OperationKind.ResetHistory,
+            OperationKind.CatchUpSchedules -> {
                 check("subject_id", subjectId == null)
                 StoredReceipt(receipt, inputDigest)
             }
