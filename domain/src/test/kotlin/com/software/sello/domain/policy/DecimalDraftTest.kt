@@ -65,8 +65,14 @@ class DecimalDraftTest {
 
     @Test
     fun aSavedFigureComesBackAsItWasWritten() {
-        assertEquals(DecimalDraft(6, "4150", comma = true, cents = "25"), DecimalDraft.of(415_025, 6))
-        assertEquals(DecimalDraft(6, "4150", comma = true, cents = "2"), DecimalDraft.of(415_020, 6))
+        assertEquals(
+            DecimalDraft(6, "4150", comma = true, cents = "25"),
+            DecimalDraft.of(415_025, 6)
+        )
+        assertEquals(
+            DecimalDraft(6, "4150", comma = true, cents = "2"),
+            DecimalDraft.of(415_020, 6)
+        )
         assertEquals(DecimalDraft(6, "4000"), DecimalDraft.of(400_000, 6))
     }
 }
