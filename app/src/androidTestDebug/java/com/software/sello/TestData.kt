@@ -20,6 +20,9 @@ object TestData {
         "income",
         "month_limit",
         "default_limit",
+        // Schedules point at categories, and pauses at schedules.
+        "schedule_pause",
+        "schedule",
         "category",
         "operation_receipt"
     )
