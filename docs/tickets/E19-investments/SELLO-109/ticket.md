@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** In Progress
 - **Depends on:** SELLO-107, SELLO-004
 - **Gate:** G2
 
@@ -36,3 +36,21 @@ v2 Inversiones page.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-109 --retain`.
+
+### Execution progress
+
+- **Part 1 (2026-10-25):** the overview is drawn and tested but not yet in the tab bar:
+  until SELLO-110 adds Agregar inversión and Anotar movimiento, the tab could show
+  nothing a person could act on, and an unfinished tab is never shown (architecture §1).
+  `InversionesViewModel` and `InvestmentsRenderModel` turn the board into the answer slip
+  (value with Gana / Pierde in ink, the signed return, Aportaste, Retiraste, Dividendos y
+  rentas, Ganancia, the valuation dates as a quiet line and the rate line), the bar and
+  the rows, with loading, failed, stale, empty, no-values and missing-rate states.
+  Design-system extensions from the gap list: `AnswerSlip(lossAmount)`, the return's
+  comma without tabular figures and an even (neutral) look, `SplitBar(gap)`, shades that
+  repeat after the fourth, the dashed no-value circle with its caption whole, and
+  `InvestmentRow` without a click until rows open something. Storage is bound in
+  composition, and in debug builds investment commands go through the sandbox's fence
+  and fault injectors.
+- **Still open:** the tab in the bar, the **+**, the dock and opening a row arrive with
+  SELLO-110, whose pull request closes this ticket.
