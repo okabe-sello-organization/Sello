@@ -17,7 +17,7 @@ only by Sello. Nothing is written to shared storage or the cache.
 
 | Where | What | Notes |
 | --- | --- | --- |
-| `databases/sello.db` (+ `-wal`, `-shm`) | Categories, budget limits, expenses and incomes with their notes; goals with their names, targets, movements and notes; the profile (financial zone, generation, revision); operation receipts; at most one deleted expense or income kept to undo it | Receipts hold an operation ID, kind, input digest, generation, revision, time and a record ID, never an amount, name or note. The undo copy is removed whenever storage opens. [Storage](../development/storage.md) |
+| `databases/sello.db` (+ `-wal`, `-shm`) | Categories, budget limits, expenses and incomes with their notes; goals with their names, targets, movements and notes; recurring payments and incomes with their notes and pauses; investments with their names, descriptions, movements and notes, and the USD rates entered; the profile (financial zone, generation, revision); operation receipts; at most one deleted expense, income, goal movement or investment movement kept to undo it | Receipts hold an operation ID, kind, input digest, generation, revision, time and a record ID, never an amount, name or note. The undo copy is removed whenever storage opens. [Storage](../development/storage.md) |
 | `files/datastore/sello-preferences.preferences_pb` | Theme, ink, category order and direction, two "seen" flags for correction hints, and the last backup: date, counts, size and file name | Not part of a backup. |
 | `files/sello-restore/` | A backup file chosen to restore, until it is confirmed, cancelled or a day old; after a restore, the backup's preferences until they are applied | Plaintext financial data while it exists. |
 | `files/sello-reset/pending.properties` | During an erase only: its operation ID and whether preferences were reset | No financial data. |
@@ -31,8 +31,8 @@ build contains none of this code (see Checks).
 ## What can leave the phone
 
 - **A backup file**, only when the person taps Crear respaldo and chooses a place in
-  the system dialog. It is plaintext JSON with every amount, category and goal name and note:
-  no password, encryption or checksum ([format](../data/backup-format.md)). Respaldo
+  the system dialog. It is plaintext JSON with every amount, category, goal and investment
+  name, description and note, and the USD rates entered: no password, encryption or checksum ([format](../data/backup-format.md)). Respaldo
   says so above the button before the place is chosen (D08, P01–P02), and that a
   cloud provider keeps it on its own terms. Sello never deletes or claims to erase a
   saved file; Borrar todos los datos says the files stay.

@@ -15,6 +15,7 @@ import com.software.sello.data.repository.runCommand
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalTargetChange
+import com.software.sello.domain.model.InvestmentHistory
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
@@ -291,6 +292,8 @@ class RoomRestores(
             financial.featuredGoal?.let {
                 goalDao().feature(FeaturedGoalEntity(FeaturedGoalEntity.SINGLE_ID, it.value))
             }
+            for (history in financial.investments) insertInvestment(history)
+            for (rate in financial.usdRates) investmentDao().insertRate(rate.toEntity())
         }
         val generation = nextCounter(profile.generation, ProfileEntity.TABLE, null, "generation")
         val revision = nextCounter(profile.revision, ProfileEntity.TABLE, null, "revision")
@@ -333,6 +336,20 @@ class RoomRestores(
         )
     }
 
+    /**
+     * An investment as the file has it, every movement at its recording position. The next
+     * position follows the last one, and is at least 2, as for an investment created with
+     * its first aporte and value.
+     */
+    private suspend fun SelloDatabase.insertInvestment(history: InvestmentHistory) {
+        val investment = history.investment
+        val next = maxOf(history.movements.maxOf { it.sequence } + 1, FIRST_FREE_POSITION)
+        investmentDao().insert(investment.toEntity(nextSequence = next))
+        for (movement in history.movements) {
+            investmentDao().insertMovement(movement.toEntity(investment.id))
+        }
+    }
+
     /** Where the history stands and what it holds, read together. */
     private class Position(val generation: Long, val revision: Long, val current: BackupSummary) {
         fun preview(operation: OperationId, contents: BackupContents) = StagedRestore(
@@ -359,7 +376,8 @@ class RoomRestores(
                             expenses = database.expenseDao().count(),
                             incomes = database.incomeDao().count(),
                             goals = database.goalDao().count(),
-                            schedules = database.scheduleDao().count()
+                            schedules = database.scheduleDao().count(),
+                            investments = database.investmentDao().count()
                         )
                     )
                 )
@@ -436,6 +454,9 @@ class RoomRestores(
         const val ORDERING = "ordering"
         const val NOTICE = "notice"
 
+        /** An investment starts with its first aporte and value at positions 0 and 1. */
+        const val FIRST_FREE_POSITION = 2L
+
         /** An unconfirmed file is forgotten after a day; a new one can always be chosen. */
         val STAGING_LIFETIME: Duration = Duration.ofDays(1)
 
@@ -473,8 +494,14 @@ fun BackupCodec.check(bytes: ByteArray): Outcome<CheckedBackup, RestoreRejection
         is Outcome.Failure -> Outcome.Failure(plan.error.reason())
     }
 
-internal fun FinancialSnapshot.summary() =
-    BackupSummary(categories.size, expenses.size, incomes.size, goals.size, schedules.size)
+internal fun FinancialSnapshot.summary() = BackupSummary(
+    categories = categories.size,
+    expenses = expenses.size,
+    incomes = incomes.size,
+    goals = goals.size,
+    schedules = schedules.size,
+    investments = investments.size
+)
 
 /** How a person is told why a file cannot be restored; the detail stays in the rejection. */
 internal fun BackupRejection.reason(): RestoreRejection = when (this) {

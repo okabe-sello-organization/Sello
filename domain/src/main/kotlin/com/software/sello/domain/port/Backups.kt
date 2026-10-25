@@ -11,7 +11,12 @@ data class BackupSummary(
     val incomes: Int,
     val goals: Int,
     /** Recurring payments and incomes, which version 3 backups carry. */
-    val schedules: Int
+    val schedules: Int,
+    /**
+     * Investments, which version 4 backups carry, each with its movements; 0 where they
+     * are not counted, such as a backup remembered before investments existed.
+     */
+    val investments: Int = 0
 )
 
 /** A backup file ready to be written to a place the person chose. Nothing has been written yet. */

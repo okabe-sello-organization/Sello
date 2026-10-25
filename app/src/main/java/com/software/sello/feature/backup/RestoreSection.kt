@@ -178,8 +178,8 @@ private fun Preview(
 }
 
 /**
- * Now and backup, side by side: categories, expenses, incomes, and goals and recurring
- * payments and incomes when either has any.
+ * Now and backup, side by side: categories, expenses, incomes, and goals, recurring
+ * payments and incomes, and investments when either has any.
  */
 @Composable
 private fun Counts(current: BackupSummary, replacement: BackupSummary) {
@@ -197,7 +197,9 @@ private fun Counts(current: BackupSummary, replacement: BackupSummary) {
         Triple(R.string.backup_goals, current.goals, replacement.goals)
             .takeIf { current.goals > 0 || replacement.goals > 0 },
         Triple(R.string.backup_schedules, current.schedules, replacement.schedules)
-            .takeIf { current.schedules > 0 || replacement.schedules > 0 }
+            .takeIf { current.schedules > 0 || replacement.schedules > 0 },
+        Triple(R.string.backup_investments, current.investments, replacement.investments)
+            .takeIf { current.investments > 0 || replacement.investments > 0 }
     ).filterNotNull().forEach { (label, before, after) ->
         val name = stringResource(label)
         Row(
