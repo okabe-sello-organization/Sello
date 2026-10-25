@@ -67,6 +67,10 @@ data class IncomeEntryRoute(val repeat: Boolean = false)
 @Serializable
 data class SchedulesRoute(val income: Boolean = false)
 
+/** Lo que Sello anotó: what catch-up recorded since the notice was dismissed. */
+@Serializable
+data object CatchUpRoute
+
 /** The payments reserved this month, opened from Recibo's footnote. */
 @Serializable
 data object UpcomingPaymentsRoute

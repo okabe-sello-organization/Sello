@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-098, SELLO-114, SELLO-004
 - **Gate:** G2
 
@@ -36,3 +36,23 @@ Opening after a week shows what was recorded.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-103 --retain`.
+
+### Execution progress
+
+- **Notice:** derived from the entries themselves, not a log: every expense and income
+  with an origin created after the last **Listo** (`ScheduleRecordReads`, one
+  transaction), so one deleted meanwhile leaves the list and nothing new is stored but
+  the moment of Listo, a preference on the audit clock that stamps the entries
+  (`CatchUpNoticePreferences`). Owner's choice of 2026-10-25: bar and list, Listo
+  dismisses, it stays across openings until then; this reads "shown once per catch-up"
+  as once per batch of unreviewed entries, however many openings that spans.
+- **Bar:** "Sello anotó N pagos fijos / ingresos fijos / pagos e ingresos fijos · Ver"
+  above Anotar on Recibo, under a correction notice when there is one; absent when the
+  list is empty or cannot be read.
+- **List:** *Lo que Sello anotó*, each entry named by note, else category or source,
+  with its date and amount, opening `ExpenseEditRoute` or `IncomeEditRoute`; Listo on
+  the dock, back keeps the bar; loading, failed with Reintentar, and empty states.
+- **Wording:** the intro says "desde la última vez que lo revisaste" instead of the
+  design's "desde la última vez que abriste Sello", since the list runs from the last
+  Listo, not the last opening.
+- **Done (2026-10-25):** gate and device evidence in [evidence.md](evidence.md).
