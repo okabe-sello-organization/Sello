@@ -22,6 +22,7 @@ import com.software.sello.data.repository.RoomIncomeCommands
 import com.software.sello.data.repository.RoomIncomeReads
 import com.software.sello.data.repository.RoomMonthlySnapshots
 import com.software.sello.data.repository.RoomResumenSnapshots
+import com.software.sello.data.repository.RoomScheduleCatchUp
 import com.software.sello.data.repository.RoomScheduleCommands
 import com.software.sello.data.repository.RoomScheduleReads
 import com.software.sello.data.repository.UndoWindow
@@ -54,6 +55,7 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.Resets
 import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleCatchUpStore
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import java.io.File
@@ -113,6 +115,10 @@ class FinancialStorage internal constructor(
         clock: FinancialClock,
         ids: RecordIdSource
     ): ScheduleCommands = RoomScheduleCommands(database, audit, clock, ids)
+
+    /** Records what schedules have due, one batch per transaction. */
+    fun scheduleCatchUp(audit: AuditClock, ids: RecordIdSource): ScheduleCatchUpStore =
+        RoomScheduleCatchUp(database, audit, ids)
 
     /** Recurring payments and incomes with their pauses and catch-up checkpoints. */
     val scheduleReads: ScheduleReads = RoomScheduleReads(database)

@@ -178,6 +178,27 @@ the schedule; every write raises its version. The rules are the approved
   same transaction, and is refused with `SchedulesPending` while one has an
   unrecorded occurrence, so nothing is ever recorded into an archived category.
 
+### Catch-up
+
+`CatchUpSchedules` (`:domain`) records every occurrence due up to today, with no age
+limit, through `RoomScheduleCatchUp` in batches of 50. Each batch is one transaction:
+the oldest due occurrences across every schedule (by date, then creation order, then
+slot), an expense or income for each carrying its origin, each schedule's checkpoint
+moved to the last one it recorded, one revision and one `schedule.catch_up` receipt
+with no subject. Nothing due writes nothing.
+
+- **Safe to repeat without an operation identifier.** What is due is read from the
+  checkpoints inside the transaction and every origin is unique, so a batch that
+  committed is never written again, whether it is retried after an unknown outcome or
+  run by a new process (RE11–RE13). A deleted entry stays handled (RE15); a manual
+  entry is never matched (RE16).
+- **A failed batch keeps the ones before it.** The run stops there and reports why;
+  the next run starts from what is stored.
+- **A payment into an archived or missing category is damage**, refused as an
+  `Integrity` failure, never skipped.
+- `CatchUpRunner` (`:app`, `feature/recurrence`) runs it while Sello runs, never in the
+  background: see [time and composition](time-and-composition.md#catch-up).
+
 ## Guarantees and how they are kept
 
 - **One operation, one record.** The receipt's primary key is the operation

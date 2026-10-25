@@ -13,6 +13,10 @@ import com.software.sello.platform.ProcessFinancialZone
 import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemDispatcherProvider
 import java.time.ZoneId
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.job
+import kotlinx.coroutines.runBlocking
 import org.koin.core.KoinApplication
 import org.koin.dsl.koinApplication
 
@@ -53,7 +57,7 @@ class SandboxGraph(var session: SandboxSession) {
     }
 
     fun close() {
-        graph?.close()
+        graph?.endProcess()
         graph = null
     }
 
@@ -81,4 +85,14 @@ class SandboxGraph(var session: SandboxSession) {
             }
         }
     }
+}
+
+/**
+ * Ends [this] graph as the end of its process would: the application scope's work, such
+ * as a catch-up under way, is stopped and waited for before the graph and its storage
+ * close, so nothing of the old process still holds the database when the next opens it.
+ */
+fun KoinApplication.endProcess() {
+    runBlocking { koin.get<CoroutineScope>().coroutineContext.job.cancelAndJoin() }
+    close()
 }

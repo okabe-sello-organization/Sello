@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-097, SELLO-004
 - **Gate:** G2
 
@@ -62,4 +62,24 @@ reads; commands; catch-up and its triggers.
   day, and waits (`SchedulesPending`) while one has an unrecorded occurrence.
   `SchedulePolicy.due` gives what catch-up has still to record. Tests:
   `ScheduleCommandContractTest` (13, RE17, RE18, RE21, RE23), three `due` examples
-  (RE10, RE11, two slots); eight deliberate breaks each fail a test.
+  (RE10, RE11, two slots); eight deliberate breaks each fail a test. Merged as #121.
+- **Part 3, catch-up:** `CatchUpSchedules` (domain) records every occurrence due up to
+  today, with no age limit, in batches of 50; a committed batch stays when a later one
+  fails. `RoomScheduleCatchUp` writes one batch per transaction: the oldest due across
+  schedules (date, creation order, slot), each entry with its origin, the moved
+  checkpoints, one revision and a `schedule.catch_up` receipt; it reads first and
+  takes the write lock only when something is due. `CatchUpRunner` runs it on start,
+  on each new financial day and after each committed change, one run at a time, with no
+  background work. Tests: `ScheduleCatchUpContractTest` (11: RE06, RE10–RE13, RE15,
+  RE16, RE21, RE36, batches across schedules, archived category), `CatchUpSchedulesTest`
+  (5), `CatchUpRunnerTest` (5, RE14) and `CatchUpOnOpeningTest`, the working checkpoint
+  on the debug app's real graph; nine deliberate breaks each fail a test. The sandbox
+  test harness now ends a graph as a process would (`endProcess`), waiting for its
+  background work before the next one opens the file.
+- **Unrelated finding, 2026-10-24, logged at the owner's request:**
+  `DataStoreUserPreferencesPersistenceTest.preferencesSurviveReopeningTheActualFile` (data
+  device suite, from SELLO-023) is flaky. It cancels the first DataStore's scope with
+  `cancel()` and reopens the same file at once, so the reopen sometimes meets the old
+  instance: "There are multiple DataStores active for the same file". It failed the
+  hosted check of #121 once and passed on a full rerun. The fix is `cancelAndJoin()`;
+  not changed here, as it is outside this ticket.

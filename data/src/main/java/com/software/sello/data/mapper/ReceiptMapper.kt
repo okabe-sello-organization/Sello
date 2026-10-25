@@ -51,7 +51,9 @@ private val IncomeKinds = setOf(
 private val GoalKinds = OperationKind.entries.filter { it.key.startsWith("goal.") }.toSet()
 
 /** The kinds whose subject is a schedule. */
-private val ScheduleKinds = OperationKind.entries.filter { it.key.startsWith("schedule.") }.toSet()
+private val ScheduleKinds = OperationKind.entries
+    .filter { it.key.startsWith("schedule.") && it != OperationKind.CatchUpSchedules }
+    .toSet()
 
 internal fun OperationReceiptEntity.toStored(): Outcome<StoredReceipt, StorageFailure.Integrity> =
     decodeRow(OperationReceiptEntity.TABLE, operationId) {
@@ -76,7 +78,9 @@ internal fun OperationReceiptEntity.toStored(): Outcome<StoredReceipt, StorageFa
                     expenseId = valid("subject_id", ExpenseId.of(subject))
                 )
 
-            OperationKind.RestoreHistory, OperationKind.ResetHistory -> {
+            OperationKind.RestoreHistory,
+            OperationKind.ResetHistory,
+            OperationKind.CatchUpSchedules -> {
                 check("subject_id", subjectId == null)
                 StoredReceipt(receipt, inputDigest)
             }

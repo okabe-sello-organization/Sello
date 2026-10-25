@@ -61,7 +61,7 @@ class ScenarioReplayTest {
 
     @After
     fun end() {
-        graph?.close()
+        graph?.endProcess()
         eraseFinancialStorage(context, SandboxNames)
     }
 
@@ -78,7 +78,7 @@ class ScenarioReplayTest {
     }
 
     private fun open() {
-        graph?.close()
+        graph?.endProcess()
         val composition = DebugComposition(store, {}) { tools = it }
         val opened = openStorage(
             context,
@@ -158,7 +158,7 @@ class ScenarioReplayTest {
         load(Scenarios.G01)
         runToTheEnd()
         val fresh = history()
-        graph?.close()
+        graph?.endProcess()
         graph = null
         eraseFinancialStorage(context, SandboxNames)
 

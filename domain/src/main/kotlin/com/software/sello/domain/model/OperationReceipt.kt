@@ -36,6 +36,9 @@ enum class OperationKind(val key: String) {
     ResumeSchedule("schedule.resume"),
     DeleteSchedule("schedule.delete"),
 
+    /** A batch catch-up recorded across schedules. It has no single subject. */
+    CatchUpSchedules("schedule.catch_up"),
+
     /** The whole financial history replaced by a backup. It has no single subject. */
     RestoreHistory("history.restore"),
 

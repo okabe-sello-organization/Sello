@@ -92,4 +92,8 @@ interface ScheduleDao {
 
     @Query("DELETE FROM schedule WHERE id = :id AND version = :expectedVersion")
     suspend fun delete(id: String, expectedVersion: Long): Int
+
+    /** Catch-up's checkpoint: [date] and [slot] are the last occurrence it dealt with. */
+    @Query("UPDATE schedule SET handled_date = :date, handled_slot = :slot WHERE id = :id")
+    suspend fun setHandled(id: String, date: String, slot: Int): Int
 }

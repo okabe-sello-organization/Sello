@@ -147,13 +147,16 @@ internal suspend fun SelloDatabase.startCommand(
     }
 }
 
-/** The last step: advance the revision by one and store the receipt. Returns the receipt. */
+/**
+ * The last step: advance the revision by one and store the receipt. Returns the receipt.
+ * [subjectId] is absent only for a change with no single subject, such as catch-up.
+ */
 internal suspend fun SelloDatabase.commitCommand(
     profile: FinancialProfile,
     operationId: OperationId,
     kind: OperationKind,
     digest: String,
-    subjectId: String,
+    subjectId: String?,
     at: Instant
 ): StoredReceipt {
     val revision = nextCounter(profile.revision, ProfileEntity.TABLE, null, "revision")

@@ -111,7 +111,7 @@ class TimeControlsJourneyTest {
 
     @After
     fun closeTheSandbox() {
-        graph.close()
+        graph.endProcess()
         eraseFinancialStorage(context, SandboxNames)
     }
 
