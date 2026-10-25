@@ -185,7 +185,8 @@ internal fun UsdRateDestination(
         onShell,
         navigation = null,
         onBack = onBack,
-        screenTitle = stringResource(R.string.usd_rate_title),
+        // The rate is not tied to a month: its title alone, as a goal's.
+        titleOnly = stringResource(R.string.usd_rate_title),
         pastMonthRibbon = false,
         entryDock = false
     ) { padding ->

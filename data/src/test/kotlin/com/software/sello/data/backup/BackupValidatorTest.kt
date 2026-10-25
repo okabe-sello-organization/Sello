@@ -43,7 +43,7 @@ class BackupValidatorTest {
                 BackupRejection.AmountOutOfRange("financial.expenses[1].amount"),
             "invalid-dangling-category.json" to
                 BackupRejection.DanglingReference("financial.expenses[2].categoryId"),
-            "invalid-newer-version.json" to BackupRejection.UnsupportedVersion(4),
+            "invalid-newer-version.json" to BackupRejection.UnsupportedVersion(5),
             "invalid-usd-expense.json" to
                 BackupRejection.UnsupportedCurrency("financial.expenses[2].currency"),
             "invalid-truncated.json" to BackupRejection.Truncated
@@ -133,8 +133,8 @@ class BackupValidatorTest {
     @Test
     fun `a newer or older version is named, not misread`() {
         assertEquals(
-            BackupRejection.UnsupportedVersion(4),
-            rejection(variant("\"version\": 1,", "\"version\": 4,"))
+            BackupRejection.UnsupportedVersion(5),
+            rejection(variant("\"version\": 1,", "\"version\": 5,"))
         )
         assertEquals(
             BackupRejection.UnsupportedVersion(0),
@@ -143,10 +143,10 @@ class BackupValidatorTest {
     }
 
     @Test
-    fun `a version 4 file is refused by version even when its shape has changed`() {
+    fun `a version 5 file is refused by version even when its shape has changed`() {
         assertEquals(
-            BackupRejection.UnsupportedVersion(4),
-            rejection("""{"format": "sello-backup", "version": 4, "ledger": {"rows": []}}""")
+            BackupRejection.UnsupportedVersion(5),
+            rejection("""{"format": "sello-backup", "version": 5, "ledger": {"rows": []}}""")
         )
     }
 
