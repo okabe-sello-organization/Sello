@@ -4,6 +4,7 @@
     <string name="sello_error_title">No se pudo cargar</string>
     <string name="sello_loading">Cargando</string>
     <string name="sello_backspace">Borrar</string>
+    <string name="sello_decimal_comma">Coma decimal</string>
     <string name="sello_clear_all">Borrar todo</string>
     <string name="sello_paste">Pegar</string>
     <string name="sello_amount_empty">Sin monto</string>
