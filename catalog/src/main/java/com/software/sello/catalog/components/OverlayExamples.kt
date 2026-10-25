@@ -55,6 +55,23 @@ fun DangerAndTicketExample() {
             strings.getString(R.string.catalog_demo_ganaste_los_sellos_del_25_y_del),
             strings.getString(R.string.catalog_demo_viaje_a_la_costa_faltan_1_290)
         )
+        StampTicket(
+            listOf(GoalPlaces[1]),
+            strings.getString(R.string.catalog_demo_de_vuelta_en_el_50),
+            strings.getString(R.string.catalog_demo_viaje_faltan_1_490)
+        )
+        StampTicket(
+            listOf(
+                GoalPlaces[3].copy(
+                    state = MilestoneState.Ready,
+                    description = strings.getString(
+                        R.string.catalog_demo_100_por_ciento_pendiente_de_marcar_como
+                    )
+                )
+            ),
+            strings.getString(R.string.catalog_demo_llegaste_al_100),
+            strings.getString(R.string.catalog_demo_celular_marcala)
+        )
         DangerSlip(
             strings.getString(R.string.catalog_demo_borrar_esta_meta),
             AnnotatedString(

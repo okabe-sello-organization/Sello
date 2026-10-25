@@ -1,9 +1,12 @@
 package com.software.sello.catalog.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +31,7 @@ import com.software.sello.designsystem.component.CompletedGoalRow
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.GoalCard
+import com.software.sello.designsystem.component.GoalIconCircle
 import com.software.sello.designsystem.component.GoalPill
 import com.software.sello.designsystem.component.GoalPinPill
 import com.software.sello.designsystem.component.IconChoice
@@ -45,6 +49,7 @@ import com.software.sello.designsystem.component.RecordedMark
 import com.software.sello.designsystem.component.RecordedValuesChart
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
+import com.software.sello.designsystem.component.SlidingKeypad
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
@@ -63,6 +68,7 @@ internal val GoalPlaces = listOf(
 fun MilestonesExample() {
     val strings = LocalResources.current
     var replay by rememberSaveable { mutableIntStateOf(0) }
+    var relit by rememberSaveable { mutableIntStateOf(0) }
     ExampleStack {
         ExampleCaption(
             strings.getString(
@@ -112,6 +118,22 @@ fun MilestonesExample() {
         SelloButton(strings.getString(R.string.catalog_demo_repetir_aterrizaje), {
             replay++
         }, kind = ButtonKind.Outlined)
+        ExampleCaption(strings.getString(R.string.catalog_demo_vuelve_a_encenderse))
+        key(relit) {
+            MilestoneRow(
+                GoalPlaces,
+                relighting = if (relit >
+                    0
+                ) {
+                    setOf(1)
+                } else {
+                    emptySet()
+                }
+            )
+        }
+        SelloButton(strings.getString(R.string.catalog_demo_repetir_encendido), {
+            relit++
+        }, kind = ButtonKind.Outlined)
         ExampleCaption(
             strings.getString(R.string.catalog_demo_con_movimiento_reducido_se_muestra_el_mismo)
         )
@@ -139,7 +161,18 @@ fun GoalPillExample() {
                 result =
                     strings.getString(R.string.catalog_demo_abrir_meta)
             },
-            { result = "Aportar" }
+            { result = "Aportar" },
+            openDescription = strings.getString(R.string.catalog_demo_viaje_57_ver_meta)
+        )
+        GoalPill(
+            strings.getString(R.string.catalog_demo_fondo_de_emergencia),
+            strings.getString(R.string.catalog_demo_0),
+            0f,
+            SelloIcon.AccountBalance,
+            strings.getString(R.string.catalog_demo_aportar_a_fondo),
+            { result = strings.getString(R.string.catalog_demo_abrir_meta) },
+            { result = "Aportar" },
+            openDescription = strings.getString(R.string.catalog_demo_fondo_0_ver_meta)
         )
         GoalPill(
             strings.getString(
@@ -168,6 +201,22 @@ fun GoalPillExample() {
                     strings.getString(R.string.catalog_demo_completar_meta)
             }
         )
+        ExampleCaption(strings.getString(R.string.catalog_demo_estrecho_boton_debajo))
+        ReachedRow(
+            strings.getString(R.string.catalog_demo_celular_nuevo),
+            strings.getString(R.string.catalog_demo_llego_al_100),
+            strings.getString(R.string.catalog_demo_marcar_como_lograda),
+            { result = strings.getString(R.string.catalog_demo_completar_meta) },
+            Modifier.width(240.dp)
+        )
+        ExampleCaption(strings.getString(R.string.catalog_demo_marcando))
+        ReachedRow(
+            strings.getString(R.string.catalog_demo_celular_nuevo),
+            strings.getString(R.string.catalog_demo_llego_al_100),
+            strings.getString(R.string.catalog_demo_marcar_como_lograda),
+            {},
+            busy = true
+        )
         ExampleCaption(result)
     }
 }
@@ -176,6 +225,7 @@ fun GoalPillExample() {
 fun GoalCardsExample() {
     val strings = LocalResources.current
     var result by rememberSaveable { mutableStateOf("") }
+    var landed by rememberSaveable { mutableIntStateOf(0) }
     // The reference's goals, highest completion first.
     ExampleStack {
         GoalCard(
@@ -212,13 +262,22 @@ fun GoalCardsExample() {
             placesUpTo(0),
             { result = "Abrir Curso de inglés" }
         )
-        CompletedGoalRow(
-            strings.getString(R.string.catalog_demo_vacunas_de_luna),
-            strings.getString(R.string.catalog_demo_400_000_30_sep),
-            SelloIcon.Pets,
-            "Lograda",
-            { result = strings.getString(R.string.catalog_demo_abrir_meta_lograda_solo_lectura) }
-        )
+        key(landed) {
+            CompletedGoalRow(
+                strings.getString(R.string.catalog_demo_vacunas_de_luna),
+                strings.getString(R.string.catalog_demo_400_000_30_sep),
+                SelloIcon.Pets,
+                "Lograda",
+                {
+                    result =
+                        strings.getString(R.string.catalog_demo_abrir_meta_lograda_solo_lectura)
+                },
+                land = landed > 0
+            )
+        }
+        SelloButton(strings.getString(R.string.catalog_demo_repetir_lograda), {
+            landed++
+        }, kind = ButtonKind.Outlined)
         ExampleCaption(result)
     }
 }
@@ -538,5 +597,37 @@ fun SplitChartsExample() {
             )
             recorded?.let { Text("Valor seleccionado: $it") }
         }
+    }
+}
+
+@Composable
+fun GoalFormExample() {
+    val strings = LocalResources.current
+    var digits by rememberSaveable { mutableStateOf("") }
+    var typing by rememberSaveable { mutableStateOf(false) }
+    ExampleStack {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            GoalIconCircle(null)
+            GoalIconCircle(SelloIcon.Flight)
+        }
+        ExampleCaption(strings.getString(R.string.catalog_demo_sin_icono))
+        EntryAmountSlip(
+            strings.getString(R.string.catalog_demo_cuanto_necesitas),
+            copFixture(digits.toLongOrNull() ?: 0),
+            icon = SelloIcon.Flight,
+            tone = ButtonTone.Gain
+        )
+        SelloButton(strings.getString(R.string.catalog_demo_abrir_teclado), {
+            typing = true
+        }, kind = ButtonKind.Outlined)
+        SlidingKeypad(
+            visible = typing,
+            doneLabel = strings.getString(R.string.catalog_demo_listo),
+            onDone = { typing = false },
+            onDigit = { if (digits.length < 12) digits = (digits + it).trimStart('0') },
+            onTripleZero = { if (digits.isNotEmpty() && digits.length <= 9) digits += "000" },
+            onBackspace = { digits = digits.dropLast(1) },
+            onClearAll = { digits = "" }
+        )
     }
 }
