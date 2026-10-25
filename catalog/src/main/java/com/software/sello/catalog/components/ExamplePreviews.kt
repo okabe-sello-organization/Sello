@@ -126,6 +126,30 @@ private fun PlanSlipExamplePreview(
 
 @ExampleThemePreviews
 @Composable
+private fun ScheduleRowExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { ScheduleRowExample() }
+
+@ExampleThemePreviews
+@Composable
+private fun RepeatSheetOpenPreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { RepeatSheetExample(startOpen = true) }
+
+@ExampleThemePreviews
+@Composable
+private fun ChoiceSlipOpenPreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { ExampleChoice() }
+
+@ExampleThemePreviews
+@Composable
+private fun NoticeExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { NoticeExample() }
+
+@ExampleThemePreviews
+@Composable
 private fun SplitChartsExamplePreview(
     @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
 ) = Frame(theme) { SplitChartsExample() }

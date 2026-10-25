@@ -58,7 +58,9 @@ import kotlinx.coroutines.launch
  * A short statement about something that just happened, with at most one thing to do
  * about it, such as "Gasto borrado" and "Deshacer". It is announced when it appears.
  * [spoken] is what is read aloud, when that should say more than fits on the line.
- * While [busy] the action stays in view and cannot be pressed.
+ * While [busy] the action stays in view and cannot be pressed. An [icon] leads the
+ * message in place of the confirmation check, such as the repeat icon on what Sello
+ * recorded by itself.
  *
  * It holds no time: whoever shows it decides how long, and takes it away.
  */
@@ -70,7 +72,8 @@ fun SelloNotice(
     onAction: (() -> Unit)? = null,
     busy: Boolean = false,
     spoken: String = message,
-    confirmation: Boolean = false
+    confirmation: Boolean = false,
+    icon: SelloIcon? = null
 ) {
     val colors = SelloTheme.colors
     Row(
@@ -84,7 +87,11 @@ fun SelloNotice(
             .padding(start = SelloTheme.spacing.lg, end = SelloTheme.spacing.xs)
             .heightIn(min = SelloTheme.spacing.minTouchTarget)
     ) {
-        if (confirmation) {
+        if (icon != null) {
+            // Brand-soft on the ink bar, light or dark: the brand itself is too faint on
+            // the dark scheme's light bar.
+            Icon(icon.painter(), null, Modifier.size(22.dp), colors.brandSoft)
+        } else if (confirmation) {
             Icon(
                 SelloIcon.Check.painter(),
                 null,

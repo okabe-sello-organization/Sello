@@ -4,18 +4,36 @@ import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Occurrence
+import com.software.sello.domain.model.OperationId
+import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.Recurrence
+import com.software.sello.domain.model.RepeatRule
+import com.software.sello.domain.model.Schedule
+import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.ScheduleCommandOutcome
+import com.software.sello.domain.port.ScheduleRejection
+import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.recurrence.HandScheduleCommands
+import com.software.sello.feature.recurrence.HandScheduleReads
+import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -62,6 +80,8 @@ class ExpenseEditViewModelTest {
     private val old = categoryIn(5, "Vieja", 100_000, archived = true)
     private val older = categoryIn(6, "Más vieja", 100_000, archived = true)
     private val bread = storedExpense(100, 1, "2026-10-05", 48_700, "Pan").copy(version = 3)
+    private val scheduleBook = HandScheduleReads()
+    private val schedules = HandScheduleCommands(scheduleBook)
 
     @Before
     fun mainDispatcher() {
@@ -96,7 +116,7 @@ class ExpenseEditViewModelTest {
     private fun form(saved: SavedStateHandle = editing()) =
         ExpenseEntryViewModel(saved, commands, reads, snapshots, clock, {
             uuid(nextId++)
-        }, money, corrections)
+        }, money, corrections, schedules, scheduleBook)
 
     /** The form opened on [expense], with it in storage and its months read. */
     private fun opened(
@@ -452,5 +472,151 @@ class ExpenseEditViewModelTest {
 
         assertTrue(untouched.now.closed)
         assertTrue(changed.now.confirmDiscard && !changed.now.closed)
+    }
+
+    // --- Solo este / Este y los siguientes (SELLO-100) ---
+
+    /** The weekly bread, 48.700 on Mondays from 5 Oct at version 2, recorded 5 Oct. */
+    private val weekly = StoredSchedule(
+        Schedule(
+            scheduleId(9),
+            ScheduledEntry.Payment(
+                categoryId(1),
+                pesos(48_700),
+                (Note.of("Pan") as Outcome.Success).value
+            ),
+            (
+                Recurrence.of(
+                    (RepeatRule.EveryWeeks.of(1) as Outcome.Success).value,
+                    LocalDate.parse("2026-10-05"),
+                    null,
+                    emptyList()
+                ) as Outcome.Success
+                ).value
+        ),
+        sequence = 1,
+        handled = Occurrence(LocalDate.parse("2026-10-19"), 1),
+        version = 2,
+        createdAt = Instant.EPOCH,
+        updatedAt = Instant.EPOCH
+    )
+
+    private val recorded = bread.copy(
+        origin = EntryOrigin(scheduleId(9), Occurrence(LocalDate.parse("2026-10-05"), 1))
+    )
+
+    private fun fromSchedule(scheduleExists: Boolean = true): ExpenseEntryViewModel {
+        if (scheduleExists) scheduleBook.schedules += weekly
+        return opened(recorded)
+    }
+
+    @Test
+    fun newTermsOnARecordedPaymentAskAndSoloEsteCorrectsOnlyIt() {
+        val form = fromSchedule()
+        form.retype("52000")
+        form.onAction(ExpenseEntryAction.Submit)
+        val asked = form.now
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = false))
+
+        assertTrue(asked.askFollowing)
+        assertEquals("Pan", asked.following?.name)
+        assertEquals(1, commands.edited.size)
+        assertEquals(pesos(52_000), commands.edited.single().amount)
+        assertTrue(schedules.submitted.isEmpty())
+        assertEquals(CorrectionNotice.Updated, corrections.notice.value)
+    }
+
+    @Test
+    fun esteYLosSiguientesChangesTheScheduleFirstThenThisPayment() {
+        val form = fromSchedule()
+        form.retype("52000")
+        form.onAction(ExpenseEntryAction.Submit)
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
+
+        // The rule, its start and end stay; only the terms change, from tomorrow.
+        assertEquals(
+            listOf(
+                ChangeSchedule(
+                    (OperationId.of(uuid(500)) as Outcome.Success).value,
+                    7,
+                    scheduleId(9),
+                    2,
+                    ScheduledEntry.Payment(
+                        categoryId(1),
+                        pesos(52_000),
+                        (Note.of("Pan") as Outcome.Success).value
+                    ),
+                    weekly.schedule.recurrence.rule,
+                    LocalDate.parse("2026-10-05"),
+                    null
+                )
+            ),
+            schedules.submitted
+        )
+        assertEquals(1, commands.edited.size)
+        assertEquals(
+            CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = false),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun aDateAloneOrAScheduleThatIsGoneAsksNothing() {
+        val moved = fromSchedule()
+        moved.onAction(ExpenseEntryAction.DatePicked(LocalDate.parse("2026-10-06")))
+        moved.onAction(ExpenseEntryAction.Submit)
+        scheduleBook.schedules.clear()
+        val gone = fromSchedule(scheduleExists = false)
+        gone.retype("52000")
+        gone.onAction(ExpenseEntryAction.Submit)
+
+        assertFalse(moved.now.askFollowing)
+        assertFalse(gone.now.askFollowing)
+        assertEquals(2, commands.edited.size)
+        assertTrue(schedules.submitted.isEmpty())
+    }
+
+    @Test
+    fun refusedNewTermsWriteNothingAndTheChoiceIsAskedAgain() {
+        val form = fromSchedule()
+        form.retype("52000")
+        schedules.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.CatchUpPending) }
+        form.onAction(ExpenseEntryAction.Submit)
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
+        val refused = form.now
+        form.onAction(ExpenseEntryAction.Submit)
+
+        assertEquals(EntryError.FollowingNotSaved, refused.error)
+        assertTrue(commands.edited.isEmpty())
+        assertTrue(form.now.askFollowing)
+    }
+
+    @Test
+    fun whenOnlyTheFollowingChangedSavingAgainCorrectsThisOneWithoutResending() {
+        val form = fromSchedule()
+        form.retype("52000")
+        commands.editAnswer =
+            {
+                ExpenseCommandOutcome.Rejected(
+                    ExpenseRejection.StorageFailed(StorageFailure.Unavailable("x"))
+                )
+            }
+        form.onAction(ExpenseEntryAction.Submit)
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
+        val half = form.now
+        commands.editAnswer = {
+            ExpenseCommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.EditExpense),
+                replayed = false
+            )
+        }
+        form.onAction(ExpenseEntryAction.Submit)
+
+        assertTrue(half.followingSaved)
+        assertEquals(EntryError.NotSaved, half.error)
+        assertFalse(form.now.askFollowing)
+        assertEquals(1, schedules.submitted.size)
+        assertEquals(2, commands.edited.size)
+        assertTrue(form.now.closed)
     }
 }

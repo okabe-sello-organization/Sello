@@ -14,6 +14,7 @@ import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.feature.backup.HandBackupRecords
 import com.software.sello.feature.backup.g01Summary
+import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.navigation.HandFinancialClock
 import java.time.Instant
 import java.time.ZoneId
@@ -49,7 +50,7 @@ class SettingsViewModelTest {
 
     @Test
     fun changingEachControlUsesItsNarrowPortAndShowsThePersistedValues() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock)
+        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
         runCurrent()
 
         model.onAction(SettingsAction.ThemeChosen(ThemePreference.Dark))
@@ -74,7 +75,7 @@ class SettingsViewModelTest {
 
     @Test
     fun anUnreadablePreferenceStaysVisibleAndRetryKeepsKnownValues() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock)
+        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
         runCurrent()
         appearance.values.value = PreferenceRead.Failed(
             PreferenceFailure.Unavailable,
@@ -95,7 +96,7 @@ class SettingsViewModelTest {
 
     @Test
     fun aFailedNonfinancialWriteIsReportedWithoutChangingTheDisplayedFinancialOrder() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock)
+        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
         runCurrent()
         ordering.nextWrite = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
 
@@ -109,7 +110,7 @@ class SettingsViewModelTest {
 
     @Test
     fun theBackupRowSaysNeverUntilABackupIsRecordedThenItsMoment() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock)
+        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
         runCurrent()
 
         assertEquals(BackupLine.Read(null, bogota), model.state.value.backup)
@@ -123,7 +124,7 @@ class SettingsViewModelTest {
 
     @Test
     fun anUnreadableBackupRecordIsSaidSoAndLeavesTheOtherControlsAlone() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock)
+        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
         runCurrent()
 
         backups.failReads()

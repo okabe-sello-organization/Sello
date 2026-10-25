@@ -94,6 +94,8 @@ import com.software.sello.feature.recibo.ReciboAction
 import com.software.sello.feature.recibo.ReciboScreen
 import com.software.sello.feature.recibo.ReciboState
 import com.software.sello.feature.recibo.ReciboViewModel
+import com.software.sello.feature.recurrence.ScheduleEditorRoot
+import com.software.sello.feature.recurrence.SchedulesRoot
 import com.software.sello.feature.reset.ResetRoot
 import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.reset.back
@@ -104,10 +106,13 @@ import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewMo
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.CorrectionsViewModel
 import com.software.sello.presentation.corrections.GoalCelebration
+import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.corrections.celebration
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.MonthNames
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.recurrence.repeatRuleLabel
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
@@ -215,7 +220,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     navigation.navigate(IncomeHistoryRoute)
                 }, { id -> navigation.navigate(ResumenCategoryRoute(id)) }, {
                     navigation.navigate(ExpenseEntryRoute())
-                }, padding) { id ->
+                }, padding, { navigation.navigate(SchedulesRoute()) }) { id ->
                     navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString()))
                 }
             }
@@ -386,7 +391,10 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     viewModels,
                     padding,
                     onOpenBackup = { navigation.navigate(BackupRoute) { launchSingleTop = true } },
-                    onOpenReset = { navigation.navigate(ResetRoute) { launchSingleTop = true } }
+                    onOpenReset = { navigation.navigate(ResetRoute) { launchSingleTop = true } },
+                    onOpenSchedules = {
+                        navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
+                    }
                 )
             }
             BackHandler(enabled = !state.monthPickerOpen) { navigation.popBackStack() }
@@ -431,6 +439,52 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 ResetRoot(viewModels, padding) { navigation.popBackStack() }
             }
         }
+        composable<SchedulesRoute> {
+            ShellScreen(
+                state,
+                monthNames(),
+                shell::onAction,
+                navigation = null,
+                onBack = { navigation.popBackStack() },
+                screenTitle = stringResource(R.string.schedules_title),
+                pastMonthRibbon = false,
+                entryDock = false,
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } },
+                actions = {
+                    IconButton(
+                        onClick = { navigation.navigate(ExpenseEntryRoute(repeat = true)) },
+                        modifier = Modifier.testTag("schedules.add")
+                    ) {
+                        Icon(
+                            SelloIcon.Add.painter(),
+                            contentDescription = stringResource(R.string.schedules_add_payment)
+                        )
+                    }
+                }
+            ) { padding ->
+                SchedulesRoot(
+                    viewModels,
+                    padding,
+                    onOpen = { id ->
+                        navigation.navigate(ScheduleRoute(id)) { launchSingleTop = true }
+                    },
+                    onAdd = { addIncome ->
+                        if (addIncome) {
+                            navigation.navigate(IncomeEntryRoute(repeat = true))
+                        } else {
+                            navigation.navigate(ExpenseEntryRoute(repeat = true))
+                        }
+                    }
+                )
+            }
+        }
+        composable<ScheduleRoute> {
+            ScheduleEditorRoot(viewModels) {
+                val onEditor =
+                    navigation.currentBackStackEntry?.destination?.hasRoute<ScheduleRoute>()
+                if (onEditor == true) navigation.popBackStack()
+            }
+        }
         composable<IncomeHistoryRoute> {
             val model: IncomeHistoryViewModel = viewModel(factory = viewModels)
             val history by model.state.collectAsStateWithLifecycle()
@@ -449,7 +503,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 dock = SelloDock(
                     label = stringResource(R.string.dock_income_label),
                     actionLabel = stringResource(R.string.income_save),
-                    onClick = { navigation.navigate(IncomeEntryRoute) }
+                    onClick = { navigation.navigate(IncomeEntryRoute()) }
                 ),
                 notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
             ) { padding ->
@@ -459,7 +513,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     plan,
                     today,
                     model::onAction,
-                    { navigation.navigate(IncomeEntryRoute) },
+                    { navigation.navigate(IncomeEntryRoute()) },
                     { navigation.navigate(IncomeEditRoute(it)) },
                     padding
                 )
@@ -1187,6 +1241,61 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
             } else {
                 SelloNotice(message, tagged, confirmation = true)
             }
+        }
+
+        is CorrectionNotice.ScheduleChanged -> SelloNotice(
+            stringResource(
+                when (notice.change) {
+                    ScheduleChange.Changed -> R.string.notice_schedule_changed
+
+                    ScheduleChange.Paused -> if (notice.income) {
+                        R.string.notice_income_paused
+                    } else {
+                        R.string.notice_payment_paused
+                    }
+
+                    ScheduleChange.Resumed -> if (notice.income) {
+                        R.string.notice_income_resumed
+                    } else {
+                        R.string.notice_payment_resumed
+                    }
+
+                    ScheduleChange.Deleted -> if (notice.income) {
+                        R.string.notice_income_deleted_schedule
+                    } else {
+                        R.string.notice_payment_deleted_schedule
+                    }
+                }
+            ),
+            tagged,
+            confirmation = true
+        )
+
+        is CorrectionNotice.ScheduleSaved -> {
+            val name = notice.name?.takeIf { it.isNotBlank() }
+                ?: notice.sourceKey?.let { incomeSourceLabel(it) }
+            val rule = notice.rule
+            val start = notice.start
+            val message = if (name != null && rule != null && start != null) {
+                stringResource(
+                    if (notice.income) {
+                        R.string.notice_income_schedule_saved
+                    } else {
+                        R.string.notice_payment_schedule_saved
+                    },
+                    name,
+                    repeatRuleLabel(rule, start)
+                )
+            } else {
+                stringResource(
+                    if (notice.income) {
+                        R.string.notice_income_schedule_saved_plain
+                    } else {
+                        R.string.notice_payment_schedule_saved_plain
+                    }
+                )
+            }
+            SelloNotice(message, tagged, confirmation = true)
         }
 
         is CorrectionNotice.IncomeRecorded -> {

@@ -7,6 +7,7 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecords
@@ -15,6 +16,8 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ScheduleBookState
+import com.software.sello.domain.port.ScheduleReads
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
@@ -29,13 +32,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Coordinates the appearance and Recibo-order controls, and the last backup's date. */
+/**
+ * Coordinates the appearance and Recibo-order controls, the last backup's date and how
+ * many payments and incomes repeat.
+ */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class SettingsViewModel(
     private val appearancePreferences: AppearancePreferences,
     private val orderingPreferences: CategoryOrderingPreferences,
     backupRecords: BackupRecords,
-    clock: FinancialClock
+    clock: FinancialClock,
+    schedules: ScheduleReads
 ) : ViewModel() {
     private val retry = MutableStateFlow(0)
     private val busy = MutableStateFlow(false)
@@ -90,13 +97,35 @@ class SettingsViewModel(
         }
     }
 
+    private val scheduleCount = retry.flatMapLatest { schedules.observe() }.map { read ->
+        when (read) {
+            ScheduleBookState.Loading -> ScheduleCountLine.Loading
+
+            is ScheduleBookState.Failed -> ScheduleCountLine.Unreadable
+
+            is ScheduleBookState.Ready -> {
+                val all = read.book.schedules.map { it.schedule.entry }
+                ScheduleCountLine.Read(
+                    payments = all.count { it is ScheduledEntry.Payment },
+                    incomes = all.count { it is ScheduledEntry.Income }
+                )
+            }
+        }
+    }
+
     val state = merge(
         readState.map { read ->
             { old: SettingsState ->
-                read.copy(busy = old.busy, writeFailure = old.writeFailure, backup = old.backup)
+                read.copy(
+                    busy = old.busy,
+                    writeFailure = old.writeFailure,
+                    backup = old.backup,
+                    schedules = old.schedules
+                )
             }
         },
         backup.map { value -> { old: SettingsState -> old.copy(backup = value) } },
+        scheduleCount.map { value -> { old: SettingsState -> old.copy(schedules = value) } },
         busy.map { value -> { old: SettingsState -> old.copy(busy = value) } },
         writeFailure.map { value -> { old: SettingsState -> old.copy(writeFailure = value) } }
     ).runningFold(SettingsState(loading = true)) { old, change -> change(old) }
@@ -148,9 +177,19 @@ data class SettingsState(
     val orderingFailure: PreferenceFailure? = null,
     val writeFailure: PreferenceFailure? = null,
     val busy: Boolean = false,
-    val backup: BackupLine = BackupLine.Loading
+    val backup: BackupLine = BackupLine.Loading,
+    val schedules: ScheduleCountLine = ScheduleCountLine.Loading
 ) {
     val failure: PreferenceFailure? get() = writeFailure ?: appearanceFailure ?: orderingFailure
+}
+
+/** The Pagos e ingresos fijos row: how many of each, when that can be read. */
+sealed interface ScheduleCountLine {
+    data object Loading : ScheduleCountLine
+
+    data object Unreadable : ScheduleCountLine
+
+    data class Read(val payments: Int, val incomes: Int) : ScheduleCountLine
 }
 
 /** The Respaldo row: when the last backup was made, if one was and that can be read. */

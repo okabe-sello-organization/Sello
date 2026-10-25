@@ -1,6 +1,9 @@
 package com.software.sello.feature.expense
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.RepeatRule
+import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.presentation.recurrence.RepeatUi
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -14,7 +17,7 @@ enum class NoteProblem { TooLong, NotAllowed }
  * first. [Changes] is only for a recorded expense being corrected: nothing differs yet
  * from what is stored, so there is nothing to save.
  */
-enum class Missing { Amount, Category, Note, Changes }
+enum class Missing { Amount, Category, Note, Repeat, Changes }
 
 /** Why recording did not finish. None of these means the expense was saved. */
 enum class EntryError {
@@ -43,8 +46,28 @@ enum class EntryError {
     ExpenseChanged,
 
     /** Deleting failed and the expense is still there. */
-    NotDeleted
+    NotDeleted,
+
+    /** A schedule starts today or later; the date was earlier. */
+    StartTooEarly,
+
+    /** A schedule's end is on or after its start and today. */
+    EndTooEarly,
+
+    /** The following payments' new terms were refused; nothing was written. */
+    FollowingNotSaved
 }
+
+/**
+ * The schedule that recorded the entry being corrected, as the choice names it: its note
+ * or category, or for an income its note, Otro's name or [sourceKey].
+ */
+data class FollowingSchedule(
+    val name: String?,
+    val rule: RepeatRule,
+    val start: LocalDate,
+    val sourceKey: String? = null
+)
 
 data class EntryCategory(val id: String, val name: String, val iconKey: String)
 
@@ -94,7 +117,14 @@ data class ExpenseEntryState(
      * Months other than the current one whose figures saving or deleting would change:
      * the month the expense is recorded in and the month the draft would move it to.
      */
-    val pastMonths: List<YearMonth> = emptyList()
+    val pastMonths: List<YearMonth> = emptyList(),
+    /** Se repite, offered only for a new expense. */
+    val repeat: RepeatUi = RepeatUi(),
+    /** Saving waits for Solo este or Este y los siguientes about [following]. */
+    val askFollowing: Boolean = false,
+    val following: FollowingSchedule? = null,
+    /** The following payments already took the new terms; this expense did not yet. */
+    val followingSaved: Boolean = false
 ) {
     val canSubmit: Boolean
         get() = !loading && !loadFailed && !busy && missing == null && error !in Blocking &&
@@ -166,4 +196,13 @@ sealed interface ExpenseEntryAction {
 
     /** Delete the recorded expense being corrected. */
     data object Delete : ExpenseEntryAction
+
+    /** Se repite's row and sheet. */
+    data class Repeat(val action: RepeatAction) : ExpenseEntryAction
+
+    /** Solo este ([alsoFollowing] false) or Este y los siguientes. */
+    data class FollowingChosen(val alsoFollowing: Boolean) : ExpenseEntryAction
+
+    /** Volver a editar: nothing is saved. */
+    data object FollowingDismissed : ExpenseEntryAction
 }

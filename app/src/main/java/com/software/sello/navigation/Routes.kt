@@ -59,8 +59,17 @@ data class CategoryExpensesRoute(val categoryId: String)
 @Serializable
 data object IncomeHistoryRoute
 
+/** The entry form for one income; with [repeat] it opens with Se repite's sheet. */
 @Serializable
-data object IncomeEntryRoute
+data class IncomeEntryRoute(val repeat: Boolean = false)
+
+/** Pagos e ingresos fijos, on Ingresos when [income]. */
+@Serializable
+data class SchedulesRoute(val income: Boolean = false)
+
+/** Changing one schedule. The screen reads the schedule itself. */
+@Serializable
+data class ScheduleRoute(val scheduleId: String)
 
 @Serializable
 data class IncomeEditRoute(val incomeId: String)
@@ -73,12 +82,17 @@ data class IncomeEditRoute(val incomeId: String)
 data class CategoryEditorRoute(val forEntry: Boolean = false)
 
 /**
- * The entry form for one expense. Both arguments are hints for the draft that came
- * from outside (a link, or a category just created): the form checks them like any
- * other input and may ignore them. Neither is a record or a result.
+ * The entry form for one expense. The arguments are hints for the draft that came
+ * from outside (a link, a category just created, or + on Pagos e ingresos fijos, which
+ * asks for [repeat]): the form checks them like any other input and may ignore them.
+ * None is a record or a result.
  */
 @Serializable
-data class ExpenseEntryRoute(val categoryId: String? = null, val amount: String? = null)
+data class ExpenseEntryRoute(
+    val categoryId: String? = null,
+    val amount: String? = null,
+    val repeat: Boolean = false
+)
 
 /**
  * The same form, correcting the recorded expense with this identifier. The form reads
