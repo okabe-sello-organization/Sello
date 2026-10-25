@@ -51,6 +51,7 @@ data only: no scenario needs personal data or a local setting.
 | `archivo-pausa@1` | 19 | 2026-10-01 · Bogotá | Archive pauses the gym; resuming while archived is refused (`CategoryArchived`) | Paused from 12 Oct, 15 Oct not recorded; unarchived, still paused; resumed, 15 Nov (RE23) | corpus |
 | `borrar-programado@1` | 11 | 2026-10-01 · Bogotá | Rent schedule deleted on 10 Oct | 5 Oct stays as an expense, nothing on 5 Nov, schedule gone (RE24) | `RecurrenceScenarioRunnerTest`, corpus |
 | `ocurrencia-borrada@1` | 16 | 2026-10-01 · Bogotá | The rent also entered by hand; the recorded one deleted on 6 Oct | Oct spent 1.900.000, the manual one is no occurrence (RE16); not recorded again on 7 Oct, checkpoint still 5 Oct, 5 Nov comes (RE15) | corpus |
+| `pagos-previstos@1` | 15 | 2026-10-01 · Bogotá | Hogar 1.000.000, 400.000 spent; on 22 Oct rent of 200.000 due on the 28th, then more spending; catch-up on 28 Oct | Reserved 200.000, margin 400.000, 40.000 per day (RE25); margin 0 (RE27); −50.000 (RE28); remaining −80.000, margin −280.000 (RE29); on 28 Oct nothing reserved and the margin still −280.000 (RE26) | corpus |
 
 Restart and undo under financial time are covered outside the corpus:
 `TimeControlsJourneyTest` steps the financial day a year forward with an undo offer
@@ -109,10 +110,16 @@ example leaves open are the scenario's own. They use only the real path:
   pause. A manual entry is never counted (RE16). After a restore there are no receipts:
   a schedule is found by its note, unique within a scenario, and a deleted one's
   entries by their category's name and that note.
+- Recibo's reservations are figure checks on the month's real snapshot: `separado` is
+  `Q` (0 when nothing is set aside), `margen` is the headline `M = R − Q` (`R` when
+  nothing is), below 0 when short, and `por día` the daily figure drawn from it.
 
-Not covered here yet: Recibo's reserved payments `Q` (RE25–RE34) arrive with
-SELLO-101 and the catch-up notice (RE38–RE39, and the notice lines of RE10–RE12) with
-SELLO-103; their scenario checks come with those tickets. Expected income in Plan del
+`pagos-previstos@1` covers RE25–RE29; nothing reserved without a limit, in a past
+month or for a paused schedule (RE31–RE34) and the exact total (RE40) are tested in
+`ReservationPolicyTest`. The catch-up notice is checked by SELLO-103's tests:
+`CatchUpNoticeJourneyTest` drives `semana-fuera@1` through Recibo's bar and its list on
+the sandbox's own data (RE10's four), and `CatchUpNoticeViewModelTest` and
+`ScheduleRecordReadsTest` cover RE38 and RE39. Expected income in Plan del
 mes (RE35–RE37) has no scenario check yet. Deshacer of an occurrence's deletion (RE15's
 second half) is not scripted: it runs on real elapsed time, like the goals' Deshacer.
 A catch-up cut after a batch or with an unknown commit (RE12, RE13) is tested in

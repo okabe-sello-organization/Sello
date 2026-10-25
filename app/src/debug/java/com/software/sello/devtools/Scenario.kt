@@ -65,7 +65,16 @@ enum class Figure(val label: String) {
     NoLimit("sin límite"),
     Income("ingresos"),
     NetFlow("ingresos menos gastos"),
-    Unallocated("sin asignar")
+    Unallocated("sin asignar"),
+
+    /** What the month in progress sets aside for payments still due (rule 11): 0 if none. */
+    Reserved("separado"),
+
+    /** Recibo's headline: what is left after what is set aside, below 0 when short. */
+    Margin("margen"),
+
+    /** Recibo's daily figure, from the margin while something is set aside. */
+    PerDay("por día")
 }
 
 /** [pesos] in [month] for [figure], as given by [source]: an approved example ID or a hand derivation. */

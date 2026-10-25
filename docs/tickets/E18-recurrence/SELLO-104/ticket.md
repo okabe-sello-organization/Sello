@@ -48,5 +48,8 @@ Focused tests, then `./scripts/verify-ticket SELLO-104 --retain`.
   `CatchUpRunner` and reports its batches (`CatchUpLog`). Checks read entries by origin and
   each schedule's checkpoint and pause. `Scenario.kt`, the sandbox guide and the corpus no
   longer say recurrence does not exist.
-- **Still open:** the reservation checks (SELLO-101) and the catch-up notice checks
-  (SELLO-103) arrive with those tickets; this ticket closes after them.
+- **Part 2 (2026-10-25):** `pagos-previstos@1` checks Recibo's reservations on the real
+  snapshot through three new figures, `separado` (`Q`), `margen` (`M`) and `por día`:
+  RE25 Al día, RE27 Sin margen, RE28 and RE29 Revisar, and RE26 on the 28th, when
+  catch-up records the rent and the headline stays. The notice is checked by SELLO-103's
+  `CatchUpNoticeJourneyTest`, which drives `semana-fuera@1` through Recibo's bar and list.
