@@ -3,8 +3,9 @@
 Every scenario the debug sandbox replays, with its stable ID, version, seed, steps and
 expected figures. The same definitions (`app/src/debug/.../devtools/Scenarios.kt`) run
 live in **Sello Herramientas** and in `TemporalScenarioCorpusTest`, and each ends with a
-`Verify` step that reads the real Recibo/Resumen snapshots. Expected values are copied
-from the approved [financial examples](mvp-financial-examples.md) and name their ID;
+`Verify` step that reads the real Recibo/Resumen snapshots and, for goals, the real goal
+board. Expected values are copied from the approved [financial examples](mvp-financial-examples.md)
+or [goal examples](goal-examples.md) and name their ID;
 where a scenario has no approved example, the value is derived by hand from the steps
 and says so. None is computed by the code being checked.
 
@@ -36,6 +37,10 @@ data only: no scenario needs personal data or a local setting.
 | `limite-pasado@1` | 8 | 2026-09-10 · Bogotá | Unchanged default carries; new October default; September correction | Sep remaining 80.000, Oct limit 100.000 (H05); Sep 80.000, Oct 120.000 (H01); Sep 70.000, Oct 120.000 (H02) | corpus |
 | `archivada@1` | 7 | 2026-10-05 · Bogotá | Archive after spending; no new entries; next month | Oct remaining 80.000, limit 100.000; new expense `CategoryArchived` (AR01); Nov no budget, Oct unchanged (AR02) | corpus |
 | `ingresos@1` | 8 | 2026-10-05 · Bogotá | Income against the budget | Oct net 120.000, remaining 70.000, unassigned 50.000 (I01); Nov net 20.000, remaining 70.000, unassigned −50.000, not clamped (I02) | corpus |
+| `metas-sellos@1` | 16 | 2026-10-23 · Bogotá | Stamps from aportes, a double tap, the budget beside goals | 749.999: 24 %, no stamp (MT02); 750.000: 25 % earned (MT01); 1.600.000: 53 %, two stamps (MT04), repeat writes nothing (MT11); 37 % (MT03); 3.060.000: 102 %, Meta waiting (MT05); Oct remaining 400.000 (MT06) | corpus |
+| `metas-retiros@1` | 9 | 2026-10-23 · Bogotá | Withdrawals and faded stamps | 1.710.001 refused `AboveSaved` (MT08); 1.310.000: 43 %, 50 % kept (MT07); 1.510.000: 50 %, lit again (MT10); 0: 25 % and 50 % kept (MT09) | corpus |
+| `metas-objetivo@1` | 10 | 2026-10-23 · Bogotá | Target changes from 1.710.000 of 3.000.000 | 4.000.000: 42 %, 50 % kept (MT17); 2.000.000: 85 %, 75 % earned (MT18); 1.700.000: 100 %, Meta waiting (MT19) | corpus |
+| `metas-lograda@1` | 15 | 2026-10-23 · Bogotá | Recibo's goal, Marcar como lograda and Deshacer | Best completion on Recibo (MT28), then the choice (MT29); Deshacer back to 102 % waiting (MT24); marked at 37 % with four stamps (MT26), Recibo falls back (MT30); completed, nothing on Recibo (MT23, rule 12) | corpus |
 
 Restart and undo under financial time are covered outside the corpus:
 `TimeControlsJourneyTest` steps the financial day a year forward with an undo offer
@@ -50,7 +55,14 @@ is exercised by `CategoryDetailJourneyTest.editingTheCurrentLimitRefreshesItsCha
 
 `TemporalScenarioCorpusTest` runs every scenario fresh, then again interrupted after
 a committed step whose checkpoint was lost, and requires the same receipts, expenses,
-incomes, categories and limits from both runs, and every `Verify` to match.
+incomes, categories, limits, goals, goal movements and Recibo's choice from both runs,
+and every `Verify` to match.
+
+Goal checks read the stamps as the goal's page draws them: `ganado`, `guardado` (earned,
+no longer reached), `vacío` and `esperando` (the Meta reached, not yet marked). Deshacer
+runs on real elapsed time, as in the app: `metas-lograda` undoes right after marking, late
+in the scenario, so the corpus's cut and resume never falls between them. A Deshacer too
+late (MT25) is covered by the goal command tests, not by waiting here.
 
 ## Adding a scenario
 

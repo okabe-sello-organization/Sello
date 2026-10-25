@@ -1,21 +1,31 @@
 package com.software.sello.devtools
 
 import com.software.sello.devtools.ScenarioStep.AdvanceTo
+import com.software.sello.devtools.ScenarioStep.Aporte
 import com.software.sello.devtools.ScenarioStep.Archive
 import com.software.sello.devtools.ScenarioStep.Category
+import com.software.sello.devtools.ScenarioStep.ChooseForRecibo
 import com.software.sello.devtools.ScenarioStep.DeleteExpense
 import com.software.sello.devtools.ScenarioStep.EditExpense
 import com.software.sello.devtools.ScenarioStep.Expense
+import com.software.sello.devtools.ScenarioStep.Goal
+import com.software.sello.devtools.ScenarioStep.GoalTarget
 import com.software.sello.devtools.ScenarioStep.Income
+import com.software.sello.devtools.ScenarioStep.MarkLograda
 import com.software.sello.devtools.ScenarioStep.Repeat
+import com.software.sello.devtools.ScenarioStep.Retiro
 import com.software.sello.devtools.ScenarioStep.SetDefaultLimit
 import com.software.sello.devtools.ScenarioStep.SetMonthLimit
 import com.software.sello.devtools.ScenarioStep.UndoDelete
+import com.software.sello.devtools.ScenarioStep.UndoLograda
 import com.software.sello.devtools.ScenarioStep.Verify
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.GoalId
+import com.software.sello.domain.model.GoalMovementKind
+import com.software.sello.domain.model.GoalName
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
@@ -24,27 +34,39 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.OverallBudget
+import com.software.sello.domain.model.PlaceState
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.ChangeGoalTarget
+import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
+import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteExpense as DeleteExpenseCommand
 import com.software.sello.domain.port.EditExpense as EditExpenseCommand
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
+import com.software.sello.domain.port.FeatureGoal
+import com.software.sello.domain.port.GoalCommand
+import com.software.sello.domain.port.GoalCommandOutcome
+import com.software.sello.domain.port.GoalCommands
+import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.SetDefaultLimit as SetDefaultLimitCommand
 import com.software.sello.domain.port.SetMonthLimit as SetMonthLimitCommand
+import com.software.sello.domain.port.UndoGoalCompletion
 import java.time.YearMonth
 import java.util.Locale
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -99,8 +121,10 @@ class ScenarioRunner(
     private val categories: CategoryCommands,
     private val expenses: ExpenseCommands,
     private val incomes: IncomeCommands,
+    private val goals: GoalCommands,
     private val months: MonthlySnapshots,
     private val summaries: ResumenSnapshots,
+    private val goalReads: GoalReads,
     private val store: SandboxSessionStore,
     private val scope: CoroutineScope,
     private val stepMillis: Long = SandboxTime.STEP_MILLIS
@@ -113,6 +137,7 @@ class ScenarioRunner(
     private val stepping = Mutex()
     private var player: Job? = null
     private val categoryIds = mutableMapOf<String, CategoryId>()
+    private val goalIds = mutableMapOf<String, GoalId>()
 
     /**
      * Lists the steps confirmed in earlier processes from their stored receipts, ahead of
@@ -403,7 +428,74 @@ class ScenarioRunner(
                 ArchiveCategory(operation, generation, id, step.version)
             }
 
-            is Verify -> verify(step.checks)
+            is Verify -> verify(loaded, step.checks, step.goals)
+
+            is Goal -> goal(
+                goals.submit(
+                    CreateGoal(
+                        operation,
+                        generation,
+                        GoalName.of(step.name).value(),
+                        IconKey.of(step.icon).value(),
+                        TransactionAmount.of(Money.cop(step.target)).value(),
+                        null
+                    )
+                )
+            )
+
+            is Aporte -> goalCommand(loaded, step.goal) { id ->
+                RecordGoalMovement(
+                    operation,
+                    generation,
+                    id,
+                    step.version,
+                    GoalMovementKind.Contribution,
+                    TransactionAmount.of(Money.cop(step.pesos)).value(),
+                    step.on ?: today,
+                    null
+                )
+            }
+
+            is Retiro -> goalCommand(loaded, step.goal) { id ->
+                RecordGoalMovement(
+                    operation,
+                    generation,
+                    id,
+                    step.version,
+                    GoalMovementKind.Withdrawal,
+                    TransactionAmount.of(Money.cop(step.pesos)).value(),
+                    today,
+                    null
+                )
+            }
+
+            is GoalTarget -> goalCommand(loaded, step.goal) { id ->
+                ChangeGoalTarget(
+                    operation,
+                    generation,
+                    id,
+                    step.version,
+                    TransactionAmount.of(Money.cop(step.pesos)).value()
+                )
+            }
+
+            is MarkLograda -> goalCommand(loaded, step.goal) { id ->
+                CompleteGoal(operation, generation, id, step.version, UNDO_FOR)
+            }
+
+            is UndoLograda -> goal(
+                goals.submit(
+                    UndoGoalCompletion(
+                        operation,
+                        generation,
+                        OperationId.of(loaded.operation(step.of)).value()
+                    )
+                )
+            )
+
+            is ChooseForRecibo -> goalCommand(loaded, step.goal) { id ->
+                FeatureGoal(operation, generation, id)
+            }
 
             is UndoDelete -> expense(
                 expenses.restore(
@@ -458,8 +550,15 @@ class ScenarioRunner(
         }
     }
 
-    /** Reads each month's real snapshots once and compares every check against them. */
-    private suspend fun verify(checks: List<Check>): Observed {
+    /**
+     * Reads each month's real snapshots and the goal board once and compares every check
+     * against them.
+     */
+    private suspend fun verify(
+        loaded: Scenario,
+        checks: List<Check>,
+        goalChecks: List<GoalCheck>
+    ): Observed {
         val lines = checks.map { check ->
             val actual = actual(check.month, check.figure)
             val expected = if (check.figure == Figure.NoLimit) "sí" else pesos(check.pesos)
@@ -467,7 +566,84 @@ class ScenarioRunner(
             "${if (ok) "✓" else "✗"} ${check.figure.label} ${check.month}: esperado $expected, " +
                 "real ${actual ?: "no se pudo leer"} (${check.source})"
         }
-        return Observed.Checked(lines, lines.all { it.startsWith("✓") })
+        val board = if (goalChecks.isEmpty()) {
+            null
+        } else {
+            (goalReads.board() as? Outcome.Success)?.value
+        }
+        val goalLines = goalChecks.map { check ->
+            // A history restored from a backup has no receipts: the goal is found by its
+            // name, which is unique in a scenario.
+            val name = loaded.steps.filterIsInstance<Goal>().firstOrNull {
+                it.key == check.goal
+            }?.name
+            val summary = goalId(loaded, check.goal)
+                ?.let { id -> board?.goals?.firstOrNull { it.history.goal.id == id } }
+                ?: board?.goals?.firstOrNull { it.history.goal.name.value == name }
+            val id = summary?.history?.goal?.id
+            val expected = goalLine(check.saved, check.percentage, check.stamps, check.completed) +
+                (check.onRecibo?.let { if (it) ", en Recibo" else ", no en Recibo" } ?: "")
+            val actual = summary?.let { found ->
+                val progress = found.progress
+                goalLine(
+                    progress.saved.minorUnits,
+                    progress.percentage,
+                    progress.places.map { stamp(it.state) },
+                    found.history.goal.completedOn != null
+                ) + (
+                    check.onRecibo?.let {
+                        if (board?.featured == id) ", en Recibo" else ", no en Recibo"
+                    } ?: ""
+                    )
+            }
+            val ok = actual == expected
+            "${if (ok) "✓" else "✗"} meta ${check.goal}: esperado $expected, " +
+                "real ${actual ?: "no se pudo leer"} (${check.source})"
+        }
+        val all = lines + goalLines
+        return Observed.Checked(all, all.all { it.startsWith("✓") })
+    }
+
+    private fun goalLine(saved: Long, percentage: Long, stamps: List<Stamp>, completed: Boolean) =
+        "${pesos(saved)}, $percentage %, sellos ${stamps.joinToString("/") { it.label }}" +
+            if (completed) ", lograda" else ""
+
+    private fun stamp(state: PlaceState): Stamp = when (state) {
+        PlaceState.Empty -> Stamp.Empty
+        is PlaceState.Earned -> Stamp.Earned
+        is PlaceState.Kept -> Stamp.Kept
+        PlaceState.Ready -> Stamp.Waiting
+    }
+
+    private fun goal(outcome: GoalCommandOutcome): Observed = when (outcome) {
+        is GoalCommandOutcome.Committed -> Observed.Committed(
+            outcome.goal.receipt,
+            outcome.replayed
+        )
+
+        is GoalCommandOutcome.Rejected -> Observed.Rejected(name(outcome.reason))
+
+        is GoalCommandOutcome.OutcomeUnknown -> Observed.Unknown
+    }
+
+    /** [command] for the goal the step named [key] made. */
+    private suspend fun goalCommand(
+        loaded: Scenario,
+        key: String,
+        command: (GoalId) -> GoalCommand
+    ): Observed {
+        val id = goalId(loaded, key) ?: return Observed.Stop("No existe la meta «$key»")
+        return goal(goals.submit(command(id)))
+    }
+
+    /** The identity the goal step named [key] received, read back from its receipt. */
+    private suspend fun goalId(loaded: Scenario, key: String): GoalId? {
+        goalIds[key]?.let { return it }
+        val index = loaded.steps.indexOfFirst { it is Goal && it.key == key }
+        if (index < 0) return null
+        val found = goals.find(OperationId.of(loaded.operation(index)).value()) as? Outcome.Success
+            ?: return null
+        return found.value?.goalId?.also { goalIds[key] = it }
     }
 
     private suspend fun actual(month: YearMonth, figure: Figure): String? = when (figure) {
@@ -551,6 +727,9 @@ class ScenarioRunner(
                 (categories.find(operation) as? Outcome.Success)?.value?.receipt
 
             is Verify -> null
+
+            is Goal, is Aporte, is Retiro, is GoalTarget, is MarkLograda, is UndoLograda,
+            is ChooseForRecibo -> (goals.find(operation) as? Outcome.Success)?.value?.receipt
         }
     }
 
@@ -561,6 +740,9 @@ class ScenarioRunner(
 
     companion object {
         private const val DATE_SET = "Fecha fijada"
+
+        /** The longest Deshacer the app offers, with a screen reader; real elapsed time. */
+        private val UNDO_FOR = 34.seconds
 
         fun describe(step: ScenarioStep): String = when (step) {
             is AdvanceTo -> "Ir al ${spokenDate(step.date)}"
@@ -594,7 +776,23 @@ class ScenarioRunner(
 
             is Archive -> "Archivar ${step.category}"
 
-            is Verify -> "Comprobar ${step.checks.size} cifras"
+            is Verify -> "Comprobar ${step.checks.size + step.goals.size} cifras"
+
+            is Goal -> "Meta ${step.name}, objetivo ${pesos(step.target)}"
+
+            is Aporte -> "Aporte ${pesos(step.pesos)} a ${step.goal} (versión ${step.version})" +
+                (step.on?.let { " con fecha ${spokenDate(it)}" } ?: "")
+
+            is Retiro -> "Retiro ${pesos(step.pesos)} de ${step.goal} (versión ${step.version})"
+
+            is GoalTarget ->
+                "Objetivo de ${step.goal}: ${pesos(step.pesos)} (versión ${step.version})"
+
+            is MarkLograda -> "Marcar ${step.goal} como lograda (versión ${step.version})"
+
+            is UndoLograda -> "Deshacer la meta lograda del paso ${step.of + 1}"
+
+            is ChooseForRecibo -> "Mostrar ${step.goal} en Recibo"
         }
 
         private fun pesos(amount: Money): String = pesos(amount.minorUnits)

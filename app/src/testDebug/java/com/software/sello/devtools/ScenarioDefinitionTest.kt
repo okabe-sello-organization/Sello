@@ -31,6 +31,8 @@ class ScenarioDefinitionTest {
         Scenarios.all.forEach { scenario ->
             var today = scenario.start
             val categories = mutableSetOf<String>()
+            val goals = mutableSetOf<String>()
+            val goalNames = mutableSetOf<String>()
             scenario.steps.forEachIndexed { index, step ->
                 when (step) {
                     is AdvanceTo -> {
@@ -68,7 +70,45 @@ class ScenarioDefinitionTest {
 
                     is ScenarioStep.Archive -> assertTrue(step.category in categories)
 
-                    is ScenarioStep.Verify -> assertTrue(step.checks.isNotEmpty())
+                    is ScenarioStep.Verify -> {
+                        assertTrue(step.checks.isNotEmpty() || step.goals.isNotEmpty())
+                        // Each goal check names a goal made before it, its four places and
+                        // the approved example its values come from.
+                        step.goals.forEach {
+                            assertTrue("${scenario.key} $it", it.goal in goals)
+                            assertEquals("${scenario.key} $it", 4, it.stamps.size)
+                            assertTrue("${scenario.key} $it", it.source.contains(Regex("MT\\d\\d")))
+                        }
+                    }
+
+                    // Keys and names are unique: a restored history is checked by name.
+                    is ScenarioStep.Goal -> assertTrue(
+                        "${scenario.key} $step",
+                        goals.add(step.key) && goalNames.add(step.name)
+                    )
+
+                    is ScenarioStep.Aporte -> assertTrue(
+                        "${scenario.key} $step",
+                        step.goal in goals
+                    )
+
+                    is ScenarioStep.Retiro -> assertTrue(
+                        "${scenario.key} $step",
+                        step.goal in goals
+                    )
+
+                    is ScenarioStep.GoalTarget ->
+                        assertTrue("${scenario.key} $step", step.goal in goals)
+
+                    is ScenarioStep.MarkLograda ->
+                        assertTrue("${scenario.key} $step", step.goal in goals)
+
+                    is ScenarioStep.UndoLograda -> assertTrue(
+                        scenario.steps[step.of] is ScenarioStep.MarkLograda && step.of < index
+                    )
+
+                    is ScenarioStep.ChooseForRecibo ->
+                        assertTrue("${scenario.key} $step", step.goal in goals)
                 }
             }
         }

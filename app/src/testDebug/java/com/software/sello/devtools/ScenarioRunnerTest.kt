@@ -2,6 +2,7 @@ package com.software.sello.devtools
 
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
@@ -12,6 +13,7 @@ import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CommittedExpense
+import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CommittedIncome
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateIncome
@@ -23,6 +25,10 @@ import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.FinancialDay
+import com.software.sello.domain.port.GoalCommand
+import com.software.sello.domain.port.GoalCommandOutcome
+import com.software.sello.domain.port.GoalCommands
+import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.RestoreExpense
@@ -173,6 +179,34 @@ class LedgerIncomes(private val ledger: Ledger) : IncomeCommands {
     override fun undoOffer() = null
 }
 
+/** Goal commands on the [ledger]; every goal command's record is the goal it names or makes. */
+class LedgerGoals(private val ledger: Ledger) : GoalCommands {
+    val sent = mutableListOf<GoalCommand>()
+
+    override suspend fun submit(command: GoalCommand): GoalCommandOutcome = try {
+        sent += command
+        ledger.write(command.operationId, OperationKind.CreateGoal, null)
+            ?.let { (receipt, id, replayed) ->
+                GoalCommandOutcome.Committed(
+                    CommittedGoal(receipt, GoalId.of(id).value(), null),
+                    replayed
+                )
+            } ?: GoalCommandOutcome.Rejected(GoalRejection.VersionConflict(0))
+    } catch (_: Ledger.Unknown) {
+        GoalCommandOutcome.OutcomeUnknown(command.operationId)
+    }
+
+    override suspend fun find(operationId: OperationId) = Outcome.Success(
+        ledger.receipts[operationId.value]?.let { (receipt, id) ->
+            CommittedGoal(receipt, GoalId.of(id).value(), null)
+        }
+    )
+
+    override fun movementUndoOffer() = null
+
+    override fun completionUndoOffer() = null
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScenarioRunnerTest {
     // G01's writes without its final check, which reads real snapshots on device.
@@ -196,8 +230,10 @@ class ScenarioRunnerTest {
             LedgerCategories(ledger),
             LedgerExpenses(ledger),
             LedgerIncomes(ledger),
+            LedgerGoals(ledger),
             NoSnapshots,
             NoSnapshots,
+            NoGoalReads,
             store,
             backgroundScope
         )
@@ -337,4 +373,12 @@ object NoSnapshots :
     override suspend fun read(month: java.time.YearMonth): Nothing = error("unused")
 
     override fun observe(month: java.time.YearMonth): Nothing = error("unused")
+}
+
+object NoGoalReads : com.software.sello.domain.port.GoalReads {
+    override suspend fun board(): Nothing = error("unused")
+
+    override fun observeBoard(): Nothing = error("unused")
+
+    override suspend fun goal(id: GoalId): Nothing = error("unused")
 }
