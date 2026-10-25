@@ -26,6 +26,7 @@ import com.software.sello.catalog.components.FieldPillExample
 import com.software.sello.catalog.components.FootnotesExample
 import com.software.sello.catalog.components.FormFieldExample
 import com.software.sello.catalog.components.GoalCardsExample
+import com.software.sello.catalog.components.GoalFormExample
 import com.software.sello.catalog.components.GoalPillExample
 import com.software.sello.catalog.components.IconChoiceExample
 import com.software.sello.catalog.components.IconStripExample
@@ -366,6 +367,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         CatalogGroup.Goals,
         R.string.catalog_example_goal_pill
     ) { GoalPillExample() },
+    CatalogExample(
+        "goals.goal-form",
+        CatalogGroup.Goals,
+        R.string.catalog_example_goal_form
+    ) { GoalFormExample() },
     CatalogExample(
         "goals.goal-cards",
         CatalogGroup.Goals,

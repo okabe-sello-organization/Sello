@@ -5,14 +5,14 @@
 > subject to the user's current instructions.
 
 **Snapshot:** 2026-10-24 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Epics E01–E08, E12, E13 and E15 are Done; E16 and E17 are in progress. Each ticket's
+Epics E01–E08, E12, E13, E15 and E17 are Done; E16 and E18 have work under way. Each ticket's
 own `handoff.md` and `evidence.md` under [docs/tickets](../tickets/README.md) carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
 This summary is refreshed when an epic closes and adds no verification claims.
 
 ## Current app
 
-- Offline, local-only COP expenses/income, with Recibo and Resumen as working tabs.
+- Offline, local-only COP expenses/income, with Recibo, Resumen and Metas as working tabs.
 - Category creation/editing, archive/unarchive, monthly limits and past corrections.
   The editor opens with the keyboard on the name, offers 24 icons and the person's
   most used limits, and says what the month's total limit would become.
@@ -25,8 +25,16 @@ This summary is refreshed when an epic closes and adds no verification claims.
 - Exact totals, budget remaining/allowance, net flow and allocation. Resumen leads with
   the same-days comparison, then income, "Un mes normal" over the monthly columns, the
   ranking, the weekday averages (six months) and at most one dismissible suggestion.
+- Metas: goals with a target and an optional month, most complete first; the goal page
+  with its stamps, Aportes por mes and movements; Aportar/Retirar with past dates,
+  corrections and Deshacer. Stamps at 25, 50 and 75 % are celebrated once per confirmed
+  save; Marcar como lograda shows the big moment and offers Deshacer for about 10 s
+  (30 s with TalkBack), then the goal is read-only. Recibo shows the chosen goal, or the
+  most complete one, and a row for another goal at 100 %. Goals never touch budgets or
+  income; backups carry them. Rules: [goal examples](../testing/goal-examples.md).
 - Shared month, restored drafts/navigation, appearance and category-order settings.
-- Room schema 3 for finances; DataStore for nonfinancial preferences.
+- Room schema 5 for finances (goals since 4; recurring schedules since 5, recorded on
+  opening but with no screen yet); DataStore for nonfinancial preferences.
 - Backups save and restore through the system file picker, also from the start-up
   failure screen; retry and confirmed start-over preserve an unreadable database privately.
 - Configuración → Borrar todos los datos erases the history after counts and BORRAR.
@@ -53,11 +61,15 @@ evidence and retained report. This file no longer repeats them.
 - SELLO-074 ([E14](../tickets/E14-assistive-technology/README.md)): the manual
   TalkBack, Switch Access and keyboard pass, moved post-MVP by the owner on
   2026-10-23. E13 is done without it.
-- SELLO-079, SELLO-083, SELLO-084 and SELLO-089–113 ([E16](../tickets/E16-v2-today-gaps/README.md)–[E19](../tickets/E19-investments/README.md)):
+- SELLO-079, SELLO-083, SELLO-084 and SELLO-099–114 ([E16](../tickets/E16-v2-today-gaps/README.md), [E18](../tickets/E18-recurrence/README.md), [E19](../tickets/E19-investments/README.md)):
   the rest of today's v2 screens (SELLO-080–082 are done; the SELLO-079 audit credits
-  them), then Metas, recurrence and Inversiones,
-  released together as `0.2.0`; decisions in [ADR 0017](../decisions/0017-goals-recurrence-investments.md).
-  Each epic starts by verifying what already exists.
+  them), then recurrence (storage and catch-up are in; backups, screens and the sandbox
+  remain) and Inversiones, released with Metas as `0.2.0`; decisions in
+  [ADR 0017](../decisions/0017-goals-recurrence-investments.md). Each epic starts by
+  verifying what already exists.
+- In debug builds, schedule commands do not yet go through the sandbox's write fence,
+  faults and log, as goal commands now do (SELLO-094); SELLO-104 covers recurrence in
+  the sandbox.
 - Signed carryover (E09), legacy import (E10) and the assistive-technology pass (E14)
   stay on the post-MVP roadmap.
 

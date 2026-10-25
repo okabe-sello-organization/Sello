@@ -65,6 +65,7 @@ class CatalogExamplesTest {
                 "feedback.celebration",
                 "goals.milestones",
                 "goals.goal-pill",
+                "goals.goal-form",
                 "goals.goal-cards",
                 "goals.movements",
                 "goals.investments"

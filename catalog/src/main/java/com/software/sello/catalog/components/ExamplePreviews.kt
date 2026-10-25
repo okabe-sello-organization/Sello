@@ -138,6 +138,12 @@ private fun GoalPillExamplePreview(
 
 @ExampleThemePreviews
 @Composable
+private fun GoalFormExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { GoalFormExample() }
+
+@ExampleThemePreviews
+@Composable
 private fun GoalCardsExamplePreview(
     @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
 ) = Frame(theme) { GoalCardsExample() }

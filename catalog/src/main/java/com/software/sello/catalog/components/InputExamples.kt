@@ -15,8 +15,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
+import com.software.sello.catalog.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.DigitGrouping
@@ -57,7 +59,9 @@ private val SourceFixtures =
 
 @Composable
 fun ChipExample() {
+    val strings = LocalResources.current
     var category by rememberSaveable { mutableIntStateOf(-1) }
+    var goal by rememberSaveable { mutableStateOf(false) }
     var source by rememberSaveable { mutableIntStateOf(0) }
     Stack {
         Caption("Categorías: se acomodan en varias líneas")
@@ -76,6 +80,13 @@ fun ChipExample() {
         Caption("Deshabilitado")
         ChipFlow {
             SelloChip("Archivada", selected = false, onClick = {}, enabled = false)
+            SelloChip(
+                strings.getString(R.string.catalog_demo_viaje_a_la_costa),
+                selected = goal,
+                onClick = { goal = !goal },
+                icon = SelloIcon.Flight,
+                trailing = strings.getString(R.string.catalog_demo_57)
+            )
         }
         SelloButton("Quitar selección", { category = -1 }, kind = ButtonKind.Text)
     }
