@@ -724,3 +724,6 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .app.large .plan-slip .leader b{margin-left:auto}
 .fx-row .stamp.small{justify-self:end}
 .app.large .fx-row .stamp.small{grid-column:2;justify-self:start}
+.inv-ages{display:flex;align-items:center;gap:8px;margin:12px 0 0}
+.inv-ages .icon{width:1.4em;height:1.4em;color:var(--soft)}
+.inv-ages b{color:var(--ink)}

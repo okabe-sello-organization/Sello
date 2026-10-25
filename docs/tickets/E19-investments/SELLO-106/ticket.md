@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-105, SELLO-004
 - **Gate:** G1
 
@@ -37,3 +37,19 @@ Approved examples exist.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-106 --retain`.
+
+### Execution progress
+
+- **Rules, 2026-10-25:** [investment examples](../../../testing/investment-examples.md),
+  16 rules and IN01–IN36 worked by hand, with the owner's answers of 2026-10-25 marked
+  **Owner**: the value carried forward between valuations, the overview converted at the
+  current rate, the rate asked first, cents for USD and the rate's bounds. The brief's
+  open list now points to them.
+- **Design, locked by owner delegation:** `inversiones.html` sections 6 (*Dólares y la
+  tasa*) and 7 (*Más estados*): the currency chips and the rate asked inside Nueva
+  inversión, USD amounts, the pad's comma key, the overview's rate line opening
+  **Dólar**, Dólar and Cambiar la tasa, the Configuración row, no values at all, neither
+  gain nor loss, shades after the fourth, with empty, loading, failed-read, large-text and
+  dark frames ([screenshots](artifacts)). The valuation-dates footnote became a quiet
+  line. The v2 README records the section and its rejected options; `components.html`
+  marks the Sello pad Extend.

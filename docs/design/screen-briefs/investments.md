@@ -58,9 +58,9 @@ for unfamiliar concepts. No universal investment target or investment recommenda
 
 The return (simple, since the first contribution), COP and USD with one dated
 app-wide manual rate, USD returns kept in USD, values never marked stale, dividends in
-the gain and corrections with undo were decided in [ADR 0017](../../decisions/0017-goals-recurrence-investments.md). Still open, for the rules
-ticket (SELLO-106): dated cash flows' full examples, rate validation bounds and any
-later return periods.
+the gain and corrections with undo were decided in [ADR 0017](../../decisions/0017-goals-recurrence-investments.md). The rules ticket (SELLO-106) settled the rest with worked examples in the
+[investment examples](../../testing/investment-examples.md): dated cash flows, the value
+between valuations, rate validation and the overview in pesos. Return periods stay out.
 
 Inversiones belongs to the Later increment ([architecture](../../../ARCHITECTURE.md)
 §1), separate from goals in Next. These notes authorize no routes, investment ledger,

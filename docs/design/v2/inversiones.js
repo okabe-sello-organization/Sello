@@ -26,7 +26,8 @@ const shade = i => `color-mix(in srgb,var(--brand) ${SHADES[i]}%,var(--paper))`;
 const perf = (t, { words = true } = {}) => `<p class="perf ${t.up ? "gain" : "loss"}">${icon(t.up ? "trending_up" : "trending_down")}<span>${t.up ? "+" : "−"}${t.pct} %</span>${words ? `<span class="perf-gain">${t.up ? "+" : "−"}${fmt(Math.abs(t.gain))} de ${t.up ? "ganancia" : "pérdida"}</span>` : ""}</p>`;
 const stamp = t => `<span class="stamp ${t.up ? "" : "loss"}">${t.up ? "Gana" : "Pierde"}</span>`;
 const leader = (label, n, cls = "") => `<div class="leader"><span>${label}</span><i class="dots"></i><b class="${cls}">${n}</b></div>`;
-const ages = t => `<button class="footnote">${icon("event")}<span>Valores anotados entre el <b>${t.from}</b> y el <b>${t.to}</b></span>${icon("chevron_right", "chev")}</button>`;
+// A quiet line, not a link (SELLO-106): each row carries its own date.
+const ages = t => `<p class="caption inv-ages">${icon("event")}<span>Valores anotados entre el <b>${t.from}</b> y el <b>${t.to}</b></span></p>`;
 const breakdown = t => leader("Aportaste", money(t.contributed)) + leader("Retiraste", money(t.withdrawn)) + leader("Dividendos y rentas", money(t.paid)) + leader("Ganancia", `${t.gain < 0 ? "−" : "+"}${fmt(Math.abs(t.gain))}`, t.gain < 0 ? "neg" : "pos");
 
 // The overview: the Recibo answer slip, with Gana / Pierde as its stamp.
@@ -117,11 +118,78 @@ const phone = (o, inner, tall = false) => `<div class="phone ${tall ? "tall" : "
 
 const card = (title, note, inner) => `<div class="frame-card"><h3>${title}</h3><p>${note}</p>${inner}</div>`;
 
+// ── Section 6 · Dólares y la tasa (SELLO-106, locked 2026-10-25 by owner delegation) ──────────
+// Rules: docs/testing/investment-examples.md. A USD investment keeps every figure in USD; only the
+// overview converts, once per sum, at the current rate (IN28):
+//   Acciones EE. UU.: aporte USD 1.000,00, value USD 1.050,50 → +USD 50,50 → 5,05 % → +5,1 %.
+//   At 4.150,25 (20 oct): V 1.050,50 → 4.359.838; C 1.000,00 → 4.150.250.
+//   Total V 38.038.000 + 4.359.838 = 42.397.838; C 41.150.250; W 500.000; D 528.000;
+//   G +2.275.588 → 5,53 % → +5,5 %.
+const usd = cents => `USD ${fmt(Math.trunc(cents / 100))},${String(Math.abs(cents) % 100).padStart(2, "0")}`;
+const spokenUsd = cents => `${fmt(Math.trunc(cents / 100))} dólares con ${Math.abs(cents) % 100} centavos`;
+const usdMoney = cents => `<span class="money" aria-label="${spokenUsd(cents)}">${usd(cents)}</span>`;
+const RATE = { text: "4.150,25", date: "20 oct", spoken: "4.150 pesos con 25 centavos" };
+const TOTAL_USD = { value: 42397838, contributed: 41150250, withdrawn: 500000, paid: 528000, gain: 2275588, pct: "5,5", up: true, since: "mar 2025", from: "12 jun", to: "14 oct" };
+const USD_ROW = { name: "Acciones EE. UU.", kind: "ETF · USD", icon: "trending_up", cents: 105050, pct: "5,1", up: true, valued: "16 oct" };
+// The rate line: a Footnote (E18) that opens Dólar. The valuation dates become a quiet line.
+const rateLine = () => `<button class="footnote">${icon("autorenew")}<span>Dólar a <b>${RATE.text}</b> · tasa del ${RATE.date}</span>${icon("chevron_right", "chev")}</button>`;
+const heroSlipUsd = t => `<section class="slip pinked"><div class="answer-head"><span class="label">Tus inversiones valen</span>${stamp(t)}</div><div class="hero long">${money(t.value)}</div>${perf(t)}<p class="caption inv-since">En total, desde ${t.since}</p><div class="tear" aria-hidden="true"></div>${breakdown(t)}${ages(t)}${rateLine()}</section>`;
+const usdRow = (h, i) => `<button class="inv-row" aria-label="${h.name}, ${spokenUsd(h.cents)}, gana ${h.pct} por ciento en dólares, valor del ${h.valued}"><span class="inv-ic" style="--c:${shade(i)}">${icon(h.icon)}</span><span><b>${h.name}</b><small>${h.kind} · valor del ${h.valued}</small></span><span class="inv-right"><b>${usd(h.cents)}</b><small class="pos">${icon("trending_up")}+${h.pct} %</small></span></button>`;
+// Shares by value in pesos: 19.000.000, 10.746.000, 5.242.000, 4.359.838, 3.050.000 of 42.397.838.
+const listSlipUsd = () => `<section class="slip"><h2 class="q">Dónde está, de mayor a menor</h2><div class="split inv-split" aria-hidden="true">${[44.8, 25.3, 12.4, 10.3, 7.2].map((w, i) => `<i style="width:${w}%;background:${shade(i % 4)}"></i>`).join("")}</div>${[H[0], H[1], H[2]].map(row).join("")}${usdRow(USD_ROW, 3)}${row(H[3], 0)}</section>`;
+
+// The pad: for USD the 000 key becomes the decimal comma (at most two decimals).
+const padUsd = () => `<div class="pad" role="group" aria-label="Teclado de Sello">${["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0"].map(k => `<button class="${k === "," ? "k000" : ""}" ${k === "," ? 'aria-label="Coma decimal"' : ""}>${k}</button>`).join("")}<button class="del" aria-label="Borrar">${icon("backspace")}</button></div>`;
+
+// Nueva inversión with a currency: Pesos / Dólares chips under the description. Dólares with no
+// rate yet asks for it in the same form, before Crear inversión (IN33).
+function invFormUsd({ rate = false, amount = 100000 } = {}) {
+  const strip = ICONS.map(i => `<button class="icon-choice" aria-pressed="${i === "trending_up"}">${icon(i)}</button>`).join("");
+  const ident = `<section class="slip form-slip inv-ident"><div class="ident"><span class="ident-icon inv" aria-hidden="true">${icon("trending_up")}</span><div><label class="form-label">Nombre</label><div class="form-field">Acciones EE. UU.</div></div></div><div class="form-msg"><span></span><span>16/40</span></div><label class="form-label">Descripción <small>(opcional)</small></label><div class="form-field">ETF</div><div class="icon-strip" role="group" aria-label="Ícono" style="margin-top:14px">${strip}</div><span class="form-label" style="margin-top:14px;display:block">Moneda</span><div class="date-row"><button class="chip" aria-pressed="false">Pesos</button><button class="chip" aria-pressed="true">Dólares</button></div><p class="goal-fact">Lo que anotes de esta inversión queda en dólares. No se puede cambiar después.</p></section>`;
+  const first = `<section class="slip pinked"><div class="plan-label"><span class="label">Primer aporte en dólares</span><button class="date-pill">${icon("event")}Hoy, vie 16</button></div><p class="plan-amount">${usdMoney(amount)}</p><div class="tear" aria-hidden="true"></div><span class="form-label">Vale hoy</span><div class="date-row"><button class="chip" aria-pressed="true">Lo mismo que aporté</button><button class="chip" aria-pressed="false">Otro valor</button></div></section>`;
+  const rateSlip = rate
+    ? `<p class="goal-fact">${icon("autorenew")} Dólar a <b>${RATE.text}</b>, tasa del ${RATE.date}: solo para el total en pesos.</p>`
+    : `<section class="slip pinked"><div class="plan-label"><span class="label">¿A cuánto está el dólar?</span><button class="date-pill">${icon("event")}Hoy, vie 16</button></div><p class="plan-amount placeholder">0<span class="caret"></span></p><p class="goal-fact">Pesos por 1 dólar. Sello no la busca: la anotas tú, y sirve para sumar tus dólares al total.</p></section>`;
+  return `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button><b style="flex:1;font-size:1.2em;margin-left:4px">Nueva inversión</b></div></div><div class="entry-mid" style="padding-top:2px">${ident}${first}${rateSlip}</div><div class="entry-action"><button class="primary inv" ${rate ? "" : "disabled"}>Crear inversión</button></div>${rate ? "" : padUsd()}<div class="gesture" style="background:var(--desk)"></div>`;
+}
+
+// Anotar movimiento on a USD investment: label "en dólares", the amount with cents, the comma key.
+function moveFormUsd() {
+  const chips = [["Acciones EE. UU.", "trending_up"], ...NAMES.slice(0, 3)].map(([n, i]) => `<button class="chip" aria-pressed="${n === "Acciones EE. UU."}">${icon(i)}${n}</button>`).join("");
+  const typeChips = `<h3>Tipo</h3><div class="chips one-row">${TYPES.map(([k, t]) => `<button class="chip" aria-pressed="${k === "in"}">${t}</button>`).join("")}</div>`;
+  return `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button><b style="flex:1;font-size:1.2em;margin-left:4px">Movimiento</b></div></div><section class="slip pinked amount-slip"><div class="amount-meta"><span>Aporte en dólares</span><button class="date-pill">${icon("event")}Hoy, vie 16</button></div><div class="amount-row"><span class="circle" style="--fill:100%;--c:var(--ink)" aria-hidden="true">${icon("trending_up")}<span class="on">${icon("trending_up")}</span></span><div class="amount-value">+USD 250,5<span class="caret"></span></div></div></section><div class="entry-mid">${typeChips}<h3>Inversión</h3><div class="chips one-row">${chips}</div><p class="goal-fact">Llevas <b>USD 1.000,00</b> aportados en Acciones EE. UU.</p><button class="note-pill">${icon("edit_note")}<span>Agregar nota</span></button></div><div class="entry-action"><button class="primary inv">Anotar aporte</button></div>${padUsd()}<div class="gesture" style="background:var(--desk)"></div>`;
+}
+
+// Dólar: reached from Configuración (Tus datos) and from the overview's rate line. The current rate
+// on a pinked slip, the history under it, newest date first; a rate is never deleted (rule 11).
+const HISTORY = [["20 oct 2026", "4.150,25"], ["2 oct 2026", "4.010,00"], ["15 sep 2026", "3.960,50"]];
+const rateBody = ({ history = HISTORY } = {}) => `<section class="slip pinked"><div class="answer-head"><span class="label">1 dólar vale</span></div><div class="hero" aria-label="${RATE.spoken}">${RATE.text}</div><p class="caption inv-since">pesos · tasa del ${RATE.date}</p><div class="tear" aria-hidden="true"></div><p class="goal-fact">Sello no busca la tasa: la anotas tú. Solo convierte el total de Inversiones; cada inversión en dólares sigue en dólares.</p><button class="outline-btn wide inv-update">${icon("autorenew")}Cambiar la tasa</button></section><section class="slip"><h2 class="q">Tasas anteriores</h2>${history.slice(1).map(([d, r]) => leader(d, r)).join("")}</section>`;
+const rateScreen = (o, body, opts = {}) => phoneX(o, subShell({ title: "Dólar", body, tabs: 4, active: 3, dock: "", dockClass: "inv" }), opts);
+function rateEntry() {
+  return `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button><b style="flex:1;font-size:1.2em;margin-left:4px">Tasa del dólar</b></div></div><section class="slip pinked amount-slip"><div class="amount-meta"><span>Pesos por 1 dólar</span><button class="date-pill">${icon("event")}Hoy, dom 25</button></div><div class="amount-row"><span class="circle" style="--fill:100%;--c:var(--ink)" aria-hidden="true">${icon("autorenew")}<span class="on">${icon("autorenew")}</span></span><div class="amount-value">4.180,7<span class="caret"></span></div></div></section><div class="entry-mid"><p class="goal-fact">La de hoy es <b>4.150,25</b>, del 20 oct. La nueva la reemplaza desde su fecha; la anterior queda en la lista.</p></div><div class="entry-action"><button class="primary inv">Guardar tasa</button></div>${padUsd()}<div class="gesture" style="background:var(--desk)"></div>`;
+}
+const settingsRows = `<section class="slip"><h2 class="q">Tus datos</h2><button class="setting-row">${icon("autorenew")}<span><b>Pagos e ingresos fijos</b><small>4 pagos, 2 ingresos</small></span>${icon("chevron_right", "chev")}</button><button class="setting-row">${icon("account_balance")}<span><b>Dólar</b><small>4.150,25 · tasa del 20 oct</small></span>${icon("chevron_right", "chev")}</button><button class="setting-row">${icon("content_paste")}<span><b>Respaldo</b><small>hace 6 días</small></span>${icon("chevron_right", "chev")}</button></section>`;
+
+// Frames with large text (200 %) or a fixed theme, as the E18 page does.
+const phoneX = (o, inner, { large = false, theme, tall = false } = {}) => `<div class="phone ${tall ? "tall" : ""}"><div class="app ${large ? "large" : ""}" data-ink="${o.ink}" data-theme="${theme ?? o.theme}" style="--scale:${large ? 2 : 1}">${inner}</div></div>`;
+const tabX = (o, body, opts = {}) => phoneX(o, appShell({ title: "Inversiones", addLabel: "Agregar inversión", body, tabs: 4, active: 3, dock: opts.dock ?? "Anotar movimiento", dockClass: "inv" }), opts);
+
+// IN35: investments exist, none has a value: no number, stamp or bar; the rows say so.
+const noValues = () => `<section class="slip pinked"><div class="answer-head"><span class="label">Tus inversiones valen</span></div><p class="goal-fact" style="margin-top:8px">Todavía no hay valores anotados. Anota cuánto vale cada una para ver el total.</p></section><section class="slip"><h2 class="q">Tus inversiones</h2>${rowNoValue(CRIPTO)}${rowNoValue({ name: "Acciones EE. UU.", kind: "ETF · USD", icon: "trending_up", contributed: 0 }).replaceAll("aportaste 0 pesos", "aportaste 1.000 dólares").replaceAll("aportaste 0", "aportaste USD 1.000,00")}</section>`;
+// Six investments: the four shades repeat in order, largest first; rows carry the exact values.
+const SIX = [...H, { name: "Bonos", kind: "TES", icon: "account_balance", value: 2400000, gain: 120000, pct: "5,3", up: true, valued: "1 oct" }, { name: "Local", kind: "Arriendo", icon: "shopping_cart", value: 1900000, gain: 40000, pct: "2,2", up: true, valued: "30 sep" }];
+const sixSlip = () => `<section class="slip"><h2 class="q">Dónde está, de mayor a menor</h2><div class="split inv-split" aria-hidden="true">${[45.0, 25.4, 12.4, 7.2, 5.7, 4.5].map((w, i) => `<i style="width:${w}%;background:${shade(i % 4)}"></i>`).join("")}</div>${SIX.map((h, i) => row(h, i % 4)).join("")}</section>`;
+// IN15: gain exactly 0: no stamp, neutral 0,0 %.
+const evenSlip = `<section class="slip pinked"><div class="answer-head"><span class="label">Vale</span></div><div class="gd-saved">${money(1000000)}</div><p class="perf"><span>0,0 %</span><span class="perf-gain">sin ganancia ni pérdida</span></p><p class="caption inv-since">Valor anotado el 16 oct · desde oct 2026</p><div class="tear" aria-hidden="true"></div>${leader("Aportaste", money(1000000))}${leader("Ganancia", "0")}</section>`;
+const rateEmpty = `<section class="slip empty">${icon("account_balance")}<h2>Todavía no hay tasa</h2><p>La anotas cuando tengas una inversión en dólares. Sello no la busca en internet.</p><button class="outline-btn">Anotar la tasa</button></section>`;
+const rateLoading = `<div role="status" aria-label="Cargando"><section class="slip"><div class="skel" style="width:40%"></div><div class="skel big"></div><div class="skel" style="width:60%"></div></section></div>`;
+const rateFailed = `<section class="slip empty">${icon("error")}<h2>No pudimos leer la tasa</h2><p>Tus tasas siguen guardadas. Vuelve a intentarlo.</p><button class="outline-btn">Reintentar</button></section>`;
+
 function render() {
   const o = reviewOptions(["ink", "theme"]);
   const set = (id, h) => document.getElementById(id).innerHTML = h;
   set("overview",
-    card("Overview", "Value as the big number with a Gana / Pierde stamp, the signed return with arrow and pesos, then what produced it under the tear. A quiet footnote says when the values were recorded. Then one bar for where the money is and a row per investment.", tab(o, heroSlip(TOTAL) + listSlip(H))) +
+    card("Overview", "Value as the big number with a Gana / Pierde stamp, the signed return with arrow and pesos, then what produced it under the tear. A quiet line says when the values were recorded (a link until SELLO-106). Then one bar for where the money is and a row per investment.", tab(o, heroSlip(TOTAL) + listSlip(H))) +
     card("Whole screen", "Rows show each value’s date, so an old valuation (Parqueadero, 12 jun) is visible without opening it.", tab(o, heroSlip(TOTAL) + listSlip(H), { tall: true })));
   set("detail",
     card("Gaining, with dividends", "Same slip language: value, stamp, signed return, the breakdown and “Anotar el valor de hoy”. The chart shows only recorded values as dots; the dashed line is what was put in.", detail(o, DETAIL.eco)) +
@@ -145,6 +213,25 @@ function render() {
     card("Otro valor", "If it is already worth something else (an investment from before Sello), the person types it.", phone(o, invForm({ name: "Parqueadero", kind: "Finca raíz", icon: "home", amount: 18000000, other: 19000000 }), true)) +
     card("Editar inversión", "Name, description and icon only; movements are edited from the list. Deleting is its own card with the confirm slip.", phone(o, invForm({ name: "Ecopetrol", kind: "Acciones", icon: "trending_up", edit: true }), true)) +
     card("Deleting asks once more", "Same confirm slip as goals.", phone(o, invForm({ name: "Ecopetrol", kind: "Acciones", icon: "trending_up", edit: true }, { confirm: true }))));
+  set("usd",
+    card("Nueva inversión en dólares", "Moneda: Pesos or Dólares, under the description, fixed once created. With no rate yet the form asks for it below the first contribution, with its date, and Crear inversión waits (IN33). The pad's 000 key becomes the decimal comma for dollars.", phoneX(o, invFormUsd(), { tall: true })) +
+    card("With a rate", "Once a rate exists, one quiet line says which and that it only serves the total.", phoneX(o, invFormUsd({ rate: true }), { tall: true })) +
+    card("Aporte en dólares", "Everything about a USD investment stays in dollars, with cents. The comma key replaces 000.", phoneX(o, moveFormUsd())) +
+    card("Overview with dollars", "The total converts at the current rate (IN28) and the slip says which, as a footnote that opens Dólar. The valuation dates become a quiet line, not a link: each row carries its own date. The USD row stays in dollars; the bar uses its value in pesos.", tabX(o, heroSlipUsd(TOTAL_USD) + listSlipUsd(), { tall: true })) +
+    card("Dólar", "From Configuración or the overview's rate line. The current rate on a pinked slip, the earlier ones below, newest date first. A rate is never deleted; a new one replaces it from its date.", rateScreen(o, rateBody())) +
+    card("Cambiar la tasa", "The entry layout: pesos per dollar with the comma key, a date today or earlier. 1,00 to 100.000,00, two decimals at most.", phoneX(o, rateEntry())) +
+    card("Configuración · Tus datos", "A Dólar row with the current rate, between Pagos e ingresos fijos and Respaldo.", `<div class="app cmp-stage" data-ink="${o.ink}" data-theme="${o.theme}">${settingsRows}</div>`));
+  set("more",
+    card("No values yet", "IN35: investments exist but none has a value. No number, stamp, return or bar; the rows say Sin valor.", tabX(o, noValues())) +
+    card("Six investments", "The four shades repeat in order, largest first, with a 2dp gap between segments; the rows carry the exact values.", tabX(o, heroSlip(TOTAL) + sixSlip(), { tall: true })) +
+    card("Neither gain nor loss", "IN15: no stamp; 0,0 % in neutral ink.", phoneX(o, subShell({ title: "Fondo nuevo", body: evenSlip, tabs: 4, active: 3, dock: "Anotar movimiento", dockClass: "inv" }))) +
+    card("Dólar · no rate", "Reached from Configuración before any USD investment.", rateScreen(o, rateEmpty)) +
+    card("Dólar · loading", "", rateScreen(o, rateLoading)) +
+    card("Dólar · failed read", "Never shown as no rate.", rateScreen(o, rateFailed)) +
+    card("Large text · 200%", "The overview with dollars at 200 %. The mock only scales; in the app a receipt line's value and a row's amount move under their label when they do not fit, never clipped.", tabX(o, heroSlipUsd(TOTAL_USD) + listSlipUsd(), { large: true, tall: true })) +
+    card("Large text · 200% · rate", "The middle scrolls; the amount, the button and the pad stay put, as in the locked entry.", phoneX(o, rateEntry(), { large: true })) +
+    card("Dark", "", tabX(o, heroSlipUsd(TOTAL_USD) + listSlipUsd(), { theme: "dark", tall: true })) +
+    card("Dark · Dólar", "", rateScreen(o, rateBody(), { theme: "dark" })));
 }
 document.querySelectorAll(".controls select").forEach(s => s.addEventListener("change", render));
 render();
