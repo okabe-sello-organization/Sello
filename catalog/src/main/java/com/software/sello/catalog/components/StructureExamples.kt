@@ -154,7 +154,7 @@ fun CategoryCellExample() {
                     description = category.description,
                     onClick = { opened = category.name },
                     over = category.over,
-                    amountPrefix = if (category.limit == null) "gastado" else null,
+                    amountCaption = if (category.limit == null) "gastado" else null,
                     staggerIndex = index,
                     modifier = Modifier.testTag("category:$index"),
                     // A long press, or a screen reader's action, offers this.
@@ -333,7 +333,7 @@ fun ScaffoldExample() {
                         description = category.description,
                         onClick = { opened = category.name },
                         over = category.over,
-                        amountPrefix = if (category.limit == null) "gastado" else null,
+                        amountCaption = if (category.limit == null) "gastado" else null,
                         staggerIndex = index
                     )
                 }

@@ -173,7 +173,7 @@ fun CategoryEditorScreen(route: CategoryEditorRoute) {
                     fraction = if (noLimit) null else 0f,
                     description = "Vista previa",
                     onClick = {},
-                    amountPrefix = "Gastado".takeIf { noLimit }
+                    amountCaption = "Gastado".takeIf { noLimit }
                 )
             }
             if (existing !=

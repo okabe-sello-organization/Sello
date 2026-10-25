@@ -122,9 +122,9 @@ fun CategoryCircle(
 private const val FILL_STAGGER_MILLIS = 30L
 
 /**
- * A circle with the category's name and one amount beside it: what is left, or with
- * [amountPrefix] what was spent when there is no limit. The amount is exact even when
- * the circle can only show "full".
+ * A circle with the category's name and one amount beside it: what is left, or what was
+ * spent when there is no limit, with [amountCaption] ("gastado") under it. The amount is
+ * exact even when the circle can only show "full".
  *
  * [actions] are offered by a long press, as a menu, and to a screen reader by name;
  * pressing the cell is still only [onClick].
@@ -143,7 +143,7 @@ fun CategoryCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     over: Boolean = false,
-    amountPrefix: String? = null,
+    amountCaption: String? = null,
     staggerIndex: Int = 0,
     actions: List<LineAction> = emptyList()
 ) {
@@ -188,22 +188,22 @@ fun CategoryCell(
                 maxLines = if (largeType) 2 else 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (amountPrefix != null) {
-                    Text(
-                        amountPrefix,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = colors.inkSoft
-                    )
+            MoneyText(
+                value = amount,
+                fontWeight = FontWeight.W800,
+                color = when {
+                    over -> colors.semantic.loss
+                    amountCaption != null -> colors.inkSoft
+                    else -> colors.ink
                 }
-                MoneyText(
-                    value = amount,
-                    fontWeight = FontWeight.W800,
-                    color = when {
-                        over -> colors.semantic.loss
-                        amountPrefix != null -> colors.inkSoft
-                        else -> colors.ink
-                    }
+            )
+            // Under the amount, as in the v2 grid: beside it, it squeezed the amount.
+            if (amountCaption != null) {
+                Text(
+                    amountCaption,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.inkSoft,
+                    maxLines = 1
                 )
             }
         }
