@@ -169,10 +169,8 @@ fun TotalLine(
             .semantics(mergeDescendants = true) {},
         start = {
             val body = MaterialTheme.typography.bodyLarge
-            Text(
-                label,
-                style = if (rule == TotalRule.Double) body.copy(fontWeight = FontWeight.W700) else body
-            )
+            val bold = rule == TotalRule.Double
+            Text(label, style = if (bold) body.copy(fontWeight = FontWeight.W700) else body)
         },
         value = value
     )
