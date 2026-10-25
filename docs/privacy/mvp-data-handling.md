@@ -31,8 +31,8 @@ build contains none of this code (see Checks).
 ## What can leave the phone
 
 - **A backup file**, only when the person taps Crear respaldo and chooses a place in
-  the system dialog. It is plaintext JSON with every amount, category and goal name and note:
-  no password, encryption or checksum ([format](../data/backup-format.md)). Respaldo
+  the system dialog. It is plaintext JSON with every amount, category, goal and investment
+  name, description and note, and the USD rates entered: no password, encryption or checksum ([format](../data/backup-format.md)). Respaldo
   says so above the button before the place is chosen (D08, P01–P02), and that a
   cloud provider keeps it on its own terms. Sello never deletes or claims to erase a
   saved file; Borrar todos los datos says the files stay.
