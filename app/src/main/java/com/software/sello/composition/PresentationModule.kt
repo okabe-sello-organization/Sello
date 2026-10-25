@@ -21,6 +21,9 @@ import com.software.sello.feature.goals.GoalDetailViewModel
 import com.software.sello.feature.goals.GoalEditorViewModel
 import com.software.sello.feature.goals.GoalMovementViewModel
 import com.software.sello.feature.goals.MetasViewModel
+import com.software.sello.feature.investments.InversionesViewModel
+import com.software.sello.feature.investments.UsdRateEntryViewModel
+import com.software.sello.feature.investments.UsdRateViewModel
 import com.software.sello.feature.goals.ReciboGoalViewModel
 import com.software.sello.feature.income.IncomeFormViewModel
 import com.software.sello.feature.income.IncomeHistoryViewModel
@@ -84,7 +87,15 @@ fun presentationModule(): Module = module {
 fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     initializer { AppearanceViewModel(koin.get()) }
     initializer {
-        SettingsViewModel(koin.get(), koin.get(), koin.get(), koin.get(), koin.get())
+        SettingsViewModel(
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
     }
     initializer {
         BackupViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
@@ -140,6 +151,18 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get(),
             koin.get(),
             koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
+    initializer { InversionesViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer { UsdRateViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer {
+        UsdRateEntryViewModel(
+            createSavedStateHandle(),
             koin.get(),
             koin.get(),
             koin.get(),

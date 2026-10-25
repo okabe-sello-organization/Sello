@@ -12,6 +12,8 @@ import com.software.sello.devtools.FaultyCategoryInsightsSnapshots
 import com.software.sello.devtools.FaultyExpenseCommands
 import com.software.sello.devtools.FaultyGoalCommands
 import com.software.sello.devtools.FaultyGoalReads
+import com.software.sello.devtools.FaultyInvestmentCommands
+import com.software.sello.devtools.FaultyInvestmentReads
 import com.software.sello.devtools.FaultyIncomeCommands
 import com.software.sello.devtools.FaultyMonthlySnapshots
 import com.software.sello.devtools.FaultyResumenSnapshots
@@ -19,6 +21,7 @@ import com.software.sello.devtools.FaultyScheduleCommands
 import com.software.sello.devtools.FencedCategoryCommands
 import com.software.sello.devtools.FencedExpenseCommands
 import com.software.sello.devtools.FencedGoalCommands
+import com.software.sello.devtools.FencedInvestmentCommands
 import com.software.sello.devtools.FencedIncomeCommands
 import com.software.sello.devtools.FencedScheduleCatchUp
 import com.software.sello.devtools.FencedScheduleCommands
@@ -48,6 +51,8 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ResumenSnapshots
@@ -173,6 +178,15 @@ class DebugComposition(
                         saved
                     )
                 }
+                single<InvestmentCommands> {
+                    val real =
+                        get<FinancialStorage>().investmentCommands(get(), get(), get(), get())
+                    FencedInvestmentCommands(
+                        if (sandbox) FaultyInvestmentCommands(real, faults, log) else real,
+                        fence,
+                        saved
+                    )
+                }
                 single<ScheduleCommands> {
                     val real = get<FinancialStorage>().scheduleCommands(get(), get(), get())
                     FencedScheduleCommands(
@@ -192,6 +206,9 @@ class DebugComposition(
                 if (time != null) {
                     single<FinancialClock> { time.clock }
                     single<GoalReads> { FaultyGoalReads(get<FinancialStorage>().goalReads, faults) }
+                    single<InvestmentReads> {
+                        FaultyInvestmentReads(get<FinancialStorage>().investmentReads, faults)
+                    }
                     single<CategoryInsightsSnapshots> {
                         FaultyCategoryInsightsSnapshots(
                             get<FinancialStorage>().categoryInsights(

@@ -157,6 +157,31 @@ The receipt's subject is always the goal. The rules are the approved
 `GoalReads` reads every goal with its progress, and Recibo's goal after the fallback
 rule, at one revision; one goal that cannot be read fails the read.
 
+## Investments
+
+`InvestmentCommands` and `RoomInvestmentCommands` (SELLO-107) follow the same steps with
+the `investment.*` kinds: create, edit, record, edit and delete a movement, put a deleted
+movement back, delete, and set the USD rate. The receipt's subject is the investment, or
+the new rate for `investment.set_usd_rate`. The rules are the approved
+[investment examples](../testing/investment-examples.md).
+
+- **Every change to an investment's history is checked before it is written** by
+  `InvestmentPolicy`: a retiro above the value carried to its date (`AboveValue`) or with
+  no value (`NoValue`), a movement other than an aporte before the first aporte, the last
+  aporte deleted (`LastContribution`), an amount in another currency. So a stored history
+  always works out. Every write raises the investment's version.
+- **Creating** writes the investment, its first aporte and its first value on the same
+  day, and a rate given with it, together. A USD investment with no rate stored and none
+  given is `RateRequired`.
+- **Rates** are never deleted; each is a new row in exact hundredths. The current one is
+  the latest date, then the last entered.
+- **A deleted movement shares the one offer to undo** with expenses, income and goal
+  movements, with its copy in `deleted_investment_movement`. Deleting an investment
+  removes it and its movements, with no undo.
+
+`InvestmentReads` reads every investment with its figures, the rates and the overview at
+one revision; one investment or rate that cannot be read fails the read.
+
 ## Schedules
 
 `ScheduleCommands` and `RoomScheduleCommands` (SELLO-098) follow the same steps with the

@@ -189,6 +189,9 @@ class RestoreCommandContractTest {
             "from_date" to "2026-10-07",
             "until_date" to null
         )
+        // An investment with its movements and a USD rate, as SELLO-107 stores them. The
+        // backup holds none, so a restore leaves none.
+        ledger.database.insertInvestmentRows()
     }
 
     private fun everyRow(): List<List<String>> = listOf(
@@ -199,6 +202,9 @@ class RestoreCommandContractTest {
         ledger.rows("income", "id", "effective_date", "sequence", "amount_minor", "source_key"),
         ledger.rows("schedule", "id", "category_id", "handled_date"),
         ledger.rows("schedule_pause", "schedule_id", "from_date"),
+        ledger.rows("investment", "id", "name"),
+        ledger.rows("investment_movement", "id", "investment_id", "amount_minor"),
+        ledger.rows("usd_rate", "id", "rate_hundredths"),
         ledger.rows("profile", "financial_zone", "generation", "revision")
     )
 
@@ -238,6 +244,9 @@ class RestoreCommandContractTest {
                     "${uuid(103)}|${uuid(1)}|2026-10-03|3|5000"
                 ),
                 listOf("${uuid(201)}|2026-10-01|1|200000|salary"),
+                emptyList(),
+                emptyList(),
+                emptyList(),
                 emptyList(),
                 emptyList(),
                 // The backup's zone, a new generation and the next revision.

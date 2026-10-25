@@ -19,9 +19,6 @@ data object ResumenRoute
 @Serializable
 data object MetasRoute
 
-/** Investments: not tied to a month either. */
-@Serializable
-data object InversionesRoute
 
 /** Dólar: the current USD rate and the earlier ones, from Configuración or Inversiones. */
 @Serializable
@@ -139,6 +136,5 @@ const val CREATED_CATEGORY_RESULT = "result.createdCategoryId"
 enum class ShellTab(val id: String) {
     Recibo("recibo"),
     Resumen("resumen"),
-    Metas("metas"),
-    Inversiones("inversiones")
+    Metas("metas")
 }

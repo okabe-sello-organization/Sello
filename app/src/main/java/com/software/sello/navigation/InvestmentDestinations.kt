@@ -25,10 +25,11 @@ import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 
 /**
- * The Inversiones tab: titled "Inversiones", never a month (v2 page). As Metas did, its
- * own actions are offered only once their screens exist (owner precedent, SELLO-089):
- * [onOpen] opens an investment, [onOpenRate] the rate. Recording an expense is not
- * offered here, so until Anotar movimiento exists the tab has no dock.
+ * The Inversiones tab: titled "Inversiones", never a month (v2 page). Its own actions
+ * are offered only once their screens exist: [onOpen] opens an investment, [onOpenRate]
+ * the rate. Recording an expense is not offered here, so until Anotar movimiento exists
+ * there is no dock. The tab joins the bar with SELLO-110, once investments can be
+ * created and recorded: an unfinished tab is never shown (architecture §1).
  */
 @Composable
 internal fun InversionesDestination(

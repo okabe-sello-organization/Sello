@@ -677,7 +677,6 @@
 
     <!-- Metas (SELLO-089) -->
     <string name="tab_metas">Metas</string>
-    <string name="tab_inversiones">Inversiones</string>
     <string name="metas_title">Metas</string>
     <string name="metas_create">Crear una meta</string>
     <string name="metas_dock_contribute">Aportar a una meta</string>
