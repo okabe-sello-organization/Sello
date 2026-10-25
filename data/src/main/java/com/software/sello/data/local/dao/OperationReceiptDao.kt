@@ -14,6 +14,10 @@ interface OperationReceiptDao {
     @Query("SELECT * FROM operation_receipt WHERE operation_id = :operationId")
     suspend fun find(operationId: String): OperationReceiptEntity?
 
+    /** When the last operation of [kind] committed, in epoch milliseconds; null if none. */
+    @Query("SELECT MAX(committed_at) FROM operation_receipt WHERE kind = :kind")
+    suspend fun lastCommittedAt(kind: String): Long?
+
     /** Every receipt goes; only a reset does this, and it then stores its own. */
     @Query("DELETE FROM operation_receipt")
     suspend fun deleteAll(): Int

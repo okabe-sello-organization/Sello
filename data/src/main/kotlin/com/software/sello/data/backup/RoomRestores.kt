@@ -22,6 +22,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.BackupSummary
+import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CheckedBackup
 import com.software.sello.domain.port.DispatcherProvider
@@ -61,6 +62,7 @@ class RoomRestores(
     private val folder: File,
     private val appearance: AppearancePreferences,
     private val ordering: CategoryOrderingPreferences,
+    private val notice: CatchUpNoticePreferences,
     private val ids: RecordIdSource,
     private val audit: AuditClock,
     private val dispatchers: DispatcherProvider,
@@ -189,6 +191,7 @@ class RoomRestores(
                 ordering.setCategoryOrderDirection(wanted.direction).saved()
             if (saved && markApplied(ORDERING)) orderingLeft = null
         }
+        reviewRestoredEntries()
         val left = PendingPreferences(appearanceLeft, orderingLeft)
         if (left.done) {
             io {
@@ -198,6 +201,28 @@ class RoomRestores(
             }
         }
         return RestoreOutcome.Restored(pending.summary, left)
+    }
+
+    /**
+     * What a backup brings counts as reviewed: the catch-up notice lists only what Sello
+     * records from the replacement on (owner, 2026-10-25), so a restore on a new phone
+     * does not list every automatic entry the backup holds. Done once: a retry later
+     * never moves it back past a Listo. Not kept pending if it cannot be saved: the worst
+     * case is a notice listing what the backup brought.
+     */
+    private suspend fun reviewRestoredEntries() {
+        val done = io { applied.takeIf { it.exists() }?.readLines()?.toSet() } ?: emptySet()
+        if (NOTICE in done) return
+        val restoredAt = (
+            reading {
+                Outcome.Success(
+                    database.operationReceiptDao().lastCommittedAt(OperationKind.RestoreHistory.key)
+                )
+            } as? Outcome.Success
+            )?.value ?: return
+        if (notice.markCatchUpNoticeSeen(Instant.ofEpochMilli(restoredAt)).saved()) {
+            markApplied(NOTICE)
+        }
     }
 
     private sealed interface Replacement {
@@ -405,6 +430,7 @@ class RoomRestores(
         const val STAGED_AT = "stagedAt"
         const val APPEARANCE = "appearance"
         const val ORDERING = "ordering"
+        const val NOTICE = "notice"
 
         /** An unconfirmed file is forgotten after a day; a new one can always be chosen. */
         val STAGING_LIFETIME: Duration = Duration.ofDays(1)

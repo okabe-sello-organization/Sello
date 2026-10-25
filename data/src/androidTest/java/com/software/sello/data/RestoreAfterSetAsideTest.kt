@@ -172,6 +172,7 @@ class RestoreAfterSetAsideTest {
         val restores = storage.restores(
             preferences,
             preferences,
+            NoticeSeen(),
             { uuid(5_000) },
             { recordedAt },
             dispatchers

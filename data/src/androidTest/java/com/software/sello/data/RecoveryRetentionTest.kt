@@ -285,7 +285,7 @@ class RecoveryRetentionTest {
         val other = open(new)
         other.profiles.establish(ZoneId.of("America/Bogota")).valueOrFail()
         val applied = Preferences(AppearancePreference(), CategoryOrderingPreference())
-        val restores = other.restores(applied, applied, {
+        val restores = other.restores(applied, applied, NoticeSeen(), {
             uuid(nextOperation++)
         }, { at }, dispatchers)
         val restored = restores.replace(restores.stage(prepared.bytes).valueOrFail())

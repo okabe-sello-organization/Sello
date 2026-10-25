@@ -100,6 +100,7 @@ class RestoreCommandContractTest {
     }
 
     private val preferences = Preferences()
+    private val notice = NoticeSeen()
     private var now = Instant.parse("2026-10-22T19:30:00Z")
     private var whenStamped: () -> Unit = {}
     private var nextId = 5_000
@@ -109,6 +110,7 @@ class RestoreCommandContractTest {
         files.restoreFolder,
         preferences,
         preferences,
+        notice,
         { uuid(nextId++) },
         {
             whenStamped()
@@ -256,6 +258,44 @@ class RestoreCommandContractTest {
                 CategoryOrderDirection.Ascending
             ),
             preferences.written
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    /**
+     * What the backup brings counts as reviewed: the notice is marked seen at the
+     * restore's commit, once. A later retry of the preferences never moves it back past
+     * a Listo pressed meanwhile.
+     */
+    @Test
+    fun aRestoreMarksTheNoticeSeenAtItsCommitOnlyOnce() = runBlocking {
+        currentHistory()
+        preferences.failAppearance = true
+
+        restores().replace(stage())
+        val listo = Instant.parse("2026-10-22T21:00:00Z")
+        notice.seen = listo
+        preferences.failAppearance = false
+        now = Instant.parse("2026-10-23T08:00:00Z")
+        val retried = restores().applyPending()
+
+        assertEquals(listOf(Instant.parse("2026-10-22T19:30:00Z")), notice.marks)
+        assertEquals(listo, notice.seen)
+        assertTrue(retried!!.preferences.done)
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    /** A notice that cannot be marked never holds the restore or its preferences up. */
+    @Test
+    fun aNoticeThatCannotBeMarkedLeavesTheRestoreDone() = runBlocking {
+        currentHistory()
+        notice.fail = true
+
+        val outcome = restores().replace(stage())
+
+        assertEquals(
+            RestoreOutcome.Restored(BackupSummary(2, 3, 1, 0, 0), PendingPreferences(null, null)),
+            outcome
         )
         assertEquals(emptyList<String>(), stagingFiles())
     }
