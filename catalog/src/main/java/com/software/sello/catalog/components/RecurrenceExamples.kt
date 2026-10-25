@@ -160,7 +160,7 @@ fun RepeatSheetExample(startOpen: Boolean = false) {
                         icon = SelloIcon.EventBusy
                     )
                 }
-                RepeatNext(strings.getString(R.string.catalog_demo_proximo_lun_5_nov))
+                RepeatNext(strings.getString(R.string.catalog_demo_proximo_jue_5_nov))
                 RepeatSheetActions(
                     dismissLabel = strings.getString(R.string.catalog_demo_quitar),
                     onDismiss = {

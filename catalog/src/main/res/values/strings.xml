@@ -330,7 +330,7 @@
     <string name="catalog_demo_termina">Termina</string>
     <string name="catalog_demo_nunca">Nunca</string>
     <string name="catalog_demo_en_una_fecha">En una fecha</string>
-    <string name="catalog_demo_proximo_lun_5_nov">Próximo: lun 5 nov. Se anota solo en su fecha.</string>
+    <string name="catalog_demo_proximo_jue_5_nov">Próximo: jue 5 nov. Se anota solo en su fecha.</string>
     <string name="catalog_demo_quitar">Quitar</string>
     <string name="catalog_demo_tus_pagos_fijos">Tus pagos fijos</string>
     <string name="catalog_demo_tus_ingresos_fijos">Tus ingresos fijos</string>
@@ -368,4 +368,9 @@
     <string name="catalog_demo_sello_anoto_4_pagos_fijos">Sello anotó 4 pagos fijos</string>
     <string name="catalog_demo_ver">Ver</string>
     <string name="catalog_demo_vistos">Vistos: %1$d</string>
+    <string name="catalog_example_goals_band">Goals band total</string>
+    <string name="catalog_demo_guardado_en_metas">Guardado en metas</string>
+    <string name="catalog_demo_mas_2_010_000_en_octubre">2.010.000 en octubre</string>
+    <string name="catalog_demo_sin_aportes_este_mes">Un mes sin aportes: solo el total, sin segunda línea.</string>
+    <string name="catalog_demo_dock_de_metas">Dock de Metas</string>
 </resources>

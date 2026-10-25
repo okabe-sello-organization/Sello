@@ -844,7 +844,7 @@ class ExpenseFormViewModelTest {
 
         form.submit()
 
-        // It opens on the entry's day, 22; the 5th comes next on lun 5 nov.
+        // It opens on the entry's day, 22; the 5th comes next on jue 5 nov.
         assertEquals(listOf(22), sheet.sheet?.days)
         assertEquals(LocalDate.parse("2026-10-22"), sheet.sheetNext)
         assertEquals(LocalDate.parse("2026-11-05"), chosen.next)

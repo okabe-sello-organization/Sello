@@ -29,6 +29,7 @@ import com.software.sello.catalog.components.FormFieldExample
 import com.software.sello.catalog.components.GoalCardsExample
 import com.software.sello.catalog.components.GoalFormExample
 import com.software.sello.catalog.components.GoalPillExample
+import com.software.sello.catalog.components.GoalsBandExample
 import com.software.sello.catalog.components.IconChoiceExample
 import com.software.sello.catalog.components.IconStripExample
 import com.software.sello.catalog.components.InvestmentsExample
@@ -382,6 +383,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         CatalogGroup.Feedback,
         R.string.catalog_example_celebration
     ) { CelebrationExample() },
+    CatalogExample(
+        "goals.band",
+        CatalogGroup.Goals,
+        R.string.catalog_example_goals_band
+    ) { GoalsBandExample() },
     CatalogExample(
         "goals.milestones",
         CatalogGroup.Goals,

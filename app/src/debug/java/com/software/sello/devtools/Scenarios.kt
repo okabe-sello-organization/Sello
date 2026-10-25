@@ -23,6 +23,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import kotlin.random.Random
+import kotlin.time.Duration
 
 private val Bogota = ZoneId.of("America/Bogota")
 private val Sep = YearMonth.of(2026, 9)
@@ -600,6 +601,40 @@ object Scenarios {
         )
     )
 
+    /**
+     * MT25: a Deshacer after the window is refused and the goal stays lograda. The window
+     * is zero, real elapsed time like any other, so nothing waits.
+     */
+    val GoalTooLate = Scenario(
+        id = "metas-tarde",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = LocalDate.of(2026, 10, 23),
+        title = "Metas · Deshacer tarde",
+        summary = "Marcar con Deshacer de 0 s; Deshacer después se rechaza y la meta " +
+            "queda lograda.",
+        steps = listOf(
+            Goal("celular", "Celular nuevo", "phone_iphone", 1_200_000),
+            Aporte("celular", 1_200_000, 1),
+            MarkLograda("celular", 2, undoFor = Duration.ZERO),
+            UndoLograda(2, Expect.Rejected("UndoExpired")),
+            Verify(
+                emptyList(),
+                listOf(
+                    GoalCheck(
+                        "celular",
+                        1_200_000,
+                        100,
+                        earned(4),
+                        "MT25: final, Deshacer fuera de tiempo",
+                        completed = true
+                    )
+                )
+            )
+        )
+    )
+
     val all: List<Scenario> = listOf(
         CategoryDetail,
         G01,
@@ -614,7 +649,8 @@ object Scenarios {
         GoalStamps,
         GoalWithdrawals,
         GoalTargets,
-        GoalCompletion
+        GoalCompletion,
+        GoalTooLate
     )
 
     fun find(key: String?): Scenario? = all.firstOrNull { it.key == key }

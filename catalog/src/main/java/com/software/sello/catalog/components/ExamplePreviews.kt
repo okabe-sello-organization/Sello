@@ -156,6 +156,12 @@ private fun SplitChartsExamplePreview(
 
 @ExampleThemePreviews
 @Composable
+private fun GoalsBandExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { GoalsBandExample() }
+
+@ExampleThemePreviews
+@Composable
 private fun MilestonesExamplePreview(
     @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
 ) = Frame(theme) { MilestonesExample() }
