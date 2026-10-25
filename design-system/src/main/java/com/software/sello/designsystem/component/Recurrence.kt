@@ -375,15 +375,11 @@ fun ScheduleRow(
                 color = if (dimmed) colors.inkSoft else colors.ink
             )
             Text(caption, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)
-            if (large) {
-                stamp()
-                figure()
-            }
-        }
-        if (!large) {
+            // Under the caption, so a paused row's caption keeps the row's width.
             stamp()
-            figure()
+            if (large) figure()
         }
+        if (!large) figure()
     }
 }
 

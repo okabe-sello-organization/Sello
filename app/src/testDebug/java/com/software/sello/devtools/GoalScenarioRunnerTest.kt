@@ -62,14 +62,12 @@ class GoalScenarioRunnerTest {
         SandboxSession(active = true, date = start, scenario = scenario.key)
     )
 
+    private val clock = ControlledFinancialClock(FinancialDay(start, scenario.zone))
+
     private fun TestScope.runner() = ScenarioRunner(
         scenario,
         7,
-        SandboxTime(
-            ControlledFinancialClock(FinancialDay(start, scenario.zone)),
-            store,
-            backgroundScope
-        ),
+        SandboxTime(clock, store, backgroundScope),
         LedgerCategories(ledger),
         LedgerExpenses(ledger),
         LedgerIncomes(ledger),
@@ -77,6 +75,7 @@ class GoalScenarioRunnerTest {
         NoSnapshots,
         NoSnapshots,
         NoGoalReads,
+        noSchedules(clock),
         store,
         backgroundScope
     )

@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import com.software.sello.data.FinancialStorage
 import com.software.sello.data.StorageNames
+import com.software.sello.devtools.CatchUpLog
 import com.software.sello.devtools.ControlledFinancialClock
 import com.software.sello.devtools.DebugFaults
 import com.software.sello.devtools.FaultyCategoryCommands
@@ -21,6 +22,7 @@ import com.software.sello.devtools.FencedGoalCommands
 import com.software.sello.devtools.FencedIncomeCommands
 import com.software.sello.devtools.FencedScheduleCatchUp
 import com.software.sello.devtools.FencedScheduleCommands
+import com.software.sello.devtools.LoggedScheduleCatchUp
 import com.software.sello.devtools.OperationInspector
 import com.software.sello.devtools.OperationLog
 import com.software.sello.devtools.SandboxBadges
@@ -32,6 +34,7 @@ import com.software.sello.devtools.SandboxSessionStore
 import com.software.sello.devtools.SandboxTime
 import com.software.sello.devtools.SandboxTools
 import com.software.sello.devtools.ScenarioRunner
+import com.software.sello.devtools.ScenarioSchedules
 import com.software.sello.devtools.Scenarios
 import com.software.sello.devtools.SharedPreferencesSessionStore
 import com.software.sello.devtools.WriteFence
@@ -133,6 +136,7 @@ class DebugComposition(
         publish(SandboxTools(profiles, time))
         val faults = DebugFaults()
         val log = OperationLog()
+        val batches = CatchUpLog()
         val sandbox = time != null
         return listOf(
             module {
@@ -178,8 +182,9 @@ class DebugComposition(
                     )
                 }
                 single<ScheduleCatchUpStore> {
+                    val real = get<FinancialStorage>().scheduleCatchUp(get(), get())
                     FencedScheduleCatchUp(
-                        get<FinancialStorage>().scheduleCatchUp(get(), get()),
+                        if (sandbox) LoggedScheduleCatchUp(real, batches) else real,
                         fence,
                         saved
                     )
@@ -233,6 +238,16 @@ class DebugComposition(
                             get(),
                             get(),
                             get(),
+                            // The catch-up Sello itself runs, on these fenced ports.
+                            ScenarioSchedules(
+                                get(),
+                                get(),
+                                get(),
+                                batches,
+                                get(),
+                                get(),
+                                get()
+                            ),
                             store,
                             scope
                         ).also {

@@ -264,6 +264,7 @@ class ScenarioRunnerTest {
             NoSnapshots,
             NoSnapshots,
             NoGoalReads,
+            noSchedules(time.clock),
             store,
             backgroundScope
         )

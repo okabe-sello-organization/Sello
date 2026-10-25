@@ -14,7 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The whole scenario corpus on real Room, goals included. Each scenario runs fresh, then again cut
+ * The whole scenario corpus on real Room, goals and schedules included, with the app's own
+ * catch-up. Each scenario runs fresh, then again cut
  * off after a committed step whose checkpoint was lost and resumed in a new process;
  * both runs must leave the same history and every `Verify` must match. Each check's
  * line is written to the log under [TAG] as the run's evidence. Each finished scenario
@@ -56,25 +57,44 @@ class TemporalScenarioCorpusTest {
         )
     }
 
-    /** Everything the scenario wrote, without the random record IDs or audit times. */
-    private fun SandboxGraph.history(): List<String> =
-        rows("SELECT operation_id, kind, revision FROM operation_receipt ORDER BY revision") +
-            rows(
-                "SELECT c.name, e.amount_minor, e.effective_date FROM expense e " +
-                    "JOIN category c ON c.id = e.category_id ORDER BY e.effective_date, e.sequence"
-            ) +
-            rows(
-                "SELECT amount_minor, effective_date, source_key FROM income ORDER BY effective_date"
-            ) +
-            rows("SELECT name, archived, version FROM category ORDER BY name") +
-            rows(
-                "SELECT c.name, d.effective_month, d.kind, d.limit_minor FROM default_limit d " +
-                    "JOIN category c ON c.id = d.category_id ORDER BY c.name, d.effective_month"
-            ) +
-            rows(
-                "SELECT c.name, m.month, m.kind, m.limit_minor FROM month_limit m " +
-                    "JOIN category c ON c.id = m.category_id ORDER BY c.name, m.month"
-            ) + goals(withVersions = true)
+    /**
+     * Everything the scenario wrote, without the random record IDs or audit times. A
+     * catch-up batch has no operation of its own: its receipt is compared by kind and
+     * revision.
+     */
+    private fun SandboxGraph.history(): List<String> = rows(
+        "SELECT CASE kind WHEN 'schedule.catch_up' THEN 'catch-up' ELSE operation_id END, " +
+            "kind, revision FROM operation_receipt ORDER BY revision"
+    ) +
+        rows(
+            "SELECT c.name, e.amount_minor, e.effective_date, e.origin_date, e.origin_slot " +
+                "FROM expense e JOIN category c ON c.id = e.category_id " +
+                "ORDER BY e.effective_date, e.sequence"
+        ) +
+        rows(
+            "SELECT amount_minor, effective_date, source_key, origin_date, origin_slot " +
+                "FROM income ORDER BY effective_date, sequence"
+        ) + schedules(withVersions = true) +
+        rows("SELECT name, archived, version FROM category ORDER BY name") +
+        rows(
+            "SELECT c.name, d.effective_month, d.kind, d.limit_minor FROM default_limit d " +
+                "JOIN category c ON c.id = d.category_id ORDER BY c.name, d.effective_month"
+        ) +
+        rows(
+            "SELECT c.name, m.month, m.kind, m.limit_minor FROM month_limit m " +
+                "JOIN category c ON c.id = m.category_id ORDER BY c.name, m.month"
+        ) + goals(withVersions = true)
+
+    /** Each schedule with its checkpoint, and its pauses. */
+    private fun SandboxGraph.schedules(withVersions: Boolean): List<String> = rows(
+        "SELECT note, kind, amount_minor, rule, rule_first, rule_second, start_date, end_date, " +
+            "handled_date, handled_slot" + (if (withVersions) ", version" else "") +
+            " FROM schedule ORDER BY sequence"
+    ) +
+        rows(
+            "SELECT s.note, p.from_date, p.until_date FROM schedule_pause p " +
+                "JOIN schedule s ON s.id = p.schedule_id ORDER BY s.note, p.from_date"
+        )
 
     /** Each goal, its movements and target changes in recording order, and Recibo's choice. */
     private fun SandboxGraph.goals(withVersions: Boolean): List<String> = rows(
@@ -114,6 +134,14 @@ class TemporalScenarioCorpusTest {
             val fresh = graph(scenario)
             fresh.finish()
             val freshChecks = checks(scenario, fresh, "fresh")
+            // What each catch-up step found, as the run's evidence; not compared, because
+            // a resumed process may have caught up on opening.
+            fresh.runner.state.value.log
+                .filter { scenario.steps[it.index] == ScenarioStep.CatchUp }
+                .filterNot { it.result.endsWith("nada pendiente") }
+                .forEach {
+                    Log.i(TAG, "${scenario.key} [fresh] paso ${it.index + 1}: ${it.result}")
+                }
             val freshAfterCut = lines(scenario, fresh, from = cut)
             val freshHistory = fresh.history()
 
@@ -131,7 +159,7 @@ class TemporalScenarioCorpusTest {
             assertTrue(scenario.key, freshChecks.none { it.startsWith("✗") })
             val verifies = scenario.steps.count { it is ScenarioStep.Verify }
             val figures = scenario.steps.filterIsInstance<ScenarioStep.Verify>().sumOf {
-                it.checks.size + it.goals.size
+                it.figures
             }
             assertEquals(scenario.key, figures, freshChecks.count { it.startsWith("✓") })
             report += "${scenario.key}: ${scenario.steps.size} steps, $verifies checks, " +
@@ -149,7 +177,7 @@ class TemporalScenarioCorpusTest {
             // Only a final check sees the whole history; earlier ones were taken mid-run. A
             // later step that is meant to be refused changes nothing.
             val checkable = last >= 0 && scenario.steps.drop(last + 1).none {
-                it.writes() && it.expect == Expect.Saved
+                it.writes && it.expect == Expect.Saved
             }
             val sandbox = graph(scenario)
             sandbox.finish()
@@ -193,12 +221,14 @@ class TemporalScenarioCorpusTest {
 
     /** What the figures are computed from, by name: no identifiers, versions or receipts. */
     private fun SandboxGraph.figures(): List<String> = rows(
-        "SELECT c.name, e.amount_minor, e.effective_date, e.note FROM expense e " +
-            "JOIN category c ON c.id = e.category_id ORDER BY e.effective_date, e.sequence"
+        "SELECT c.name, e.amount_minor, e.effective_date, e.note, e.origin_date, e.origin_slot " +
+            "FROM expense e JOIN category c ON c.id = e.category_id " +
+            "ORDER BY e.effective_date, e.sequence"
     ) +
         rows(
-            "SELECT amount_minor, effective_date, source_key FROM income ORDER BY effective_date"
-        ) +
+            "SELECT amount_minor, effective_date, source_key, origin_date, origin_slot " +
+                "FROM income ORDER BY effective_date, sequence"
+        ) + schedules(withVersions = false) +
         rows("SELECT name, archived FROM category ORDER BY name") +
         rows(
             "SELECT c.name, d.effective_month, d.kind, d.limit_minor FROM default_limit d " +
@@ -208,9 +238,6 @@ class TemporalScenarioCorpusTest {
             "SELECT c.name, m.month, m.kind, m.limit_minor FROM month_limit m " +
                 "JOIN category c ON c.id = m.category_id ORDER BY c.name, m.month"
         ) + goals(withVersions = false)
-
-    private fun ScenarioStep.writes() =
-        this !is ScenarioStep.AdvanceTo && this !is ScenarioStep.Verify
 
     private companion object {
         const val TAG = "ScenarioCorpus"
