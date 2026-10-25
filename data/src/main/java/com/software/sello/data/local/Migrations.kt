@@ -28,7 +28,8 @@ internal val Migration5To6 = object : Migration(5, 6) {
                 "ON UPDATE RESTRICT ON DELETE RESTRICT )"
         )
         db.execSQL(
-            "CREATE UNIQUE INDEX IF NOT EXISTS `index_investment_movement_investment_id_sequence` " +
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_investment_movement_investment_id_sequence` " +
                 "ON `investment_movement` (`investment_id`, `sequence`)"
         )
         db.execSQL(

@@ -365,7 +365,8 @@ class ExportedSchemaOnDeviceTest {
                     "NULL, NULL, NULL)"
             )
             exported.execSQL(
-                "INSERT INTO goal VALUES ('${uuid(5)}', 'Viaje', 'flight', NULL, NULL, 2, 1, 30, 40)"
+                "INSERT INTO goal VALUES ('${uuid(5)}', 'Viaje', 'flight', NULL, NULL, " +
+                    "2, 1, 30, 40)"
             )
             exported.execSQL(
                 "INSERT INTO goal_event VALUES ('${uuid(6)}', '${uuid(5)}', 0, 'target', " +
