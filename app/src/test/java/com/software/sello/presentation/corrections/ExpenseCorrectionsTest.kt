@@ -3,11 +3,14 @@ package com.software.sello.presentation.corrections
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovementId
 import com.software.sello.domain.model.GoalPlace
+import com.software.sello.domain.model.InvestmentId
+import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteGoalMovement
+import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome.OutcomeUnknown
 import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
@@ -18,8 +21,12 @@ import com.software.sello.domain.port.GoalUndoOffer
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.IncomeUndoOffer
+import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentRejection
+import com.software.sello.domain.port.InvestmentUndoOffer
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.RestoreGoalMovement
+import com.software.sello.domain.port.RestoreInvestmentMovement
 import com.software.sello.domain.port.UndoGoalCompletion
 import com.software.sello.domain.port.UndoOffer
 import com.software.sello.feature.expense.HandExpenseCommands
@@ -28,6 +35,7 @@ import com.software.sello.feature.expense.expenseId
 import com.software.sello.feature.expense.incomeId
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.investments.HandInvestmentCommands
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
@@ -55,6 +63,7 @@ class ExpenseCorrectionsTest {
     private val commands = HandExpenseCommands()
     private val incomes = HandIncomeCommands()
     private val goals = HandGoalCommands()
+    private val investments = HandInvestmentCommands()
     private var slept: Duration = Duration.ZERO
     private val monotonic =
         MonotonicClock { 5.hours + scope.testScheduler.currentTime.milliseconds + slept }
@@ -64,6 +73,7 @@ class ExpenseCorrectionsTest {
             commands,
             incomes,
             goals,
+            investments,
             monotonic,
             { uuid(nextId++) },
             scope.backgroundScope
@@ -547,6 +557,108 @@ class ExpenseCorrectionsTest {
 
         assertEquals(answers.map { it.second to null }, results)
         assertEquals(CorrectionNotice.IncomeUpdated, notice)
+    }
+
+    // --- Investment movements: the same offer, the investment's own commands and words ---
+
+    private fun investmentDeletion(generation: Long = 7) = DeleteInvestmentMovement(
+        OperationId.of(uuid(910)).let { (it as Outcome.Success).value },
+        generation,
+        (InvestmentId.of(uuid(311)) as Outcome.Success).value,
+        4,
+        (InvestmentMovementId.of(uuid(312)) as Outcome.Success).value,
+        1
+    )
+
+    private suspend fun deleteInvestmentMovement(generation: Long = 7): InvestmentCommandOutcome {
+        deletedAt = monotonic.elapsed()
+        val command = investmentDeletion(generation)
+        investments.undoOffer = {
+            InvestmentUndoOffer(command.operationId, command.investmentId, deletedAt + 6.seconds)
+                .takeIf { monotonic.elapsed() < it.until }
+        }
+        return corrections.deleteInvestmentMovement(command)
+    }
+
+    @Test
+    fun in21DeletingAnInvestmentMovementOffersUndoAndDeshacerRestoresItThroughItsCommands() = test {
+        val outcome = deleteInvestmentMovement(generation = 7)
+        val offered = notice
+        advanceTimeBy(2_000)
+
+        corrections.undo()
+        runCurrent()
+
+        assertEquals(true, outcome is InvestmentCommandOutcome.Committed)
+        assertEquals(CorrectionNotice.InvestmentMovementDeleted(canUndo = true), offered)
+        val sent = investments.sent.last() as RestoreInvestmentMovement
+        assertEquals(
+            listOf(uuid(500), 7L, uuid(910)),
+            listOf(sent.operationId.value, sent.generation, sent.deletionId.value)
+        )
+        assertEquals(investmentDeletion(), investments.sent.first())
+        assertEquals(emptyList<Any>(), goals.sent)
+        assertEquals(emptyList<Any>(), commands.restored)
+        assertEquals(CorrectionNotice.InvestmentMovementRestored, notice)
+    }
+
+    @Test
+    fun anInvestmentOfferEndsAtSixSecondsAndALateOrBlockedUndoSaysSoAboutTheMovement() = test {
+        deleteInvestmentMovement()
+        advanceTimeBy(5_999)
+        runCurrent()
+        val before = notice
+        advanceTimeBy(1)
+        runCurrent()
+        val after = notice
+        deleteInvestmentMovement()
+        investments.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.UndoExpired)
+        corrections.undo()
+        runCurrent()
+        val late = notice
+        deleteInvestmentMovement()
+        investments.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.UndoConflict)
+        corrections.undo()
+        runCurrent()
+
+        assertEquals(CorrectionNotice.InvestmentMovementDeleted(canUndo = true), before)
+        assertNull(after)
+        assertEquals(CorrectionNotice.InvestmentMovementUndoTooLate, late)
+        assertEquals(CorrectionNotice.InvestmentMovementUndoBlocked, notice)
+    }
+
+    @Test
+    fun anUnknownUndoOfAnInvestmentMovementIsAskedWithTheSameOperationNeverSentAgain() = test {
+        deleteInvestmentMovement()
+        investments.answers += InvestmentCommandOutcome.OutcomeUnknown(
+            (OperationId.of(uuid(500)) as Outcome.Success).value
+        )
+        investments.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+
+        corrections.undo()
+        runCurrent()
+        val failed = notice
+
+        assertEquals(listOf(uuid(500)), investments.asked.map { it.value })
+        assertEquals(2, investments.sent.size)
+        assertEquals(
+            CorrectionNotice.InvestmentMovementDeleted(canUndo = true, undoFailed = true),
+            failed
+        )
+    }
+
+    @Test
+    fun aRefusedInvestmentMovementDeletionOffersNothing() = test {
+        investments.answers +=
+            InvestmentCommandOutcome.Rejected(InvestmentRejection.LastContribution)
+
+        val outcome = deleteInvestmentMovement()
+        val afterRefusal = notice
+        corrections.investmentMovementUpdated()
+
+        assertEquals(true, outcome is InvestmentCommandOutcome.Rejected)
+        assertNull(afterRefusal)
+        assertEquals(CorrectionNotice.InvestmentMovementUpdated, notice)
     }
 
     // --- Goal movements: the same offer, the goal's own commands and words ---

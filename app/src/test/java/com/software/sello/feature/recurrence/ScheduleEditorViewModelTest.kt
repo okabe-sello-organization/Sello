@@ -28,6 +28,7 @@ import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.pesos
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
@@ -77,6 +78,7 @@ class ScheduleEditorViewModelTest {
             HandExpenseCommands(),
             HandIncomeCommands(),
             HandGoalCommands(),
+            HandInvestmentCommands(),
             { Duration.ZERO },
             { uuid(nextId++) },
             CoroutineScope(Dispatchers.Main)

@@ -37,6 +37,7 @@ import com.software.sello.feature.expense.pesos
 import com.software.sello.feature.expense.storedIncome
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.feature.recurrence.HandScheduleCommands
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
@@ -106,6 +107,7 @@ class IncomeFormViewModelTest {
             HandExpenseCommands(),
             commands,
             HandGoalCommands(),
+            HandInvestmentCommands(),
             { Duration.ZERO },
             { uuid(nextId++) },
             CoroutineScope(Dispatchers.Main)
