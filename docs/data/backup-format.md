@@ -225,7 +225,8 @@ entries keep their `origin`; catch-up then goes on from each checkpoint, so noth
 backup holds is recorded again and what came due since is. Investments and rates are
 replaced too: each movement keeps its recording position, the investment's next position
 follows its last movement (at least 2), and no deleted movement can be put back. The
-preview, like the erase confirmation, counts investments when either side has any. Inside one transaction a receipt for the same operation means it already
+restore preview and the erase confirmation count investments when there are any.
+Inside one transaction a receipt for the same operation means it already
 happened, so asking again after an unknown outcome or a crash replays instead of
 replacing twice. Afterwards the backup's appearance and order are applied; a group
 that fails stays pending, with the file, and is retried at start-up and on request.
