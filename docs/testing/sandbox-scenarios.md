@@ -75,8 +75,8 @@ is exercised by `CategoryDetailJourneyTest.editingTheCurrentLimitRefreshesItsCha
 a committed step whose checkpoint was lost, and requires the same receipts, expenses,
 incomes, categories, limits, goals, goal movements, Recibo's choice, investments, their
 movements and the USD rates from both runs, and every `Verify` to match. Its backup test
-restores every scenario and compares the rows; backups do not carry investments until
-SELLO-108, so an investment scenario's last check is not run again after the restore.
+restores every scenario, compares the rows (investments and rates included, without the
+versions a backup does not keep) and runs the last check again on the restored rows.
 
 Goal checks read the stamps as the goal's page draws them: `ganado`, `guardado` (earned,
 no longer reached), `vacío` and `esperando` (the Meta reached, not yet marked). Deshacer

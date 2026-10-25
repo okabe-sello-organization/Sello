@@ -20,8 +20,7 @@ import org.junit.runner.RunWith
  * both runs must leave the same history and every `Verify` must match. Each check's
  * line is written to the log under [TAG] as the run's evidence. Each finished scenario
  * is also saved as a backup and restored into a new installation, where its last
- * check must find the same figures; an investment scenario's last check is not, until
- * backups carry investments (SELLO-108).
+ * check must find the same figures.
  */
 @RunWith(AndroidJUnit4::class)
 class TemporalScenarioCorpusTest {
@@ -84,18 +83,22 @@ class TemporalScenarioCorpusTest {
         rows(
             "SELECT c.name, m.month, m.kind, m.limit_minor FROM month_limit m " +
                 "JOIN category c ON c.id = m.category_id ORDER BY c.name, m.month"
-        ) + goals(withVersions = true) + investments()
+        ) + goals(withVersions = true) + investments(withVersions = true)
 
     /**
      * Each investment, its movements in recording order and the rates in the order they
-     * were entered, without identifiers or audit times.
+     * were entered, without identifiers or audit times. A backup keeps no versions and no
+     * next recording position, so a restore is compared [withVersions] false.
      */
-    private fun SandboxGraph.investments(): List<String> = rows(
-        "SELECT name, icon_key, currency, next_sequence, version FROM investment ORDER BY name"
+    private fun SandboxGraph.investments(withVersions: Boolean): List<String> = rows(
+        "SELECT name, icon_key, currency" +
+            (if (withVersions) ", next_sequence, version" else "") +
+            " FROM investment ORDER BY name"
     ) +
         rows(
-            "SELECT i.name, m.sequence, m.kind, m.amount_minor, m.currency, m.effective_date, " +
-                "m.version FROM investment_movement m " +
+            "SELECT i.name, m.sequence, m.kind, m.amount_minor, m.currency, m.effective_date" +
+                (if (withVersions) ", m.version" else "") +
+                " FROM investment_movement m " +
                 "JOIN investment i ON i.id = m.investment_id ORDER BY i.name, m.sequence"
         ) +
         rows("SELECT rate_hundredths, effective_date, sequence FROM usd_rate ORDER BY sequence")
@@ -189,13 +192,9 @@ class TemporalScenarioCorpusTest {
         val report = mutableListOf<String>()
         Scenarios.all.forEach { scenario ->
             val last = scenario.steps.indexOfLast { it is ScenarioStep.Verify }
-            // Backups do not carry investments or rates until SELLO-108, so a restore leaves
-            // none: an investment scenario's last check, which reads them, is not run again.
-            // Its other rows are still compared, and `figures` leaves investments out.
-            val investing = scenario.steps.any { it is ScenarioStep.Investment }
             // Only a final check sees the whole history; earlier ones were taken mid-run. A
             // later step that is meant to be refused changes nothing.
-            val checkable = !investing && last >= 0 && scenario.steps.drop(last + 1).none {
+            val checkable = last >= 0 && scenario.steps.drop(last + 1).none {
                 it.writes && it.expect == Expect.Saved
             }
             val sandbox = graph(scenario)
@@ -221,11 +220,7 @@ class TemporalScenarioCorpusTest {
 
             if (!checkable) {
                 report += "${scenario.key}: backup ${bytes.size} bytes restored; same rows; " +
-                    if (investing) {
-                        "investments are not in backups until SELLO-108, last check not rerun"
-                    } else {
-                        "no check follows its last saved change"
-                    }
+                    "no check follows its last saved change"
                 return@forEach
             }
             // After the restart a restore asks for, the last check runs on restored rows.
@@ -260,7 +255,7 @@ class TemporalScenarioCorpusTest {
         rows(
             "SELECT c.name, m.month, m.kind, m.limit_minor FROM month_limit m " +
                 "JOIN category c ON c.id = m.category_id ORDER BY c.name, m.month"
-        ) + goals(withVersions = false)
+        ) + goals(withVersions = false) + investments(withVersions = false)
 
     private companion object {
         const val TAG = "ScenarioCorpus"
