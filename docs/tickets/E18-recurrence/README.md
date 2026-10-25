@@ -1,6 +1,6 @@
 # SELLO-E18 — Recurring payments, incomes and reservations
 
-- **Status:** Backlog
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** Let a person schedule recurring payments and incomes that Sello records on their dates, reserving payments still to come.
 - **Exit:** Schedules can be created, paused, ended and changed; due occurrences are recorded on opening with a notice; Recibo's headline is after reservations with Sin margen and Revisar; income history shows Plan del mes; backups carry schedules.

@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-098, SELLO-004
 - **Gate:** G2
 
@@ -53,3 +53,4 @@ Focused tests, then `./scripts/verify-ticket SELLO-104 --retain`.
   RE25 Al día, RE27 Sin margen, RE28 and RE29 Revisar, and RE26 on the 28th, when
   catch-up records the rent and the headline stays. The notice is checked by SELLO-103's
   `CatchUpNoticeJourneyTest`, which drives `semana-fuera@1` through Recibo's bar and list.
+- **Done (2026-10-25):** gate and device evidence in [evidence.md](evidence.md).
