@@ -9,9 +9,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -25,6 +27,7 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.InvestmentMovementKind
+import com.software.sello.press
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -151,7 +154,10 @@ class InvestmentMovementScreenTest {
         rule.onNodeWithText("Vale 5.242.000 según el valor del 14 oct. ¿Vale más hoy?")
             .assertExists()
         rule.onNodeWithTag(INVESTMENT_MOVEMENT_SUBMIT_TAG).assertIsNotEnabled()
-        rule.onNodeWithText("Anotar el valor de hoy", useUnmergedTree = true).performClick()
+        // Pressed through its action: on a short screen the pad covers where it is drawn.
+        rule.onNodeWithTag(INVESTMENT_MOVEMENT_VALUE_FIRST_TAG)
+            .assert(hasText("Anotar el valor de hoy"))
+            .press()
         assertEquals(
             listOf<InvestmentMovementAction>(InvestmentMovementAction.RecordValueFirst),
             actions
