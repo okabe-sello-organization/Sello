@@ -10,11 +10,13 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.CategoryInMonth
 import com.software.sello.domain.policy.MonthlyBudgetPolicy
+import com.software.sello.domain.policy.ReservationPolicy
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.MonthBudget
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.SnapshotState
+import com.software.sello.domain.port.StoredSchedule
 import java.time.YearMonth
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
@@ -34,7 +36,11 @@ class RoomMonthlySnapshots(
     private val clock: FinancialClock,
     private val computation: CoroutineContext
 ) : MonthlySnapshots {
-    private class Rows(val budget: MonthBudget, val expenses: List<Expense>)
+    private class Rows(
+        val budget: MonthBudget,
+        val expenses: List<Expense>,
+        val schedules: List<StoredSchedule>
+    )
 
     override suspend fun read(month: YearMonth): Outcome<MonthlySnapshot, SnapshotFailure> =
         readAsOf(month, clock.today.value)
@@ -57,7 +63,9 @@ class RoomMonthlySnapshots(
                 generation = rows.budget.generation,
                 revision = rows.budget.revision,
                 categories = rows.budget.categories.map { CategoryInMonth(it.category, it.state) },
-                expenses = rows.expenses
+                expenses = rows.expenses,
+                // Read with the rest, so what is reserved belongs to the same revision.
+                reserved = ReservationPolicy.reserved(rows.schedules, month)
             )
         }
     }
@@ -67,9 +75,13 @@ class RoomMonthlySnapshots(
             is Outcome.Success -> read.value
             is Outcome.Failure -> return read
         }
-        return when (val expenses = database.monthExpenses(month)) {
-            is Outcome.Success -> Outcome.Success(Rows(budget, expenses.value))
-            is Outcome.Failure -> expenses
+        val expenses = when (val read = database.monthExpenses(month)) {
+            is Outcome.Success -> read.value
+            is Outcome.Failure -> return read
+        }
+        return when (val schedules = database.storedSchedules()) {
+            is Outcome.Success -> Outcome.Success(Rows(budget, expenses, schedules.value))
+            is Outcome.Failure -> schedules
         }
     }
 

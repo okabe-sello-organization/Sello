@@ -4,13 +4,11 @@ import android.database.SQLException
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.mapper.profileFrom
-import com.software.sello.data.mapper.toStored
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
-import com.software.sello.domain.port.StoredSchedule
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
@@ -28,16 +26,14 @@ class RoomScheduleReads(private val database: SelloDatabase) : ScheduleReads {
                 is Outcome.Success -> stored.value
                 is Outcome.Failure -> return@withTransaction stored
             }
-            val pauses = database.scheduleDao().allPauses().groupBy { it.scheduleId }
-            // A pause cannot outlive its schedule: the foreign key refuses it.
-            val schedules = mutableListOf<StoredSchedule>()
-            for (row in database.scheduleDao().all()) {
-                when (val stored = row.toStored(pauses[row.id].orEmpty())) {
-                    is Outcome.Success -> schedules += stored.value
-                    is Outcome.Failure -> return@withTransaction stored
-                }
+            when (val schedules = database.storedSchedules()) {
+                is Outcome.Success ->
+                    Outcome.Success(
+                        ScheduleBook(profile.generation, profile.revision, schedules.value)
+                    )
+
+                is Outcome.Failure -> schedules
             }
-            Outcome.Success(ScheduleBook(profile.generation, profile.revision, schedules))
         }
     }
 

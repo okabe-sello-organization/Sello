@@ -9,6 +9,7 @@ import com.software.sello.data.local.entity.MonthLimitEntity
 import com.software.sello.data.mapper.decodeAll
 import com.software.sello.data.mapper.profileFrom
 import com.software.sello.data.mapper.toDomain
+import com.software.sello.data.mapper.toStored
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.Outcome
@@ -16,6 +17,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.CategoryBudgetPolicy
 import com.software.sello.domain.port.CategoryBudget
 import com.software.sello.domain.port.MonthBudget
+import com.software.sello.domain.port.StoredSchedule
 import java.time.YearMonth
 
 /*
@@ -107,4 +109,22 @@ internal suspend fun SelloDatabase.monthIncomes(
     return pages<IncomeEntity> { after ->
         incomeDao().page(from, until, after?.effectiveDate.orEmpty(), after?.sequence ?: 0, PAGE)
     }.decodeAll { it.toDomain() }
+}
+
+/**
+ * Every schedule with its pauses, in creation order. One that cannot be read fails the
+ * read: it is never left out.
+ */
+internal suspend fun SelloDatabase.storedSchedules():
+    Outcome<List<StoredSchedule>, StorageFailure.Integrity> {
+    val pauses = scheduleDao().allPauses().groupBy { it.scheduleId }
+    // A pause cannot outlive its schedule: the foreign key refuses it.
+    val schedules = mutableListOf<StoredSchedule>()
+    for (row in scheduleDao().all()) {
+        when (val stored = row.toStored(pauses[row.id].orEmpty())) {
+            is Outcome.Success -> schedules += stored.value
+            is Outcome.Failure -> return stored
+        }
+    }
+    return Outcome.Success(schedules)
 }

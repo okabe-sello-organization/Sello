@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-098, SELLO-100, SELLO-114, SELLO-004
 - **Gate:** G2
 
@@ -37,3 +37,22 @@ ADR 0012; v2 Recibo; the [gap list](../../../design/v2/gaps/recurrence.md): reus
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-101 --retain`.
+
+### Execution progress
+
+- **Rule:** `ReservationPolicy` reserves the payment occurrences of the month in progress
+  not yet handled, a due one catch-up has not recorded included (rule 11), and works out
+  `Q`, `M = R − Q`, its standing (Al día, Sin margen, Revisar) and, while short, `−M` and
+  `−R` exactly. `MonthlyBudgetPolicy` takes them for the month in progress with a finite
+  limit only and draws the daily figure from `M`. `RoomMonthlySnapshots` reads the
+  schedules in the month's transaction, so `Q` is of the same revision as the spending.
+- **Recibo:** **Falta para tus pagos** with Revisar (warn) before Excedido, Sin margen
+  (neutral) at 0, the sentence under the big number ("Quedan …" or, past the limit,
+  "Pasaste tu límite por …", owner's RE29 wording), the footnote "Incluye … separado para
+  … pagos previstos ›" and **Ajustar presupuesto** for Revisar. Categories never show it.
+- **Pagos previstos:** opened by the footnote, from the same snapshot; each payment
+  opens its schedule, and **Ver todos los pagos fijos ›**.
+- **Catalog:** *Recibo answer states* in the v2 order, Sin margen with its footnote and
+  Revisar past the limit.
+- **Sandbox:** the reservation checks come with SELLO-104's second part, after this.
+- **Done (2026-10-25):** gate and device evidence in [evidence.md](evidence.md).

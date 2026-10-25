@@ -244,7 +244,8 @@ fun AnswerSlipExample() {
             strings.getString(R.string.catalog_demo_sin_margen),
             "Revisar",
             strings.getString(R.string.catalog_demo_sin_limite),
-            "Cerrado"
+            "Cerrado",
+            strings.getString(R.string.catalog_demo_revisar_pasado)
         )
     ExampleStack {
         ChipRows(labels.size) { index ->
@@ -257,81 +258,55 @@ fun AnswerSlipExample() {
             strings.getString(R.string.catalog_demo_sin_margen),
             "Revisar",
             strings.getString(R.string.catalog_demo_sin_limite),
-            "Cumplido"
+            "Cumplido",
+            "Revisar"
         )[state]
         val ink = when (state) {
             0, 6 -> StampInk.Good
             2 -> StampInk.Over
-            4 -> StampInk.Warn
+            4, 7 -> StampInk.Warn
             else -> StampInk.Neutral
         }
-        val value = listOf(400_000L, 0L, -80_000L, 0L, 50_000L, 920_000L, 80_000L)[state]
-        AnswerSlip(
-            if (state ==
-                5
-            ) {
-                strings.getString(R.string.catalog_demo_has_gastado_este_mes)
-            } else if (state ==
-                4
-            ) {
-                strings.getString(R.string.catalog_demo_falta_para_tus_pagos)
-            } else {
-                strings.getString(R.string.catalog_demo_restante_del_presupuesto)
-            },
-            copFixture(value),
-            stamp,
-            ink
-        ) {
+        val value = listOf(400_000L, 0L, -80_000L, 0L, 50_000L, 920_000L, 80_000L, 280_000L)[state]
+        val label = when (state) {
+            5 -> R.string.catalog_demo_has_gastado_este_mes
+            4, 7 -> R.string.catalog_demo_falta_para_tus_pagos
+            else -> R.string.catalog_demo_restante_del_presupuesto
+        }
+        // v2 Recibo: Revisar's sentence under the big number, then the tear line, the
+        // daily figure, the footnote while payments are reserved and Ajustar presupuesto.
+        val reserved = mapOf(
+            0 to R.string.catalog_demo_incluye_200_000_separado_para_1_pago,
+            3 to R.string.catalog_demo_incluye_100_000_separado_para_1_pago,
+            4 to R.string.catalog_demo_incluye_150_000_separado_para_1_pago,
+            7 to R.string.catalog_demo_incluye_200_000_separado_para_1_pago
+        )[state]
+        AnswerSlip(strings.getString(label), copFixture(value), stamp, ink) {
+            when (state) {
+                4 -> Text(
+                    strings.getString(R.string.catalog_demo_quedan_100_000_y_tus_pagos_previstos)
+                )
+
+                7 -> Text(strings.getString(R.string.catalog_demo_pasaste_tu_limite_por_80_000))
+            }
             if (state != 5) {
                 TearLine()
-                when (state) {
-                    6 -> Text(
-                        strings.getString(R.string.catalog_demo_mes_cerrado_gastaste_920_000_de_1)
-                    )
-
-                    4 -> Text(
-                        strings.getString(
-                            R.string.catalog_demo_quedan_100_000_y_tus_pagos_previstos
-                        )
-                    )
-
-                    else -> {
-                        MoneyText(
-                            copFixture(
-                                if (state ==
-                                    0
-                                ) {
-                                    40_000
-                                } else {
-                                    0
-                                }
-                            ),
-                            style = MoneyStyle.Card
-                        )
-                        Text(strings.getString(R.string.catalog_demo_por_dia))
-                        ExampleCaption(
-                            strings.getString(R.string.catalog_demo_10_dias_incluido_hoy)
-                        )
-                    }
+                if (state == 6) {
+                    Text(strings.getString(R.string.catalog_demo_mes_cerrado_gastaste_920_000_de_1))
+                } else {
+                    MoneyText(copFixture(if (state == 0) 40_000 else 0), style = MoneyStyle.Card)
+                    Text(strings.getString(R.string.catalog_demo_por_dia))
+                    ExampleCaption(strings.getString(R.string.catalog_demo_10_dias_incluido_hoy))
                 }
             }
-            if (state == 2 ||
-                state == 4
-            ) {
-                SelloButton(strings.getString(R.string.catalog_demo_ajustar_presupuesto), {
-                }, kind = ButtonKind.Text)
+            reserved?.let {
+                Footnote(AnnotatedString(strings.getString(it)), {})
             }
-            if (state ==
-                0
-            ) {
-                Footnote(
-                    AnnotatedString(
-                        strings.getString(
-                            R.string.catalog_demo_incluye_200_000_separado_para_1_pago
-                        )
-                    ),
-                    {
-                    }
+            if (state == 2 || state == 4 || state == 7) {
+                SelloButton(
+                    strings.getString(R.string.catalog_demo_ajustar_presupuesto),
+                    {},
+                    kind = ButtonKind.Text
                 )
             }
         }

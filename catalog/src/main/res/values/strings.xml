@@ -141,6 +141,10 @@
     <string name="catalog_demo_sin_margen" formatted="false">Sin margen</string>
     <string name="catalog_demo_sin_limite" formatted="false">Sin límite</string>
     <string name="catalog_demo_incluye_200_000_separado_para_1_pago" formatted="false">Incluye 200.000 separado para 1 pago previsto</string>
+    <string name="catalog_demo_incluye_100_000_separado_para_1_pago" formatted="false">Incluye 100.000 separado para 1 pago previsto</string>
+    <string name="catalog_demo_incluye_150_000_separado_para_1_pago" formatted="false">Incluye 150.000 separado para 1 pago previsto</string>
+    <string name="catalog_demo_pasaste_tu_limite_por_80_000" formatted="false">Pasaste tu límite por 80.000 y tus pagos previstos suman 200.000.</string>
+    <string name="catalog_demo_revisar_pasado" formatted="false">Revisar, pasado el límite</string>
     <string name="catalog_demo_pagos_previstos" formatted="false">Pagos previstos</string>
     <string name="catalog_demo_valores_anotados_entre_el_12_jun_y" formatted="false">Valores anotados entre el 12 jun y el 14 oct</string>
     <string name="catalog_demo_fechas_de_valoracion" formatted="false">Fechas de valoración</string>

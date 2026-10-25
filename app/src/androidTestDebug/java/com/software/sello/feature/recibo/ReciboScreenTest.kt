@@ -637,4 +637,90 @@ class ReciboScreenTest {
         rule.onNodeWithTag("detail").assertExists()
         assertEquals(emptyList<ReciboAction>(), actions)
     }
+
+    // --- Payments reserved (SELLO-101) ---
+
+    private fun reservedMonth(summary: ReciboSummary) =
+        ReciboState.Month(summary, categories, false)
+
+    @Test
+    fun revisarSaysWhatIsMissingAndItsTwoFactsThenOpensThePayments() {
+        show(
+            reservedMonth(
+                ReciboSummary(
+                    ReciboAnswerLabel.ShortForPayments,
+                    plain("50.000"),
+                    ReciboStamp.Review,
+                    ReciboPerDay(plain("0"), 10),
+                    adjustable = true,
+                    reserved = ReciboReserved(plain("150.000"), 1),
+                    shortfall = ReciboShortfall(
+                        plain("100.000"),
+                        over = false,
+                        reserved = plain("150.000")
+                    )
+                )
+            )
+        )
+
+        rule.onNodeWithContentDescription("Falta para tus pagos: 50.000 pesos. Revisar.")
+            .assertIsDisplayed()
+        rule.onNodeWithContentDescription(
+            "Quedan 100.000 pesos y tus pagos previstos suman 150.000 pesos."
+        ).assertIsDisplayed()
+        adjust.assertExists()
+        rule.onNodeWithTag(RECIBO_RESERVED_TAG).performScrollTo().performClick()
+
+        assertEquals(listOf<ReciboAction>(ReciboAction.OpenReserved), actions)
+    }
+
+    @Test
+    fun alreadyPastTheLimitTheSentenceSaysBy() {
+        show(
+            reservedMonth(
+                ReciboSummary(
+                    ReciboAnswerLabel.ShortForPayments,
+                    plain("280.000"),
+                    ReciboStamp.Review,
+                    ReciboPerDay(plain("0"), 10),
+                    adjustable = true,
+                    reserved = ReciboReserved(plain("200.000"), 2),
+                    shortfall = ReciboShortfall(
+                        plain("80.000"),
+                        over = true,
+                        reserved = plain("200.000")
+                    )
+                )
+            )
+        )
+
+        rule.onNodeWithContentDescription("Falta para tus pagos: 280.000 pesos. Revisar.")
+            .assertIsDisplayed()
+        rule.onNodeWithContentDescription(
+            "Pasaste tu límite por 80.000 pesos y tus pagos previstos suman 200.000 pesos."
+        ).assertIsDisplayed()
+        rule.onNodeWithContentDescription("Incluye 200.000 pesos separado para 2 pagos previstos")
+            .performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun sinMargenKeepsTheFootnoteAndNothingIsReservedWithoutOne() {
+        show(
+            reservedMonth(
+                ReciboSummary(
+                    ReciboAnswerLabel.Remaining,
+                    plain("0"),
+                    ReciboStamp.NoMargin,
+                    ReciboPerDay(plain("0"), 10),
+                    reserved = ReciboReserved(plain("100.000"), 1)
+                )
+            )
+        )
+
+        rule.onNodeWithContentDescription("Restante del presupuesto: 0 pesos. Sin margen.")
+            .assertIsDisplayed()
+        rule.onNodeWithTag(RECIBO_RESERVED_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag(RECIBO_SHORTFALL_TAG).assertDoesNotExist()
+        adjust.assertDoesNotExist()
+    }
 }

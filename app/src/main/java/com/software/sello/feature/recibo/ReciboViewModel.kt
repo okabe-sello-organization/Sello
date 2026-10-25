@@ -63,7 +63,8 @@ class ReciboViewModel(
             // Handled by the root, which owns navigation and the selection.
             ReciboAction.CreateCategory,
             is ReciboAction.OpenCategory,
-            is ReciboAction.EditCategory -> Unit
+            is ReciboAction.EditCategory,
+            ReciboAction.OpenReserved -> Unit
         }
     }
 
