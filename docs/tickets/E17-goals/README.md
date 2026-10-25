@@ -1,6 +1,6 @@
 # SELLO-E17 — Metas: personal goals
 
-- **Status:** Done
+- **Status:** In Progress
 - **Increment:** Post-MVP
 - **Goal:** Let a person create goals, record contributions and withdrawals, earn milestone stamps and complete goals, as designed in Sello v2.
 - **Exit:** Metas is a tab with goals, detail, Aportar/Retirar, creation and celebrations; Recibo shows one goal; backups carry goals; the sandbox and catalog cover them.
@@ -15,3 +15,9 @@ change category budgets.
 SELLO-089–094 reuse the goal components the design system and catalog already have and
 add only the listed extensions; SELLO-094's catalog part shrinks to those extensions and
 the missing device tests. No ticket was removed.
+
+**Owner decision (2026-10-25):** what E17 left open after closing (the Metas dock and
+goals band in the catalog, two stamps landing one after the other, a Deshacer too late
+replayed in the sandbox) is finished in a new ticket, SELLO-115, which reopened the epic
+until it merged. Recibo's first use shows the goal: rule 12 hides it only with no active
+goal or on a past month.
