@@ -34,6 +34,7 @@ commands, so Recibo and Resumen grow exactly as they would by hand.
 | `fin-de-mes@1` · Fin de mes y de año | 12 | Comida over its 50.000 on 31 Oct, a new month on 1 Nov, Ocio with no limit, 31 Dec → 1 Jan |
 | `seis-meses@1` · Seis meses | 67 | May–Oct 2026, a salary and six seeded expenses a month: the month-by-month columns grow |
 | `bordes@1` · Bordes | 10 | A double submit writes once; an edit of an old version is refused (`VersionConflict`); a deletion replaced by a later one cannot be undone (`UndoExpired`); an amount past the maximum never reaches a command (`AboveMaximum`) |
+| `semana-fuera@1` and the other *Programados* | 6–22 | Schedules, catch-up after a date jump, batches of 50, month ends, twice a month, pause, changes from tomorrow, archive, deletion; listed in the corpus |
 
 A step may expect a rejection (`Expect`); meeting it is a pass, anything else stops.
 
@@ -48,7 +49,16 @@ A step may expect a rejection (`Expect`); meeting it is a pass, anything else st
   a step's result is known; a rejection or unknown outcome stops and is shown.
 - Entries are dated on the sandbox's day: each date step moves the clock first, so
   entry validation (no future dates) stays real.
-- There is no recurrence in the app, so no step stands for a scheduled entry.
+- No step stands for a scheduled entry. A schedule step saves a schedule through the
+  app's schedule commands; its entries come only from the app's own catch-up, the
+  `CatchUpRunner` that runs when Sello opens and when the financial day changes (no
+  background work, ADR 0017). A date step changes the day, so Sello starts a catch-up
+  by itself; the **Ponerse al día** step after it runs one more and waits, so nothing
+  races the next step. It shows the batches committed since the last one ("85
+  registradas en 2 lotes: 50 …, 35 …"); a failed or unknown batch stops the scenario.
+- A recurrence check reads what a schedule recorded through the app's reads, by each
+  entry's origin, and its checkpoint and pause from the stored schedule; a manual entry
+  is never counted as an occurrence.
 - Scenario progress lives in `sandbox-session.xml`, never in Room, so a backup of
   financial data cannot contain it.
 - A scenario is Kotlin in `devtools/Scenarios.kt`. Changing its steps or seed means
@@ -99,7 +109,10 @@ was told and what storage holds. It carries no category name, note or amount.
   `SandboxTime`, `SandboxProfiles` (enter, leave, reset, load, restart),
   `Scenario`/`Scenarios`, `ScenarioRunner`, `DebugFaults`, `Faulty*` wrappers,
   `OperationLog`, `OperationInspector`, `SandboxBadges` and `ToolsActivity`. In the
-  sandbox each write meets its fault first, then the fence.
+  sandbox each write meets its fault first, then the fence. Catch-up goes through the
+  fence too (`FencedScheduleCatchUp`); in the sandbox `LoggedScheduleCatchUp` keeps
+  each batch's answer in a `CatchUpLog` for the scenario steps, and the runner gets the
+  graph's own `CatchUpRunner` and schedule ports (`ScenarioSchedules`).
 - `VariantComposition.newDataZone` lets a loaded scenario create the sandbox in its own
   zone; release returns none.
 - `:app:assembleRelease` is finalized by `verifyReleaseHasNoDeveloperTools`, which reads

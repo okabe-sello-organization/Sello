@@ -1,5 +1,6 @@
 package com.software.sello.devtools
 
+import com.software.sello.domain.model.Occurrence
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -12,8 +13,10 @@ import java.util.UUID
  * step's place. The same scenario therefore always writes the same operations, and a
  * step run twice is recognised rather than recorded twice.
  *
- * It starts in a new sandbox at [start] in [zone]. Recurrence does not exist in the
- * app, so no step stands for a scheduled entry; every entry is an explicit step.
+ * It starts in a new sandbox at [start] in [zone]. A scheduled entry is never a step of
+ * its own: a [ScenarioStep.Schedule] step saves the schedule, and the app's own catch-up
+ * records its occurrences when a [ScenarioStep.CatchUp] step runs it after a date step,
+ * exactly as Sello does on opening and when the financial day changes.
  */
 data class Scenario(
     val id: String,
@@ -95,12 +98,75 @@ data class GoalCheck(
     val onRecibo: Boolean? = null
 )
 
+/** How a schedule repeats, as the schedule form offers it (recurrence rule 2). */
+sealed interface Every {
+    /** On [day] of each month, or on the last day of a shorter month. */
+    data class Month(val day: Int) : Every
+
+    /** On [first] and [second] of each month, each clamped like [Month]; slots 1 and 2. */
+    data class TwiceAMonth(val first: Int, val second: Int) : Every
+
+    /** On the start date and every [days] days after it. */
+    data class Days(val days: Int) : Every
+
+    /** On the start date and every [weeks] weeks after it. */
+    data class Weeks(val weeks: Int) : Every
+}
+
+/**
+ * What each occurrence of a schedule records (rule 1). [note] is unique within a
+ * scenario: a history restored from a backup has no receipts, so it is found by it.
+ */
+sealed interface Scheduled {
+    val pesos: Long
+    val note: String
+
+    /** A recurring payment into the category the step named [category] made. */
+    data class Payment(val category: String, override val pesos: Long, override val note: String) :
+        Scheduled
+
+    /** A recurring income from the stored source key [source], such as `salary`. */
+    data class Income(val source: String, override val pesos: Long, override val note: String) :
+        Scheduled
+}
+
+/** An entry a schedule recorded: its occurrence's [date] and [slot] (rule 4), and its [pesos]. */
+data class Recorded(val date: LocalDate, val pesos: Long, val slot: Int = 1)
+
+/**
+ * What the schedule the step named [schedule] made has recorded from [from] to [to], both
+ * included: exactly [entries], by date and slot, each an expense or income dated on its
+ * occurrence and carrying that occurrence as its origin. A manual entry is never one of
+ * them (rule 5). [source] is the recurrence example the values come from.
+ */
+data class OccurrenceCheck(
+    val schedule: String,
+    val from: LocalDate,
+    val to: LocalDate,
+    val entries: List<Recorded>,
+    val source: String
+)
+
+/**
+ * How the schedule the step named [schedule] made stands, as Sello stores it: [handled]
+ * is its checkpoint, the last occurrence catch-up dealt with (null before the first),
+ * and [pausedFrom] the first day of a pause still open (null while it is active). Once it
+ * is deleted it is not [present], and nothing else is read.
+ */
+data class ScheduleCheck(
+    val schedule: String,
+    val handled: Occurrence?,
+    val source: String,
+    val pausedFrom: LocalDate? = null,
+    val present: Boolean = true
+)
+
 /** One action of a scenario. Amounts are whole pesos; entries are dated on the sandbox's day. */
 sealed interface ScenarioStep {
     val expect: Expect get() = Expect.Saved
 
-    /** Whether the step submits an operation; a date step or a check does not. */
-    val writes: Boolean get() = this !is AdvanceTo && this !is Verify
+    /** Whether the step submits an operation; a date step, a catch-up or a check does not. */
+    val writes: Boolean get() = this !is AdvanceTo && this !is Verify && this !is CatchUp
 
     /** Moves the sandbox's date forward to [date]. */
     data class AdvanceTo(val date: LocalDate) : ScenarioStep
@@ -136,12 +202,18 @@ sealed interface ScenarioStep {
     data class Archive(val category: String, val version: Long) : ScenarioStep
 
     /**
-     * Reads the real month snapshots and goal board and compares each of [checks] and
-     * [goals]. Every expected value names where it comes from; none is computed by the
-     * code being checked.
+     * Reads the real month snapshots, goal board, schedules and recorded entries and
+     * compares each of [checks], [goals], [occurrences] and [schedules]. Every expected
+     * value names where it comes from; none is computed by the code being checked.
      */
-    data class Verify(val checks: List<Check>, val goals: List<GoalCheck> = emptyList()) :
-        ScenarioStep
+    data class Verify(
+        val checks: List<Check>,
+        val goals: List<GoalCheck> = emptyList(),
+        val occurrences: List<OccurrenceCheck> = emptyList(),
+        val schedules: List<ScheduleCheck> = emptyList()
+    ) : ScenarioStep {
+        val figures: Int get() = checks.size + goals.size + occurrences.size + schedules.size
+    }
 
     /** [source] is a stored income source key, such as `salary`. */
     data class Income(val pesos: Long, val source: String) : ScenarioStep
@@ -214,4 +286,75 @@ sealed interface ScenarioStep {
     /** [goal] chosen for Recibo, as "Mostrar en Recibo" does. */
     data class ChooseForRecibo(val goal: String, override val expect: Expect = Expect.Saved) :
         ScenarioStep
+
+    /**
+     * A schedule the later steps call [key], from [start] (by default the sandbox's day)
+     * to [end], if any (rules 1–3). Saving it records nothing: a [CatchUp] does.
+     */
+    data class Schedule(
+        val key: String,
+        val entry: Scheduled,
+        val every: Every,
+        val start: LocalDate? = null,
+        val end: LocalDate? = null,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /**
+     * New terms for [schedule] after today, as read at [version] (rule 7): [pesos], or
+     * [every] from [start], which must be after today. What is not given stays as the
+     * earlier steps left it.
+     */
+    data class ChangeSchedule(
+        val schedule: String,
+        val version: Long,
+        val pesos: Long? = null,
+        val every: Every? = null,
+        val start: LocalDate? = null,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /** Pauses [schedule] from today, as read at [version] (rule 8). */
+    data class PauseSchedule(
+        val schedule: String,
+        val version: Long,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /** Resumes [schedule] from today, which counts, as read at [version] (rule 8). */
+    data class ResumeSchedule(
+        val schedule: String,
+        val version: Long,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /** Deletes [schedule], as read at [version]; what it recorded stays (rule 10). */
+    data class DeleteSchedule(
+        val schedule: String,
+        val version: Long,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /** Unarchives the category, as read at [version]; its schedules stay paused (rule 9). */
+    data class Unarchive(val category: String, val version: Long) : ScenarioStep
+
+    /**
+     * Deletes the entry [schedule] recorded for its occurrence on [date] in [slot], as
+     * read at [version]. Its origin stays handled: it is never recorded again (rule 4).
+     */
+    data class DeleteOccurrence(
+        val schedule: String,
+        val date: LocalDate,
+        val slot: Int = 1,
+        val version: Long = 1,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /**
+     * Runs the app's catch-up, the one Sello runs when it opens and when the financial
+     * day changes, after any run already under way, and waits for it. It passes once
+     * everything due up to the sandbox's day is recorded; a failed or unknown batch
+     * stops the scenario, and the next try runs catch-up again.
+     */
+    data object CatchUp : ScenarioStep
 }

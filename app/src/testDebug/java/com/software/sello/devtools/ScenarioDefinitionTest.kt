@@ -10,6 +10,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+private val RE = Regex("RE\\d\\d")
+
 class ScenarioDefinitionTest {
     @Test
     fun eachStepHasItsOwnOperationAndTheSameOneEveryTime() {
@@ -33,6 +35,8 @@ class ScenarioDefinitionTest {
             val categories = mutableSetOf<String>()
             val goals = mutableSetOf<String>()
             val goalNames = mutableSetOf<String>()
+            val schedules = mutableSetOf<String>()
+            val notes = mutableSetOf<String>()
             scenario.steps.forEachIndexed { index, step ->
                 when (step) {
                     is AdvanceTo -> {
@@ -71,7 +75,17 @@ class ScenarioDefinitionTest {
                     is ScenarioStep.Archive -> assertTrue(step.category in categories)
 
                     is ScenarioStep.Verify -> {
-                        assertTrue(step.checks.isNotEmpty() || step.goals.isNotEmpty())
+                        assertTrue(step.figures > 0)
+                        // Each recurrence check names a schedule made before it and the
+                        // recurrence example its values come from.
+                        (
+                            step.occurrences.map { it.schedule to it.source } +
+                                step.schedules.map { it.schedule to it.source }
+                            )
+                            .forEach { (schedule, source) ->
+                                assertTrue("${scenario.key} $schedule", schedule in schedules)
+                                assertTrue("${scenario.key} $source", source.contains(RE))
+                            }
                         // Each goal check names a goal made before it, its four places and
                         // the approved example its values come from.
                         step.goals.forEach {
@@ -109,6 +123,39 @@ class ScenarioDefinitionTest {
 
                     is ScenarioStep.ChooseForRecibo ->
                         assertTrue("${scenario.key} $step", step.goal in goals)
+
+                    // Keys and notes are unique: a restored history is checked by note.
+                    is ScenarioStep.Schedule -> {
+                        assertTrue(
+                            "${scenario.key} $step",
+                            schedules.add(step.key) && notes.add(step.entry.note)
+                        )
+                        (step.entry as? Scheduled.Payment)?.let {
+                            assertTrue("${scenario.key} $step", it.category in categories)
+                        }
+                    }
+
+                    is ScenarioStep.ChangeSchedule ->
+                        assertTrue("${scenario.key} $step", step.schedule in schedules)
+
+                    is ScenarioStep.PauseSchedule ->
+                        assertTrue("${scenario.key} $step", step.schedule in schedules)
+
+                    is ScenarioStep.ResumeSchedule ->
+                        assertTrue("${scenario.key} $step", step.schedule in schedules)
+
+                    is ScenarioStep.DeleteSchedule ->
+                        assertTrue("${scenario.key} $step", step.schedule in schedules)
+
+                    is ScenarioStep.DeleteOccurrence -> assertTrue(
+                        "${scenario.key} $step",
+                        step.schedule in schedules && step.date <= today
+                    )
+
+                    is ScenarioStep.Unarchive ->
+                        assertTrue("${scenario.key} $step", step.category in categories)
+
+                    ScenarioStep.CatchUp -> Unit
                 }
             }
         }
@@ -157,6 +204,7 @@ class ScenarioDefinitionTest {
                     is ScenarioStep.SetDefaultLimit -> changed(step.category, step.version, step)
                     is ScenarioStep.SetMonthLimit -> changed(step.category, step.version, step)
                     is ScenarioStep.Archive -> changed(step.category, step.version, step)
+                    is ScenarioStep.Unarchive -> changed(step.category, step.version, step)
                     else -> Unit
                 }
             }
@@ -172,6 +220,106 @@ class ScenarioDefinitionTest {
         Scenarios.all.flatMap { it.steps }.filterIsInstance<ScenarioStep.Verify>()
             .flatMap { it.checks }
             .forEach { assertTrue("$it", it.source.isNotBlank()) }
+    }
+
+    @Test
+    fun theRecurrenceExamplesTheSandboxCoversEachHaveACheck() {
+        val named = Scenarios.all.flatMap { it.steps }.filterIsInstance<ScenarioStep.Verify>()
+            .flatMap { verify ->
+                verify.occurrences.map { it.source } + verify.schedules.map { it.source }
+            }
+            .flatMap { source -> RE.findAll(source).map { it.value }.toList() }
+            .toSet()
+        val covered = listOf(1, 5, 6, 7, 9, 10, 11, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24)
+            .map { "RE%02d".format(it) }
+        assertEquals(emptyList<String>(), covered.filter { it !in named })
+    }
+
+    @Test
+    fun catchUpRunsAfterEveryDayChangeAndEverySaveThatCanMakeSomethingDue() {
+        // Sello runs catch-up by itself then; a step waits for it, so nothing races the
+        // next step and both runs of the corpus write in the same order.
+        Scenarios.all.forEach { scenario ->
+            val first = scenario.steps.indexOfFirst { it is ScenarioStep.Schedule }
+            if (first < 0) return@forEach
+            scenario.steps.forEachIndexed { index, step ->
+                val due = (step is ScenarioStep.AdvanceTo && index > first) ||
+                    (step is ScenarioStep.Schedule && step.expect == Expect.Saved) ||
+                    (step is ScenarioStep.ResumeSchedule && step.expect == Expect.Saved)
+                if (due) {
+                    assertEquals(
+                        "${scenario.key} step ${index + 1}",
+                        ScenarioStep.CatchUp,
+                        scenario.steps.getOrNull(index + 1)
+                    )
+                }
+            }
+        }
+    }
+
+    @Test
+    fun scriptedScheduleVersionsFollowTheChangesBeforeThem() {
+        // A schedule starts at version 1; each saved change, pause or resume adds one, and
+        // archiving its category adds one when that pauses it (rule 9).
+        Scenarios.all.forEach { scenario ->
+            val versions = mutableMapOf<String, Long>()
+            val paused = mutableSetOf<String>()
+            val categoryOf = mutableMapOf<String, String?>()
+            fun read(schedule: String, version: Long, saved: Boolean, step: ScenarioStep) {
+                assertEquals("${scenario.key} $step", versions[schedule], version)
+                if (saved) versions[schedule] = version + 1
+            }
+            scenario.steps.forEach { step ->
+                when (step) {
+                    is ScenarioStep.Schedule -> {
+                        versions[step.key] = 1
+                        categoryOf[step.key] = (step.entry as? Scheduled.Payment)?.category
+                    }
+
+                    is ScenarioStep.ChangeSchedule ->
+                        read(step.schedule, step.version, step.expect == Expect.Saved, step)
+
+                    is ScenarioStep.PauseSchedule -> {
+                        read(step.schedule, step.version, step.expect == Expect.Saved, step)
+                        if (step.expect == Expect.Saved) paused += step.schedule
+                    }
+
+                    is ScenarioStep.ResumeSchedule -> {
+                        read(step.schedule, step.version, step.expect == Expect.Saved, step)
+                        if (step.expect == Expect.Saved) paused -= step.schedule
+                    }
+
+                    is ScenarioStep.DeleteSchedule -> {
+                        read(step.schedule, step.version, false, step)
+                        versions.remove(step.schedule)
+                    }
+
+                    is ScenarioStep.Archive ->
+                        versions.keys
+                            .filter { categoryOf[it] == step.category && it !in paused }
+                            .forEach {
+                                versions[it] = versions.getValue(it) + 1
+                                paused += it
+                            }
+
+                    else -> Unit
+                }
+            }
+        }
+    }
+
+    @Test
+    fun theLongGapIsRe11() {
+        // RE11: every day from 1 ago to 24 oct 2026, 85 occurrences, 425.000.
+        val check = Scenarios.all.flatMap { it.steps }.filterIsInstance<ScenarioStep.Verify>()
+            .flatMap { it.occurrences }
+            .single { it.source.startsWith("RE11") && it.entries.size > 1 }
+        assertEquals(85, check.entries.size)
+        assertEquals(425_000L, check.entries.sumOf { it.pesos })
+        assertTrue(check.entries.all { it.pesos == 5_000L && it.slot == 1 })
+        assertEquals(LocalDate.of(2026, 8, 1), check.entries.first().date)
+        assertEquals(LocalDate.of(2026, 10, 24), check.entries.last().date)
+        assertEquals(85, check.entries.map { it.date }.toSet().size)
     }
 
     @Test
