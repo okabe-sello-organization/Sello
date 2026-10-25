@@ -125,9 +125,9 @@ class IncomeJourneyTest {
     fun aDraftSurvivesSwitchingKindsAndActivityRecreationWithoutSaving() {
         openForm()
         keys("5", "000")
-        rule.onNodeWithText("Gasto").performScrollTo().performClick()
+        rule.onNodeWithText("Gasto").press()
         rule.awaitTag("entry.kind")
-        rule.onNodeWithText("Ingreso").performScrollTo().performClick()
+        rule.onNodeWithText("Ingreso").press()
         scenario?.recreate()
         rule.awaitTag("income.amount")
         rule.onNodeWithTag("income.submit").press()
