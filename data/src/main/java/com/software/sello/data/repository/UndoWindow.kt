@@ -22,7 +22,7 @@ import kotlinx.coroutines.withContext
  */
 internal class UndoWindow(private val monotonic: MonotonicClock) {
     /** What a deletion removed. An offer is only ever answered to the workflow of its kind. */
-    enum class Kind { Expense, Income, GoalMovement }
+    enum class Kind { Expense, Income, GoalMovement, InvestmentMovement }
 
     /** The deletion on offer, and the clock reading taken when it committed. */
     class Pending(
@@ -69,7 +69,7 @@ internal class UndoWindow(private val monotonic: MonotonicClock) {
 }
 
 /**
- * Removes what was kept to undo any earlier deletion, of either kind, which makes
+ * Removes what was kept to undo any earlier deletion, of any kind, which makes
  * those deletions final. Called inside the transaction of a new deletion, and when
  * storage is opened.
  */
@@ -77,4 +77,5 @@ internal suspend fun SelloDatabase.discardKeptCopies() {
     deletedExpenseDao().clear()
     deletedIncomeDao().clear()
     deletedGoalEventDao().clear()
+    deletedInvestmentMovementDao().clear()
 }
