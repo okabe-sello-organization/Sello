@@ -73,7 +73,8 @@ class CatalogExamplesTest {
                 "goals.goal-form",
                 "goals.goal-cards",
                 "goals.movements",
-                "goals.investments"
+                "goals.investments",
+                "goals.investment-states"
             ),
             catalogExamples.map { it.id }
         )

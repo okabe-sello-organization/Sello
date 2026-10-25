@@ -377,4 +377,22 @@
     <string name="catalog_demo_mas_2_010_000_en_octubre">2.010.000 en octubre</string>
     <string name="catalog_demo_sin_aportes_este_mes">Un mes sin aportes: solo el total, sin segunda línea.</string>
     <string name="catalog_demo_dock_de_metas">Dock de Metas</string>
+    <string name="catalog_example_investment_states">Investment answer, rows, chart and pad</string>
+    <string name="catalog_demo_tus_inversiones_valen" formatted="false">Tus inversiones valen</string>
+    <string name="catalog_demo_pierde" formatted="false">Pierde</string>
+    <string name="catalog_demo_0_3" formatted="false">−0,3 %</string>
+    <string name="catalog_demo_30_000_de_perdida" formatted="false">−30.000 de pérdida</string>
+    <string name="catalog_demo_0_0" formatted="false">0,0 %</string>
+    <string name="catalog_demo_sin_ganancia_ni_perdida" formatted="false">sin ganancia ni pérdida</string>
+    <string name="catalog_demo_pierde_value_in_ink" formatted="false">Pierde keeps the value in ink; only the stamp and the return are red.</string>
+    <string name="catalog_demo_six_shades" formatted="false">Six investments: the four shades repeat, with a 2dp gap; rows open nothing until a screen exists.</string>
+    <string name="catalog_demo_valor_anotado" formatted="false">Valor anotado</string>
+    <string name="catalog_demo_lo_que_pusiste" formatted="false">Lo que pusiste</string>
+    <string name="catalog_demo_may_25" formatted="false">may 25</string>
+    <string name="catalog_demo_oct_26" formatted="false">oct 26</string>
+    <string name="catalog_demo_valores_de_may_a_oct" formatted="false">Valores anotados de may 2025 a oct 2026</string>
+    <string name="catalog_demo_3_may_2025_3_000_000" formatted="false">3 may 2025: 3.000.000 pesos</string>
+    <string name="catalog_demo_14_oct_2026_5_242_000" formatted="false">14 oct 2026: 5.242.000 pesos</string>
+    <string name="catalog_demo_comma_pad" formatted="false">For dollars and the USD rate, the 000 key is the decimal comma.</string>
+    <string name="catalog_demo_pressed" formatted="false">Pressed: %1$s</string>
 </resources>
