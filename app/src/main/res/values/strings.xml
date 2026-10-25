@@ -581,6 +581,7 @@
     <string name="backup_incomes">Ingresos</string>
     <string name="backup_goals">Metas</string>
     <string name="backup_schedules">Pagos e ingresos fijos</string>
+    <string name="backup_investments">Inversiones</string>
     <string name="backup_size">Archivo</string>
     <string name="backup_moment">%1$s, %2$s</string>
     <string name="backup_record_failed">No pudimos leer cuándo fue tu último respaldo. Puedes crear uno igual.</string>
@@ -661,6 +662,10 @@
     <plurals name="restore_schedules">
         <item quantity="one">%s pago o ingreso fijo</item>
         <item quantity="other">%s pagos e ingresos fijos</item>
+    </plurals>
+    <plurals name="restore_investments">
+        <item quantity="one">%s inversión</item>
+        <item quantity="other">%s inversiones</item>
     </plurals>
     <!-- Joins what a backup holds: "2 categorías, 3 gastos y 1 ingreso". -->
     <string name="restore_list_two">%1$s y %2$s</string>

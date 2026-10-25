@@ -116,6 +116,17 @@ class ResetScreenTest {
     }
 
     @Test
+    fun investmentsAreCountedLastAndOnlyWhenThereAreAny() {
+        val current = BackupSummary(2, 10, 1, 3, 2, investments = 1)
+        show(ResetState(ResetStep.Ready(preview.copy(current = current))))
+
+        rule.onNodeWithText(
+            "Se borran 2 categorías, 10 gastos, 1 ingreso, 3 metas, 2 pagos e ingresos fijos y 1 inversión, con sus límites y notas.",
+            substring = true
+        ).assertIsDisplayed()
+    }
+
+    @Test
     fun newCountsSayTheDataChanged() {
         show(ResetState(ResetStep.Ready(preview, refreshed = true)))
 
