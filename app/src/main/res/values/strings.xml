@@ -842,7 +842,6 @@
     <string name="schedules_payments">Pagos</string>
     <string name="schedules_incomes">Ingresos</string>
     <string name="schedules_add_payment">Agregar pago fijo</string>
-    <string name="schedules_add_income">Agregar ingreso fijo</string>
     <string name="schedules_failed_title">No pudimos leer tus pagos fijos</string>
     <string name="schedules_failed">Siguen guardados y Sello no anotó nada de más. Vuelve a intentarlo.</string>
     <string name="schedules_empty_title">Nada se repite todavía</string>
@@ -892,7 +891,7 @@
     <string name="schedule_error_data_changed">Tus datos cambiaron. No se guardó; sal y vuelve a abrirlo.</string>
     <string name="schedule_error_gone">Este pago fijo ya no existe. No se cambió nada.</string>
     <string name="schedule_error_changed">Este pago fijo cambió mientras lo editabas. Sal y vuelve a abrirlo.</string>
-    <string name="schedule_error_catch_up">Sello aún está anotando lo pendiente. Inténtalo de nuevo en un momento.</string>
+    <string name="schedule_error_catch_up">Sello aún está anotando lo pendiente. Vuelve a intentarlo en unos segundos.</string>
     <string name="schedule_error_category">Esa categoría ya no recibe gastos. Elige otra.</string>
     <string name="schedule_error_start">Los cambios de regla empiezan mañana o después. Cambia la fecha.</string>
     <string name="settings_schedules_count">%1$s, %2$s</string>

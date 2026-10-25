@@ -87,7 +87,10 @@ class RecurrencePartsTest {
             assertEquals(scheme, null, day.config.getOrNull(SemanticsProperties.Text))
             val boxes = days()
             assertTargets(scheme, boxes)
-            assertEquals(scheme, 7, boxes.map { it.left }.distinct().size)
+            // Rows of seven where seven 48dp targets fit; fewer on a narrower screen.
+            val width = boxes.maxOf { it.right } - boxes.minOf { it.left }
+            val fits = minOf(7, (width.value / 48f).toInt())
+            assertEquals(scheme, fits, boxes.map { it.left }.distinct().size)
         }
     }
 
