@@ -33,6 +33,9 @@ import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleCommand
+import com.software.sello.domain.port.ScheduleCommandOutcome
+import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.SnapshotState
 import java.time.YearMonth
 import kotlinx.coroutines.CancellationException
@@ -91,10 +94,12 @@ private fun told(outcome: Any): String = when (outcome) {
     is IncomeCommandOutcome.Committed -> saved(outcome.replayed)
     is CategoryCommandOutcome.Committed -> saved(outcome.replayed)
     is GoalCommandOutcome.Committed -> saved(outcome.replayed)
+    is ScheduleCommandOutcome.Committed -> saved(outcome.replayed)
     is ExpenseCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     is IncomeCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     is CategoryCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     is GoalCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
+    is ScheduleCommandOutcome.Rejected -> "Rechazado: ${outcome.reason::class.simpleName}"
     else -> "Desconocido"
 }
 
@@ -189,6 +194,22 @@ class FaultyGoalCommands(
         command.operationId,
         "Meta: ${command::class.simpleName}",
         GoalCommandOutcome.OutcomeUnknown(command.operationId),
+        ::told
+    ) { commands.submit(command) }
+}
+
+/** Every schedule command, logged with what its caller was told. */
+class FaultyScheduleCommands(
+    private val commands: ScheduleCommands,
+    private val faults: DebugFaults,
+    private val log: OperationLog
+) : ScheduleCommands by commands {
+    override suspend fun submit(command: ScheduleCommand): ScheduleCommandOutcome = faulted(
+        faults,
+        log,
+        command.operationId,
+        "Programado: ${command::class.simpleName}",
+        ScheduleCommandOutcome.OutcomeUnknown(command.operationId),
         ::told
     ) { commands.submit(command) }
 }

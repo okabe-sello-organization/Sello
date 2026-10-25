@@ -8,6 +8,7 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
@@ -15,6 +16,7 @@ import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CommittedIncome
+import com.software.sello.domain.port.CommittedSchedule
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteExpense
@@ -33,6 +35,10 @@ import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
+import com.software.sello.domain.port.ScheduleCommand
+import com.software.sello.domain.port.ScheduleCommandOutcome
+import com.software.sello.domain.port.ScheduleCommands
+import com.software.sello.domain.port.ScheduleRejection
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -205,6 +211,30 @@ class LedgerGoals(private val ledger: Ledger) : GoalCommands {
     override fun movementUndoOffer() = null
 
     override fun completionUndoOffer() = null
+}
+
+/** Schedule commands on the [ledger]; each record is the schedule the command names or makes. */
+class LedgerSchedules(private val ledger: Ledger) : ScheduleCommands {
+    val sent = mutableListOf<ScheduleCommand>()
+
+    override suspend fun submit(command: ScheduleCommand): ScheduleCommandOutcome = try {
+        sent += command
+        ledger.write(command.operationId, OperationKind.PauseSchedule, null)
+            ?.let { (receipt, id, replayed) ->
+                ScheduleCommandOutcome.Committed(
+                    CommittedSchedule(receipt, ScheduleId.of(id).value()),
+                    replayed
+                )
+            } ?: ScheduleCommandOutcome.Rejected(ScheduleRejection.Unchanged)
+    } catch (_: Ledger.Unknown) {
+        ScheduleCommandOutcome.OutcomeUnknown(command.operationId)
+    }
+
+    override suspend fun find(operationId: OperationId) = Outcome.Success(
+        ledger.receipts[operationId.value]?.let { (receipt, id) ->
+            CommittedSchedule(receipt, ScheduleId.of(id).value())
+        }
+    )
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
