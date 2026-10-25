@@ -93,6 +93,10 @@ import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.recurrence.FollowingChoice
+import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.presentation.recurrence.RepeatChoiceSheet
+import com.software.sello.presentation.recurrence.RepeatRow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -135,6 +139,10 @@ fun ExpenseEntryRoot(
         }
     }
     BackHandler { viewModel.onAction(ExpenseEntryAction.Back) }
+    // While Se repite's sheet is open, Back closes it and keeps the choice as it was.
+    BackHandler(enabled = state.repeat.sheet != null) {
+        viewModel.onAction(ExpenseEntryAction.Repeat(RepeatAction.Dismiss))
+    }
     ExpenseEntryScreen(
         state,
         dateLabels(),
@@ -229,6 +237,7 @@ fun ExpenseEntryScreen(
                 choices = {
                     Choices(
                         state,
+                        dates,
                         onAction,
                         onCreateCategory,
                         showPastExpenseAnnouncement,
@@ -284,8 +293,23 @@ fun ExpenseEntryScreen(
             )
         )
     }
-    if (state.datePickerOpen) DayPicker(state.date, state.today, onAction)
+    if (state.datePickerOpen) {
+        DayPicker(state.date, state.today, state.repeat.choice != null, onAction)
+    }
     state.noteDraft?.let { NoteSheet(state, it, onAction) }
+    RepeatChoiceSheet(state.repeat, state.date, state.today, dates) {
+        onAction(ExpenseEntryAction.Repeat(it))
+    }
+    val following = state.following
+    if (state.askFollowing && following != null) {
+        FollowingChoice(
+            following,
+            income = false,
+            busy = state.busy,
+            onChoose = { onAction(ExpenseEntryAction.FollowingChosen(it)) },
+            onBack = { onAction(ExpenseEntryAction.FollowingDismissed) }
+        )
+    }
 }
 
 @Composable
@@ -349,6 +373,7 @@ private fun Amount(
 @Composable
 private fun Choices(
     state: ExpenseEntryState,
+    dates: DateLabels,
     onAction: (ExpenseEntryAction) -> Unit,
     onCreateCategory: (() -> Unit)?,
     showPastExpenseAnnouncement: Boolean,
@@ -388,6 +413,17 @@ private fun Choices(
     )
     state.noteProblem?.let {
         FieldMessageText(FieldMessage(stringResource(it.text())))
+    }
+    // Se repite, for a new expense only: a recorded one is corrected on its own.
+    if (!state.editing) {
+        RepeatRow(
+            state.repeat,
+            state.date,
+            state.today,
+            dates,
+            state.editable,
+            { onAction(ExpenseEntryAction.Repeat(it)) }
+        )
     }
     // Before anything is saved: which other months' figures a correction touches.
     if (state.pastMonths.isNotEmpty()) {
@@ -439,6 +475,10 @@ private fun Said(state: ExpenseEntryState) {
             FieldMessage(stringResource(error.text(state.editing))),
             Modifier.testTag(ENTRY_ERROR_TAG)
         )
+        // The following payments already changed; only this one is still to save.
+        if (state.followingSaved) {
+            FieldMessageText(FieldMessage(stringResource(R.string.following_saved_this_not)))
+        }
     }
     val missing = state.missing?.text()
     if (missing != null && !state.busy && state.error != EntryError.Unknown) {
@@ -474,15 +514,17 @@ private fun SubmitButton(state: ExpenseEntryState, onAction: (ExpenseEntryAction
         return
     }
     // Read aloud as the whole sentence, so it is clear what will be recorded and where.
+    val repeating = state.repeat.choice != null && !state.editing
     val label = stringResource(
         when {
             state.busy -> R.string.expense_entry_saving
             state.editing -> R.string.expense_edit_submit
+            repeating -> R.string.repeat_save_payment
             else -> R.string.expense_entry_submit
         }
     )
     val category = state.category
-    val sentence = if (state.amount != null && category != null && !state.busy) {
+    val sentence = if (state.amount != null && category != null && !state.busy && !repeating) {
         stringResource(
             if (state.editing) {
                 R.string.expense_edit_submit_description
@@ -559,13 +601,24 @@ private fun NoteSheet(
 /** Days after [today] cannot be chosen. The picker works in whole days, with no time or zone. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DayPicker(date: LocalDate, today: LocalDate, onAction: (ExpenseEntryAction) -> Unit) {
+private fun DayPicker(
+    date: LocalDate,
+    today: LocalDate,
+    repeating: Boolean,
+    onAction: (ExpenseEntryAction) -> Unit
+) {
+    // One expense is dated today or earlier; while Se repite is on, today or later.
     val picker = rememberDatePickerState(
         initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
         selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = !day(utcTimeMillis).isAfter(today)
+            override fun isSelectableDate(utcTimeMillis: Long) = if (repeating) {
+                !day(utcTimeMillis).isBefore(today)
+            } else {
+                !day(utcTimeMillis).isAfter(today)
+            }
 
-            override fun isSelectableYear(year: Int) = year <= today.year
+            override fun isSelectableYear(year: Int) =
+                if (repeating) year >= today.year else year <= today.year
         }
     )
     DatePickerDialog(
@@ -613,6 +666,7 @@ private fun Missing.text(): Int? = when (this) {
     Missing.Amount -> null
     Missing.Category -> R.string.expense_entry_missing_category
     Missing.Note -> R.string.expense_entry_missing_note
+    Missing.Repeat -> R.string.repeat_missing
     Missing.Changes -> R.string.expense_edit_no_changes
 }
 
@@ -640,6 +694,12 @@ private fun EntryError.text(editing: Boolean) = when (this) {
     EntryError.ExpenseChanged -> R.string.expense_edit_changed
 
     EntryError.NotDeleted -> R.string.expense_edit_not_deleted
+
+    EntryError.StartTooEarly -> R.string.repeat_start_too_early
+
+    EntryError.EndTooEarly -> R.string.repeat_end_too_early
+
+    EntryError.FollowingNotSaved -> R.string.following_not_saved
 }
 
 const val ENTRY_LOADING_TAG = "expense-entry:loading"

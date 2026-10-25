@@ -19,11 +19,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -93,6 +98,88 @@ fun ConfirmSlip(
                     kind = if (destructive) ButtonKind.Destructive else ButtonKind.Filled,
                     loading = busy,
                     modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A question with two answers, neither of them destructive, such as whether a change
+ * applies to the next ones too: [firstLabel] outlined, [secondLabel] filled, and
+ * [backLabel] under them to go back without answering. The slip is [ConfirmSlip]'s.
+ * Back and a tap outside are [onBack]. The answers stand one above the other when they
+ * do not fit side by side, as at large text. While [busy] the answer given shows a
+ * spinner and nothing can be pressed or dismissed, so it is requested once.
+ */
+@Composable
+fun ChoiceSlip(
+    title: String,
+    message: AnnotatedString,
+    firstLabel: String,
+    onFirst: () -> Unit,
+    secondLabel: String,
+    onSecond: () -> Unit,
+    backLabel: String,
+    onBack: () -> Unit,
+    busy: Boolean = false
+) {
+    // Which answer was given, so the spinner shows on that one.
+    var answered by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    Dialog(onDismissRequest = { if (!busy) onBack() }) {
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
+        // The dialog's own window would take the system's text size; keep the caller's,
+        // as the catalog's font control sets it.
+        CompositionLocalProvider(LocalDensity provides density) {
+            Slip(
+                pinked = false,
+                contentPadding = SlipDefaults.PlainPadding,
+                modifier = Modifier.semantics { paneTitle = title }
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
+                    modifier = Modifier.semantics { heading() }
+                )
+                Spacer(Modifier.height(SelloTheme.spacing.sm))
+                Text(text = message, style = MaterialTheme.typography.bodyLarge)
+                TearLine(bleed = 20.dp)
+                ButtonPair(
+                    firstWeight = 1f,
+                    secondWeight = 1f,
+                    gap = SelloTheme.spacing.md,
+                    first = {
+                        SelloButton(
+                            text = firstLabel,
+                            onClick = {
+                                answered = 1
+                                onFirst()
+                            },
+                            kind = ButtonKind.Outlined,
+                            enabled = !busy,
+                            loading = busy && answered == 1
+                        )
+                    },
+                    second = {
+                        SelloButton(
+                            text = secondLabel,
+                            onClick = {
+                                answered = 2
+                                onSecond()
+                            },
+                            enabled = !busy,
+                            loading = busy && answered == 2
+                        )
+                    }
+                )
+                SelloButton(
+                    text = backLabel,
+                    onClick = onBack,
+                    kind = ButtonKind.Text,
+                    enabled = !busy,
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)
                 )
             }
         }

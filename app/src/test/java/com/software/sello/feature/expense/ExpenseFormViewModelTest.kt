@@ -4,19 +4,30 @@ import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.RepeatRule
+import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CreateExpense
+import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.ScheduleCommandOutcome
+import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.recurrence.HandScheduleCommands
+import com.software.sello.feature.recurrence.HandScheduleReads
+import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.presentation.recurrence.RepeatKind
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -41,6 +52,8 @@ class ExpenseFormViewModelTest {
     private val commands = HandExpenseCommands()
     private val reads = HandExpenseReads()
     private val snapshots = HandSnapshots()
+    private val scheduleBook = HandScheduleReads()
+    private val schedules = HandScheduleCommands(scheduleBook)
     private val clock = HandFinancialClock("2026-10-22")
     private var nextId = 500
     private val money = MoneyFormatter(
@@ -99,7 +112,9 @@ class ExpenseFormViewModelTest {
         clock,
         { uuid(nextId++) },
         money,
-        corrections
+        corrections,
+        schedules,
+        scheduleBook
     )
 
     /** A form over a month with the given categories, already read. */
@@ -806,5 +821,187 @@ class ExpenseFormViewModelTest {
         form.onAction(ExpenseEntryAction.Back)
 
         assertTrue(form.now.confirmDiscard)
+    }
+
+    // --- Se repite: a schedule instead of one expense (SELLO-100) ---
+
+    private fun ExpenseEntryViewModel.repeat(action: RepeatAction) =
+        onAction(ExpenseEntryAction.Repeat(action))
+
+    private fun rule(day: Int) = (RepeatRule.Monthly.of(day) as Outcome.Success).value
+
+    private fun operationIdOf(text: String) = (OperationId.of(text) as Outcome.Success).value
+
+    @Test
+    fun seRepiteKeepsASchedulePaymentAndRecordsNothingItself() {
+        val form = ready().chosen()
+        form.type("950000")
+        form.repeat(RepeatAction.Open)
+        val sheet = form.now.repeat
+        form.repeat(RepeatAction.DayToggled(5))
+        form.repeat(RepeatAction.Done)
+        val chosen = form.now.repeat
+
+        form.submit()
+
+        // It opens on the entry's day, 22; the 5th comes next on jue 5 nov.
+        assertEquals(listOf(22), sheet.sheet?.days)
+        assertEquals(LocalDate.parse("2026-10-22"), sheet.sheetNext)
+        assertEquals(LocalDate.parse("2026-11-05"), chosen.next)
+        assertNull(chosen.sheet)
+        assertEquals(emptyList<CreateExpense>(), commands.created)
+        assertEquals(
+            listOf(
+                CreateSchedule(
+                    operationIdOf(uuid(500)),
+                    1,
+                    ScheduledEntry.Payment(categoryId(1), pesos(950_000), null),
+                    rule(5),
+                    LocalDate.parse("2026-10-22"),
+                    null
+                )
+            ),
+            schedules.submitted
+        )
+        // Said from what storage holds: the category names a payment without a note.
+        assertEquals(
+            CorrectionNotice.ScheduleSaved(
+                "Alimentación",
+                rule(5),
+                LocalDate.parse("2026-10-22"),
+                income = false
+            ),
+            said
+        )
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun whileSeRepiteIsOnTheDateIsTodayOrLaterAndOffItIsTodayOrEarlier() {
+        val form = ready().chosen()
+        form.type("950000")
+        form.onAction(ExpenseEntryAction.DatePicked(LocalDate.parse("2026-10-10")))
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.Done)
+        // A schedule starts today or later: the 10th moved to today.
+        val on = form.now.date
+        form.onAction(ExpenseEntryAction.DatePicked(LocalDate.parse("2026-11-05")))
+        val later = form.now.date
+        form.onAction(ExpenseEntryAction.DatePicked(LocalDate.parse("2026-10-21")))
+        val earlierRefused = form.now.date
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.Remove)
+
+        assertEquals(LocalDate.parse("2026-10-22"), on)
+        assertEquals(LocalDate.parse("2026-11-05"), later)
+        assertEquals(LocalDate.parse("2026-11-05"), earlierRefused)
+        // Off again, a single expense cannot be dated after today.
+        assertEquals(LocalDate.parse("2026-10-22"), form.now.date)
+        assertNull(form.now.repeat.choice)
+    }
+
+    @Test
+    fun anIncompleteChoiceIsNotKeptAndDismissingKeepsTheOneBefore() {
+        val form = ready().chosen()
+        form.type("950000")
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.Done)
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.KindPicked(RepeatKind.TwiceMonthly))
+        form.repeat(RepeatAction.Done)
+        val incomplete = form.now.repeat
+        form.repeat(RepeatAction.Dismiss)
+
+        // Twice a month with one day: nothing to keep, the sheet stays open.
+        assertFalse(incomplete.sheetComplete)
+        assertEquals(RepeatKind.TwiceMonthly, incomplete.sheet?.kind)
+        assertEquals(rule(22), form.now.repeat.choice?.rule())
+        assertNull(form.now.repeat.sheet)
+    }
+
+    @Test
+    fun anEndThatLeavesNothingToRecordStopsTheSave() {
+        val form = ready().chosen()
+        form.type("950000")
+        form.onAction(ExpenseEntryAction.DatePicked(LocalDate.parse("2026-10-22")))
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.DayToggled(5))
+        // Ending on the 30th: the 5th of November never comes.
+        form.repeat(RepeatAction.EndPicked(LocalDate.parse("2026-10-30")))
+        val sheet = form.now.repeat
+        form.repeat(RepeatAction.Done)
+
+        assertNull(sheet.sheetNext)
+        assertFalse(sheet.sheetComplete)
+        assertNull(form.now.repeat.choice)
+        // An end before the start is not taken at all.
+        form.repeat(RepeatAction.EndPicked(LocalDate.parse("2026-10-21")))
+        assertEquals(LocalDate.parse("2026-10-30"), form.now.repeat.sheet?.end)
+    }
+
+    @Test
+    fun aRefusedScheduleKeepsTheDraftAndSaysWhy() {
+        val form = ready().chosen()
+        form.type("950000")
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.Done)
+        schedules.answer = {
+            ScheduleCommandOutcome.Rejected(
+                ScheduleRejection.StartTooEarly(LocalDate.parse("2026-10-23"))
+            )
+        }
+        form.submit()
+        val early = form.now
+        schedules.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.CategoryArchived) }
+        form.submit()
+
+        assertEquals(EntryError.StartTooEarly, early.error)
+        assertEquals(shown("950.000"), early.amount)
+        assertEquals(rule(22), early.repeat.choice?.rule())
+        assertEquals(EntryError.CategoryGone, form.now.error)
+        assertNull(form.now.categoryId)
+        assertEquals(emptyList<CreateExpense>(), commands.created)
+        assertNull(said)
+    }
+
+    @Test
+    fun anUnknownOutcomeAsksTheScheduleCommandsNeverTheExpenseOnes() {
+        val saved = SavedStateHandle()
+        val form = ready(saved = saved).chosen()
+        form.type("950000")
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.Done)
+        schedules.answer = { ScheduleCommandOutcome.OutcomeUnknown(it.operationId) }
+        schedules.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        form.submit()
+        val unknown = form.now
+
+        // The process stops; storage then answers that it was saved.
+        schedules.found = { Outcome.Success(schedules.committed(it)) }
+        scheduleBook.keep(schedules.submitted.single() as CreateSchedule, scheduleId(700))
+        val restored = ready(saved = saved.afterProcessDeath())
+
+        assertEquals(EntryError.Unknown, unknown.error)
+        assertEquals(listOf(operationIdOf(uuid(500)), operationIdOf(uuid(500))), schedules.looked)
+        assertEquals(emptyList<CreateExpense>(), commands.created)
+        assertEquals(1, schedules.submitted.size)
+        assertTrue(restored.now.closed)
+        assertEquals(rule(22), (said as CorrectionNotice.ScheduleSaved).rule)
+    }
+
+    @Test
+    fun theChoiceAndItsOpenSheetSurviveTheProcessStopping() {
+        val saved = SavedStateHandle()
+        val form = ready(saved = saved).chosen()
+        form.type("950000")
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.KindPicked(RepeatKind.Weeks))
+        form.repeat(RepeatAction.Increase)
+
+        val restored = ready(saved = saved.afterProcessDeath())
+
+        assertEquals(RepeatKind.Weeks, restored.now.repeat.sheet?.kind)
+        assertEquals(2, restored.now.repeat.sheet?.interval)
+        assertNull(restored.now.repeat.choice)
     }
 }

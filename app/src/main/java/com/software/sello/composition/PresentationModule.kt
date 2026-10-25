@@ -27,6 +27,8 @@ import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.ReciboViewModel
 import com.software.sello.feature.recurrence.CatchUpRunner
+import com.software.sello.feature.recurrence.ScheduleEditorViewModel
+import com.software.sello.feature.recurrence.SchedulesViewModel
 import com.software.sello.feature.reset.ResetSession
 import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.resumen.ResumenViewModel
@@ -77,7 +79,9 @@ fun presentationModule(): Module = module {
  */
 fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     initializer { AppearanceViewModel(koin.get()) }
-    initializer { SettingsViewModel(koin.get(), koin.get(), koin.get(), koin.get()) }
+    initializer {
+        SettingsViewModel(koin.get(), koin.get(), koin.get(), koin.get(), koin.get())
+    }
     initializer {
         BackupViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
     }
@@ -99,6 +103,8 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     initializer {
         IncomeFormViewModel(
             createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
             koin.get(),
             koin.get(),
             koin.get(),
@@ -212,12 +218,29 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get(),
             koin.get(),
             koin.get(),
+            koin.get(),
+            koin.get(),
             koin.get()
         )
     }
     initializer {
         CategoryEditorViewModel(
             createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
+    initializer {
+        SchedulesViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get(), koin.get())
+    }
+    initializer {
+        ScheduleEditorViewModel(
+            createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
             koin.get(),
             koin.get(),
             koin.get(),

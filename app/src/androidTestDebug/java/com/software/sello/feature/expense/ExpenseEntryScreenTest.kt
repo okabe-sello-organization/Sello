@@ -28,7 +28,16 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.RepeatRule
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.recurrence.FollowingSchedule
+import com.software.sello.presentation.recurrence.REPEAT_ROW_TAG
+import com.software.sello.presentation.recurrence.REPEAT_SHEET_TAG
+import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.presentation.recurrence.RepeatChoice
+import com.software.sello.presentation.recurrence.RepeatKind
+import com.software.sello.presentation.recurrence.RepeatUi
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -465,5 +474,87 @@ class ExpenseEntryScreenTest {
 
         rule.onNodeWithText("No pudimos leer este gasto.").assertIsDisplayed()
         rule.onNodeWithTag(ENTRY_DELETE_TAG).assertDoesNotExist()
+    }
+
+    // --- Se repite and Solo este (SELLO-100) ---
+
+    private fun monthly(day: Int) =
+        RepeatChoice.of((RepeatRule.Monthly.of(day) as Outcome.Success).value, null)
+
+    @Test
+    fun seRepiteIsARowForANewExpenseOnlyAndOpensTheSheet() {
+        show(complete)
+        rule.onNodeWithTag(REPEAT_ROW_TAG).performScrollTo().assertIsDisplayed().performClick()
+
+        assertEquals(ExpenseEntryAction.Repeat(RepeatAction.Open), actions.last())
+        rule.onNodeWithText("Anotar gasto").assertExists()
+    }
+
+    @Test
+    fun aKeptChoiceNamesTheRuleAndTheButtonSaysItKeepsAPayment() {
+        // jue 5 nov is next for the 5th from vie 9 oct.
+        show(
+            complete.copy(repeat = RepeatUi(choice = monthly(5), next = LocalDate.of(2026, 11, 5)))
+        )
+
+        rule.onNodeWithText(
+            "El 5 de cada mes · próximo jue 5 nov"
+        ).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Guardar pago fijo").assertExists()
+    }
+
+    @Test
+    fun theSheetWaitsForAChoiceThatRecordsSomethingAndQuitarTurnsItOff() {
+        val twiceWithOne = RepeatChoice.of(
+            (RepeatRule.Monthly.of(9) as Outcome.Success).value,
+            null
+        )
+            .withKind(RepeatKind.TwiceMonthly)
+        show(complete.copy(repeat = RepeatUi(sheet = twiceWithOne, sheetNext = null)))
+
+        rule.onNode(
+            hasText("Listo") and hasAnyAncestor(hasTestTag(REPEAT_SHEET_TAG))
+        ).assertIsNotEnabled()
+        rule.onNode(hasText("Quitar") and hasAnyAncestor(hasTestTag(REPEAT_SHEET_TAG)))
+            .performScrollTo().performClick()
+        rule.onNodeWithContentDescription("Día 15").performScrollTo().performClick()
+
+        assertEquals(
+            listOf(
+                ExpenseEntryAction.Repeat(RepeatAction.Remove),
+                ExpenseEntryAction.Repeat(RepeatAction.DayToggled(15))
+            ),
+            actions
+        )
+    }
+
+    @Test
+    fun newTermsOnARecordedPaymentAskSoloEsteOrEsteYLosSiguientes() {
+        show(
+            complete.copy(
+                editing = true,
+                askFollowing = true,
+                following = FollowingSchedule(
+                    "Arriendo",
+                    (RepeatRule.Monthly.of(5) as Outcome.Success).value,
+                    today
+                )
+            )
+        )
+
+        rule.onNodeWithText("¿Cambiar también los siguientes?").assertIsDisplayed()
+        rule.onNodeWithTag(REPEAT_ROW_TAG).assertDoesNotExist()
+        rule.onNodeWithText("Este y los siguientes").performClick()
+        rule.onNodeWithText("Solo este").performClick()
+        rule.onNodeWithText("Volver a editar").performClick()
+
+        assertEquals(
+            listOf(
+                ExpenseEntryAction.FollowingChosen(true),
+                ExpenseEntryAction.FollowingChosen(false),
+                ExpenseEntryAction.FollowingDismissed
+            ),
+            actions
+        )
     }
 }

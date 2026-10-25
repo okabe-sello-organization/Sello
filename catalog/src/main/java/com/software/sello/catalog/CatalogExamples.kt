@@ -13,6 +13,7 @@ import com.software.sello.catalog.components.CategoryCircleExample
 import com.software.sello.catalog.components.CelebrationExample
 import com.software.sello.catalog.components.ChipExample
 import com.software.sello.catalog.components.ChipRowsExample
+import com.software.sello.catalog.components.ChoiceSlipExample
 import com.software.sello.catalog.components.ColumnsChartExample
 import com.software.sello.catalog.components.ComparisonExample
 import com.software.sello.catalog.components.ConfirmSlipExample
@@ -47,7 +48,9 @@ import com.software.sello.catalog.components.NoticeExample
 import com.software.sello.catalog.components.PastMonthRibbonExample
 import com.software.sello.catalog.components.PlanSlipExample
 import com.software.sello.catalog.components.RankingExample
+import com.software.sello.catalog.components.RepeatSheetExample
 import com.software.sello.catalog.components.ScaffoldExample
+import com.software.sello.catalog.components.ScheduleRowExample
 import com.software.sello.catalog.components.SettingsControlsExample
 import com.software.sello.catalog.components.SlipExample
 import com.software.sello.catalog.components.SlipSkeletonExample
@@ -173,6 +176,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         R.string.catalog_example_plan_slip
     ) { PlanSlipExample() },
     CatalogExample(
+        "paper.schedule-row",
+        CatalogGroup.Paper,
+        R.string.catalog_example_schedule_row
+    ) { ScheduleRowExample() },
+    CatalogExample(
         "stamps.stamp",
         CatalogGroup.Stamps,
         R.string.catalog_example_stamp
@@ -258,6 +266,12 @@ val catalogExamples: List<CatalogExample> = listOf(
         R.string.catalog_example_note_composer
     ) { NoteComposerExample() },
     CatalogExample(
+        "inputs.repeat-sheet",
+        CatalogGroup.Inputs,
+        R.string.catalog_example_repeat_sheet,
+        fullBleed = true
+    ) { RepeatSheetExample() },
+    CatalogExample(
         "inputs.entry",
         CatalogGroup.Inputs,
         R.string.catalog_example_entry,
@@ -324,6 +338,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         CatalogGroup.Feedback,
         R.string.catalog_example_confirm_slip
     ) { ConfirmSlipExample() },
+    CatalogExample(
+        "feedback.choice-slip",
+        CatalogGroup.Feedback,
+        R.string.catalog_example_choice_slip
+    ) { ChoiceSlipExample() },
     CatalogExample(
         "feedback.empty-slip",
         CatalogGroup.Feedback,

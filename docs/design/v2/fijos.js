@@ -173,18 +173,18 @@ function render() {
   const o = reviewOptions(["ink", "theme"]);
   const set = (id, h) => document.getElementById(id).innerHTML = h;
   const ready = { mode: "expense", amount: 950000, category: "Hogar", note: "Arriendo" };
-  const on = { ...ready, repeat: "Cada mes, el 5 · desde lun 5 nov", date: "lun 5 nov" };
+  const on = { ...ready, repeat: "Cada mes, el 5 · desde jue 5 nov", date: "jue 5 nov" };
 
   set("create",
     card("Ready to save · Se repite off", "The locked entry with one more row under the note. Off by default: Anotar records one expense, as today.", phone(o, entry(ready))) +
-    card("Se repite · each month", "Tapping the row opens the rule. The day starts as the entry’s date; Próximo says when Sello records the first one.", phone(o, entry(ready, { sheet: ruleSheet("month", { days: [5], next: "lun 5 nov" }) }))) +
+    card("Se repite · each month", "Tapping the row opens the rule. The day starts as the entry’s date; Próximo says when Sello records the first one.", phone(o, entry(ready, { sheet: ruleSheet("month", { days: [5], next: "jue 5 nov" }) }))) +
     card("Twice a month · 15 and 30", "The person picks both days (SELLO-096). Past day 28, shorter months use their last day.", phone(o, entry({ mode: "income", amount: 1000000, category: "Salario" }, { sheet: ruleSheet("twice", { days: [15, 30], next: "vie 30 oct" }) }))) +
     card("Every N weeks", "A stepper, 1–52 weeks (or 1–365 days), counted from the entry’s date.", phone(o, entry({ mode: "expense", amount: 20000, category: "Transporte", note: "Bus" }, { sheet: ruleSheet("weeks", { n: 1, next: "sáb 24 oct" }) }))) +
     card("Se repite on · future start", "The date may be later than today only while Se repite is on, never earlier. The button says what saving does: it keeps a schedule, and Sello records each one on its date.", phone(o, entry(on))) +
     card("Starting today", "If the first one is today, Sello records it right after saving; the notice on Recibo says so (section 6).", phone(o, entry({ ...ready, repeat: "Cada mes, el 22 · desde hoy" }, { sheet: ruleSheet("month", { days: [22], next: "hoy, jue 22 oct", note: "Se anota en cuanto guardes." }) }))) +
     card("Saved", "Recibo’s brief confirmation, as for any save. Nothing is recorded until the date.", phone(o, appShell({ body: `<section class="slip pinked"><div class="answer-head"><span class="label">Restante del presupuesto</span><span class="stamp">Al día</span></div><div class="hero">${money(400000)}</div></section>`, toast: "Pago fijo guardado: Arriendo, el 5 de cada mes" }))) +
     card("Large text · 200%", "The middle scrolls; amount, the button and the pad stay put, as in the locked entry.", phone(o, entry(on), { large: true })) +
-    card("Dark", "Same parts in the dark theme.", phone(o, entry(ready, { sheet: ruleSheet("month", { days: [5], next: "lun 5 nov" }) }), { theme: "dark" })));
+    card("Dark", "Same parts in the dark theme.", phone(o, entry(ready, { sheet: ruleSheet("month", { days: [5], next: "jue 5 nov" }) }), { theme: "dark" })));
 
   set("list",
     card("Pagos · default", "Gastos and ingresos apart. A dashed plan says what October holds — what already went through and what is still to come (soft) — never a recorded total. Rows by day; paused and ended ones are dimmed.", sub(o, "Pagos e ingresos fijos", listBody(), { action: ["add", "Agregar pago fijo"] })) +

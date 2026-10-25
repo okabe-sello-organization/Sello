@@ -7,6 +7,7 @@ import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteGoalMovement
@@ -26,6 +27,7 @@ import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.RestoreIncome
 import com.software.sello.domain.port.UndoGoalCompletion
+import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -104,6 +106,23 @@ sealed interface CorrectionNotice {
 
     /** The same for a new income: "Ingreso anotado: 2.000.000". */
     data class IncomeRecorded(val amount: MoneyTextValue?) : CorrectionNotice
+
+    /**
+     * A new schedule storage confirmed, as it was read back: "Pago fijo guardado: Arriendo,
+     * el 5 de cada mes". [name] is its note, else its category or the name of an Otro
+     * source; an income without either is named by [sourceKey]. [rule] and [start] are
+     * null when it is saved but could not be read back.
+     */
+    data class ScheduleSaved(
+        val name: String?,
+        val rule: RepeatRule?,
+        val start: LocalDate?,
+        val income: Boolean,
+        val sourceKey: String? = null
+    ) : CorrectionNotice
+
+    /** A schedule changed, paused, resumed or deleted, as its receipt confirmed. */
+    data class ScheduleChanged(val change: ScheduleChange, val income: Boolean) : CorrectionNotice
 
     /** The same as [Deleted], [Restored], [UndoTooLate], [UndoBlocked] and [Updated], for a goal's movement. */
     data class GoalMovementDeleted(
@@ -541,6 +560,12 @@ class ExpenseCorrections(
     /** A screen reports a new income its receipt confirmed, read back from storage. */
     fun incomeRecorded(notice: CorrectionNotice.IncomeRecorded) = said(notice)
 
+    /** A screen reports a new schedule its receipt confirmed, read back from storage. */
+    fun scheduleSaved(notice: CorrectionNotice.ScheduleSaved) = said(notice)
+
+    /** A screen reports a schedule change its receipt confirmed. */
+    fun scheduleChanged(notice: CorrectionNotice.ScheduleChanged) = said(notice)
+
     /** A screen reports a category change its receipt confirmed. */
     fun categoryChanged(notice: CorrectionNotice) {
         require(
@@ -605,3 +630,6 @@ class ExpenseCorrections(
         val NOTICE = 4.seconds
     }
 }
+
+/** What a confirmed command did to a schedule. */
+enum class ScheduleChange { Changed, Paused, Resumed, Deleted }

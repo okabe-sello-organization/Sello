@@ -4,32 +4,51 @@ import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.Occurrence
+import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.Recurrence
+import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ResumenSnapshot
+import com.software.sello.domain.model.Schedule
+import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CreateIncome
+import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommandOutcome.Rejected
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleCommandOutcome
+import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.feature.expense.HandIncomeReads
 import com.software.sello.feature.expense.incomeId
+import com.software.sello.feature.expense.pesos
 import com.software.sello.feature.expense.storedIncome
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.recurrence.HandScheduleCommands
+import com.software.sello.feature.recurrence.HandScheduleReads
+import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.feature.resumen.resumenSnapshot
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.recurrence.RepeatAction
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -61,6 +80,8 @@ class IncomeFormViewModelTest {
     private val october = YearMonth.of(2026, 10)
     private val commands = HandIncomeCommands()
     private val reads = HandIncomeReads()
+    private val scheduleBook = HandScheduleReads()
+    private val schedules = HandScheduleCommands(scheduleBook)
     private val clock = HandFinancialClock("2026-10-22")
     private var nextId = 500
     private val money = MoneyFormatter(
@@ -99,7 +120,7 @@ class IncomeFormViewModelTest {
     private fun form(saved: SavedStateHandle = SavedStateHandle()) =
         IncomeFormViewModel(saved, commands, reads, clock, {
             uuid(nextId++)
-        }, money, corrections)
+        }, money, corrections, schedules, scheduleBook)
 
     /** A new-income form with the month already read. */
     private fun ready(saved: SavedStateHandle = SavedStateHandle()): IncomeFormViewModel {
@@ -670,5 +691,142 @@ class IncomeFormViewModelTest {
             IncomeFormError.IncomeChanged to false,
             refused.now.error to refused.now.closed
         )
+    }
+
+    // --- Se repite: a schedule instead of one income (SELLO-100) ---
+
+    private fun IncomeFormViewModel.repeat(action: RepeatAction) =
+        onAction(IncomeFormAction.Repeat(action))
+
+    @Test
+    fun seRepiteKeepsAScheduledIncomeNamedByItsSource() {
+        val form = ready()
+        form.type("1000000")
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.DayToggled(30))
+        form.repeat(RepeatAction.Done)
+        val chosen = form.now.repeat
+        form.onAction(IncomeFormAction.Submit)
+
+        val monthly30 = (RepeatRule.Monthly.of(30) as Outcome.Success).value
+        assertEquals(LocalDate.parse("2026-10-30"), chosen.next)
+        assertEquals(emptyList<CreateIncome>(), commands.created)
+        assertEquals(
+            listOf(
+                CreateSchedule(
+                    (OperationId.of(uuid(500)) as Outcome.Success).value,
+                    7,
+                    ScheduledEntry.Income(IncomeSource.Salary, pesos(1_000_000), null),
+                    monthly30,
+                    LocalDate.parse("2026-10-22"),
+                    null
+                )
+            ),
+            schedules.submitted
+        )
+        assertEquals(
+            CorrectionNotice.ScheduleSaved(
+                null,
+                monthly30,
+                LocalDate.parse("2026-10-22"),
+                income = true,
+                sourceKey = "salary"
+            ),
+            corrections.notice.value
+        )
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun aScheduleWhoseSaveWasNotHeardFromIsAskedAboutAfterARestart() {
+        val saved = SavedStateHandle()
+        val form = ready(saved)
+        form.type("1000000")
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.Done)
+        schedules.answer = { ScheduleCommandOutcome.OutcomeUnknown(it.operationId) }
+        schedules.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        form.onAction(IncomeFormAction.Submit)
+        val unknown = form.now.error
+        schedules.found = { Outcome.Success(null) }
+
+        // Storage says it was never saved: the draft and the choice are there to try again.
+        val restored = ready(saved.afterProcessDeath())
+
+        assertEquals(IncomeFormError.Unknown, unknown)
+        assertEquals(2, schedules.looked.size)
+        assertEquals(emptyList<CreateIncome>(), commands.created)
+        assertNull(restored.now.error)
+        assertTrue(restored.now.canSubmit)
+        assertEquals(22, restored.now.repeat.choice?.days?.single())
+    }
+
+    // --- Solo este / Este y los siguientes for incomes (SELLO-100) ---
+
+    private val salarySchedule = StoredSchedule(
+        Schedule(
+            scheduleId(8),
+            ScheduledEntry.Income(IncomeSource.Salary, pesos(1_000_000), null),
+            (
+                Recurrence.of(
+                    (RepeatRule.Monthly.of(5) as Outcome.Success).value,
+                    LocalDate.parse("2026-10-01"),
+                    null,
+                    emptyList()
+                ) as Outcome.Success
+                ).value
+        ),
+        sequence = 1,
+        handled = Occurrence(LocalDate.parse("2026-10-05"), 1),
+        version = 4,
+        createdAt = Instant.EPOCH,
+        updatedAt = Instant.EPOCH
+    )
+
+    private val recordedSalary = storedIncome(101, "2026-10-05", 1_000_000)
+        .copy(origin = EntryOrigin(scheduleId(8), Occurrence(LocalDate.parse("2026-10-05"), 1)))
+
+    @Test
+    fun esteYLosSiguientesChangesTheScheduledIncomeFirstThenThisOne() {
+        scheduleBook.schedules += salarySchedule
+        val form = opened(recordedSalary)
+        form.retype("1200000")
+        form.onAction(IncomeFormAction.Submit)
+        val asked = form.now.askFollowing
+        form.onAction(IncomeFormAction.FollowingChosen(alsoFollowing = true))
+
+        assertTrue(asked)
+        assertEquals(
+            listOf(
+                ChangeSchedule(
+                    (OperationId.of(uuid(500)) as Outcome.Success).value,
+                    7,
+                    scheduleId(8),
+                    4,
+                    ScheduledEntry.Income(IncomeSource.Salary, pesos(1_200_000), null),
+                    salarySchedule.schedule.recurrence.rule,
+                    LocalDate.parse("2026-10-01"),
+                    null
+                )
+            ),
+            schedules.submitted
+        )
+        assertEquals(1, commands.edited.size)
+        assertEquals(
+            CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = true),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun soloEsteCorrectsOnlyThisIncome() {
+        scheduleBook.schedules += salarySchedule
+        val form = opened(recordedSalary)
+        form.retype("1200000")
+        form.onAction(IncomeFormAction.Submit)
+        form.onAction(IncomeFormAction.FollowingChosen(alsoFollowing = false))
+
+        assertTrue(schedules.submitted.isEmpty())
+        assertEquals(pesos(1_200_000), commands.edited.single().amount)
     }
 }

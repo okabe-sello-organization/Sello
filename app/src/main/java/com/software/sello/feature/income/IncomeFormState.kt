@@ -1,6 +1,9 @@
 package com.software.sello.feature.income
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.presentation.recurrence.FollowingSchedule
+import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.presentation.recurrence.RepeatUi
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -17,7 +20,7 @@ enum class IncomeComposer { Note, SourceName }
  * first. [SourceName] is for "Otro", which needs a name. [Changes] is only for a
  * recorded income being corrected: nothing differs yet from what is stored.
  */
-enum class IncomeMissing { Amount, SourceName, Note, Changes }
+enum class IncomeMissing { Amount, SourceName, Note, Repeat, Changes }
 
 /** Why recording did not finish. None of these means the income was saved. */
 enum class IncomeFormError {
@@ -43,7 +46,16 @@ enum class IncomeFormError {
     IncomeChanged,
 
     /** Deleting failed and the income is still there. */
-    NotDeleted
+    NotDeleted,
+
+    /** A schedule starts today or later; the date was earlier. */
+    StartTooEarly,
+
+    /** A schedule's end is on or after its start and today. */
+    EndTooEarly,
+
+    /** The following incomes' new terms were refused; nothing was written. */
+    FollowingNotSaved
 }
 
 /**
@@ -93,7 +105,14 @@ data class IncomeFormState(
     /** A recorded income is being corrected, not a new one written. */
     val editing: Boolean = false,
     /** Months other than the current one whose income saving or deleting would change. */
-    val pastMonths: List<YearMonth> = emptyList()
+    val pastMonths: List<YearMonth> = emptyList(),
+    /** Se repite, offered only for a new income. */
+    val repeat: RepeatUi = RepeatUi(),
+    /** Saving waits for Solo este or Este y los siguientes about [following]. */
+    val askFollowing: Boolean = false,
+    val following: FollowingSchedule? = null,
+    /** The following incomes already took the new terms; this income did not yet. */
+    val followingSaved: Boolean = false
 ) {
     val canSubmit: Boolean
         get() = !loading && !loadFailed && !busy && !generationChanged && missing == null &&
@@ -167,4 +186,13 @@ sealed interface IncomeFormAction {
 
     /** Delete the recorded income being corrected. */
     data object Delete : IncomeFormAction
+
+    /** Se repite's row and sheet. */
+    data class Repeat(val action: RepeatAction) : IncomeFormAction
+
+    /** Solo este ([alsoFollowing] false) or Este y los siguientes. */
+    data class FollowingChosen(val alsoFollowing: Boolean) : IncomeFormAction
+
+    /** Volver a editar: nothing is saved. */
+    data object FollowingDismissed : IncomeFormAction
 }

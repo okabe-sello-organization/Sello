@@ -76,6 +76,10 @@ import com.software.sello.domain.model.SourceName
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.recurrence.FollowingChoice
+import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.presentation.recurrence.RepeatChoiceSheet
+import com.software.sello.presentation.recurrence.RepeatRow
 import java.time.Instant
 import java.time.ZoneOffset
 
@@ -101,6 +105,10 @@ fun IncomeFormRoot(
         }
     }
     BackHandler { model.onAction(IncomeFormAction.Back) }
+    // While Se repite's sheet is open, Back closes it and keeps the choice as it was.
+    BackHandler(enabled = state.repeat.sheet != null) {
+        model.onAction(IncomeFormAction.Repeat(RepeatAction.Dismiss))
+    }
     IncomeFormScreen(state, model::onAction, onExpense = onExpense)
 }
 
@@ -189,8 +197,22 @@ fun IncomeFormScreen(
             onDismiss = { onAction(IncomeFormAction.KeepEditing) }
         )
     }
+    val dates = dateLabels()
     if (state.datePickerOpen) IncomeDatePicker(state, onAction)
     state.composer?.let { IncomeComposerSheet(state, it, onAction) }
+    RepeatChoiceSheet(state.repeat, state.date, state.today, dates) {
+        onAction(IncomeFormAction.Repeat(it))
+    }
+    val following = state.following
+    if (state.askFollowing && following != null) {
+        FollowingChoice(
+            following,
+            income = true,
+            busy = state.busy,
+            onChoose = { onAction(IncomeFormAction.FollowingChosen(it)) },
+            onBack = { onAction(IncomeFormAction.FollowingDismissed) }
+        )
+    }
 }
 
 @Composable
@@ -276,6 +298,17 @@ private fun IncomeChoices(state: IncomeFormState, onAction: (IncomeFormAction) -
     state.noteProblem?.let {
         FieldMessageText(FieldMessage(stringResource(R.string.income_note_invalid)))
     }
+    // Se repite, for a new income only: a recorded one is corrected on its own.
+    if (!state.editing) {
+        RepeatRow(
+            state.repeat,
+            state.date,
+            state.today,
+            dateLabels(),
+            state.editable,
+            { onAction(IncomeFormAction.Repeat(it)) }
+        )
+    }
     Text(
         stringResource(R.string.income_history_guidance),
         style = MaterialTheme.typography.bodySmall,
@@ -309,18 +342,26 @@ private fun IncomeAction(state: IncomeFormState, onAction: (IncomeFormAction) ->
                             IncomeFormError.FutureDate -> R.string.expense_entry_future_date
                             IncomeFormError.InvalidDate -> R.string.expense_entry_invalid_date
                             IncomeFormError.NotDeleted -> R.string.income_not_deleted
+                            IncomeFormError.StartTooEarly -> R.string.repeat_start_too_early
+                            IncomeFormError.EndTooEarly -> R.string.repeat_end_too_early
+                            IncomeFormError.FollowingNotSaved -> R.string.following_not_saved
                             else -> R.string.income_not_saved
                         }
                     )
                 ),
                 Modifier.testTag("income.error")
             )
+            // The following incomes already changed; only this one is still to save.
+            if (state.followingSaved) {
+                FieldMessageText(FieldMessage(stringResource(R.string.following_saved_this_not)))
+            }
         }
         // What is still missing, said where the button is. A missing amount is not: the
         // slip already shows "Sin monto".
         val missing = when (state.missing) {
             IncomeMissing.SourceName -> R.string.income_missing_source
             IncomeMissing.Note -> R.string.expense_entry_missing_note
+            IncomeMissing.Repeat -> R.string.repeat_missing
             IncomeMissing.Changes -> R.string.expense_edit_no_changes
             else -> null
         }
@@ -337,6 +378,7 @@ private fun IncomeAction(state: IncomeFormState, onAction: (IncomeFormAction) ->
                     unknown -> R.string.expense_entry_check_again
                     state.busy -> R.string.expense_entry_saving
                     state.editing -> R.string.expense_edit_submit
+                    state.repeat.choice != null -> R.string.repeat_save_income
                     else -> R.string.income_save
                 }
             ),
@@ -409,16 +451,20 @@ private fun IncomeComposerSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun IncomeDatePicker(state: IncomeFormState, onAction: (IncomeFormAction) -> Unit) {
+    val repeating = state.repeat.choice != null
     val picker = rememberDatePickerState(
         initialSelectedDateMillis = state.date.atStartOfDay(
             ZoneOffset.UTC
         ).toInstant().toEpochMilli(),
         selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) = !Instant.ofEpochMilli(
-                utcTimeMillis
-            ).atZone(ZoneOffset.UTC).toLocalDate().isAfter(state.today)
+            // One income is dated today or earlier; while Se repite is on, today or later.
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val day = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
+                return if (repeating) !day.isBefore(state.today) else !day.isAfter(state.today)
+            }
 
-            override fun isSelectableYear(year: Int) = year <= state.today.year
+            override fun isSelectableYear(year: Int) =
+                if (repeating) year >= state.today.year else year <= state.today.year
         }
     )
     DatePickerDialog(

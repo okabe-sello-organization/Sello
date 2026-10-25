@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +27,7 @@ import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
@@ -38,11 +40,19 @@ fun SettingsRoot(
     viewModels: ViewModelProvider.Factory,
     contentPadding: PaddingValues,
     onOpenBackup: () -> Unit,
-    onOpenReset: () -> Unit
+    onOpenReset: () -> Unit,
+    onOpenSchedules: () -> Unit
 ) {
     val model: SettingsViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
-    SettingsScreen(state, model::onAction, contentPadding, onOpenBackup, onOpenReset)
+    SettingsScreen(
+        state,
+        model::onAction,
+        contentPadding,
+        onOpenBackup,
+        onOpenReset,
+        onOpenSchedules
+    )
 }
 
 /** Persisted, nonfinancial preferences. Every control is a real setting, never a placeholder. */
@@ -53,6 +63,7 @@ fun SettingsScreen(
     contentPadding: PaddingValues,
     onOpenBackup: () -> Unit,
     onOpenReset: () -> Unit,
+    onOpenSchedules: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -76,13 +87,18 @@ fun SettingsScreen(
         }
         AppearanceControls(state, onAction)
         CategoryOrderingControls(state, onAction)
-        DataControls(state.backup, onOpenBackup, onOpenReset)
+        DataControls(state, onOpenBackup, onOpenReset, onOpenSchedules)
     }
 }
 
 @Composable
-private fun DataControls(backup: BackupLine, onOpenBackup: () -> Unit, onOpenReset: () -> Unit) {
-    val value = when (backup) {
+private fun DataControls(
+    state: SettingsState,
+    onOpenBackup: () -> Unit,
+    onOpenReset: () -> Unit,
+    onOpenSchedules: () -> Unit
+) {
+    val value = when (val backup = state.backup) {
         BackupLine.Loading -> ""
 
         BackupLine.Unreadable -> stringResource(R.string.settings_backup_unreadable)
@@ -91,8 +107,27 @@ private fun DataControls(backup: BackupLine, onOpenBackup: () -> Unit, onOpenRes
             dateLabels().moment(it, backup.zone, stringResource(R.string.backup_moment))
         } ?: stringResource(R.string.settings_backup_never)
     }
+    val schedules = when (val count = state.schedules) {
+        ScheduleCountLine.Loading -> ""
+
+        ScheduleCountLine.Unreadable -> stringResource(R.string.settings_schedules_unreadable)
+
+        is ScheduleCountLine.Read -> stringResource(
+            R.string.settings_schedules_count,
+            pluralStringResource(R.plurals.settings_payments, count.payments, count.payments),
+            pluralStringResource(R.plurals.settings_incomes, count.incomes, count.incomes)
+        )
+    }
     Slip(Modifier.fillMaxWidth().testTag(SETTINGS_DATA_TAG)) {
         SectionTitle(R.string.settings_data)
+        LeaderLine(
+            label = stringResource(R.string.schedules_title),
+            value = "",
+            caption = schedules,
+            icon = SelloIcon.Autorenew,
+            onClick = onOpenSchedules,
+            modifier = Modifier.testTag(SETTINGS_SCHEDULES_TAG)
+        )
         LeaderLine(
             label = stringResource(R.string.settings_backup),
             value = value,
@@ -228,3 +263,5 @@ const val SETTINGS_DIRECTION_TAG = "settings:direction"
 const val SETTINGS_DATA_TAG = "settings:data"
 const val SETTINGS_BACKUP_TAG = "settings:backup"
 const val SETTINGS_RESET_TAG = "settings:reset"
+
+const val SETTINGS_SCHEDULES_TAG = "settings:schedules"

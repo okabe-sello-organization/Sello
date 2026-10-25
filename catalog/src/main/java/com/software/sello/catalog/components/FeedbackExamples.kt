@@ -15,11 +15,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
+import com.software.sello.catalog.R
 import com.software.sello.designsystem.component.Bullet
 import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ButtonKind
@@ -102,7 +104,9 @@ private const val CONFIRM_BUSY_MILLIS = 1_200L
 /** The notice in each thing it says. It holds no time: here it stays until something else is shown. */
 @Composable
 fun NoticeExample() {
+    val strings = LocalResources.current
     var undone by rememberSaveable { mutableIntStateOf(0) }
+    var seen by rememberSaveable { mutableIntStateOf(0) }
     Stack {
         SelloNotice(
             message = "Gasto borrado",
@@ -117,6 +121,15 @@ fun NoticeExample() {
         SelloNotice(
             message = "No se pudo deshacer porque tus datos cambiaron. El gasto quedó borrado."
         )
+        // What Sello recorded on its own: the repeat icon leads, and Ver opens the list.
+        SelloNotice(
+            message = strings.getString(R.string.catalog_demo_sello_anoto_4_pagos_fijos),
+            actionLabel = strings.getString(R.string.catalog_demo_ver),
+            onAction = { seen++ },
+            icon = SelloIcon.Autorenew,
+            modifier = Modifier.testTag("notice:recorded")
+        )
+        Result(strings.getString(R.string.catalog_demo_vistos, seen), "notice:seen")
     }
 }
 

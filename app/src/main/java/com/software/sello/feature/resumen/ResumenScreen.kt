@@ -65,7 +65,8 @@ fun ResumenScreen(
     onCategory: (String) -> Unit,
     onExpense: () -> Unit,
     padding: PaddingValues,
-    onAdjustLimit: (String) -> Unit = {}
+    onAdjustLimit: (String) -> Unit = {},
+    onSchedules: () -> Unit = {}
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val layout = selloWindowLayout(maxWidth, maxHeight)
@@ -92,7 +93,7 @@ fun ResumenScreen(
                         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
                     ) {
                         ResumenPane(Modifier.weight(1f)) {
-                            SummarySlips(state, onIncome, onAction)
+                            SummarySlips(state, onIncome, onSchedules, onAction)
                         }
                         ResumenPane(Modifier.weight(1f)) {
                             ChartSlips(state, onAction, onCategory, onExpense, onAdjustLimit)
@@ -100,7 +101,7 @@ fun ResumenScreen(
                     }
                 } else {
                     ResumenPane(content) {
-                        SummarySlips(state, onIncome, onAction)
+                        SummarySlips(state, onIncome, onSchedules, onAction)
                         ChartSlips(state, onAction, onCategory, onExpense, onAdjustLimit)
                     }
                 }
@@ -127,6 +128,7 @@ private fun ResumenPane(modifier: Modifier, content: @Composable ColumnScope.() 
 private fun SummarySlips(
     state: ResumenState.Ready,
     onIncome: () -> Unit,
+    onSchedules: () -> Unit,
     onAction: (ResumenAction) -> Unit
 ) {
     if (state.stale) {
@@ -151,6 +153,7 @@ private fun SummarySlips(
         ) { MoneyText(state.unallocated) }
         ResumenNote(stringResource(R.string.resumen_actual_through, state.asOf))
         ResumenLink(stringResource(R.string.resumen_open_income_destination), onIncome)
+        ResumenLink(stringResource(R.string.schedules_title), onSchedules)
     }
 }
 

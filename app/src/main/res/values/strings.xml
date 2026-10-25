@@ -275,6 +275,15 @@
         <item>sáb</item>
         <item>dom</item>
     </string-array>
+    <string-array name="weekday_names_plural">
+        <item>lunes</item>
+        <item>martes</item>
+        <item>miércoles</item>
+        <item>jueves</item>
+        <item>viernes</item>
+        <item>sábados</item>
+        <item>domingos</item>
+    </string-array>
     <string-array name="month_names_abbreviated">
         <item>ene</item>
         <item>feb</item>
@@ -827,4 +836,138 @@
     <string name="goal_celebration_left">%1$s · faltan %2$s para la meta</string>
     <string name="goal_celebration_mark_later">%s · márcala como lograda cuando quieras</string>
     <string name="goal_celebration_notice">%1$s. %2$s.</string>
+    <!-- Recurring payments and incomes (SELLO-100, docs/design/v2 Pagos e ingresos fijos) -->
+    <string name="repeat_title">Se repite</string>
+    <string name="schedules_title">Pagos e ingresos fijos</string>
+    <string name="schedules_payments">Pagos</string>
+    <string name="schedules_incomes">Ingresos</string>
+    <string name="schedules_add_payment">Agregar pago fijo</string>
+    <string name="schedules_failed_title">No pudimos leer tus pagos fijos</string>
+    <string name="schedules_failed">Siguen guardados y Sello no anotó nada de más. Vuelve a intentarlo.</string>
+    <string name="schedules_empty_title">Nada se repite todavía</string>
+    <string name="schedules_empty_body">Cuando anotes el arriendo o el salario, marca Se repite y Sello lo anotará solo en su fecha.</string>
+    <string name="schedules_empty_action">Anotar algo que se repite</string>
+    <string name="schedules_list_payments">Tus pagos fijos</string>
+    <string name="schedules_list_incomes">Tus ingresos fijos</string>
+    <string name="schedules_ended">Terminados</string>
+    <string name="schedules_footnote">Se anotan solos, cada uno en su fecha, cuando abres Sello.</string>
+    <string name="schedules_plan_tag">Previsto en %1$s</string>
+    <plurals name="schedules_active_payments">
+        <item quantity="one">%d pago activo</item>
+        <item quantity="other">%d pagos activos</item>
+    </plurals>
+    <plurals name="schedules_active_incomes">
+        <item quantity="one">%d ingreso activo</item>
+        <item quantity="other">%d ingresos activos</item>
+    </plurals>
+    <string name="schedules_plan_done">Ya se anotaron (%1$d)</string>
+    <string name="schedules_plan_done_incomes">Ya entraron (%1$d)</string>
+    <string name="schedules_plan_to_come">Faltan (%1$d)</string>
+    <string name="schedules_plan_total">En el mes</string>
+    <string name="schedules_ended_on">terminó el %1$s</string>
+    <string name="schedules_paused_since">en pausa desde %1$s</string>
+    <string name="schedules_next">próximo %1$s</string>
+    <string name="schedules_paused">En pausa</string>
+    <string name="schedule_payment">Pago fijo</string>
+    <string name="schedule_income">Ingreso fijo</string>
+    <string name="schedule_from">Desde %1$s</string>
+    <string name="schedule_from_tomorrow">Los cambios aplican desde mañana. Lo que ya se anotó no cambia.</string>
+    <string name="schedule_pause">Pausar</string>
+    <string name="schedule_next">Próximo: %1$s</string>
+    <string name="schedule_paused_since">En pausa desde %1$s</string>
+    <string name="schedule_paused_by_archive">En pausa porque %1$s está archivada</string>
+    <string name="schedule_paused_body">Mientras está en pausa no se anota ni se separa nada. Al reanudar, sigue desde ese día; lo de la pausa no se anota.</string>
+    <string name="schedule_resume">Reanudar</string>
+    <string name="schedule_delete_payment">Borrar este pago fijo</string>
+    <string name="schedule_delete_income">Borrar este ingreso fijo</string>
+    <string name="schedule_delete_body">Deja de anotarse. Lo que ya se anotó se queda.</string>
+    <string name="schedule_delete_action">Borrar</string>
+    <string name="schedule_delete_confirm_title">¿Borrarlo?</string>
+    <string name="schedule_delete_confirm_payment">Sello deja de anotarlo desde hoy. Los gastos ya anotados no se borran.</string>
+    <string name="schedule_delete_confirm_income">Sello deja de anotarlo desde hoy. Los ingresos ya anotados no se borran.</string>
+    <string name="schedule_save">Guardar cambios</string>
+    <string name="schedule_load_failed">No pudimos leer este pago fijo. Sigue guardado; vuelve a intentarlo.</string>
+    <string name="schedule_error_not_saved">No se guardó. Lo que cambiaste sigue aquí.</string>
+    <string name="schedule_error_data_changed">Tus datos cambiaron. No se guardó; sal y vuelve a abrirlo.</string>
+    <string name="schedule_error_gone">Este pago fijo ya no existe. No se cambió nada.</string>
+    <string name="schedule_error_changed">Este pago fijo cambió mientras lo editabas. Sal y vuelve a abrirlo.</string>
+    <string name="schedule_error_catch_up">Sello aún está anotando lo pendiente. Vuelve a intentarlo en unos segundos.</string>
+    <string name="schedule_error_category">Esa categoría ya no recibe gastos. Elige otra.</string>
+    <string name="schedule_error_start">Los cambios de regla empiezan mañana o después. Cambia la fecha.</string>
+    <string name="settings_schedules_count">%1$s, %2$s</string>
+    <string name="settings_schedules_unreadable">No se pudieron leer</string>
+    <plurals name="settings_payments">
+        <item quantity="one">%d pago</item>
+        <item quantity="other">%d pagos</item>
+    </plurals>
+    <plurals name="settings_incomes">
+        <item quantity="one">%d ingreso</item>
+        <item quantity="other">%d ingresos</item>
+    </plurals>
+    <string name="repeat_off">No</string>
+    <string name="repeat_change">Cambiar</string>
+    <string name="repeat_row">%1$s · próximo %2$s</string>
+    <string name="repeat_row_spoken">Se repite %1$s. Próximo %2$s. Cambiar</string>
+    <string name="repeat_row_off_spoken">Se repite: no. Elegir cuándo se repite</string>
+    <string name="repeat_monthly">el %1$d de cada mes</string>
+    <string name="repeat_twice_monthly">el %1$d y el %2$d de cada mes</string>
+    <plurals name="repeat_weeks">
+        <item quantity="one">cada semana, los %2$s</item>
+        <item quantity="other">cada %1$d semanas, los %2$s</item>
+    </plurals>
+    <plurals name="repeat_days">
+        <item quantity="one">cada día</item>
+        <item quantity="other">cada %1$d días</item>
+    </plurals>
+    <string name="repeat_kind_monthly">Cada mes</string>
+    <string name="repeat_kind_twice_monthly">Dos veces al mes</string>
+    <string name="repeat_kind_weeks">Cada semana o más</string>
+    <string name="repeat_kind_days">Cada cierto número de días</string>
+    <string name="repeat_day">El día</string>
+    <string name="repeat_two_days">Los días (elige dos)</string>
+    <string name="repeat_day_description">Día %1$d</string>
+    <string name="repeat_short_months">En los meses más cortos, el último día del mes.</string>
+    <string name="repeat_every">Cada</string>
+    <plurals name="repeat_weeks_unit">
+        <item quantity="one">semana, desde el día que elegiste</item>
+        <item quantity="other">semanas, desde el día que elegiste</item>
+    </plurals>
+    <plurals name="repeat_days_unit">
+        <item quantity="one">día, desde el día que elegiste</item>
+        <item quantity="other">días, desde el día que elegiste</item>
+    </plurals>
+    <string name="repeat_decrease">Menos</string>
+    <string name="repeat_increase">Más</string>
+    <string name="repeat_end">Termina</string>
+    <string name="repeat_end_never">Nunca</string>
+    <string name="repeat_end_on_date">En una fecha</string>
+    <string name="repeat_next">Próximo: %1$s. Se anota solo en su fecha.</string>
+    <string name="repeat_next_today">Próximo: hoy. Se anota en cuanto guardes.</string>
+    <string name="repeat_never_records">Con este final no se anotaría nada. Cambia el final o el día.</string>
+    <string name="repeat_remove">Quitar</string>
+    <string name="repeat_done">Listo</string>
+    <string name="repeat_missing">Con este final no se anotaría nada. Cambia el final o el día.</string>
+    <string name="repeat_start_too_early">Un pago o ingreso fijo empieza hoy o después. Cambia la fecha.</string>
+    <string name="repeat_end_too_early">El final no puede ser antes de hoy ni antes del inicio.</string>
+    <string name="repeat_save_payment">Guardar pago fijo</string>
+    <string name="repeat_save_income">Guardar ingreso fijo</string>
+    <string name="notice_payment_schedule_saved">Pago fijo guardado: %1$s, %2$s</string>
+    <string name="notice_income_schedule_saved">Ingreso fijo guardado: %1$s, %2$s</string>
+    <string name="notice_payment_schedule_saved_plain">Pago fijo guardado</string>
+    <string name="notice_schedule_changed">Cambios guardados. Aplican desde mañana.</string>
+    <string name="following_title">¿Cambiar también los siguientes?</string>
+    <string name="following_message_expense">Este gasto lo anotó %1$s, que se repite %2$s. Los siguientes cambian desde mañana; los ya anotados no.</string>
+    <string name="following_message_income">Este ingreso lo anotó %1$s, que se repite %2$s. Los siguientes cambian desde mañana; los ya anotados no.</string>
+    <string name="following_only_this">Solo este</string>
+    <string name="following_also">Este y los siguientes</string>
+    <string name="following_back">Volver a editar</string>
+    <string name="following_not_saved">No se pudieron cambiar los siguientes. No se guardó nada; puedes guardar solo este.</string>
+    <string name="following_saved_this_not">Los siguientes ya cambiaron; este todavía no. Vuelve a guardar.</string>
+    <string name="notice_payment_paused">Pago fijo en pausa</string>
+    <string name="notice_income_paused">Ingreso fijo en pausa</string>
+    <string name="notice_payment_resumed">Pago fijo reanudado</string>
+    <string name="notice_income_resumed">Ingreso fijo reanudado</string>
+    <string name="notice_payment_deleted_schedule">Pago fijo borrado. Lo ya anotado se queda.</string>
+    <string name="notice_income_deleted_schedule">Ingreso fijo borrado. Lo ya anotado se queda.</string>
+    <string name="notice_income_schedule_saved_plain">Ingreso fijo guardado</string>
 </resources>
