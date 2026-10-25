@@ -31,9 +31,6 @@ import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.domain.port.StoredSchedule
-import com.software.sello.feature.expense.AmountProblem
-import com.software.sello.feature.expense.EntryCategory
-import com.software.sello.feature.expense.NoteProblem
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.corrections.ScheduleChange
@@ -322,7 +319,7 @@ class ScheduleEditorViewModel(
         saved[COMPOSER_TEXT] = null
     }
 
-    private fun composerProblem(what: ScheduleComposer, text: String): NoteProblem? {
+    private fun composerProblem(what: ScheduleComposer, text: String): ScheduleTextProblem? {
         val error = when (what) {
             ScheduleComposer.Note -> (Note.of(text) as? Outcome.Failure)?.error
 
@@ -333,8 +330,8 @@ class ScheduleEditorViewModel(
     }
 
     private fun problem(error: TextError) = when (error) {
-        is TextError.TooLong -> NoteProblem.TooLong
-        else -> NoteProblem.NotAllowed
+        is TextError.TooLong -> ScheduleTextProblem.TooLong
+        else -> ScheduleTextProblem.NotAllowed
     }
 
     /** The entry the draft describes, or null while something in it is not valid. */
@@ -547,7 +544,7 @@ class ScheduleEditorViewModel(
             limitPulse = progress.limitPulse,
             atLimit = progress.atLimit,
             categories = categories.map {
-                EntryCategory(it.id.value, it.name.value, it.icon.value)
+                ScheduleCategory(it.id.value, it.name.value, it.icon.value)
             },
             categoryId = saved.get<String>(CATEGORY)?.takeIf { id ->
                 categories.any {
@@ -600,12 +597,12 @@ class ScheduleEditorViewModel(
 
     private fun amountProblem(error: AmountDraftError) = when (error) {
         is AmountDraftError.Range -> when (error.error) {
-            TransactionAmountError.NotPositive -> AmountProblem.Zero
-            TransactionAmountError.AboveMaximum -> AmountProblem.TooLarge
-            is TransactionAmountError.UnsupportedCurrency -> AmountProblem.NotAnAmount
+            TransactionAmountError.NotPositive -> ScheduleAmountProblem.Zero
+            TransactionAmountError.AboveMaximum -> ScheduleAmountProblem.TooLarge
+            is TransactionAmountError.UnsupportedCurrency -> ScheduleAmountProblem.NotAnAmount
         }
 
-        else -> AmountProblem.NotAnAmount
+        else -> ScheduleAmountProblem.NotAnAmount
     }
 
     companion object {

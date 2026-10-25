@@ -30,9 +30,10 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
-import com.software.sello.feature.recurrence.REPEAT_ROW_TAG
-import com.software.sello.feature.recurrence.REPEAT_SHEET_TAG
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.recurrence.FollowingSchedule
+import com.software.sello.presentation.recurrence.REPEAT_ROW_TAG
+import com.software.sello.presentation.recurrence.REPEAT_SHEET_TAG
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatKind

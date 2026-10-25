@@ -1,7 +1,7 @@
 package com.software.sello.feature.income
 
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.feature.expense.FollowingSchedule
+import com.software.sello.presentation.recurrence.FollowingSchedule
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatUi
 import java.time.LocalDate

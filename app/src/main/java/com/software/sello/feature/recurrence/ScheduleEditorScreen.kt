@@ -51,12 +51,13 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Note
-import com.software.sello.feature.expense.NoteProblem
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.presentation.recurrence.RepeatChoiceSheet
+import com.software.sello.presentation.recurrence.RepeatRow
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -393,8 +394,8 @@ private fun Composer(
         error = state.composerProblem?.let {
             stringResource(
                 when (it) {
-                    NoteProblem.TooLong -> R.string.expense_entry_note_composer_too_long
-                    NoteProblem.NotAllowed -> R.string.expense_entry_note_not_allowed
+                    ScheduleTextProblem.TooLong -> R.string.expense_entry_note_composer_too_long
+                    ScheduleTextProblem.NotAllowed -> R.string.expense_entry_note_not_allowed
                 }
             )
         },

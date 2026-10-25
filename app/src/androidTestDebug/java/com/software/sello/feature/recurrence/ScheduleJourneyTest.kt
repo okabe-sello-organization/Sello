@@ -16,6 +16,7 @@ import com.software.sello.TestData
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.hideKeyboard
+import com.software.sello.presentation.recurrence.REPEAT_SHEET_TAG
 import com.software.sello.press
 import org.junit.After
 import org.junit.Assert.assertEquals

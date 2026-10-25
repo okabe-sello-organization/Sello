@@ -73,13 +73,13 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.SourceName
-import com.software.sello.feature.recurrence.FollowingChoice
-import com.software.sello.feature.recurrence.RepeatChoiceSheet
-import com.software.sello.feature.recurrence.RepeatRow
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.recurrence.FollowingChoice
 import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.presentation.recurrence.RepeatChoiceSheet
+import com.software.sello.presentation.recurrence.RepeatRow
 import java.time.Instant
 import java.time.ZoneOffset
 

@@ -1,4 +1,4 @@
-package com.software.sello.feature.recurrence
+package com.software.sello.presentation.recurrence
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
@@ -33,14 +33,8 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.feature.expense.FollowingSchedule
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
-import com.software.sello.presentation.recurrence.RepeatAction
-import com.software.sello.presentation.recurrence.RepeatChoice
-import com.software.sello.presentation.recurrence.RepeatKind
-import com.software.sello.presentation.recurrence.RepeatUi
-import com.software.sello.presentation.recurrence.repeatRuleLabel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset

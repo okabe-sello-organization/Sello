@@ -1,7 +1,7 @@
 package com.software.sello.feature.expense
 
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.domain.model.RepeatRule
+import com.software.sello.presentation.recurrence.FollowingSchedule
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatUi
 import java.time.LocalDate
@@ -57,17 +57,6 @@ enum class EntryError {
     /** The following payments' new terms were refused; nothing was written. */
     FollowingNotSaved
 }
-
-/**
- * The schedule that recorded the entry being corrected, as the choice names it: its note
- * or category, or for an income its note, Otro's name or [sourceKey].
- */
-data class FollowingSchedule(
-    val name: String?,
-    val rule: RepeatRule,
-    val start: LocalDate,
-    val sourceKey: String? = null
-)
 
 data class EntryCategory(val id: String, val name: String, val iconKey: String)
 

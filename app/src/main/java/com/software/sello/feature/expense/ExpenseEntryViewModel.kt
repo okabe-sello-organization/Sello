@@ -38,6 +38,7 @@ import com.software.sello.presentation.corrections.DeleteResult
 import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.recurrence.FollowingSchedule
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatDraft
 import com.software.sello.presentation.recurrence.RepeatUi

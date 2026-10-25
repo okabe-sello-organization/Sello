@@ -26,7 +26,6 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
-import com.software.sello.feature.expense.EntryCategory
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatUi
@@ -152,7 +151,7 @@ class ScheduleScreensTest {
     private val editing = ScheduleEditorState(
         loading = false,
         amount = pesos("950.000"),
-        categories = listOf(EntryCategory("h", "Hogar", "home")),
+        categories = listOf(ScheduleCategory("h", "Hogar", "home")),
         categoryId = "h",
         note = "Arriendo",
         start = LocalDate.of(2026, 10, 1),

@@ -33,11 +33,11 @@ import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.StoredSchedule
-import com.software.sello.feature.expense.FollowingSchedule
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.recurrence.FollowingSchedule
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatDraft
 import com.software.sello.presentation.recurrence.RepeatUi

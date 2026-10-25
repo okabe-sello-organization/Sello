@@ -1,12 +1,18 @@
 package com.software.sello.feature.recurrence
 
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.feature.expense.AmountProblem
-import com.software.sello.feature.expense.EntryCategory
-import com.software.sello.feature.expense.NoteProblem
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatUi
 import java.time.LocalDate
+
+/** Why the amount as typed or pasted cannot be used. The text is kept as it was. */
+enum class ScheduleAmountProblem { NotAnAmount, Zero, TooLarge }
+
+/** Why a note or Otro's name cannot be kept. */
+enum class ScheduleTextProblem { TooLong, NotAllowed }
+
+/** A category a payment can be put in, as its chip shows it. */
+data class ScheduleCategory(val id: String, val name: String, val iconKey: String)
 
 /** What still has to be right before the change can be saved, most important first. */
 enum class ScheduleMissing { Amount, Category, SourceName, Note, Repeat, Changes }
@@ -51,20 +57,20 @@ data class ScheduleEditorState(
     val income: Boolean = false,
     val amount: MoneyTextValue? = null,
     val amountText: String? = null,
-    val amountProblem: AmountProblem? = null,
+    val amountProblem: ScheduleAmountProblem? = null,
     val limitPulse: Int = 0,
     val atLimit: Boolean = false,
-    val categories: List<EntryCategory> = emptyList(),
+    val categories: List<ScheduleCategory> = emptyList(),
     val categoryId: String? = null,
     val sourceKeys: List<String> = emptyList(),
     val sourceKey: String = "",
     val otherName: String = "",
     val note: String = "",
-    val noteProblem: NoteProblem? = null,
+    val noteProblem: ScheduleTextProblem? = null,
     /** The note or Otro's name being written in its composer; null while it is closed. */
     val composer: ScheduleComposer? = null,
     val composerDraft: String = "",
-    val composerProblem: NoteProblem? = null,
+    val composerProblem: ScheduleTextProblem? = null,
     val start: LocalDate? = null,
     val today: LocalDate,
     val startPickerOpen: Boolean = false,
@@ -87,7 +93,7 @@ data class ScheduleEditorState(
 
     val canSave: Boolean get() = editable && missing == null
 
-    val category: EntryCategory? get() = categories.firstOrNull { it.id == categoryId }
+    val category: ScheduleCategory? get() = categories.firstOrNull { it.id == categoryId }
 
     private companion object {
         val Blocking = setOf(
