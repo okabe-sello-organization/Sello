@@ -606,13 +606,13 @@
     <string name="backup_unknown">Sello se cerró mientras lo guardaba. Ese archivo puede estar incompleto. Crea uno nuevo para estar seguro.</string>
     <string name="backup_unknown_action">Crear un respaldo nuevo</string>
     <string name="restore_title">Restaurar</string>
-    <string name="restore_body">Elige un archivo de respaldo. Reemplaza todo lo que hay en este teléfono.</string>
+    <string name="restore_body">Elige un archivo de respaldo de Sello o de FinanceTracker. Reemplaza todo lo que hay en este teléfono.</string>
     <string name="restore_choose">Elegir archivo</string>
     <string name="restore_checking">Revisando el archivo…</string>
     <string name="restore_rejected_title">Ese archivo no se puede restaurar</string>
     <string name="restore_rejected_unreadable">No pudimos abrir ese archivo. Tus datos no cambiaron.</string>
     <string name="restore_rejected_too_large">Es más grande de lo que puede tener un respaldo. Tus datos no cambiaron.</string>
-    <string name="restore_rejected_not_backup">No es un respaldo de Sello. Tus datos no cambiaron.</string>
+    <string name="restore_rejected_not_backup">No es un respaldo de Sello ni de FinanceTracker. Tus datos no cambiaron.</string>
     <string name="restore_rejected_newer">Lo hizo una versión más nueva de Sello. Actualiza Sello e inténtalo de nuevo. Tus datos no cambiaron.</string>
     <string name="restore_rejected_damaged">El archivo está incompleto o dañado. Tus datos no cambiaron.</string>
     <string name="restore_rejected_content">Tiene datos que Sello no acepta, como un monto fuera de rango. Tus datos no cambiaron.</string>
@@ -622,6 +622,24 @@
     <string name="restore_preview_now">Ahora</string>
     <string name="restore_preview_backup">Respaldo</string>
     <string name="restore_preview_warning">Todo lo que hay ahora en este teléfono se reemplaza por el respaldo; no se mezclan. También se restauran la zona horaria, la apariencia y el orden del respaldo.</string>
+    <string name="restore_legacy_title">Desde FinanceTracker</string>
+    <string name="restore_legacy_complete">Sello pudo traer todo lo que tiene el archivo.</string>
+    <string name="restore_legacy_changed">Ajustado para que encaje en Sello:</string>
+    <string name="restore_legacy_left_out">No se importa:</string>
+    <string name="restore_legacy_totals">Por eso los totales de Sello pueden no coincidir con los de FinanceTracker.</string>
+    <string name="restore_legacy_line">%1$s: %2$s</string>
+    <string name="restore_legacy_shortened">texto recortado para caber</string>
+    <string name="restore_legacy_renamed">nombre repetido, ahora numerado</string>
+    <string name="restore_legacy_unreadable">formato no reconocido</string>
+    <string name="restore_legacy_duplicate">identificador repetido</string>
+    <string name="restore_legacy_amount">monto fuera de rango</string>
+    <string name="restore_legacy_date">fecha no válida</string>
+    <string name="restore_legacy_after_export">fecha posterior al respaldo</string>
+    <string name="restore_legacy_text">texto no válido</string>
+    <string name="restore_legacy_category_missing">su categoría no está en el archivo</string>
+    <string name="restore_legacy_category_left_out">su categoría no se importa</string>
+    <string name="restore_legacy_repeat">repetición que Sello no tiene</string>
+    <string name="restore_legacy_not_yet">aún no se importan</string>
     <string name="restore_preview_refreshed">Tus datos cambiaron mientras revisabas. Estas son las cifras de ahora.</string>
     <string name="restore_confirm">Reemplazar con el respaldo</string>
     <string name="restore_cancel">Cancelar</string>
@@ -665,6 +683,26 @@
     <!-- Joins what a backup holds: "2 categorías, 3 gastos y 1 ingreso". -->
     <string name="restore_list_two">%1$s y %2$s</string>
     <string name="restore_list_more">%1$s, %2$s</string>
+    <plurals name="restore_legacy_limits">
+        <item quantity="one">%s límite</item>
+        <item quantity="other">%s límites</item>
+    </plurals>
+    <plurals name="restore_legacy_investments">
+        <item quantity="one">%s inversión</item>
+        <item quantity="other">%s inversiones</item>
+    </plurals>
+    <plurals name="restore_legacy_investment_entries">
+        <item quantity="one">%s movimiento de inversión</item>
+        <item quantity="other">%s movimientos de inversión</item>
+    </plurals>
+    <plurals name="restore_legacy_rates">
+        <item quantity="one">%s tasa de cambio</item>
+        <item quantity="other">%s tasas de cambio</item>
+    </plurals>
+    <plurals name="restore_legacy_merchant_rules">
+        <item quantity="one">%s regla de comercio</item>
+        <item quantity="other">%s reglas de comercio</item>
+    </plurals>
     <plurals name="restore_incomes">
         <item quantity="one">%s ingreso</item>
         <item quantity="other">%s ingresos</item>

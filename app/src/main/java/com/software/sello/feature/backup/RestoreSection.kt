@@ -45,6 +45,7 @@ import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StagedRestore
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.restore.LegacyReportSection
 import com.software.sello.presentation.restore.RestoreBody
 import com.software.sello.presentation.restore.RestoreHeading
 import com.software.sello.presentation.restore.RestoredSlip
@@ -154,6 +155,7 @@ private fun Preview(
             )
         }
         Counts(staged.current, staged.replacement)
+        staged.legacy?.let { LegacyReportSection(it) }
         RestoreBody(stringResource(R.string.restore_preview_warning))
         SelloButton(
             text = stringResource(

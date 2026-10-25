@@ -1,6 +1,8 @@
 package com.software.sello.data.backup
 
 import androidx.room.withTransaction
+import com.software.sello.data.backup.legacy.LegacyTranslation
+import com.software.sello.data.backup.legacy.LegacyTranslator
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.entity.FeaturedGoalEntity
 import com.software.sello.data.local.entity.OperationReceiptEntity
@@ -26,6 +28,10 @@ import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CheckedBackup
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.LegacyImportLine
+import com.software.sello.domain.port.LegacyImportReport
+import com.software.sello.domain.port.LegacyReason
+import com.software.sello.domain.port.LegacyRecord
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.RecordIdSource
@@ -40,6 +46,7 @@ import java.io.IOException
 import java.security.MessageDigest
 import java.time.Duration
 import java.time.Instant
+import java.time.ZoneId
 import java.util.Properties
 import kotlinx.coroutines.withContext
 
@@ -48,8 +55,10 @@ import kotlinx.coroutines.withContext
  * belongs to one storage profile (the sandbox has its own).
  *
  * - `staged.json` and `staged.properties`: a checked file and the operation it will
- *   be replaced under, its history position and when it was staged. Nothing financial
- *   has changed while only these exist.
+ *   be replaced under, its history position and when it was staged, and for a
+ *   FinanceTracker backup what its translation changed and left out (ADR 0019): the
+ *   file kept is then the translated Sello backup. Nothing financial has changed while
+ *   only these exist.
  * - `restored.json`: the history was replaced from it; its preferences are not all
  *   applied yet. `applied` lists the groups that are. The folder empties once all are.
  *
@@ -66,7 +75,8 @@ class RoomRestores(
     private val ids: RecordIdSource,
     private val audit: AuditClock,
     private val dispatchers: DispatcherProvider,
-    private val codec: BackupCodec = BackupCodec()
+    private val codec: BackupCodec = BackupCodec(),
+    private val legacy: LegacyTranslator = LegacyTranslator(ids)
 ) : Restores {
     private val staged = File(folder, "staged.json")
     private val manifest = File(folder, "staged.properties")
@@ -77,14 +87,64 @@ class RoomRestores(
         val plan = withContext(dispatchers.default) { codec.read(bytes) }
         val contents = when (plan) {
             is Outcome.Success -> plan.value.contents
-            is Outcome.Failure -> return Outcome.Failure(StageFailure.Rejected(plan.error.reason()))
+
+            is Outcome.Failure -> return if (plan.error == BackupRejection.NotSelloBackup) {
+                stageLegacy(bytes)
+            } else {
+                Outcome.Failure(StageFailure.Rejected(plan.error.reason()))
+            }
         }
+        val position = when (val read = stagingPosition()) {
+            is Outcome.Success -> read.value
+            is Outcome.Failure -> return read
+        }
+        return keep(bytes, contents, position, report = null)
+    }
+
+    /**
+     * A file that is not a Sello backup may be a FinanceTracker one. It is translated
+     * in the current financial zone, and the translation, written out as a Sello backup
+     * and read back by the same reader as any other, is what is kept and restored.
+     */
+    private suspend fun stageLegacy(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
+        val position = when (val read = stagingPosition()) {
+            is Outcome.Success -> read.value
+            is Outcome.Failure -> return read
+        }
+        val translation = withContext(dispatchers.default) {
+            legacy.translate(bytes, position.zone)
+        }
+        val translated = when (translation) {
+            LegacyTranslation.NotLegacy -> return rejected(RestoreRejection.NotABackup)
+            is LegacyTranslation.Rejected -> return rejected(translation.reason)
+            is LegacyTranslation.Translated -> translation
+        }
+        // Encoding reads the file back, so only what the released reader accepts is kept.
+        val file = withContext(dispatchers.default) { codec.encode(translated.contents) }
+        val written = when (file) {
+            is Outcome.Success -> file.value
+            is Outcome.Failure -> return rejected(RestoreRejection.InvalidContent)
+        }
+        return keep(written, translated.contents, position, translated.report)
+    }
+
+    private fun rejected(reason: RestoreRejection) = Outcome.Failure(StageFailure.Rejected(reason))
+
+    private suspend fun stagingPosition(): Outcome<Position, StageFailure> {
         // A replacement whose preferences are still pending is finished first.
         if (io { restored.exists() }) return Outcome.Failure(StageFailure.Storage)
-        val position = when (val read = position()) {
-            is Outcome.Success -> read.value
-            is Outcome.Failure -> return Outcome.Failure(StageFailure.Storage)
+        return when (val read = position()) {
+            is Outcome.Success -> read
+            is Outcome.Failure -> Outcome.Failure(StageFailure.Storage)
         }
+    }
+
+    private suspend fun keep(
+        bytes: ByteArray,
+        contents: BackupContents,
+        position: Position,
+        report: LegacyImportReport?
+    ): Outcome<StagedRestore, StageFailure> {
         val operation = when (val id = OperationId.of(ids.next())) {
             is Outcome.Success -> id.value
             is Outcome.Failure -> error("The identifier source returned a malformed identifier")
@@ -95,11 +155,12 @@ class RoomRestores(
                 setProperty(OPERATION, operation.value)
                 setProperty(GENERATION, position.generation.toString())
                 setProperty(STAGED_AT, audit.now().toEpochMilli().toString())
+                report?.let { write(it) }
             }
             writeAtomically(staged, bytes) && writeAtomically(manifest, properties.text())
         }
         if (!written) return Outcome.Failure(StageFailure.Storage)
-        return Outcome.Success(position.preview(operation, contents))
+        return Outcome.Success(position.preview(operation, contents, report))
     }
 
     override suspend fun staged(): StagedRestore? {
@@ -124,7 +185,7 @@ class RoomRestores(
         }
         val bytes = io { staged.takeIf { it.exists() }?.readBytes() } ?: return null
         val plan = codec.read(bytes) as? Outcome.Success ?: return null.also { discard() }
-        return position.preview(manifest.operation, plan.value.contents)
+        return position.preview(manifest.operation, plan.value.contents, manifest.report)
     }
 
     override suspend fun discard() {
@@ -330,15 +391,22 @@ class RoomRestores(
     }
 
     /** Where the history stands and what it holds, read together. */
-    private class Position(val generation: Long, val revision: Long, val current: BackupSummary) {
-        fun preview(operation: OperationId, contents: BackupContents) = StagedRestore(
-            operationId = operation,
-            backupAt = contents.exportedAt,
-            current = current,
-            replacement = contents.financial.summary(),
-            generation = generation,
-            revision = revision
-        )
+    private class Position(
+        val generation: Long,
+        val revision: Long,
+        val zone: ZoneId,
+        val current: BackupSummary
+    ) {
+        fun preview(operation: OperationId, contents: BackupContents, report: LegacyImportReport?) =
+            StagedRestore(
+                operationId = operation,
+                backupAt = contents.exportedAt,
+                current = current,
+                replacement = contents.financial.summary(),
+                generation = generation,
+                revision = revision,
+                legacy = report
+            )
     }
 
     private suspend fun position(): Outcome<Position, StorageFailure> = reading {
@@ -350,6 +418,7 @@ class RoomRestores(
                     Position(
                         profile.value.generation,
                         profile.value.revision,
+                        profile.value.zone,
                         BackupSummary(
                             categories = database.categoryDao().count(),
                             expenses = database.expenseDao().count(),
@@ -373,7 +442,12 @@ class RoomRestores(
         is Outcome.Failure -> null
     }
 
-    private class Manifest(val operation: OperationId, val generation: Long, val stagedAt: Instant)
+    private class Manifest(
+        val operation: OperationId,
+        val generation: Long,
+        val stagedAt: Instant,
+        val report: LegacyImportReport?
+    )
 
     private suspend fun readManifest(): Manifest? = io {
         if (!manifest.exists() || !staged.exists()) return@io null
@@ -391,8 +465,39 @@ class RoomRestores(
             properties.getProperty(GENERATION)?.toLongOrNull() ?: return@io null,
             Instant.ofEpochMilli(
                 properties.getProperty(STAGED_AT)?.toLongOrNull() ?: return@io null
-            )
+            ),
+            if (properties.getProperty(LEGACY_LINES) == null) {
+                null
+            } else {
+                // A report that cannot be read makes the staging unusable, not complete.
+                properties.report() ?: return@io null
+            }
         )
+    }
+
+    /** `legacy.lines`, then `legacy.<n>` as `Record,Reason,count` for each line. */
+    private fun Properties.write(report: LegacyImportReport) {
+        setProperty(LEGACY_LINES, report.lines.size.toString())
+        report.lines.forEachIndexed { index, line ->
+            setProperty(
+                "$LEGACY_LINE$index",
+                "${line.record.name},${line.reason.name},${line.count}"
+            )
+        }
+    }
+
+    private fun Properties.report(): LegacyImportReport? {
+        val size = getProperty(LEGACY_LINES)?.toIntOrNull()?.takeIf { it >= 0 } ?: return null
+        val lines = (0 until size).map { index ->
+            val parts = getProperty("$LEGACY_LINE$index")?.split(',') ?: return null
+            if (parts.size != 3) return null
+            LegacyImportLine(
+                LegacyRecord.entries.firstOrNull { it.name == parts[0] } ?: return null,
+                LegacyReason.entries.firstOrNull { it.name == parts[1] } ?: return null,
+                parts[2].toIntOrNull()?.takeIf { it > 0 } ?: return null
+            )
+        }
+        return LegacyImportReport(lines)
     }
 
     private suspend fun restoredContents(): BackupContents? {
@@ -428,6 +533,8 @@ class RoomRestores(
         const val OPERATION = "operation"
         const val GENERATION = "generation"
         const val STAGED_AT = "stagedAt"
+        const val LEGACY_LINES = "legacy.lines"
+        const val LEGACY_LINE = "legacy."
         const val APPEARANCE = "appearance"
         const val ORDERING = "ordering"
         const val NOTICE = "notice"

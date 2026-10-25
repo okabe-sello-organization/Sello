@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P2
-- **Status:** Backlog
+- **Status:** In Progress
 - **Depends on:** SELLO-028, SELLO-030, SELLO-036, SELLO-004
 - **Gate:** G2
 
@@ -18,11 +18,15 @@ import completed through the restore workflow of SELLO-030. Synthetic fixtures o
 
 ### Acceptance criteria
 - Owner decision (2026-10-09): restore as much as possible. A legacy record that
-  breaks a Sello rule is skipped, never repaired, clipped, rounded or renamed into
-  something the person did not record.
+  breaks a Sello rule is skipped, never repaired, clipped or rounded. Owner decision
+  (2026-10-25, ADR 0019): two exceptions, always counted in the preview: text longer
+  than Sello allows is cut to fit, and category names that clash are numbered
+  `Nombre_2`, `Nombre_3`, … in the old app's order.
 - Nothing is skipped silently. Before confirmation the person sees how many
-  categories, limits, expenses and incomes will be imported and how many are left
-  out, grouped by reason, and can cancel with no change.
+  categories, expenses, incomes, goals and repeating entries will be imported, how
+  many were shortened or renamed and how many are left out, grouped by reason, and can
+  cancel with no change. Investments, their movements and rates are reported as not
+  imported yet (SELLO-118 imports them after E19).
 - A record that depends on a skipped record is skipped with it and counted under
   its own reason; no expense is moved to another category to save it.
 - The translator never writes to the database. It produces a backup plan that the
@@ -68,15 +72,15 @@ record must meet. Legacy code and formulas are evidence to review, not code to c
 5. Build synthetic fixtures and tests first; run the ticket gate and record evidence.
 
 ### Concrete cases and pitfalls
-- Open choices for the owner at start, not to be guessed: which of two legacy
-  categories whose names collide under Sello's uniqueness rule is kept; whether a
-  category name that is too long skips the category and therefore its expenses;
-  how legacy features outside the MVP (recurrence, goals, investments, other
-  currencies) are reported; whether an import may be repeated; whether the report
-  of skipped records can be saved.
+- Owner answers (2026-10-25), recorded in ADR 0019 and the
+  [legacy export format](../../../data/legacy-export-format.md): clashing names are
+  numbered, over-long text is cut and shown as such, the single legacy limit is the
+  default from the earliest imported month, goals come in with one contribution on the
+  export day, repeating entries become schedules, an unknown income source becomes Otro
+  with its name, imports may be repeated and the skip report is shown, not saved.
+  Investments wait for SELLO-118.
 - Amounts of zero, negative, fractional or above 999.999.999.999 COP, impossible or
-  future dates, unknown income sources and notes over 60 code points are skipped
-  under the approved rule. Cutting a note to fit would be a repair.
+  future dates and text with control characters are skipped under the approved rule.
 - Restore replaces, never merges (D09). Importing into an app that already has
   history replaces that history; the preview must say so with both counts.
 - A legacy total will not match the imported total when records are skipped. Say

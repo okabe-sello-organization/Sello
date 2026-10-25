@@ -314,8 +314,11 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   The merged-manifest, release and file/log checks in
   [MVP data handling](docs/privacy/mvp-data-handling.md) enforce these; keep them
   passing rather than describing protection they do not test.
-- **COULD** add reviewed encryption or an isolated legacy JSON translator after
-  an explicit product/security decision. Never custom crypto or old database import.
+- **COULD** add reviewed encryption after an explicit product/security decision.
+  Never custom crypto or old database import. The isolated FinanceTracker JSON
+  translator of [ADR 0019](docs/decisions/0019-legacy-import.md) is the one exception
+  to all-or-nothing files: it translates into a Sello backup the released validator and
+  restore accept unchanged, leaves out and counts what breaks a rule, and shows it.
 
 ## 8. Contracts activated by later features
 
