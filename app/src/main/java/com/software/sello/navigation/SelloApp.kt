@@ -104,6 +104,7 @@ import com.software.sello.feature.reset.ResetRoot
 import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.reset.back
 import com.software.sello.feature.resumen.ResumenRoot
+import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.settings.SettingsRoot
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
@@ -266,8 +267,25 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 viewModels = viewModels,
                 onShell = shell::onAction,
                 tabs = tabs,
-                onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } }
+                onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
+                onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } }
             )
+        }
+        composable<UsdRateRoute> {
+            UsdRateDestination(
+                state = state,
+                viewModels = viewModels,
+                onShell = shell::onAction,
+                onBack = { navigation.popBackStack() },
+                onChange = { navigation.navigate(UsdRateEntryRoute) { launchSingleTop = true } }
+            )
+        }
+        composable<UsdRateEntryRoute> {
+            UsdRateEntryRoot(viewModels) {
+                val onForm =
+                    navigation.currentBackStackEntry?.destination?.hasRoute<UsdRateEntryRoute>()
+                if (onForm == true) navigation.popBackStack()
+            }
         }
         composable<GoalRoute> { entry ->
             val id = entry.toRoute<GoalRoute>().goalId
@@ -418,7 +436,8 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     onOpenReset = { navigation.navigate(ResetRoute) { launchSingleTop = true } },
                     onOpenSchedules = {
                         navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
-                    }
+                    },
+                    onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } }
                 )
             }
             BackHandler(enabled = !state.monthPickerOpen) { navigation.popBackStack() }

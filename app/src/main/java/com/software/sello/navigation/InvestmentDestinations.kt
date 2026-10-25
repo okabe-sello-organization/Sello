@@ -18,6 +18,9 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.feature.investments.InversionesAction
 import com.software.sello.feature.investments.InversionesScreen
 import com.software.sello.feature.investments.InversionesViewModel
+import com.software.sello.feature.investments.UsdRateAction
+import com.software.sello.feature.investments.UsdRateScreen
+import com.software.sello.feature.investments.UsdRateViewModel
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 
@@ -66,4 +69,38 @@ internal fun InversionesDestination(
         )
     }
     BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect(ShellTab.Recibo.id) }
+}
+
+/** Dólar, pushed from Configuración or the overview's rate line; no month and no dock. */
+@Composable
+internal fun UsdRateDestination(
+    state: ShellState,
+    viewModels: ViewModelProvider.Factory,
+    onShell: (ShellAction) -> Unit,
+    onBack: () -> Unit,
+    onChange: () -> Unit
+) {
+    val model: UsdRateViewModel = viewModel(factory = viewModels)
+    val rate by model.state.collectAsStateWithLifecycle()
+    ShellScreen(
+        state,
+        monthNames(),
+        onShell,
+        navigation = null,
+        onBack = onBack,
+        screenTitle = stringResource(R.string.usd_rate_title),
+        pastMonthRibbon = false,
+        entryDock = false
+    ) { padding ->
+        UsdRateScreen(
+            state = rate,
+            onAction = { action ->
+                if (action == UsdRateAction.Change) onChange()
+                model.onAction(action)
+            },
+            dates = dateLabels(),
+            padding = padding
+        )
+    }
+    BackHandler(enabled = !state.monthPickerOpen) { onBack() }
 }

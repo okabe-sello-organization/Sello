@@ -1052,4 +1052,33 @@
     <string name="inversiones_failed_title">No pudimos leer tus inversiones</string>
     <string name="inversiones_failed_body">Tus registros siguen guardados. Vuelve a intentarlo.</string>
     <string name="inversiones_stale">No pudimos leer tus inversiones de nuevo. Te mostramos las de la última lectura.</string>
+
+    <!-- Dólar and Cambiar la tasa (SELLO-111; inversiones.html, Dólares y la tasa) -->
+    <string name="usd_rate_title">Dólar</string>
+    <string name="usd_rate_label">1 dólar vale</string>
+    <string name="usd_rate_caption">pesos · tasa del %1$s</string>
+    <string name="usd_rate_spoken">1 dólar vale %1$s pesos, tasa del %2$s</string>
+    <string name="usd_rate_fact">Sello no busca la tasa: la anotas tú. Solo convierte el total de Inversiones; cada inversión en dólares sigue en dólares.</string>
+    <string name="usd_rate_change">Cambiar la tasa</string>
+    <string name="usd_rate_history">Tasas anteriores</string>
+    <string name="usd_rate_empty_title">Todavía no hay tasa</string>
+    <string name="usd_rate_empty_body">La anotas cuando tengas una inversión en dólares. Sello no la busca en internet.</string>
+    <string name="usd_rate_enter">Anotar la tasa</string>
+    <string name="usd_rate_failed_title">No pudimos leer la tasa</string>
+    <string name="usd_rate_failed_body">Tus tasas siguen guardadas. Vuelve a intentarlo.</string>
+    <string name="usd_rate_stale">No pudimos leer la tasa de nuevo. Te mostramos la de la última lectura.</string>
+    <string name="usd_rate_entry_title">Tasa del dólar</string>
+    <string name="usd_rate_entry_label">Pesos por 1 dólar</string>
+    <string name="usd_rate_entry_spoken">%1$s pesos por dólar</string>
+    <string name="usd_rate_below">La tasa es de 1,00 en adelante</string>
+    <string name="usd_rate_above">La tasa llega hasta 100.000,00</string>
+    <string name="usd_rate_limit">Hasta 100.000 y dos decimales</string>
+    <string name="usd_rate_entry_first">Sello no la busca: la anotas tú, y sirve para sumar tus dólares al total.</string>
+    <string name="usd_rate_entry_fact">La de hoy es %1$s, del %2$s. La nueva la reemplaza desde su fecha; la anterior queda en la lista.</string>
+    <string name="usd_rate_data_changed">Tus datos cambiaron mientras escribías. No se guardó la tasa.</string>
+    <string name="usd_rate_not_saved">No se guardó la tasa. Puedes intentarlo de nuevo.</string>
+    <string name="usd_rate_save">Guardar tasa</string>
+    <string name="settings_rate_current">%1$s · tasa del %2$s</string>
+    <string name="settings_rate_none">Sin tasa todavía</string>
+    <string name="settings_rate_unreadable">No pudimos leer la tasa</string>
 </resources>
