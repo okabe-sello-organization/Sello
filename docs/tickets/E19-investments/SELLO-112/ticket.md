@@ -34,3 +34,21 @@ ARCHITECTURE §9.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-112 --retain`.
+
+### Execution progress
+
+- **2026-10-25, sandbox:** investment steps (create, record, correct, delete with Deshacer,
+  delete an investment, set the rate) go through the fenced `InvestmentCommands`, and
+  checks read the real board: each investment's value and date, contributed, withdrawn,
+  dividends, gain and return, and the overview in pesos with its rate. Five scenarios
+  reach their checks: `inversiones-pagina@1` (IN02–IN07, IN15, IN17, IN23),
+  `valor-arrastrado@1` (IN08–IN16, IN26), `dolares@1` (IN27–IN34), `correcciones@1`
+  (IN19–IN25) and `sin-valor@1` (IN17, IN18, IN35), fresh and resumed after a cut, and
+  restored from their backups with their last check again. The sandbox's operation log
+  and receipt inspector now name investment writes. Built by a delegated agent and
+  integrated here.
+- **Catalog:** *Investment answer, rows, chart and pad* shows Pierde with the value in
+  ink, an even return, six investments with repeating shades and the bar's gap, rows
+  that open nothing, the values chart's months and legend, the comma pad and the ink dock
+  button; device tests cover the ink dock (`DockToneTest`), the bar's gap and the chart
+  (`InvestmentPartsTest`).
