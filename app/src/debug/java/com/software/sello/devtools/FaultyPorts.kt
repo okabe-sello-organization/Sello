@@ -28,6 +28,12 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
+import com.software.sello.domain.port.InvestmentBoard
+import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.InvestmentCommand
+import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
@@ -198,6 +204,22 @@ class FaultyGoalCommands(
     ) { commands.submit(command) }
 }
 
+/** Every investment command, logged with what its caller was told. */
+class FaultyInvestmentCommands(
+    private val commands: InvestmentCommands,
+    private val faults: DebugFaults,
+    private val log: OperationLog
+) : InvestmentCommands by commands {
+    override suspend fun submit(command: InvestmentCommand): InvestmentCommandOutcome = faulted(
+        faults,
+        log,
+        command.operationId,
+        "Inversión: ${command::class.simpleName}",
+        InvestmentCommandOutcome.OutcomeUnknown(command.operationId),
+        ::told
+    ) { commands.submit(command) }
+}
+
 /** Every schedule command, logged with what its caller was told. */
 class FaultyScheduleCommands(
     private val commands: ScheduleCommands,
@@ -274,6 +296,23 @@ class FaultyCategoryInsightsSnapshots(
                 send(state)
             }
         }
+}
+
+/** Inversiones, an investment and Dólar share the sandbox's read-failure control. */
+class FaultyInvestmentReads(private val reads: InvestmentReads, private val faults: DebugFaults) :
+    InvestmentReads by reads {
+    override fun observeBoard(): Flow<InvestmentBoardState> = channelFlow {
+        var lastGood: InvestmentBoard? = null
+        launch {
+            faults.readFailures.collect {
+                send(InvestmentBoardState.Failed(SimulatedStorageFailure, lastGood))
+            }
+        }
+        reads.observeBoard().collect { state ->
+            if (state is InvestmentBoardState.Ready) lastGood = state.board
+            send(state)
+        }
+    }
 }
 
 /** Metas, the goal page and Recibo's goal share the sandbox's read-failure control. */

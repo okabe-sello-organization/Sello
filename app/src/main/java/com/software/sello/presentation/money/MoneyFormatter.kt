@@ -59,6 +59,12 @@ class MoneyFormatter(private val labels: MoneyLabels) {
         )
     }
 
+    /**
+     * An exact decimal written as the app writes money, without a currency: 415025
+     * hundredths are "4.150,25". For the USD rate, which is pesos per dollar, not money.
+     */
+    fun decimal(units: Long, scale: Int): String = group(units.toString(), scale)
+
     /** Pesos carry no mark (ADR 0007); any other currency is named by its code. */
     private fun symbol(currency: Currency) = if (currency == Currency.COP) "" else currency.code
 

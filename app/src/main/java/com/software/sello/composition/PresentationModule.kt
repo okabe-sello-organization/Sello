@@ -24,6 +24,7 @@ import com.software.sello.feature.goals.MetasViewModel
 import com.software.sello.feature.goals.ReciboGoalViewModel
 import com.software.sello.feature.income.IncomeFormViewModel
 import com.software.sello.feature.income.IncomeHistoryViewModel
+import com.software.sello.feature.investments.InversionesViewModel
 import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.ReciboViewModel
@@ -147,6 +148,7 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get()
         )
     }
+    initializer { InversionesViewModel(koin.get(), koin.get(), koin.get()) }
     initializer {
         MetasViewModel(
             createSavedStateHandle(),

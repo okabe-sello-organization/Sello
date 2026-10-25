@@ -1023,4 +1023,37 @@
     <string name="notice_payment_deleted_schedule">Pago fijo borrado. Lo ya anotado se queda.</string>
     <string name="notice_income_deleted_schedule">Ingreso fijo borrado. Lo ya anotado se queda.</string>
     <string name="notice_income_schedule_saved_plain">Ingreso fijo guardado</string>
+
+    <!-- Inversiones (SELLO-109; docs/design/v2/inversiones.html) -->
+    <string name="inversiones_title">Inversiones</string>
+    <string name="inversiones_value_label">Tus inversiones valen</string>
+    <string name="investment_stamp_gain">Gana</string>
+    <string name="investment_stamp_loss">Pierde</string>
+    <string name="investment_percent">%1$s %%</string>
+    <string name="investment_gain_words">%1$s de ganancia</string>
+    <string name="investment_loss_words">%1$s de pérdida</string>
+    <string name="investment_even_words">sin ganancia ni pérdida</string>
+    <string name="inversiones_since">En total, desde %1$s</string>
+    <string name="investment_contributed">Aportaste</string>
+    <string name="investment_withdrawn">Retiraste</string>
+    <string name="investment_dividends">Dividendos y rentas</string>
+    <string name="investment_gain">Ganancia</string>
+    <string name="inversiones_valued_between">Valores anotados entre el %1$s y el %2$s</string>
+    <string name="inversiones_valued_on">Valores anotados el %1$s</string>
+    <string name="inversiones_rate_line">Dólar a %1$s · tasa del %2$s</string>
+    <string name="inversiones_where">Dónde está, de mayor a menor</string>
+    <string name="inversiones_list">Tus inversiones</string>
+    <string name="investment_row_detail">%1$s · valor del %2$s</string>
+    <string name="investment_row_valued">valor del %1$s</string>
+    <string name="investment_row_no_value_detail">%1$s · sin valor anotado</string>
+    <string name="investment_row_no_value">sin valor anotado</string>
+    <string name="investment_no_value">Sin valor</string>
+    <string name="investment_contributed_row">aportaste %1$s</string>
+    <string name="inversiones_empty_title">Anota lo que tienes invertido</string>
+    <string name="inversiones_empty_body">Un CDT, un fondo, acciones o un local. Anotas cuánto pusiste y, de vez en cuando, cuánto vale. Sello no se conecta a ningún banco.</string>
+    <string name="inversiones_no_values">Todavía no hay valores anotados. Anota cuánto vale cada una para ver el total.</string>
+    <string name="inversiones_missing_rate">Falta la tasa del dólar para sumar tus inversiones en dólares.</string>
+    <string name="inversiones_failed_title">No pudimos leer tus inversiones</string>
+    <string name="inversiones_failed_body">Tus registros siguen guardados. Vuelve a intentarlo.</string>
+    <string name="inversiones_stale">No pudimos leer tus inversiones de nuevo. Te mostramos las de la última lectura.</string>
 </resources>

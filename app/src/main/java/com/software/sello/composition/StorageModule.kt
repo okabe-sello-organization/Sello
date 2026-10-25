@@ -28,6 +28,8 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.Resets
 import com.software.sello.domain.port.RestoreRejection
@@ -107,6 +109,8 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<IncomeReads> { storage.incomeReads }
     single<GoalCommands> { storage.goalCommands(get(), get(), get(), get()) }
     single<GoalReads> { storage.goalReads }
+    single<InvestmentCommands> { storage.investmentCommands(get(), get(), get(), get()) }
+    single<InvestmentReads> { storage.investmentReads }
     single<ScheduleCommands> { storage.scheduleCommands(get(), get(), get()) }
     single<ScheduleReads> { storage.scheduleReads }
     single<ScheduleRecordReads> { storage.scheduleRecordReads }
