@@ -145,6 +145,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
     val selectedTab = when {
         entry?.destination?.hasRoute<ResumenRoute>() == true -> ShellTab.Resumen
         entry?.destination?.hasRoute<MetasRoute>() == true -> ShellTab.Metas
+        entry?.destination?.hasRoute<InversionesRoute>() == true -> ShellTab.Inversiones
         else -> ShellTab.Recibo
     }
     val tabs = SelloNavigation(
@@ -159,7 +160,12 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 stringResource(R.string.tab_resumen),
                 SelloIcon.Insights
             ),
-            SelloDestination(ShellTab.Metas.id, stringResource(R.string.tab_metas), SelloIcon.Flag)
+            SelloDestination(ShellTab.Metas.id, stringResource(R.string.tab_metas), SelloIcon.Flag),
+            SelloDestination(
+                ShellTab.Inversiones.id,
+                stringResource(R.string.tab_inversiones),
+                SelloIcon.AccountBalance
+            )
         ),
         selectedTab.id
     ) { id ->
@@ -167,6 +173,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
             val route: Any = when (id) {
                 ShellTab.Resumen.id -> ResumenRoute
                 ShellTab.Metas.id -> MetasRoute
+                ShellTab.Inversiones.id -> InversionesRoute
                 else -> ReciboRoute
             }
             navigation.navigate(route) {
@@ -252,6 +259,45 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 notice = notice?.let {
                     { StampNoticeBar(it, corrections::undo, corrections::lands) }
                 }
+            )
+        }
+        composable<InversionesRoute> {
+            InversionesDestination(
+                state = state,
+                viewModels = viewModels,
+                onShell = shell::onAction,
+                tabs = tabs,
+                onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
+                onOpen = { id -> navigation.navigate(InvestmentRoute(id)) { launchSingleTop = true } },
+                onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } },
+                onAdd = { navigation.navigate(InvestmentEditorRoute()) { launchSingleTop = true } },
+                onMove = {
+                    navigation.navigate(InvestmentMovementRoute()) { launchSingleTop = true }
+                },
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
+            )
+        }
+        composable<InvestmentRoute> { entry ->
+            val id = entry.toRoute<InvestmentRoute>().investmentId
+            InvestmentDestination(
+                state = state,
+                viewModels = viewModels,
+                onShell = shell::onAction,
+                onBack = {
+                    val here = navigation.currentBackStackEntry?.destination
+                        ?.hasRoute<InvestmentRoute>()
+                    if (here == true) navigation.popBackStack()
+                },
+                onEdit = { navigation.navigate(InvestmentEditorRoute(id)) { launchSingleTop = true } },
+                onMove = { kind ->
+                    navigation.navigate(InvestmentMovementRoute(id, kind)) { launchSingleTop = true }
+                },
+                onEditMovement = { movement ->
+                    navigation.navigate(InvestmentMovementRoute(id, movementId = movement)) {
+                        launchSingleTop = true
+                    }
+                },
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
             )
         }
         composable<UsdRateRoute> {

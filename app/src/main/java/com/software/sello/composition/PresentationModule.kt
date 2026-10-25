@@ -22,6 +22,7 @@ import com.software.sello.feature.goals.GoalEditorViewModel
 import com.software.sello.feature.goals.GoalMovementViewModel
 import com.software.sello.feature.goals.MetasViewModel
 import com.software.sello.feature.investments.InversionesViewModel
+import com.software.sello.feature.investments.InvestmentDetailViewModel
 import com.software.sello.feature.investments.UsdRateEntryViewModel
 import com.software.sello.feature.investments.UsdRateViewModel
 import com.software.sello.feature.goals.ReciboGoalViewModel
@@ -160,6 +161,9 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     }
     initializer { InversionesViewModel(koin.get(), koin.get(), koin.get()) }
     initializer { UsdRateViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer {
+        InvestmentDetailViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
+    }
     initializer {
         UsdRateEntryViewModel(
             createSavedStateHandle(),

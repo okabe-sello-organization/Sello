@@ -240,4 +240,66 @@ class InvestmentsRenderModelTest {
         assertEquals("19.000.000", stale.total!!.value.digits)
         assertEquals(InversionesState.Loading, render.overview(InvestmentBoardState.Loading, today))
     }
+
+    @Test
+    fun in04_theDetailKeepsItsOwnFiguresAndListsMovementsNewestFirst() {
+        val fondo = fondo()
+        val id = fondo.history.investment.id.value
+        val detail = render.detail(InvestmentBoardState.Ready(board(fondo)), id, today)
+            as InvestmentDetailState.Ready
+        assertEquals("5.242.000", detail.value!!.digits)
+        assertEquals(LocalDate.of(2026, 10, 14), detail.valuedOn)
+        assertEquals(MoneySign.Minus, detail.gain!!.sign)
+        assertEquals("258.000", detail.gain!!.digits)
+        assertEquals(InvestmentReturn(GainDirection.Loss, 43), detail.`return`)
+        assertEquals(YearMonth.of(2025, 5), detail.since)
+        // Newest first: the value, the retiro (minus), the first value, the aporte (plus).
+        assertEquals(
+            listOf(
+                valor to MoneySign.None,
+                retiro to MoneySign.Minus,
+                valor to MoneySign.None,
+                aporte to MoneySign.Plus
+            ),
+            detail.movements.map { it.kind to it.amount.sign }
+        )
+        assertEquals("500.000", detail.movements[1].amount.digits)
+    }
+
+    @Test
+    fun theChartPlacesOnlyRecordedValuesAndWhatWasPutInAsSteps() {
+        val fondo = fondo()
+        val chart = (
+            render.detail(
+                InvestmentBoardState.Ready(board(fondo)),
+                fondo.history.investment.id.value,
+                today
+            ) as InvestmentDetailState.Ready
+            ).chart!!
+        // Values 6.000.000 and 5.242.000; put in 6.000.000, then 5.500.000 after the retiro.
+        assertEquals(listOf("6.000.000", "5.242.000"), chart.values.map { it.amount.digits })
+        assertEquals(listOf("6.000.000", "5.500.000"), chart.putIn.map { it.amount.digits })
+        assertEquals(1f, chart.values.first().y)
+        assertEquals(0f, chart.values.first().x)
+        assertEquals(5_500_000f / 6_000_000f, chart.putIn.last().y, 0.0001f)
+        assertTrue(chart.values.last().x < 1f)
+        assertEquals(YearMonth.of(2025, 5), chart.start)
+        assertEquals(YearMonth.of(2026, 10), chart.end)
+    }
+
+    @Test
+    fun aDeletedInvestmentIsGoneAndAFailedReadIsNeverGone() {
+        assertEquals(
+            InvestmentDetailState.Gone,
+            render.detail(InvestmentBoardState.Ready(board(fondo())), "missing", today)
+        )
+        assertEquals(
+            InvestmentDetailState.Failed,
+            render.detail(
+                InvestmentBoardState.Failed(StorageFailure.Unavailable("x"), null),
+                "any",
+                today
+            )
+        )
+    }
 }

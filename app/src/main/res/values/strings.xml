@@ -1051,6 +1051,31 @@
     <string name="inversiones_failed_title">No pudimos leer tus inversiones</string>
     <string name="inversiones_failed_body">Tus registros siguen guardados. Vuelve a intentarlo.</string>
     <string name="inversiones_stale">No pudimos leer tus inversiones de nuevo. Te mostramos las de la última lectura.</string>
+    <!-- One investment (SELLO-110) -->
+    <string name="investment_value_label">Vale</string>
+    <string name="investment_no_value_answer">Sin valor anotado</string>
+    <string name="investment_since">Desde %1$s</string>
+    <string name="investment_valued_since">Valor anotado el %1$s · desde %2$s</string>
+    <string name="investment_record_value">Anotar el valor de hoy</string>
+    <string name="investment_chart_title">Valor anotado y lo que pusiste</string>
+    <string name="investment_chart_values">Valor anotado</string>
+    <string name="investment_chart_put">Lo que pusiste</string>
+    <string name="investment_chart_summary">Valores anotados de %1$s a %2$s</string>
+    <string name="investment_chart_value">%1$s: %2$s</string>
+    <string name="investment_movements">Movimientos</string>
+    <plurals name="investment_movements_all"><item quantity="one">Ver el movimiento</item><item quantity="other">Ver los %d</item></plurals>
+    <string name="investment_kind_contribution">Aporte</string>
+    <string name="investment_kind_valuation">Valor de hoy</string>
+    <string name="investment_kind_withdrawal">Retiro</string>
+    <string name="investment_kind_dividend">Dividendo</string>
+    <string name="investment_movement_note">%1$s · %2$s</string>
+    <string name="investment_failed_title">No pudimos leer esta inversión</string>
+    <string name="investment_stale">No pudimos leer esta inversión de nuevo. Te mostramos la de la última lectura.</string>
+    <string name="investment_edit">Editar inversión</string>
+    <string name="inversiones_add">Agregar inversión</string>
+    <string name="inversiones_dock_move">Anotar movimiento</string>
+    <string name="inversiones_dock_add">Agregar inversión</string>
+    <string name="tab_inversiones">Inversiones</string>
 
     <!-- Dólar and Cambiar la tasa (SELLO-111; inversiones.html, Dólares y la tasa) -->
     <string name="usd_rate_title">Dólar</string>
