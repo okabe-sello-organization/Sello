@@ -35,3 +35,15 @@ Changing the rate updates the total and says its date.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-111 --retain`.
+
+### Execution progress
+
+- **2026-10-25:** **Dólar** (`UsdRateScreen`, `UsdRateViewModel`) shows the current rate
+  on a pinked slip with its date and the earlier ones newest first, with empty, loading,
+  failed and stale states; it is reached from Configuración (**Tus datos → Dólar**, with
+  the current rate) and, once the tab is in the bar (SELLO-110), from the overview's rate
+  line. **Cambiar la tasa** (`UsdRateEntryScreen`, `UsdRateEntryViewModel`) takes pesos per
+  dollar with the Sello pad's comma (`DecimalDraft`, `AmountKeypad(onComma)`), a date
+  today or earlier, 1,00 to 100.000,00 with two decimals at most, and sends `SetUsdRate`
+  with its operation identifier kept across process death and an unknown outcome asked
+  about before anything else.
