@@ -488,7 +488,9 @@ private fun schedules(wire: List<ScheduleV3>, categories: List<Category>): List<
             is Outcome.Failure -> invalid(
                 when (built.error) {
                     RecurrenceError.EndBeforeStart -> "$path.end"
+
                     is RecurrenceError.DateOutOfRange -> "$path.start"
+
                     is RecurrenceError.InvalidPause,
                     is RecurrenceError.OverlappingPauses -> "$path.pauses"
                 }
