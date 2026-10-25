@@ -27,6 +27,8 @@ import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.UnarchiveCategory
+import com.software.sello.domain.usecase.CatchUpResult
+import com.software.sello.domain.usecase.CatchUpStop
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.feature.expense.HandSnapshots
@@ -55,6 +57,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -85,6 +88,7 @@ class CategoryManagementViewModelTest {
 
         override suspend fun submit(command: CategoryCommand): CategoryCommandOutcome {
             submitted += command
+            events += command::class.simpleName.orEmpty()
             hold?.await()
             return answer(command)
         }
@@ -111,6 +115,10 @@ class CategoryManagementViewModelTest {
         rejected(CategoryRejection.StorageFailed(StorageFailure.Unavailable("x")))
 
     private val commands = HandCommands()
+
+    /** What happened, in order: each command sent and each catch-up run. */
+    private val events = mutableListOf<String>()
+    private var caughtUp = CatchUpResult(emptyList(), stopped = null)
     private val reads = HandCategoryReads().apply { generation = 7 }
     private val snapshots = HandSnapshots()
     private val session = MonthSession(HandFinancialClock("2026-10-09"), HandMonotonicClock())
@@ -187,7 +195,11 @@ class CategoryManagementViewModelTest {
         session,
         { uuid(nextId++) },
         money,
-        notices
+        notices,
+        {
+            events += "catch-up"
+            caughtUp
+        }
     )
 
     private fun SavedStateHandle.afterProcessDeath() =
@@ -649,6 +661,78 @@ class CategoryManagementViewModelTest {
         assertNull(form.now.archiveQuestion)
         assertEquals(emptyList<CategoryCommand>(), commands.submitted)
         assertEquals("Cafetería", form.now.name)
+    }
+
+    /**
+     * Rule 9 with a payment due and not recorded yet: Sello records what is due, then
+     * archives under a new operation, since the refused one wrote nothing (owner,
+     * 2026-10-25).
+     */
+    @Test
+    fun archivingWhileAPaymentIsDueRecordsItFirstThenArchives() {
+        var answers = 0
+        commands.answer = {
+            if (answers++ ==
+                0
+            ) {
+                rejected(CategoryRejection.SchedulesPending)
+            } else {
+                committed(it.operationId)
+            }
+        }
+        val form = form()
+        form.onAction(CategoryEditorAction.Archive)
+
+        form.onAction(CategoryEditorAction.ArchiveConfirmed)
+
+        assertEquals(listOf("ArchiveCategory", "catch-up", "ArchiveCategory"), events)
+        val (first, second) = commands.submitted.map { it as ArchiveCategory }
+        assertNotEquals(first.operationId, second.operationId)
+        assertEquals(5L to 5L, first.expectedVersion to second.expectedVersion)
+        assertEquals(EditorResult.Archived, form.now.result)
+        assertEquals(CorrectionNotice.CategoryArchived, notices.notice.value)
+    }
+
+    @Test
+    fun aCatchUpThatStopsArchivesNothingAndSaysWhy() {
+        commands.answer = { rejected(CategoryRejection.SchedulesPending) }
+        caughtUp = CatchUpResult(
+            emptyList(),
+            CatchUpStop.Failed(StorageFailure.Unavailable("SQLException"))
+        )
+        val form = form()
+        form.onAction(CategoryEditorAction.Archive)
+
+        form.onAction(CategoryEditorAction.ArchiveConfirmed)
+
+        assertEquals(listOf("ArchiveCategory", "catch-up"), events)
+        assertEquals(SaveError.PaymentsPending, form.now.saveError)
+        assertFalse(form.now.busy)
+        assertNull(form.now.result)
+    }
+
+    @Test
+    fun aPaymentStillDueAfterCatchUpIsAskedOnceThenSaid() {
+        commands.answer = { rejected(CategoryRejection.SchedulesPending) }
+        val form = form()
+        form.onAction(CategoryEditorAction.Archive)
+
+        form.onAction(CategoryEditorAction.ArchiveConfirmed)
+
+        assertEquals(listOf("ArchiveCategory", "catch-up", "ArchiveCategory"), events)
+        assertEquals(SaveError.PaymentsPending, form.now.saveError)
+        assertNull(form.now.result)
+    }
+
+    @Test
+    fun unarchivingNeverWaitsForCatchUp() {
+        val form = form(opening(category = 2))
+        form.onAction(CategoryEditorAction.Archive)
+
+        form.onAction(CategoryEditorAction.ArchiveConfirmed)
+
+        assertEquals(listOf("UnarchiveCategory"), events)
+        assertEquals(EditorResult.Unarchived, form.now.result)
     }
 
     @Test

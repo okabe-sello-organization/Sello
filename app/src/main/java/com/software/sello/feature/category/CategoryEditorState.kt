@@ -27,7 +27,13 @@ enum class SaveError {
     Conflict,
 
     /** The category being edited no longer exists. */
-    CategoryGone
+    CategoryGone,
+
+    /**
+     * Archiving waited for a fixed payment of the category that is due, and Sello could
+     * not record it first: nothing was archived.
+     */
+    PaymentsPending
 }
 
 /** One part of a category, saved by its own command. */

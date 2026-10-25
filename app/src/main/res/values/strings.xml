@@ -278,6 +278,7 @@
     <string name="category_detail_edit">Editar categoría</string>
     <string name="category_detail_past_help">%1$s ya terminó. Su límite aún se puede corregir en Editar categoría, sin cambiar los demás meses.</string>
     <string name="recibo_category_edit">Editar categoría</string>
+    <string name="category_archive_payments_pending">No se archivó: Sello no pudo anotar antes los pagos fijos de esta categoría que ya tocaban. Inténtalo de nuevo.</string>
     <string name="category_edit_conflict">Esta categoría cambió mientras la editabas.</string>
     <string name="category_edit_gone">Esta categoría ya no existe. No se cambió nada.</string>
     <string name="category_saved">Categoría actualizada</string>

@@ -478,6 +478,16 @@ class CategoryEditorScreenTest {
     }
 
     @Test
+    fun anArchiveThatCouldNotRecordItsDuePaymentsFirstSaysSo() {
+        show(editing.copy(saveError = SaveError.PaymentsPending))
+
+        rule.onNodeWithText(
+            "No se archivó: Sello no pudo anotar antes los pagos fijos de esta categoría " +
+                "que ya tocaban. Inténtalo de nuevo."
+        ).performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
     fun archivingIsOfferedInTheTopBarAndANewCategoryHasNoSuchAction() {
         show(editing)
 
