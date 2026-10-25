@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-098, SELLO-114, SELLO-004
 - **Gate:** G2
 
@@ -55,4 +55,4 @@ Focused tests, then `./scripts/verify-ticket SELLO-103 --retain`.
 - **Wording:** the intro says "desde la última vez que lo revisaste" instead of the
   design's "desde la última vez que abriste Sello", since the list runs from the last
   Listo, not the last opening.
-
+- **Done (2026-10-25):** gate and device evidence in [evidence.md](evidence.md).
