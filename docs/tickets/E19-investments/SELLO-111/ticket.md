@@ -10,7 +10,7 @@
 A person sets one USD-to-COP rate with its date; changing it records a new dated rate.
 
 ### Deliverables
-A rate setting with validation and its history, used by the overview total.
+A rate setting with validation and its history, used by the overview total, reached as SELLO-106 designs it and asked first when a USD investment is created (SELLO-110).
 
 ### Acceptance criteria
 - Rates are positive, bounded decimals with the date entered.
