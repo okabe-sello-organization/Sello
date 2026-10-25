@@ -14,9 +14,16 @@ import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.feature.backup.HandBackupRecords
 import com.software.sello.feature.backup.g01Summary
+import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.feature.investments.HandInvestmentReads
+import com.software.sello.feature.investments.rateEntry
+import com.software.sello.feature.investments.ratesBoard
+import com.software.sello.feature.investments.testMoney
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.navigation.HandFinancialClock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -48,9 +55,44 @@ class SettingsViewModelTest {
     @After
     fun resetMain() = Dispatchers.resetMain()
 
+    private val investments = HandInvestmentReads(InvestmentBoardState.Loading)
+
+    private fun settings() = SettingsViewModel(
+        appearance,
+        ordering,
+        backups,
+        clock,
+        HandScheduleReads(),
+        investments,
+        testMoney()
+    )
+
+    @Test
+    fun theDolarRowSaysTheCurrentRateNoneOrThatItCouldNotBeRead() = runTest {
+        val model = settings()
+        runCurrent()
+        assertEquals(RateLine.Loading, model.state.value.rate)
+
+        investments.board.value = InvestmentBoardState.Ready(ratesBoard())
+        runCurrent()
+        assertEquals(RateLine.None, model.state.value.rate)
+
+        // IN31: 4.000,00 on 24 oct stays current after 3.900,00 dated 22 oct is entered.
+        investments.board.value = InvestmentBoardState.Ready(
+            ratesBoard(rateEntry(400_000, "2026-10-24", 1), rateEntry(390_000, "2026-10-22", 2))
+        )
+        runCurrent()
+        assertEquals(RateLine.Read("4.000,00", LocalDate.of(2026, 10, 24)), model.state.value.rate)
+
+        investments.board.value =
+            InvestmentBoardState.Failed(StorageFailure.Unavailable("hand"), null)
+        runCurrent()
+        assertEquals(RateLine.Unreadable, model.state.value.rate)
+    }
+
     @Test
     fun changingEachControlUsesItsNarrowPortAndShowsThePersistedValues() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
+        val model = settings()
         runCurrent()
 
         model.onAction(SettingsAction.ThemeChosen(ThemePreference.Dark))
@@ -75,7 +117,7 @@ class SettingsViewModelTest {
 
     @Test
     fun anUnreadablePreferenceStaysVisibleAndRetryKeepsKnownValues() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
+        val model = settings()
         runCurrent()
         appearance.values.value = PreferenceRead.Failed(
             PreferenceFailure.Unavailable,
@@ -96,7 +138,7 @@ class SettingsViewModelTest {
 
     @Test
     fun aFailedNonfinancialWriteIsReportedWithoutChangingTheDisplayedFinancialOrder() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
+        val model = settings()
         runCurrent()
         ordering.nextWrite = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
 
@@ -110,7 +152,7 @@ class SettingsViewModelTest {
 
     @Test
     fun theBackupRowSaysNeverUntilABackupIsRecordedThenItsMoment() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
+        val model = settings()
         runCurrent()
 
         assertEquals(BackupLine.Read(null, bogota), model.state.value.backup)
@@ -124,7 +166,7 @@ class SettingsViewModelTest {
 
     @Test
     fun anUnreadableBackupRecordIsSaidSoAndLeavesTheOtherControlsAlone() = runTest {
-        val model = SettingsViewModel(appearance, ordering, backups, clock, HandScheduleReads())
+        val model = settings()
         runCurrent()
 
         backups.failReads()
