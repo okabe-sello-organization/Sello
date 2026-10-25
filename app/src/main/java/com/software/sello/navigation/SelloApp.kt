@@ -81,7 +81,9 @@ import com.software.sello.feature.goals.celebrationLine
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.feature.income.IncomeHistoryScreen
 import com.software.sello.feature.income.IncomeHistoryViewModel
+import com.software.sello.feature.investments.InvestmentEditorRoot
 import com.software.sello.feature.investments.InvestmentMovementNoticeBar
+import com.software.sello.feature.investments.InvestmentMovementRoot
 import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_EDIT_TAG
 import com.software.sello.feature.recibo.CategoryDetailAction
@@ -307,6 +309,33 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 },
                 notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
             )
+        }
+        composable<InvestmentEditorRoute> {
+            InvestmentEditorRoot(
+                viewModels,
+                onCreated = { id ->
+                    navigation.navigate(InvestmentRoute(id)) {
+                        popUpTo<InvestmentEditorRoute> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onDeleted = {
+                    // The deleted investment has no page to go back to: Inversiones shows the rest.
+                    navigation.popBackStack<InversionesRoute>(inclusive = false)
+                },
+                onClosed = {
+                    val onForm = navigation.currentBackStackEntry?.destination
+                        ?.hasRoute<InvestmentEditorRoute>()
+                    if (onForm == true) navigation.popBackStack()
+                }
+            )
+        }
+        composable<InvestmentMovementRoute> {
+            InvestmentMovementRoot(viewModels) {
+                val onForm = navigation.currentBackStackEntry?.destination
+                    ?.hasRoute<InvestmentMovementRoute>()
+                if (onForm == true) navigation.popBackStack()
+            }
         }
         composable<UsdRateRoute> {
             UsdRateDestination(

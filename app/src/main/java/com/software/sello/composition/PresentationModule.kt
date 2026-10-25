@@ -26,6 +26,8 @@ import com.software.sello.feature.income.IncomeFormViewModel
 import com.software.sello.feature.income.IncomeHistoryViewModel
 import com.software.sello.feature.investments.InversionesViewModel
 import com.software.sello.feature.investments.InvestmentDetailViewModel
+import com.software.sello.feature.investments.InvestmentEditorViewModel
+import com.software.sello.feature.investments.InvestmentMovementViewModel
 import com.software.sello.feature.investments.UsdRateEntryViewModel
 import com.software.sello.feature.investments.UsdRateViewModel
 import com.software.sello.feature.recibo.CategoryDetailViewModel
@@ -163,6 +165,27 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     initializer { UsdRateViewModel(koin.get(), koin.get(), koin.get()) }
     initializer {
         InvestmentDetailViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
+    }
+    initializer {
+        InvestmentEditorViewModel(
+            createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
+    initializer {
+        InvestmentMovementViewModel(
+            createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
     }
     initializer {
         UsdRateEntryViewModel(

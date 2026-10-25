@@ -106,7 +106,8 @@ class InvestmentMovementViewModel(
                 ?: saved.get<String>(KEY_KIND)?.let(::kindOf)
                 ?: InvestmentMovementKind.Contribution,
             investmentId = saved[INVESTMENT] ?: saved[KEY_INVESTMENT],
-            pesos = saved.get<String>(PESOS)?.let(AmountDraft::paste) ?: AmountDraft.Empty,
+            pesos = saved.get<String>(PESOS)?.let { if (it == ZERO) ZeroPesos else AmountDraft.paste(it) }
+                ?: AmountDraft.Empty,
             dollars = saved.get<String>(WHOLE)?.let {
                 DecimalDraft(
                     MAX_WHOLE,
@@ -163,8 +164,10 @@ class InvestmentMovementViewModel(
                         change(
                             draft.value.copy(
                                 kind = movement.kind,
-                                pesos = if (usd || units == 0L) {
+                                pesos = if (usd) {
                                     AmountDraft.Empty
+                                } else if (units == 0L) {
+                                    ZeroPesos
                                 } else {
                                     AmountDraft.Digits(units.toString())
                                 },
@@ -201,7 +204,7 @@ class InvestmentMovementViewModel(
                         draft.value.dollars.digit(action.digit)
                     )
                 } else {
-                    pesos(draft.value.pesos.digit(action.digit))
+                    pesos(pesoDigit(draft.value, action.digit))
                 }
             }
 
@@ -330,6 +333,23 @@ class InvestmentMovementViewModel(
             )
         }
         draft.value = next
+    }
+
+    /**
+     * A digit typed in pesos. A recorded value may be 0 (rule 2), which the expense pad
+     * never takes: a 0 typed first on Valor de hoy is that value, and the next digit
+     * replaces it.
+     */
+    private fun pesoDigit(current: Draft, digit: Int): AmountDraft.Change {
+        val pesos = current.pesos
+        return when {
+            current.kind == InvestmentMovementKind.Valuation && digit == 0 &&
+                (pesos == AmountDraft.Empty || pesos == ZeroPesos) -> AmountDraft.Change(ZeroPesos)
+
+            pesos == ZeroPesos -> AmountDraft.Empty.digit(digit)
+
+            else -> pesos.digit(digit)
+        }
     }
 
     private fun pesos(change: AmountDraft.Change) {
@@ -795,6 +815,10 @@ class InvestmentMovementViewModel(
     }
 
     companion object {
+        /** A value of 0 pesos, as typed on Valor de hoy (rule 2). */
+        private val ZeroPesos = AmountDraft.Digits("0")
+        private const val ZERO = "0"
+
         /** Route arguments: the investment chosen, the movement's kind, the movement to correct. */
         const val KEY_INVESTMENT = "investmentId"
         const val KEY_KIND = "kind"

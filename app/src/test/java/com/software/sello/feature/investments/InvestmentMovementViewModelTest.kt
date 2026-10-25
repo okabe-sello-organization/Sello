@@ -454,6 +454,24 @@ class InvestmentMovementViewModelTest {
     }
 
     @Test
+    fun rule2AValueOfZeroPesosCanBeRecordedButAnAporteOfZeroWaits() = runTest {
+        val value = model(investment = ecopetrol, kind = InvestmentMovementViewModel.KIND_VALUATION)
+        value.keys("0")
+        assertTrue(value.now.canSubmit)
+        value.onAction(InvestmentMovementAction.Submit)
+        assertEquals(Money.cop(0), (commands.sent.single() as RecordInvestmentMovement).amount.money)
+
+        val replaced = model(investment = ecopetrol, kind = InvestmentMovementViewModel.KIND_VALUATION)
+        replaced.keys("0", "5", "000")
+        replaced.onAction(InvestmentMovementAction.Submit)
+        assertEquals(Money.cop(5_000), (commands.sent.last() as RecordInvestmentMovement).amount.money)
+
+        val aporte = model(investment = ecopetrol)
+        aporte.keys("0")
+        assertFalse(aporte.now.canSubmit)
+    }
+
+    @Test
     fun in34DollarsAreTypedWithTheCommaAndSentAsExactCents() = runTest {
         val model = model(investment = acciones)
         assertTrue(model.now.usd)
