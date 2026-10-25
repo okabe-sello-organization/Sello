@@ -1,6 +1,6 @@
 # SELLO-E17 — Metas: personal goals
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** Let a person create goals, record contributions and withdrawals, earn milestone stamps and complete goals, as designed in Sello v2.
 - **Exit:** Metas is a tab with goals, detail, Aportar/Retirar, creation and celebrations; Recibo shows one goal; backups carry goals; the sandbox and catalog cover them.
