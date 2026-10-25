@@ -19,7 +19,6 @@ data object ResumenRoute
 @Serializable
 data object MetasRoute
 
-
 /** Dólar: the current USD rate and the earlier ones, from Configuración or Inversiones. */
 @Serializable
 data object UsdRateRoute

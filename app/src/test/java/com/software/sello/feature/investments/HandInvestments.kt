@@ -89,7 +89,9 @@ class HandInvestmentCommands : InvestmentCommands {
 
     override fun movementUndoOffer(): InvestmentUndoOffer? = null
 
-    override suspend fun find(operationId: OperationId): Outcome<CommittedInvestment?, StorageFailure> {
+    override suspend fun find(
+        operationId: OperationId
+    ): Outcome<CommittedInvestment?, StorageFailure> {
         asked += operationId
         return found
     }

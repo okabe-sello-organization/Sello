@@ -20,11 +20,8 @@ import kotlinx.coroutines.flow.update
 
 /** Dólar from the investment board's rates as they change. */
 @OptIn(ExperimentalCoroutinesApi::class)
-class UsdRateViewModel(
-    reads: InvestmentReads,
-    clock: FinancialClock,
-    money: MoneyFormatter
-) : ViewModel() {
+class UsdRateViewModel(reads: InvestmentReads, clock: FinancialClock, money: MoneyFormatter) :
+    ViewModel() {
     private val render = InvestmentsRenderModel(money)
     private val attempts = MutableStateFlow(0)
 
@@ -32,12 +29,18 @@ class UsdRateViewModel(
         combine(attempts.flatMapLatest { reads.observeBoard() }, clock.today) { board, today ->
             when (board) {
                 InvestmentBoardState.Loading -> UsdRateState.Loading
+
                 is InvestmentBoardState.Ready -> ready(board.board.rates, today.date, false)
+
                 is InvestmentBoardState.Failed -> board.lastGood?.let {
                     ready(it.rates, today.date, true)
                 } ?: UsdRateState.Failed
             }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS), UsdRateState.Loading)
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
+            UsdRateState.Loading
+        )
 
     private fun ready(book: UsdRateBook, today: LocalDate, stale: Boolean): UsdRateState.Ready {
         val newest = book.history.sortedWith(

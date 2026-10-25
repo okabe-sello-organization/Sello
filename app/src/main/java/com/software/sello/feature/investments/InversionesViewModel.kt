@@ -16,11 +16,8 @@ import kotlinx.coroutines.flow.update
 
 /** Inversiones from the investment board as it changes. It is not tied to a month. */
 @OptIn(ExperimentalCoroutinesApi::class)
-class InversionesViewModel(
-    reads: InvestmentReads,
-    clock: FinancialClock,
-    money: MoneyFormatter
-) : ViewModel() {
+class InversionesViewModel(reads: InvestmentReads, clock: FinancialClock, money: MoneyFormatter) :
+    ViewModel() {
     private val render = InvestmentsRenderModel(money)
     private val attempts = MutableStateFlow(0)
     private val board = attempts.flatMapLatest { reads.observeBoard() }

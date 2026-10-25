@@ -13,18 +13,17 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecords
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
-import java.time.Instant
-import java.time.ZoneId
-import com.software.sello.domain.port.InvestmentBoardState
-import com.software.sello.domain.port.InvestmentReads
-import com.software.sello.feature.investments.InvestmentsRenderModel
 import com.software.sello.presentation.money.MoneyFormatter
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -51,7 +50,6 @@ class SettingsViewModel(
     investments: InvestmentReads,
     money: MoneyFormatter
 ) : ViewModel() {
-    private val rates = InvestmentsRenderModel(money)
     private val retry = MutableStateFlow(0)
     private val busy = MutableStateFlow(false)
     private val writeFailure = MutableStateFlow<PreferenceFailure?>(null)
@@ -124,9 +122,11 @@ class SettingsViewModel(
     private val rateLine = retry.flatMapLatest { investments.observeBoard() }.map { read ->
         when (read) {
             InvestmentBoardState.Loading -> RateLine.Loading
+
             is InvestmentBoardState.Failed -> RateLine.Unreadable
+
             is InvestmentBoardState.Ready -> read.board.rates.current?.let {
-                RateLine.Read(rates.rate(it.rate), it.date)
+                RateLine.Read(money.decimal(it.rate.hundredths, RATE_SCALE), it.date)
             } ?: RateLine.None
         }
     }
@@ -203,6 +203,9 @@ data class SettingsState(
 ) {
     val failure: PreferenceFailure? get() = writeFailure ?: appearanceFailure ?: orderingFailure
 }
+
+/** The rate is written to the centavo: "4.150,25" (investment rule 11). */
+private const val RATE_SCALE = 2
 
 /** The Dólar row: the current rate and its date, none yet, or unreadable. */
 sealed interface RateLine {

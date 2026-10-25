@@ -26,10 +26,10 @@ import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.FinancialProfileStore
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
-import com.software.sello.domain.port.InvestmentCommands
-import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.Resets
 import com.software.sello.domain.port.RestoreRejection

@@ -48,7 +48,13 @@ class UsdRateScreensTest {
         today = today
     )
 
-    private data class Look(val ink: SelloInk, val dark: Boolean, val scale: Float, val w: Int, val h: Int)
+    private data class Look(
+        val ink: SelloInk,
+        val dark: Boolean,
+        val scale: Float,
+        val w: Int,
+        val h: Int
+    )
 
     @Test
     fun theRateStaysWholeInEveryThemeSizeAndWindow() {
@@ -62,14 +68,18 @@ class UsdRateScreensTest {
                 }
             }
         }
-        for (ink in SelloInk.entries) for (dark in listOf(false, true)) {
-            for (scale in listOf(1f, 1.3f, 2f)) for ((w, h) in listOf(320 to 640, 840 to 600)) {
-                look = Look(ink, dark, scale, w, h)
-                rule.waitForIdle()
-                val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()
-                val rate = rule.onNodeWithText("100.000,00", useUnmergedTree = true)
-                    .getUnclippedBoundsInRoot()
-                assertTrue("$look: $rate", rate.right <= window.right + 0.5.dp)
+        for (ink in SelloInk.entries) {
+            for (dark in listOf(false, true)) {
+                for (scale in listOf(1f, 1.3f, 2f)) {
+                    for ((w, h) in listOf(320 to 640, 840 to 600)) {
+                        look = Look(ink, dark, scale, w, h)
+                        rule.waitForIdle()
+                        val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()
+                        val rate = rule.onNodeWithText("100.000,00", useUnmergedTree = true)
+                            .getUnclippedBoundsInRoot()
+                        assertTrue("$look: $rate", rate.right <= window.right + 0.5.dp)
+                    }
+                }
             }
         }
         rule.onNodeWithContentDescription(
