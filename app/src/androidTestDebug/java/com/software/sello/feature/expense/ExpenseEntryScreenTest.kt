@@ -38,6 +38,7 @@ import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatKind
 import com.software.sello.presentation.recurrence.RepeatUi
+import com.software.sello.revealed
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -122,7 +123,7 @@ class ExpenseEntryScreenTest {
         key("7").performClick()
         key("000").performClick()
         rule.onNodeWithText("Café").performScrollTo().performClick()
-        rule.onNodeWithTag(ENTRY_DATE_TAG).performScrollTo().performClick()
+        rule.onNodeWithTag(ENTRY_DATE_TAG).revealed().performClick()
         rule.onNodeWithTag(ENTRY_SUBMIT_TAG).performClick()
         rule.onNodeWithContentDescription("Cerrar").performClick()
 
@@ -330,7 +331,7 @@ class ExpenseEntryScreenTest {
 
         rule.onNodeWithContentDescription("48.700 pesos").performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("Café").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(ENTRY_DATE_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag(ENTRY_DATE_TAG).revealed().assertIsDisplayed()
         key("000").assertIsDisplayed()
         rule.onNodeWithTag(ENTRY_SUBMIT_TAG).assertIsDisplayed().assertIsEnabled()
     }

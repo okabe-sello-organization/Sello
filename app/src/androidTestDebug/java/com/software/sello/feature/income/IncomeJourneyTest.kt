@@ -100,6 +100,8 @@ class IncomeJourneyTest {
                 "SELECT amount_minor, source_key, version FROM income"
             )
         )
+        // Back on the history, the list is read again before the row is there.
+        rule.awaitTag("income.line.$id")
         rule.onNodeWithTag("income.line.$id").performScrollTo().performClick()
         rule.awaitText("Editar ingreso")
         rule.onNodeWithTag("income.delete").press()
@@ -125,9 +127,9 @@ class IncomeJourneyTest {
     fun aDraftSurvivesSwitchingKindsAndActivityRecreationWithoutSaving() {
         openForm()
         keys("5", "000")
-        rule.onNodeWithText("Gasto").performScrollTo().performClick()
+        rule.onNodeWithText("Gasto").press()
         rule.awaitTag("entry.kind")
-        rule.onNodeWithText("Ingreso").performScrollTo().performClick()
+        rule.onNodeWithText("Ingreso").press()
         scenario?.recreate()
         rule.awaitTag("income.amount")
         rule.onNodeWithTag("income.submit").press()

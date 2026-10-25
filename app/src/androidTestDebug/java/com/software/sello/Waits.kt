@@ -9,6 +9,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
@@ -44,6 +45,20 @@ fun ComposeTestRule.awaitDescription(description: String) =
  */
 fun SemanticsNodeInteraction.press(): SemanticsNodeInteraction =
     performSemanticsAction(SemanticsActions.OnClick)
+
+/**
+ * Scrolls to this node when a scrolling container holds it, and leaves it be otherwise:
+ * on a tall screen a form that fits has no scrolling container, and scrolling to one of
+ * its controls would fail.
+ */
+fun SemanticsNodeInteraction.revealed(): SemanticsNodeInteraction {
+    var parent = fetchSemanticsNode().parent
+    while (parent != null) {
+        if (SemanticsActions.ScrollBy in parent.config) return performScrollTo()
+        parent = parent.parent
+    }
+    return this
+}
 
 /**
  * Puts the system keyboard away before a test ends. A keyboard left up by a test that
