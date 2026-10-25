@@ -21,13 +21,13 @@ import com.software.sello.feature.goals.GoalDetailViewModel
 import com.software.sello.feature.goals.GoalEditorViewModel
 import com.software.sello.feature.goals.GoalMovementViewModel
 import com.software.sello.feature.goals.MetasViewModel
+import com.software.sello.feature.goals.ReciboGoalViewModel
+import com.software.sello.feature.income.IncomeFormViewModel
+import com.software.sello.feature.income.IncomeHistoryViewModel
 import com.software.sello.feature.investments.InversionesViewModel
 import com.software.sello.feature.investments.InvestmentDetailViewModel
 import com.software.sello.feature.investments.UsdRateEntryViewModel
 import com.software.sello.feature.investments.UsdRateViewModel
-import com.software.sello.feature.goals.ReciboGoalViewModel
-import com.software.sello.feature.income.IncomeFormViewModel
-import com.software.sello.feature.income.IncomeHistoryViewModel
 import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.ReciboViewModel

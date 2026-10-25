@@ -19,13 +19,13 @@ import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.feature.investments.InversionesAction
+import com.software.sello.feature.investments.InversionesScreen
 import com.software.sello.feature.investments.InversionesState
+import com.software.sello.feature.investments.InversionesViewModel
 import com.software.sello.feature.investments.InvestmentDetailAction
 import com.software.sello.feature.investments.InvestmentDetailScreen
 import com.software.sello.feature.investments.InvestmentDetailState
 import com.software.sello.feature.investments.InvestmentDetailViewModel
-import com.software.sello.feature.investments.InversionesScreen
-import com.software.sello.feature.investments.InversionesViewModel
 import com.software.sello.feature.investments.UsdRateAction
 import com.software.sello.feature.investments.UsdRateScreen
 import com.software.sello.feature.investments.UsdRateViewModel
@@ -74,8 +74,14 @@ internal fun InversionesDestination(
         entryDock = false,
         dock = when {
             ready == null -> null
-            ready.empty -> onAdd?.let { investmentDock(stringResource(R.string.inversiones_dock_add), it) }
-            else -> onMove?.let { investmentDock(stringResource(R.string.inversiones_dock_move), it) }
+
+            ready.empty -> onAdd?.let {
+                investmentDock(stringResource(R.string.inversiones_dock_add), it)
+            }
+
+            else -> onMove?.let {
+                investmentDock(stringResource(R.string.inversiones_dock_move), it)
+            }
         }
     ) { padding ->
         InversionesScreen(
@@ -130,7 +136,9 @@ internal fun InvestmentDestination(
             }
         },
         entryDock = false,
-        dock = ready?.let { investmentDock(stringResource(R.string.inversiones_dock_move)) { onMove(null) } }
+        dock = ready?.let {
+            investmentDock(stringResource(R.string.inversiones_dock_move)) { onMove(null) }
+        }
     ) { padding ->
         InvestmentDetailScreen(
             state = detail,

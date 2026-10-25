@@ -76,11 +76,15 @@ fun UsdRateEntryScreen(state: UsdRateEntryState, onAction: (UsdRateEntryAction) 
         }
     ) { padding ->
         when {
-            state.loading -> Column(Modifier.fillMaxSize().padding(padding).padding(SelloTheme.spacing.lg)) {
+            state.loading -> Column(
+                Modifier.fillMaxSize().padding(padding).padding(SelloTheme.spacing.lg)
+            ) {
                 SlipSkeleton(Modifier.testTag("usd.rate.entry.loading"))
             }
 
-            state.loadFailed -> Column(Modifier.fillMaxSize().padding(padding).padding(SelloTheme.spacing.lg)) {
+            state.loadFailed -> Column(
+                Modifier.fillMaxSize().padding(padding).padding(SelloTheme.spacing.lg)
+            ) {
                 ErrorSlip(
                     stringResource(R.string.usd_rate_failed_body),
                     { onAction(UsdRateEntryAction.Retry) },
@@ -119,7 +123,12 @@ private fun Amount(state: UsdRateEntryState, onAction: (UsdRateEntryAction) -> U
     EntryAmountSlip(
         label = stringResource(R.string.usd_rate_entry_label),
         amount = state.rate?.let {
-            MoneyTextValue(MoneySign.None, "", it, stringResource(R.string.usd_rate_entry_spoken, it))
+            MoneyTextValue(
+                MoneySign.None,
+                "",
+                it,
+                stringResource(R.string.usd_rate_entry_spoken, it)
+            )
         },
         modifier = Modifier.testTag(USD_RATE_ENTRY_AMOUNT_TAG),
         error = when {

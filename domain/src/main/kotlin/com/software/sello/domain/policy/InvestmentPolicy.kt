@@ -152,11 +152,15 @@ object InvestmentPolicy {
      * [date] (after every movement already dated then), or null when no value is recorded
      * by then (rules 5, 7, 8; IN10, IN18).
      */
-    fun available(history: InvestmentHistory, date: LocalDate): Outcome<Money?, InvestmentHistoryError> {
+    fun available(
+        history: InvestmentHistory,
+        date: LocalDate
+    ): Outcome<Money?, InvestmentHistoryError> {
         val currency = history.investment.currency
         val upTo = history.movements.filter { !it.date.isAfter(date) }
         return when (val replayed = replay(upTo, currency)) {
             is Outcome.Failure -> replayed
+
             is Outcome.Success -> {
                 val units = replayed.value.value ?: return Outcome.Success(null)
                 units.toMoney(currency)?.let { Outcome.Success(it) }
@@ -257,7 +261,10 @@ object InvestmentPolicy {
             for (currency in listOf(Currency.COP, Currency.USD)) {
                 val units = valued
                     .filter { it.first.investment.currency == currency }
-                    .fold(BigInteger.ZERO) { sum, it -> sum + BigInteger.valueOf(figure(it.second).minorUnits) }
+                    .fold(BigInteger.ZERO) { sum, it ->
+                        sum +
+                            BigInteger.valueOf(figure(it.second).minorUnits)
+                    }
                 if (units.signum() == 0) continue
                 pesos += BigInteger.valueOf((inPesos(currency, units) ?: return null).minorUnits)
             }
@@ -270,7 +277,8 @@ object InvestmentPolicy {
         val dividends = total { it.dividends } ?: return unrepresentable
         val gain = (
             BigInteger.valueOf(value.minorUnits) + BigInteger.valueOf(withdrawn.minorUnits) +
-                BigInteger.valueOf(dividends.minorUnits) - BigInteger.valueOf(contributed.minorUnits)
+                BigInteger.valueOf(dividends.minorUnits) -
+                BigInteger.valueOf(contributed.minorUnits)
             ).toMoney(Currency.COP) ?: return unrepresentable
         val dates = valued.map { it.second.value!!.valuedOn }
         val total = PortfolioTotal(

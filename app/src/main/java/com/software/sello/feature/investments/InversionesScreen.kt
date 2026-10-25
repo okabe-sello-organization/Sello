@@ -197,7 +197,12 @@ private fun Total(
             if (onOpenRate == null) {
                 QuietLine(SelloIcon.Autorenew, text, Modifier.testTag("inversiones.rate"))
             } else {
-                Footnote(text, onOpenRate, Modifier.testTag("inversiones.rate"), SelloIcon.Autorenew)
+                Footnote(
+                    text,
+                    onOpenRate,
+                    Modifier.testTag("inversiones.rate"),
+                    SelloIcon.Autorenew
+                )
             }
         }
     }
@@ -210,7 +215,11 @@ private fun NoTotal(missingRate: Boolean) {
         Text(stringResource(R.string.inversiones_value_label), color = SelloTheme.colors.inkSoft)
         Text(
             stringResource(
-                if (missingRate) R.string.inversiones_missing_rate else R.string.inversiones_no_values
+                if (missingRate) {
+                    R.string.inversiones_missing_rate
+                } else {
+                    R.string.inversiones_no_values
+                }
             ),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(top = 8.dp)

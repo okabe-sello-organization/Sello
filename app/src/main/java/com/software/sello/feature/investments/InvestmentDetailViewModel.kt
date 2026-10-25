@@ -27,7 +27,8 @@ class InvestmentDetailViewModel(
     money: MoneyFormatter
 ) : ViewModel() {
     private val render = InvestmentsRenderModel(money)
-    private val id: String = checkNotNull(saved[KEY_INVESTMENT]) { "An investment's detail needs its id" }
+    private val id: String =
+        checkNotNull(saved[KEY_INVESTMENT]) { "An investment's detail needs its id" }
     private val attempts = MutableStateFlow(0)
 
     val state: StateFlow<InvestmentDetailState> = combine(
@@ -37,7 +38,11 @@ class InvestmentDetailViewModel(
         saved.getStateFlow<String?>(KEY_SELECTED, null)
     ) { board, today, all, selected ->
         when (val detail = render.detail(board, id, today.date)) {
-            is InvestmentDetailState.Ready -> detail.copy(allMovements = all, selectedValue = selected)
+            is InvestmentDetailState.Ready -> detail.copy(
+                allMovements = all,
+                selectedValue = selected
+            )
+
             else -> detail
         }
     }.stateIn(

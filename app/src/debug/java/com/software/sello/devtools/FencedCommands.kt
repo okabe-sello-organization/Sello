@@ -15,11 +15,11 @@ import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
+import com.software.sello.domain.port.IncomeCommandOutcome
+import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
-import com.software.sello.domain.port.IncomeCommandOutcome
-import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
 import com.software.sello.domain.port.ScheduleCatchUpStore

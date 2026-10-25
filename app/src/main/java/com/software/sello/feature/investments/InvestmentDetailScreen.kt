@@ -80,7 +80,9 @@ fun InvestmentDetailScreen(
                     )
                 }
                 Answer(state, dates, onAction)
-                state.chart?.takeIf { it.values.isNotEmpty() }?.let { Chart(it, state, dates, onAction) }
+                state.chart?.takeIf {
+                    it.values.isNotEmpty()
+                }?.let { Chart(it, state, dates, onAction) }
                 Movements(state, dates, onAction)
             }
         }
@@ -119,7 +121,9 @@ private fun Answer(
                 color = SelloTheme.colors.inkSoft
             )
             TearLine()
-            LeaderLine(stringResource(R.string.investment_contributed)) { MoneyText(state.contributed) }
+            LeaderLine(stringResource(R.string.investment_contributed)) {
+                MoneyText(state.contributed)
+            }
             record()
         }
         return

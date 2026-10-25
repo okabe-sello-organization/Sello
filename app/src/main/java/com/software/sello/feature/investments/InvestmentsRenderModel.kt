@@ -79,8 +79,10 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
                     note = movement.note?.value,
                     amount = when (movement.kind) {
                         InvestmentMovementKind.Valuation -> money.format(amount)
+
                         InvestmentMovementKind.Withdrawal ->
                             money.format(amount).copy(sign = MoneySign.Minus)
+
                         else -> money.format(amount, signed = true)
                     }
                 )
@@ -127,7 +129,9 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
         )
         return ValuesChartModel(
             values = values.map { point(it.id.value, it.date, it.amount.money.minorUnits) },
-            putIn = steps.map { (movement, level) -> point(movement.id.value, movement.date, level) },
+            putIn = steps.map { (movement, level) ->
+                point(movement.id.value, movement.date, level)
+            },
             start = YearMonth.from(first),
             end = YearMonth.from(end)
         )
@@ -136,9 +140,14 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
     /** The rate as the app writes it: "4.150,25". */
     fun rate(rate: UsdRate): String = money.decimal(rate.hundredths, Currency.USD.scale)
 
-    private fun overview(board: InvestmentBoard, today: LocalDate, stale: Boolean): InversionesState {
+    private fun overview(
+        board: InvestmentBoard,
+        today: LocalDate,
+        stale: Boolean
+    ): InversionesState {
         val overview = when (val worked = board.overview) {
             is Outcome.Success -> worked.value
+
             // Never guessed at another rate, never left out: the rows still show.
             is Outcome.Failure -> when (worked.error) {
                 PortfolioError.MissingRate -> return InversionesState.Ready(

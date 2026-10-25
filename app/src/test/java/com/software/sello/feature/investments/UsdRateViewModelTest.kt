@@ -172,7 +172,12 @@ class UsdRateViewModelTest {
         runCurrent()
 
         assertEquals(RateEntryError.Unknown, model.state.value.error)
-        assertEquals(listOf("00000000-0000-4000-a000-000000000001"), commands.asked.map { it.value })
+        assertEquals(
+            listOf("00000000-0000-4000-a000-000000000001"),
+            commands.asked.map {
+                it.value
+            }
+        )
         // Back waits while the outcome is not known; asking again finds it saved.
         model.onAction(UsdRateEntryAction.Back)
         assertFalse(model.state.value.closed)
@@ -206,7 +211,8 @@ class UsdRateViewModelTest {
 
     @Test
     fun aCertainRefusalSaysWhyAndKeepsTheDraft() = runTest {
-        commands.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.StaleGeneration(2))
+        commands.answers +=
+            InvestmentCommandOutcome.Rejected(InvestmentRejection.StaleGeneration(2))
         val model = entry()
         model.type("4000")
         model.onAction(UsdRateEntryAction.Submit)

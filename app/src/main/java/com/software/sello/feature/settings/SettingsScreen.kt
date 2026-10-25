@@ -137,8 +137,11 @@ private fun DataControls(
             value = "",
             caption = when (val rate = state.rate) {
                 RateLine.Loading -> ""
+
                 RateLine.Unreadable -> stringResource(R.string.settings_rate_unreadable)
+
                 RateLine.None -> stringResource(R.string.settings_rate_none)
+
                 is RateLine.Read -> stringResource(
                     R.string.settings_rate_current,
                     rate.rate,

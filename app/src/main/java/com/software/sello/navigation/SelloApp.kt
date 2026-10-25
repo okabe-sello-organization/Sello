@@ -81,6 +81,7 @@ import com.software.sello.feature.goals.celebrationLine
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.feature.income.IncomeHistoryScreen
 import com.software.sello.feature.income.IncomeHistoryViewModel
+import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_EDIT_TAG
 import com.software.sello.feature.recibo.CategoryDetailAction
 import com.software.sello.feature.recibo.CategoryDetailScreen
@@ -104,7 +105,6 @@ import com.software.sello.feature.reset.ResetRoot
 import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.reset.back
 import com.software.sello.feature.resumen.ResumenRoot
-import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.settings.SettingsRoot
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
@@ -268,7 +268,9 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 onShell = shell::onAction,
                 tabs = tabs,
                 onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
-                onOpen = { id -> navigation.navigate(InvestmentRoute(id)) { launchSingleTop = true } },
+                onOpen = { id ->
+                    navigation.navigate(InvestmentRoute(id)) { launchSingleTop = true }
+                },
                 onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } },
                 onAdd = { navigation.navigate(InvestmentEditorRoute()) { launchSingleTop = true } },
                 onMove = {
@@ -288,9 +290,13 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                         ?.hasRoute<InvestmentRoute>()
                     if (here == true) navigation.popBackStack()
                 },
-                onEdit = { navigation.navigate(InvestmentEditorRoute(id)) { launchSingleTop = true } },
+                onEdit = {
+                    navigation.navigate(InvestmentEditorRoute(id)) { launchSingleTop = true }
+                },
                 onMove = { kind ->
-                    navigation.navigate(InvestmentMovementRoute(id, kind)) { launchSingleTop = true }
+                    navigation.navigate(InvestmentMovementRoute(id, kind)) {
+                        launchSingleTop = true
+                    }
                 },
                 onEditMovement = { movement ->
                     navigation.navigate(InvestmentMovementRoute(id, movementId = movement)) {

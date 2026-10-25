@@ -19,7 +19,6 @@ data object ResumenRoute
 @Serializable
 data object MetasRoute
 
-
 /** Investments: not tied to a month either. */
 @Serializable
 data object InversionesRoute

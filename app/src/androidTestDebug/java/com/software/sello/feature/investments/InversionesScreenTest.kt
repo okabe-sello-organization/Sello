@@ -232,7 +232,9 @@ class InversionesScreenTest {
 
         override fun observeBoard(): Flow<InvestmentBoardState> = flowOf(state)
 
-        override suspend fun investment(id: InvestmentId): Outcome<InvestmentSummary?, StorageFailure> =
+        override suspend fun investment(
+            id: InvestmentId
+        ): Outcome<InvestmentSummary?, StorageFailure> =
             Outcome.Failure(StorageFailure.Unavailable("not used"))
     }
 
@@ -318,7 +320,10 @@ class InversionesScreenTest {
         rule.onNodeWithText("aportaste 2.000.000", useUnmergedTree = true).assertExists()
         val row = rule.onNode(hasTestTag("inversiones.row.00000000-0000-4000-8000-000000000001"))
             .fetchSemanticsNode()
-        assertNull("rows open nothing until SELLO-110", row.config.getOrNull(SemanticsActions.OnClick))
+        assertNull(
+            "rows open nothing until SELLO-110",
+            row.config.getOrNull(SemanticsActions.OnClick)
+        )
     }
 
     @Test
@@ -332,8 +337,15 @@ class InversionesScreenTest {
         }
         rule.onNodeWithTag("inversiones.loading").assertExists()
 
-        shown = render.overview(InvestmentBoardState.Failed(StorageFailure.Unavailable("x"), null), today)
-        rule.onNodeWithText("No pudimos leer tus inversiones", useUnmergedTree = true).assertExists()
+        shown =
+            render.overview(
+                InvestmentBoardState.Failed(StorageFailure.Unavailable("x"), null),
+                today
+            )
+        rule.onNodeWithText(
+            "No pudimos leer tus inversiones",
+            useUnmergedTree = true
+        ).assertExists()
         rule.onNodeWithTag("inversiones.empty").assertDoesNotExist()
 
         shown = render.overview(InvestmentBoardState.Ready(board()), today)
@@ -360,7 +372,9 @@ class InversionesScreenTest {
 
     @Test
     fun everyFigureStaysWholeInEveryThemeSizeAndWindow() {
-        val shown = InvestmentsRenderModel(money).overview(InvestmentBoardState.Ready(largest()), today)
+        val shown = InvestmentsRenderModel(
+            money
+        ).overview(InvestmentBoardState.Ready(largest()), today)
         var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, 320, 640))
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.fontScale)) {
