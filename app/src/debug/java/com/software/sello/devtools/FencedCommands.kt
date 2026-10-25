@@ -1,5 +1,6 @@
 package com.software.sello.devtools
 
+import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
@@ -18,6 +19,11 @@ import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
+import com.software.sello.domain.port.ScheduleCatchUpStore
+import com.software.sello.domain.port.ScheduleCommand
+import com.software.sello.domain.port.ScheduleCommandOutcome
+import com.software.sello.domain.port.ScheduleCommands
+import java.time.LocalDate
 
 /*
  * The real commands, run through the sandbox's [WriteFence]. They add no rule and
@@ -79,4 +85,25 @@ class FencedGoalCommands(
     override suspend fun submit(command: GoalCommand): GoalCommandOutcome = fence.write {
         commands.submit(command)
     }.also { if (it is GoalCommandOutcome.Committed && !it.replayed) saved() }
+}
+
+class FencedScheduleCommands(
+    private val commands: ScheduleCommands,
+    private val fence: WriteFence,
+    private val saved: () -> Unit
+) : ScheduleCommands by commands {
+    override suspend fun submit(command: ScheduleCommand): ScheduleCommandOutcome = fence.write {
+        commands.submit(command)
+    }.also { if (it is ScheduleCommandOutcome.Committed && !it.replayed) saved() }
+}
+
+/** Catch-up on opening, through the fence; a batch that recorded anything is a change. */
+class FencedScheduleCatchUp(
+    private val store: ScheduleCatchUpStore,
+    private val fence: WriteFence,
+    private val saved: () -> Unit
+) : ScheduleCatchUpStore {
+    override suspend fun recordDue(today: LocalDate, limit: Int): CatchUpBatch = fence.write {
+        store.recordDue(today, limit)
+    }.also { if (it is CatchUpBatch.Recorded && it.occurrences.isNotEmpty()) saved() }
 }

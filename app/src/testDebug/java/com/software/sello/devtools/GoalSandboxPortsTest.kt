@@ -79,7 +79,8 @@ class GoalSandboxPortsTest {
             LedgerExpenses(ledger),
             LedgerIncomes(ledger),
             LedgerCategories(ledger),
-            goals
+            goals,
+            LedgerSchedules(ledger)
         )
         faults.arm(Fault.LostAnswer)
         val command = feature(4)

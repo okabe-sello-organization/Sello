@@ -41,7 +41,8 @@ class DebugFaultDecoratorTest {
             LedgerExpenses(ledger),
             LedgerIncomes(ledger),
             LedgerCategories(ledger),
-            LedgerGoals(ledger)
+            LedgerGoals(ledger),
+            LedgerSchedules(ledger)
         )
 
     private fun create(n: Int) = CreateExpense(

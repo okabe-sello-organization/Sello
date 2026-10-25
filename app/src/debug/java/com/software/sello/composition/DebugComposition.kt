@@ -14,10 +14,13 @@ import com.software.sello.devtools.FaultyGoalReads
 import com.software.sello.devtools.FaultyIncomeCommands
 import com.software.sello.devtools.FaultyMonthlySnapshots
 import com.software.sello.devtools.FaultyResumenSnapshots
+import com.software.sello.devtools.FaultyScheduleCommands
 import com.software.sello.devtools.FencedCategoryCommands
 import com.software.sello.devtools.FencedExpenseCommands
 import com.software.sello.devtools.FencedGoalCommands
 import com.software.sello.devtools.FencedIncomeCommands
+import com.software.sello.devtools.FencedScheduleCatchUp
+import com.software.sello.devtools.FencedScheduleCommands
 import com.software.sello.devtools.OperationInspector
 import com.software.sello.devtools.OperationLog
 import com.software.sello.devtools.SandboxBadges
@@ -45,6 +48,8 @@ import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleCatchUpStore
+import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemDispatcherProvider
 import java.io.File
@@ -164,6 +169,21 @@ class DebugComposition(
                         saved
                     )
                 }
+                single<ScheduleCommands> {
+                    val real = get<FinancialStorage>().scheduleCommands(get(), get(), get())
+                    FencedScheduleCommands(
+                        if (sandbox) FaultyScheduleCommands(real, faults, log) else real,
+                        fence,
+                        saved
+                    )
+                }
+                single<ScheduleCatchUpStore> {
+                    FencedScheduleCatchUp(
+                        get<FinancialStorage>().scheduleCatchUp(get(), get()),
+                        fence,
+                        saved
+                    )
+                }
                 if (time != null) {
                     single<FinancialClock> { time.clock }
                     single<GoalReads> { FaultyGoalReads(get<FinancialStorage>().goalReads, faults) }
@@ -199,7 +219,7 @@ class DebugComposition(
                         val diagnostics = SandboxDiagnostics(
                             faults,
                             log,
-                            OperationInspector(get(), get(), get(), get()),
+                            OperationInspector(get(), get(), get(), get(), get()),
                             store::read
                         )
                         ScenarioRunner(
