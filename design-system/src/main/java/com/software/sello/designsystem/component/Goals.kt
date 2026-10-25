@@ -823,17 +823,24 @@ fun StampTicket(
 
 /**
  * A goal's icon in a large green circle, beside its name while creating or editing it.
- * Before an icon is chosen the circle is empty and dashed, with a soft flag. Decorative:
- * the icon strip says which icon is chosen.
+ * Before an icon is chosen the circle is empty and dashed, with a soft [emptyIcon].
+ * Decorative: the icon strip says which icon is chosen. An investment draws it in
+ * [ButtonTone.Ink], with a trending line while empty (v2 Agregar inversión).
  */
 @Composable
-fun GoalIconCircle(icon: SelloIcon?, modifier: Modifier = Modifier) {
+fun GoalIconCircle(
+    icon: SelloIcon?,
+    modifier: Modifier = Modifier,
+    tone: ButtonTone = ButtonTone.Gain,
+    emptyIcon: SelloIcon = SelloIcon.Flag
+) {
     val colors = SelloTheme.colors
+    val (fill, onFill) = tone.inks()
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier.size(64.dp).drawBehind {
             if (icon != null) {
-                drawCircle(colors.semantic.gain)
+                drawCircle(fill)
             } else {
                 val stroke = 2.dp.toPx()
                 drawCircle(
@@ -850,9 +857,9 @@ fun GoalIconCircle(icon: SelloIcon?, modifier: Modifier = Modifier) {
         }
     ) {
         Icon(
-            (icon ?: SelloIcon.Flag).painter(),
+            (icon ?: emptyIcon).painter(),
             contentDescription = null,
-            tint = if (icon != null) colors.semantic.onGain else colors.inkSoft,
+            tint = if (icon != null) onFill else colors.inkSoft,
             modifier = Modifier.size(30.dp)
         )
     }
