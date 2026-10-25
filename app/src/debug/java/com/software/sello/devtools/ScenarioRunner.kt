@@ -566,7 +566,11 @@ class ScenarioRunner(
             "${if (ok) "✓" else "✗"} ${check.figure.label} ${check.month}: esperado $expected, " +
                 "real ${actual ?: "no se pudo leer"} (${check.source})"
         }
-        val board = if (goalChecks.isEmpty()) null else (goalReads.board() as? Outcome.Success)?.value
+        val board = if (goalChecks.isEmpty()) {
+            null
+        } else {
+            (goalReads.board() as? Outcome.Success)?.value
+        }
         val goalLines = goalChecks.map { check ->
             // A history restored from a backup has no receipts: the goal is found by its
             // name, which is unique in a scenario.
