@@ -171,7 +171,10 @@ class ResetGenerationContractTest {
 
         val preview = preview()
 
-        assertEquals(BackupSummary(categories = 1, expenses = 2, incomes = 1, 0), preview.current)
+        assertEquals(
+            BackupSummary(categories = 1, expenses = 2, incomes = 1, 0, 0),
+            preview.current
+        )
         assertEquals(1L, preview.generation)
         assertEquals(before, everyRow())
         assertFalse(markerExists())
@@ -244,7 +247,7 @@ class ResetGenerationContractTest {
         assertEquals(0, preferenceResets)
         assertFalse(markerExists())
         assertTrue(files.restoreFolder.exists())
-        assertEquals(BackupSummary(1, 3, 1, 0), preview().current)
+        assertEquals(BackupSummary(1, 3, 1, 0, 0), preview().current)
     }
 
     @Test

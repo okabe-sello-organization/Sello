@@ -6,8 +6,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 and 2, documented in docs/data/backup-format.md.
- * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`. These classes
+ * The wire shapes of versions 1 to 3, documented in docs/data/backup-format.md.
+ * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
+ * is version 2 plus `financial.schedules` and each expense's and income's `origin`. These classes
  * are the file and nothing else: they never become Room entities or domain values
  * without going through BackupValidation. Every property is required, including the
  * nullable ones, and the JSON configuration refuses unknown keys. Numbers and flags
@@ -164,6 +165,144 @@ internal fun BackupFileV1.asVersion2() = BackupFileV2(
         incomes = financial.incomes,
         goals = emptyList(),
         featuredGoal = null
+    ),
+    preferences = preferences
+)
+
+@Serializable
+internal data class BackupFileV3(
+    val format: String,
+    val version: JsonElement,
+    val exportedAt: String,
+    val financial: FinancialV3,
+    val preferences: PreferencesV1?
+)
+
+@Serializable
+internal data class FinancialV3(
+    val sourceRevision: JsonElement,
+    val zone: String,
+    val categories: List<CategoryV1>,
+    val defaultLimits: List<DefaultLimitV1>,
+    val monthLimits: List<MonthLimitV1>,
+    val expenses: List<ExpenseV3>,
+    val incomes: List<IncomeV3>,
+    val goals: List<GoalV2>,
+    val featuredGoal: String?,
+    val schedules: List<ScheduleV3>
+)
+
+/** The occurrence a schedule recorded this entry for, or null for one entered by hand. */
+@Serializable
+internal data class OriginV3(val schedule: String, val date: String, val slot: JsonElement)
+
+@Serializable
+internal data class ExpenseV3(
+    val id: String,
+    val categoryId: String,
+    val date: String,
+    val sequence: JsonElement,
+    val amount: JsonElement,
+    val currency: String,
+    val note: String?,
+    val createdAt: String,
+    val updatedAt: String,
+    val origin: OriginV3?
+)
+
+@Serializable
+internal data class IncomeV3(
+    val id: String,
+    val date: String,
+    val sequence: JsonElement,
+    val amount: JsonElement,
+    val currency: String,
+    val source: String,
+    val sourceName: String?,
+    val note: String?,
+    val createdAt: String,
+    val updatedAt: String,
+    val origin: OriginV3?
+)
+
+/** The last occurrence catch-up dealt with. */
+@Serializable
+internal data class HandledV3(val date: String, val slot: JsonElement)
+
+@Serializable
+internal data class PauseV3(val from: String, val until: String?)
+
+/**
+ * A recurring payment (`kind` `payment`, with `categoryId`) or income (`income`, with
+ * `source` and, for `other`, `sourceName`). `repeat` is `monthly` (`first` the day),
+ * `twice_monthly` (`first` and `second` the days), `every_days` or `every_weeks` (`first`
+ * the interval); `second` is null but twice a month. `sequence` is the creation order.
+ */
+@Serializable
+internal data class ScheduleV3(
+    val id: String,
+    val kind: String,
+    val categoryId: String?,
+    val source: String?,
+    val sourceName: String?,
+    val amount: JsonElement,
+    val currency: String,
+    val note: String?,
+    val repeat: String,
+    val first: JsonElement,
+    val second: JsonElement,
+    val start: String,
+    val end: String?,
+    val sequence: JsonElement,
+    val handled: HandledV3?,
+    val pauses: List<PauseV3>,
+    val createdAt: String,
+    val updatedAt: String
+)
+
+/** A version 2 file read as version 3: no schedules, and no entry recorded by one. */
+internal fun BackupFileV2.asVersion3() = BackupFileV3(
+    format = format,
+    version = version,
+    exportedAt = exportedAt,
+    financial = FinancialV3(
+        sourceRevision = financial.sourceRevision,
+        zone = financial.zone,
+        categories = financial.categories,
+        defaultLimits = financial.defaultLimits,
+        monthLimits = financial.monthLimits,
+        expenses = financial.expenses.map {
+            ExpenseV3(
+                id = it.id,
+                categoryId = it.categoryId,
+                date = it.date,
+                sequence = it.sequence,
+                amount = it.amount,
+                currency = it.currency,
+                note = it.note,
+                createdAt = it.createdAt,
+                updatedAt = it.updatedAt,
+                origin = null
+            )
+        },
+        incomes = financial.incomes.map {
+            IncomeV3(
+                id = it.id,
+                date = it.date,
+                sequence = it.sequence,
+                amount = it.amount,
+                currency = it.currency,
+                source = it.source,
+                sourceName = it.sourceName,
+                note = it.note,
+                createdAt = it.createdAt,
+                updatedAt = it.updatedAt,
+                origin = null
+            )
+        },
+        goals = financial.goals,
+        featuredGoal = financial.featuredGoal,
+        schedules = emptyList()
     ),
     preferences = preferences
 )

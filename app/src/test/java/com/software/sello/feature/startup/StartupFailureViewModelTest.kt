@@ -84,10 +84,10 @@ class StartupFailureViewModelTest {
     private val backup = CheckedBackup(
         Instant.parse("2026-10-22T14:30:00Z"),
         ZoneId.of("America/Lima"),
-        BackupSummary(categories = 2, expenses = 3, incomes = 1, 0)
+        BackupSummary(categories = 2, expenses = 3, incomes = 1, 0, 0)
     )
     private val restored = RestoreOutcome.Restored(
-        BackupSummary(2, 3, 1, 0),
+        BackupSummary(2, 3, 1, 0, 0),
         PendingPreferences(null, null)
     )
 

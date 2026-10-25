@@ -172,7 +172,8 @@ the schedule; every write raises its version. The rules are the approved
   its anchor. An end before today is refused. A payment stays a payment.
 - **Pause and resume** write `schedule_pause` rows: a pause from today (or the start),
   ended on the day it is resumed, which counts again. Resumed the day it began, it
-  leaves nothing.
+  leaves nothing. A payment cannot resume while its category is archived
+  (`CategoryArchived`).
 - **Deleting** removes the schedule and its pauses; every entry it recorded stays.
 - **Archiving a category** pauses each of its payment schedules from that day, in the
   same transaction, and is refused with `SchedulesPending` while one has an

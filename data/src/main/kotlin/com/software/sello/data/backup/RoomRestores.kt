@@ -251,6 +251,14 @@ class RoomRestores(
             expenseDao().insertAll(financial.expenses.map { it.toEntity() })
             incomeDao().insertAll(financial.incomes.map { it.toEntity() })
             for (history in financial.goals) insertGoal(history)
+            // After the categories they record into; each keeps its checkpoint, so catch-up
+            // goes on after the occurrences the backup already holds.
+            for (stored in financial.schedules) {
+                scheduleDao().insert(stored.toEntity())
+                for (pause in stored.schedule.recurrence.pauses) {
+                    scheduleDao().insertPause(pause.toEntity(stored.schedule.id))
+                }
+            }
             financial.featuredGoal?.let {
                 goalDao().feature(FeaturedGoalEntity(FeaturedGoalEntity.SINGLE_ID, it.value))
             }
@@ -321,7 +329,8 @@ class RoomRestores(
                             categories = database.categoryDao().count(),
                             expenses = database.expenseDao().count(),
                             incomes = database.incomeDao().count(),
-                            goals = database.goalDao().count()
+                            goals = database.goalDao().count(),
+                            schedules = database.scheduleDao().count()
                         )
                     )
                 )
@@ -435,7 +444,7 @@ fun BackupCodec.check(bytes: ByteArray): Outcome<CheckedBackup, RestoreRejection
     }
 
 internal fun FinancialSnapshot.summary() =
-    BackupSummary(categories.size, expenses.size, incomes.size, goals.size)
+    BackupSummary(categories.size, expenses.size, incomes.size, goals.size, schedules.size)
 
 /** How a person is told why a file cannot be restored; the detail stays in the rejection. */
 internal fun BackupRejection.reason(): RestoreRejection = when (this) {

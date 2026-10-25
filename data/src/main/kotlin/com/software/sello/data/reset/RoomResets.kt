@@ -66,7 +66,8 @@ class RoomResets(
                             categories = database.categoryDao().count(),
                             expenses = database.expenseDao().count(),
                             incomes = database.incomeDao().count(),
-                            goals = database.goalDao().count()
+                            goals = database.goalDao().count(),
+                            schedules = database.scheduleDao().count()
                         ),
                         profile.value.generation,
                         profile.value.revision

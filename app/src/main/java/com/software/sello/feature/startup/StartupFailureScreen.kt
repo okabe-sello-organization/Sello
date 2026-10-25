@@ -249,7 +249,11 @@ private fun Preview(
         RestoreBody(
             stringResource(
                 R.string.startup_restore_counts,
-                contentsText(contents, withGoals = contents.goals > 0)
+                contentsText(
+                    contents,
+                    withGoals = contents.goals > 0,
+                    withSchedules = contents.schedules > 0
+                )
             )
         )
         RestoreBody(stringResource(R.string.startup_restore_warning))

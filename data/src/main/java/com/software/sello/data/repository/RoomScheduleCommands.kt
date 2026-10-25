@@ -275,9 +275,15 @@ class RoomScheduleCommands internal constructor(
         return Written.Done(loaded.row.id)
     }
 
-    /** Today counts again. A pause that never took effect leaves nothing behind. */
+    /**
+     * Today counts again. A pause that never took effect leaves nothing behind. A payment
+     * stays paused while its category is archived (rule 9), or catch-up would record into it.
+     */
     private suspend fun resume(loaded: Loaded, today: LocalDate, now: Instant): Written {
         val open = loaded.openPause ?: return refused(ScheduleRejection.NotPaused)
+        (loaded.schedule.entry as? ScheduledEntry.Payment)?.let { payment ->
+            categoryRejection(payment.categoryId)?.let { return refused(it) }
+        }
         val id = loaded.row.id
         val from = EffectiveDates.storedText(open.from)
         val changed = if (today.isAfter(open.from)) {

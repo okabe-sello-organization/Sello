@@ -12,6 +12,7 @@ import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DefaultLimit
+import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.Goal
@@ -31,12 +32,22 @@ import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.Recurrence
+import com.software.sello.domain.model.RecurrenceError
+import com.software.sello.domain.model.RepeatRule
+import com.software.sello.domain.model.RepeatRuleError
+import com.software.sello.domain.model.Schedule
+import com.software.sello.domain.model.ScheduleId
+import com.software.sello.domain.model.SchedulePause
+import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.StoredSchedule
 import java.time.DateTimeException
 import java.time.Instant
 import java.time.YearMonth
@@ -57,6 +68,12 @@ internal object WireNames {
     const val TARGET = "target"
     const val CONTRIBUTION = "contribution"
     const val WITHDRAWAL = "withdrawal"
+    const val PAYMENT = "payment"
+    const val INCOME = "income"
+    const val MONTHLY = "monthly"
+    const val TWICE_MONTHLY = "twice_monthly"
+    const val EVERY_DAYS = "every_days"
+    const val EVERY_WEEKS = "every_weeks"
 
     val themes = mapOf(
         ThemePreference.System to "system",
@@ -110,16 +127,16 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, a version 1 file read as version 2 included; the
+ * Checks a decoded file completely, older versions read as version 3 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV2): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV3): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV2): BackupContents {
+private fun contentsOf(file: BackupFileV3): BackupContents {
     val financial = file.financial
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
     val zone = try {
@@ -137,6 +154,8 @@ private fun contentsOf(file: BackupFileV2): BackupContents {
         }
         id
     }
+    val schedules = schedules(financial.schedules, categories)
+    val handled = schedules.associate { it.schedule.id to it.handled }
     return BackupContents(
         exportedAt = instant(file.exportedAt, "exportedAt"),
         financial = FinancialSnapshot(
@@ -145,10 +164,11 @@ private fun contentsOf(file: BackupFileV2): BackupContents {
             categories = categories,
             defaultLimits = defaultLimits(financial.defaultLimits, known),
             monthLimits = monthLimits(financial.monthLimits, known),
-            expenses = expenses(financial.expenses, known),
-            incomes = incomes(financial.incomes),
+            expenses = expenses(financial.expenses, known, handled),
+            incomes = incomes(financial.incomes, handled),
             goals = goals,
-            featuredGoal = featured
+            featuredGoal = featured,
+            schedules = schedules
         ),
         preferences = file.preferences?.let(::preferences)
     )
@@ -294,9 +314,14 @@ private fun note(text: String?, path: String): Note? {
     return note
 }
 
-private fun expenses(wire: List<ExpenseV1>, known: Set<CategoryId>): List<Expense> {
+private fun expenses(
+    wire: List<ExpenseV3>,
+    known: Set<CategoryId>,
+    handled: Map<ScheduleId, Occurrence?>
+): List<Expense> {
     val ids = HashSet<String>()
     val sequences = HashSet<Long>()
+    val origins = HashSet<EntryOrigin>()
     return wire.mapIndexed { index, row ->
         val path = "financial.expenses[$index]"
         val id = ExpenseId.of(row.id).or("$path.id")
@@ -312,14 +337,16 @@ private fun expenses(wire: List<ExpenseV1>, known: Set<CategoryId>): List<Expens
             note = note(row.note, "$path.note"),
             version = 1,
             createdAt = instant(row.createdAt, "$path.createdAt"),
-            updatedAt = instant(row.updatedAt, "$path.updatedAt")
+            updatedAt = instant(row.updatedAt, "$path.updatedAt"),
+            origin = row.origin?.let { origin(it, "$path.origin", origins, handled) }
         )
     }
 }
 
-private fun incomes(wire: List<IncomeV1>): List<Income> {
+private fun incomes(wire: List<IncomeV3>, handled: Map<ScheduleId, Occurrence?>): List<Income> {
     val ids = HashSet<String>()
     val sequences = HashSet<Long>()
+    val origins = HashSet<EntryOrigin>()
     return wire.mapIndexed { index, row ->
         val path = "financial.incomes[$index]"
         val id = IncomeId.of(row.id).or("$path.id")
@@ -340,8 +367,175 @@ private fun incomes(wire: List<IncomeV1>): List<Income> {
             note = note(row.note, "$path.note"),
             version = 1,
             createdAt = instant(row.createdAt, "$path.createdAt"),
+            updatedAt = instant(row.updatedAt, "$path.updatedAt"),
+            origin = row.origin?.let { origin(it, "$path.origin", origins, handled) }
+        )
+    }
+}
+
+/** A slot is a bare 1, or 2 where [twice] allows it. */
+private fun slot(element: JsonElement, twice: Boolean, path: String): Int =
+    when (whole(element, path)) {
+        1L -> 1
+        2L -> if (twice) 2 else invalid(path)
+        else -> invalid(path)
+    }
+
+/**
+ * An entry's origin (rule 4 of docs/testing/recurrence-examples.md): recorded at most
+ * once in its list, and, when its schedule is in the file, at or before that schedule's
+ * checkpoint, or catch-up would try to record it again. A schedule deleted since is not
+ * in the file, and its entries stay as they are.
+ */
+private fun origin(
+    wire: OriginV3,
+    path: String,
+    seen: MutableSet<EntryOrigin>,
+    handled: Map<ScheduleId, Occurrence?>
+): EntryOrigin {
+    val schedule = ScheduleId.of(wire.schedule).or("$path.schedule")
+    val date = EffectiveDates.parseDate(wire.date).or("$path.date")
+    val origin =
+        EntryOrigin(schedule, Occurrence(date, slot(wire.slot, twice = true, "$path.slot")))
+    if (!seen.add(origin)) reject(BackupRejection.DuplicateEntry(path))
+    if (schedule in handled) {
+        val checkpoint = handled[schedule] ?: invalid(path)
+        val after = date.isAfter(checkpoint.date) ||
+            (date == checkpoint.date && origin.occurrence.slot > checkpoint.slot)
+        if (after) invalid(path)
+    }
+    return origin
+}
+
+/**
+ * Each schedule as the app stores it: its entry with the amount rules of an expense, a
+ * rule the domain accepts, a start before any end, pauses in order and apart, a
+ * checkpoint whose slot fits the rule, and a creation order of its own. A payment points
+ * at a category in the file and, if that category is archived, is paused, as archiving
+ * leaves it (rule 9). Versions start again at 1.
+ */
+private fun schedules(wire: List<ScheduleV3>, categories: List<Category>): List<StoredSchedule> {
+    val ids = HashSet<ScheduleId>()
+    val sequences = HashSet<Long>()
+    val known = categories.associateBy { it.id }
+    return wire.mapIndexed { index, row ->
+        val path = "financial.schedules[$index]"
+        val id = ScheduleId.of(row.id).or("$path.id")
+        if (!ids.add(id)) reject(BackupRejection.DuplicateId("$path.id"))
+        val amount = amount(row.amount, row.currency, path)
+        val note = note(row.note, "$path.note")
+        val entry = when (row.kind) {
+            WireNames.PAYMENT -> {
+                if (row.source != null) invalid("$path.source")
+                if (row.sourceName != null) invalid("$path.sourceName")
+                val categoryId =
+                    reference(
+                        row.categoryId ?: invalid("$path.categoryId"),
+                        known.keys,
+                        "$path.categoryId"
+                    )
+                ScheduledEntry.Payment(categoryId, amount, note)
+            }
+
+            WireNames.INCOME -> {
+                if (row.categoryId != null) invalid("$path.categoryId")
+                val key = row.source ?: invalid("$path.source")
+                if (key !in IncomeSource.keys) invalid("$path.source")
+                val source = IncomeSource.of(key, row.sourceName).or("$path.sourceName")
+                if ((source as? IncomeSource.Other)?.name?.value !=
+                    row.sourceName
+                ) {
+                    invalid("$path.sourceName")
+                }
+                ScheduledEntry.Income(source, amount, note)
+            }
+
+            else -> invalid("$path.kind")
+        }
+        val first = whole(row.first, "$path.first").toIntOrNull("$path.first")
+        val second = optionalWhole(row.second, "$path.second")?.toIntOrNull("$path.second")
+        val rule: RepeatRule = when (row.repeat) {
+            WireNames.TWICE_MONTHLY ->
+                RepeatRule.TwiceMonthly.of(
+                    first,
+                    second ?: invalid("$path.second")
+                ).orRule(first, path)
+
+            WireNames.MONTHLY, WireNames.EVERY_DAYS, WireNames.EVERY_WEEKS -> {
+                if (second != null) invalid("$path.second")
+                when (row.repeat) {
+                    WireNames.MONTHLY -> RepeatRule.Monthly.of(first)
+                    WireNames.EVERY_DAYS -> RepeatRule.EveryDays.of(first)
+                    else -> RepeatRule.EveryWeeks.of(first)
+                }.or("$path.first")
+            }
+
+            else -> invalid("$path.repeat")
+        }
+        val start = EffectiveDates.parseDate(row.start).or("$path.start")
+        val end = row.end?.let { EffectiveDates.parseDate(it).or("$path.end") }
+        val pauses = row.pauses.mapIndexed { pauseIndex, pause ->
+            SchedulePause(
+                from = EffectiveDates.parseDate(pause.from).or("$path.pauses[$pauseIndex].from"),
+                until = pause.until?.let {
+                    EffectiveDates.parseDate(it).or("$path.pauses[$pauseIndex].until")
+                }
+            )
+        }
+        val recurrence = when (val built = Recurrence.of(rule, start, end, pauses)) {
+            is Outcome.Success -> built.value
+
+            is Outcome.Failure -> invalid(
+                when (built.error) {
+                    RecurrenceError.EndBeforeStart -> "$path.end"
+                    is RecurrenceError.DateOutOfRange -> "$path.start"
+                    is RecurrenceError.InvalidPause, is RecurrenceError.OverlappingPauses -> "$path.pauses"
+                }
+            )
+        }
+        val category = (entry as? ScheduledEntry.Payment)?.let { known.getValue(it.categoryId) }
+        val running = recurrence.pauses.lastOrNull()?.until != null || recurrence.pauses.isEmpty()
+        if (category?.archived == true && running) invalid("$path.pauses")
+        val sequence = whole(row.sequence, "$path.sequence")
+        if (!sequences.add(sequence)) reject(BackupRejection.DuplicateEntry("$path.sequence"))
+        val handled = row.handled?.let {
+            Occurrence(
+                EffectiveDates.parseDate(it.date).or("$path.handled.date"),
+                slot(it.slot, rule is RepeatRule.TwiceMonthly, "$path.handled.slot")
+            )
+        }
+        StoredSchedule(
+            schedule = Schedule(id, entry, recurrence),
+            sequence = sequence,
+            handled = handled,
+            version = 1,
+            createdAt = instant(row.createdAt, "$path.createdAt"),
             updatedAt = instant(row.updatedAt, "$path.updatedAt")
         )
+    }
+}
+
+private fun Long.toIntOrNull(path: String): Int = if (this <=
+    Int.MAX_VALUE
+) {
+    toInt()
+} else {
+    invalid(path)
+}
+
+/** Two days twice a month: a day out of range is named as such, two out of order by the second. */
+private fun Outcome<RepeatRule.TwiceMonthly, RepeatRuleError>.orRule(
+    first: Int,
+    path: String
+): RepeatRule = when (this) {
+    is Outcome.Success -> value
+
+    is Outcome.Failure -> when (val error = error) {
+        is RepeatRuleError.DayOutOfRange ->
+            invalid(if (error.day == first) "$path.first" else "$path.second")
+
+        is RepeatRuleError.DaysNotInOrder, is RepeatRuleError.IntervalOutOfRange ->
+            invalid("$path.second")
     }
 }
 

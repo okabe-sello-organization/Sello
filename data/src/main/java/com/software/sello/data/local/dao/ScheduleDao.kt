@@ -96,4 +96,7 @@ interface ScheduleDao {
     /** Catch-up's checkpoint: [date] and [slot] are the last occurrence it dealt with. */
     @Query("UPDATE schedule SET handled_date = :date, handled_slot = :slot WHERE id = :id")
     suspend fun setHandled(id: String, date: String, slot: Int): Int
+
+    @Query("SELECT COUNT(*) FROM schedule")
+    suspend fun count(): Int
 }

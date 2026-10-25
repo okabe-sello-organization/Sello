@@ -205,3 +205,30 @@ internal fun SchedulePause.toEntity(scheduleId: ScheduleId) = SchedulePauseEntit
     fromDate = EffectiveDates.storedText(from),
     untilDate = until?.let(EffectiveDates::storedText)
 )
+
+/** A schedule's row as restored from a backup: its checkpoint kept, its version 1. */
+internal fun StoredSchedule.toEntity(): ScheduleEntity {
+    val entry = schedule.entry.stored
+    val rule = schedule.recurrence.rule.stored
+    return ScheduleEntity(
+        id = schedule.id.value,
+        kind = entry.kind,
+        categoryId = entry.categoryId,
+        sourceKey = entry.sourceKey,
+        sourceName = entry.sourceName,
+        amountMinor = entry.amountMinor,
+        currency = entry.currency,
+        note = entry.note,
+        rule = rule.rule,
+        ruleFirst = rule.first,
+        ruleSecond = rule.second,
+        startDate = EffectiveDates.storedText(schedule.recurrence.start),
+        endDate = schedule.recurrence.end?.let(EffectiveDates::storedText),
+        sequence = sequence,
+        handledDate = handled?.date?.let(EffectiveDates::storedText),
+        handledSlot = handled?.slot,
+        version = version,
+        createdAt = createdAt.toEpochMilli(),
+        updatedAt = updatedAt.toEpochMilli()
+    )
+}

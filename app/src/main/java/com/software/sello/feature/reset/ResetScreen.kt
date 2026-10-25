@@ -162,7 +162,11 @@ private fun Counts(
         RestoreBody(
             stringResource(
                 R.string.reset_counts_body,
-                contentsText(current, withGoals = current.goals > 0)
+                contentsText(
+                    current,
+                    withGoals = current.goals > 0,
+                    withSchedules = current.schedules > 0
+                )
             )
         )
         RestoreBody(stringResource(R.string.reset_backups_stay))

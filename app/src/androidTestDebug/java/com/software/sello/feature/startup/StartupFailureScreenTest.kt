@@ -146,7 +146,7 @@ class StartupFailureScreenTest {
     private val backup = CheckedBackup(
         Instant.parse("2026-10-22T19:30:00Z"),
         ZoneId.of("America/Lima"),
-        BackupSummary(categories = 2, expenses = 3, incomes = 1, 0)
+        BackupSummary(categories = 2, expenses = 3, incomes = 1, 0, 0)
     )
 
     @Test
@@ -228,7 +228,7 @@ class StartupFailureScreenTest {
     @Test
     fun aRestoredBackupIsRestauradoAndGoingOnLeaves() {
         val done = RestoreOutcome.Restored(
-            BackupSummary(2, 3, 1, 0),
+            BackupSummary(2, 3, 1, 0, 0),
             PendingPreferences(null, null)
         )
         show(StartupFailureState(restore = StartupRestoreStep.Restored(done)))
@@ -244,7 +244,7 @@ class StartupFailureScreenTest {
     @Test
     fun aLargeRestoredBackupGroupsItsThousands() {
         val done = RestoreOutcome.Restored(
-            BackupSummary(20, 10_000, 2_000, 0),
+            BackupSummary(20, 10_000, 2_000, 0, 0),
             PendingPreferences(null, null)
         )
         show(StartupFailureState(restore = StartupRestoreStep.Restored(done)))
@@ -257,7 +257,7 @@ class StartupFailureScreenTest {
     @Test
     fun aRestoredBackupWithGoalsCountsThem() {
         val done = RestoreOutcome.Restored(
-            BackupSummary(2, 3, 1, 1),
+            BackupSummary(2, 3, 1, 1, 0),
             PendingPreferences(null, null)
         )
         show(StartupFailureState(restore = StartupRestoreStep.Restored(done)))
@@ -269,7 +269,7 @@ class StartupFailureScreenTest {
     @Test
     fun preferencesNotAppliedAreNamedAndOnlyTheyAreRetried() {
         val pending = RestoreOutcome.Restored(
-            BackupSummary(2, 3, 1, 0),
+            BackupSummary(2, 3, 1, 0, 0),
             PendingPreferences(
                 null,
                 CategoryOrderingPreference(

@@ -27,7 +27,7 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResetViewModelTest {
-    private val preview = ResetPreview(BackupSummary(3, 42, 2, 0), generation = 1, revision = 9)
+    private val preview = ResetPreview(BackupSummary(3, 42, 2, 0, 0), generation = 1, revision = 9)
 
     /** Resets that answer as told and record what they were asked. */
     private class HandResets : Resets {
@@ -169,7 +169,7 @@ class ResetViewModelTest {
 
     @Test
     fun countsThatChangedAreShownAgainAndNeedBothConfirmations() = runTest {
-        val fresh = preview.copy(current = BackupSummary(3, 43, 2, 0), revision = 10)
+        val fresh = preview.copy(current = BackupSummary(3, 43, 2, 0, 0), revision = 10)
         resets.resetAnswer = ResetOutcome.Stale
         val model = model()
         resets.previewAnswer = Outcome.Success(fresh)

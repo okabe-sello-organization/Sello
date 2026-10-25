@@ -2,6 +2,7 @@ package com.software.sello.data.backup
 
 import com.software.sello.domain.model.AutomaticBudget
 import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.GoalEvent
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalMovement
@@ -9,7 +10,10 @@ import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalTargetChange
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.RepeatRule
+import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.policy.EffectiveDates
+import com.software.sello.domain.port.StoredSchedule
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
@@ -28,9 +32,9 @@ object BackupFormat {
     const val FORMAT = "sello-backup"
 
     /** What this app writes. */
-    const val VERSION = 2L
+    const val VERSION = 3L
 
-    /** What it reads: version 1 files, which hold no goals, and its own. */
+    /** What it reads: version 1 (no goals), version 2 (no schedules) and its own. */
     val READABLE = 1L..VERSION
     const val MIME_TYPE = "application/json"
 
@@ -42,7 +46,7 @@ object BackupFormat {
 }
 
 /**
- * Writes version 2 backups and reads versions 1 and 2. Reading never touches storage:
+ * Writes version 3 backups and reads versions 1 to 3. Reading never touches storage:
  * a file either becomes a [BackupPlan] or is rejected whole with the first problem found.
  */
 class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
@@ -51,7 +55,7 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
      * out a backup it would itself refuse to restore.
      */
     fun encode(contents: BackupContents): Outcome<ByteArray, BackupRejection> {
-        val text = writer.encodeToString(BackupFileV2.serializer(), contents.toWire())
+        val text = writer.encodeToString(BackupFileV3.serializer(), contents.toWire())
         val bytes = "$text\n".toByteArray(Charsets.UTF_8)
         return when (val check = read(bytes)) {
             is Outcome.Success -> Outcome.Success(bytes)
@@ -85,10 +89,15 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
             is Outcome.Failure -> return header
         }
         val file = try {
-            if (version == 1L) {
-                reader.decodeFromString(BackupFileV1.serializer(), text).asVersion2()
-            } else {
-                reader.decodeFromString(BackupFileV2.serializer(), text)
+            when (version) {
+                1L -> reader.decodeFromString(
+                    BackupFileV1.serializer(),
+                    text
+                ).asVersion2().asVersion3()
+
+                2L -> reader.decodeFromString(BackupFileV2.serializer(), text).asVersion3()
+
+                else -> reader.decodeFromString(BackupFileV3.serializer(), text)
             }
         } catch (failure: SerializationException) {
             return Outcome.Failure(BackupRejection.Malformed(pathOf(failure)))
@@ -163,13 +172,13 @@ private fun BudgetLimit.kind() = when (this) {
  * Records are written in a fixed order, so the same data always makes the same file:
  * categories by creation then identifier, limits by category then month, records by
  * date then sequence, goals by creation then identifier, each goal's history by
- * recording position.
+ * recording position, schedules by creation order, each schedule's pauses by first day.
  */
-internal fun BackupContents.toWire(): BackupFileV2 = BackupFileV2(
+internal fun BackupContents.toWire(): BackupFileV3 = BackupFileV3(
     format = BackupFormat.FORMAT,
     version = JsonPrimitive(BackupFormat.VERSION),
     exportedAt = exportedAt.toString(),
-    financial = FinancialV2(
+    financial = FinancialV3(
         sourceRevision = JsonPrimitive(financial.revision),
         zone = financial.zone.id,
         categories = financial.categories
@@ -210,7 +219,7 @@ internal fun BackupContents.toWire(): BackupFileV2 = BackupFileV2(
         expenses = financial.expenses
             .sortedWith(compareBy({ it.date }, { it.sequence }))
             .map {
-                ExpenseV1(
+                ExpenseV3(
                     id = it.id.value,
                     categoryId = it.categoryId.value,
                     date = EffectiveDates.storedText(it.date),
@@ -219,13 +228,14 @@ internal fun BackupContents.toWire(): BackupFileV2 = BackupFileV2(
                     currency = it.amount.money.currency.code,
                     note = it.note?.value,
                     createdAt = it.createdAt.toString(),
-                    updatedAt = it.updatedAt.toString()
+                    updatedAt = it.updatedAt.toString(),
+                    origin = it.origin?.toWire()
                 )
             },
         incomes = financial.incomes
             .sortedWith(compareBy({ it.date }, { it.sequence }))
             .map {
-                IncomeV1(
+                IncomeV3(
                     id = it.id.value,
                     date = EffectiveDates.storedText(it.date),
                     sequence = JsonPrimitive(it.sequence),
@@ -235,13 +245,15 @@ internal fun BackupContents.toWire(): BackupFileV2 = BackupFileV2(
                     sourceName = (it.source as? IncomeSource.Other)?.name?.value,
                     note = it.note?.value,
                     createdAt = it.createdAt.toString(),
-                    updatedAt = it.updatedAt.toString()
+                    updatedAt = it.updatedAt.toString(),
+                    origin = it.origin?.toWire()
                 )
             },
         goals = financial.goals
             .sortedWith(compareBy({ it.goal.createdAt }, { it.goal.id.value }))
             .map { history -> history.toWire() },
-        featuredGoal = financial.featuredGoal?.value
+        featuredGoal = financial.featuredGoal?.value,
+        schedules = financial.schedules.sortedBy { it.sequence }.map { it.toWire() }
     ),
     preferences = preferences?.let {
         PreferencesV1(
@@ -294,3 +306,50 @@ private fun GoalHistory.toWire(): GoalV2 = GoalV2(
         }
     }
 )
+
+private fun EntryOrigin.toWire() = OriginV3(
+    schedule = schedule.value,
+    date = EffectiveDates.storedText(occurrence.date),
+    slot = JsonPrimitive(occurrence.slot)
+)
+
+private fun StoredSchedule.toWire(): ScheduleV3 {
+    val entry = schedule.entry
+    val rule = schedule.recurrence.rule
+    return ScheduleV3(
+        id = schedule.id.value,
+        kind = if (entry is ScheduledEntry.Payment) WireNames.PAYMENT else WireNames.INCOME,
+        categoryId = (entry as? ScheduledEntry.Payment)?.categoryId?.value,
+        source = (entry as? ScheduledEntry.Income)?.source?.key,
+        sourceName = ((entry as? ScheduledEntry.Income)?.source as? IncomeSource.Other)?.name?.value,
+        amount = JsonPrimitive(entry.amount.money.minorUnits),
+        currency = entry.amount.money.currency.code,
+        note = entry.note?.value,
+        repeat = when (rule) {
+            is RepeatRule.Monthly -> WireNames.MONTHLY
+            is RepeatRule.TwiceMonthly -> WireNames.TWICE_MONTHLY
+            is RepeatRule.EveryDays -> WireNames.EVERY_DAYS
+            is RepeatRule.EveryWeeks -> WireNames.EVERY_WEEKS
+        },
+        first = JsonPrimitive(
+            when (rule) {
+                is RepeatRule.Monthly -> rule.day
+                is RepeatRule.TwiceMonthly -> rule.first
+                is RepeatRule.EveryDays -> rule.days
+                is RepeatRule.EveryWeeks -> rule.weeks
+            }
+        ),
+        second = JsonPrimitive((rule as? RepeatRule.TwiceMonthly)?.second),
+        start = EffectiveDates.storedText(schedule.recurrence.start),
+        end = schedule.recurrence.end?.let(EffectiveDates::storedText),
+        sequence = JsonPrimitive(sequence),
+        handled = handled?.let {
+            HandledV3(EffectiveDates.storedText(it.date), JsonPrimitive(it.slot))
+        },
+        pauses = schedule.recurrence.pauses.sortedBy { it.from }.map {
+            PauseV3(EffectiveDates.storedText(it.from), it.until?.let(EffectiveDates::storedText))
+        },
+        createdAt = createdAt.toString(),
+        updatedAt = updatedAt.toString()
+    )
+}
