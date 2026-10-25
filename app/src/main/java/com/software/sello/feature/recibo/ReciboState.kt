@@ -60,7 +60,13 @@ enum class ReciboStamp {
     Paused,
 
     /** Nothing was configured for the category that month. */
-    NotSet
+    NotSet,
+
+    /** Reserved payments take exactly what is left. "Sin margen". */
+    NoMargin,
+
+    /** Reserved payments take more than what is left. "Revisar". */
+    Review
 }
 
 /** An amount with the sentence it completes and its verdict. [amount] carries no sign. */
@@ -76,7 +82,10 @@ enum class ReciboAnswerLabel {
     Remaining,
 
     /** "Has gastado este mes": there is no finite limit to compare with. */
-    Spent
+    Spent,
+
+    /** "Falta para tus pagos": what reserved payments need beyond what is left. */
+    ShortForPayments
 }
 
 /**
@@ -91,7 +100,24 @@ data class ReciboSummary(
     val stamp: ReciboStamp,
     val perDay: ReciboPerDay? = null,
     val closed: ReciboClosedMonth? = null,
-    val adjustable: Boolean = false
+    val adjustable: Boolean = false,
+    /** While payments are reserved: the footnote "Incluye … separado para … pagos previstos". */
+    val reserved: ReciboReserved? = null,
+    /** While reserved payments need more than is left: the two facts behind it. */
+    val shortfall: ReciboShortfall? = null
+)
+
+/** What is reserved for the [count] payments still to come this month. */
+data class ReciboReserved(val total: MoneyTextValue, val count: Int)
+
+/**
+ * "Quedan [left] y tus pagos previstos suman [reserved]." or, when the limit is already
+ * passed ([over]), "Pasaste tu límite por [left] …". [left] carries no sign.
+ */
+data class ReciboShortfall(
+    val left: MoneyTextValue,
+    val over: Boolean,
+    val reserved: MoneyTextValue
 )
 
 /** What can be spent each day from today to the end of the month, today included. */
@@ -130,4 +156,7 @@ sealed interface ReciboAction {
 
     /** Open the form on an existing category. Navigation is the root's. */
     data class EditCategory(val id: String) : ReciboAction
+
+    /** Open the payments reserved this month. Navigation is the root's. */
+    data object OpenReserved : ReciboAction
 }

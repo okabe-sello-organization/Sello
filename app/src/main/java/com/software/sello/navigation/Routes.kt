@@ -67,6 +67,10 @@ data class IncomeEntryRoute(val repeat: Boolean = false)
 @Serializable
 data class SchedulesRoute(val income: Boolean = false)
 
+/** The payments reserved this month, opened from Recibo's footnote. */
+@Serializable
+data object UpcomingPaymentsRoute
+
 /** Changing one schedule. The screen reads the schedule itself. */
 @Serializable
 data class ScheduleRoute(val scheduleId: String)

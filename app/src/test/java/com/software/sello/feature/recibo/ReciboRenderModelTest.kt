@@ -5,17 +5,27 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Occurrence
+import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ReservedPayment
+import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.MonthBudgetState
+import com.software.sello.domain.policy.MonthlyBudgetPolicy
+import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.SnapshotState
+import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
+import com.software.sello.feature.expense.pesos
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
+import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -407,5 +417,95 @@ class ReciboRenderModelTest {
         )
 
         assertEquals(false, state.summary.adjustable)
+    }
+
+    // --- Payments reserved (SELLO-101, recurrence examples RE25–RE29) ---
+
+    /** 22 October, ten days left: Hogar limited to 1.000.000 and [spentPesos] spent in it. */
+    private fun reserved(spentPesos: Long, vararg payments: Long): ReciboSummary {
+        val reserved = payments.mapIndexed { index, pesos ->
+            ReservedPayment(
+                (ScheduleId.of(uuid(700 + index)) as Outcome.Success).value,
+                categoryId(6),
+                null,
+                Occurrence(LocalDate.parse("2026-10-28"), 1),
+                pesos(pesos)
+            )
+        }
+        val snapshot = (
+            MonthlyBudgetPolicy.snapshot(
+                YearMonth.of(2026, 10),
+                FinancialDay(LocalDate.parse("2026-10-22"), ZoneId.of("America/Bogota")),
+                1,
+                1,
+                listOf(categoryIn(6, "Hogar", 1_000_000)),
+                listOf(storedExpense(next++, 6, "2026-10-05", spentPesos)),
+                reserved
+            ) as Outcome.Success
+            ).value
+        return shown(SnapshotState.Ready(snapshot)).summary
+    }
+
+    @Test
+    fun re25aReservedPaymentLeavesAlDiaWithItsFootnote() {
+        assertEquals(
+            ReciboSummary(
+                ReciboAnswerLabel.Remaining,
+                plain("400.000"),
+                ReciboStamp.OnTrack,
+                ReciboPerDay(plain("40.000"), 10),
+                reserved = ReciboReserved(plain("200.000"), 1)
+            ),
+            reserved(400_000, 200_000)
+        )
+    }
+
+    @Test
+    fun re27reservedPaymentsThatUseUpWhatIsLeftAreSinMargenAtZero() {
+        assertEquals(
+            ReciboSummary(
+                ReciboAnswerLabel.Remaining,
+                plain("0"),
+                ReciboStamp.NoMargin,
+                ReciboPerDay(plain("0"), 10),
+                reserved = ReciboReserved(plain("100.000"), 1)
+            ),
+            reserved(900_000, 100_000)
+        )
+    }
+
+    @Test
+    fun re28moreReservedThanLeftIsRevisarWithWhatIsMissingAndTheTwoFacts() {
+        assertEquals(
+            ReciboSummary(
+                ReciboAnswerLabel.ShortForPayments,
+                plain("50.000"),
+                ReciboStamp.Review,
+                ReciboPerDay(plain("0"), 10),
+                adjustable = true,
+                reserved = ReciboReserved(plain("150.000"), 1),
+                shortfall = ReciboShortfall(
+                    plain("100.000"),
+                    over = false,
+                    reserved = plain("150.000")
+                )
+            ),
+            reserved(900_000, 150_000)
+        )
+    }
+
+    @Test
+    fun re29pastTheLimitWithPaymentsReservedIsRevisarNotExcedido() {
+        val summary = reserved(1_080_000, 120_000, 80_000)
+
+        assertEquals(ReciboAnswerLabel.ShortForPayments, summary.label)
+        assertEquals(plain("280.000"), summary.amount)
+        assertEquals(ReciboStamp.Review, summary.stamp)
+        assertEquals(
+            ReciboShortfall(plain("80.000"), over = true, reserved = plain("200.000")),
+            summary.shortfall
+        )
+        assertEquals(ReciboReserved(plain("200.000"), 2), summary.reserved)
+        assertEquals(StampInk.Warn, stampInk(summary.stamp))
     }
 }

@@ -26,6 +26,7 @@ import com.software.sello.feature.income.IncomeHistoryViewModel
 import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.ReciboViewModel
+import com.software.sello.feature.recibo.UpcomingPaymentsViewModel
 import com.software.sello.feature.recurrence.CatchUpRunner
 import com.software.sello.feature.recurrence.ScheduleEditorViewModel
 import com.software.sello.feature.recurrence.SchedulesViewModel
@@ -233,6 +234,7 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get()
         )
     }
+    initializer { UpcomingPaymentsViewModel(koin.get(), koin.get(), koin.get()) }
     initializer {
         SchedulesViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get(), koin.get())
     }

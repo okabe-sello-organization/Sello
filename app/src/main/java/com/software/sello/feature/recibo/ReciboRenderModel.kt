@@ -7,6 +7,7 @@ import com.software.sello.domain.model.LimitedBudget
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.model.PastVerdict
+import com.software.sello.domain.model.ReservedStanding
 import com.software.sello.domain.model.Verdict
 import com.software.sello.domain.policy.CategoryOrderPolicy
 import com.software.sello.domain.policy.MonthBudgetState
@@ -61,10 +62,22 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
 
             is OverallBudget.Limited -> {
                 val budget = overall.budget
+                val reservation = overall.reservation
+                val margin = reservation?.margin ?: budget.remaining
+                val short = reservation?.standing == ReservedStanding.Short
                 ReciboSummary(
-                    label = ReciboAnswerLabel.Remaining,
-                    amount = money.format(budget.remaining),
-                    stamp = figure(budget).stamp,
+                    // With payments reserved the headline is what they leave (ADR 0012 BG2).
+                    label = if (short) {
+                        ReciboAnswerLabel.ShortForPayments
+                    } else {
+                        ReciboAnswerLabel.Remaining
+                    },
+                    amount = money.format(reservation?.shortfall ?: margin),
+                    stamp = when (reservation?.standing) {
+                        ReservedStanding.NoMargin -> ReciboStamp.NoMargin
+                        ReservedStanding.Short -> ReciboStamp.Review
+                        else -> figure(budget).stamp
+                    },
                     perDay = overall.allowance?.let {
                         ReciboPerDay(money.format(it.amount), it.availableDays)
                     },
@@ -75,8 +88,18 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
                         null
                     },
                     // A finished month is not adjusted from here.
-                    adjustable = (budget.standing as? BudgetStanding.Current)?.verdict ==
-                        Verdict.Over
+                    adjustable = short || (budget.standing as? BudgetStanding.Current)?.verdict ==
+                        Verdict.Over,
+                    reserved = reservation?.let {
+                        ReciboReserved(money.format(it.total), it.payments.size)
+                    },
+                    shortfall = reservation?.takeIf { short }?.let {
+                        ReciboShortfall(
+                            left = money.format(it.overLimitBy ?: budget.remaining),
+                            over = it.overLimitBy != null,
+                            reserved = money.format(it.total)
+                        )
+                    }
                 )
             }
         }

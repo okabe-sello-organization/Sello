@@ -48,7 +48,10 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
@@ -57,6 +60,7 @@ import com.software.sello.designsystem.component.CategoryCell
 import com.software.sello.designsystem.component.CategoryGrid
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
+import com.software.sello.designsystem.component.Footnote
 import com.software.sello.designsystem.component.LineAction
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
@@ -143,7 +147,7 @@ fun ReciboScreen(
                 if (state.stale) {
                     StaleSlip({ onAction(ReciboAction.Retry) }, Modifier.testTag(RECIBO_STALE_TAG))
                 }
-                SummarySlip(state.summary, toCategories)
+                SummarySlip(state.summary, toCategories) { onAction(ReciboAction.OpenReserved) }
                 goal()
                 CategoriesSlip(
                     state.categories,
@@ -189,11 +193,12 @@ internal fun StaleSlip(onRetry: () -> Unit, modifier: Modifier = Modifier) {
  * pesos. Excedido." The minus is a character on the screen and a word when read.
  */
 @Composable
-private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit) {
+private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved: () -> Unit) {
     val label = stringResource(
         when (summary.label) {
             ReciboAnswerLabel.Remaining -> R.string.recibo_answer_remaining
             ReciboAnswerLabel.Spent -> R.string.recibo_answer_spent
+            ReciboAnswerLabel.ShortForPayments -> R.string.recibo_answer_short
         }
     )
     val stamp = stampText(summary.stamp)
@@ -211,12 +216,54 @@ private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit) {
         )
     ) {
         summary.closed?.let { ClosedMonthNote(it) }
+        // Revisar's two facts under the big number, before the tear line (v2 Recibo).
+        summary.shortfall?.let { ShortfallNote(it) }
         summary.perDay?.let { PerDayFigure(it, over = summary.stamp == ReciboStamp.Over) }
+        summary.reserved?.let { ReservedFootnote(it, onReserved) }
         if (summary.adjustable) AdjustBudgetLink(onAdjust)
     }
 }
 
-/** "Ajustar presupuesto ›", only for a month in progress that is Excedido. */
+/** "Quedan 100.000 y tus pagos previstos suman 150.000." or "Pasaste tu límite por …". */
+@Composable
+private fun ShortfallNote(shortfall: ReciboShortfall) {
+    val sentence = if (shortfall.over) R.string.recibo_shortfall_over else R.string.recibo_shortfall
+    // On screen the figures as written; read aloud with their currency.
+    val spoken = stringResource(sentence, shortfall.left.spoken, shortfall.reserved.spoken)
+    Text(
+        text = stringResource(sentence, shortfall.left.digits, shortfall.reserved.digits),
+        style = MaterialTheme.typography.bodyMedium,
+        color = SelloTheme.colors.inkSoft,
+        modifier = Modifier
+            .padding(top = 8.dp)
+            .testTag(RECIBO_SHORTFALL_TAG)
+            .clearAndSetSemantics { contentDescription = spoken }
+    )
+}
+
+/** "Incluye 200.000 separado para 1 pago previsto ›": opens the payments reserved. */
+@Composable
+private fun ReservedFootnote(reserved: ReciboReserved, onClick: () -> Unit) {
+    val payments =
+        pluralStringResource(R.plurals.recibo_reserved_payments, reserved.count, reserved.count)
+    val template = stringResource(R.string.recibo_reserved, AMOUNT_MARK, payments)
+    val text = buildAnnotatedString {
+        val at = template.indexOf(AMOUNT_MARK)
+        append(template.substring(0, at))
+        withStyle(SpanStyle(fontWeight = FontWeight.W800, color = SelloTheme.colors.ink)) {
+            append(reserved.total.digits)
+        }
+        append(template.substring(at + AMOUNT_MARK.length))
+    }
+    val spoken = stringResource(R.string.recibo_reserved, reserved.total.spoken, payments)
+    Footnote(
+        text = text,
+        onClick = onClick,
+        modifier = Modifier.testTag(RECIBO_RESERVED_TAG).semantics { contentDescription = spoken }
+    )
+}
+
+/** "Ajustar presupuesto ›", for a month in progress that is Excedido or Revisar. */
 @Composable
 private fun AdjustBudgetLink(onClick: () -> Unit) {
     val spoken = stringResource(R.string.recibo_adjust_budget_description)
@@ -473,6 +520,8 @@ internal fun stampText(stamp: ReciboStamp): String = stringResource(
         ReciboStamp.NoLimit -> R.string.recibo_stamp_no_limit
         ReciboStamp.Paused -> R.string.recibo_stamp_paused
         ReciboStamp.NotSet -> R.string.recibo_stamp_not_set
+        ReciboStamp.NoMargin -> R.string.recibo_stamp_no_margin
+        ReciboStamp.Review -> R.string.recibo_stamp_review
     }
 )
 
@@ -481,13 +530,18 @@ internal fun stampInk(stamp: ReciboStamp): StampInk = when (stamp) {
 
     ReciboStamp.Over, ReciboStamp.OverLimit -> StampInk.Over
 
-    ReciboStamp.AtLimit, ReciboStamp.NoLimit, ReciboStamp.Paused, ReciboStamp.NotSet ->
-        StampInk.Neutral
+    ReciboStamp.AtLimit, ReciboStamp.NoLimit, ReciboStamp.Paused, ReciboStamp.NotSet,
+    ReciboStamp.NoMargin -> StampInk.Neutral
+
+    ReciboStamp.Review -> StampInk.Warn
 }
 
 fun reciboCategoryTag(id: String) = "recibo:category:$id"
 
 const val RECIBO_SUMMARY_TAG = "recibo:summary"
+const val RECIBO_SHORTFALL_TAG = "recibo:shortfall"
+const val RECIBO_RESERVED_TAG = "recibo:reserved"
+private const val AMOUNT_MARK = "\u0000"
 const val RECIBO_PER_DAY_TAG = "recibo:per-day"
 const val RECIBO_CLOSED_TAG = "recibo:closed"
 const val RECIBO_CATEGORIES_TAG = "recibo:categories"
