@@ -223,7 +223,10 @@ class RestoreCommandContractTest {
         val staged = stage()
         val outcome = restores().replace(staged)
 
-        assertEquals(BackupSummary(categories = 1, expenses = 2, incomes = 0, 0, 1), staged.current)
+        assertEquals(
+            BackupSummary(categories = 1, expenses = 2, incomes = 0, 0, 1, investments = 1),
+            staged.current
+        )
         assertEquals(
             BackupSummary(categories = 2, expenses = 3, incomes = 1, 0, 0),
             staged.replacement
@@ -319,7 +322,7 @@ class RestoreCommandContractTest {
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
         val newer = restores().stage(
-            String(bytes).replaceFirst("\"version\": 3", "\"version\": 4").toByteArray()
+            String(bytes).replaceFirst("\"version\": 4", "\"version\": 5").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)
@@ -364,7 +367,7 @@ class RestoreCommandContractTest {
         assertEquals(before, everyRow())
 
         val fresh = restores().staged()!!
-        assertEquals(BackupSummary(1, 3, 0, 0, 1), fresh.current)
+        assertEquals(BackupSummary(1, 3, 0, 0, 1, investments = 1), fresh.current)
         assertTrue(restores().replace(fresh) is RestoreOutcome.Restored)
     }
 
