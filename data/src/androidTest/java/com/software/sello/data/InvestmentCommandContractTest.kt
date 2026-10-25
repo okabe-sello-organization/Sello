@@ -293,6 +293,23 @@ class InvestmentCommandContractTest {
     }
 
     @Test
+    fun aMovementOfZeroOtherThanAValueAndADateBeforeYearZeroAreRefused() = runBlocking {
+        ledger.created(ledger.createInvestment("Fondo", pesos(1_000_000), "2026-10-01"))
+
+        val zero = ledger.movement(first, Contribution, pesosValue(0), "2026-10-02")
+        val ancient = ledger.movement(
+            first,
+            Valuation,
+            pesosValue(1_000_000),
+            LocalDate.of(-1, 1, 1).toString()
+        )
+
+        assertEquals(Rejected(InvestmentRejection.InvalidAmount), zero)
+        assertEquals(Rejected(InvestmentRejection.InvalidDate), ancient)
+        assertEquals(2, movements().size)
+    }
+
+    @Test
     fun in25NothingButAnAporteMayComeBeforeTheFirstAporte() = runBlocking {
         ledger.created(ledger.createInvestment("Fondo", pesos(3_000_000), "2025-05-03"))
 

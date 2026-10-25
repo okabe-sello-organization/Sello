@@ -62,11 +62,6 @@ import java.time.LocalDate
  * investment's version. Nothing here reads or writes any other record (rule 15).
  *
  * A deleted movement shares [undo] with expenses, income and goal movements.
- *
- * Two inputs the port has no rejection of their own for are refused as
- * [InvestmentRejection.Unrepresentable]: a date whose year cannot be stored (before year
- * 0000; a later one is already in the future) and an aporte, retiro or dividend of 0,
- * which only a recorded value may be (rule 2).
  */
 class RoomInvestmentCommands internal constructor(
     private val database: SelloDatabase,
@@ -250,7 +245,7 @@ class RoomInvestmentCommands internal constructor(
                 is EffectiveDateError.InFuture -> InvestmentRejection.FutureDate(today)
 
                 EffectiveDateError.OutOfRange, is EffectiveDateError.Malformed ->
-                    InvestmentRejection.Unrepresentable
+                    InvestmentRejection.InvalidDate
             }
         }
     }
@@ -264,7 +259,7 @@ class RoomInvestmentCommands internal constructor(
         amount.money.currency != currency -> InvestmentRejection.CurrencyMismatch
 
         investmentAmount(kind, amount.money) !is Outcome.Success ->
-            InvestmentRejection.Unrepresentable
+            InvestmentRejection.InvalidAmount
 
         else -> null
     }
