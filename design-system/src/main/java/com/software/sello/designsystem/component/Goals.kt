@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,17 +38,22 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -216,6 +223,12 @@ fun MilestoneRow(
 
 private const val KEPT_ALPHA = 0.42f
 
+/**
+ * Recibo's goal: the pill itself is the progress bar, filled to [progress] with a brand
+ * edge where the fill ends. The main part opens the goal and, with [openDescription], is
+ * said that way ("Viaje a la costa, 57 por ciento. Ver meta") with its exact progress;
+ * the round **+** is Aportar, said as [contributeLabel].
+ */
 @Composable
 fun GoalPill(
     name: String,
@@ -225,63 +238,149 @@ fun GoalPill(
     contributeLabel: String,
     onOpen: () -> Unit,
     onContribute: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    openDescription: String? = null
 ) {
     val colors = SelloTheme.colors
+    val fill = progress.coerceIn(0f, 1f)
     Row(
-        modifier.fillMaxWidth().clip(CircleShape).background(colors.paper).drawBehind {
-            drawRect(
-                colors.brandSoft,
-                size = androidx.compose.ui.geometry.Size(
-                    size.width * progress.coerceIn(0f, 1f),
-                    size.height
-                )
-            )
-        }.heightIn(min = 56.dp),
+        modifier.fillMaxWidth().heightIn(min = 56.dp).clip(CircleShape)
+            .background(colors.paper).drawBehind {
+                val width = size.width * fill
+                drawRect(colors.brandSoft, size = Size(width, size.height))
+                if (fill > 0f) {
+                    val edge = 2.dp.toPx()
+                    drawRect(
+                        colors.brand,
+                        topLeft = Offset(width - edge, 0f),
+                        size = Size(edge, size.height)
+                    )
+                }
+            }.padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            Modifier.weight(
-                1f
-            ).heightIn(min = 56.dp).clickable(role = Role.Button, onClick = onOpen).padding(12.dp),
+            Modifier.weight(1f).heightIn(min = 48.dp).clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onOpen)
+                .semantics(mergeDescendants = true) {
+                    openDescription?.let { contentDescription = it }
+                    progressBarRangeInfo = ProgressBarRangeInfo(fill, 0f..1f)
+                }
+                .padding(start = 14.dp, end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(icon.painter(), null, tint = colors.brand)
-            Text(name, Modifier.weight(1f), fontWeight = FontWeight.W800, color = colors.ink)
-            Text(percentage, color = colors.ink)
+            Icon(icon.painter(), null, Modifier.size(22.dp), tint = colors.onBrandSoft)
+            Text(
+                name,
+                Modifier.weight(1f),
+                fontWeight = FontWeight.W800,
+                color = colors.onBrandSoft,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                percentage,
+                color = colors.ink,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.W900)
+            )
         }
-        IconButton(
-            onClick = onContribute,
-            modifier = Modifier.padding(4.dp).background(colors.paper, CircleShape)
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(48.dp).clip(CircleShape).background(colors.brand)
+                .clickable(role = Role.Button, onClick = onContribute)
+                .semantics { contentDescription = contributeLabel }
         ) {
-            Icon(SelloIcon.Add.painter(), contributeLabel, tint = colors.brand)
+            Icon(SelloIcon.Add.painter(), null, tint = colors.onBrand)
         }
     }
 }
 
+/**
+ * Another goal at 100 %, on Recibo: a green pill with [name], [message] ("Llegó al
+ * 100 %") and a filled [actionLabel] that marks it lograda; [busy] while that is saved.
+ * Where the three do not fit on one line (a narrow screen, a long name, large text) the
+ * action moves under the name and the row becomes a card, so nothing is cut.
+ */
 @Composable
 fun ReachedRow(
     name: String,
     message: String,
     actionLabel: String,
     onComplete: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    busy: Boolean = false
 ) {
-    Column(
-        modifier.fillMaxWidth().background(
-            SelloTheme.colors.semantic.gainSoft,
-            SelloTheme.shapes.control
-        ).padding(12.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(SelloIcon.Check.painter(), null, tint = SelloTheme.colors.semantic.onGainSoft)
-            Column(Modifier.padding(start = 8.dp)) {
-                Text(name, fontWeight = FontWeight.W800)
-                Text(message)
+    val colors = SelloTheme.colors
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val nameStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.W800)
+    val messageStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W700)
+    val actionStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800)
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val widths = with(density) {
+            listOf(name to nameStyle, message to messageStyle, actionLabel to actionStyle)
+                .map { (text, style) -> measurer.measure(text, style).size.width.toDp() }
+        }
+        // Start padding, icon and gaps, the wider text, the action and its padding, end padding.
+        val inline = 14.dp + 22.dp + 10.dp + maxOf(widths[0], widths[1]) + 10.dp +
+            widths[2] + 28.dp + 6.dp <= maxWidth
+        val shape = if (inline) CircleShape else SelloTheme.shapes.control
+        val texts = @Composable { textModifier: Modifier ->
+            Column(textModifier.semantics(mergeDescendants = true) {}) {
+                Text(
+                    name,
+                    color = colors.ink,
+                    style = nameStyle,
+                    maxLines = if (inline) 1 else Int.MAX_VALUE,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(message, color = colors.semantic.gain, style = messageStyle)
             }
         }
-        SelloButton(actionLabel, onComplete, kind = ButtonKind.Text, tone = ButtonTone.Gain)
+        val check = @Composable {
+            Icon(SelloIcon.Check.painter(), null, Modifier.size(22.dp), tint = colors.semantic.gain)
+        }
+        val action = @Composable {
+            // The v2 row's own compact button: 44dp, so the name keeps its room.
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.heightIn(min = 44.dp).clip(CircleShape)
+                    .background(colors.semantic.gain)
+                    .clickable(enabled = !busy, role = Role.Button, onClick = onComplete)
+                    .alpha(if (busy) 0.6f else 1f)
+                    .padding(horizontal = 14.dp)
+            ) {
+                Text(actionLabel, color = colors.semantic.onGain, style = actionStyle)
+            }
+        }
+        val surface = Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(shape)
+            .background(colors.semantic.gainSoft)
+        if (inline) {
+            Row(
+                surface.padding(start = 14.dp, top = 6.dp, end = 6.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                check()
+                texts(Modifier.weight(1f))
+                action()
+            }
+        } else {
+            Column(
+                surface.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    check()
+                    texts(Modifier.weight(1f))
+                }
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { action() }
+            }
+        }
     }
 }
 

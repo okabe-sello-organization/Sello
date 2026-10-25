@@ -22,6 +22,7 @@ import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
+import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
@@ -166,6 +167,14 @@ object TestCommands {
                 goalVersion(goal),
                 1.seconds
             )
+        )
+        assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
+    }
+
+    /** Chooses [goal] for Recibo, as "Mostrar en Recibo" does, through the real command. */
+    fun featureGoal(goal: String) = runBlocking {
+        val outcome = koin.get<GoalCommands>().submit(
+            FeatureGoal(operation(), generation(), GoalId.of(goal).value())
         )
         assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
     }

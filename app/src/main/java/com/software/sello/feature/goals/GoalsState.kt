@@ -204,3 +204,47 @@ sealed interface GoalDetailAction {
     /** The big moment is closed. */
     data object CelebrationDone : GoalDetailAction
 }
+
+/**
+ * Recibo's goal (rule 12): the goal shown as the pill, and another goal waiting at
+ * 100 %. Read apart from the month, so Recibo's answer never waits on goals.
+ */
+sealed interface ReciboGoalState {
+    /** A past month, no active goal, or the first read still on its way. */
+    data object Hidden : ReciboGoalState
+
+    /** Goals could not be read and none was read before: said, never shown as none. */
+    data object Failed : ReciboGoalState
+
+    /**
+     * [pill] is the goal Recibo shows; [reached] another active goal at 100 %, waiting
+     * to be marked. Either may be absent while a completion's moment is still open.
+     */
+    data class Shown(
+        val pill: ReciboGoalPill?,
+        val reached: ReciboReachedGoal?,
+        val completion: CompletionState = CompletionState.Idle
+    ) : ReciboGoalState
+}
+
+/** The goal on Recibo, filled to its rounded-down [percentage]. */
+@Immutable
+data class ReciboGoalPill(
+    val id: String,
+    val name: String,
+    val iconKey: String,
+    val percentage: Long
+)
+
+/** Another active goal at 100 %, offered to be marked lograda from Recibo. */
+@Immutable
+data class ReciboReachedGoal(val id: String, val name: String, val iconKey: String)
+
+sealed interface ReciboGoalAction {
+    data object Retry : ReciboGoalAction
+
+    data class MarkComplete(val id: String) : ReciboGoalAction
+
+    /** The big moment is closed. */
+    data object CelebrationDone : ReciboGoalAction
+}
