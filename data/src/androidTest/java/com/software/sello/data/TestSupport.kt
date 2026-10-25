@@ -20,11 +20,17 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CatchUpNoticePreferences
+import com.software.sello.domain.port.PreferenceFailure
+import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.PreferenceWrite
 import java.io.File
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.rules.ExternalResource
 
 /** Real database files in the test app's private storage, closed and removed afterwards. */
@@ -125,3 +131,20 @@ fun income(number: Int, date: String, sequence: Long, pesos: Long, source: Incom
 )
 
 fun finite(pesos: Long): BudgetLimit = BudgetLimit.finite(Money.cop(pesos)).valueOrFail()
+
+/** When the catch-up notice was last dismissed, as a test sets it; [fail] refuses writes. */
+class NoticeSeen : CatchUpNoticePreferences {
+    var seen: Instant? = null
+    var fail = false
+    val marks = mutableListOf<Instant>()
+
+    override fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>> =
+        flowOf(PreferenceRead.Ready(seen))
+
+    override suspend fun markCatchUpNoticeSeen(at: Instant): PreferenceWrite {
+        if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+        marks += at
+        seen = at
+        return PreferenceWrite.Saved
+    }
+}

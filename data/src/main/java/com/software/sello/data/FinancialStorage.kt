@@ -35,6 +35,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.BackupExports
+import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.CategoryInsightsSnapshots
@@ -155,11 +156,20 @@ class FinancialStorage internal constructor(
     fun restores(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
+        notice: CatchUpNoticePreferences,
         ids: RecordIdSource,
         audit: AuditClock,
         dispatchers: DispatcherProvider
-    ): Restores =
-        RoomRestores(database, restoreFolder, appearance, ordering, ids, audit, dispatchers)
+    ): Restores = RoomRestores(
+        database,
+        restoreFolder,
+        appearance,
+        ordering,
+        notice,
+        ids,
+        audit,
+        dispatchers
+    )
 
     /**
      * Erasing this storage on request: its rows, its restore folder, the copy set aside

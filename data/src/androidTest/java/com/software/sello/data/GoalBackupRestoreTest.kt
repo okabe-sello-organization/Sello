@@ -158,6 +158,7 @@ class GoalBackupRestoreTest {
         folder.restoreFolder,
         preferences,
         preferences,
+        NoticeSeen(),
         { uuid(nextId++) },
         { target.audit },
         dispatchers

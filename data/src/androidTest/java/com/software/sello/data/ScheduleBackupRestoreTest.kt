@@ -5,6 +5,7 @@ import com.software.sello.data.backup.BackupExport
 import com.software.sello.data.backup.RoomBackupSnapshots
 import com.software.sello.data.backup.RoomRestores
 import com.software.sello.data.repository.RoomScheduleCatchUp
+import com.software.sello.data.repository.RoomScheduleRecordReads
 import com.software.sello.data.reset.RoomResets
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
@@ -14,6 +15,7 @@ import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
@@ -30,7 +32,9 @@ import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.ScheduleCommandOutcome
+import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.StoredSchedule
+import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -89,6 +93,7 @@ class ScheduleBackupRestoreTest {
         override suspend fun setCategoryOrderDirection(direction: CategoryOrderDirection) =
             PreferenceWrite.Saved
     }
+    private val notice = NoticeSeen()
     private var nextId = 5_000
 
     private fun d(text: String) = LocalDate.parse(text)
@@ -167,6 +172,7 @@ class ScheduleBackupRestoreTest {
         folder.restoreFolder,
         preferences,
         preferences,
+        notice,
         { uuid(nextId++) },
         { target.audit },
         dispatchers
@@ -218,6 +224,37 @@ class ScheduleBackupRestoreTest {
         other.goTo("2026-11-05")
         // Then the salary of 30 October and the rent of 5 November; the bus is paused.
         assertEquals(listOf("2026-10-30", "2026-11-05"), other.catchUp("2026-11-05"))
+    }
+
+    /**
+     * A new phone restored from the backup: the catch-up notice lists nothing the backup
+     * brought, only what Sello records after the restore (owner, 2026-10-25).
+     */
+    @Test
+    fun aFreshInstallationRestoredListsOnlyWhatIsRecordedAfterInTheNotice() = runBlocking {
+        history()
+        val bytes = backup()
+        other.goTo("2026-10-24")
+        other.audit = Instant.parse("2026-10-24T20:00:00Z")
+        val restores = restoresInto(other, fresh)
+
+        restores.replace(restores.stage(bytes).valueOrFail())
+        val reads = RoomScheduleRecordReads(other.database)
+
+        assertEquals(listOf(Instant.parse("2026-10-24T20:00:00Z")), notice.marks)
+        assertEquals(Outcome.Success(emptyList<ScheduleRecord>()), reads.recordedAfter(notice.seen))
+        other.goTo("2026-11-05")
+        other.audit = Instant.parse("2026-11-05T13:00:00Z")
+        other.catchUp("2026-11-05")
+        assertEquals(
+            listOf("2026-10-30", "2026-11-05"),
+            (reads.recordedAfter(notice.seen) as Outcome.Success).value.map {
+                when (it) {
+                    is ScheduleRecord.Payment -> it.expense.date.toString()
+                    is ScheduleRecord.Earning -> it.income.date.toString()
+                }
+            }
+        )
     }
 
     @Test
