@@ -77,7 +77,8 @@ class InvestmentPolicyTest {
 
         val history get() = InvestmentHistory(investment, movements.toList())
 
-        fun aporte(units: Long, date: String) = add(InvestmentMovementKind.Contribution, units, date)
+        fun aporte(units: Long, date: String) =
+            add(InvestmentMovementKind.Contribution, units, date)
 
         fun retiro(units: Long, date: String) = add(InvestmentMovementKind.Withdrawal, units, date)
 
@@ -112,6 +113,14 @@ class InvestmentPolicyTest {
 
     private fun figures(recorder: Recorder): InvestmentFigures =
         InvestmentPolicy.figures(recorder.history).valueOrFail()
+
+    /** The history of [recorder] worked out with [movement] added or corrected. */
+    private fun withMovement(recorder: Recorder, movement: InvestmentMovement) =
+        InvestmentPolicy.figures(InvestmentPolicy.with(recorder.history, movement))
+
+    /** The history of [recorder] worked out without [movement]. */
+    private fun withoutMovement(recorder: Recorder, movement: InvestmentMovement) =
+        InvestmentPolicy.figures(InvestmentPolicy.without(recorder.history, movement))
 
     private fun gana(tenths: Long) = InvestmentReturn(GainDirection.Gain, tenths)
 
@@ -243,14 +252,17 @@ class InvestmentPolicyTest {
     @Test
     fun in10_aWithdrawalIsLimitedToTheValueOnItsDate() {
         val in09 = in08().apply { retiro(2_000_000, "2026-10-12") }
-        assertEquals(cop(4_000_000), InvestmentPolicy.available(in09.history, d("2026-10-12")).valueOrFail())
+        assertEquals(
+            cop(4_000_000),
+            InvestmentPolicy.available(in09.history, d("2026-10-12")).valueOrFail()
+        )
 
         val over = in09.movement(InvestmentMovementKind.Withdrawal, 4_000_001, "2026-10-13")
-        val refused = InvestmentPolicy.figures(InvestmentPolicy.with(in09.history, over)).errorOrFail()
+        val refused = withMovement(in09, over).errorOrFail()
         assertEquals(InvestmentHistoryError.WithdrawalAboveValue(over.id, cop(4_000_000)), refused)
 
         val all = in09.movement(InvestmentMovementKind.Withdrawal, 4_000_000, "2026-10-13")
-        val emptied = InvestmentPolicy.figures(InvestmentPolicy.with(in09.history, all)).valueOrFail()
+        val emptied = withMovement(in09, all).valueOrFail()
         assertEquals(cop(0), emptied.value!!.amount)
     }
 
@@ -351,7 +363,7 @@ class InvestmentPolicyTest {
         val retiro = cripto.movement(InvestmentMovementKind.Withdrawal, 1_000, "2026-10-01")
         assertEquals(
             InvestmentHistoryError.WithdrawalWithoutValue(retiro.id),
-            InvestmentPolicy.figures(InvestmentPolicy.with(cripto.history, retiro)).errorOrFail()
+            withMovement(cripto, retiro).errorOrFail()
         )
     }
 
@@ -363,15 +375,16 @@ class InvestmentPolicyTest {
         assertEquals(cop(0), figures(in19).value!!.amount)
         assertEquals(
             InvestmentHistoryError.WithdrawalAboveValue(retiro.id, cop(5_000_000)),
-            InvestmentPolicy.figures(InvestmentPolicy.without(in19.history, tenth)).errorOrFail()
+            withoutMovement(in19, tenth).errorOrFail()
         )
 
         val in09 = in08()
         val twelfth = in09.retiro(2_000_000, "2026-10-12")
-        val edited = twelfth.copy(amount = in09.amount(InvestmentMovementKind.Withdrawal, 7_000_000))
+        val edited =
+            twelfth.copy(amount = in09.amount(InvestmentMovementKind.Withdrawal, 7_000_000))
         assertEquals(
             InvestmentHistoryError.WithdrawalAboveValue(twelfth.id, cop(6_000_000)),
-            InvestmentPolicy.figures(InvestmentPolicy.with(in09.history, edited)).errorOrFail()
+            withMovement(in09, edited).errorOrFail()
         )
     }
 
@@ -379,7 +392,7 @@ class InvestmentPolicyTest {
     fun in21_deletingAWithdrawalBringsTheValueBack() {
         val in09 = in08()
         val retiro = in09.retiro(2_000_000, "2026-10-12")
-        val result = InvestmentPolicy.figures(InvestmentPolicy.without(in09.history, retiro)).valueOrFail()
+        val result = withoutMovement(in09, retiro).valueOrFail()
         assertEquals(cop(6_000_000), result.value!!.amount)
         assertEquals(cop(0), result.withdrawn)
         assertEquals(cop(1_000_000), result.gain)
@@ -394,7 +407,7 @@ class InvestmentPolicyTest {
         val onlyAporte = single.movements.first()
         assertEquals(
             InvestmentHistoryError.NoContribution,
-            InvestmentPolicy.figures(InvestmentPolicy.without(single.history, onlyAporte)).errorOrFail()
+            withoutMovement(single, onlyAporte).errorOrFail()
         )
     }
 
@@ -413,17 +426,17 @@ class InvestmentPolicyTest {
         val early = fondo.movement(InvestmentMovementKind.Valuation, 3_000_000, "2025-05-01")
         assertEquals(
             InvestmentHistoryError.BeforeFirstContribution(early.id, d("2025-05-03")),
-            InvestmentPolicy.figures(InvestmentPolicy.with(fondo.history, early)).errorOrFail()
+            withMovement(fondo, early).errorOrFail()
         )
         val sameMonth = fondo.movement(InvestmentMovementKind.Contribution, 100_000, "2025-05-01")
         assertEquals(
             YearMonth.of(2025, 5),
-            InvestmentPolicy.figures(InvestmentPolicy.with(fondo.history, sameMonth)).valueOrFail().since
+            withMovement(fondo, sameMonth).valueOrFail().since
         )
         val earlier = fondo.movement(InvestmentMovementKind.Contribution, 100_000, "2025-04-01")
         assertEquals(
             YearMonth.of(2025, 4),
-            InvestmentPolicy.figures(InvestmentPolicy.with(fondo.history, earlier)).valueOrFail().since
+            withMovement(fondo, earlier).valueOrFail().since
         )
     }
 
@@ -457,7 +470,7 @@ class InvestmentPolicyTest {
         val pesos = Recorder("Pesos").movement(InvestmentMovementKind.Dividend, 5_000, "2026-10-17")
         assertEquals(
             InvestmentHistoryError.CurrencyMismatch(pesos.id),
-            InvestmentPolicy.figures(InvestmentPolicy.with(dollars.history, pesos)).errorOrFail()
+            withMovement(dollars, pesos).errorOrFail()
         )
     }
 
@@ -491,7 +504,13 @@ class InvestmentPolicyTest {
         assertEquals(cop(4_359_838), usdItem.valueInPesos)
         assertEquals(
             "by value in pesos: 4.359.838 comes before Ecopetrol's 3.050.000",
-            listOf("Parqueadero", "CDT Banco", "Fondo de acciones", "Acciones EE. UU.", "Ecopetrol"),
+            listOf(
+                "Parqueadero",
+                "CDT Banco",
+                "Fondo de acciones",
+                "Acciones EE. UU.",
+                "Ecopetrol"
+            ),
             overview.items.map { it.history.investment.name.value }
         )
         assertEquals(
