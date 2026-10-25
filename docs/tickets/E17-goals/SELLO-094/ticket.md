@@ -53,6 +53,10 @@ then the catalog and component device tests.
   `metas-objetivo`, `metas-lograda`. The corpus test compares goals, movements and
   Recibo's choice between the fresh and resumed runs, and compares only the checks the
   resumed run takes again.
-- **Part 2, still open:** catalog examples for the extended goal components, device tests
-  for `GoalPill`, `MovementRow`, `StampTicket`, `GoalPinPill` and `IconChoiceStrip`, the
-  ticket's evidence, and closing E17.
+- **Part 2, the catalog:** examples for what E17 added to the goal components: the kept
+  stamp's relight, the LOGRADA landing in completed rows (both replayable), the goal chip's
+  percentage, the Recibo pill with its spoken description and at 0 %, the 100 % row stacked
+  and busy, the ticket relit and with the Meta waiting, and a new *Goal icon circle and
+  sliding pad* example (`goals.goal-form`) with its previews. `GoalComponentsTest` gives
+  `GoalPill`, `MovementRow`, `StampTicket`, `GoalPinPill` and `IconChoiceStrip` device tests
+  in all four colour schemes: what is said, what each control does and 48dp targets.
