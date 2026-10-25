@@ -411,8 +411,8 @@ private fun CategoriesSlip(
                     )
                     .semantics { selected = isSelected },
                 over = category.over,
-                amountPrefix = if (category.limit == null) {
-                    stringResource(R.string.recibo_cell_spent_prefix)
+                amountCaption = if (category.limit == null) {
+                    stringResource(R.string.recibo_cell_spent_caption)
                 } else {
                     null
                 },
