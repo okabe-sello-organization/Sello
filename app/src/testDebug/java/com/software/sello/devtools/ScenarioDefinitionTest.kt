@@ -364,6 +364,82 @@ class ScenarioDefinitionTest {
     }
 
     @Test
+    fun scriptedInvestmentVersionsFollowTheChangesBeforeThem() {
+        // An investment starts at version 1; each saved movement, correction, deletion of
+        // a movement or Deshacer adds one, and a rate changes none (repository rule).
+        Scenarios.all.forEach { scenario ->
+            val versions = mutableMapOf<String, Long>()
+            fun keyOf(of: Int): String = when (val target = scenario.steps[of]) {
+                is ScenarioStep.Investment -> target.key
+                is ScenarioStep.Movement -> target.investment
+                else -> error("${scenario.key} step ${of + 1} records no movement")
+            }
+            fun read(investment: String, version: Long, saved: Boolean, step: ScenarioStep) {
+                assertEquals("${scenario.key} $step", versions[investment], version)
+                if (saved) versions[investment] = version + 1
+            }
+            scenario.steps.forEach { step ->
+                val saved = step.expect == Expect.Saved
+                when (step) {
+                    is ScenarioStep.Investment -> if (saved) versions[step.key] = 1
+
+                    is ScenarioStep.Movement -> read(step.investment, step.version, saved, step)
+
+                    is ScenarioStep.EditMovement -> read(keyOf(step.of), step.version, saved, step)
+
+                    is ScenarioStep.DeleteMovement ->
+                        read(keyOf(step.of), step.version, saved, step)
+
+                    is ScenarioStep.UndoMovementDelete -> if (saved) {
+                        val deletion = scenario.steps[step.of] as ScenarioStep.DeleteMovement
+                        val investment = keyOf(deletion.of)
+                        versions[investment] = versions.getValue(investment) + 1
+                    }
+
+                    is ScenarioStep.DeleteInvestment -> {
+                        read(step.investment, step.version, false, step)
+                        if (saved) versions.remove(step.investment)
+                    }
+
+                    else -> Unit
+                }
+            }
+        }
+    }
+
+    @Test
+    fun theInvestmentExamplesTheSandboxCoversEachHaveACheck() {
+        val named = Scenarios.all.flatMap { it.steps }.filterIsInstance<ScenarioStep.Verify>()
+            .flatMap { verify ->
+                verify.investments.map { it.source } + listOfNotNull(verify.portfolio?.source)
+            }
+            .flatMap { source -> IN.findAll(source).map { it.value }.toList() }
+            .toSet()
+        // The refusals (IN10, IN18–IN20, IN22, IN24–IN26, IN32–IN34) are steps that
+        // expect them; these are the figures read back.
+        val covered = (2..21) + listOf(23, 27, 28, 29, 30, 31, 35)
+        assertEquals(
+            emptyList<String>(),
+            covered.map { "IN%02d".format(it) }.filter { it !in named }
+        )
+        val refusals = Scenarios.all.flatMap { it.steps }.map { it.expect }
+            .filterIsInstance<Expect.Rejected>().map { it.reason }.toSet()
+        assertTrue(
+            "$refusals",
+            refusals.containsAll(
+                listOf(
+                    "AboveValue",
+                    "NoValue",
+                    "RateRequired",
+                    "LastContribution",
+                    "BeforeFirstContribution",
+                    "FutureDate"
+                )
+            )
+        )
+    }
+
+    @Test
     fun theLongGapIsRe11() {
         // RE11: every day from 1 ago to 24 oct 2026, 85 occurrences, 425.000.
         val check = Scenarios.all.flatMap { it.steps }.filterIsInstance<ScenarioStep.Verify>()
