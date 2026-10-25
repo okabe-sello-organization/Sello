@@ -321,7 +321,8 @@ private fun StoredSchedule.toWire(): ScheduleV3 {
         kind = if (entry is ScheduledEntry.Payment) WireNames.PAYMENT else WireNames.INCOME,
         categoryId = (entry as? ScheduledEntry.Payment)?.categoryId?.value,
         source = (entry as? ScheduledEntry.Income)?.source?.key,
-        sourceName = ((entry as? ScheduledEntry.Income)?.source as? IncomeSource.Other)?.name?.value,
+        sourceName = ((entry as? ScheduledEntry.Income)?.source as? IncomeSource.Other)
+            ?.name?.value,
         amount = JsonPrimitive(entry.amount.money.minorUnits),
         currency = entry.amount.money.currency.code,
         note = entry.note?.value,
