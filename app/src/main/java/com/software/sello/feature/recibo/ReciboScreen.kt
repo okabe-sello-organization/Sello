@@ -74,7 +74,8 @@ import kotlinx.coroutines.launch
 
 /**
  * Recibo: what is left this month and where it is going. [selectedCategoryId] marks
- * the category whose detail is shown beside it, when there is room for both.
+ * the category whose detail is shown beside it, when there is room for both. [goal] is
+ * drawn under the month's answer; it is read apart, so the answer never waits on it.
  */
 @Composable
 fun ReciboScreen(
@@ -82,7 +83,8 @@ fun ReciboScreen(
     onAction: (ReciboAction) -> Unit,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
-    selectedCategoryId: String? = null
+    selectedCategoryId: String? = null,
+    goal: @Composable () -> Unit = {}
 ) {
     // The start is complete once the month was read: its figures, a first run or a failure.
     ReportDrawnWhen { state !is ReciboState.Loading }
@@ -137,6 +139,7 @@ fun ReciboScreen(
                     StaleSlip({ onAction(ReciboAction.Retry) }, Modifier.testTag(RECIBO_STALE_TAG))
                 }
                 SummarySlip(state.summary, toCategories)
+                goal()
                 CategoriesSlip(
                     state.categories,
                     selectedCategoryId,

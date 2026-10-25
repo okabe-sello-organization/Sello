@@ -68,9 +68,15 @@ import com.software.sello.feature.category.CategoryEditorRoot
 import com.software.sello.feature.category.CategoryManagementRoot
 import com.software.sello.feature.expense.ExpenseEntryRoot
 import com.software.sello.feature.goals.CelebrationTicket
+import com.software.sello.feature.goals.CompletionState
 import com.software.sello.feature.goals.GoalEditorResult
 import com.software.sello.feature.goals.GoalEditorRoot
 import com.software.sello.feature.goals.GoalMovementRoot
+import com.software.sello.feature.goals.LogradaMoment
+import com.software.sello.feature.goals.ReciboGoal
+import com.software.sello.feature.goals.ReciboGoalAction
+import com.software.sello.feature.goals.ReciboGoalState
+import com.software.sello.feature.goals.ReciboGoalViewModel
 import com.software.sello.feature.goals.celebrationLine
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.feature.income.IncomeHistoryScreen
@@ -169,6 +175,13 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 onShell = shell::onAction,
                 notice = notice,
                 onUndo = corrections::undo,
+                lands = corrections::lands,
+                onOpenGoal = { id ->
+                    navigation.navigate(GoalRoute(id)) { launchSingleTop = true }
+                },
+                onContributeGoal = { id ->
+                    navigation.navigate(GoalMovementRoute(id)) { launchSingleTop = true }
+                },
                 announcements = announcementState,
                 onDismissPastLimit = if (announcementState.failure == null) {
                     announcements::dismissPastLimit
@@ -223,7 +236,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     navigation.navigate(GoalMovementRoute()) { launchSingleTop = true }
                 },
                 notice = notice?.let {
-                    { MetasNoticeBar(it, corrections::undo, corrections::lands) }
+                    { StampNoticeBar(it, corrections::undo, corrections::lands) }
                 }
             )
         }
@@ -575,6 +588,9 @@ private fun ReciboDestination(
     onShell: (ShellAction) -> Unit,
     notice: CorrectionNotice?,
     onUndo: () -> Unit,
+    lands: (GoalCelebration) -> Boolean,
+    onOpenGoal: (String) -> Unit,
+    onContributeGoal: (String) -> Unit,
     announcements: CorrectionAnnouncementState,
     onDismissPastLimit: () -> Unit,
     announcementFailed: Boolean,
@@ -587,7 +603,9 @@ private fun ReciboDestination(
 ) {
     val recibo: ReciboViewModel = viewModel(factory = viewModels)
     val detail: CategoryDetailViewModel = viewModel(factory = viewModels)
+    val goal: ReciboGoalViewModel = viewModel(factory = viewModels)
     val reciboState by recibo.state.collectAsStateWithLifecycle()
+    val goalState by goal.state.collectAsStateWithLifecycle()
     val detailState by detail.state.collectAsStateWithLifecycle()
     val names = monthNames()
     val dates = dateLabels()
@@ -604,7 +622,7 @@ private fun ReciboDestination(
             state = state,
             names = names,
             onAction = onShell,
-            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } },
+            notice = notice?.let { { StampNoticeBar(it, onUndo, lands) } },
             navigation = tabs,
             actions = {
                 IconButton(
@@ -655,9 +673,20 @@ private fun ReciboDestination(
                     recibo.onAction(action)
                 },
                 contentPadding = padding,
-                selectedCategoryId = shownId.takeIf { twoPane }
+                selectedCategoryId = shownId.takeIf { twoPane },
+                goal = { ReciboGoal(goalState, goal::onAction, onOpenGoal, onContributeGoal) }
             )
         }
+        val completion = (goalState as? ReciboGoalState.Shown)?.completion ?: CompletionState.Idle
+        LogradaMoment(
+            completion,
+            onDone = { goal.onAction(ReciboGoalAction.CelebrationDone) },
+            onView = {
+                val plate = (completion as? CompletionState.Celebrating)?.plate
+                goal.onAction(ReciboGoalAction.CelebrationDone)
+                plate?.goalId?.takeIf { it.isNotEmpty() }?.let(onOpenGoal)
+            }
+        )
         // Beside Recibo the detail is not a screen to leave: Back does what it does on Recibo.
         val onDetail = state.detailCategoryId != null && !twoPane
         val target = backTarget(state.monthPickerOpen, onDetail, ShellTab.Recibo)
@@ -1175,11 +1204,12 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
 }
 
 /**
- * The notice on Metas: a stamp a confirmed aporte earned lands on a paper ticket, as the
- * goal's own stamps are not in view there; anything else is said as everywhere.
+ * The notice on Metas and Recibo: a stamp a confirmed aporte earned lands on a paper
+ * ticket, as the goal's own stamps are not in view there; anything else is said as
+ * everywhere.
  */
 @Composable
-internal fun MetasNoticeBar(
+internal fun StampNoticeBar(
     notice: CorrectionNotice,
     onUndo: () -> Unit,
     lands: (GoalCelebration) -> Boolean
