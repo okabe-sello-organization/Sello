@@ -13,6 +13,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -116,14 +117,13 @@ class GoalComponentsTest {
         }
     }
 
-    private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithDescriptionEnding(
-        suffix: String
-    ): Int = onAllNodes(
-        SemanticsMatcher("description ends with $suffix") { node ->
-            node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
-                .any { it.endsWith(suffix) }
-        }
-    ).fetchSemanticsNodes().size
+    private fun ComposeContentTestRule.onAllNodesWithDescriptionEnding(suffix: String): Int =
+        onAllNodes(
+            SemanticsMatcher("description ends with $suffix") { node ->
+                node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }
+                    .any { it.endsWith(suffix) }
+            }
+        ).fetchSemanticsNodes().size
 
     @Test
     fun theTicketSaysItsStampsAndLineAndTwoStampsSitSmallerSideBySide() {
