@@ -7,8 +7,8 @@ The rules every recurrence ticket (SELLO-097–104, SELLO-114) implements and te
 against. Decisions come from [ADR 0017](../decisions/0017-goals-recurrence-investments.md),
 [ADR 0012](../decisions/0012-budget-guidance-contract.md) BG1–BG3, architecture §4 and §8,
 the [gap list](../design/v2/gaps/recurrence.md) and the owner's answers of 2026-10-24
-(marked **Owner**). Rules marked **Proposed** follow from those decisions and are approved
-by merging. Every figure was worked out by hand, not from code. Amounts are whole COP
+(marked **Owner**). Rules marked **Proposed** follow from those decisions; the owner
+approved them by merging SELLO-096 (2026-10-24). Every figure was worked out by hand, not from code. Amounts are whole COP
 pesos, grouped as the app shows them; dates are financial days in the profile's
 financial zone. These are expectations, not passing tests.
 
