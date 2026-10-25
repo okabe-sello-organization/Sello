@@ -37,7 +37,12 @@ class DebugFaultDecoratorTest {
     private val log = OperationLog()
     private val expenses = FaultyExpenseCommands(LedgerExpenses(ledger), faults, log)
     private val inspector =
-        OperationInspector(LedgerExpenses(ledger), LedgerIncomes(ledger), LedgerCategories(ledger))
+        OperationInspector(
+            LedgerExpenses(ledger),
+            LedgerIncomes(ledger),
+            LedgerCategories(ledger),
+            LedgerGoals(ledger)
+        )
 
     private fun create(n: Int) = CreateExpense(
         OperationId.of("00000000-0000-4000-8000-00000000000$n").value(),

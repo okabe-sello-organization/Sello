@@ -67,6 +67,34 @@ enum class Figure(val label: String) {
 /** [pesos] in [month] for [figure], as given by [source]: an approved example ID or a hand derivation. */
 data class Check(val month: YearMonth, val figure: Figure, val pesos: Long, val source: String)
 
+/** How one of a goal's four stamp places stands, as its page draws it (rules 4, 5 and 8). */
+enum class Stamp(val label: String) {
+    Empty("vacío"),
+    Earned("ganado"),
+
+    /** Earned, no longer reached: shown faded. */
+    Kept("guardado"),
+
+    /** Meta only: the target is reached, waiting for Marcar como lograda. */
+    Waiting("esperando")
+}
+
+/**
+ * The goal the step named [goal] made, as Metas reads it: [saved] pesos, the rounded-down
+ * [percentage], its [stamps] at 25 %, 50 %, 75 % and the Meta, whether it is [completed]
+ * and whether it is Recibo's goal ([onRecibo], unchecked when null). [source] is the
+ * approved example the values come from; none is computed by the code being checked.
+ */
+data class GoalCheck(
+    val goal: String,
+    val saved: Long,
+    val percentage: Long,
+    val stamps: List<Stamp>,
+    val source: String,
+    val completed: Boolean = false,
+    val onRecibo: Boolean? = null
+)
+
 /** One action of a scenario. Amounts are whole pesos; entries are dated on the sandbox's day. */
 sealed interface ScenarioStep {
     val expect: Expect get() = Expect.Saved
@@ -108,10 +136,12 @@ sealed interface ScenarioStep {
     data class Archive(val category: String, val version: Long) : ScenarioStep
 
     /**
-     * Reads the real month snapshots and compares each of [checks]. Every expected value
-     * names where it comes from; none is computed by the code being checked.
+     * Reads the real month snapshots and goal board and compares each of [checks] and
+     * [goals]. Every expected value names where it comes from; none is computed by the
+     * code being checked.
      */
-    data class Verify(val checks: List<Check>) : ScenarioStep
+    data class Verify(val checks: List<Check>, val goals: List<GoalCheck> = emptyList()) :
+        ScenarioStep
 
     /** [source] is a stored income source key, such as `salary`. */
     data class Income(val pesos: Long, val source: String) : ScenarioStep
@@ -137,4 +167,51 @@ sealed interface ScenarioStep {
 
     /** Undoes the deletion made by step [of]. */
     data class UndoDelete(val of: Int, override val expect: Expect = Expect.Saved) : ScenarioStep
+
+    /** A goal the later steps call [key], with a [target] of pesos and no month. */
+    data class Goal(val key: String, val name: String, val icon: String, val target: Long) :
+        ScenarioStep
+
+    /**
+     * An aporte of [pesos] to [goal], read at [version]; [on] dates it earlier than the
+     * sandbox's day.
+     */
+    data class Aporte(
+        val goal: String,
+        val pesos: Long,
+        val version: Long,
+        override val expect: Expect = Expect.Saved,
+        val on: LocalDate? = null
+    ) : ScenarioStep
+
+    /** A retiro of [pesos] from [goal], read at [version]. */
+    data class Retiro(
+        val goal: String,
+        val pesos: Long,
+        val version: Long,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /** [goal]'s new target, read at [version]. */
+    data class GoalTarget(
+        val goal: String,
+        val pesos: Long,
+        val version: Long,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /** Marcar como lograda on [goal], read at [version]. */
+    data class MarkLograda(
+        val goal: String,
+        val version: Long,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /** Deshacer the completion step [of] made, while it is on offer. */
+    data class UndoLograda(val of: Int, override val expect: Expect = Expect.Saved) :
+        ScenarioStep
+
+    /** [goal] chosen for Recibo, as "Mostrar en Recibo" does. */
+    data class ChooseForRecibo(val goal: String, override val expect: Expect = Expect.Saved) :
+        ScenarioStep
 }

@@ -1,16 +1,23 @@
 package com.software.sello.devtools
 
 import com.software.sello.devtools.ScenarioStep.AdvanceTo
+import com.software.sello.devtools.ScenarioStep.Aporte
 import com.software.sello.devtools.ScenarioStep.Archive
 import com.software.sello.devtools.ScenarioStep.Category
+import com.software.sello.devtools.ScenarioStep.ChooseForRecibo
 import com.software.sello.devtools.ScenarioStep.DeleteExpense
 import com.software.sello.devtools.ScenarioStep.EditExpense
 import com.software.sello.devtools.ScenarioStep.Expense
+import com.software.sello.devtools.ScenarioStep.Goal
+import com.software.sello.devtools.ScenarioStep.GoalTarget
 import com.software.sello.devtools.ScenarioStep.Income
+import com.software.sello.devtools.ScenarioStep.MarkLograda
 import com.software.sello.devtools.ScenarioStep.Repeat
+import com.software.sello.devtools.ScenarioStep.Retiro
 import com.software.sello.devtools.ScenarioStep.SetDefaultLimit
 import com.software.sello.devtools.ScenarioStep.SetMonthLimit
 import com.software.sello.devtools.ScenarioStep.UndoDelete
+import com.software.sello.devtools.ScenarioStep.UndoLograda
 import com.software.sello.devtools.ScenarioStep.Verify
 import java.time.LocalDate
 import java.time.YearMonth
@@ -20,6 +27,17 @@ import kotlin.random.Random
 private val Bogota = ZoneId.of("America/Bogota")
 private val Sep = YearMonth.of(2026, 9)
 private val Oct = YearMonth.of(2026, 10)
+
+/** A goal's four places, none earned. */
+private val None: List<Stamp> = List(4) { Stamp.Empty }
+
+/** The first [count] places earned, the rest empty. */
+private fun earned(count: Int): List<Stamp> =
+    List(4) { if (it < count) Stamp.Earned else Stamp.Empty }
+
+/** 25 %, 50 % and 75 % earned; the target reached, waiting for Marcar como lograda. */
+private val MetaWaiting: List<Stamp> =
+    listOf(Stamp.Earned, Stamp.Earned, Stamp.Earned, Stamp.Waiting)
 
 /** The scenarios the tools offer, all synthetic. */
 object Scenarios {
@@ -367,6 +385,221 @@ object Scenarios {
         )
     )
 
+    /**
+     * The approved goal examples for stamps (MT01–MT05) on *Viaje a la costa*, *Curso de
+     * inglés* and *Celular nuevo*; a double tap writes nothing new (MT11), and Recibo's
+     * remainder is untouched by aportes (MT06).
+     */
+    val GoalStamps = Scenario(
+        id = "metas-sellos",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = LocalDate.of(2026, 10, 23),
+        title = "Metas · Sellos",
+        summary = "749.999 no gana sello; 750.000 gana el 25 %; dos sellos en un aporte; " +
+            "102 % con la Meta esperando; el presupuesto no cambia.",
+        steps = listOf(
+            Category("comida", "Comida", "restaurant", 500_000),
+            Expense("comida", 100_000),
+            Goal("viaje", "Viaje a la costa", "flight", 3_000_000),
+            Aporte("viaje", 749_999, 1),
+            Verify(emptyList(), listOf(GoalCheck("viaje", 749_999, 24, None, "MT02"))),
+            Aporte("viaje", 1, 2),
+            Verify(
+                emptyList(),
+                listOf(GoalCheck("viaje", 750_000, 25, earned(1), "MT01: 749.999 + 1 = 750.000"))
+            ),
+            Goal("curso", "Curso de inglés", "home", 3_000_000),
+            Aporte("curso", 700_000, 1),
+            Aporte("curso", 900_000, 2),
+            Repeat(9),
+            Goal("celular", "Celular nuevo", "phone_iphone", 1_200_000),
+            Aporte("celular", 450_000, 1),
+            Aporte("viaje", 2_200_000, 3),
+            Aporte("viaje", 110_000, 4),
+            Verify(
+                listOf(Check(Oct, Figure.Remaining, 400_000, "MT06: 500.000 − 100.000")),
+                listOf(
+                    GoalCheck(
+                        "curso",
+                        1_600_000,
+                        53,
+                        earned(2),
+                        "MT04, repetido sin escribir (MT11)"
+                    ),
+                    GoalCheck(
+                        "celular",
+                        450_000,
+                        37,
+                        earned(1),
+                        "MT03; 25 % = 300.000, alcanzado (regla 3)"
+                    ),
+                    GoalCheck("viaje", 3_060_000, 102, MetaWaiting, "MT05")
+                )
+            )
+        )
+    )
+
+    /** Withdrawals (MT07–MT10): a faded stamp stays yours and lights again. */
+    val GoalWithdrawals = Scenario(
+        id = "metas-retiros",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = LocalDate.of(2026, 10, 23),
+        title = "Metas · Retiros",
+        summary = "Más de lo guardado se rechaza; el 50 % queda guardado y vuelve a " +
+            "encenderse; retirar todo deja dos sellos guardados.",
+        steps = listOf(
+            Goal("viaje", "Viaje a la costa", "flight", 3_000_000),
+            Aporte("viaje", 1_710_000, 1),
+            Retiro("viaje", 1_710_001, 2, Expect.Rejected("AboveSaved")),
+            Retiro("viaje", 400_000, 2),
+            Verify(
+                emptyList(),
+                listOf(
+                    GoalCheck(
+                        "viaje",
+                        1_310_000,
+                        43,
+                        listOf(Stamp.Earned, Stamp.Kept, Stamp.Empty, Stamp.Empty),
+                        "MT08 y MT07"
+                    )
+                )
+            ),
+            Aporte("viaje", 200_000, 3),
+            Verify(
+                emptyList(),
+                listOf(GoalCheck("viaje", 1_510_000, 50, earned(2), "MT10"))
+            ),
+            Retiro("viaje", 1_510_000, 4),
+            Verify(
+                emptyList(),
+                listOf(
+                    GoalCheck(
+                        "viaje",
+                        0,
+                        0,
+                        listOf(Stamp.Kept, Stamp.Kept, Stamp.Empty, Stamp.Empty),
+                        "MT09, retirando todo desde 1.510.000"
+                    )
+                )
+            )
+        )
+    )
+
+    /** Target changes (MT17–MT19), each from 1.710.000 of 3.000.000. */
+    val GoalTargets = Scenario(
+        id = "metas-objetivo",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = LocalDate.of(2026, 10, 23),
+        title = "Metas · Cambiar el objetivo",
+        summary = "A 4.000.000: 42 %, el 50 % guardado. A 2.000.000: 85 %, gana el 75 %. " +
+            "A 1.700.000: 100 %, la Meta esperando.",
+        steps = listOf(
+            Goal("viaje", "Viaje a la costa", "flight", 3_000_000),
+            Goal("moto", "Moto", "home", 3_000_000),
+            Goal("casa", "Cuota de la casa", "home", 3_000_000),
+            Aporte("viaje", 1_710_000, 1),
+            Aporte("moto", 1_710_000, 1),
+            Aporte("casa", 1_710_000, 1),
+            GoalTarget("viaje", 4_000_000, 2),
+            GoalTarget("moto", 2_000_000, 2),
+            GoalTarget("casa", 1_700_000, 2),
+            Verify(
+                emptyList(),
+                listOf(
+                    GoalCheck(
+                        "viaje",
+                        1_710_000,
+                        42,
+                        listOf(Stamp.Earned, Stamp.Kept, Stamp.Empty, Stamp.Empty),
+                        "MT17"
+                    ),
+                    GoalCheck("moto", 1_710_000, 85, earned(3), "MT18"),
+                    GoalCheck("casa", 1_710_000, 100, MetaWaiting, "MT19")
+                )
+            )
+        )
+    )
+
+    /**
+     * Recibo's goal (MT28–MT30) and Marcar como lograda (MT23, MT24, MT26). The completion
+     * and its Deshacer come late, so a run cut off and resumed in a new process still has
+     * the Deshacer on offer: it is gone with the process that marked it.
+     */
+    val GoalCompletion = Scenario(
+        id = "metas-lograda",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = LocalDate.of(2026, 10, 23),
+        title = "Metas · Lograda y Recibo",
+        summary = "Recibo muestra la de mayor avance, luego la elegida; Marcar y Deshacer; " +
+            "la elegida lograda deja volver a la de mayor avance.",
+        steps = listOf(
+            Goal("viaje", "Viaje a la costa", "flight", 3_000_000),
+            Goal("celular", "Celular nuevo", "phone_iphone", 1_200_000),
+            Aporte("viaje", 2_950_000, 1),
+            Aporte("celular", 450_000, 1),
+            Verify(
+                emptyList(),
+                listOf(
+                    GoalCheck("viaje", 2_950_000, 98, earned(3), "MT28", onRecibo = true),
+                    GoalCheck("celular", 450_000, 37, earned(1), "MT28; MT03", onRecibo = false)
+                )
+            ),
+            ChooseForRecibo("celular"),
+            Verify(
+                emptyList(),
+                listOf(
+                    GoalCheck("viaje", 2_950_000, 98, earned(3), "MT29", onRecibo = false),
+                    GoalCheck("celular", 450_000, 37, earned(1), "MT29; MT03", onRecibo = true)
+                )
+            ),
+            Aporte("viaje", 110_000, 2),
+            MarkLograda("viaje", 3),
+            UndoLograda(8),
+            Verify(
+                emptyList(),
+                listOf(GoalCheck("viaje", 3_060_000, 102, MetaWaiting, "MT24"))
+            ),
+            MarkLograda("celular", 2),
+            Verify(
+                emptyList(),
+                listOf(
+                    GoalCheck("celular", 450_000, 37, earned(4), "MT26", completed = true),
+                    GoalCheck(
+                        "viaje",
+                        3_060_000,
+                        102,
+                        MetaWaiting,
+                        "MT30",
+                        onRecibo = true
+                    )
+                )
+            ),
+            MarkLograda("viaje", 5),
+            Verify(
+                emptyList(),
+                listOf(
+                    GoalCheck(
+                        "viaje",
+                        3_060_000,
+                        102,
+                        earned(4),
+                        "MT23; ninguna activa, nada en Recibo",
+                        completed = true,
+                        onRecibo = false
+                    )
+                )
+            )
+        )
+    )
+
     val all: List<Scenario> = listOf(
         CategoryDetail,
         G01,
@@ -377,7 +610,11 @@ object Scenarios {
         SkippedMonths,
         PastLimits,
         Archived,
-        IncomeAllocation
+        IncomeAllocation,
+        GoalStamps,
+        GoalWithdrawals,
+        GoalTargets,
+        GoalCompletion
     )
 
     fun find(key: String?): Scenario? = all.firstOrNull { it.key == key }
