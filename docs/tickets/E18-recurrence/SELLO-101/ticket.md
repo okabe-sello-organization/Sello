@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-098, SELLO-100, SELLO-114, SELLO-004
 - **Gate:** G2
 
@@ -55,3 +55,4 @@ Focused tests, then `./scripts/verify-ticket SELLO-101 --retain`.
 - **Catalog:** *Recibo answer states* in the v2 order, Sin margen with its footnote and
   Revisar past the limit.
 - **Sandbox:** the reservation checks come with SELLO-104's second part, after this.
+- **Done (2026-10-25):** gate and device evidence in [evidence.md](evidence.md).
