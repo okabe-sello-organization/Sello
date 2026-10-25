@@ -76,3 +76,10 @@ reads; commands; catch-up and its triggers.
   on the debug app's real graph; nine deliberate breaks each fail a test. The sandbox
   test harness now ends a graph as a process would (`endProcess`), waiting for its
   background work before the next one opens the file.
+- **Unrelated finding, 2026-10-24, logged at the owner's request:**
+  `DataStoreUserPreferencesPersistenceTest.preferencesSurviveReopeningTheActualFile` (data
+  device suite, from SELLO-023) is flaky. It cancels the first DataStore's scope with
+  `cancel()` and reopens the same file at once, so the reopen sometimes meets the old
+  instance: "There are multiple DataStores active for the same file". It failed the
+  hosted check of #121 once and passed on a full rerun. The fix is `cancelAndJoin()`;
+  not changed here, as it is outside this ticket.
