@@ -61,7 +61,11 @@ class ScheduleRecordReadsTest {
         schedule(
             "2026-10-01",
             RepeatRule.Monthly.of(5).valueOrFail(),
-            ScheduledEntry.Payment(ledger.categoryId(100), pesos(950_000), Note.of("Arriendo").valueOrFail())
+            ScheduledEntry.Payment(
+                ledger.categoryId(100),
+                pesos(950_000),
+                Note.of("Arriendo").valueOrFail()
+            )
         )
         schedule(
             "2026-10-01",

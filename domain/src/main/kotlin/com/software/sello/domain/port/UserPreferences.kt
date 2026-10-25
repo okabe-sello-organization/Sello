@@ -63,4 +63,3 @@ interface CatchUpNoticePreferences {
 
     suspend fun markCatchUpNoticeSeen(at: Instant): PreferenceWrite
 }
-

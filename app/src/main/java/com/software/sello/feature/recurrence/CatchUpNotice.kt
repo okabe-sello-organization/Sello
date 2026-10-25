@@ -115,6 +115,7 @@ class CatchUpNoticeViewModel(
         .flatMapLatest { seen ->
             when (seen) {
                 is PreferenceRead.Failed -> flowOf(CatchUpNoticeState.Failed)
+
                 is PreferenceRead.Ready -> records.observeRecordedAfter(seen.value)
                     .map { read -> render(read, clock.today.value.date) }
             }

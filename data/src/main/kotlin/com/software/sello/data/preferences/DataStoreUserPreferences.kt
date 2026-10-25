@@ -1,6 +1,5 @@
 package com.software.sello.data.preferences
 
-import com.software.sello.domain.port.CatchUpNoticePreferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
@@ -26,6 +25,7 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupRecords
 import com.software.sello.domain.port.BackupSummary
+import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CorrectionAnnouncementPreferences
 import com.software.sello.domain.port.LastBackup
@@ -112,8 +112,9 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
     override suspend fun dismissSuggestion(dismissed: DismissedSuggestion): PreferenceWrite =
         write { this[SUGGESTION_DISMISSED] = "${dismissed.month}|${dismissed.categoryId.value}" }
 
-    override fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>> =
-        observe { stored -> Decoded.Value(stored[CATCH_UP_NOTICE_SEEN]?.let(Instant::ofEpochMilli)) }
+    override fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>> = observe { stored ->
+        Decoded.Value(stored[CATCH_UP_NOTICE_SEEN]?.let(Instant::ofEpochMilli))
+    }
 
     override suspend fun markCatchUpNoticeSeen(at: Instant): PreferenceWrite =
         write { this[CATCH_UP_NOTICE_SEEN] = at.toEpochMilli() }

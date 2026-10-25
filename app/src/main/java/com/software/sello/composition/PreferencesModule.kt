@@ -1,10 +1,10 @@
 package com.software.sello.composition
 
-import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.data.StorageNames
 import com.software.sello.data.preferences.DataStoreUserPreferences
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecords
+import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CorrectionAnnouncementPreferences
 import com.software.sello.domain.port.PreferenceReset

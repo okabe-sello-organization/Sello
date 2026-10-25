@@ -1,8 +1,5 @@
 package com.software.sello.navigation
 
-import com.software.sello.feature.recurrence.CatchUpRecordedRoot
-import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
-import com.software.sello.feature.recurrence.CatchUpNoticeBar
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -97,6 +94,9 @@ import com.software.sello.feature.recibo.ReciboAction
 import com.software.sello.feature.recibo.ReciboScreen
 import com.software.sello.feature.recibo.ReciboState
 import com.software.sello.feature.recibo.ReciboViewModel
+import com.software.sello.feature.recurrence.CatchUpNoticeBar
+import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
+import com.software.sello.feature.recurrence.CatchUpRecordedRoot
 import com.software.sello.feature.recurrence.ScheduleEditorRoot
 import com.software.sello.feature.recurrence.SchedulesRoot
 import com.software.sello.feature.reset.ResetRoot
@@ -494,8 +494,8 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 pastMonthRibbon = false,
                 // Listo dismisses the notice; Back keeps it.
                 dock = SelloDock(
-                    label = stringResource(R.string.catch_up_done),
-                    actionLabel = stringResource(R.string.catch_up_done_description),
+                    label = stringResource(R.string.catch_up_done_description),
+                    actionLabel = stringResource(R.string.catch_up_done),
                     onClick = model::done,
                     icon = SelloIcon.Check
                 ),
@@ -505,7 +505,9 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     viewModels,
                     padding,
                     onEdit = { id, income ->
-                        navigation.navigate(if (income) IncomeEditRoute(id) else ExpenseEditRoute(id))
+                        navigation.navigate(
+                            if (income) IncomeEditRoute(id) else ExpenseEditRoute(id)
+                        )
                     },
                     onClosed = {
                         val onList =

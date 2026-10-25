@@ -21,31 +21,39 @@ import kotlinx.coroutines.flow.flow
  * and nothing is kept apart from them. One that cannot be read fails the read.
  */
 class RoomScheduleRecordReads(private val database: SelloDatabase) : ScheduleRecordReads {
-    override suspend fun recordedAfter(since: Instant?): Outcome<List<ScheduleRecord>, StorageFailure> =
-        reading {
-            database.withTransaction {
-                val after = since?.toEpochMilli() ?: Long.MIN_VALUE
-                val records = mutableListOf<Pair<ScheduleRecord, Pair<String, Long>>>()
-                for (row in database.expenseDao().recordedAfter(after)) {
-                    when (val expense = row.toDomain()) {
-                        is Outcome.Success ->
-                            records += ScheduleRecord.Payment(expense.value) to (row.effectiveDate to row.sequence)
-                        is Outcome.Failure -> return@withTransaction expense
-                    }
+    override suspend fun recordedAfter(
+        since: Instant?
+    ): Outcome<List<ScheduleRecord>, StorageFailure> = reading {
+        database.withTransaction {
+            val after = since?.toEpochMilli() ?: Long.MIN_VALUE
+            val records = mutableListOf<Placed>()
+            for (row in database.expenseDao().recordedAfter(after)) {
+                when (val expense = row.toDomain()) {
+                    is Outcome.Success -> records += Placed(
+                        row.effectiveDate,
+                        row.sequence,
+                        ScheduleRecord.Payment(expense.value)
+                    )
+
+                    is Outcome.Failure -> return@withTransaction expense
                 }
-                for (row in database.incomeDao().recordedAfter(after)) {
-                    when (val income = row.toDomain()) {
-                        is Outcome.Success ->
-                            records += ScheduleRecord.Earning(income.value) to (row.effectiveDate to row.sequence)
-                        is Outcome.Failure -> return@withTransaction income
-                    }
-                }
-                Outcome.Success(
-                    records.sortedWith(compareBy({ it.second.first }, { it.second.second }))
-                        .map { it.first }
-                )
             }
+            for (row in database.incomeDao().recordedAfter(after)) {
+                when (val income = row.toDomain()) {
+                    is Outcome.Success -> records += Placed(
+                        row.effectiveDate,
+                        row.sequence,
+                        ScheduleRecord.Earning(income.value)
+                    )
+
+                    is Outcome.Failure -> return@withTransaction income
+                }
+            }
+            Outcome.Success(
+                records.sortedWith(compareBy({ it.date }, { it.sequence })).map { it.record }
+            )
         }
+    }
 
     override fun observeRecordedAfter(since: Instant?): Flow<ScheduleRecordsState> = flow {
         emit(ScheduleRecordsState.Loading)
@@ -62,9 +70,20 @@ class RoomScheduleRecordReads(private val database: SelloDatabase) : ScheduleRec
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: SQLException) {
-            emit(ScheduleRecordsState.Failed(StorageFailure.Unavailable(failure.javaClass.simpleName)))
+            emit(
+                ScheduleRecordsState.Failed(
+                    StorageFailure.Unavailable(failure.javaClass.simpleName)
+                )
+            )
         } catch (failure: IllegalStateException) {
-            emit(ScheduleRecordsState.Failed(StorageFailure.Unavailable(failure.javaClass.simpleName)))
+            emit(
+                ScheduleRecordsState.Failed(
+                    StorageFailure.Unavailable(failure.javaClass.simpleName)
+                )
+            )
         }
     }
 }
+
+/** A record with where it falls: its date, then the order it was put down. */
+private class Placed(val date: String, val sequence: Long, val record: ScheduleRecord)
