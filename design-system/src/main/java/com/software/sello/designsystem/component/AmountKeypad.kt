@@ -46,6 +46,8 @@ import com.software.sello.designsystem.theme.SelloTheme
 /**
  * The in-app keypad for amounts: 1 to 9, then 000, 0 and backspace. It only reports
  * presses; the draft, its 12-digit limit and every validation belong to the caller.
+ * With [onComma] (dollars and the USD rate) the 000 key is the decimal comma instead,
+ * and a hardware comma or period types it.
  *
  * A hardware keyboard works while focus is inside the keypad: digits, Backspace, and
  * Enter for [onSubmit] when one is given. A long press on backspace, or its "Borrar
@@ -60,7 +62,8 @@ fun AmountKeypad(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     onSubmit: (() -> Unit)? = null,
-    compact: Boolean = false
+    compact: Boolean = false,
+    onComma: (() -> Unit)? = null
 ) {
     val hardware = Modifier.onPreviewKeyEvent { event ->
         if (!enabled || event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
@@ -69,6 +72,9 @@ fun AmountKeypad(
             digit != null -> onDigit(digit)
 
             event.key == Key.Backspace -> onBackspace()
+
+            (event.key == Key.Comma || event.key == Key.Period || event.key == Key.NumPadDot) &&
+                onComma != null -> onComma()
 
             (event.key == Key.Enter || event.key == Key.NumPadEnter) && onSubmit != null ->
                 onSubmit()
@@ -91,7 +97,16 @@ fun AmountKeypad(
             }
         }
         KeyRow(compact) {
-            Key(enabled, compact = compact, onClick = onTripleZero) { KeyLabel("000") }
+            if (onComma == null) {
+                Key(enabled, compact = compact, onClick = onTripleZero) { KeyLabel("000") }
+            } else {
+                Key(
+                    enabled,
+                    compact = compact,
+                    onClick = onComma,
+                    description = stringResource(R.string.sello_decimal_comma)
+                ) { KeyLabel(",") }
+            }
             Key(enabled, compact = compact, onClick = { onDigit(0) }) { KeyLabel("0") }
             Key(
                 enabled = enabled,
@@ -190,7 +205,8 @@ fun SlidingKeypad(
     onTripleZero: () -> Unit,
     onBackspace: () -> Unit,
     onClearAll: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onComma: (() -> Unit)? = null
 ) {
     val reduced = SelloTheme.reducedMotion
     AnimatedVisibility(
@@ -206,7 +222,14 @@ fun SlidingKeypad(
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 SelloButton(doneLabel, onDone, kind = ButtonKind.Text)
             }
-            AmountKeypad(onDigit, onTripleZero, onBackspace, onClearAll, onSubmit = onDone)
+            AmountKeypad(
+                onDigit,
+                onTripleZero,
+                onBackspace,
+                onClearAll,
+                onSubmit = onDone,
+                onComma = onComma
+            )
         }
     }
 }

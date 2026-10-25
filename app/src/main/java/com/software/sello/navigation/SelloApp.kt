@@ -81,6 +81,7 @@ import com.software.sello.feature.goals.celebrationLine
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.feature.income.IncomeHistoryScreen
 import com.software.sello.feature.income.IncomeHistoryViewModel
+import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_EDIT_TAG
 import com.software.sello.feature.recibo.CategoryDetailAction
 import com.software.sello.feature.recibo.CategoryDetailScreen
@@ -253,6 +254,22 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 }
             )
         }
+        composable<UsdRateRoute> {
+            UsdRateDestination(
+                state = state,
+                viewModels = viewModels,
+                onShell = shell::onAction,
+                onBack = { navigation.popBackStack() },
+                onChange = { navigation.navigate(UsdRateEntryRoute) { launchSingleTop = true } }
+            )
+        }
+        composable<UsdRateEntryRoute> {
+            UsdRateEntryRoot(viewModels) {
+                val onForm =
+                    navigation.currentBackStackEntry?.destination?.hasRoute<UsdRateEntryRoute>()
+                if (onForm == true) navigation.popBackStack()
+            }
+        }
         composable<GoalRoute> { entry ->
             val id = entry.toRoute<GoalRoute>().goalId
             GoalDestination(
@@ -402,7 +419,8 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     onOpenReset = { navigation.navigate(ResetRoute) { launchSingleTop = true } },
                     onOpenSchedules = {
                         navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
-                    }
+                    },
+                    onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } }
                 )
             }
             BackHandler(enabled = !state.monthPickerOpen) { navigation.popBackStack() }

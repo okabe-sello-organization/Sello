@@ -19,6 +19,14 @@ data object ResumenRoute
 @Serializable
 data object MetasRoute
 
+/** Dólar: the current USD rate and the earlier ones, from Configuración or Inversiones. */
+@Serializable
+data object UsdRateRoute
+
+/** Cambiar la tasa: a new dated USD rate. */
+@Serializable
+data object UsdRateEntryRoute
+
 /** One goal's detail. The screen reads the goal itself. */
 @Serializable
 data class GoalRoute(val goalId: String)

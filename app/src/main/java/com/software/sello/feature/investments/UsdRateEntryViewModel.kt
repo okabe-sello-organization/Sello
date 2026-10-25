@@ -1,0 +1,253 @@
+package com.software.sello.feature.investments
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.software.sello.domain.model.OperationId
+import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.UsdRate
+import com.software.sello.domain.policy.DecimalDraft
+import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.InvestmentBoard
+import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentReads
+import com.software.sello.domain.port.InvestmentRejection
+import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.domain.port.SetUsdRate
+import com.software.sello.presentation.money.MoneyFormatter
+import java.time.LocalDate
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+/**
+ * Cambiar la tasa (rule 11): pesos per dollar typed with the comma pad and a date. The
+ * draft, the date and the operation in flight live in [saved]. A save whose outcome is
+ * not known is asked about with its own identifier before anything else is sent.
+ */
+class UsdRateEntryViewModel(
+    private val saved: SavedStateHandle,
+    reads: InvestmentReads,
+    private val commands: InvestmentCommands,
+    private val clock: FinancialClock,
+    private val ids: RecordIdSource,
+    private val money: MoneyFormatter
+) : ViewModel() {
+    private data class Progress(
+        val busy: Boolean = false,
+        val error: RateEntryError? = null,
+        val closed: Boolean = false,
+        val datePickerOpen: Boolean = false,
+        val limitPulse: Int = 0,
+        val atLimit: Boolean = false
+    )
+
+    private val render = InvestmentsRenderModel(money)
+    private val draft = MutableStateFlow(restored())
+    private val date = MutableStateFlow(
+        saved.get<String>(DATE)?.let(LocalDate::parse) ?: clock.today.value.date
+    )
+    private val progress = MutableStateFlow(Progress())
+    private val board = reads.observeBoard()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, InvestmentBoardState.Loading)
+
+    val state: StateFlow<UsdRateEntryState> =
+        combine(draft, date, progress, board, clock.today) { draft, date, progress, board, today ->
+            render(draft, date, progress, board, today.date)
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            render(draft.value, date.value, progress.value, board.value, clock.today.value.date)
+        )
+
+    init {
+        if (saved.get<String>(OPERATION) != null) viewModelScope.launch { recover() }
+    }
+
+    private fun restored(): DecimalDraft {
+        val whole = saved.get<String>(WHOLE) ?: return DecimalDraft(MAX_WHOLE)
+        return DecimalDraft(
+            MAX_WHOLE,
+            whole,
+            saved.get<Boolean>(COMMA) ?: false,
+            saved.get<String>(CENTS).orEmpty()
+        )
+    }
+
+    fun onAction(action: UsdRateEntryAction) {
+        val now = state.value
+        val editable = now.editable && !now.loading && !now.loadFailed
+        when (action) {
+            is UsdRateEntryAction.Digit -> if (editable) key(draft.value.digit(action.digit))
+
+            UsdRateEntryAction.Comma -> if (editable) key(draft.value.comma())
+
+            UsdRateEntryAction.Backspace -> if (editable) change(draft.value.backspace())
+
+            UsdRateEntryAction.Clear -> if (editable) change(DecimalDraft(MAX_WHOLE))
+
+            UsdRateEntryAction.OpenDatePicker ->
+                if (editable) progress.update { it.copy(datePickerOpen = true) }
+
+            UsdRateEntryAction.CloseDatePicker ->
+                progress.update { it.copy(datePickerOpen = false) }
+
+            is UsdRateEntryAction.DatePicked -> {
+                if (editable && InvestmentPolicy.acceptsDate(action.date, now.today)) {
+                    saved[DATE] = action.date.toString()
+                    date.value = action.date
+                }
+                progress.update { it.copy(datePickerOpen = false) }
+            }
+
+            UsdRateEntryAction.Submit -> if (now.canSubmit) submit()
+
+            UsdRateEntryAction.Retry -> if (!now.busy) {
+                if (saved.get<String>(OPERATION) != null) {
+                    viewModelScope.launch { recover() }
+                } else {
+                    progress.update { it.copy(error = null) }
+                }
+            }
+
+            // Never closed while a save may be on its way: its outcome comes first.
+            UsdRateEntryAction.Back -> if (!now.busy && saved.get<String>(OPERATION) == null) {
+                progress.update { it.copy(closed = true) }
+            }
+        }
+    }
+
+    private fun key(change: DecimalDraft.Change) {
+        change(change.draft)
+        if (change.limitReached) {
+            progress.update { it.copy(limitPulse = it.limitPulse + 1, atLimit = true) }
+        }
+    }
+
+    private fun change(next: DecimalDraft) {
+        if (next != draft.value) progress.update { it.copy(atLimit = false, error = null) }
+        saved[WHOLE] = next.whole
+        saved[COMMA] = next.comma
+        saved[CENTS] = next.cents
+        draft.value = next
+    }
+
+    private fun readable(state: InvestmentBoardState): InvestmentBoard? = when (state) {
+        InvestmentBoardState.Loading -> null
+        is InvestmentBoardState.Ready -> state.board
+        is InvestmentBoardState.Failed -> state.lastGood
+    }
+
+    /** The draft as the pad wrote it: "4.180,7". */
+    private fun text(draft: DecimalDraft): String? {
+        if (draft.empty) return null
+        val whole = draft.whole.ifEmpty { "0" }
+        val grouped = money.decimal(whole.toLong(), 0)
+        return if (draft.comma) "$grouped,${draft.cents}" else grouped
+    }
+
+    private fun render(
+        draft: DecimalDraft,
+        date: LocalDate,
+        progress: Progress,
+        board: InvestmentBoardState,
+        today: LocalDate
+    ): UsdRateEntryState {
+        val read = readable(board)
+        val hundredths = draft.hundredths()
+        return UsdRateEntryState(
+            loading = board is InvestmentBoardState.Loading,
+            loadFailed = board is InvestmentBoardState.Failed && read == null,
+            rate = text(draft),
+            problem = when {
+                hundredths == null -> null
+                hundredths < UsdRate.MIN_HUNDREDTHS -> RateProblem.BelowMinimum
+                hundredths > UsdRate.MAX_HUNDREDTHS -> RateProblem.AboveMaximum
+                else -> null
+            },
+            current = read?.rates?.current?.let { RateModel(render.rate(it.rate), it.date) },
+            date = date,
+            today = today,
+            datePickerOpen = progress.datePickerOpen,
+            limitPulse = progress.limitPulse,
+            atLimit = progress.atLimit,
+            busy = progress.busy,
+            error = progress.error,
+            closed = progress.closed
+        )
+    }
+
+    private fun submit() {
+        val read = readable(board.value) ?: return
+        val hundredths = draft.value.hundredths() ?: return
+        val rate = (UsdRate.ofHundredths(hundredths) as? Outcome.Success)?.value ?: return
+        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
+        saved[OPERATION] = operation.value
+        progress.update { it.copy(busy = true, error = null) }
+        viewModelScope.launch {
+            settle(commands.submit(SetUsdRate(operation, read.generation, rate, date.value)))
+        }
+    }
+
+    private suspend fun settle(outcome: InvestmentCommandOutcome) {
+        when (outcome) {
+            is InvestmentCommandOutcome.Committed -> committed()
+
+            is InvestmentCommandOutcome.OutcomeUnknown -> recover()
+
+            is InvestmentCommandOutcome.Rejected -> {
+                // Certain: nothing was written, so this attempt is over.
+                saved[OPERATION] = null
+                val error = when (outcome.reason) {
+                    is InvestmentRejection.FutureDate -> RateEntryError.FutureDate
+                    is InvestmentRejection.StaleGeneration -> RateEntryError.DataChanged
+                    else -> RateEntryError.NotSaved
+                }
+                progress.update { it.copy(busy = false, error = error) }
+            }
+        }
+    }
+
+    /** Asks how the saved operation ended, with its own identifier. Only a receipt counts. */
+    private suspend fun recover() {
+        val operation =
+            (saved.get<String>(OPERATION)?.let(OperationId::of) as? Outcome.Success)?.value
+                ?: return
+        progress.update { it.copy(busy = true, error = null) }
+        when (val found = commands.find(operation)) {
+            is Outcome.Failure -> progress.update {
+                it.copy(busy = false, error = RateEntryError.Unknown)
+            }
+
+            is Outcome.Success -> if (found.value != null) {
+                committed()
+            } else {
+                saved[OPERATION] = null
+                progress.update { it.copy(busy = false, error = RateEntryError.NotSaved) }
+            }
+        }
+    }
+
+    private fun committed() {
+        saved[OPERATION] = null
+        progress.update { it.copy(busy = false, error = null, closed = true) }
+    }
+
+    private companion object {
+        /** 100.000,00 is six whole digits (rule 11). */
+        const val MAX_WHOLE = 6
+
+        const val WHOLE = "usd.rate.whole"
+        const val COMMA = "usd.rate.comma"
+        const val CENTS = "usd.rate.cents"
+        const val DATE = "usd.rate.date"
+        const val OPERATION = "usd.rate.operation"
+    }
+}

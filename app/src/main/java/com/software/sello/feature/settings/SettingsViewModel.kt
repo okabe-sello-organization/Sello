@@ -13,12 +13,16 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecords
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
+import com.software.sello.presentation.money.MoneyFormatter
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,8 +37,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Coordinates the appearance and Recibo-order controls, the last backup's date and how
- * many payments and incomes repeat.
+ * Coordinates the appearance and Recibo-order controls, the last backup's date, how
+ * many payments and incomes repeat and the current USD rate.
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class SettingsViewModel(
@@ -42,7 +46,9 @@ class SettingsViewModel(
     private val orderingPreferences: CategoryOrderingPreferences,
     backupRecords: BackupRecords,
     clock: FinancialClock,
-    schedules: ScheduleReads
+    schedules: ScheduleReads,
+    investments: InvestmentReads,
+    money: MoneyFormatter
 ) : ViewModel() {
     private val retry = MutableStateFlow(0)
     private val busy = MutableStateFlow(false)
@@ -113,6 +119,18 @@ class SettingsViewModel(
         }
     }
 
+    private val rateLine = retry.flatMapLatest { investments.observeBoard() }.map { read ->
+        when (read) {
+            InvestmentBoardState.Loading -> RateLine.Loading
+
+            is InvestmentBoardState.Failed -> RateLine.Unreadable
+
+            is InvestmentBoardState.Ready -> read.board.rates.current?.let {
+                RateLine.Read(money.decimal(it.rate.hundredths, RATE_SCALE), it.date)
+            } ?: RateLine.None
+        }
+    }
+
     val state = merge(
         readState.map { read ->
             { old: SettingsState ->
@@ -120,12 +138,14 @@ class SettingsViewModel(
                     busy = old.busy,
                     writeFailure = old.writeFailure,
                     backup = old.backup,
-                    schedules = old.schedules
+                    schedules = old.schedules,
+                    rate = old.rate
                 )
             }
         },
         backup.map { value -> { old: SettingsState -> old.copy(backup = value) } },
         scheduleCount.map { value -> { old: SettingsState -> old.copy(schedules = value) } },
+        rateLine.map { value -> { old: SettingsState -> old.copy(rate = value) } },
         busy.map { value -> { old: SettingsState -> old.copy(busy = value) } },
         writeFailure.map { value -> { old: SettingsState -> old.copy(writeFailure = value) } }
     ).runningFold(SettingsState(loading = true)) { old, change -> change(old) }
@@ -178,9 +198,24 @@ data class SettingsState(
     val writeFailure: PreferenceFailure? = null,
     val busy: Boolean = false,
     val backup: BackupLine = BackupLine.Loading,
-    val schedules: ScheduleCountLine = ScheduleCountLine.Loading
+    val schedules: ScheduleCountLine = ScheduleCountLine.Loading,
+    val rate: RateLine = RateLine.Loading
 ) {
     val failure: PreferenceFailure? get() = writeFailure ?: appearanceFailure ?: orderingFailure
+}
+
+/** The rate is written to the centavo: "4.150,25" (investment rule 11). */
+private const val RATE_SCALE = 2
+
+/** The Dólar row: the current rate and its date, none yet, or unreadable. */
+sealed interface RateLine {
+    data object Loading : RateLine
+
+    data object Unreadable : RateLine
+
+    data object None : RateLine
+
+    data class Read(val rate: String, val date: LocalDate) : RateLine
 }
 
 /** The Pagos e ingresos fijos row: how many of each, when that can be read. */

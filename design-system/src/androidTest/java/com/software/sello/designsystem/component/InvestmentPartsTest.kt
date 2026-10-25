@@ -15,8 +15,10 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
@@ -182,5 +184,35 @@ class InvestmentPartsTest {
                 (0 until layout.lineCount).any { layout.isLineEllipsized(it) }
             assertFalse("$scheme: the caption is cut in ${layout.lineCount} lines", shortened)
         }
+    }
+
+    @Test
+    fun forDollarsAndTheRateThePadHasACommaWhere000Was() {
+        var commas = 0
+        var zeros = 0
+        var decimal by mutableStateOf(true)
+        rule.setContent {
+            SelloTheme {
+                AmountKeypad(
+                    onDigit = {},
+                    onTripleZero = { zeros++ },
+                    onBackspace = {},
+                    onClearAll = {},
+                    onComma = if (decimal) {
+                        { commas++ }
+                    } else {
+                        null
+                    }
+                )
+            }
+        }
+        rule.onNodeWithContentDescription("Coma decimal").performClick()
+        assertEquals(1, commas)
+        rule.onNodeWithText("000").assertDoesNotExist()
+
+        decimal = false
+        rule.onNodeWithText("000").performClick()
+        assertEquals(1, zeros)
+        rule.onNodeWithContentDescription("Coma decimal").assertDoesNotExist()
     }
 }
