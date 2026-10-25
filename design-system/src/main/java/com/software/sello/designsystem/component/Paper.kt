@@ -368,8 +368,9 @@ private val PinnedAmountMinHeight = 600.dp
 
 /**
  * A screen's answer: a label with its stamp, if it has one, then one large amount, in
- * loss ink when [ink] is [StampInk.Over]. With [description], the label, stamp and
- * amount are read as that one sentence; [detail] is read on its own.
+ * loss ink when [lossAmount] (by default when [ink] is [StampInk.Over]). Inversiones'
+ * Pierde keeps the value in ink: a value is not an overrun. With [description], the
+ * label, stamp and amount are read as that one sentence; [detail] is read on its own.
  */
 @Composable
 fun AnswerSlip(
@@ -379,6 +380,7 @@ fun AnswerSlip(
     ink: StampInk,
     modifier: Modifier = Modifier,
     description: String? = null,
+    lossAmount: Boolean = ink == StampInk.Over,
     detail: @Composable () -> Unit = {}
 ) {
     Slip(modifier.fillMaxWidth()) {
@@ -402,7 +404,7 @@ fun AnswerSlip(
             }
             FittedMoneyText(
                 amount,
-                color = if (ink == StampInk.Over) {
+                color = if (lossAmount) {
                     SelloTheme.colors.semantic.loss
                 } else {
                     SelloTheme.colors.ink

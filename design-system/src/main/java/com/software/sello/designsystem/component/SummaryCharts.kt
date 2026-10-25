@@ -35,6 +35,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -49,8 +50,12 @@ data class SplitSegment(
     val striped: Boolean = false
 )
 
+/**
+ * One bar split by [segments], with [gap] of paper between them (Inversiones uses 2dp).
+ * The exact values belong in the lines or rows next to it.
+ */
 @Composable
-fun SplitBar(segments: List<SplitSegment>, modifier: Modifier = Modifier) {
+fun SplitBar(segments: List<SplitSegment>, modifier: Modifier = Modifier, gap: Dp = 0.dp) {
     require(segments.all { it.fraction.isFinite() && it.fraction >= 0f })
     val total = segments.sumOf { it.fraction.toDouble() }.toFloat()
     val summary = segments.joinToString(". ") { it.spoken }
@@ -61,9 +66,12 @@ fun SplitBar(segments: List<SplitSegment>, modifier: Modifier = Modifier) {
         }
     ) {
         if (total == 0f) return@Canvas
+        val drawn = segments.filter { it.fraction > 0f }
+        val space = gap.toPx()
+        val room = (size.width - space * (drawn.size - 1)).coerceAtLeast(0f)
         var start = 0f
-        segments.forEach { segment ->
-            val width = size.width * (segment.fraction / total)
+        drawn.forEach { segment ->
+            val width = room * (segment.fraction / total)
             if (segment.striped) {
                 clipRect(start, 0f, start + width, size.height) {
                     drawRect(
@@ -89,7 +97,7 @@ fun SplitBar(segments: List<SplitSegment>, modifier: Modifier = Modifier) {
                     androidx.compose.ui.geometry.Size(width, size.height)
                 )
             }
-            start += width
+            start += width + space
         }
     }
 }

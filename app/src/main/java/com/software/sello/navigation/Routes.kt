@@ -19,6 +19,10 @@ data object ResumenRoute
 @Serializable
 data object MetasRoute
 
+/** Investments: not tied to a month either. */
+@Serializable
+data object InversionesRoute
+
 /** One goal's detail. The screen reads the goal itself. */
 @Serializable
 data class GoalRoute(val goalId: String)
@@ -127,5 +131,6 @@ const val CREATED_CATEGORY_RESULT = "result.createdCategoryId"
 enum class ShellTab(val id: String) {
     Recibo("recibo"),
     Resumen("resumen"),
-    Metas("metas")
+    Metas("metas"),
+    Inversiones("inversiones")
 }
