@@ -21,6 +21,9 @@ interface InvestmentDao {
     @Query("SELECT * FROM investment WHERE id = :id")
     suspend fun byId(id: String): InvestmentEntity?
 
+    @Query("SELECT COUNT(*) FROM investment")
+    suspend fun count(): Int
+
     /** Every investment, the earliest created first. */
     @Query("SELECT * FROM investment ORDER BY created_at, id")
     suspend fun all(): List<InvestmentEntity>

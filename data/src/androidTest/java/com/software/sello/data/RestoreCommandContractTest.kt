@@ -148,7 +148,9 @@ class RestoreCommandContractTest {
                 incomes = listOf(income(201, "2026-10-01", 1, 200_000, IncomeSource.Salary)),
                 goals = emptyList(),
                 featuredGoal = null,
-                schedules = emptyList()
+                schedules = emptyList(),
+                investments = emptyList(),
+                usdRates = emptyList()
             ),
             preferences = preferences
         )
