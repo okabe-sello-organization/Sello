@@ -42,6 +42,7 @@ class DebugFaultDecoratorTest {
             LedgerIncomes(ledger),
             LedgerCategories(ledger),
             LedgerGoals(ledger),
+            LedgerInvestments(ledger),
             LedgerSchedules(ledger)
         )
 
