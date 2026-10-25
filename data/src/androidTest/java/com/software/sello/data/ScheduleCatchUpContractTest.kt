@@ -13,12 +13,15 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
+import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.RecordedOccurrence
 import com.software.sello.domain.port.RestoreExpense
+import com.software.sello.domain.port.RestoreIncome
 import com.software.sello.domain.port.ResumeSchedule
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.usecase.CatchUpSchedules
@@ -252,6 +255,37 @@ class ScheduleCatchUpContractTest {
         assertEquals(listOf("2026-10-05|1|950000|${uuid(100)}|null|${rent.value}"), expenses())
         assertEquals(CatchUpBatch.Recorded(emptyList()), batch("2026-10-07"))
         assertEquals(listOf("0|2026-10-05|1"), checkpoints())
+    }
+
+    /** Rule 4 for an income: an undone deletion of the 15 October salary is not recorded again. */
+    @Test
+    fun anUndoneIncomeDeletionComesBackWithItsOriginAndIsNotRecordedTwice() = runBlocking {
+        val salary = schedule(
+            "2026-10-01",
+            RepeatRule.Monthly.of(15).valueOrFail(),
+            ScheduledEntry.Income(IncomeSource.Salary, pesos(1_000_000), null)
+        )
+        val recorded = (batch("2026-10-15") as CatchUpBatch.Recorded).occurrences.single()
+        ledger.goTo("2026-10-16")
+        val deletion = ledger.operation()
+        ledger.incomes.delete(
+            DeleteIncome(deletion, 1, (recorded as RecordedOccurrence.Income).incomeId, 1)
+        )
+
+        val undone = ledger.incomes.restore(RestoreIncome(ledger.operation(), 1, deletion))
+
+        assertTrue("$undone", undone is IncomeCommandOutcome.Committed)
+        assertEquals(
+            listOf("2026-10-15|1|1000000|${salary.value}"),
+            ledger.rows(
+                "income",
+                "effective_date",
+                "origin_slot",
+                "amount_minor",
+                "origin_schedule_id"
+            )
+        )
+        assertEquals(CatchUpBatch.Recorded(emptyList()), batch("2026-10-17"))
     }
 
     /** RE16: a manual entry is never taken for the scheduled one. */
