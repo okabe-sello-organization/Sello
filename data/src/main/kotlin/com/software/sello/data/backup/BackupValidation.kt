@@ -29,6 +29,17 @@ import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.Investment
+import com.software.sello.domain.model.InvestmentAmount
+import com.software.sello.domain.model.InvestmentAmountError
+import com.software.sello.domain.model.InvestmentDescription
+import com.software.sello.domain.model.InvestmentHistory
+import com.software.sello.domain.model.InvestmentHistoryError
+import com.software.sello.domain.model.InvestmentId
+import com.software.sello.domain.model.InvestmentMovement
+import com.software.sello.domain.model.InvestmentMovementId
+import com.software.sello.domain.model.InvestmentMovementKind
+import com.software.sello.domain.model.InvestmentName
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.Note
@@ -45,8 +56,12 @@ import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.model.TransactionAmountError
+import com.software.sello.domain.model.UsdRate
+import com.software.sello.domain.model.UsdRateEntry
+import com.software.sello.domain.model.UsdRateId
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.StoredSchedule
 import java.time.DateTimeException
 import java.time.Instant
@@ -68,6 +83,8 @@ internal object WireNames {
     const val TARGET = "target"
     const val CONTRIBUTION = "contribution"
     const val WITHDRAWAL = "withdrawal"
+    const val DIVIDEND = "dividend"
+    const val VALUATION = "valuation"
     const val PAYMENT = "payment"
     const val INCOME = "income"
     const val MONTHLY = "monthly"
@@ -127,16 +144,16 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 3 included; the
+ * Checks a decoded file completely, older versions read as version 4 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV3): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV4): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV3): BackupContents {
+private fun contentsOf(file: BackupFileV4): BackupContents {
     val financial = file.financial
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
     val zone = try {
@@ -168,7 +185,9 @@ private fun contentsOf(file: BackupFileV3): BackupContents {
             incomes = incomes(financial.incomes, handled),
             goals = goals,
             featuredGoal = featured,
-            schedules = schedules
+            schedules = schedules,
+            investments = investments(financial.investments),
+            usdRates = usdRates(financial.usdRates)
         ),
         preferences = file.preferences?.let(::preferences)
     )
@@ -639,6 +658,161 @@ private fun goals(wire: List<GoalV2>): List<GoalHistory> {
             }
         }
         history
+    }
+}
+
+/** An investment's or movement's currency: COP or USD, the only ones investments keep. */
+private fun investmentCurrency(code: String, path: String): Currency =
+    Currency.entries.firstOrNull { it.code == code && it in InvestmentAmount.currencies }
+        ?: reject(BackupRejection.UnsupportedCurrency(path))
+
+/** A movement's kind, by its wire spelling. */
+private fun movementKind(text: String, path: String): InvestmentMovementKind = when (text) {
+    WireNames.CONTRIBUTION -> InvestmentMovementKind.Contribution
+    WireNames.WITHDRAWAL -> InvestmentMovementKind.Withdrawal
+    WireNames.DIVIDEND -> InvestmentMovementKind.Dividend
+    WireNames.VALUATION -> InvestmentMovementKind.Valuation
+    else -> invalid(path)
+}
+
+/**
+ * A movement's amount, in its investment's [currency] and nothing else (investment rule
+ * 2): 1 to 999.999.999.999 minor units, or 0 as well for a recorded value.
+ */
+private fun investmentAmount(
+    kind: InvestmentMovementKind,
+    units: JsonElement,
+    code: String,
+    currency: Currency,
+    path: String
+): InvestmentAmount {
+    val minor = whole(units, "$path.amount")
+    if (investmentCurrency(code, "$path.currency") != currency) {
+        reject(BackupRejection.UnsupportedCurrency("$path.currency"))
+    }
+    val money = Money(minor, currency)
+    val amount = if (kind == InvestmentMovementKind.Valuation) {
+        InvestmentAmount.ofValue(money)
+    } else {
+        InvestmentAmount.of(money)
+    }
+    return when (amount) {
+        is Outcome.Success -> amount.value
+
+        is Outcome.Failure -> when (amount.error) {
+            InvestmentAmountError.BelowMinimum, InvestmentAmountError.AboveMaximum ->
+                reject(BackupRejection.AmountOutOfRange("$path.amount"))
+
+            is InvestmentAmountError.UnsupportedCurrency ->
+                reject(BackupRejection.UnsupportedCurrency("$path.currency"))
+        }
+    }
+}
+
+/**
+ * Each investment and its history as the app stores them (docs/testing/investment-examples.md):
+ * a name and description in stored form, COP or USD, every movement in that currency and
+ * within its bounds, the movements in recording order, and a history the rules accept, so
+ * a retiro never takes more than the value on its date and nothing comes before the first
+ * aporte. A movement belongs to the investment it is written in: the file cannot point one
+ * anywhere else. Versions start again at 1.
+ */
+private fun investments(wire: List<InvestmentV4>): List<InvestmentHistory> {
+    val investmentIds = HashSet<InvestmentId>()
+    val movementIds = HashSet<InvestmentMovementId>()
+    return wire.mapIndexed { index, row ->
+        val path = "financial.investments[$index]"
+        val id = InvestmentId.of(row.id).or("$path.id")
+        if (!investmentIds.add(id)) reject(BackupRejection.DuplicateId("$path.id"))
+        val name = InvestmentName.of(row.name).or("$path.name")
+        if (name.value != row.name) invalid("$path.name")
+        val description = InvestmentDescription.of(row.description).or("$path.description")
+        if (description?.value != row.description) invalid("$path.description")
+        val currency = investmentCurrency(row.currency, "$path.currency")
+        val investment = Investment(
+            id = id,
+            name = name,
+            description = description,
+            icon = IconKey.of(row.icon).or("$path.icon"),
+            currency = currency,
+            version = 1,
+            createdAt = instant(row.createdAt, "$path.createdAt"),
+            updatedAt = instant(row.updatedAt, "$path.updatedAt")
+        )
+        var previous = -1L
+        val movements = row.movements.mapIndexed { position, movement ->
+            val at = "$path.movements[$position]"
+            val movementId = InvestmentMovementId.of(movement.id).or("$at.id")
+            if (!movementIds.add(movementId)) reject(BackupRejection.DuplicateId("$at.id"))
+            val sequence = whole(movement.sequence, "$at.sequence")
+            if (sequence <= previous) reject(BackupRejection.DuplicateEntry("$at.sequence"))
+            // A restore puts the next recording position after the last one.
+            if (sequence == Long.MAX_VALUE) invalid("$at.sequence")
+            previous = sequence
+            val kind = movementKind(movement.kind, "$at.kind")
+            InvestmentMovement(
+                id = movementId,
+                kind = kind,
+                amount = investmentAmount(kind, movement.amount, movement.currency, currency, at),
+                date = EffectiveDates.parseDate(movement.date).or("$at.date"),
+                sequence = sequence,
+                note = note(movement.note, "$at.note"),
+                version = 1,
+                createdAt = instant(movement.createdAt, "$at.createdAt"),
+                updatedAt = instant(movement.updatedAt, "$at.updatedAt")
+            )
+        }
+        val history = InvestmentHistory(investment, movements)
+        val worked = InvestmentPolicy.figures(history)
+        if (worked is Outcome.Failure) invalid(historyPath(path, movements, worked.error))
+        history
+    }
+}
+
+/** Where a history the rules refuse goes wrong: the movement named, or the whole history. */
+private fun historyPath(
+    path: String,
+    movements: List<InvestmentMovement>,
+    error: InvestmentHistoryError
+): String {
+    fun place(movement: InvestmentMovementId) =
+        "$path.movements[${movements.indexOfFirst { it.id == movement }}]"
+    return when (error) {
+        is InvestmentHistoryError.WithdrawalAboveValue -> "${place(error.withdrawal)}.amount"
+
+        is InvestmentHistoryError.WithdrawalWithoutValue -> "${place(error.withdrawal)}.kind"
+
+        is InvestmentHistoryError.BeforeFirstContribution -> "${place(error.movement)}.date"
+
+        is InvestmentHistoryError.CurrencyMismatch -> "${place(error.movement)}.currency"
+
+        InvestmentHistoryError.NoContribution,
+        InvestmentHistoryError.Unrepresentable -> "$path.movements"
+    }
+}
+
+/**
+ * Every entered USD rate (investment rule 11): whole hundredths of a peso per dollar from
+ * 1,00 to 100.000,00, so a decimal JSON number, such as a rate with three decimals, is
+ * refused and never rounded; a real date; and an entry position of its own.
+ */
+private fun usdRates(wire: List<UsdRateV4>): List<UsdRateEntry> {
+    val ids = HashSet<UsdRateId>()
+    val sequences = HashSet<Long>()
+    return wire.mapIndexed { index, row ->
+        val path = "financial.usdRates[$index]"
+        val id = UsdRateId.of(row.id).or("$path.id")
+        if (!ids.add(id)) reject(BackupRejection.DuplicateId("$path.id"))
+        val hundredths = whole(row.rateHundredths, "$path.rateHundredths")
+        val sequence = whole(row.sequence, "$path.sequence")
+        if (!sequences.add(sequence)) reject(BackupRejection.DuplicateEntry("$path.sequence"))
+        UsdRateEntry(
+            id = id,
+            rate = UsdRate.ofHundredths(hundredths).or("$path.rateHundredths"),
+            date = EffectiveDates.parseDate(row.date).or("$path.date"),
+            sequence = sequence,
+            createdAt = instant(row.createdAt, "$path.createdAt")
+        )
     }
 }
 

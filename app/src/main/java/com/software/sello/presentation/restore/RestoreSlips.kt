@@ -229,10 +229,15 @@ const val RESTORE_LEAVE_TAG = "restore:leave"
 /**
  * What a backup or the phone holds, in words: "2 categorías, 3 gastos y 1 ingreso",
  * with "y 3 metas" at the end only when [withGoals], so nothing changes for a history
- * without goals.
+ * without goals; likewise schedules and investments.
  */
 @Composable
-fun contentsText(summary: BackupSummary, withGoals: Boolean, withSchedules: Boolean): String {
+fun contentsText(
+    summary: BackupSummary,
+    withGoals: Boolean,
+    withSchedules: Boolean,
+    withInvestments: Boolean = summary.investments > 0
+): String {
     val items = buildList {
         add(
             pluralStringResource(
@@ -270,6 +275,15 @@ fun contentsText(summary: BackupSummary, withGoals: Boolean, withSchedules: Bool
                     R.plurals.restore_schedules,
                     summary.schedules,
                     countText(summary.schedules)
+                )
+            )
+        }
+        if (withInvestments) {
+            add(
+                pluralStringResource(
+                    R.plurals.restore_investments,
+                    summary.investments,
+                    countText(summary.investments)
                 )
             )
         }

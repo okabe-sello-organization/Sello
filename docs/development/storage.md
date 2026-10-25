@@ -174,8 +174,9 @@ written. A new investment writes its row, its first aporte and its first value (
 position, the same date) and, for a first USD investment, the rate in one transaction.
 Deleting an investment deletes its movements in that command's transaction, never by a
 cascade. Rates are only ever added; the current one is the latest date, then the last
-entered. Restore and erase-all remove the investment tables with the rest; backups do not
-carry them yet (SELLO-108), so a restore leaves no investments.
+entered. Backups carry investments, their movements and the rates (format version 4,
+SELLO-108); restore puts them back as they were, each movement at its recording position,
+and erase-all removes them. Neither keeps a deleted movement's undo copy.
 
 ## Not here yet
 
