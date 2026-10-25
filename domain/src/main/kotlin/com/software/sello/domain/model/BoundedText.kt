@@ -105,3 +105,36 @@ data class GoalName private constructor(val value: String) {
             }
     }
 }
+
+/** An investment's displayed name: trimmed, 1–40 code points, as a goal's (investment rule 1). */
+@ConsistentCopyVisibility
+data class InvestmentName private constructor(val value: String) {
+    companion object {
+        const val MAX_CODE_POINTS = 40
+
+        fun of(raw: String): Outcome<InvestmentName, TextError> =
+            when (val text = boundedText(raw, MAX_CODE_POINTS)) {
+                is Outcome.Success -> Outcome.Success(InvestmentName(text.value))
+                is Outcome.Failure -> text
+            }
+    }
+}
+
+/**
+ * An investment's optional description, shown under its name: trimmed, at most 40 code
+ * points; blank is no description (investment rule 1).
+ */
+@ConsistentCopyVisibility
+data class InvestmentDescription private constructor(val value: String) {
+    companion object {
+        const val MAX_CODE_POINTS = 40
+
+        fun of(raw: String?): Outcome<InvestmentDescription?, TextError> {
+            if (raw.isNullOrBlank()) return Outcome.Success(null)
+            return when (val text = boundedText(raw, MAX_CODE_POINTS)) {
+                is Outcome.Success -> Outcome.Success(InvestmentDescription(text.value))
+                is Outcome.Failure -> text
+            }
+        }
+    }
+}

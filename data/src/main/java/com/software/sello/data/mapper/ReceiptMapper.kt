@@ -5,19 +5,22 @@ import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.IncomeId
+import com.software.sello.domain.model.InvestmentId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.model.UsdRateId
 import java.time.Instant
 
 /**
  * A stored receipt, decoded. The subject is the record the operation changed: an
  * expense for the four expense kinds, an income for the four income kinds, a goal for
- * the goal kinds, a schedule for the schedule kinds, none for a restore or reset of the
- * whole history, a category for every other kind.
+ * the goal kinds, a schedule for the schedule kinds, an investment for the investment
+ * kinds, the rate entered for a new USD rate, none for a restore or reset of the whole
+ * history, a category for every other kind.
  */
 internal class StoredReceipt(
     val receipt: OperationReceipt,
@@ -26,7 +29,9 @@ internal class StoredReceipt(
     val categoryId: CategoryId? = null,
     val incomeId: IncomeId? = null,
     val goalId: GoalId? = null,
-    val scheduleId: ScheduleId? = null
+    val scheduleId: ScheduleId? = null,
+    val investmentId: InvestmentId? = null,
+    val usdRateId: UsdRateId? = null
 )
 
 private val sha256Hex = Regex("[0-9a-f]{64}")
@@ -53,6 +58,11 @@ private val GoalKinds = OperationKind.entries.filter { it.key.startsWith("goal."
 /** The kinds whose subject is a schedule. */
 private val ScheduleKinds = OperationKind.entries
     .filter { it.key.startsWith("schedule.") && it != OperationKind.CatchUpSchedules }
+    .toSet()
+
+/** The kinds whose subject is an investment; a new USD rate is about the rate. */
+private val InvestmentKinds = OperationKind.entries
+    .filter { it.key.startsWith("investment.") && it != OperationKind.SetUsdRate }
     .toSet()
 
 internal fun OperationReceiptEntity.toStored(): Outcome<StoredReceipt, StorageFailure.Integrity> =
@@ -97,6 +107,20 @@ internal fun OperationReceiptEntity.toStored(): Outcome<StoredReceipt, StorageFa
                     receipt,
                     inputDigest,
                     scheduleId = valid("subject_id", ScheduleId.of(subject))
+                )
+
+            in InvestmentKinds ->
+                StoredReceipt(
+                    receipt,
+                    inputDigest,
+                    investmentId = valid("subject_id", InvestmentId.of(subject))
+                )
+
+            OperationKind.SetUsdRate ->
+                StoredReceipt(
+                    receipt,
+                    inputDigest,
+                    usdRateId = valid("subject_id", UsdRateId.of(subject))
                 )
 
             in IncomeKinds ->

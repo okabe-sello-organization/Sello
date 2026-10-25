@@ -136,6 +136,8 @@ class ResetGenerationContractTest {
             "from_date" to "2026-10-07",
             "until_date" to null
         )
+        // An investment with its movements and a USD rate, as SELLO-107 stores them.
+        ledger.database.insertInvestmentRows()
         files.restoreFolder.mkdirs()
         File(files.restoreFolder, "restored.json").writeText("{\"Mercado\": 7000}")
         setAside.forEach { it.writeBytes(ByteArray(64) { 7 }) }
@@ -150,7 +152,11 @@ class ResetGenerationContractTest {
         "deleted_expense",
         "deleted_income",
         "schedule",
-        "schedule_pause"
+        "schedule_pause",
+        "investment",
+        "investment_movement",
+        "deleted_investment_movement",
+        "usd_rate"
     ).associateWith { ledger.long("SELECT COUNT(*) FROM $it") }
 
     private fun everyRow(): List<List<String>> = listOf(

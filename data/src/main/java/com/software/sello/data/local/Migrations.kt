@@ -4,6 +4,61 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
+ * Version 6 adds investments: their movements, the copy kept for undoing a deleted
+ * movement and the dated USD rates, all empty. Nothing that existed in version 5 is read,
+ * changed or removed.
+ */
+internal val Migration5To6 = object : Migration(5, 6) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `investment` (`id` TEXT NOT NULL, " +
+                "`name` TEXT NOT NULL, `description` TEXT, `icon_key` TEXT NOT NULL, " +
+                "`currency` TEXT NOT NULL, `next_sequence` INTEGER NOT NULL, " +
+                "`version` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, " +
+                "`updated_at` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `investment_movement` (`id` TEXT NOT NULL, " +
+                "`investment_id` TEXT NOT NULL, `sequence` INTEGER NOT NULL, " +
+                "`kind` TEXT NOT NULL, `amount_minor` INTEGER NOT NULL, " +
+                "`currency` TEXT NOT NULL, `effective_date` TEXT NOT NULL, `note` TEXT, " +
+                "`version` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, " +
+                "`updated_at` INTEGER NOT NULL, PRIMARY KEY(`id`), " +
+                "FOREIGN KEY(`investment_id`) REFERENCES `investment`(`id`) " +
+                "ON UPDATE RESTRICT ON DELETE RESTRICT )"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_investment_movement_investment_id_sequence` " +
+                "ON `investment_movement` (`investment_id`, `sequence`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS " +
+                "`index_investment_movement_investment_id_effective_date` " +
+                "ON `investment_movement` (`investment_id`, `effective_date`)"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `deleted_investment_movement` (" +
+                "`deletion_id` TEXT NOT NULL, `generation` INTEGER NOT NULL, " +
+                "`deleted_at` INTEGER NOT NULL, `movement_id` TEXT NOT NULL, " +
+                "`investment_id` TEXT NOT NULL, `sequence` INTEGER NOT NULL, " +
+                "`kind` TEXT NOT NULL, `amount_minor` INTEGER NOT NULL, " +
+                "`currency` TEXT NOT NULL, `effective_date` TEXT NOT NULL, `note` TEXT, " +
+                "`version` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, " +
+                "`updated_at` INTEGER NOT NULL, PRIMARY KEY(`deletion_id`))"
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `usd_rate` (`id` TEXT NOT NULL, " +
+                "`rate_hundredths` INTEGER NOT NULL, `effective_date` TEXT NOT NULL, " +
+                "`sequence` INTEGER NOT NULL, `created_at` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_usd_rate_sequence` ON `usd_rate` (`sequence`)"
+        )
+    }
+}
+
+/**
  * Version 5 adds recurrence: schedules and their pauses, both empty, and the origin of an
  * automatically recorded expense or income, absent on every existing row and on the
  * copies kept for undo. Nothing that existed in version 4 is read, changed or removed.

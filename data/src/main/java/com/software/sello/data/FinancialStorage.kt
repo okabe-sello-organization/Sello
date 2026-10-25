@@ -20,6 +20,8 @@ import com.software.sello.data.repository.RoomGoalCommands
 import com.software.sello.data.repository.RoomGoalReads
 import com.software.sello.data.repository.RoomIncomeCommands
 import com.software.sello.data.repository.RoomIncomeReads
+import com.software.sello.data.repository.RoomInvestmentCommands
+import com.software.sello.data.repository.RoomInvestmentReads
 import com.software.sello.data.repository.RoomMonthlySnapshots
 import com.software.sello.data.repository.RoomResumenSnapshots
 import com.software.sello.data.repository.RoomScheduleCatchUp
@@ -50,6 +52,8 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceReset
@@ -111,6 +115,20 @@ class FinancialStorage internal constructor(
         RoomGoalCommands(database, audit, clock, ids, undoWindow(monotonic), monotonic)
 
     val goalReads: GoalReads = RoomGoalReads(database)
+
+    /**
+     * Investments and the USD rate. A deleted movement shares the one offer to undo with
+     * expenses, income and goal movements.
+     */
+    fun investmentCommands(
+        audit: AuditClock,
+        clock: FinancialClock,
+        ids: RecordIdSource,
+        monotonic: MonotonicClock
+    ): InvestmentCommands =
+        RoomInvestmentCommands(database, audit, clock, ids, undoWindow(monotonic))
+
+    val investmentReads: InvestmentReads = RoomInvestmentReads(database)
 
     /** Recurring payments and incomes: create, change, pause, resume and delete. */
     fun scheduleCommands(
