@@ -145,8 +145,8 @@ class RestoreCommandContractTest {
                 ),
                 incomes = listOf(income(201, "2026-10-01", 1, 200_000, IncomeSource.Salary)),
                 goals = emptyList(),
-                featuredGoal = null
-
+                featuredGoal = null,
+                schedules = emptyList()
             ),
             preferences = preferences
         )
@@ -157,8 +157,8 @@ class RestoreCommandContractTest {
         ledger.categories.submit(ledger.createCategory("Mercado", finite(50_000)))
         ledger.expenses.create(ledger.createExpense(100, "2026-10-05", 7_000))
         ledger.expenses.create(ledger.createExpense(100, "2026-10-06", 8_000))
-        // A paused recurring payment in Mercado, as SELLO-098 stores one. Version 2
-        // backups carry no schedules, so a restore leaves none.
+        // A paused recurring payment in Mercado, as SELLO-098 stores one. The backup
+        // holds no schedules, so a restore leaves none.
         ledger.database.insertRaw(
             "schedule",
             "id" to uuid(300),
@@ -213,14 +213,14 @@ class RestoreCommandContractTest {
         val staged = stage()
         val outcome = restores().replace(staged)
 
-        assertEquals(BackupSummary(categories = 1, expenses = 2, incomes = 0, 0), staged.current)
+        assertEquals(BackupSummary(categories = 1, expenses = 2, incomes = 0, 0, 1), staged.current)
         assertEquals(
-            BackupSummary(categories = 2, expenses = 3, incomes = 1, 0),
+            BackupSummary(categories = 2, expenses = 3, incomes = 1, 0, 0),
             staged.replacement
         )
         assertEquals(
             RestoreOutcome.Restored(
-                BackupSummary(2, 3, 1, 0),
+                BackupSummary(2, 3, 1, 0, 0),
                 PendingPreferences(null, null)
             ),
             outcome
@@ -268,7 +268,7 @@ class RestoreCommandContractTest {
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
         val newer = restores().stage(
-            String(bytes).replaceFirst("\"version\": 2", "\"version\": 3").toByteArray()
+            String(bytes).replaceFirst("\"version\": 3", "\"version\": 4").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)
@@ -313,7 +313,7 @@ class RestoreCommandContractTest {
         assertEquals(before, everyRow())
 
         val fresh = restores().staged()!!
-        assertEquals(BackupSummary(1, 3, 0, 0), fresh.current)
+        assertEquals(BackupSummary(1, 3, 0, 0, 1), fresh.current)
         assertTrue(restores().replace(fresh) is RestoreOutcome.Restored)
     }
 
@@ -368,7 +368,7 @@ class RestoreCommandContractTest {
 
         assertEquals(
             RestoreOutcome.Restored(
-                BackupSummary(2, 3, 1, 0),
+                BackupSummary(2, 3, 1, 0, 0),
                 PendingPreferences(appearance = null, ordering = wanted.ordering)
             ),
             outcome

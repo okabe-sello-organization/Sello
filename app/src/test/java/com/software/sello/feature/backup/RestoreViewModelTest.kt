@@ -40,13 +40,13 @@ class RestoreViewModelTest {
     private val staged = StagedRestore(
         operationId = operation,
         backupAt = Instant.parse("2026-10-22T14:30:00Z"),
-        current = BackupSummary(1, 2, 0, 0),
-        replacement = BackupSummary(2, 3, 1, 0),
+        current = BackupSummary(1, 2, 0, 0, 0),
+        replacement = BackupSummary(2, 3, 1, 0, 0),
         generation = 1,
         revision = 4
     )
     private val done = RestoreOutcome.Restored(
-        BackupSummary(2, 3, 1, 0),
+        BackupSummary(2, 3, 1, 0, 0),
         PendingPreferences(null, null)
     )
 
@@ -206,7 +206,7 @@ class RestoreViewModelTest {
 
     @Test
     fun aHistoryThatChangedAfterThePreviewIsPreviewedAgain() = runTest {
-        val fresh = staged.copy(current = BackupSummary(1, 3, 0, 0), revision = 5)
+        val fresh = staged.copy(current = BackupSummary(1, 3, 0, 0, 0), revision = 5)
         restores.stageAnswer = Outcome.Success(staged)
         restores.replaceAnswer = RestoreOutcome.Stale
         restores.stagedAnswer = fresh

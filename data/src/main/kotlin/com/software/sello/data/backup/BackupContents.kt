@@ -9,6 +9,7 @@ import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.MonthLimit
+import com.software.sello.domain.port.StoredSchedule
 import java.time.Instant
 import java.time.ZoneId
 
@@ -28,7 +29,9 @@ data class FinancialSnapshot(
     /** Each goal with its whole history, the earliest created first. */
     val goals: List<GoalHistory>,
     /** Recibo's chosen goal, one of [goals], or null. */
-    val featuredGoal: GoalId?
+    val featuredGoal: GoalId?,
+    /** Recurring payments and incomes in creation order, with their pauses and checkpoints. */
+    val schedules: List<StoredSchedule>
 ) {
     val counts: BackupCounts
         get() = BackupCounts(
@@ -39,7 +42,8 @@ data class FinancialSnapshot(
             expenses = expenses.size,
             incomes = incomes.size,
             goals = goals.size,
-            goalEvents = goals.sumOf { it.events.size }
+            goalEvents = goals.sumOf { it.events.size },
+            schedules = schedules.size
         )
 }
 
@@ -67,7 +71,8 @@ data class BackupCounts(
     val expenses: Int,
     val incomes: Int,
     val goals: Int,
-    val goalEvents: Int
+    val goalEvents: Int,
+    val schedules: Int
 )
 
 /**

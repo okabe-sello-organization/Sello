@@ -1,4 +1,4 @@
-# Backup file format, version 2
+# Backup file format, version 3
 
 Rules: [architecture](../../ARCHITECTURE.md) §7, [D05, D08 and D09](../decisions/0001-mvp-contract.md#d08--privacy-and-portable-files),
 [ADR 0003](../decisions/0003-mvp-transaction-amount-range.md). Code: `data/.../backup`.
@@ -14,14 +14,17 @@ its financial zone (`BackupFormat.fileName`). MIME type: `application/json`.
 
 ## Shape
 
-Sello writes version 2 (SELLO-088) and reads versions 1 and 2. Version 2 is version 1
-plus `financial.goals` and `financial.featuredGoal`; a version 1 file reads as having no
-goals. A backup with no goals is still version 2, so the MVP (0.1.0) cannot read it.
+Sello writes version 3 (SELLO-099) and reads versions 1 to 3. Version 2 is version 1
+plus `financial.goals` and `financial.featuredGoal` (SELLO-088); version 3 is version 2
+plus `financial.schedules` and each expense's and income's `origin`. A version 1 file
+reads as having no goals, and versions 1 and 2 as having no schedules and no origins.
+A backup with none of them is still version 3, so an app that reads only version 2
+cannot read it.
 
 ```json
 {
   "format": "sello-backup",
-  "version": 2,
+  "version": 3,
   "exportedAt": "2026-10-22T14:30:00Z",
   "financial": {
     "sourceRevision": 9,
@@ -32,7 +35,8 @@ goals. A backup with no goals is still version 2, so the MVP (0.1.0) cannot read
     "expenses": [ … ],
     "incomes": [ … ],
     "goals": [ … ],
-    "featuredGoal": "…" | null
+    "featuredGoal": "…" | null,
+    "schedules": [ … ]
   },
   "preferences": { … } | null
 }
@@ -40,15 +44,19 @@ goals. A backup with no goals is still version 2, so the MVP (0.1.0) cannot read
 
 [`valid-g01.json`](../../data/src/test/resources/backup/valid-g01.json) is a complete
 synthetic version 1 example: G01's three expenses and one income, plus an archived
-category. [`valid-g01-v2.json`](../../data/src/test/resources/backup/valid-g01-v2.json) is
-the same data as Sello writes it now, and
+category. [`valid-g01-v2.json`](../../data/src/test/resources/backup/valid-g01-v2.json) and
+[`valid-g01-v3.json`](../../data/src/test/resources/backup/valid-g01-v3.json) are the
+same data in versions 2 and 3, the latter as Sello writes it now;
 [`valid-goals-v2.json`](../../data/src/test/resources/backup/valid-goals-v2.json) adds one
-goal (approved example MT07). The `invalid-*.json` files beside them each break one rule.
+goal (approved example MT07), and
+[`valid-schedules-v3.json`](../../data/src/test/resources/backup/valid-schedules-v3.json)
+holds recurring payments and incomes with the entries they recorded (recurrence
+examples RE05 and RE10). The `invalid-*.json` files beside them each break one rule.
 
 | Key | Value |
 | --- | --- |
 | `format` | Always `"sello-backup"`. |
-| `version` | `1` or `2`. Any other number is refused as a version this app cannot read. |
+| `version` | `1`, `2` or `3`. Any other number is refused as a version this app cannot read. |
 | `exportedAt` | When the backup was made, UTC. |
 | `financial.sourceRevision` | The revision all financial rows were read at: one transaction, one revision. Informative; a restore does not reuse it. |
 | `financial.zone` | The financial zone, an IANA identifier such as `America/Bogota`. |
@@ -62,10 +70,14 @@ goal (approved example MT07). The `invalid-*.json` files beside them each break 
 | `categories` | `id`, `name`, `icon`, `archived`, `createdAt`, `updatedAt` |
 | `defaultLimits` | `categoryId`, `from` (month), `kind`, `amount`, `currency` |
 | `monthLimits` | `categoryId`, `month`, `kind`, `amount`, `currency` |
-| `expenses` | `id`, `categoryId`, `date`, `sequence`, `amount`, `currency`, `note`, `createdAt`, `updatedAt` |
-| `incomes` | `id`, `date`, `sequence`, `amount`, `currency`, `source`, `sourceName`, `note`, `createdAt`, `updatedAt` |
+| `expenses` | `id`, `categoryId`, `date`, `sequence`, `amount`, `currency`, `note`, `createdAt`, `updatedAt`, and in version 3 `origin` |
+| `incomes` | `id`, `date`, `sequence`, `amount`, `currency`, `source`, `sourceName`, `note`, `createdAt`, `updatedAt`, and in version 3 `origin` |
 | `goals` (v2) | `id`, `name`, `icon`, `targetMonth`, `completedOn`, `createdAt`, `updatedAt`, `history` |
 | `history` (each goal) | `id`, `sequence`, `kind`, `amount`, `currency`, `date`, `recordedOn`, `note`, `createdAt`, `updatedAt` |
+| `origin` (v3, each expense or income) | `schedule`, `date`, `slot`, or `null` for one entered by hand |
+| `schedules` (v3) | `id`, `kind`, `categoryId`, `source`, `sourceName`, `amount`, `currency`, `note`, `repeat`, `first`, `second`, `start`, `end`, `sequence`, `handled`, `pauses`, `createdAt`, `updatedAt` |
+| `handled` (each schedule) | `date`, `slot`, or `null` before catch-up first dealt with it |
+| `pauses` (each schedule) | `from`, `until` (`null` while still paused) |
 
 `preferences` has `theme` (`system`, `light`, `dark`), `ink` (`cobalto`, `violeta`),
 `categoryOrder` (`most_used`, `alphabetical`, `amount_spent`, `limit`,
@@ -102,16 +114,33 @@ Every key is required, even when its value is `null`, and no other key is allowe
   [goal rules](../testing/goal-examples.md): a withdrawal above what was saved at its
   point rejects the file. Stamps and percentages are not in the file; they are worked
   out from the history.
+- **Schedules** ([recurrence rules](../testing/recurrence-examples.md)): `kind` is
+  `payment`, with a `categoryId` in the file and `source` and `sourceName` `null`, or
+  `income`, with `categoryId` `null` and an income `source`. Amount, currency and note
+  follow an expense's rules. `repeat` is `monthly` (`first` the day, 1–31),
+  `twice_monthly` (`first` and `second` the days, `first` earlier), `every_days` (1–365)
+  or `every_weeks` (1–52); `second` is `null` but twice a month. `start` and `end` are
+  dates, `end` on or after `start` or `null`; `pauses` begin on or after `start`, are in
+  order and do not overlap, and only the last may be open. `sequence` is the creation
+  order, unique. `handled` is the last occurrence catch-up dealt with: a date and a slot,
+  `2` only twice a month. A payment into an archived category must be paused, as
+  archiving leaves it.
+- **Origins:** `slot` is `1` or `2`; one origin appears at most once among expenses and
+  once among incomes. When its schedule is in the file, it is at or before that
+  schedule's `handled`, so a restore never records it again; one whose schedule was
+  deleted since stays as it is.
 - **Order:** `sequence` is kept as written, so history keeps its order. Files are
   written categories by creation then ID, limits by category then month, records
-  by date then sequence, goals by creation then ID with each history by sequence;
-  the same data always makes the same bytes.
+  by date then sequence, goals by creation then ID with each history by sequence,
+  schedules by `sequence` with each schedule's pauses by first day; the same data
+  always makes the same bytes.
 
 ## Not in a backup
 
 Record, category and goal versions, a goal's next recording position, the profile
 generation, operation receipts, the copies kept for undo (`deleted_expense`,
-`deleted_income`, `deleted_goal_event`), a goal's stamps and percentage, jobs, sandbox or debug
+`deleted_income`, `deleted_goal_event`), a goal's stamps and percentage, a schedule's
+occurrences (worked out from its terms) and catch-up receipts, jobs, sandbox or debug
 state, one-time notice dismissals, permissions, URIs, paths and credentials.
 
 ## Reading a file
@@ -158,7 +187,10 @@ file survives a restart, but is forgotten after a day or once the generation cha
 
 The replacement refuses a history that moved since the preview; the person previews
 again. Goals and Recibo's choice are replaced with the rest, never merged: each goal's
-next recording position follows its last event, and each target gets a new identifier. Inside one transaction a receipt for the same operation means it already
+next recording position follows its last event, and each target gets a new identifier.
+Schedules are replaced the same way, each with its pauses and `handled` checkpoint, and
+entries keep their `origin`; catch-up then goes on from each checkpoint, so nothing the
+backup holds is recorded again and what came due since is. Inside one transaction a receipt for the same operation means it already
 happened, so asking again after an unknown outcome or a crash replays instead of
 replacing twice. Afterwards the backup's appearance and order are applied; a group
 that fails stays pending, with the file, and is retried at start-up and on request.
@@ -170,6 +202,6 @@ there as above.
 
 ## Changing the format
 
-Any change to keys, meanings or rules is a new `version`. Versions 1 and 2 stay
+Any change to keys, meanings or rules is a new `version`. Versions 1, 2 and 3 stay
 readable for as long as the app supports restoring them; nothing translates older Sello
 databases or other apps' files.

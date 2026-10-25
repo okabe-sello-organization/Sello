@@ -407,6 +407,24 @@ class ScheduleCommandContractTest {
         assertEquals("2", ledger.rows("schedule", "version").single())
     }
 
+    /**
+     * A payment paused by archiving its category stays paused until the category comes
+     * back (rule 9): resuming it before would record into an archived category, which
+     * catch-up treats as damage and would stop at.
+     */
+    @Test
+    fun aPaymentPausedByArchivingCannotResumeWhileItsCategoryIsArchived() = runBlocking {
+        start("2026-10-09")
+        committed(submit(create("2026-10-09", monthly(15))))
+        ledger.goTo("2026-10-12")
+        ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, hogar, 1))
+
+        val resumed = submit(ResumeSchedule(ledger.operation(), 1, scheduleId(), 2))
+
+        assertEquals(Rejected(ScheduleRejection.CategoryArchived), resumed)
+        assertEquals(listOf("$rent|2026-10-12|null"), pauses())
+    }
+
     @Test
     fun archivingWaitsWhileACategorysScheduleHasAnUnrecordedOccurrence() = runBlocking {
         start("2026-10-09")

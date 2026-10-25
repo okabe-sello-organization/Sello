@@ -180,7 +180,8 @@ class RestoreJourneyTest {
                         )
                     ),
                     goals = emptyList(),
-                    featuredGoal = null
+                    featuredGoal = null,
+                    schedules = emptyList()
                 ),
                 preferences = PortablePreferences(
                     AppearancePreference(ThemePreference.Dark, InkPreference.Violeta),

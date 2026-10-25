@@ -77,7 +77,7 @@ class DataStoreUserPreferencesTest {
         at = Instant.parse("2026-10-22T19:30:00.250Z"),
         name = "sello-respaldo-2026-10-22-1430.json",
         bytes = 4_096,
-        summary = BackupSummary(categories = 2, expenses = 3, incomes = 1, 0)
+        summary = BackupSummary(categories = 2, expenses = 3, incomes = 1, 0, 0)
     )
 
     @Test

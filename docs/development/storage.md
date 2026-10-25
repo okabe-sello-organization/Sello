@@ -157,8 +157,9 @@ and with no foreign key, so the entry outlives its schedule. A schedule's
 every earlier one are never recorded again, even after their entry was deleted.
 Catch-up writes those entries and moves the checkpoints in one transaction per batch,
 with a `schedule.catch_up` receipt that has no subject ([commands](commands.md#catch-up)).
-Backups (format version 2), restore and erase-all do not carry schedules yet
-(SELLO-099).
+Backups (format version 3, SELLO-099) carry schedules, their pauses and checkpoints
+and every entry's origin; restore puts them back as they were and erase-all removes
+them.
 
 ## Not here yet
 

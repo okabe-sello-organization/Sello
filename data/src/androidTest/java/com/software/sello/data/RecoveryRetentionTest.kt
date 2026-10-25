@@ -265,7 +265,10 @@ class RecoveryRetentionTest {
         // 2. Its backup holds exactly that history and the person's preferences.
         val prepared = upgraded.backupExports(chosen, chosen, { at }, dispatchers).prepare()
             .valueOrFail()
-        assertEquals(BackupSummary(categories = 3, expenses = 5, incomes = 2, 0), prepared.summary)
+        assertEquals(
+            BackupSummary(categories = 3, expenses = 5, incomes = 2, 0, 0),
+            prepared.summary
+        )
         val contents = BackupCodec().read(prepared.bytes).valueOrFail().contents
         assertEquals(ZoneId.of("America/Lima"), contents.financial.zone)
         assertEquals(
@@ -287,7 +290,7 @@ class RecoveryRetentionTest {
         }, { at }, dispatchers)
         val restored = restores.replace(restores.stage(prepared.bytes).valueOrFail())
         assertEquals(
-            RestoreOutcome.Restored(BackupSummary(3, 5, 2, 0), PendingPreferences(null, null)),
+            RestoreOutcome.Restored(BackupSummary(3, 5, 2, 0, 0), PendingPreferences(null, null)),
             restored
         )
         assertEquals(restoredHistory, history(new))

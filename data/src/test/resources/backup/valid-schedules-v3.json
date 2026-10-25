@@ -1,0 +1,205 @@
+{
+  "format": "sello-backup",
+  "version": 3,
+  "exportedAt": "2026-10-24T20:00:00Z",
+  "financial": {
+    "sourceRevision": 20,
+    "zone": "America/Bogota",
+    "categories": [
+      {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "name": "Hogar",
+        "icon": "home",
+        "archived": false,
+        "createdAt": "2026-09-01T12:00:00Z",
+        "updatedAt": "2026-09-01T12:00:00Z"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "Transporte",
+        "icon": "directions_bus",
+        "archived": false,
+        "createdAt": "2026-09-01T12:05:00Z",
+        "updatedAt": "2026-09-01T12:05:00Z"
+      }
+    ],
+    "defaultLimits": [],
+    "monthLimits": [],
+    "expenses": [
+      {
+        "id": "00000000-0000-4000-8000-000000000101",
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "date": "2026-10-05",
+        "sequence": 1,
+        "amount": 950000,
+        "currency": "COP",
+        "note": "Arriendo",
+        "createdAt": "2026-10-24T13:00:00Z",
+        "updatedAt": "2026-10-24T13:00:00Z",
+        "origin": {
+          "schedule": "00000000-0000-4000-8000-000000000201",
+          "date": "2026-10-05",
+          "slot": 1
+        }
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000102",
+        "categoryId": "00000000-0000-4000-8000-000000000002",
+        "date": "2026-10-10",
+        "sequence": 2,
+        "amount": 20000,
+        "currency": "COP",
+        "note": null,
+        "createdAt": "2026-10-24T13:00:00Z",
+        "updatedAt": "2026-10-24T13:00:00Z",
+        "origin": {
+          "schedule": "00000000-0000-4000-8000-000000000202",
+          "date": "2026-10-10",
+          "slot": 1
+        }
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000103",
+        "categoryId": "00000000-0000-4000-8000-000000000002",
+        "date": "2026-10-17",
+        "sequence": 3,
+        "amount": 20000,
+        "currency": "COP",
+        "note": null,
+        "createdAt": "2026-10-24T13:00:00Z",
+        "updatedAt": "2026-10-24T13:00:00Z",
+        "origin": {
+          "schedule": "00000000-0000-4000-8000-000000000202",
+          "date": "2026-10-17",
+          "slot": 1
+        }
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000104",
+        "categoryId": "00000000-0000-4000-8000-000000000002",
+        "date": "2026-10-20",
+        "sequence": 4,
+        "amount": 15000,
+        "currency": "COP",
+        "note": "Taxi",
+        "createdAt": "2026-10-20T22:10:00Z",
+        "updatedAt": "2026-10-20T22:10:00Z",
+        "origin": null
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000105",
+        "categoryId": "00000000-0000-4000-8000-000000000002",
+        "date": "2026-10-24",
+        "sequence": 5,
+        "amount": 20000,
+        "currency": "COP",
+        "note": null,
+        "createdAt": "2026-10-24T13:00:00Z",
+        "updatedAt": "2026-10-24T13:00:00Z",
+        "origin": {
+          "schedule": "00000000-0000-4000-8000-000000000202",
+          "date": "2026-10-24",
+          "slot": 1
+        }
+      }
+    ],
+    "incomes": [
+      {
+        "id": "00000000-0000-4000-8000-000000000151",
+        "date": "2026-10-15",
+        "sequence": 1,
+        "amount": 800000,
+        "currency": "COP",
+        "source": "salary",
+        "sourceName": null,
+        "note": null,
+        "createdAt": "2026-10-15T13:00:00Z",
+        "updatedAt": "2026-10-15T13:00:00Z",
+        "origin": {
+          "schedule": "00000000-0000-4000-8000-000000000203",
+          "date": "2026-10-15",
+          "slot": 1
+        }
+      }
+    ],
+    "goals": [],
+    "featuredGoal": null,
+    "schedules": [
+      {
+        "id": "00000000-0000-4000-8000-000000000201",
+        "kind": "payment",
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "source": null,
+        "sourceName": null,
+        "amount": 950000,
+        "currency": "COP",
+        "note": "Arriendo",
+        "repeat": "monthly",
+        "first": 5,
+        "second": null,
+        "start": "2026-09-01",
+        "end": null,
+        "sequence": 0,
+        "handled": {
+          "date": "2026-10-05",
+          "slot": 1
+        },
+        "pauses": [],
+        "createdAt": "2026-09-01T12:10:00Z",
+        "updatedAt": "2026-09-01T12:10:00Z"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000202",
+        "kind": "payment",
+        "categoryId": "00000000-0000-4000-8000-000000000002",
+        "source": null,
+        "sourceName": null,
+        "amount": 20000,
+        "currency": "COP",
+        "note": null,
+        "repeat": "every_weeks",
+        "first": 1,
+        "second": null,
+        "start": "2026-09-26",
+        "end": null,
+        "sequence": 1,
+        "handled": {
+          "date": "2026-10-24",
+          "slot": 1
+        },
+        "pauses": [
+          {
+            "from": "2026-11-01",
+            "until": null
+          }
+        ],
+        "createdAt": "2026-09-26T09:00:00Z",
+        "updatedAt": "2026-10-24T18:00:00Z"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000203",
+        "kind": "income",
+        "categoryId": null,
+        "source": "salary",
+        "sourceName": null,
+        "amount": 800000,
+        "currency": "COP",
+        "note": null,
+        "repeat": "twice_monthly",
+        "first": 15,
+        "second": 30,
+        "start": "2026-10-01",
+        "end": "2026-12-31",
+        "sequence": 2,
+        "handled": {
+          "date": "2026-10-15",
+          "slot": 1
+        },
+        "pauses": [],
+        "createdAt": "2026-10-01T08:00:00Z",
+        "updatedAt": "2026-10-01T08:00:00Z"
+      }
+    ]
+  },
+  "preferences": null
+}

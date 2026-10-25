@@ -5,7 +5,14 @@ import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 
 /** What a backup holds, as a person would count it. [goals] counts goals of any state. */
-data class BackupSummary(val categories: Int, val expenses: Int, val incomes: Int, val goals: Int)
+data class BackupSummary(
+    val categories: Int,
+    val expenses: Int,
+    val incomes: Int,
+    val goals: Int,
+    /** Recurring payments and incomes, which version 3 backups carry. */
+    val schedules: Int
+)
 
 /** A backup file ready to be written to a place the person chose. Nothing has been written yet. */
 class PreparedBackup(val bytes: ByteArray, val summary: BackupSummary)

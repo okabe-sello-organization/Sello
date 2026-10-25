@@ -11,6 +11,7 @@ import com.software.sello.data.mapper.decodeAll
 import com.software.sello.data.mapper.profileFrom
 import com.software.sello.data.mapper.toDomain
 import com.software.sello.data.mapper.toHistory
+import com.software.sello.data.mapper.toStored
 import com.software.sello.data.repository.PAGE
 import com.software.sello.data.repository.pages
 import com.software.sello.data.repository.reading
@@ -74,6 +75,8 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
                 return Outcome.Failure(StorageFailure.Integrity("featured_goal", null, "goal_id"))
         }
     }
+    val pauses = scheduleDao().allPauses().groupBy { it.scheduleId }
+    val schedules = scheduleDao().all().decodeAll { it.toStored(pauses[it.id].orEmpty()) }
     return Outcome.Success(
         FinancialSnapshot(
             zone = profile.zone,
@@ -84,7 +87,8 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
             expenses = expenses.orReturn { return it },
             incomes = incomes.orReturn { return it },
             goals = goals.orReturn { return it },
-            featuredGoal = featured
+            featuredGoal = featured,
+            schedules = schedules.orReturn { return it }
         )
     )
 }
@@ -139,7 +143,8 @@ class BackupExport(
                         categories = file.value.counts.categories,
                         expenses = file.value.counts.expenses,
                         incomes = file.value.counts.incomes,
-                        goals = file.value.counts.goals
+                        goals = file.value.counts.goals,
+                        schedules = file.value.counts.schedules
                     )
                 )
             )

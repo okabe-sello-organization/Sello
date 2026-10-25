@@ -84,7 +84,11 @@ private fun Restored(summary: BackupSummary, onLeave: () -> Unit) {
         RestoreBody(
             stringResource(
                 R.string.restore_done_body,
-                contentsText(summary, withGoals = summary.goals > 0)
+                contentsText(
+                    summary,
+                    withGoals = summary.goals > 0,
+                    withSchedules = summary.schedules > 0
+                )
             )
         )
         GoToRecibo(onLeave)
@@ -228,7 +232,7 @@ const val RESTORE_LEAVE_TAG = "restore:leave"
  * without goals.
  */
 @Composable
-fun contentsText(summary: BackupSummary, withGoals: Boolean): String {
+fun contentsText(summary: BackupSummary, withGoals: Boolean, withSchedules: Boolean): String {
     val items = buildList {
         add(
             pluralStringResource(
@@ -257,6 +261,15 @@ fun contentsText(summary: BackupSummary, withGoals: Boolean): String {
                     R.plurals.restore_goals,
                     summary.goals,
                     countText(summary.goals)
+                )
+            )
+        }
+        if (withSchedules) {
+            add(
+                pluralStringResource(
+                    R.plurals.restore_schedules,
+                    summary.schedules,
+                    countText(summary.schedules)
                 )
             )
         }

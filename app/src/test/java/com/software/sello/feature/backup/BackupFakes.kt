@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** G01's counts, as a prepared file would carry them. */
-val g01Summary = BackupSummary(categories = 2, expenses = 3, incomes = 1, 0)
+val g01Summary = BackupSummary(categories = 2, expenses = 3, incomes = 1, 0, 0)
 
 class HandBackupExports : BackupExports {
     var name = "sello-respaldo-2026-10-22-1430.json"
