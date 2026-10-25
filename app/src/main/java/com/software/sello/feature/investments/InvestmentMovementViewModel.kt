@@ -106,8 +106,17 @@ class InvestmentMovementViewModel(
                 ?: saved.get<String>(KEY_KIND)?.let(::kindOf)
                 ?: InvestmentMovementKind.Contribution,
             investmentId = saved[INVESTMENT] ?: saved[KEY_INVESTMENT],
-            pesos = saved.get<String>(PESOS)?.let { if (it == ZERO) ZeroPesos else AmountDraft.paste(it) }
-                ?: AmountDraft.Empty,
+            pesos =
+                saved.get<String>(PESOS)?.let {
+                    if (it ==
+                        ZERO
+                    ) {
+                        ZeroPesos
+                    } else {
+                        AmountDraft.paste(it)
+                    }
+                }
+                    ?: AmountDraft.Empty,
             dollars = saved.get<String>(WHOLE)?.let {
                 DecimalDraft(
                     MAX_WHOLE,

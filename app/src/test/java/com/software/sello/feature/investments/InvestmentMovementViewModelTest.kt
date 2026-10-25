@@ -459,12 +459,19 @@ class InvestmentMovementViewModelTest {
         value.keys("0")
         assertTrue(value.now.canSubmit)
         value.onAction(InvestmentMovementAction.Submit)
-        assertEquals(Money.cop(0), (commands.sent.single() as RecordInvestmentMovement).amount.money)
+        assertEquals(
+            Money.cop(0),
+            (commands.sent.single() as RecordInvestmentMovement).amount.money
+        )
 
-        val replaced = model(investment = ecopetrol, kind = InvestmentMovementViewModel.KIND_VALUATION)
+        val replaced =
+            model(investment = ecopetrol, kind = InvestmentMovementViewModel.KIND_VALUATION)
         replaced.keys("0", "5", "000")
         replaced.onAction(InvestmentMovementAction.Submit)
-        assertEquals(Money.cop(5_000), (commands.sent.last() as RecordInvestmentMovement).amount.money)
+        assertEquals(
+            Money.cop(5_000),
+            (commands.sent.last() as RecordInvestmentMovement).amount.money
+        )
 
         val aporte = model(investment = ecopetrol)
         aporte.keys("0")
