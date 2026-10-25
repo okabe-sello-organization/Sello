@@ -1137,9 +1137,11 @@ class ScenarioRunner(
     }
 
     private suspend fun actual(month: YearMonth, figure: Figure): String? = when (figure) {
-        Figure.Spent, Figure.Limit, Figure.Remaining, Figure.NoLimit -> {
+        Figure.Spent, Figure.Limit, Figure.Remaining, Figure.NoLimit, Figure.Reserved,
+        Figure.Margin, Figure.PerDay -> {
             val snapshot = (months.read(month) as? Outcome.Success)?.value
             val overall = snapshot?.overall
+            val limited = overall as? OverallBudget.Limited
             when (figure) {
                 Figure.Spent -> snapshot?.spent?.let(::pesos)
 
@@ -1148,7 +1150,17 @@ class ScenarioRunner(
                 Figure.Limit -> (overall as? OverallBudget.Limited)?.budget?.limit?.let(::pesos)
                     ?: overall?.let { "sin límite" }
 
-                else -> (overall as? OverallBudget.Limited)?.budget?.remaining?.let(::pesos)
+                Figure.Reserved -> limited?.let { pesos(it.reservation?.total?.minorUnits ?: 0) }
+                    ?: overall?.let { "sin límite" }
+
+                Figure.Margin ->
+                    limited?.let { (it.reservation?.margin ?: it.budget.remaining).let(::pesos) }
+                        ?: overall?.let { "sin límite" }
+
+                Figure.PerDay -> limited?.let { it.allowance?.amount?.let(::pesos) ?: "sin cifra" }
+                    ?: overall?.let { "sin límite" }
+
+                else -> limited?.budget?.remaining?.let(::pesos)
                     ?: overall?.let { "sin límite" }
             }
         }

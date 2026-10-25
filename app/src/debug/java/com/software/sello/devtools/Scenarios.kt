@@ -1335,6 +1335,79 @@ object Scenarios {
         )
     )
 
+    /**
+     * RE25–RE29 and RE26 on Recibo (ADR 0012 BG-E02, E03, E06, E11): Hogar's 1.000.000 with
+     * rent of 200.000 due on the 28th, seen on jue 22 oct with 10 days left. Spending moves
+     * the margin from Al día to Sin margen, Revisar and past the limit; on the 28th catch-up
+     * records the rent, nothing is set aside any more and the headline stays where it was.
+     */
+    val Reservations = Scenario(
+        id = "pagos-previstos",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = LocalDate.of(2026, 10, 1),
+        title = "Programados · Pagos previstos",
+        summary = "RE25–RE29: el arriendo del 28 se separa de lo que queda; Sin margen en 0, " +
+            "Revisar cuando falta y al pasar el límite. RE26: al registrarse nada cambia.",
+        steps = listOf(
+            Category("hogar", "Hogar", "home", 1_000_000),
+            Expense("hogar", 400_000),
+            AdvanceTo(LocalDate.of(2026, 10, 22)),
+            Schedule("arriendo", Scheduled.Payment("hogar", 200_000, "Arriendo"), Every.Month(28)),
+            CatchUp,
+            Verify(
+                listOf(
+                    Check(Oct, Figure.Remaining, 600_000, "RE25, BG-E02"),
+                    Check(Oct, Figure.Reserved, 200_000, "RE25"),
+                    Check(Oct, Figure.Margin, 400_000, "RE25: 600.000 − 200.000"),
+                    Check(Oct, Figure.PerDay, 40_000, "RE25: 400.000 / 10 días")
+                )
+            ),
+            Expense("hogar", 400_000),
+            Verify(
+                listOf(
+                    Check(Oct, Figure.Margin, 0, "RE27, BG-E11: Sin margen"),
+                    Check(Oct, Figure.PerDay, 0, "RE27")
+                )
+            ),
+            Expense("hogar", 50_000),
+            Verify(
+                listOf(
+                    Check(Oct, Figure.Remaining, 150_000, "a mano: 1.000.000 − 850.000"),
+                    Check(Oct, Figure.Margin, -50_000, "RE28, BG-E06: faltan 50.000"),
+                    Check(Oct, Figure.PerDay, 0, "RE28")
+                )
+            ),
+            Expense("hogar", 230_000),
+            Verify(
+                listOf(
+                    Check(Oct, Figure.Remaining, -80_000, "RE29: pasaste tu límite por 80.000"),
+                    Check(Oct, Figure.Reserved, 200_000, "RE29"),
+                    Check(Oct, Figure.Margin, -280_000, "RE29: faltan 280.000")
+                )
+            ),
+            AdvanceTo(LocalDate.of(2026, 10, 28)),
+            CatchUp,
+            Verify(
+                listOf(
+                    Check(Oct, Figure.Spent, 1_280_000, "a mano: 1.080.000 + el arriendo"),
+                    Check(Oct, Figure.Reserved, 0, "RE26: registrado, ya no se separa"),
+                    Check(Oct, Figure.Margin, -280_000, "RE26: el titular no se mueve")
+                ),
+                occurrences = listOf(
+                    OccurrenceCheck(
+                        "arriendo",
+                        LocalDate.of(2026, 10, 22),
+                        LocalDate.of(2026, 10, 28),
+                        listOf(Recorded(LocalDate.of(2026, 10, 28), 200_000)),
+                        "RE26"
+                    )
+                )
+            )
+        )
+    )
+
     val all: List<Scenario> = listOf(
         CategoryDetail,
         G01,
@@ -1359,7 +1432,8 @@ object Scenarios {
         Changes,
         ArchivePauses,
         DeleteKeepsEntries,
-        DeletedOccurrence
+        DeletedOccurrence,
+        Reservations
     )
 
     fun find(key: String?): Scenario? = all.firstOrNull { it.key == key }
