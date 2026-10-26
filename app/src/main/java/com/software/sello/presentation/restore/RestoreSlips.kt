@@ -45,6 +45,8 @@ import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StagedRestore
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.investments.label
+import com.software.sello.presentation.investments.newInvestmentLabel
 
 /**
  * A replaced history: Restaurado when every preference was applied too, otherwise D09's
@@ -127,20 +129,23 @@ private fun Pending(
                             stringResource(it.direction.label())
                         )
                     )
+                },
+                preferences.investments?.let {
+                    Bullet(
+                        null,
+                        stringResource(
+                            R.string.restore_pending_investments,
+                            stringResource(it.newCurrency.newInvestmentLabel()),
+                            stringResource(it.order.label())
+                        )
+                    )
                 }
             ),
             Modifier.padding(top = SelloTheme.spacing.sm)
         )
         SelloButton(
             text = stringResource(
-                when {
-                    preferences.appearance != null && preferences.ordering != null ->
-                        R.string.restore_apply_both
-
-                    preferences.appearance != null -> R.string.restore_apply_appearance
-
-                    else -> R.string.restore_apply_ordering
-                }
+                applyLabel(preferences)
             ),
             onClick = onApply,
             loading = applying,
@@ -195,6 +200,20 @@ internal fun RestoreRejection.message() = when (this) {
     RestoreRejection.NewerVersion -> R.string.restore_rejected_newer
     RestoreRejection.Damaged -> R.string.restore_rejected_damaged
     RestoreRejection.InvalidContent -> R.string.restore_rejected_content
+}
+
+/** One group by its name; appearance and order together as D09 words them; more, as a whole. */
+private fun applyLabel(preferences: PendingPreferences): Int {
+    val appearance = preferences.appearance != null
+    val ordering = preferences.ordering != null
+    val investments = preferences.investments != null
+    return when {
+        appearance && ordering && !investments -> R.string.restore_apply_both
+        listOf(appearance, ordering, investments).count { it } > 1 -> R.string.restore_apply_all
+        appearance -> R.string.restore_apply_appearance
+        ordering -> R.string.restore_apply_ordering
+        else -> R.string.restore_apply_investments
+    }
 }
 
 private fun ThemePreference.label() = when (this) {

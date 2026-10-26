@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P2
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-119, SELLO-004
 - **Gate:** G2
 
@@ -48,3 +48,16 @@ orders largest value first today; `BackupWire`/`BackupValidation` hold the porta
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-120 --retain`.
+
+### Execution progress
+
+- **2026-10-26:** The orders, as built and proposed for review with this ticket's pull
+  request (`InvestmentOrderPolicy`): Mayor valor is the value in pesos, largest first,
+  those without a value last, oldest first; Rendimiento is the simple return, highest
+  first, losses below even, those without a return last; Alfabético ignores case and
+  accents; Más reciente is the newest investment first; Última actualización is the
+  latest movement's date, then when it was recorded, those without movements last.
+  Every order ends on the name, then the identifier. The movement screen's investment
+  list keeps the largest-value order; the setting orders Inversiones' list. A
+  FinanceTracker import brings the defaults: ADR 0019 does not translate that app's
+  investment sorting. Backups are version 5; versions 1 to 4 read with the defaults.

@@ -11,6 +11,8 @@ import com.software.sello.domain.model.InvestmentMovement
 import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.InvestmentName
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
@@ -30,9 +32,12 @@ import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentEdit
+import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.InvestmentUndoOffer
+import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
@@ -188,3 +193,24 @@ fun committedInvestment(operation: OperationId, kind: OperationKind, investmentI
         ),
         replayed = false
     )
+
+/** Inversiones' settings as a test sets them; [fail] makes reads fail with no last value. */
+class HandInvestmentPreferences(value: InvestmentPreference = InvestmentPreference()) :
+    InvestmentPreferences {
+    val current =
+        MutableStateFlow<PreferenceRead<InvestmentPreference>>(PreferenceRead.Ready(value))
+
+    override fun observeInvestments(): Flow<PreferenceRead<InvestmentPreference>> = current
+
+    override suspend fun setNewInvestmentCurrency(currency: Currency): PreferenceWrite {
+        val now = (current.value as? PreferenceRead.Ready)?.value ?: InvestmentPreference()
+        current.value = PreferenceRead.Ready(now.copy(newCurrency = currency))
+        return PreferenceWrite.Saved
+    }
+
+    override suspend fun setInvestmentOrder(order: InvestmentOrder): PreferenceWrite {
+        val now = (current.value as? PreferenceRead.Ready)?.value ?: InvestmentPreference()
+        current.value = PreferenceRead.Ready(now.copy(order = order))
+        return PreferenceWrite.Saved
+    }
+}

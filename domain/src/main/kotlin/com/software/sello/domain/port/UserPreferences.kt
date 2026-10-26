@@ -5,8 +5,11 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.ThemePreference
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
@@ -39,6 +42,15 @@ interface CategoryOrderingPreferences {
     fun observeCategoryOrdering(): Flow<PreferenceRead<CategoryOrderingPreference>>
     suspend fun setCategoryOrder(order: CategoryOrder): PreferenceWrite
     suspend fun setCategoryOrderDirection(direction: CategoryOrderDirection): PreferenceWrite
+}
+
+/** Inversiones' two settings; a new investment may still be created in either currency. */
+interface InvestmentPreferences {
+    fun observeInvestments(): Flow<PreferenceRead<InvestmentPreference>>
+
+    /** Refuses with [PreferenceFailure.InvalidValue] a currency no investment may hold. */
+    suspend fun setNewInvestmentCurrency(currency: Currency): PreferenceWrite
+    suspend fun setInvestmentOrder(order: InvestmentOrder): PreferenceWrite
 }
 
 /** Remembers only the two one-time correction announcements handed off to this ticket. */

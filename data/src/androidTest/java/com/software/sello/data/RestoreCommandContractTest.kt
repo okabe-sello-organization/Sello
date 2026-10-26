@@ -11,10 +11,13 @@ import com.software.sello.domain.model.AutomaticBudget
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
@@ -99,6 +102,8 @@ class RestoreCommandContractTest {
             write(direction, failOrdering)
     }
 
+    private val investments = HandInvestmentPreferences()
+
     private val preferences = Preferences()
     private val notice = NoticeSeen()
     private var now = Instant.parse("2026-10-22T19:30:00Z")
@@ -110,6 +115,7 @@ class RestoreCommandContractTest {
         files.restoreFolder,
         preferences,
         preferences,
+        investments,
         notice,
         { uuid(nextId++) },
         {
@@ -322,7 +328,7 @@ class RestoreCommandContractTest {
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
         val newer = restores().stage(
-            String(bytes).replaceFirst("\"version\": 4", "\"version\": 5").toByteArray()
+            String(bytes).replaceFirst("\"version\": 5", "\"version\": 6").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)
@@ -454,6 +460,29 @@ class RestoreCommandContractTest {
     }
 
     @Test
+    fun investmentSettingsAreAppliedAndOnesThatFailStayPendingAlone() = runBlocking {
+        currentHistory()
+        val dollars = InvestmentPreference(Currency.USD, InvestmentOrder.Return)
+        investments.fail = true
+
+        val outcome = restores().replace(stage(g01(wanted.copy(investments = dollars))))
+
+        // Appearance and order were applied; only Inversiones' settings wait.
+        assertEquals(
+            PendingPreferences(null, null, dollars),
+            (outcome as RestoreOutcome.Restored).preferences
+        )
+        assertEquals(InvestmentPreference(), investments.value)
+
+        investments.fail = false
+        val done = restores().applyPending()
+
+        assertEquals(PendingPreferences(null, null), done?.preferences)
+        assertEquals(dollars, investments.value)
+        assertNull(restores().pending())
+    }
+
+    @Test
     fun aBackupWithoutPreferencesLeavesTheDevicesAlone() = runBlocking {
         currentHistory()
 
@@ -464,6 +493,7 @@ class RestoreCommandContractTest {
             (outcome as RestoreOutcome.Restored).preferences
         )
         assertTrue(preferences.written.isEmpty())
+        assertEquals(InvestmentPreference(), investments.value)
         assertEquals(emptyList<String>(), stagingFiles())
     }
 

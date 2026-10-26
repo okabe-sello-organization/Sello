@@ -3,11 +3,14 @@ package com.software.sello
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalName
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InvestmentAmount
+import com.software.sello.domain.model.InvestmentName
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationId
@@ -20,6 +23,7 @@ import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.CreateIncome
+import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.FeatureGoal
@@ -28,6 +32,8 @@ import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
+import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.navigation.MonthSession
@@ -79,6 +85,26 @@ object TestCommands {
             )
         )
         assertTrue("$outcome", outcome is CategoryCommandOutcome.Committed)
+    }
+
+    /** A peso investment named [name], its first aporte [pesos] today, valued the same. */
+    fun createInvestment(name: String, pesos: Long) = runBlocking {
+        val amount = InvestmentAmount.of(Money.cop(pesos)).value()
+        val outcome = koin.get<InvestmentCommands>().submit(
+            CreateInvestment(
+                operation(),
+                generation(),
+                InvestmentName.of(name).value(),
+                null,
+                IconKey.of("account_balance").value(),
+                Currency.COP,
+                amount,
+                InvestmentAmount.ofValue(Money.cop(pesos)).value(),
+                today,
+                null
+            )
+        )
+        assertTrue("$outcome", outcome is InvestmentCommandOutcome.Committed)
     }
 
     fun setMonthLimit(category: String, month: YearMonth, pesos: Long) = runBlocking {

@@ -55,6 +55,7 @@ enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: In
     LocalGasStation(R.drawable.ic_sello_local_gas_station),
     MedicalServices(R.drawable.ic_sello_medical_services),
     Pause(R.drawable.ic_sello_pause),
+    Payments(R.drawable.ic_sello_payments),
     Pets(R.drawable.ic_sello_pets),
     PhoneIphone(R.drawable.ic_sello_phone_iphone),
     PlayArrow(R.drawable.ic_sello_play_arrow),

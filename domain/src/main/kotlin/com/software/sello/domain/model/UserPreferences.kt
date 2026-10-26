@@ -17,6 +17,21 @@ enum class CategoryOrder { MostUsed, Alphabetical, AmountSpent, Limit, LatestExp
 /** The direction of the selected category metric. */
 enum class CategoryOrderDirection { Descending, Ascending }
 
+/**
+ * How Inversiones lists investments. Stable storage values are owned by the DataStore
+ * adapter and the backup format; these names are not serialized.
+ */
+enum class InvestmentOrder { LargestValue, Return, Alphabetical, Newest, LatestUpdate }
+
+/**
+ * Inversiones' two settings: the currency Nueva inversión starts in, COP or USD (the
+ * currencies an investment may hold), and the list's order.
+ */
+data class InvestmentPreference(
+    val newCurrency: Currency = Currency.COP,
+    val order: InvestmentOrder = InvestmentOrder.LargestValue
+)
+
 data class AppearancePreference(
     val theme: ThemePreference = ThemePreference.System,
     val ink: InkPreference = InkPreference.Cobalto

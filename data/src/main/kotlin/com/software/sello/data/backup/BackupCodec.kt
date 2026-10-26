@@ -34,11 +34,11 @@ object BackupFormat {
     const val FORMAT = "sello-backup"
 
     /** What this app writes. */
-    const val VERSION = 4L
+    const val VERSION = 5L
 
     /**
      * What it reads: version 1 (no goals), version 2 (no schedules), version 3 (no
-     * investments) and its own.
+     * investments), version 4 (no investment settings) and its own.
      */
     val READABLE = 1L..VERSION
     const val MIME_TYPE = "application/json"
@@ -51,7 +51,7 @@ object BackupFormat {
 }
 
 /**
- * Writes version 4 backups and reads versions 1 to 4. Reading never touches storage:
+ * Writes version 5 backups and reads versions 1 to 5. Reading never touches storage:
  * a file either becomes a [BackupPlan] or is rejected whole with the first problem found.
  */
 class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
@@ -60,7 +60,7 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
      * out a backup it would itself refuse to restore.
      */
     fun encode(contents: BackupContents): Outcome<ByteArray, BackupRejection> {
-        val text = writer.encodeToString(BackupFileV4.serializer(), contents.toWire())
+        val text = writer.encodeToString(BackupFileV5.serializer(), contents.toWire())
         val bytes = "$text\n".toByteArray(Charsets.UTF_8)
         return when (val check = read(bytes)) {
             is Outcome.Success -> Outcome.Success(bytes)
@@ -96,14 +96,17 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
         val file = try {
             when (version) {
                 1L -> reader.decodeFromString(BackupFileV1.serializer(), text)
-                    .asVersion2().asVersion3().asVersion4()
+                    .asVersion2().asVersion3().asVersion4().asVersion5()
 
                 2L -> reader.decodeFromString(BackupFileV2.serializer(), text)
-                    .asVersion3().asVersion4()
+                    .asVersion3().asVersion4().asVersion5()
 
-                3L -> reader.decodeFromString(BackupFileV3.serializer(), text).asVersion4()
+                3L -> reader.decodeFromString(BackupFileV3.serializer(), text)
+                    .asVersion4().asVersion5()
 
-                else -> reader.decodeFromString(BackupFileV4.serializer(), text)
+                4L -> reader.decodeFromString(BackupFileV4.serializer(), text).asVersion5()
+
+                else -> reader.decodeFromString(BackupFileV5.serializer(), text)
             }
         } catch (failure: SerializationException) {
             return Outcome.Failure(BackupRejection.Malformed(pathOf(failure)))
@@ -182,7 +185,7 @@ private fun BudgetLimit.kind() = when (this) {
  * investments by creation then identifier, each one's movements by recording position,
  * and rates by the order they were entered.
  */
-internal fun BackupContents.toWire(): BackupFileV4 = BackupFileV4(
+internal fun BackupContents.toWire(): BackupFileV5 = BackupFileV5(
     format = BackupFormat.FORMAT,
     version = JsonPrimitive(BackupFormat.VERSION),
     exportedAt = exportedAt.toString(),
@@ -276,11 +279,13 @@ internal fun BackupContents.toWire(): BackupFileV4 = BackupFileV4(
         }
     ),
     preferences = preferences?.let {
-        PreferencesV1(
+        PreferencesV5(
             theme = WireNames.themes.getValue(it.appearance.theme),
             ink = WireNames.inks.getValue(it.appearance.ink),
             categoryOrder = WireNames.orders.getValue(it.ordering.order),
-            categoryDirection = WireNames.directions.getValue(it.ordering.direction)
+            categoryDirection = WireNames.directions.getValue(it.ordering.direction),
+            investmentCurrency = WireNames.newCurrencies.getValue(it.investments.newCurrency),
+            investmentOrder = WireNames.investmentOrders.getValue(it.investments.order)
         )
     }
 )

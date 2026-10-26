@@ -27,9 +27,11 @@ import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
+import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
@@ -37,6 +39,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -53,6 +56,7 @@ import kotlinx.coroutines.launch
 class InvestmentEditorViewModel(
     private val saved: SavedStateHandle,
     reads: InvestmentReads,
+    preferences: InvestmentPreferences,
     private val commands: InvestmentCommands,
     private val clock: FinancialClock,
     private val ids: RecordIdSource,
@@ -77,13 +81,30 @@ class InvestmentEditorViewModel(
     private val board = reads.observeBoard()
         .stateIn(viewModelScope, SharingStarted.Eagerly, InvestmentBoardState.Loading)
 
+    /**
+     * The currency a new investment starts in, chosen in Configuración, until another is
+     * picked here. Pesos while it is read, or when it cannot be: it moves no money.
+     */
+    private val starting = preferences.observeInvestments().map { read ->
+        when (read) {
+            is PreferenceRead.Ready -> read.value.newCurrency
+            is PreferenceRead.Failed -> read.lastGood?.newCurrency ?: Currency.COP
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, Currency.COP)
+
     val state: StateFlow<InvestmentEditorState> =
-        combine(drafts, progress, board, clock.today) { _, progress, board, today ->
-            render(progress, board, today.date)
+        combine(drafts, progress, board, clock.today, starting) {
+                _,
+                progress,
+                board,
+                today,
+                starting
+            ->
+            render(progress, board, today.date, starting)
         }.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
-            render(progress.value, board.value, clock.today.value.date)
+            render(progress.value, board.value, clock.today.value.date, starting.value)
         )
 
     init {
@@ -387,7 +408,7 @@ class InvestmentEditorViewModel(
 
     private fun description(): String = saved[KEY_DESCRIPTION] ?: ""
 
-    private fun chosenCurrency(summary: InvestmentSummary?): Currency =
+    private fun chosenCurrency(summary: InvestmentSummary?, starting: Currency): Currency =
         summary?.history?.investment?.currency
             ?: saved.get<String>(KEY_CURRENCY)?.let { code ->
                 Currency.entries.first {
@@ -395,7 +416,7 @@ class InvestmentEditorViewModel(
                         code
                 }
             }
-            ?: Currency.COP
+            ?: starting
 
     private fun date(key: String, today: LocalDate): LocalDate =
         saved.get<String>(key)?.let(LocalDate::parse) ?: today
@@ -427,19 +448,20 @@ class InvestmentEditorViewModel(
         state.changed
     } else {
         name().isNotBlank() || description().isNotBlank() || state.iconKey != null ||
-            state.currency != Currency.COP || state.firstContribution != null ||
+            state.currency != starting.value || state.firstContribution != null ||
             state.otherValue != null || state.rate != null
     }
 
     private fun render(
         progress: Progress,
         board: InvestmentBoardState,
-        today: LocalDate
+        today: LocalDate,
+        starting: Currency
     ): InvestmentEditorState {
         val read = readable(board)
         val summary = stored(read)
         val editing = investmentId != null
-        val currency = chosenCurrency(summary)
+        val currency = chosenCurrency(summary, starting)
         val first = figure(InvestmentField.First, currency)
         val other = figure(InvestmentField.Value, currency)
         val rateDraft = decimalDraft(InvestmentField.Rate)

@@ -41,9 +41,13 @@ import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.investments.label
+import com.software.sello.presentation.investments.newInvestmentLabel
 
 /**
  * [tusDatos] is the backup section, given by navigation: it belongs to Respaldo's
@@ -70,7 +74,10 @@ fun SettingsRoot(
 }
 
 /** Which choice is open over Configuración, kept across recreation. */
-private enum class SettingsPicker { Order, Direction }
+private enum class SettingsPicker { Order, Direction, NewInvestmentCurrency, InvestmentOrder }
+
+/** The currencies a new investment may start in, in the order offered. */
+private val newInvestmentCurrencies = listOf(Currency.COP, Currency.USD)
 
 /**
  * Configuración: Tus datos and its backup card first, then Lo que se repite, Apariencia,
@@ -110,7 +117,7 @@ fun SettingsScreen(
         RecurringControls(state, onOpenSchedules)
         AppearanceControls(state, onAction)
         CategoryOrderingControls(state) { picking = it }
-        InvestmentControls(state, onOpenRate)
+        InvestmentControls(state, onOpenRate) { picking = it }
         Text(
             text = stringResource(R.string.settings_footer),
             style = MaterialTheme.typography.bodySmall,
@@ -144,6 +151,30 @@ fun SettingsScreen(
             },
             onDismiss = { picking = null },
             modifier = Modifier.testTag(SETTINGS_DIRECTION_TAG)
+        )
+
+        SettingsPicker.NewInvestmentCurrency -> OptionSlip(
+            title = stringResource(R.string.settings_investment_currency),
+            options = newInvestmentCurrencies.map { stringResource(it.newInvestmentLabel()) },
+            selectedIndex = newInvestmentCurrencies.indexOf(state.investments.newCurrency),
+            onSelect = { index ->
+                picking = null
+                onAction(SettingsAction.NewInvestmentCurrencyChosen(newInvestmentCurrencies[index]))
+            },
+            onDismiss = { picking = null },
+            modifier = Modifier.testTag(SETTINGS_INVESTMENT_CURRENCY_TAG)
+        )
+
+        SettingsPicker.InvestmentOrder -> OptionSlip(
+            title = stringResource(R.string.settings_investment_order),
+            options = InvestmentOrder.entries.map { stringResource(it.label()) },
+            selectedIndex = InvestmentOrder.entries.indexOf(state.investments.order),
+            onSelect = { index ->
+                picking = null
+                onAction(SettingsAction.InvestmentOrderChosen(InvestmentOrder.entries[index]))
+            },
+            onDismiss = { picking = null },
+            modifier = Modifier.testTag(SETTINGS_INVESTMENT_ORDER_TAG)
         )
 
         null -> Unit
@@ -252,10 +283,31 @@ private fun CategoryOrderingControls(state: SettingsState, onPick: (SettingsPick
 }
 
 @Composable
-private fun InvestmentControls(state: SettingsState, onOpenRate: () -> Unit) {
+private fun InvestmentControls(
+    state: SettingsState,
+    onOpenRate: () -> Unit,
+    onPick: (SettingsPicker) -> Unit
+) {
     val rate = state.rate
     Slip(Modifier.fillMaxWidth().testTag(SETTINGS_INVESTMENTS_TAG)) {
         SectionTitle(R.string.settings_investments)
+        SettingRow(
+            title = stringResource(R.string.settings_investment_currency),
+            icon = SelloIcon.Payments,
+            value = stringResource(state.investments.newCurrency.newInvestmentLabel()),
+            onClick = { onPick(SettingsPicker.NewInvestmentCurrency) },
+            divider = false,
+            enabled = !state.busy,
+            modifier = Modifier.testTag(SETTINGS_INVESTMENT_CURRENCY_ROW_TAG)
+        )
+        SettingRow(
+            title = stringResource(R.string.settings_investment_order),
+            icon = SelloIcon.Sort,
+            value = stringResource(state.investments.order.label()),
+            onClick = { onPick(SettingsPicker.InvestmentOrder) },
+            enabled = !state.busy,
+            modifier = Modifier.testTag(SETTINGS_INVESTMENT_ORDER_ROW_TAG)
+        )
         SettingRow(
             title = stringResource(R.string.usd_rate_title),
             icon = SelloIcon.CurrencyExchange,
@@ -273,7 +325,6 @@ private fun InvestmentControls(state: SettingsState, onOpenRate: () -> Unit) {
             },
             value = (rate as? RateLine.Read)?.rate,
             onClick = onOpenRate,
-            divider = false,
             modifier = Modifier.testTag(SETTINGS_RATE_TAG)
         )
     }
@@ -327,3 +378,11 @@ const val SETTINGS_RECURRING_TAG = "settings:recurring"
 const val SETTINGS_SCHEDULES_TAG = "settings:schedules"
 const val SETTINGS_INVESTMENTS_TAG = "settings:investments"
 const val SETTINGS_RATE_TAG = "settings:rate"
+
+/** Moneda al crear's option slip, open after tapping its row. */
+const val SETTINGS_INVESTMENT_CURRENCY_TAG = "settings:investment:currency"
+const val SETTINGS_INVESTMENT_CURRENCY_ROW_TAG = "settings:investment:currency:row"
+
+/** Orden de la lista's option slip, open after tapping its row. */
+const val SETTINGS_INVESTMENT_ORDER_TAG = "settings:investment:order"
+const val SETTINGS_INVESTMENT_ORDER_ROW_TAG = "settings:investment:order:row"

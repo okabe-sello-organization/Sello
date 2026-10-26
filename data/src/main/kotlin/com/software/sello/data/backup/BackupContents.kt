@@ -9,6 +9,7 @@ import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.InvestmentHistory
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.port.StoredSchedule
@@ -62,7 +63,9 @@ data class FinancialSnapshot(
 /** The preferences that travel with a backup. Device-only notices stay behind. */
 data class PortablePreferences(
     val appearance: AppearancePreference,
-    val ordering: CategoryOrderingPreference
+    val ordering: CategoryOrderingPreference,
+    /** Version 5 on; an older file brings the defaults (SELLO-120). */
+    val investments: InvestmentPreference = InvestmentPreference()
 )
 
 /**

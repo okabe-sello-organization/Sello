@@ -43,6 +43,8 @@ import com.software.sello.domain.model.InvestmentMovement
 import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.InvestmentName
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
@@ -55,8 +57,11 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentSummary
+import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.navigation.InversionesDestination
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.navigation.ShellState
@@ -238,12 +243,22 @@ class InversionesScreenTest {
             Outcome.Failure(StorageFailure.Unavailable("not used"))
     }
 
+    /** Inversiones' settings at their defaults: largest value first. */
+    private class Order : InvestmentPreferences {
+        override fun observeInvestments(): Flow<PreferenceRead<InvestmentPreference>> =
+            flowOf(PreferenceRead.Ready(InvestmentPreference()))
+
+        override suspend fun setNewInvestmentCurrency(currency: Currency) = PreferenceWrite.Saved
+
+        override suspend fun setInvestmentOrder(order: InvestmentOrder) = PreferenceWrite.Saved
+    }
+
     private val shell =
         ShellState(YearMonth.of(2026, 10), YearMonth.of(2026, 10), false, 2026, null)
 
     private fun destination(state: InvestmentBoardState) {
         val factory = viewModelFactory {
-            initializer { InversionesViewModel(Reads(state), clock, money) }
+            initializer { InversionesViewModel(Reads(state), Order(), clock, money) }
         }
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {

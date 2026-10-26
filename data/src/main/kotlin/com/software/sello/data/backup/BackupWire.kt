@@ -1,12 +1,14 @@
 package com.software.sello.data.backup
 
+import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.InvestmentOrder
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 to 4, documented in docs/data/backup-format.md.
+ * The wire shapes of versions 1 to 5, documented in docs/data/backup-format.md.
  * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
  * is version 2 plus `financial.schedules` and each expense's and income's `origin`;
  * version 4 is version 3 plus `financial.investments` and `financial.usdRates`. These classes
@@ -407,6 +409,44 @@ internal data class PreferencesV1(
     val ink: String,
     val categoryOrder: String,
     val categoryDirection: String
+)
+
+/** Version 5: version 4 with Inversiones' two settings in `preferences` (SELLO-120). */
+@Serializable
+internal data class BackupFileV5(
+    val format: String,
+    val version: JsonElement,
+    val exportedAt: String,
+    val financial: FinancialV4,
+    val preferences: PreferencesV5?
+)
+
+@Serializable
+internal data class PreferencesV5(
+    val theme: String,
+    val ink: String,
+    val categoryOrder: String,
+    val categoryDirection: String,
+    val investmentCurrency: String,
+    val investmentOrder: String
+)
+
+/** A version 4 file read as version 5: its investments start in pesos, largest value first. */
+internal fun BackupFileV4.asVersion5() = BackupFileV5(
+    format = format,
+    version = version,
+    exportedAt = exportedAt,
+    financial = financial,
+    preferences = preferences?.let {
+        PreferencesV5(
+            theme = it.theme,
+            ink = it.ink,
+            categoryOrder = it.categoryOrder,
+            categoryDirection = it.categoryDirection,
+            investmentCurrency = WireNames.newCurrencies.getValue(Currency.COP),
+            investmentOrder = WireNames.investmentOrders.getValue(InvestmentOrder.LargestValue)
+        )
+    }
 )
 
 private val plainWhole = Regex("0|[1-9][0-9]*")

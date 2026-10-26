@@ -166,16 +166,35 @@ fun g01() = BackupContents(
 )
 
 /**
- * A version 3 file as Sello now writes the same data: version 4, with no investments and
- * no rates after the schedules, and nothing else changed.
+ * A version 3 file as Sello now writes the same data: version 5, with no investments and
+ * no rates after the schedules, the default investment settings, and nothing else changed.
  */
-fun writtenAsVersion4(version3: String): String {
+fun writtenAsVersion5(version3: String): String {
     val closing = "\n  },\n  \"preferences\""
     check(version3.split(closing).size == 2 && version3.contains("\"version\": 3,"))
-    return version3.replace("\"version\": 3,", "\"version\": 4,").replace(
-        closing,
-        ",\n    \"investments\": [],\n    \"usdRates\": []$closing"
+    return version4AsVersion5(
+        version3.replace("\"version\": 3,", "\"version\": 4,").replace(
+            closing,
+            ",\n    \"investments\": [],\n    \"usdRates\": []$closing"
+        )
     )
+}
+
+/**
+ * A version 4 file as Sello now writes the same data: version 5, its investments starting
+ * in pesos, largest value first, when it has preferences at all, and nothing else changed.
+ */
+fun version4AsVersion5(version4: String): String {
+    check(version4.contains("\"version\": 4,"))
+    val newer = version4.replace("\"version\": 4,", "\"version\": 5,")
+    // A file made without preferences has none to add to.
+    if (newer.endsWith("\"preferences\": null\n}\n")) return newer
+    val last = Regex("(\"categoryDirection\": \"[a-z]+\")\n  }\n}")
+    check(last.findAll(newer).count() == 1)
+    return newer.replace(last) {
+        "${it.groupValues[1]},\n    \"investmentCurrency\": \"COP\"," +
+            "\n    \"investmentOrder\": \"largest_value\"\n  }\n}"
+    }
 }
 
 fun resource(name: String): ByteArray =

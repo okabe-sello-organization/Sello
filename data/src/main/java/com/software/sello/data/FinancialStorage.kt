@@ -53,6 +53,7 @@ import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.MonthlySnapshots
@@ -174,6 +175,7 @@ class FinancialStorage internal constructor(
     fun restores(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
+        investments: InvestmentPreferences,
         notice: CatchUpNoticePreferences,
         ids: RecordIdSource,
         audit: AuditClock,
@@ -183,6 +185,7 @@ class FinancialStorage internal constructor(
         restoreFolder,
         appearance,
         ordering,
+        investments,
         notice,
         ids,
         audit,
@@ -214,10 +217,17 @@ class FinancialStorage internal constructor(
     fun backupExports(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
+        investments: InvestmentPreferences,
         audit: AuditClock,
         dispatchers: DispatcherProvider
-    ): BackupExports =
-        BackupExport(RoomBackupSnapshots(database), appearance, ordering, audit, dispatchers)
+    ): BackupExports = BackupExport(
+        RoomBackupSnapshots(database),
+        appearance,
+        ordering,
+        investments,
+        audit,
+        dispatchers
+    )
 
     /**
      * Takes the financial clock for the same reason the commands do. [computation] must

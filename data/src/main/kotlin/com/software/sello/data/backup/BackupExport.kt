@@ -25,6 +25,7 @@ import com.software.sello.domain.port.BackupPreparationFailure
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreparedBackup
 import java.time.ZoneId
@@ -132,6 +133,7 @@ class BackupExport(
     private val snapshots: RoomBackupSnapshots,
     private val appearance: AppearancePreferences,
     private val ordering: CategoryOrderingPreferences,
+    private val investments: InvestmentPreferences,
     private val auditClock: AuditClock,
     private val dispatchers: DispatcherProvider,
     private val codec: BackupCodec = BackupCodec()
@@ -195,8 +197,13 @@ class BackupExport(
     private suspend fun portablePreferences(): PortablePreferences? {
         val appearance = appearance.observeAppearance().first()
         val ordering = ordering.observeCategoryOrdering().first()
-        if (appearance !is PreferenceRead.Ready || ordering !is PreferenceRead.Ready) return null
-        return PortablePreferences(appearance.value, ordering.value)
+        val investments = investments.observeInvestments().first()
+        if (appearance !is PreferenceRead.Ready || ordering !is PreferenceRead.Ready ||
+            investments !is PreferenceRead.Ready
+        ) {
+            return null
+        }
+        return PortablePreferences(appearance.value, ordering.value, investments.value)
     }
 
     private companion object {

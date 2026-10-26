@@ -1,4 +1,4 @@
-# Backup file format, version 4
+# Backup file format, version 5
 
 Rules: [architecture](../../ARCHITECTURE.md) §7, [D05, D08 and D09](../decisions/0001-mvp-contract.md#d08--privacy-and-portable-files),
 [ADR 0003](../decisions/0003-mvp-transaction-amount-range.md). Code: `data/.../backup`.
@@ -14,18 +14,21 @@ its financial zone (`BackupFormat.fileName`). MIME type: `application/json`.
 
 ## Shape
 
-Sello writes version 4 (SELLO-108) and reads versions 1 to 4. Version 2 is version 1
+Sello writes version 5 (SELLO-120) and reads versions 1 to 5. Version 2 is version 1
 plus `financial.goals` and `financial.featuredGoal` (SELLO-088); version 3 is version 2
 plus `financial.schedules` and each expense's and income's `origin` (SELLO-099);
-version 4 is version 3 plus `financial.investments` and `financial.usdRates`. A version 1
-file reads as having no goals, versions 1 and 2 as having no schedules and no origins,
-and versions 1 to 3 as having no investments and no rates. A backup with none of them
-is still version 4, so an app that reads only version 3 cannot read it.
+version 4 is version 3 plus `financial.investments` and `financial.usdRates` (SELLO-108);
+version 5 is version 4 plus `preferences.investmentCurrency` and
+`preferences.investmentOrder`. A version 1 file reads as having no goals, versions 1
+and 2 as having no schedules and no origins, versions 1 to 3 as having no investments
+and no rates, and versions 1 to 4 as starting investments in `COP`, largest value
+first. A backup with none of them is still version 5, so an app that reads only
+version 4 cannot read it.
 
 ```json
 {
   "format": "sello-backup",
-  "version": 4,
+  "version": 5,
   "exportedAt": "2026-10-22T14:30:00Z",
   "financial": {
     "sourceRevision": 9,
@@ -50,7 +53,9 @@ synthetic version 1 example: G01's three expenses and one income, plus an archiv
 category. [`valid-g01-v2.json`](../../data/src/test/resources/backup/valid-g01-v2.json),
 [`valid-g01-v3.json`](../../data/src/test/resources/backup/valid-g01-v3.json) and
 [`valid-g01-v4.json`](../../data/src/test/resources/backup/valid-g01-v4.json) are the
-same data in versions 2 to 4, the last as Sello writes it now;
+same data in versions 2 to 4, and
+[`valid-g01-v5.json`](../../data/src/test/resources/backup/valid-g01-v5.json) is the
+same data as Sello writes it now, with its investments starting in dollars;
 [`valid-goals-v2.json`](../../data/src/test/resources/backup/valid-goals-v2.json) adds one
 goal (approved example MT07), and
 [`valid-schedules-v3.json`](../../data/src/test/resources/backup/valid-schedules-v3.json)
@@ -91,7 +96,9 @@ rates 4.000,00 and 4.150,25). The `invalid-*.json` files beside them each break 
 
 `preferences` has `theme` (`system`, `light`, `dark`), `ink` (`cobalto`, `violeta`),
 `categoryOrder` (`most_used`, `alphabetical`, `amount_spent`, `limit`,
-`latest_expense_added`) and `categoryDirection` (`descending`, `ascending`).
+`latest_expense_added`), `categoryDirection` (`descending`, `ascending`) and, from
+version 5, `investmentCurrency` (`COP`, `USD`) and `investmentOrder` (`largest_value`,
+`return`, `alphabetical`, `newest`, `latest_update`).
 
 Every key is required, even when its value is `null`, and no other key is allowed.
 
@@ -242,6 +249,6 @@ there as above.
 
 ## Changing the format
 
-Any change to keys, meanings or rules is a new `version`. Versions 1 to 4 stay
+Any change to keys, meanings or rules is a new `version`. Versions 1 to 5 stay
 readable for as long as the app supports restoring them; nothing translates older Sello
 databases or other apps' files.

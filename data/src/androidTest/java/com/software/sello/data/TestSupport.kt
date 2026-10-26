@@ -10,17 +10,21 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpNoticePreferences
+import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
@@ -145,6 +149,27 @@ class NoticeSeen : CatchUpNoticePreferences {
         if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
         marks += at
         seen = at
+        return PreferenceWrite.Saved
+    }
+}
+
+/** Inversiones' settings as a test sets them; [fail] refuses writes. */
+class HandInvestmentPreferences(var value: InvestmentPreference = InvestmentPreference()) :
+    InvestmentPreferences {
+    var fail = false
+
+    override fun observeInvestments(): Flow<PreferenceRead<InvestmentPreference>> =
+        flowOf(PreferenceRead.Ready(value))
+
+    override suspend fun setNewInvestmentCurrency(currency: Currency): PreferenceWrite {
+        if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+        value = value.copy(newCurrency = currency)
+        return PreferenceWrite.Saved
+    }
+
+    override suspend fun setInvestmentOrder(order: InvestmentOrder): PreferenceWrite {
+        if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+        value = value.copy(order = order)
         return PreferenceWrite.Saved
     }
 }

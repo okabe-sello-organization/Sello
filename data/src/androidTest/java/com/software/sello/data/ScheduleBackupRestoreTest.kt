@@ -67,6 +67,7 @@ class ScheduleBackupRestoreTest {
         override val default = Dispatchers.Default
         override val io = Dispatchers.IO
     }
+    private val investments = HandInvestmentPreferences()
     private val preferences = object : AppearancePreferences, CategoryOrderingPreferences {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = flowOf(
             PreferenceRead.Ready(
@@ -161,17 +162,22 @@ class ScheduleBackupRestoreTest {
         )
     }
 
-    private suspend fun backup(): ByteArray =
-        BackupExport(RoomBackupSnapshots(ledger.database), preferences, preferences, {
-            ledger.audit
-        }, dispatchers)
-            .create().valueOrFail().bytes
+    private suspend fun backup(): ByteArray = BackupExport(
+        RoomBackupSnapshots(ledger.database),
+        preferences,
+        preferences,
+        investments,
+        { ledger.audit },
+        dispatchers
+    )
+        .create().valueOrFail().bytes
 
     private fun restoresInto(target: TestLedger, folder: DatabaseFiles) = RoomRestores(
         target.database,
         folder.restoreFolder,
         preferences,
         preferences,
+        investments,
         notice,
         { uuid(nextId++) },
         { target.audit },

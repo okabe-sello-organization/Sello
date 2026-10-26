@@ -67,6 +67,7 @@ class InvestmentBackupRestoreTest {
         override val default = Dispatchers.Default
         override val io = Dispatchers.IO
     }
+    private val investments = HandInvestmentPreferences()
     private val preferences = object : AppearancePreferences, CategoryOrderingPreferences {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = flowOf(
             PreferenceRead.Ready(
@@ -158,6 +159,7 @@ class InvestmentBackupRestoreTest {
         RoomBackupSnapshots(ledger.database),
         preferences,
         preferences,
+        investments,
         { ledger.audit },
         dispatchers
     )
@@ -169,6 +171,7 @@ class InvestmentBackupRestoreTest {
         files.restoreFolder,
         preferences,
         preferences,
+        investments,
         NoticeSeen(),
         { uuid(nextId++) },
         { ledger.audit },

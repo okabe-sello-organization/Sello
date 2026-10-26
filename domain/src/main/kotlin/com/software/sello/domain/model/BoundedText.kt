@@ -36,6 +36,13 @@ private fun isControl(codePoint: Int): Boolean = when (Character.getType(codePoi
 private val combiningMarks = Regex("\\p{M}+")
 private val whitespaceRuns = Regex("[\\s\\p{Z}]+")
 
+/** [text] with case, accents, compatibility forms and repeated spaces folded away. */
+private fun foldedKey(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFKD)
+    .replace(combiningMarks, "")
+    .uppercase(Locale.ROOT)
+    .lowercase(Locale.ROOT)
+    .replace(whitespaceRuns, " ")
+
 /** A category's displayed name: trimmed, 1–24 Unicode code points, accents preserved. */
 @ConsistentCopyVisibility
 data class CategoryName private constructor(val value: String) {
@@ -45,11 +52,7 @@ data class CategoryName private constructor(val value: String) {
      * key, including against archived categories. It is never shown.
      */
     val uniquenessKey: String
-        get() = Normalizer.normalize(value, Normalizer.Form.NFKD)
-            .replace(combiningMarks, "")
-            .uppercase(Locale.ROOT)
-            .lowercase(Locale.ROOT)
-            .replace(whitespaceRuns, " ")
+        get() = foldedKey(value)
 
     companion object {
         const val MAX_CODE_POINTS = 24
@@ -109,6 +112,10 @@ data class GoalName private constructor(val value: String) {
 /** An investment's displayed name: trimmed, 1–40 code points, as a goal's (investment rule 1). */
 @ConsistentCopyVisibility
 data class InvestmentName private constructor(val value: String) {
+    /** What the alphabetical order compares: case and accents ignored, as category names. */
+    val sortKey: String
+        get() = foldedKey(value)
+
     companion object {
         const val MAX_CODE_POINTS = 40
 

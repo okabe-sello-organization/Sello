@@ -4,7 +4,10 @@ import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
@@ -13,6 +16,7 @@ import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.feature.investments.HandInvestmentPreferences
 import com.software.sello.feature.investments.HandInvestmentReads
 import com.software.sello.feature.investments.rateEntry
 import com.software.sello.feature.investments.ratesBoard
@@ -47,10 +51,12 @@ class SettingsViewModelTest {
     fun resetMain() = Dispatchers.resetMain()
 
     private val investments = HandInvestmentReads(InvestmentBoardState.Loading)
+    private val investmentSettings = HandInvestmentPreferences()
 
     private fun settings() = SettingsViewModel(
         appearance,
         ordering,
+        investmentSettings,
         HandScheduleReads(),
         investments,
         testMoney()
@@ -102,6 +108,40 @@ class SettingsViewModelTest {
             model.state.value.categoryOrdering
         )
         assertFalse(model.state.value.busy)
+    }
+
+    @Test
+    fun inversionesSettingsStartInPesosLargestValueFirstAndChangeThroughTheirPort() = runTest {
+        val model = settings()
+        runCurrent()
+        assertEquals(InvestmentPreference(), model.state.value.investments)
+
+        model.onAction(SettingsAction.NewInvestmentCurrencyChosen(Currency.USD))
+        model.onAction(SettingsAction.InvestmentOrderChosen(InvestmentOrder.Return))
+        runCurrent()
+
+        assertEquals(
+            InvestmentPreference(Currency.USD, InvestmentOrder.Return),
+            model.state.value.investments
+        )
+        assertEquals(
+            PreferenceRead.Ready(InvestmentPreference(Currency.USD, InvestmentOrder.Return)),
+            investmentSettings.current.value
+        )
+    }
+
+    @Test
+    fun anUnreadableInversionesSettingIsReportedAndKeepsTheLastKnownValue() = runTest {
+        val model = settings()
+        runCurrent()
+        val known = InvestmentPreference(Currency.USD, InvestmentOrder.Newest)
+        investmentSettings.current.value =
+            PreferenceRead.Failed(PreferenceFailure.Unavailable, known)
+        runCurrent()
+
+        assertEquals(known, model.state.value.investments)
+        assertEquals(PreferenceFailure.Unavailable, model.state.value.failure)
+        assertFalse(model.state.value.loading)
     }
 
     @Test

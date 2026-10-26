@@ -263,7 +263,9 @@ class RecoveryRetentionTest {
         assertEquals("America/Lima|3", profile(old))
 
         // 2. Its backup holds exactly that history and the person's preferences.
-        val prepared = upgraded.backupExports(chosen, chosen, { at }, dispatchers).prepare()
+        val prepared = upgraded.backupExports(chosen, chosen, HandInvestmentPreferences(), {
+            at
+        }, dispatchers).prepare()
             .valueOrFail()
         assertEquals(
             BackupSummary(categories = 3, expenses = 5, incomes = 2, 0, 0),
@@ -285,7 +287,7 @@ class RecoveryRetentionTest {
         val other = open(new)
         other.profiles.establish(ZoneId.of("America/Bogota")).valueOrFail()
         val applied = Preferences(AppearancePreference(), CategoryOrderingPreference())
-        val restores = other.restores(applied, applied, NoticeSeen(), {
+        val restores = other.restores(applied, applied, HandInvestmentPreferences(), NoticeSeen(), {
             uuid(nextOperation++)
         }, { at }, dispatchers)
         val restored = restores.replace(restores.stage(prepared.bytes).valueOrFail())

@@ -76,6 +76,8 @@ class LegacyImportRestoreTest {
             write(direction)
     }
 
+    private val investments = HandInvestmentPreferences()
+
     private val preferences = Preferences()
     private var nextId = 5_000
 
@@ -84,6 +86,7 @@ class LegacyImportRestoreTest {
         files.restoreFolder,
         preferences,
         preferences,
+        investments,
         NoticeSeen(),
         { uuid(nextId++) },
         { Instant.parse("2026-10-25T20:00:00Z") },

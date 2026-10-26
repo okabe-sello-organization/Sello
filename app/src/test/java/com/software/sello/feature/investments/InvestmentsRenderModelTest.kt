@@ -13,6 +13,7 @@ import com.software.sello.domain.model.InvestmentMovement
 import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.InvestmentName
+import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentReturn
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
@@ -210,6 +211,41 @@ class InvestmentsRenderModelTest {
         assertNull(state.total)
         assertFalse(state.missingRate)
         assertEquals(listOf("Cripto"), state.rows.map { it.name })
+    }
+
+    @Test
+    fun theRowsFollowTheOrderChosenAndKeepTheirOwnShare() {
+        val board = InvestmentBoardState.Ready(board(cripto(), fondo(), parqueadero()))
+
+        val largest = render.overview(board, today) as InversionesState.Ready
+        assertEquals(
+            listOf("Parqueadero", "Fondo de acciones", "Cripto"),
+            largest.rows.map { it.name }
+        )
+        val alphabetical =
+            render.overview(board, today, InvestmentOrder.Alphabetical) as InversionesState.Ready
+        assertEquals(
+            listOf("Cripto", "Fondo de acciones", "Parqueadero"),
+            alphabetical.rows.map { it.name }
+        )
+        // The bar is each investment's share of the total, whatever the order.
+        assertEquals(
+            largest.rows.associate { it.name to it.share },
+            alphabetical.rows.associate { it.name to it.share }
+        )
+    }
+
+    @Test
+    fun withoutARateTheRowsStillFollowTheOrderChosen() {
+        // Acciones EE. UU. has a 5,1 % return; Cripto has no value, so no return.
+        val state = render.overview(
+            InvestmentBoardState.Ready(board(cripto(), acciones())),
+            today,
+            InvestmentOrder.Return
+        ) as InversionesState.Ready
+
+        assertTrue(state.missingRate)
+        assertEquals(listOf("Acciones EE. UU.", "Cripto"), state.rows.map { it.name })
     }
 
     @Test
