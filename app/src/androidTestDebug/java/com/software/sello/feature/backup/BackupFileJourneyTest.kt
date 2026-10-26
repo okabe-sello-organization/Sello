@@ -30,10 +30,6 @@ import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupRecords
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
-import com.software.sello.feature.settings.SETTINGS_BACKUP_CARD_TAG
-import com.software.sello.feature.settings.SETTINGS_BACKUP_CREATE_TAG
-import com.software.sello.feature.settings.SETTINGS_BACKUP_TAG
-import com.software.sello.feature.settings.SETTINGS_DISCLOSURE_TAG
 import com.software.sello.feature.settings.SETTINGS_TAG
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.platform.TestDocuments
@@ -118,7 +114,7 @@ class BackupFileJourneyTest {
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
         rule.awaitTag(SETTINGS_TAG)
-        rule.onNodeWithTag(SETTINGS_BACKUP_TAG).performScrollTo().performClick()
+        rule.onNodeWithTag(BACKUP_CARD_CONTENTS_TAG).performScrollTo().performClick()
         rule.awaitTag(BACKUP_TAG)
     }
 
@@ -182,11 +178,11 @@ class BackupFileJourneyTest {
         scenario = ActivityScenario.launch(Intent(context, MainActivity::class.java))
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
-        rule.awaitTag(SETTINGS_BACKUP_CARD_TAG)
+        rule.awaitTag(BACKUP_CARD_TAG)
     }
 
     private fun onCard(text: String) =
-        rule.onNode(hasText(text) and hasAnyAncestor(hasTestTag(SETTINGS_BACKUP_CARD_TAG)))
+        rule.onNode(hasText(text) and hasAnyAncestor(hasTestTag(BACKUP_CARD_TAG)))
 
     @Test
     fun theCardSavesOnlyAfterTheDisclosureAndThenSaysGuardadoToday() {
@@ -194,8 +190,8 @@ class BackupFileJourneyTest {
         val picker = answerWith { document(name) }
         openSettings()
 
-        rule.onNodeWithTag(SETTINGS_BACKUP_CREATE_TAG).performScrollTo().performClick()
-        rule.awaitTag(SETTINGS_DISCLOSURE_TAG)
+        rule.onNodeWithTag(BACKUP_CARD_CREATE_TAG).performScrollTo().performClick()
+        rule.awaitTag(BACKUP_CARD_DISCLOSURE_TAG)
         rule.onNode(hasText("Cualquiera que abra el archivo puede leerlo.", substring = true))
             .assertExists()
         // Nothing is asked of the system before the disclosure is accepted.
@@ -210,7 +206,7 @@ class BackupFileJourneyTest {
         onCard("Respaldar").assertExists()
         rule.onNode(
             hasText("Hoy", substring = true) and
-                hasAnyAncestor(hasTestTag(SETTINGS_BACKUP_CARD_TAG))
+                hasAnyAncestor(hasTestTag(BACKUP_CARD_TAG))
         ).assertExists()
     }
 
@@ -220,12 +216,15 @@ class BackupFileJourneyTest {
         val picker = answerWith { document("sello-respaldo-${UUID.randomUUID()}.json") }
         openSettings()
 
-        rule.onNodeWithTag(SETTINGS_BACKUP_CREATE_TAG).performScrollTo().performClick()
-        rule.awaitTag(SETTINGS_DISCLOSURE_TAG)
+        rule.onNodeWithTag(BACKUP_CARD_CREATE_TAG).performScrollTo().performClick()
+        rule.awaitTag(BACKUP_CARD_DISCLOSURE_TAG)
         rule.onNodeWithText("Cancelar").performClick()
         rule.waitForIdle()
 
-        assertEquals(0, rule.onAllNodes(hasTestTag(SETTINGS_DISCLOSURE_TAG)).fetchSemanticsNodes().size)
+        assertEquals(
+            0,
+            rule.onAllNodes(hasTestTag(BACKUP_CARD_DISCLOSURE_TAG)).fetchSemanticsNodes().size
+        )
         assertEquals(0, picker.requests.size)
         assertEquals(before, record().last)
         assertFalse(record().unfinished)

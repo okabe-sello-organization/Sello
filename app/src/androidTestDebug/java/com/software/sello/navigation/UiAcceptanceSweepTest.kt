@@ -33,6 +33,8 @@ import com.software.sello.await
 import com.software.sello.composition.SelloApplication
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.feature.backup.BACKUP_CARD_CONTENTS_TAG
+import com.software.sello.feature.backup.BACKUP_CARD_RESET_TAG
 import com.software.sello.feature.backup.BACKUP_CREATE_TAG
 import com.software.sello.feature.category.EDITOR_SUBMIT_TAG
 import com.software.sello.feature.expense.ENTRY_DELETE_TAG
@@ -44,8 +46,6 @@ import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
 import com.software.sello.feature.recibo.categoryExpenseTag
 import com.software.sello.feature.recibo.reciboCategoryTag
 import com.software.sello.feature.reset.RESET_CONTINUE_TAG
-import com.software.sello.feature.settings.SETTINGS_BACKUP_TAG
-import com.software.sello.feature.settings.SETTINGS_RESET_TAG
 import com.software.sello.readyViewModels
 import org.junit.After
 import org.junit.Assert.assertTrue
@@ -214,15 +214,15 @@ class UiAcceptanceSweepTest(private val window: Window) {
 
         open(hasText("Recibo") and hasClickAction())
         open(hasTestTag(SETTINGS_ACTION_TAG))
-        awaitOrDescribe(hasTestTag(SETTINGS_RESET_TAG))
-        check("Configuración", SETTINGS_BACKUP_TAG, SETTINGS_RESET_TAG)
+        awaitOrDescribe(hasTestTag(BACKUP_CARD_RESET_TAG))
+        check("Configuración", BACKUP_CARD_CONTENTS_TAG, BACKUP_CARD_RESET_TAG)
 
-        open(hasTestTag(SETTINGS_BACKUP_TAG))
+        open(hasTestTag(BACKUP_CARD_CONTENTS_TAG))
         awaitOrDescribe(hasTestTag(BACKUP_CREATE_TAG))
         check("Respaldo", BACKUP_CREATE_TAG)
         back()
 
-        open(hasTestTag(SETTINGS_RESET_TAG))
+        open(hasTestTag(BACKUP_CARD_RESET_TAG))
         awaitOrDescribe(hasTestTag(RESET_CONTINUE_TAG))
         check("Borrar todos los datos", RESET_CONTINUE_TAG)
         back()

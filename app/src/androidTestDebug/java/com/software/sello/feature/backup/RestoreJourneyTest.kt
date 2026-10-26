@@ -49,8 +49,6 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
-import com.software.sello.feature.settings.SETTINGS_BACKUP_TAG
-import com.software.sello.feature.settings.SETTINGS_RESTORE_TAG
 import com.software.sello.feature.settings.SETTINGS_TAG
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.platform.ProcessAppRestart
@@ -221,7 +219,7 @@ class RestoreJourneyTest {
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
         rule.awaitTag(SETTINGS_TAG)
-        rule.onNodeWithTag(SETTINGS_BACKUP_TAG).performScrollTo().performClick()
+        rule.onNodeWithTag(BACKUP_CARD_CONTENTS_TAG).performScrollTo().performClick()
         rule.awaitTag(BACKUP_TAG)
         rule.onNodeWithTag(RESTORE_CHOOSE_TAG).performScrollTo().performClick()
     }
@@ -278,7 +276,7 @@ class RestoreJourneyTest {
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
         rule.awaitTag(SETTINGS_TAG)
-        rule.onNodeWithTag(SETTINGS_RESTORE_TAG).performScrollTo().performClick()
+        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).performScrollTo().performClick()
 
         rule.awaitTag(RESTORE_PREVIEW_TAG)
         rule.onNodeWithTag(BACKUP_TAG).assertExists()
@@ -304,13 +302,13 @@ class RestoreJourneyTest {
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
         rule.awaitTag(SETTINGS_TAG)
-        rule.onNodeWithTag(SETTINGS_RESTORE_TAG).performScrollTo().performClick()
+        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).performScrollTo().performClick()
         rule.waitUntil(timeoutMillis = 10_000) { monitor.hits == 1 }
         rule.waitForIdle()
 
         rule.onNodeWithTag(SETTINGS_TAG).assertExists()
         assertEquals(0, rule.onAllNodes(hasTestTag(BACKUP_TAG)).fetchSemanticsNodes().size)
-        rule.onNodeWithTag(SETTINGS_RESTORE_TAG).assertIsEnabled()
+        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).assertIsEnabled()
         assertEquals(before, financialRows())
     }
 
