@@ -124,6 +124,8 @@ fun FittedMoneyText(
  * [date] pill, an [icon] circle and the fitted amount. Text pasted that cannot be an
  * amount is shown as it was in [rejectedText]; with [onPaste] a paste button hands the
  * clipboard text to the caller untouched. [content] follows the amount inside the slip.
+ * On a form with several figures, [onClick] makes the slip choose itself for the pad and
+ * [active] edges it in ink while the pad types into it.
  */
 @Composable
 fun EntryAmountSlip(
@@ -139,6 +141,8 @@ fun EntryAmountSlip(
     onPaste: ((String) -> Unit)? = null,
     pasteLabel: String = stringResource(R.string.sello_paste),
     amountAlpha: Float = 1f,
+    onClick: (() -> Unit)? = null,
+    active: Boolean = false,
     content: @Composable ColumnScope.() -> Unit = {}
 ) {
     val reduced = SelloTheme.reducedMotion
@@ -158,7 +162,11 @@ fun EntryAmountSlip(
         ButtonTone.Loss -> colors.semantic.loss
         else -> colors.ink
     }
-    Slip(modifier.fillMaxWidth()) {
+    Slip(
+        modifier.fillMaxWidth(),
+        onClick = onClick,
+        outline = if (active) colors.ink else null
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 error ?: label,

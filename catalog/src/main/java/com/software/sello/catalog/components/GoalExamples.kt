@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.software.sello.catalog.R
+import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
@@ -32,12 +33,11 @@ import com.software.sello.designsystem.component.CompletedGoalRow
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.GoalCard
-import com.software.sello.designsystem.component.GoalIconCircle
 import com.software.sello.designsystem.component.GoalPill
 import com.software.sello.designsystem.component.GoalPinPill
 import com.software.sello.designsystem.component.GoalsBandTotal
 import com.software.sello.designsystem.component.IconChoice
-import com.software.sello.designsystem.component.IconChoiceStrip
+import com.software.sello.designsystem.component.IconPickerCircle
 import com.software.sello.designsystem.component.InvestmentRow
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MilestoneRow
@@ -51,7 +51,6 @@ import com.software.sello.designsystem.component.RecordedMark
 import com.software.sello.designsystem.component.RecordedValuesChart
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
-import com.software.sello.designsystem.component.SlidingKeypad
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
@@ -416,30 +415,10 @@ fun InvestmentsExample() {
 }
 
 @Composable
-fun IconStripExample() {
+fun ReciboPinExample() {
     val strings = LocalResources.current
-    var picked by rememberSaveable { mutableStateOf("flight") }
     var pinned by rememberSaveable { mutableStateOf(false) }
-    val choices =
-        listOf(
-            IconChoice("flight", SelloIcon.Flight, "Viaje"),
-            IconChoice("home", SelloIcon.Home, "Casa"),
-            IconChoice(
-                "school",
-                SelloIcon.School,
-                strings.getString(R.string.catalog_demo_educacion)
-            ),
-            IconChoice("pets", SelloIcon.Pets, "Mascotas"),
-            IconChoice("phone", SelloIcon.PhoneIphone, "Celular"),
-            IconChoice(
-                "bank",
-                SelloIcon.AccountBalance,
-                strings.getString(R.string.catalog_demo_inversion)
-            )
-        )
     ExampleStack {
-        IconChoiceStrip(choices, picked, { picked = it })
-        IconChoiceStrip(choices, picked, { picked = it }, tone = ButtonTone.Ink)
         Column(Modifier.fillMaxWidth().background(SelloTheme.colors.band).padding(12.dp)) {
             GoalPinPill(
                 if (pinned) {
@@ -456,7 +435,6 @@ fun IconStripExample() {
                 }
             )
         }
-        ExampleCaption("Elegido: $picked")
     }
 }
 
@@ -604,34 +582,37 @@ fun SplitChartsExample() {
     }
 }
 
+/**
+ * Nueva meta's parts: the icon circle, empty and chosen, then Cuánto necesitas edged as
+ * the figure the Sello pad types into, and the pad, which stays under the form.
+ */
 @Composable
 fun GoalFormExample() {
     val strings = LocalResources.current
     var digits by rememberSaveable { mutableStateOf("") }
-    var typing by rememberSaveable { mutableStateOf(false) }
     ExampleStack {
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            GoalIconCircle(null)
-            GoalIconCircle(SelloIcon.Flight)
+            IconPickerCircle(null, "Elegir ícono", "Elegir ícono", {}, tone = ButtonTone.Gain)
+            IconPickerCircle(
+                SelloIcon.Flight,
+                "Cambiar",
+                "Ícono: Viaje. Cambiar",
+                {},
+                tone = ButtonTone.Gain
+            )
         }
         ExampleCaption(strings.getString(R.string.catalog_demo_sin_icono))
         EntryAmountSlip(
             strings.getString(R.string.catalog_demo_cuanto_necesitas),
-            copFixture(digits.toLongOrNull() ?: 0),
-            icon = SelloIcon.Flight,
-            tone = ButtonTone.Gain
+            digits.toLongOrNull()?.let(::copFixture),
+            active = true
         )
-        SelloButton(strings.getString(R.string.catalog_demo_abrir_teclado), {
-            typing = true
-        }, kind = ButtonKind.Outlined)
-        SlidingKeypad(
-            visible = typing,
-            doneLabel = strings.getString(R.string.catalog_demo_listo),
-            onDone = { typing = false },
+        AmountKeypad(
             onDigit = { if (digits.length < 12) digits = (digits + it).trimStart('0') },
             onTripleZero = { if (digits.isNotEmpty() && digits.length <= 9) digits += "000" },
             onBackspace = { digits = digits.dropLast(1) },
-            onClearAll = { digits = "" }
+            onClearAll = { digits = "" },
+            compact = true
         )
     }
 }

@@ -11,13 +11,19 @@ import com.software.sello.designsystem.R
  * the outlined drawing exists only where the reference uses it (unselected tabs).
  */
 enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: Int? = null) {
+    AccountBalanceWallet(R.drawable.ic_sello_account_balance_wallet),
+    Agriculture(R.drawable.ic_sello_agriculture),
     AllInclusive(R.drawable.ic_sello_all_inclusive),
     AccountBalance(
         R.drawable.ic_sello_account_balance,
         R.drawable.ic_sello_account_balance_outlined
     ),
+    Apartment(R.drawable.ic_sello_apartment),
+    CurrencyBitcoin(R.drawable.ic_sello_currency_bitcoin),
     Flag(R.drawable.ic_sello_flag),
     Close(R.drawable.ic_sello_close),
+    PieChart(R.drawable.ic_sello_pie_chart),
+    Storefront(R.drawable.ic_sello_storefront),
     TrendingUp(R.drawable.ic_sello_trending_up),
     TrendingDown(R.drawable.ic_sello_trending_down),
     Star(R.drawable.ic_sello_star, R.drawable.ic_sello_star_outline),

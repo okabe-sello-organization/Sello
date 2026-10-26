@@ -144,9 +144,8 @@ sealed interface InvestmentEditorAction {
     /** Vale hoy: true for Lo mismo que aporté, false for Otro valor. */
     data class SameValuePicked(val same: Boolean) : InvestmentEditorAction
 
-    data class OpenPad(val field: InvestmentField) : InvestmentEditorAction
-
-    data object ClosePad : InvestmentEditorAction
+    /** The Sello pad, always under a new investment, types into [field] from now on. */
+    data class TypeInto(val field: InvestmentField) : InvestmentEditorAction
 
     data class Digit(val digit: Int) : InvestmentEditorAction
 

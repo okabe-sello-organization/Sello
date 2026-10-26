@@ -138,7 +138,8 @@ class CategoryEditorViewModelTest {
         // No limit is something chosen, never where a new category starts.
         assertFalse(state.unlimited)
         assertEquals("directions_bus", state.iconKey)
-        assertEquals(24, state.iconKeys.size)
+        // The shared set of 35, money and investment icons included (owner, 2026-10-26).
+        assertEquals(35, state.iconKeys.size)
         assertEquals(listOf("200.000", "300.000", "500.000"), state.suggestions.map { it.label })
         assertEquals(
             listOf("200.000 pesos", "300.000 pesos", "500.000 pesos"),

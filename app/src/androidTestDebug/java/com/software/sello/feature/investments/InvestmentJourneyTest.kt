@@ -64,16 +64,20 @@ class InvestmentJourneyTest {
         scenario?.hideKeyboard()
     }
 
-    /** Opens the pad from [field] and types [keys] on it, then closes it with Listo. */
+    /** Gives the always-present pad to [field]'s slip and types [keys] on it. */
     private fun editorKeys(field: String, vararg keys: String) {
         rule.onNodeWithTag(field).performScrollTo().press()
-        rule.awaitTag(INVESTMENT_EDITOR_PAD_TAG)
         keys.forEach { key ->
             val node = if (key == ",") hasContentDescription("Coma decimal") else hasText(key)
             rule.onNode(node and hasAnyAncestor(hasTestTag(INVESTMENT_EDITOR_PAD_TAG))).press()
         }
-        rule.onNode(hasText("Listo") and hasAnyAncestor(hasTestTag(INVESTMENT_EDITOR_PAD_TAG)))
-            .press()
+    }
+
+    /** Chooses an icon from the circle's sheet. */
+    private fun icon(label: String) {
+        rule.onNodeWithTag(INVESTMENT_EDITOR_ICON_TAG).performScrollTo().press()
+        rule.awaitTag(INVESTMENT_EDITOR_ICONS_TAG)
+        rule.onNodeWithContentDescription(label).performClick()
     }
 
     private fun movementKeys(vararg keys: String) = keys.forEach { key ->
@@ -89,7 +93,7 @@ class InvestmentJourneyTest {
         rule.awaitTag(INVESTMENT_EDITOR_TAG)
 
         name("CDT Banco")
-        rule.onNodeWithContentDescription("Banco").performClick()
+        icon("Banco")
         editorKeys(INVESTMENT_EDITOR_FIRST_TAG, "1", "0", "000", "000")
         rule.onNodeWithTag(INVESTMENT_EDITOR_SUBMIT_TAG).press()
 
@@ -132,14 +136,14 @@ class InvestmentJourneyTest {
         rule.awaitTag(INVESTMENT_EDITOR_TAG)
 
         name("Acciones EE. UU.")
-        rule.onNodeWithContentDescription("Acciones").performClick()
+        icon("Acciones")
         rule.onNodeWithText("Dólares").performScrollTo().performClick()
         rule.awaitTag(INVESTMENT_EDITOR_RATE_SLIP_TAG)
         editorKeys(INVESTMENT_EDITOR_FIRST_TAG, "1", "0", "0", "0", ",", "0", "0")
         rule.onNodeWithTag(INVESTMENT_EDITOR_SUBMIT_TAG).assert(
             androidx.compose.ui.test.isNotEnabled()
         )
-        editorKeys(INVESTMENT_EDITOR_RATE_TAG, "4", "1", "5", "0", ",", "2", "5")
+        editorKeys(INVESTMENT_EDITOR_RATE_SLIP_TAG, "4", "1", "5", "0", ",", "2", "5")
         rule.onNodeWithTag(INVESTMENT_EDITOR_SUBMIT_TAG).press()
 
         rule.awaitTag(INVESTMENT_DETAIL_TAG)

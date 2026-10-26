@@ -1,6 +1,7 @@
 package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -38,7 +40,8 @@ object SlipDefaults {
 
 /**
  * The basic surface: a piece of paper on the desk. Everything that carries a figure
- * sits on one. With [onClick] the whole slip is a single button for accessibility.
+ * sits on one. With [onClick] the whole slip is a single button for accessibility. An
+ * [outline] edges it, as the figure the Sello pad is typing into.
  */
 @Composable
 fun Slip(
@@ -46,6 +49,7 @@ fun Slip(
     pinked: Boolean = true,
     contentPadding: PaddingValues = SlipDefaults.Padding,
     onClick: (() -> Unit)? = null,
+    outline: Color? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val colors = SelloTheme.colors
@@ -65,6 +69,7 @@ fun Slip(
             modifier = modifier
                 .clip(shape)
                 .background(colors.paper)
+                .then(if (outline == null) Modifier else Modifier.border(2.dp, outline, shape))
                 .then(click)
                 .padding(contentPadding),
             content = content

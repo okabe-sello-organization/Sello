@@ -560,11 +560,11 @@ class GoalEditorViewModelTest {
         val model = model()
         model.onAction(GoalEditorAction.IconPicked("rocket"))
         assertNull(model.state.value.iconKey)
-        // A goal offers the same 24 icons as a category, in the same order.
+        // A goal offers the same 35 icons as a category, in the same order.
         model.onAction(GoalEditorAction.IconPicked("savings"))
         assertEquals("savings", model.state.value.iconKey)
         assertEquals(CategoryIcons.keys, GoalIcons.options.map { it.key })
-        assertEquals(24, GoalIcons.options.size)
+        assertEquals(35, GoalIcons.options.size)
         assertEquals(GoalPlace.entries, model.state.value.places.map { it.place.place })
     }
 

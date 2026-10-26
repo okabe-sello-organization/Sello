@@ -210,9 +210,9 @@ private fun InvestmentsExamplePreview(
 
 @ExampleThemePreviews
 @Composable
-private fun IconStripExamplePreview(
+private fun ReciboPinExamplePreview(
     @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
-) = Frame(theme) { IconStripExample() }
+) = Frame(theme) { ReciboPinExample() }
 
 @ExampleThemePreviews
 @Composable

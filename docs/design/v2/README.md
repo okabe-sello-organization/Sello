@@ -303,8 +303,8 @@ no live preview, and the same saving / rejected / unknown-outcome / restore beha
 - **Identity card:** the goal's icon in a large green circle beside **Nombre** (40
   characters, with a counter). Empty, the circle is a dashed green ring around a centred
   **+**, captioned **Elegir ícono**; chosen, it is filled with a small pencil and
-  **Cambiar**. Tapping it opens **Elige un ícono**, a sheet with the same 24 icons as a
-  category. A new goal opens on the name with the keyboard up. Too long a name keeps the
+  **Cambiar**. Tapping it opens **Elige un ícono**, a sheet with the shared 35 icons (the
+  same for categories, goals and investments). A new goal opens on the name with the keyboard up. Too long a name keeps the
   text, turns the line red ("Máximo 40 caracteres. Tu texto sigue aquí.") and the button
   waits.
 - **Amount card (pinked):** "Cuánto necesitas" and the amount as the big number, typed on
@@ -336,6 +336,12 @@ always-present Sello pad, with **Sin límite** in its corner; with it on, the am
 suggestions and pad grey out and what was typed comes back. Zero is a limit: 0 types it.
 Pasted text that is not an amount is kept as it came beside why. The same layout serves
 Editar categoría.
+
+**One icon set of 35** (owner, 2026-10-26): the 24 categories had, the three money icons
+investments had (Banco, Acciones, Fondos) and eight more for money and investments
+(Efectivo, Divisas, Billetera, Portafolio, Cripto, Negocio, Apartamento, Agro). Categories
+and goals list them in that order; investments list the eleven money ones first. A goal or
+an investment keeps its own names where it had them ("Casa", "Finca raíz").
 
 **Celebrations** play only after a confirmed save; an uncertain outcome never celebrates.
 Reduced motion keeps the same text and final picture without movement or confetti.
@@ -439,11 +445,19 @@ action above the pad, note row, one plain fact and no live preview.
   de hoy** first.
 - Opened from an investment it is chosen; from the dock none is, and the button waits.
 
-**Agregar / editar inversión** follows Crear meta in ink: name (40 characters), an
-optional description, an icon; **Primer aporte** as the big number with its date; **Vale
-hoy** with **Lo mismo que aporté** (default) or **Otro valor**, so a new investment
-starts with a recorded value. Editing changes name, description and icon only; movements
-are edited from their list. **Borrar esta inversión** is its own card with the confirm slip.
+**Agregar / editar inversión** follows Nueva meta in ink (made alike by the owner on
+2026-10-26): the icon circle beside the name (40 characters), opening the shared 35 icons
+with the money ones first; the optional description; **Pesos | Dólares** as a segmented
+switch. A new investment opens on the name with the keyboard up. **Primer aporte** is the
+big number with its date in the slip's corner, typed on the Sello pad, which is always
+there; at the slip's foot, "Vale hoy: lo mismo que aportas · **Otro valor**", so a new
+investment starts with a recorded value. Otro valor adds its own **Vale hoy** slip. The
+figure the pad types into is edged in ink and said as such; the others step back and a
+tap gives one the pad, scrolling it into view. Nothing above the figures is pinned: they
+and the identity scroll together over the button and the pad. A line above **Crear
+inversión** says what is missing first. Editing changes name, description and icon only,
+with no pad; movements are edited from their list. **Borrar esta inversión** is its own
+card with the confirm slip.
 
 ### Dólares y la tasa
 
@@ -451,12 +465,11 @@ Locked 2026-10-25 by owner delegation (SELLO-106): the owner answered the rules 
 the executor to design and lock this section; the owner reviews it in the pull request.
 Rules are [SELLO-106's](../../testing/investment-examples.md).
 
-- **Currency:** **Moneda: Pesos / Dólares** chips in Nueva inversión, under the
-  description, with "Lo que anotes de esta inversión queda en dólares. No se puede
+- **Currency:** **Pesos | Dólares** in Nueva inversión, under the description, with "Lo que anotes de esta inversión queda en dólares. No se puede
   cambiar después." Not shown when editing.
 - **Rate first (owner):** choosing Dólares with no rate adds a pinked slip "¿A cuánto
-  está el dólar?" with its date pill below the first contribution; Crear inversión waits
-  for it. With a rate, one quiet line names it.
+  está el dólar?" with its date pill below the first contribution, a figure the pad types
+  into like the others; Crear inversión waits for it. With a rate, one quiet line names it.
 - **USD amounts** read as the app's money text already does for USD (`USD 1.050,50`),
   everywhere inside a USD investment: slip, rows, movements, the chart and entry
   ("Aporte en dólares"). Nothing inside it converts.

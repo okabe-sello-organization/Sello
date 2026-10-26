@@ -44,7 +44,7 @@ class CatalogExamplesTest {
                 "inputs.settings-controls",
                 "inputs.icon-choice",
                 "inputs.icon-picker",
-                "inputs.icon-strip",
+                "inputs.recibo-pin",
                 "inputs.amount",
                 "inputs.keypad",
                 "inputs.note-composer",
