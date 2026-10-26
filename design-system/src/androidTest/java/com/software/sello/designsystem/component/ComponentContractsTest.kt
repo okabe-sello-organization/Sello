@@ -15,13 +15,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.isRoot
@@ -558,6 +562,65 @@ class ComponentContractsTest {
             val without = rule.onNodeWithTag("without").getUnclippedBoundsInRoot()
             assertTrue("$without is shorter than $with", without.height + 12.dp < with.height)
             rule.onAllNodesWithContentDescription("100.000 pesos").assertCountEquals(2)
+        }
+    }
+
+    @Test
+    fun goalsBandTotalOffersItsActionBesideTheLabelAsAFullSizeButton() {
+        var created = 0
+        rule.inEveryScheme(content = {
+            GoalsBandTotal(
+                "Guardado en metas",
+                MoneyTextValue(MoneySign.None, "", "2.460.000", "2.460.000 pesos"),
+                "350.000 en octubre",
+                action = { BandChip("Nueva meta", { created++ }, Modifier.testTag("chip")) }
+            )
+        }) {
+            val chip = rule.onNodeWithTag("chip")
+            chip.assertIsDisplayed().assert(hasClickAction()).assertTextContains("Nueva meta")
+            assertEquals(
+                Role.Button,
+                chip.fetchSemanticsNode().config[SemanticsProperties.Role]
+            )
+            val node = chip.fetchSemanticsNode()
+            assertTrue(
+                with(node.layoutInfo.density) { node.touchBoundsInRoot.height.toDp() } >= 47.9.dp
+            )
+            val label = rule.onNodeWithText("Guardado en metas").getUnclippedBoundsInRoot()
+            val bounds = chip.getUnclippedBoundsInRoot()
+            assertTrue("$bounds beside $label", bounds.left >= label.right)
+            assertTrue("$bounds level with $label", bounds.top < label.bottom)
+            chip.performClick()
+        }
+        assertEquals(4, created)
+    }
+
+    @Test
+    fun atLargeTextTheBandActionGoesUnderTheTotalAndStaysWhole() {
+        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+            GoalsBandTotal(
+                "Guardado en metas",
+                MoneyTextValue(MoneySign.None, "", "2.460.000", "2.460.000 pesos"),
+                "350.000 en octubre",
+                action = { BandChip("Nueva meta", {}, Modifier.testTag("chip")) }
+            )
+        }) {
+            val chip = rule.onNodeWithTag("chip").assertIsDisplayed()
+            val bounds = chip.getUnclippedBoundsInRoot()
+            val change = rule.onNodeWithText("350.000 en octubre").getUnclippedBoundsInRoot()
+            assertTrue("$bounds under $change", bounds.top >= change.bottom)
+            assertTrue("$bounds fits 320dp", bounds.right <= 320.dp)
+            val text = rule.onNodeWithText("Nueva meta", useUnmergedTree = true)
+                .fetchSemanticsNode()
+            val layout = mutableListOf<TextLayoutResult>()
+            text.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layout)
+            // One line, whole: its natural width fits the width it was given.
+            val line = layout.single()
+            assertEquals(1, line.lineCount)
+            assertTrue(
+                "Nueva meta is not cut",
+                line.multiParagraph.intrinsics.maxIntrinsicWidth <= line.size.width + 0.5f
+            )
         }
     }
 

@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
@@ -234,13 +235,27 @@ class MetasScreenTest {
     }
 
     @Test
-    fun withNoGoalsTheDockAndThePlusCreateOne() {
+    fun withGoalsNuevaMetaOnTheBandCreatesOneAndTheTopBarHasNoPlus() {
+        var created = 0
+        destination(board, onCreate = { created++ }, onContribute = {})
+
+        rule.onNode(
+            hasTestTag(METAS_CREATE_TAG) and
+                hasAnyAncestor(hasTestTag("metas.band"))
+        ).assert(hasText("Nueva meta")).performClick()
+        assertEquals(1, created)
+        rule.onNodeWithContentDescription("Crear una meta").assertDoesNotExist()
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Aportar a una meta"))
+    }
+
+    @Test
+    fun withNoGoalsOnlyTheDockCreatesOne() {
         var created = 0
         destination(GoalBoard(1, 0, emptyList(), null), onCreate = { created++ })
 
         rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Crear una meta")).performClick()
-        rule.onNodeWithTag(com.software.sello.navigation.METAS_CREATE_TAG).performClick()
-        assertEquals(2, created)
+        assertEquals(1, created)
+        rule.onNodeWithTag(METAS_CREATE_TAG).assertDoesNotExist()
         rule.onNodeWithTag("metas.band").assertDoesNotExist()
     }
 
@@ -249,7 +264,7 @@ class MetasScreenTest {
         destination(board)
 
         rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assertDoesNotExist()
-        rule.onNodeWithTag(com.software.sello.navigation.METAS_CREATE_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(METAS_CREATE_TAG).assertDoesNotExist()
         rule.onNodeWithTag("metas.band").assertExists()
     }
 

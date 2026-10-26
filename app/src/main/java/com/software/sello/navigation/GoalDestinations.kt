@@ -36,9 +36,9 @@ import com.software.sello.presentation.month.monthNames
 
 /**
  * The Metas tab: titled "Metas", never a month. Its own actions are offered only once
- * their screens exist: [onCreate] for the top **+** and the empty state's **Crear una
- * meta**, [onContribute] for **Aportar a una meta**. Recording an expense is not offered
- * here, so without them the tab has no dock.
+ * their screens exist: [onCreate] for **+ Nueva meta** on the band and the empty state's
+ * **Crear una meta**, [onContribute] for **Aportar a una meta**. Recording an expense is
+ * not offered here, so without them the tab has no dock.
  */
 @Composable
 internal fun MetasDestination(
@@ -63,13 +63,8 @@ internal fun MetasDestination(
         navigation = tabs,
         titleOnly = stringResource(R.string.metas_title),
         notice = notice,
-        band = ready?.band?.let { band -> { MetasBandTotal(band, names) } },
+        band = ready?.band?.let { band -> { MetasBandTotal(band, names, onCreate) } },
         actions = {
-            if (onCreate != null) {
-                IconButton(onClick = onCreate, modifier = Modifier.testTag(METAS_CREATE_TAG)) {
-                    Icon(SelloIcon.Add.painter(), stringResource(R.string.metas_create))
-                }
-            }
             IconButton(onClick = onOpenSettings, modifier = Modifier.testTag(SETTINGS_ACTION_TAG)) {
                 Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
             }
@@ -180,5 +175,4 @@ internal fun GoalDestination(
 private fun goalDock(label: String, onClick: () -> Unit) =
     SelloDock(label, label, onClick, tone = ButtonTone.Gain, icon = SelloIcon.Flag)
 
-const val METAS_CREATE_TAG = "metas.create"
 const val GOAL_EDIT_TAG = "goal.edit"

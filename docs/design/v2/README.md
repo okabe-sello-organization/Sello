@@ -25,7 +25,7 @@ synthetic.
 | [Expense and income entry](entry.html) | Locked 2026-10-15 |
 | [Resumen](resumen.html) | Locked 2026-10-15 |
 | [Income](income.html) | Locked 2026-10-15 |
-| [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16 |
+| [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16; + Nueva meta moved to the band by the owner 2026-10-26 |
 | [Inversiones](inversiones.html) | Locked 2026-10-16; USD and the rate added 2026-10-25 by owner delegation (SELLO-106) |
 | [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice; the list redesigned by the owner 2026-10-26 (SELLO-122) |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
@@ -218,10 +218,13 @@ six-month income chart.
 
 The v1.1 Metas screen, kept close to the original on purpose, in its own tab.
 
-- **Top bar:** title **Metas**, **+** to create a goal, settings. Goals are not tied to a
-  month, so there is no month bar.
+- **Top bar:** title **Metas** and settings. Goals are not tied to a month, so there is
+  no month bar.
 - **Band:** "Guardado en metas" with the total of active goals (never investments) and
-  "+ 350.000 en octubre" for this month's contributions.
+  "+ 350.000 en octubre" for this month's contributions. A white **+ Nueva meta** chip
+  at the end of the label's line creates a goal; at large text it moves under the total.
+  It replaced a bare **+** in the top bar that was easy to miss, and stays quieter than
+  the green dock (owner decision, 2026-10-26).
 - **One pinked stamp card per goal, highest completion first:** icon and name, the
   percentage, the saved amount large, "de 3.000.000" and 🏁 target date (or "Sin fecha"),
   a green progress bar and four stamp places (25 %, 50 %, 75 %, Meta). Reached places
@@ -335,8 +338,9 @@ Reduced motion keeps the same text and final picture without movement or confett
 "En Recibo" tag, Aportar on every card, a global Anotar dock on Metas, a "Mostrar en
 Recibo" toggle, a star in the top bar or a chip in the main card, a separate stamp line in
 the movement list, taking a stamp back after a withdrawal, rounding the monthly amount
-(769.300), the phone keyboard for the goal amount, Borrar meta as a link at the end of the
-form, and "Marcar como completada" (Lograda is the word Metas already uses). For
+(769.300), creating a goal from a bare + or a labelled pill in the top bar or from a
+dashed "Crear otra meta" card after the goals (below the fold with three goals), the
+phone keyboard for the goal amount, Borrar meta as a link at the end of the form, and "Marcar como completada" (Lograda is the word Metas already uses). For
 celebrations: one ticket everywhere, a centred milestone slip, a printed final receipt, a
 round seal (it cannot hold long names or amounts) and automatic completion at 100 %.
 
