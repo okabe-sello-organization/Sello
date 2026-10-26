@@ -95,6 +95,7 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get(),
             koin.get(),
             koin.get(),
+            koin.get(),
             koin.get()
         )
     }
@@ -159,7 +160,7 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get()
         )
     }
-    initializer { InversionesViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer { InversionesViewModel(koin.get(), koin.get(), koin.get(), koin.get()) }
     initializer { UsdRateViewModel(koin.get(), koin.get(), koin.get()) }
     initializer {
         InvestmentDetailViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
@@ -167,6 +168,7 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     initializer {
         InvestmentEditorViewModel(
             createSavedStateHandle(),
+            koin.get(),
             koin.get(),
             koin.get(),
             koin.get(),

@@ -42,6 +42,7 @@ class InvestmentEditorViewModelTest {
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
     private val reads = HandInvestmentReads()
     private val commands = HandInvestmentCommands()
+    private val settings = HandInvestmentPreferences()
     private val createdId = "00000000-0000-4000-9000-000000000077"
     private val ecopetrolId = "00000000-0000-4000-9000-000000000005"
 
@@ -52,7 +53,7 @@ class InvestmentEditorViewModelTest {
     fun resetMain() = Dispatchers.resetMain()
 
     private fun editor(saved: SavedStateHandle = SavedStateHandle()) =
-        InvestmentEditorViewModel(saved, reads, commands, clock, ids, testMoney())
+        InvestmentEditorViewModel(saved, reads, settings, commands, clock, ids, testMoney())
 
     private fun editing(saved: SavedStateHandle = SavedStateHandle()): InvestmentEditorViewModel {
         saved[InvestmentEditorViewModel.KEY_INVESTMENT] = ecopetrolId
@@ -543,6 +544,43 @@ class InvestmentEditorViewModelTest {
         assertEquals(listOf(operation(1), operation(1)), commands.asked)
         assertEquals(1, commands.sent.size)
         assertEquals(createdId, after.state.value.created)
+    }
+
+    @Test
+    fun aNewInvestmentStartsInTheCurrencyChosenInConfiguracion() = runTest {
+        created()
+        settings.setNewInvestmentCurrency(Currency.USD)
+        val model = editor()
+
+        assertEquals(Currency.USD, model.state.value.currency)
+        // No rate yet: dollars ask for one before Crear inversión, as when picked here.
+        model.identity(name = "Acciones EE. UU.", description = "ETF", icon = "trending_up")
+        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.type("1000")
+        assertTrue(model.state.value.rateNeeded)
+
+        // Pesos may still be picked for this one.
+        model.onAction(InvestmentEditorAction.CurrencyPicked(Currency.COP))
+        assertEquals(Currency.COP, model.state.value.currency)
+    }
+
+    @Test
+    fun startingInTheChosenCurrencyIsNotAChangeToDiscard() = runTest {
+        settings.setNewInvestmentCurrency(Currency.USD)
+        val model = editor()
+
+        model.onAction(InvestmentEditorAction.Back)
+
+        assertFalse(model.state.value.confirmDiscard)
+        assertEquals(InvestmentEditorResult.Discarded, model.state.value.result)
+    }
+
+    @Test
+    fun editingKeepsTheInvestmentsOwnCurrencyWhateverIsChosen() = runTest {
+        reads.board.value = InvestmentBoardState.Ready(investmentsBoard(listOf(ecopetrol())))
+        settings.setNewInvestmentCurrency(Currency.USD)
+
+        assertEquals(Currency.COP, editing().state.value.currency)
     }
 
     @Test

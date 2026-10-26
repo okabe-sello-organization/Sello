@@ -17,8 +17,11 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
@@ -28,6 +31,7 @@ import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CorrectionAnnouncementPreferences
+import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.LastBackup
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
@@ -58,6 +62,7 @@ internal const val PREFERENCES_FILE = "sello-preferences"
 class DataStoreUserPreferences internal constructor(private val data: DataStore<Preferences>) :
     AppearancePreferences,
     CategoryOrderingPreferences,
+    InvestmentPreferences,
     CorrectionAnnouncementPreferences,
     SuggestionPreferences,
     CatchUpNoticePreferences,
@@ -95,6 +100,18 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
     override suspend fun setCategoryOrderDirection(
         direction: CategoryOrderDirection
     ): PreferenceWrite = write { this[CATEGORY_DIRECTION] = direction.stored }
+
+    override fun observeInvestments(): Flow<PreferenceRead<InvestmentPreference>> =
+        observe(::investments)
+
+    override suspend fun setNewInvestmentCurrency(currency: Currency): PreferenceWrite {
+        val stored =
+            currency.stored ?: return PreferenceWrite.Failed(PreferenceFailure.InvalidValue)
+        return write { this[INVESTMENT_CURRENCY] = stored }
+    }
+
+    override suspend fun setInvestmentOrder(order: InvestmentOrder): PreferenceWrite =
+        write { this[INVESTMENT_ORDER] = order.stored }
 
     override fun observeCorrectionAnnouncements():
         Flow<PreferenceRead<CorrectionAnnouncementPreference>> =
@@ -227,6 +244,23 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         return Decoded.Value(CategoryOrderingPreference(order, direction))
     }
 
+    private fun investments(stored: Preferences): Decoded<InvestmentPreference> {
+        val currency = when (stored[INVESTMENT_CURRENCY] ?: "cop") {
+            "cop" -> Currency.COP
+            "usd" -> Currency.USD
+            else -> return Decoded.Invalid
+        }
+        val order = when (stored[INVESTMENT_ORDER] ?: InvestmentOrder.LargestValue.stored) {
+            "largest_value" -> InvestmentOrder.LargestValue
+            "return" -> InvestmentOrder.Return
+            "alphabetical" -> InvestmentOrder.Alphabetical
+            "newest" -> InvestmentOrder.Newest
+            "latest_update" -> InvestmentOrder.LatestUpdate
+            else -> return Decoded.Invalid
+        }
+        return Decoded.Value(InvestmentPreference(currency, order))
+    }
+
     private fun correctionAnnouncements(stored: Preferences) = Decoded.Value(
         CorrectionAnnouncementPreference(
             pastExpenseSeen = stored[PAST_EXPENSE_SEEN] ?: false,
@@ -288,6 +322,8 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         val INK = stringPreferencesKey("appearance_ink_v1")
         val CATEGORY_ORDER = stringPreferencesKey("recibo_category_order_v1")
         val CATEGORY_DIRECTION = stringPreferencesKey("recibo_category_direction_v1")
+        val INVESTMENT_CURRENCY = stringPreferencesKey("investment_new_currency_v1")
+        val INVESTMENT_ORDER = stringPreferencesKey("investment_order_v1")
         val PAST_EXPENSE_SEEN = booleanPreferencesKey("past_expense_correction_seen_v1")
         val PAST_LIMIT_SEEN = booleanPreferencesKey("past_limit_correction_seen_v1")
         val SUGGESTION_DISMISSED = stringPreferencesKey("resumen_suggestion_dismissed_v1")
@@ -329,6 +365,23 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
             get() = when (this) {
                 CategoryOrderDirection.Descending -> "descending"
                 CategoryOrderDirection.Ascending -> "ascending"
+            }
+
+        /** Only the currencies an investment may hold have a stored value. */
+        val Currency.stored: String?
+            get() = when (this) {
+                Currency.COP -> "cop"
+                Currency.USD -> "usd"
+                Currency.EUR, Currency.GBP -> null
+            }
+
+        val InvestmentOrder.stored: String
+            get() = when (this) {
+                InvestmentOrder.LargestValue -> "largest_value"
+                InvestmentOrder.Return -> "return"
+                InvestmentOrder.Alphabetical -> "alphabetical"
+                InvestmentOrder.Newest -> "newest"
+                InvestmentOrder.LatestUpdate -> "latest_update"
             }
     }
 }

@@ -11,8 +11,11 @@ import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.BackupRecord
@@ -290,6 +293,60 @@ class DataStoreUserPreferencesTest {
     private val cafe = (
         CategoryId.of("00000000-0000-4000-8000-000000000001") as Outcome.Success
         ).value
+
+    @Test
+    fun investmentsStartInPesosLargestValueFirstAndKeepTheirStoredCodes() = runTest {
+        val data = HandDataStore()
+        val first = DataStoreUserPreferences(data)
+        assertEquals(
+            PreferenceRead.Ready(InvestmentPreference(Currency.COP, InvestmentOrder.LargestValue)),
+            first.observeInvestments().first()
+        )
+
+        assertEquals(PreferenceWrite.Saved, first.setNewInvestmentCurrency(Currency.USD))
+        assertEquals(PreferenceWrite.Saved, first.setInvestmentOrder(InvestmentOrder.LatestUpdate))
+
+        val reopened = DataStoreUserPreferences(data)
+        assertEquals(
+            PreferenceRead.Ready(InvestmentPreference(Currency.USD, InvestmentOrder.LatestUpdate)),
+            reopened.observeInvestments().first()
+        )
+        // The codes are the stored contract, not enum names.
+        val stored = data.data.first()
+        assertEquals("usd", stored[stringPreferencesKey("investment_new_currency_v1")])
+        assertEquals("latest_update", stored[stringPreferencesKey("investment_order_v1")])
+    }
+
+    @Test
+    fun aCurrencyNoInvestmentMayHoldIsRefusedAndNothingIsStored() = runTest {
+        val preferences = DataStoreUserPreferences(HandDataStore())
+
+        assertEquals(
+            PreferenceWrite.Failed(PreferenceFailure.InvalidValue),
+            preferences.setNewInvestmentCurrency(Currency.EUR)
+        )
+        assertEquals(
+            PreferenceRead.Ready(InvestmentPreference()),
+            preferences.observeInvestments().first()
+        )
+    }
+
+    @Test
+    fun anUnknownInvestmentCodeIsVisibleAndResetReturnsTheDefaults() = runTest {
+        val raw = mutablePreferencesOf(stringPreferencesKey("investment_order_v1") to "random")
+        val preferences = DataStoreUserPreferences(HandDataStore(raw))
+        assertEquals(
+            PreferenceRead.Failed<InvestmentPreference>(PreferenceFailure.InvalidValue, null),
+            preferences.observeInvestments().first()
+        )
+
+        assertEquals(PreferenceWrite.Saved, preferences.resetAll())
+
+        assertEquals(
+            PreferenceRead.Ready(InvestmentPreference()),
+            preferences.observeInvestments().first()
+        )
+    }
 
     @Test
     fun anUnknownStoredCodeIsVisibleAndIsNotSilentlyRewritten() = runTest {

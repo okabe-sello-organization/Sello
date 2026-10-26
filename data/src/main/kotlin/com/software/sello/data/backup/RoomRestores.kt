@@ -29,6 +29,7 @@ import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CheckedBackup
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.LegacyImportLine
 import com.software.sello.domain.port.LegacyImportReport
 import com.software.sello.domain.port.LegacyReason
@@ -72,6 +73,7 @@ class RoomRestores(
     private val folder: File,
     private val appearance: AppearancePreferences,
     private val ordering: CategoryOrderingPreferences,
+    private val investments: InvestmentPreferences,
     private val notice: CatchUpNoticePreferences,
     private val ids: RecordIdSource,
     private val audit: AuditClock,
@@ -234,7 +236,8 @@ class RoomRestores(
             contents.financial.summary(),
             PendingPreferences(
                 appearance = preferences?.appearance?.takeUnless { APPEARANCE in done },
-                ordering = preferences?.ordering?.takeUnless { ORDERING in done }
+                ordering = preferences?.ordering?.takeUnless { ORDERING in done },
+                investments = preferences?.investments?.takeUnless { INVESTMENTS in done }
             )
         )
     }
@@ -243,6 +246,7 @@ class RoomRestores(
         val pending = pending() ?: return null
         var appearanceLeft = pending.preferences.appearance
         var orderingLeft = pending.preferences.ordering
+        var investmentsLeft = pending.preferences.investments
         appearanceLeft?.let { wanted ->
             val saved = appearance.setTheme(wanted.theme).saved() &&
                 appearance.setInk(wanted.ink).saved()
@@ -253,8 +257,13 @@ class RoomRestores(
                 ordering.setCategoryOrderDirection(wanted.direction).saved()
             if (saved && markApplied(ORDERING)) orderingLeft = null
         }
+        investmentsLeft?.let { wanted ->
+            val saved = investments.setNewInvestmentCurrency(wanted.newCurrency).saved() &&
+                investments.setInvestmentOrder(wanted.order).saved()
+            if (saved && markApplied(INVESTMENTS)) investmentsLeft = null
+        }
         reviewRestoredEntries()
-        val left = PendingPreferences(appearanceLeft, orderingLeft)
+        val left = PendingPreferences(appearanceLeft, orderingLeft, investmentsLeft)
         if (left.done) {
             io {
                 restored.delete()
@@ -559,6 +568,7 @@ class RoomRestores(
         const val LEGACY_LINE = "legacy."
         const val APPEARANCE = "appearance"
         const val ORDERING = "ordering"
+        const val INVESTMENTS = "investments"
         const val NOTICE = "notice"
 
         /** An investment starts with its first aporte and value at positions 0 and 1. */

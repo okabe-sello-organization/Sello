@@ -2,6 +2,7 @@ package com.software.sello.domain.port
 
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import java.time.Instant
@@ -150,9 +151,10 @@ sealed interface StageFailure {
 /** The backup's preferences that still have to be applied; null when that group is done. */
 data class PendingPreferences(
     val appearance: AppearancePreference?,
-    val ordering: CategoryOrderingPreference?
+    val ordering: CategoryOrderingPreference?,
+    val investments: InvestmentPreference? = null
 ) {
-    val done: Boolean get() = appearance == null && ordering == null
+    val done: Boolean get() = appearance == null && ordering == null && investments == null
 }
 
 sealed interface RestoreOutcome {

@@ -6,12 +6,16 @@ import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.InkPreference
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
@@ -32,13 +36,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Coordinates the appearance and Recibo-order controls, how many payments and incomes
- * repeat and the current USD rate. The backup card reads the backup's own state.
+ * Coordinates the appearance, Recibo-order and Inversiones controls, how many payments and
+ * incomes repeat and the current USD rate. The backup card reads the backup's own state.
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class SettingsViewModel(
     private val appearancePreferences: AppearancePreferences,
     private val orderingPreferences: CategoryOrderingPreferences,
+    private val investmentPreferences: InvestmentPreferences,
     schedules: ScheduleReads,
     investments: InvestmentReads,
     money: MoneyFormatter
@@ -50,7 +55,8 @@ class SettingsViewModel(
     private val reads: Flow<SettingsRead> = retry.flatMapLatest {
         merge(
             appearancePreferences.observeAppearance().map(SettingsRead::Appearance),
-            orderingPreferences.observeCategoryOrdering().map(SettingsRead::Ordering)
+            orderingPreferences.observeCategoryOrdering().map(SettingsRead::Ordering),
+            investmentPreferences.observeInvestments().map(SettingsRead::Investments)
         )
     }
 
@@ -83,7 +89,23 @@ class SettingsViewModel(
                     orderingFailure = value.failure
                 )
             }
-        }.let { it.copy(loading = !it.appearanceLoaded || !it.orderingLoaded) }
+
+            is SettingsRead.Investments -> when (val value = read.value) {
+                is PreferenceRead.Ready -> old.copy(
+                    investments = value.value,
+                    investmentsLoaded = true,
+                    investmentsFailure = null
+                )
+
+                is PreferenceRead.Failed -> old.copy(
+                    investments = value.lastGood ?: old.investments,
+                    investmentsLoaded = true,
+                    investmentsFailure = value.failure
+                )
+            }
+        }.let {
+            it.copy(loading = !it.appearanceLoaded || !it.orderingLoaded || !it.investmentsLoaded)
+        }
     }
 
     private val scheduleCount = retry.flatMapLatest { schedules.observe() }.map { read ->
@@ -152,6 +174,12 @@ class SettingsViewModel(
                 is SettingsAction.DirectionChosen ->
                     orderingPreferences.setCategoryOrderDirection(action.direction)
 
+                is SettingsAction.NewInvestmentCurrencyChosen ->
+                    investmentPreferences.setNewInvestmentCurrency(action.currency)
+
+                is SettingsAction.InvestmentOrderChosen ->
+                    investmentPreferences.setInvestmentOrder(action.order)
+
                 SettingsAction.Retry -> error("Retry is handled before launching")
             }
             busy.value = false
@@ -165,23 +193,29 @@ sealed interface SettingsAction {
     data class InkChosen(val ink: InkPreference) : SettingsAction
     data class OrderChosen(val order: CategoryOrder) : SettingsAction
     data class DirectionChosen(val direction: CategoryOrderDirection) : SettingsAction
+    data class NewInvestmentCurrencyChosen(val currency: Currency) : SettingsAction
+    data class InvestmentOrderChosen(val order: InvestmentOrder) : SettingsAction
     data object Retry : SettingsAction
 }
 
 data class SettingsState(
     val appearance: AppearancePreference = AppearancePreference(),
     val categoryOrdering: CategoryOrderingPreference = CategoryOrderingPreference(),
+    val investments: InvestmentPreference = InvestmentPreference(),
     val loading: Boolean,
     val appearanceLoaded: Boolean = false,
     val orderingLoaded: Boolean = false,
+    val investmentsLoaded: Boolean = false,
     val appearanceFailure: PreferenceFailure? = null,
     val orderingFailure: PreferenceFailure? = null,
+    val investmentsFailure: PreferenceFailure? = null,
     val writeFailure: PreferenceFailure? = null,
     val busy: Boolean = false,
     val schedules: ScheduleCountLine = ScheduleCountLine.Loading,
     val rate: RateLine = RateLine.Loading
 ) {
-    val failure: PreferenceFailure? get() = writeFailure ?: appearanceFailure ?: orderingFailure
+    val failure: PreferenceFailure?
+        get() = writeFailure ?: appearanceFailure ?: orderingFailure ?: investmentsFailure
 }
 
 /** The rate is written to the centavo: "4.150,25" (investment rule 11). */
@@ -210,4 +244,5 @@ sealed interface ScheduleCountLine {
 private sealed interface SettingsRead {
     data class Appearance(val value: PreferenceRead<AppearancePreference>) : SettingsRead
     data class Ordering(val value: PreferenceRead<CategoryOrderingPreference>) : SettingsRead
+    data class Investments(val value: PreferenceRead<InvestmentPreference>) : SettingsRead
 }

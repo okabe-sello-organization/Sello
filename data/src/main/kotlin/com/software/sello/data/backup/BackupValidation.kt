@@ -40,6 +40,8 @@ import com.software.sello.domain.model.InvestmentMovement
 import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.InvestmentName
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.Note
@@ -109,6 +111,16 @@ internal object WireNames {
         CategoryOrderDirection.Descending to "descending",
         CategoryOrderDirection.Ascending to "ascending"
     )
+
+    /** The currencies a new investment may start in, written as amounts write theirs. */
+    val newCurrencies = mapOf(Currency.COP to "COP", Currency.USD to "USD")
+    val investmentOrders = mapOf(
+        InvestmentOrder.LargestValue to "largest_value",
+        InvestmentOrder.Return to "return",
+        InvestmentOrder.Alphabetical to "alphabetical",
+        InvestmentOrder.Newest to "newest",
+        InvestmentOrder.LatestUpdate to "latest_update"
+    )
 }
 
 /** Thrown and caught inside [validate] only, carrying the first problem found. */
@@ -144,16 +156,16 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 4 included; the
+ * Checks a decoded file completely, older versions read as version 5 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV4): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV5): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV4): BackupContents {
+private fun contentsOf(file: BackupFileV5): BackupContents {
     val financial = file.financial
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
     val zone = try {
@@ -819,7 +831,7 @@ private fun usdRates(wire: List<UsdRateV4>): List<UsdRateEntry> {
 private fun <T> Map<T, String>.decode(text: String, path: String): T =
     entries.firstOrNull { it.value == text }?.key ?: invalid(path)
 
-private fun preferences(wire: PreferencesV1) = PortablePreferences(
+private fun preferences(wire: PreferencesV5) = PortablePreferences(
     appearance = AppearancePreference(
         theme = WireNames.themes.decode(wire.theme, "preferences.theme"),
         ink = WireNames.inks.decode(wire.ink, "preferences.ink")
@@ -829,6 +841,16 @@ private fun preferences(wire: PreferencesV1) = PortablePreferences(
         direction = WireNames.directions.decode(
             wire.categoryDirection,
             "preferences.categoryDirection"
+        )
+    ),
+    investments = InvestmentPreference(
+        newCurrency = WireNames.newCurrencies.decode(
+            wire.investmentCurrency,
+            "preferences.investmentCurrency"
+        ),
+        order = WireNames.investmentOrders.decode(
+            wire.investmentOrder,
+            "preferences.investmentOrder"
         )
     )
 )

@@ -102,6 +102,7 @@ class BackupSnapshotConsistencyTest {
         RoomBackupSnapshots(ledger.database),
         preferences,
         preferences,
+        HandInvestmentPreferences(),
         { now },
         dispatchers
     )

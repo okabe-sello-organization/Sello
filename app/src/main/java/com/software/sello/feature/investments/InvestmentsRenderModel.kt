@@ -5,11 +5,13 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.InvestmentHistory
 import com.software.sello.domain.model.InvestmentMovement
 import com.software.sello.domain.model.InvestmentMovementKind
+import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PortfolioError
 import com.software.sello.domain.model.PortfolioItem
 import com.software.sello.domain.model.UsdRate
+import com.software.sello.domain.policy.InvestmentOrderPolicy
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.presentation.money.MoneyFormatter
@@ -18,16 +20,22 @@ import java.time.YearMonth
 
 /**
  * Turns the investment board into what Inversiones draws. Every figure comes from
- * `InvestmentPolicy` through the board; nothing is added, converted or compared here.
+ * `InvestmentPolicy` through the board and the order from `InvestmentOrderPolicy`;
+ * nothing is added, converted or compared here.
  */
 class InvestmentsRenderModel(private val money: MoneyFormatter) {
-    fun overview(board: InvestmentBoardState, today: LocalDate): InversionesState = when (board) {
+    fun overview(
+        board: InvestmentBoardState,
+        today: LocalDate,
+        order: InvestmentOrder = InvestmentOrder.LargestValue
+    ): InversionesState = when (board) {
         InvestmentBoardState.Loading -> InversionesState.Loading
 
-        is InvestmentBoardState.Ready -> overview(board.board, today, stale = false)
+        is InvestmentBoardState.Ready -> overview(board.board, today, order, stale = false)
 
-        is InvestmentBoardState.Failed ->
-            board.lastGood?.let { overview(it, today, stale = true) } ?: InversionesState.Failed
+        is InvestmentBoardState.Failed -> board.lastGood?.let {
+            overview(it, today, order, stale = true)
+        } ?: InversionesState.Failed
     }
 
     /** One investment's detail from the board, or why it cannot be shown. */
@@ -143,6 +151,7 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
     private fun overview(
         board: InvestmentBoard,
         today: LocalDate,
+        order: InvestmentOrder,
         stale: Boolean
     ): InversionesState {
         val overview = when (val worked = board.overview) {
@@ -152,9 +161,10 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
             is Outcome.Failure -> when (worked.error) {
                 PortfolioError.MissingRate -> return InversionesState.Ready(
                     total = null,
-                    rows = board.investments.map { summary ->
-                        row(PortfolioItem(summary.history, summary.figures, null), share = 0f)
-                    },
+                    rows = InvestmentOrderPolicy.order(
+                        board.investments.map { PortfolioItem(it.history, it.figures, null) },
+                        order
+                    ).map { row(it, share = 0f) },
                     rate = null,
                     today = today,
                     missingRate = true,
@@ -180,7 +190,7 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
                     valuedTo = it.valuedTo
                 )
             },
-            rows = overview.items.map { item ->
+            rows = InvestmentOrderPolicy.order(overview.items, order).map { item ->
                 val share = item.valueInPesos?.minorUnits?.let { value ->
                     pesos?.let { (value.toDouble() / it).toFloat() }
                 } ?: 0f

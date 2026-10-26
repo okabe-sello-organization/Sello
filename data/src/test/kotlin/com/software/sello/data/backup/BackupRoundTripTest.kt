@@ -6,8 +6,11 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.ExactTotal
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SourceName
 import java.time.Instant
 import java.time.YearMonth
@@ -19,6 +22,7 @@ import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BackupRoundTripTest {
@@ -51,11 +55,66 @@ class BackupRoundTripTest {
         )
     }
 
+    /** G01 with its investments starting in dollars, the latest update first. */
+    private fun g01InDollars() = g01().let {
+        it.copy(
+            preferences = it.preferences!!.copy(
+                investments = InvestmentPreference(Currency.USD, InvestmentOrder.LatestUpdate)
+            )
+        )
+    }
+
     @Test
-    fun `G01 is written byte for byte as the documented version 4 file`() {
+    fun `G01 is written byte for byte as the documented version 5 file`() {
         assertEquals(
-            String(resource("valid-g01-v4.json")),
-            String(codec.encode(g01()).value())
+            String(resource("valid-g01-v5.json")),
+            String(codec.encode(g01InDollars()).value())
+        )
+    }
+
+    @Test
+    fun `the version 5 file reads back with its investment settings`() {
+        assertEquals(g01InDollars(), codec.read(resource("valid-g01-v5.json")).value().contents)
+    }
+
+    @Test
+    fun `a version 4 file reads with investments in pesos, largest value first`() {
+        val contents = codec.read(resource("valid-g01-v4.json")).value().contents
+
+        assertEquals(g01(), contents)
+        assertEquals(
+            InvestmentPreference(Currency.COP, InvestmentOrder.LargestValue),
+            contents.preferences?.investments
+        )
+    }
+
+    @Test
+    fun `an investment setting the app does not know rejects the whole file`() {
+        val file = String(resource("valid-g01-v5.json"))
+        for ((from, to, path) in listOf(
+            Triple("\"USD\"", "\"EUR\"", "preferences.investmentCurrency"),
+            Triple("\"USD\"", "\"usd\"", "preferences.investmentCurrency"),
+            Triple("\"latest_update\"", "\"LatestUpdate\"", "preferences.investmentOrder")
+        )) {
+            val changed = file.replace(from, to)
+            check(changed != file)
+            assertEquals(
+                to,
+                BackupRejection.InvalidValue(path),
+                (codec.read(changed.toByteArray()) as Outcome.Failure).error
+            )
+        }
+    }
+
+    @Test
+    fun `a version 5 file without its investment settings is malformed`() {
+        val file = String(resource("valid-g01-v5.json"))
+        val missing = file.replace(",\n    \"investmentOrder\": \"latest_update\"", "")
+        check(missing != file)
+
+        assertTrue(
+            (codec.read(missing.toByteArray()) as Outcome.Failure).error
+                is BackupRejection.Malformed
         )
     }
 
@@ -220,7 +279,14 @@ class BackupRoundTripTest {
             keysOf("defaultLimits")
         )
         assertEquals(
-            setOf("theme", "ink", "categoryOrder", "categoryDirection"),
+            setOf(
+                "theme",
+                "ink",
+                "categoryOrder",
+                "categoryDirection",
+                "investmentCurrency",
+                "investmentOrder"
+            ),
             (file.getValue("preferences") as JsonObject).keys
         )
     }
