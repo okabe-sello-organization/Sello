@@ -185,7 +185,7 @@ class ExportTest {
 
     @Test
     fun `the CSV lists every movement by date with exact amounts and neutralized text`() {
-        val expected = "" +
+        val expected = "\uFEFF" +
             "Fecha,Tipo,Nombre,Monto,Moneda,Nota\r\n" +
             "2026-10-01,Gasto,Mercado,10000,COP,'=SUM(A1:A9)\r\n" +
             "2026-10-01,Ingreso,Salario,200000,COP,\r\n" +
@@ -199,6 +199,17 @@ class ExportTest {
             "2026-10-03,Dividendo,Acciones EE. UU.,12.05,USD,\r\n"
 
         assertEquals(expected, String(CsvExport.encode(movements(history), words), Charsets.UTF_8))
+    }
+
+    @Test
+    fun `the CSV starts with the UTF-8 byte order mark so spreadsheets read accents`() {
+        val bytes = CsvExport.encode(movements(history), words)
+
+        // EF BB BF, then the header: checked as bytes, since the mark is invisible as text.
+        assertArrayEquals(
+            byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte(), 'F'.code.toByte()),
+            bytes.copyOfRange(0, 4)
+        )
     }
 
     @Test
