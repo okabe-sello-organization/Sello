@@ -56,8 +56,12 @@ import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.component.SelloNavigationBar
 import com.software.sello.designsystem.component.SelloNavigationRail
 import com.software.sello.designsystem.component.Slip
+import com.software.sello.designsystem.component.SlipStub
 import com.software.sello.designsystem.component.SpendingRankRow
+import com.software.sello.designsystem.component.SplitBar
+import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StubButton
 import com.software.sello.designsystem.component.SuggestionNote
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TitleBar
@@ -432,32 +436,86 @@ fun ComparisonExample() {
     }
 }
 
+/**
+ * Resumen's income slip (SELLO-123): where the income went, by spending category, and
+ * the stub to the income list and Pagos e ingresos fijos.
+ */
 @Composable
 private fun IncomeSlipExample(mode: Int) {
     val strings = LocalResources.current
-    Slip(Modifier.fillMaxWidth(), pinked = false) {
-        Text(
+    val october = mode == 0
+    val brand = SelloTheme.colors.brand
+    val spent = if (october) 400_000L else 920_000L
+    val lines = if (october) {
+        listOf(
+            Triple("Hogar", SelloIcon.Home, 200_000L),
+            Triple("Comida", SelloIcon.Restaurant, 80_000L),
+            Triple(strings.getString(R.string.catalog_demo_cafe), SelloIcon.LocalCafe, 60_000L)
+        )
+    } else {
+        listOf(
+            Triple("Hogar", SelloIcon.Home, 500_000L),
+            Triple("Comida", SelloIcon.Restaurant, 250_000L),
+            Triple(strings.getString(R.string.catalog_demo_cafe), SelloIcon.LocalCafe, 100_000L)
+        )
+    }
+    Slip(Modifier.fillMaxWidth()) {
+        Text(strings.getString(R.string.catalog_income_question))
+        LeaderLine(
             strings.getString(
                 if (mode ==
                     2
                 ) {
-                    R.string.catalog_september_income
+                    R.string.catalog_income_in_september
                 } else {
-                    R.string.catalog_demo_ingresos_de_octubre
+                    R.string.catalog_income_in_october
                 }
             )
+        ) { MoneyText(copFixture(2_000_000), style = MoneyStyle.Title) }
+        SplitBar(
+            listOf(
+                SplitSegment(spent / 2_000_000f, copFixture(spent).spoken, brand),
+                SplitSegment(
+                    1f - spent / 2_000_000f,
+                    copFixture(2_000_000 - spent).spoken,
+                    brand,
+                    striped = true
+                )
+            ),
+            Modifier.padding(vertical = 8.dp)
         )
-        LeaderLine(strings.getString(R.string.catalog_demo_ingresos_anotados)) {
-            MoneyText(copFixture(2_000_000))
+        lines.forEach { (name, icon, pesos) ->
+            LeaderLine(name, icon = icon, onClick = {}) { MoneyText(copFixture(-pesos)) }
         }
-        LeaderLine(strings.getString(R.string.catalog_demo_ingresos_menos_gastos)) {
-            MoneyText(copFixture(if (mode == 0) 1_600_000 else 1_080_000))
+        LeaderLine(
+            strings.getString(R.string.catalog_income_others),
+            Modifier.padding(start = 25.dp)
+        ) {
+            MoneyText(copFixture(if (october) -60_000 else -70_000))
         }
-        LeaderLine(strings.getString(R.string.catalog_demo_sin_asignar_a_categorias)) {
-            MoneyText(copFixture(1_000_000))
+        TotalLine(strings.getString(R.string.catalog_demo_ingresos_menos_gastos)) {
+            MoneyText(copFixture(2_000_000 - spent), style = MoneyStyle.Title)
         }
-        SelloButton(strings.getString(R.string.catalog_demo_ver_ingresos_y_su_destino), {
-        }, kind = ButtonKind.Text)
+        TearLine()
+        SlipStub(
+            start = {
+                StubButton(
+                    SelloIcon.ReceiptLong,
+                    strings.getString(R.string.catalog_income_stub_incomes),
+                    {},
+                    fact = strings.getString(R.string.catalog_income_stub_count)
+                )
+            },
+            end = {
+                StubButton(
+                    SelloIcon.Autorenew,
+                    strings.getString(R.string.catalog_income_stub_fixed),
+                    {},
+                    fact = strings.getString(R.string.catalog_income_stub_next),
+                    label = strings.getString(R.string.catalog_income_stub_fixed_label)
+                )
+            }
+        )
     }
 }
 

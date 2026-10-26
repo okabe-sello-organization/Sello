@@ -6,18 +6,34 @@ import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.LimitAdjustment
 import com.software.sello.domain.model.Money
+import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.Recurrence
+import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ResumenSnapshot
+import com.software.sello.domain.model.Schedule
+import com.software.sello.domain.model.SchedulePause
+import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
+import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleBook
+import com.software.sello.domain.port.ScheduleBookState
+import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.domain.port.SuggestionPreferences
+import com.software.sello.feature.expense.categoryId
+import com.software.sello.feature.recurrence.HandScheduleReads
+import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
+import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,6 +61,8 @@ class ResumenViewModelTest {
     private val session = MonthSession(HandFinancialClock("2026-10-13"), HandMonotonicClock())
     private val reads = HandResumenSnapshots()
     private val suggestions = HandSuggestions()
+    private val clock = HandFinancialClock("2026-10-22")
+    private val schedules = HandScheduleReads()
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -53,7 +71,7 @@ class ResumenViewModelTest {
     fun reset() = Dispatchers.resetMain()
 
     private fun model(saved: SavedStateHandle = SavedStateHandle()) =
-        ResumenViewModel(saved, reads, session, resumenMoney(), suggestions)
+        ResumenViewModel(saved, reads, session, resumenMoney(), suggestions, schedules, clock)
 
     private fun TestScope.watch(model: ResumenViewModel) =
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
@@ -107,7 +125,6 @@ class ResumenViewModelTest {
         assertEquals("2026-10", shown.selectedHistory)
         assertEquals("27.000 pesos", shown.history.last().amount.spoken)
         assertEquals("173.000 pesos", shown.netFlow.spoken)
-        assertEquals("100.000 pesos", shown.unallocated.spoken)
         assertEquals(1, reads.started)
     }
 
@@ -141,6 +158,77 @@ class ResumenViewModelTest {
             original.copy(budget = original.budget.copy(month = september))
         )
         assertNull((model.state.value as ResumenState.Ready).selectedHistory)
+    }
+
+    // --- SELLO-123: the stub's fixed payments and incomes ---
+
+    private fun bills(day: Int, handled: String? = null, pausedFrom: String? = null) =
+        StoredSchedule(
+            Schedule(
+                scheduleId(day),
+                ScheduledEntry.Payment(
+                    categoryId(1),
+                    (TransactionAmount.of(Money.cop(90_000)) as Outcome.Success).value,
+                    null
+                ),
+                (
+                    Recurrence.of(
+                        (RepeatRule.Monthly.of(day) as Outcome.Success).value,
+                        LocalDate.parse("2026-10-01"),
+                        null,
+                        pausedFrom?.let {
+                            listOf(SchedulePause(LocalDate.parse(it), null))
+                        }.orEmpty()
+                    ) as Outcome.Success
+                    ).value
+            ),
+            sequence = day.toLong(),
+            handled = handled?.let { Occurrence(LocalDate.parse(it), 1) },
+            version = 1,
+            createdAt = Instant.EPOCH,
+            updatedAt = Instant.EPOCH
+        )
+
+    private fun shown(model: ResumenViewModel) = (model.state.value as ResumenState.Ready).nextFixed
+
+    @Test
+    fun theStubSaysTheNearestFixedOneStillToComeAndNothingWhenItCannotBeRead() = runTest {
+        val model = model()
+        watch(model)
+        reads.of(october).value = ResumenSnapshotState.Ready(resumenSnapshot())
+        // While loading, no fact: never "none".
+        assertEquals(ResumenNextFixed.Unknown, shown(model))
+
+        // The 5th went through on 5 Oct, so 5 Nov; the 28th is still to come; the 15th is paused.
+        schedules.state.value = ScheduleBookState.Ready(
+            ScheduleBook(
+                1,
+                1,
+                listOf(
+                    bills(5, handled = "2026-10-05"),
+                    bills(28),
+                    bills(15, pausedFrom = "2026-10-10")
+                )
+            )
+        )
+        val today = LocalDate.parse("2026-10-22")
+        assertEquals(ResumenNextFixed.On(LocalDate.parse("2026-10-28"), today), shown(model))
+
+        clock.goTo("2026-10-29")
+        // The 28th not recorded yet by catch-up: it is today's.
+        assertEquals(
+            ResumenNextFixed.On(LocalDate.parse("2026-10-29"), LocalDate.parse("2026-10-29")),
+            shown(model)
+        )
+
+        schedules.state.value = ScheduleBookState.Ready(ScheduleBook(1, 2, emptyList()))
+        assertEquals(ResumenNextFixed.None, shown(model))
+
+        schedules.state.value = ScheduleBookState.Failed(
+            StorageFailure.Unavailable("hand"),
+            ScheduleBook(1, 2, emptyList())
+        )
+        assertEquals(ResumenNextFixed.Unknown, shown(model))
     }
 
     // --- The suggestion ---

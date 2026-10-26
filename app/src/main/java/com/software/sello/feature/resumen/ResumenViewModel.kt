@@ -6,8 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.policy.ScheduleListPolicy
+import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ResumenSnapshots
+import com.software.sello.domain.port.ScheduleBookState
+import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SuggestionPreferences
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.money.MoneyFormatter
@@ -30,7 +34,9 @@ class ResumenViewModel(
     reads: ResumenSnapshots,
     session: MonthSession,
     money: MoneyFormatter,
-    private val suggestions: SuggestionPreferences
+    private val suggestions: SuggestionPreferences,
+    schedules: ScheduleReads,
+    clock: FinancialClock
 ) : ViewModel() {
     private val attempts = MutableStateFlow(0)
     private val render = ResumenRenderModel(money)
@@ -47,14 +53,35 @@ class ResumenViewModel(
         }
     }
 
+    /** The stub's fact: the nearest fixed one still to come, on the financial day. */
+    private val nextFixed = combine(schedules.observe(), clock.today) { read, today ->
+        when (read) {
+            is ScheduleBookState.Ready -> {
+                val date = today.date
+                val lines = ScheduleListPolicy.lines(
+                    read.book.schedules,
+                    date,
+                    YearMonth.from(date)
+                )
+                ScheduleListPolicy.nextDate(lines, date)?.let { ResumenNextFixed.On(it, date) }
+                    ?: ResumenNextFixed.None
+            }
+
+            // A failed read is never "none", even with an earlier book to hand.
+            ScheduleBookState.Loading, is ScheduleBookState.Failed -> ResumenNextFixed.Unknown
+        }
+    }
+
     val state = combine(
         snapshot,
         saved.getStateFlow<String?>(HISTORY, null),
         saved.getStateFlow<String?>(WEEKDAY, null),
-        dismissed
-    ) { state, history, weekday, dismissed ->
+        dismissed,
+        nextFixed
+    ) { state, history, weekday, dismissed, next ->
         if (state is ResumenState.Ready) {
             state.copy(
+                nextFixed = next,
                 selectedHistory = selection(history, state.month, state.history),
                 selectedWeekday = selection(
                     weekday,

@@ -5,6 +5,7 @@ import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ComparisonBar
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.SpendingDirection
+import java.time.LocalDate
 
 sealed interface ResumenState {
     data object Loading : ResumenState
@@ -18,8 +19,8 @@ sealed interface ResumenState {
         val income: MoneyTextValue,
         val spent: MoneyTextValue,
         val netFlow: MoneyTextValue,
-        val allocated: MoneyTextValue,
-        val unallocated: MoneyTextValue,
+        /** Where [income] went: the receipt under "¿A dónde fue lo que entró?". */
+        val incomeSlip: ResumenIncome,
         val history: List<ResumenPoint>,
         /** The selected month's limit, drawn once as a dashed line over the columns. */
         val monthLimit: ResumenLimit?,
@@ -36,8 +37,47 @@ sealed interface ResumenState {
         /** The day the figures run to, as written in a sentence: "22 de octubre". */
         val asOf: String,
         val selectedHistory: String? = null,
-        val selectedWeekday: String? = null
+        val selectedWeekday: String? = null,
+        /** The fact on the stub's Fijos half. */
+        val nextFixed: ResumenNextFixed = ResumenNextFixed.Unknown
     ) : ResumenState
+}
+
+/**
+ * Where the month's recorded income went, by spending only (ADR 0012 BG4). [count] is how
+ * many incomes make it up. [destinations] are the categories that took most, most first,
+ * each amount taken off ("− 200.000"); [others] the rest together, or null when there are
+ * none. [spentShare] is how much of the bar is spent: geometry only, never shown or turned
+ * back into money. [overspent] says spending went above the income.
+ */
+@Immutable
+data class ResumenIncome(
+    val count: Int,
+    val destinations: List<ResumenDestination>,
+    val others: ResumenOthers?,
+    val spentShare: Float,
+    val overspent: Boolean
+)
+
+@Immutable
+data class ResumenDestination(
+    val id: String,
+    val name: String,
+    val iconKey: String,
+    val amount: MoneyTextValue
+)
+
+@Immutable
+data class ResumenOthers(val count: Int, val amount: MoneyTextValue)
+
+/** The nearest fixed payment or income still to come, or why there is none to say. */
+sealed interface ResumenNextFixed {
+    /** Loading or a failed read: nothing is said, never "none". */
+    data object Unknown : ResumenNextFixed
+
+    data object None : ResumenNextFixed
+
+    data class On(val date: LocalDate, val today: LocalDate) : ResumenNextFixed
 }
 
 /**

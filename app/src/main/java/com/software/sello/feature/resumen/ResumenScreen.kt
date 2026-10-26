@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -46,9 +47,14 @@ import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.SlipStub
 import com.software.sello.designsystem.component.SpendingRankRow
+import com.software.sello.designsystem.component.SplitBar
+import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.StubButton
 import com.software.sello.designsystem.component.SuggestionNote
+import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
 import com.software.sello.designsystem.component.selloWindowLayout
 import com.software.sello.designsystem.icon.SelloIcon
@@ -56,6 +62,7 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.presentation.category.CategoryIcons
+import com.software.sello.presentation.date.dateLabels
 
 @Composable
 fun ResumenScreen(
@@ -93,7 +100,7 @@ fun ResumenScreen(
                         horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
                     ) {
                         ResumenPane(Modifier.weight(1f)) {
-                            SummarySlips(state, onIncome, onSchedules, onAction)
+                            SummarySlips(state, onIncome, onSchedules, onAction, onCategory)
                         }
                         ResumenPane(Modifier.weight(1f)) {
                             ChartSlips(state, onAction, onCategory, onExpense, onAdjustLimit)
@@ -101,7 +108,7 @@ fun ResumenScreen(
                     }
                 } else {
                     ResumenPane(content) {
-                        SummarySlips(state, onIncome, onSchedules, onAction)
+                        SummarySlips(state, onIncome, onSchedules, onAction, onCategory)
                         ChartSlips(state, onAction, onCategory, onExpense, onAdjustLimit)
                     }
                 }
@@ -120,16 +127,15 @@ private fun ResumenPane(modifier: Modifier, content: @Composable ColumnScope.() 
 }
 
 /**
- * How the month compares, then income as receipt lines: what came in, what is left
- * after spending and what no category budget takes, then the way to income history.
- * Nothing is projected.
+ * How the month compares, then where the income went. Nothing is projected.
  */
 @Composable
 private fun SummarySlips(
     state: ResumenState.Ready,
     onIncome: () -> Unit,
     onSchedules: () -> Unit,
-    onAction: (ResumenAction) -> Unit
+    onAction: (ResumenAction) -> Unit,
+    onCategory: (String) -> Unit
 ) {
     if (state.stale) {
         ErrorSlip(
@@ -139,38 +145,153 @@ private fun SummarySlips(
         )
     }
     Hero(state.hero, state.insufficientHistory)
+    IncomeSlip(state, onIncome, onSchedules, onCategory)
+}
+
+/**
+ * Where the month's recorded income went, as a receipt: what came in, a bar of spent
+ * against the rest, the categories that took most taken off, the others together and
+ * Ingresos menos gastos. Spending only: goals and investments are not destinations (ADR
+ * 0012 BG4). Under the tear line, a stub to the income list and Pagos e ingresos fijos.
+ */
+@Composable
+private fun IncomeSlip(
+    state: ResumenState.Ready,
+    onIncome: () -> Unit,
+    onSchedules: () -> Unit,
+    onCategory: (String) -> Unit
+) {
+    val slip = state.incomeSlip
+    val month = state.hero.monthName
     Slip(Modifier.fillMaxWidth().testTag("resumen.flow")) {
-        ResumenHeading(stringResource(R.string.resumen_income_title))
-        LeaderLine(
-            stringResource(R.string.resumen_income_recorded),
-            onClick = onIncome,
-            modifier = Modifier.testTag("resumen.income")
-        ) { MoneyText(state.income) }
-        LeaderLine(stringResource(R.string.resumen_net_flow)) { MoneyText(state.netFlow) }
-        LeaderLine(
-            stringResource(R.string.resumen_unallocated_line),
-            modifier = Modifier.testTag("resumen.unallocated")
-        ) { MoneyText(state.unallocated) }
-        ResumenNote(stringResource(R.string.resumen_actual_through, state.asOf))
-        ResumenLink(stringResource(R.string.resumen_open_income_destination), onIncome)
-        ResumenLink(stringResource(R.string.schedules_title), onSchedules)
+        ResumenHeading(stringResource(R.string.resumen_income_question))
+        if (slip.count == 0) {
+            Text(
+                stringResource(R.string.resumen_income_none, month),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.W800,
+                modifier = Modifier.testTag("resumen.income")
+            )
+            ResumenNote(stringResource(R.string.resumen_income_none_body))
+        } else {
+            IncomeLines(state, onCategory)
+        }
+        TearLine()
+        SlipStub(
+            start = {
+                StubButton(
+                    SelloIcon.ReceiptLong,
+                    stringResource(R.string.resumen_stub_incomes),
+                    onIncome,
+                    Modifier.testTag("resumen.openIncome"),
+                    fact = if (slip.count == 0) {
+                        stringResource(R.string.resumen_stub_incomes_none, month)
+                    } else {
+                        pluralStringResource(
+                            R.plurals.resumen_stub_incomes_count,
+                            slip.count,
+                            slip.count,
+                            month
+                        )
+                    }
+                )
+            },
+            end = {
+                StubButton(
+                    SelloIcon.Autorenew,
+                    stringResource(R.string.resumen_stub_fixed),
+                    onSchedules,
+                    Modifier.testTag("resumen.openSchedules"),
+                    fact = nextFixed(state.nextFixed),
+                    label = stringResource(R.string.schedules_title)
+                )
+            }
+        )
     }
 }
 
-/** A brand text link with a chevron, at least 48dp tall. */
 @Composable
-private fun ResumenLink(label: String, onClick: () -> Unit) {
-    val ink = SelloTheme.colors.brand
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .padding(top = SelloTheme.spacing.sm)
-            .heightIn(min = SelloTheme.spacing.minTouchTarget)
-            .clickable(role = Role.Button, onClick = onClick)
-            .testTag("resumen.openIncome")
+private fun IncomeLines(state: ResumenState.Ready, onCategory: (String) -> Unit) {
+    val slip = state.incomeSlip
+    val colors = SelloTheme.colors
+    LeaderLine(
+        stringResource(R.string.resumen_income_in, state.hero.monthName),
+        modifier = Modifier.testTag("resumen.income")
     ) {
-        Text(label, fontWeight = FontWeight.W800, color = ink)
-        Icon(SelloIcon.ChevronRight.painter(), null, Modifier.size(20.dp), tint = ink)
+        MoneyText(
+            state.income,
+            textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.W900)
+        )
+    }
+    SplitBar(
+        listOf(
+            SplitSegment(
+                slip.spentShare,
+                stringResource(R.string.resumen_income_bar_spent, state.spent.spoken),
+                colors.brand
+            ),
+            SplitSegment(
+                1f - slip.spentShare,
+                stringResource(R.string.resumen_income_bar_rest, state.netFlow.spoken),
+                colors.brand,
+                striped = true
+            )
+        ),
+        Modifier.padding(vertical = SelloTheme.spacing.sm).testTag("resumen.income.bar")
+    )
+    slip.destinations.forEach { destination ->
+        LeaderLine(
+            destination.name,
+            modifier = Modifier.testTag("resumen.income.${destination.id}"),
+            icon = CategoryIcons.iconFor(destination.iconKey),
+            onClick = { onCategory(destination.id) }
+        ) { MoneyText(destination.amount) }
+    }
+    slip.others?.let { others ->
+        LeaderLine(
+            pluralStringResource(R.plurals.resumen_income_others, others.count, others.count),
+            // Under the names above, past where their icons sit.
+            modifier = Modifier.padding(start = 25.dp).testTag("resumen.income.others")
+        ) { MoneyText(others.amount) }
+    }
+    TotalLine(stringResource(R.string.resumen_net_flow), Modifier.testTag("resumen.netFlow")) {
+        MoneyText(
+            state.netFlow,
+            style = MoneyStyle.Title,
+            color = if (slip.overspent) colors.semantic.loss else Color.Unspecified
+        )
+    }
+    if (slip.overspent) {
+        ResumenNote(
+            stringResource(
+                R.string.resumen_income_overspent,
+                state.income.digits,
+                state.spent.digits
+            )
+        )
+    }
+    ResumenNote(stringResource(R.string.resumen_actual_through, state.asOf))
+}
+
+/** "Próximo: hoy", "mañana" or "28 oct"; nothing while the schedules cannot be read. */
+@Composable
+private fun nextFixed(next: ResumenNextFixed): String? {
+    val dates = dateLabels()
+    return when (next) {
+        ResumenNextFixed.Unknown -> null
+
+        ResumenNextFixed.None -> stringResource(R.string.resumen_stub_none_active)
+
+        is ResumenNextFixed.On -> when (next.date) {
+            next.today -> stringResource(R.string.resumen_stub_next_today)
+
+            next.today.plusDays(1) -> stringResource(R.string.resumen_stub_next_tomorrow)
+
+            else -> stringResource(
+                R.string.resumen_stub_next,
+                dates.shortDay(next.date, next.today)
+            )
+        }
     }
 }
 
