@@ -181,8 +181,7 @@ class BackupFileJourneyTest {
         rule.awaitTag(BACKUP_CARD_TAG)
     }
 
-    private fun onCard(text: String) =
-        rule.onNode(hasText(text) and hasAnyAncestor(hasTestTag(BACKUP_CARD_TAG)))
+    private fun inCard(text: String) = hasText(text) and hasAnyAncestor(hasTestTag(BACKUP_CARD_TAG))
 
     @Test
     fun theCardSavesOnlyAfterTheDisclosureAndThenSaysGuardadoToday() {
@@ -199,11 +198,13 @@ class BackupFileJourneyTest {
 
         rule.onNodeWithText("Elegir dónde guardar").performClick()
         waitUntil("the backup was recorded") { record().last?.name == name }
-        rule.waitForIdle()
+        // The record is stored before the card leaves Guardando…; wait for the card.
+        waitUntil("the card is ready for the next backup") {
+            rule.onAllNodes(inCard("Respaldar")).fetchSemanticsNodes().isNotEmpty()
+        }
 
         assertEquals(1, picker.requests.size)
         assertEquals(1, readBack(name).counts.categories)
-        onCard("Respaldar").assertExists()
         rule.onNode(
             hasText("Hoy", substring = true) and
                 hasAnyAncestor(hasTestTag(BACKUP_CARD_TAG))
