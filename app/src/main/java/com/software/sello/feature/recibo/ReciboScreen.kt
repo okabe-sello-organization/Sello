@@ -446,12 +446,13 @@ private fun CategoriesSlip(
                     )
                     .semantics { selected = isSelected },
                 over = category.over,
-                amountCaption = if (category.limit == null) {
-                    stringResource(R.string.recibo_cell_spent_caption)
-                } else {
-                    null
+                amountCaption = when {
+                    category.unlimited -> stringResource(R.string.recibo_cell_unlimited_caption)
+                    category.limit == null -> stringResource(R.string.recibo_cell_spent_caption)
+                    else -> null
                 },
-                staggerIndex = index
+                staggerIndex = index,
+                unlimited = category.unlimited
             )
         }
     }

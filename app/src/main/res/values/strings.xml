@@ -208,6 +208,7 @@
     <string name="recibo_cell_open">%1$s. %2$s %3$s. %4$s.</string>
     <string name="recibo_cell_archived">%1$s Archivada.</string>
     <string name="recibo_cell_spent_caption">gastado</string>
+    <string name="recibo_cell_unlimited_caption">sin límite</string>
     <string name="recibo_stale">No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día.</string>
     <string name="recibo_stale_retry">Reintentar</string>
     <string name="category_detail_back">Volver al recibo</string>

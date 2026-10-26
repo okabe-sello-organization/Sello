@@ -77,7 +77,10 @@ function categoryGrid(s) {
   const cells = Object.entries(SPEND[s.spend]).map(([name, spent]) => {
     const unlimited = !!s.unlimited, limit = LIMITS[name], left = unlimited ? spent : limit - spent;
     const over = !unlimited && left < 0, fill = unlimited ? 0 : over ? 100 : Math.round(100 * spent / limit);
-    return `<button class="cell"><span class="circle ${over ? "over" : unlimited ? "unlimited" : ""}" style="--fill:${fill}%">${icon(ICONS[name])}<span class="on">${icon(ICONS[name])}</span></span><span class="cell-text"><span>${name}</span><b>${money(left)}</b>${unlimited ? "<small>gastado</small>" : ""}</span></button>`;
+    const circle = unlimited
+      ? unlimitedCircle(ICONS[name])
+      : `<span class="circle ${over ? "over" : ""}" style="--fill:${fill}%">${icon(ICONS[name])}<span class="on">${icon(ICONS[name])}</span></span>`;
+    return `<button class="cell">${circle}<span class="cell-text"><span>${name}</span><b>${money(left)}</b>${unlimited ? "<small>sin límite</small>" : ""}</span></button>`;
   }).join("");
   return `<section class="slip"><div class="section-head"><h2>Tus categorías</h2><button class="icon-btn" aria-label="Agregar categoría">${icon("add")}</button></div><div class="grid">${cells}</div></section>`;
 }

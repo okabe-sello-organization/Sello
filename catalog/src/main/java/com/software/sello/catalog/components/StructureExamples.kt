@@ -123,7 +123,12 @@ fun CategoryCircleExample() {
                     CategoryCircle(SelloIcon.Restaurant, 0.68f, staggerIndex = 1)
                     CategoryCircle(SelloIcon.LocalCafe, 1f, staggerIndex = 2)
                     CategoryCircle(SelloIcon.Theaters, 1.14f, over = true, staggerIndex = 3)
-                    CategoryCircle(SelloIcon.DirectionsBus, null, staggerIndex = 4)
+                    CategoryCircle(
+                        SelloIcon.DirectionsBus,
+                        null,
+                        staggerIndex = 4,
+                        unlimited = true
+                    )
                 }
             }
             Caption("Tamaños: 28, 46 y 62")
@@ -154,8 +159,9 @@ fun CategoryCellExample() {
                     description = category.description,
                     onClick = { opened = category.name },
                     over = category.over,
-                    amountCaption = if (category.limit == null) "gastado" else null,
+                    amountCaption = if (category.limit == null) "sin límite" else null,
                     staggerIndex = index,
+                    unlimited = category.limit == null,
                     modifier = Modifier.testTag("category:$index"),
                     // A long press, or a screen reader's action, offers this.
                     actions = listOf(

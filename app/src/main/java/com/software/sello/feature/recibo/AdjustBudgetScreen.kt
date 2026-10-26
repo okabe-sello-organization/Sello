@@ -211,6 +211,7 @@ private fun CategoryRow(row: AdjustRow, onOpen: (AdjustRow) -> Unit) {
     val caption = when {
         row.archived -> stringResource(R.string.adjust_archived_caption)
         limit != null -> stringResource(R.string.adjust_row_caption, row.spent.digits, limit.digits)
+        row.unlimited -> stringResource(R.string.recibo_cell_unlimited_caption)
         else -> stringResource(R.string.adjust_open_caption)
     }
     val spoken = when {
@@ -244,7 +245,8 @@ private fun CategoryRow(row: AdjustRow, onOpen: (AdjustRow) -> Unit) {
         over = row.over,
         spoken = spoken,
         onClick = { onOpen(row) },
-        modifier = Modifier.testTag(adjustRowTag(row.id))
+        modifier = Modifier.testTag(adjustRowTag(row.id)),
+        unlimited = row.unlimited
     )
 }
 

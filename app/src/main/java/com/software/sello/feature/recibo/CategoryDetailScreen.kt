@@ -228,7 +228,8 @@ private fun HeaderSlip(
                         CategoryIcons.iconFor(category.iconKey),
                         category.fraction,
                         size = 56.dp,
-                        over = category.over
+                        over = category.over,
+                        unlimited = category.unlimited
                     )
                 }
                 val amount: @Composable () -> Unit = {

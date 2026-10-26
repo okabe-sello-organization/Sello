@@ -25,3 +25,7 @@ function subShell({ title, body, tabs = 3, active = 1, dock = "Anotar", dockClas
   const nav = all.map(([ic, t], i) => `<button ${i === active ? 'aria-current="page"' : ""}><span class="pill">${icon(ic)}</span><span class="t">${t}</span></button>`).join("");
   return `<div class="top">${statusbar()}<div class="topbar sub"><button class="icon-btn" aria-label="Volver">${icon("arrow_back")}</button><h1 class="sub-title">${title}</h1>${(action ? (Array.isArray(action[0]) ? action : [action]) : []).map(([ic, label, pressed]) => `<button class="icon-btn sub-action" aria-label="${label}" ${pressed !== undefined ? `aria-pressed="${pressed}"` : ""}>${icon(ic)}</button>`).join("")}</div>${current ? pastRibbon(month, current) : ""}${band}</div><main class="content">${body}</main><div class="bottom">${dock ? `<div class="dock"><button class="primary ${dockClass}">${dockClass === "goal" ? icon("flag") : dockClass === "plain" ? "" : icon("add")}${dock}</button></div>` : ""}<nav class="nav">${nav}</nav><div class="gesture"></div></div>`;
 }
+
+// A category without a limit on purpose: dashed ring and ∞ badge (mock: the badge is
+// text; the app draws Material's all_inclusive icon).
+const unlimitedCircle = ic => `<span class="inf-wrap"><span class="circle unlimited" aria-hidden="true">${icon(ic)}</span><span class="inf" aria-hidden="true">∞</span></span>`;

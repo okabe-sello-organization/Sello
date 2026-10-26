@@ -3,17 +3,22 @@ package com.software.sello.designsystem.component
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,10 +35,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -58,6 +65,8 @@ import kotlinx.coroutines.delay
  * @param fraction spent over limit; drawn clamped to 0..1. Null means no limit:
  * outline and icon only.
  * @param over spent more than the limit: full, in loss ink.
+ * @param unlimited no limit on purpose ("Sin límite"): an open, dashed ring and a small
+ * ∞ badge at its lower edge, so it never looks like a limit with nothing spent yet.
  * @param staggerIndex position in a group, so the circles of a screen fill in turn.
  */
 @Composable
@@ -68,10 +77,11 @@ fun CategoryCircle(
     size: Dp = 46.dp,
     over: Boolean = false,
     animate: Boolean = true,
-    staggerIndex: Int = 0
+    staggerIndex: Int = 0,
+    unlimited: Boolean = false
 ) {
     val colors = SelloTheme.colors
-    val target = fillLevel(fraction, over)
+    val target = if (unlimited) 0f else fillLevel(fraction, over)
     val moving = animate && !SelloTheme.reducedMotion
     val level = remember { Animatable(if (moving) 0f else target) }
     LaunchedEffect(target, moving) {
@@ -97,7 +107,22 @@ fun CategoryCircle(
                 val filled = inner * level.value
                 drawRect(ink, Offset(0f, stroke + inner - filled), Size(this.size.width, filled))
             }
-            drawCircle(ink, radius = (this.size.minDimension - stroke) / 2, style = Stroke(stroke))
+            val ring = if (unlimited) {
+                // Short dashes, scaled with the circle, read as "no edge" at every size.
+                val dash = this.size.minDimension * DASH_SHARE
+                Stroke(
+                    stroke,
+                    pathEffect = PathEffect.dashPathEffect(
+                        floatArrayOf(
+                            dash,
+                            dash * 0.75f
+                        )
+                    )
+                )
+            } else {
+                Stroke(stroke)
+            }
+            drawCircle(ink, radius = (this.size.minDimension - stroke) / 2, style = ring)
         }
         val iconSize = size / 2
         Icon(icon.painter(), null, Modifier.size(iconSize), ink)
@@ -116,10 +141,37 @@ fun CategoryCircle(
                 }
             }
         )
+        if (unlimited) UnlimitedBadge(size)
     }
 }
 
+/** The ∞ mark on a circle without a limit, overlapping its lower right edge. */
+@Composable
+private fun BoxScope.UnlimitedBadge(circle: Dp) {
+    val colors = SelloTheme.colors
+    val badge = circle * BADGE_SHARE
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .offset(x = badge * BADGE_OVERHANG, y = badge * BADGE_OVERHANG)
+            .size(badge)
+            .background(colors.paper, CircleShape)
+            .border(1.5.dp, colors.brand, CircleShape)
+            .testTag(CATEGORY_UNLIMITED_TAG)
+    ) {
+        Icon(SelloIcon.AllInclusive.painter(), null, Modifier.size(badge * 0.7f), colors.brand)
+    }
+}
+
+private const val DASH_SHARE = 0.09f
+private const val BADGE_SHARE = 0.42f
+private const val BADGE_OVERHANG = 0.2f
+
 private const val FILL_STAGGER_MILLIS = 30L
+
+/** The test tag of the ∞ badge a circle without a limit carries. */
+const val CATEGORY_UNLIMITED_TAG = "category-circle:unlimited"
 
 /**
  * A circle with the category's name and one amount beside it: what is left, or what was
@@ -145,7 +197,8 @@ fun CategoryCell(
     over: Boolean = false,
     amountCaption: String? = null,
     staggerIndex: Int = 0,
-    actions: List<LineAction> = emptyList()
+    actions: List<LineAction> = emptyList(),
+    unlimited: Boolean = false
 ) {
     val colors = SelloTheme.colors
     val largeType = LocalDensity.current.fontScale >= LARGE_NAME_SCALE
@@ -179,7 +232,13 @@ fun CategoryCell(
             }
     ) {
         LineActionMenu(actions, menuOpen) { menuOpen = false }
-        CategoryCircle(icon, fraction, over = over, staggerIndex = staggerIndex)
+        CategoryCircle(
+            icon,
+            fraction,
+            over = over,
+            staggerIndex = staggerIndex,
+            unlimited = unlimited
+        )
         Column {
             Text(
                 text = name,

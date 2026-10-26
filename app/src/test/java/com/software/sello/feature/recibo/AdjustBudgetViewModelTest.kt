@@ -95,6 +95,8 @@ class AdjustBudgetViewModelTest {
         assertEquals("50.000 pesos", cafe.limit?.spoken)
         assertTrue(cafe.over)
         assertEquals(null, ready.open.single().limit)
+        assertTrue(ready.open.single().unlimited)
+        assertEquals(emptyList<AdjustRow>(), ready.limited.filter { it.unlimited })
     }
 
     @Test
