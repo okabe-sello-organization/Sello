@@ -39,6 +39,16 @@
                     android:scheme="sello" />
             </intent-filter>
         </activity>
+        <!-- Exports the person chose to share, one at a time; not exported (SELLO-121). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.exports"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/export_paths" />
+        </provider>
     </application>
 
 </manifest>

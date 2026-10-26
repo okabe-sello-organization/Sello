@@ -8,11 +8,13 @@ import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.DocumentReader
 import com.software.sello.domain.port.DocumentWriter
+import com.software.sello.domain.port.ExportShares
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.platform.AndroidDocumentReader
 import com.software.sello.platform.AndroidDocumentWriter
+import com.software.sello.platform.AndroidExportShares
 import com.software.sello.platform.AndroidScreenReader
 import com.software.sello.platform.AndroidTimeSignals
 import com.software.sello.platform.ApplicationScope
@@ -64,6 +66,7 @@ fun androidModule(context: Context): Module = module {
     singleOf(::AndroidTimeSignals) { bind<TimeSignals>() }
     single<DocumentWriter> { AndroidDocumentWriter(context.contentResolver, get()) }
     single<DocumentReader> { AndroidDocumentReader(context.contentResolver, get()) }
+    single<ExportShares> { AndroidExportShares(context, get()) }
     single<AppRestart> { ProcessAppRestart(context) }
     single<ScreenReader> { AndroidScreenReader(context) }
 }

@@ -3,6 +3,7 @@ package com.software.sello.feature.backup
 import android.text.format.Formatter
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -63,11 +64,16 @@ fun TusDatosRoot(
     val backup by model.state.collectAsStateWithLifecycle()
     val restoreModel: RestoreViewModel = viewModel(factory = viewModels)
     val restore by restoreModel.state.collectAsStateWithLifecycle()
+    val exportModel: ExportViewModel = viewModel(factory = viewModels)
+    val export by exportModel.state.collectAsStateWithLifecycle()
     BackupSavePicker(backup, model::onAction)
     RestoreFilePicker(restore, restoreModel::onAction, onChosen = onOpenBackup)
+    ExportPickers(export, exportModel::onAction)
     TusDatos(
         backup = backup,
         onBackupAction = model::onAction,
+        export = export,
+        onExportAction = exportModel::onAction,
         restoreEnabled = !restore.pickerRequest,
         onRestore = {
             // A restore already under way is Respaldo's to show.
@@ -90,14 +96,22 @@ fun TusDatosRoot(
 fun TusDatos(
     backup: BackupState,
     onBackupAction: (BackupAction) -> Unit,
+    export: ExportState,
+    onExportAction: (ExportAction) -> Unit,
     restoreEnabled: Boolean,
     onRestore: () -> Unit,
     onOpenBackup: () -> Unit,
     onOpenReset: () -> Unit
 ) {
     var disclosing by rememberSaveable { mutableStateOf(false) }
+    var exporting by rememberSaveable { mutableStateOf(false) }
+    val words = exportWords()
     Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
         BackupProblems(backup) { disclosing = true }
+        ExportProblems(export) {
+            onExportAction(ExportAction.Dismiss)
+            exporting = true
+        }
         if (backup.loading) {
             SlipSkeleton(Modifier.testTag(BACKUP_CARD_TAG))
         } else {
@@ -117,19 +131,32 @@ fun TusDatos(
                     onRestore = onRestore,
                     onOpenBackup = onOpenBackup
                 )
+                Box(Modifier.padding(top = SelloTheme.spacing.sm)) {
+                    ExportRow(export) { exporting = true }
+                }
                 SettingRow(
                     title = stringResource(R.string.settings_reset),
                     icon = SelloIcon.DeleteForever,
                     caption = stringResource(R.string.settings_reset_caption),
                     onClick = onOpenReset,
                     tone = SettingTone.Loss,
-                    divider = false,
-                    modifier = Modifier
-                        .padding(top = SelloTheme.spacing.sm)
-                        .testTag(BACKUP_CARD_RESET_TAG)
+                    modifier = Modifier.testTag(BACKUP_CARD_RESET_TAG)
                 )
             }
         }
+    }
+    if (exporting) {
+        ExportSlip(
+            onShare = { format ->
+                exporting = false
+                onExportAction(ExportAction.Share(format, words))
+            },
+            onSave = { format ->
+                exporting = false
+                onExportAction(ExportAction.Save(format))
+            },
+            onDismiss = { exporting = false }
+        )
     }
     if (disclosing) {
         ConfirmSlip(

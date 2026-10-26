@@ -3,11 +3,14 @@ package com.software.sello.composition
 import android.app.Application
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.ExportShares
 import com.software.sello.platform.AndroidDocumentReader
 import com.software.sello.platform.ProcessFinancialZone
 import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemDispatcherProvider
 import com.software.sello.platform.deviceZone
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.koin.core.context.startKoin
 
 class SelloApplication : Application() {
@@ -58,7 +61,10 @@ class SelloApplication : Application() {
                         ) + variant.modules(opened.value.profile)
                     )
                 }
-                Outcome.Success(Started(viewModels(application.koin), application.koin.get()))
+                // Exports left for sharing by an earlier run go now (SELLO-121).
+                val koin = application.koin
+                koin.get<CoroutineScope>().launch { koin.get<ExportShares>().clear() }
+                Outcome.Success(Started(viewModels(koin), koin.get()))
             }
         }
     }

@@ -4,6 +4,7 @@ import android.content.Context
 import com.software.sello.data.backup.BackupExport
 import com.software.sello.data.backup.RoomBackupSnapshots
 import com.software.sello.data.backup.RoomRestores
+import com.software.sello.data.export.RoomDataExports
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.keptFiles
 import com.software.sello.data.local.openSelloDatabase
@@ -43,6 +44,7 @@ import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CategoryReads
+import com.software.sello.domain.port.DataExports
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseReads
@@ -228,6 +230,10 @@ class FinancialStorage internal constructor(
         audit,
         dispatchers
     )
+
+    /** CSV and JSON exports of this storage, read from one revision (SELLO-121). */
+    fun dataExports(audit: AuditClock, dispatchers: DispatcherProvider): DataExports =
+        RoomDataExports(RoomBackupSnapshots(database), audit, dispatchers)
 
     /**
      * Takes the financial clock for the same reason the commands do. [computation] must
