@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-122, SELLO-004
 - **Gate:** G2
 
@@ -56,3 +56,14 @@ On the running app the screen looks like concept 1 in both states and both theme
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-125 --retain`.
+
+### Execution progress
+
+- **2026-10-26:** Built as follows, proposed for review with this ticket's pull request.
+  The month's receipt ends in a tear line and a `StubButton`, **Nuevo pago fijo** or
+  **Nuevo ingreso fijo** by the tab, opening the expense or income entry with Se repite
+  on. With nothing repeating, the receipt shows the month's title, 0 when there is a plan,
+  "Aún no tienes pagos fijos" (or "ingresos fijos") and the stub with examples; with a
+  sum that does not fit, the stub alone. The top bar's + is gone, the footnote keeps only
+  that they record themselves, and the v2 list paragraph and HANDOFF describe the stub.
+
