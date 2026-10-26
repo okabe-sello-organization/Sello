@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-100, SELLO-004
 - **Gate:** G2
 
@@ -61,3 +61,18 @@ On the running app the screen looks like the approved mockup in both themes.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-122 --retain`.
+
+### Execution progress
+
+- **2026-10-26:** Built as follows, proposed for review with this ticket's pull request.
+  The summary is a pinked slip, "Tus pagos fijos de octubre" (or "ingresos"), the
+  month's exact plan sum, a bar of recorded against still to come and both amounts; a
+  sum that does not fit hides it. Rows are grouped on the financial day: ended, paused,
+  something still to come this month (Faltan, nearest first, the day in a pill with Hoy
+  or Mañana), everything this month recorded (Ya se anotaron / Ya entraron, a check,
+  when it went through and the next date), or nothing this month (Más adelante). The
+  domain line now says when the month's last occurrence was recorded. The title has no
+  month; the empty screen has no button; the + in the top bar opens the entry with Se
+  repite on for the tab shown, so Ingresos adds an income. `PlanSlip` now provides the
+  theme's ink, which also fixes Plan del mes in the dark theme. The design reference's
+  list paragraph describes the new screen.

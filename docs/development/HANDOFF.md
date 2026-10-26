@@ -5,7 +5,7 @@
 > subject to the user's current instructions.
 
 **Snapshot:** 2026-10-26 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Epics E01–E08, E10, E12, E13, E15, E17, E18 and E20 are Done; E16 has work under way
+Epics E01–E08, E10, E12, E13, E15, E17, E18, E20 and E21 are Done; E16 has work under way
 and E19 waits only for its `0.2.0` release ticket. Each ticket's
 own `handoff.md` and `evidence.md` under [docs/tickets](../tickets/README.md) carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -36,8 +36,10 @@ This summary is refreshed when an epic closes and adds no verification claims.
   income; backups carry them. Rules: [goal examples](../testing/goal-examples.md).
 - Pagos e ingresos fijos: Se repite in both entry forms makes a schedule (monthly,
   twice a month, every N days or weeks, optional end). The list, from Configuración and
-  Resumen, pauses, resumes, changes from tomorrow and deletes, keeping what was
-  recorded; a recorded entry asks Solo este / Este y los siguientes. Sello records due
+  Resumen ([E21](../tickets/E21-fixed-payments-screen/README.md)), leads with the month's
+  total and a bar of what went through, then groups Faltan, Ya se anotaron, Más
+  adelante, En pausa and Terminados; it pauses, resumes, changes from tomorrow and
+  deletes, keeping what was recorded; a recorded entry asks Solo este / Este y los siguientes. Sello records due
   occurrences on their own dates when it opens, at the day change and after a save,
   never in the background, and Recibo's bar lists them until Listo. Recibo sets aside
   this month's payments still due: the headline is after them, with Sin margen and
