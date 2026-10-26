@@ -399,6 +399,11 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 /* ---------- Metas: v1.1 stamp cards ---------- */
 .goals-band{display:grid;gap:2px;padding:0 16px 14px;color:#fff}
 .goals-band span{font-size:.93em;opacity:.85}
+.goals-band .band-row{display:flex;align-items:center;justify-content:space-between;gap:8px;opacity:1}
+.goals-band .band-row>span{opacity:.85}
+.band-chip{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 14px 0 8px;margin:-6px -2px -6px 0;border:0;border-radius:99px;background:#fff;color:var(--band);font-weight:800;font-size:.93em;white-space:nowrap}
+.band-chip .icon{width:1.4em;height:1.4em}
+.app[data-theme=dark] .band-chip{background:var(--paper);color:var(--ink)}
 .goals-band b{font-size:2.6em;font-weight:900;letter-spacing:-.04em;line-height:1.05}
 .goals-band small{display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:.9em}
 .goals-band small .icon{width:1.3em;height:1.3em;background:var(--gain);color:#fff;border-radius:50%;padding:2px}
