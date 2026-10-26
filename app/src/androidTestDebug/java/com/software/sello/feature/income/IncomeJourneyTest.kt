@@ -47,7 +47,7 @@ class IncomeJourneyTest {
         rule.awaitText("Resumen")
         rule.onNodeWithText("Resumen").performClick()
         rule.awaitTag("resumen.income")
-        rule.onNodeWithText("Ver ingresos y su destino").performScrollTo().performClick()
+        rule.onNodeWithTag("resumen.openIncome").performScrollTo().performClick()
         rule.awaitTag("income.history")
         rule.onNodeWithContentDescription("Anotar un ingreso").performClick()
         rule.awaitTag("income.keypad")

@@ -5,7 +5,7 @@
 > subject to the user's current instructions.
 
 **Snapshot:** 2026-10-26 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Epics E01–E08, E10, E12, E13, E15, E17, E18, E20 and E21 are Done; E16 has work under way
+Epics E01–E08, E10, E12, E13, E15, E17, E18 and E20–E22 are Done; E16 has work under way
 and E19 waits only for its `0.2.0` release ticket. Each ticket's
 own `handoff.md` and `evidence.md` under [docs/tickets](../tickets/README.md) carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -25,7 +25,10 @@ This summary is refreshed when an epic closes and adds no verification claims.
 - Main and tools launchers now use the existing Marca artwork, including themed icons.
 - Expense/income history, editing, deletion and guarded six-second undo.
 - Exact totals, budget remaining/allowance, net flow and allocation. Resumen leads with
-  the same-days comparison, then income, "Un mes normal" over the monthly columns, the
+  the same-days comparison, then where the income went
+  ([E22](../tickets/E22-income-receipt/README.md)): what came in, the three categories
+  that took most and the others, Ingresos menos gastos, and a stub to the income list
+  and Pagos e ingresos fijos. Then "Un mes normal" over the monthly columns, the
   ranking, the weekday averages (six months) and at most one dismissible suggestion.
 - Metas: goals with a target and an optional month, most complete first; the goal page
   with its stamps, Aportes por mes and movements; Aportar/Retirar with past dates,

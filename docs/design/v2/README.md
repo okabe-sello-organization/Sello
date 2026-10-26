@@ -157,9 +157,18 @@ which days → one suggestion. The month in progress is never projected.
   with exact amounts. Up and down use the same neutral ink and arrow: spending more is
   a fact, not a failure. A past month asks "¿Cómo cerró septiembre?" and compares full
   months.
-- **Income** (right after the hero): Ingresos anotados, Ingresos menos gastos and Sin
-  asignar a categorías as receipt lines, then **Ver ingresos y su destino ›** and, since
-  2026-10-25, **Pagos e ingresos fijos ›**.
+- **Income** (right after the hero; redesigned by the owner 2026-10-26, SELLO-123):
+  "¿A dónde fue lo que entró?" as a receipt. **Entró en {mes}** and the recorded total,
+  a bar of spent (solid) against the rest of the income (striped), the three categories
+  that took most with their icons, each taken off ("− 200.000") and opening its
+  category, **Otras N categorías** together, then **Ingresos menos gastos** as the total.
+  Spending above the income signs it in red with "Anotaste 1.000.000 de ingresos y
+  1.120.000 de gastos."; with no income recorded the slip says "Aún no anotas ingresos
+  en {mes}." and shows no negative figure. Spending only: goal and investment records
+  are not destinations (ADR 0012 BG4), and Sin asignar stays on the income screen.
+  Under the tear line, a stub of two halves: **Ingresos** ("3 en octubre") opens the
+  income list and **Fijos** ("Próximo: 28 oct", "hoy", "mañana" or "Ninguno activo")
+  opens Pagos e ingresos fijos. The mockup is in SELLO-123's `artifacts/`.
 - **Mes a mes:** "Un mes normal" (average of the full months shown) first, then
   v1.1 columns: past months in `pastBar`, the month in progress striped and marked
   `*`, one dashed limit line, values printed only on the highest and current
