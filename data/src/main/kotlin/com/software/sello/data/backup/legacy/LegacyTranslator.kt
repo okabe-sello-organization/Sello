@@ -185,7 +185,9 @@ class LegacyTranslator(
                     incomes = incomes,
                     goals = goals,
                     featuredGoal = null,
-                    schedules = schedules.map { it.stored }
+                    schedules = schedules.map { it.stored },
+                    investments = emptyList(),
+                    usdRates = emptyList()
                 ),
                 preferences = preferences()
             )
