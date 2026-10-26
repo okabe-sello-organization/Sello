@@ -364,7 +364,7 @@ class CategoryEditorScreenTest {
     // --- Choosing the icon ---
 
     @Test
-    fun theCircleOpensTheTwentyFourIconsAndTheOnesInUseSaySoButCanBeChosen() {
+    fun theCircleOpensTheThirtyFiveIconsAndTheOnesInUseSaySoButCanBeChosen() {
         show(ready.copy(usedIconKeys = setOf("restaurant")))
 
         rule.onNodeWithTag(EDITOR_ICONS_TAG).assertDoesNotExist()
@@ -373,7 +373,7 @@ class CategoryEditorScreenTest {
         rule.onNodeWithText("Elige un ícono").assertIsDisplayed()
         rule.onAllNodes(
             hasAnyAncestor(hasTestTag(EDITOR_ICONS_TAG)) and isSelectable()
-        ).assertCountEquals(24)
+        ).assertCountEquals(35)
         rule.onNodeWithContentDescription("Hogar").assertIsSelected()
         rule.onNodeWithContentDescription("Comida. Ya lo usa otra categoría; puedes repetirlo.")
             .assertIsEnabled().performClick()

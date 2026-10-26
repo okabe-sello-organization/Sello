@@ -15,6 +15,7 @@ import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.presentation.category.CategoryIcons
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -117,7 +118,7 @@ class InvestmentEditorViewModelTest {
         created()
         val model = editor()
         model.identity()
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         // IN03: CDT Banco, aporte 10.000.000.
         model.type("10KK")
 
@@ -145,7 +146,7 @@ class InvestmentEditorViewModelTest {
         created()
         val model = editor()
         model.identity(name = "Parqueadero", description = "Finca raíz", icon = "home")
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("18KK")
         model.onAction(InvestmentEditorAction.SameValuePicked(false))
 
@@ -167,7 +168,7 @@ class InvestmentEditorViewModelTest {
         created()
         val model = editor()
         model.identity(name = "Parqueadero", description = "Finca raíz", icon = "home")
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("18KK")
         model.onAction(InvestmentEditorAction.SameValuePicked(false))
         model.type("19KK")
@@ -182,7 +183,7 @@ class InvestmentEditorViewModelTest {
     fun aFirstContributionOfZeroWaitsAndPesosStopAtTwelveDigits() = runTest {
         val model = editor()
         model.identity()
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("0")
         assertNull(model.state.value.firstContribution)
         assertFalse(model.state.value.canSubmit)
@@ -201,7 +202,7 @@ class InvestmentEditorViewModelTest {
         val model = editor()
         model.identity(name = "Acciones EE. UU.", description = "ETF", icon = "trending_up")
         model.onAction(InvestmentEditorAction.CurrencyPicked(Currency.USD))
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("1000")
 
         // IN33: Crear inversión waits for the rate.
@@ -210,7 +211,7 @@ class InvestmentEditorViewModelTest {
         model.onAction(InvestmentEditorAction.Submit)
         assertTrue(commands.sent.isEmpty())
 
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.Rate))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.Rate))
         model.type("4150,25")
         model.onAction(InvestmentEditorAction.OpenDatePicker(InvestmentField.Rate))
         model.onAction(InvestmentEditorAction.DatePicked(LocalDate.of(2026, 10, 20)))
@@ -232,9 +233,9 @@ class InvestmentEditorViewModelTest {
         val model = editor()
         model.identity(name = "Acciones EE. UU.", description = "ETF", icon = "trending_up")
         model.onAction(InvestmentEditorAction.CurrencyPicked(Currency.USD))
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("1000")
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.Rate))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.Rate))
         // IN32: 0,99 is refused; 1,00 is accepted.
         model.type("0,99")
         assertEquals(RateProblem.BelowMinimum, model.state.value.rateProblem)
@@ -252,7 +253,7 @@ class InvestmentEditorViewModelTest {
         val model = editor()
         model.identity(name = "Acciones EE. UU.", description = "ETF", icon = "trending_up")
         model.onAction(InvestmentEditorAction.CurrencyPicked(Currency.USD))
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("1000,00")
 
         val state = model.state.value
@@ -270,7 +271,7 @@ class InvestmentEditorViewModelTest {
     fun dollarsAreTypedWithTheCommaToTheExactCent() = runTest {
         val model = editor()
         model.onAction(InvestmentEditorAction.CurrencyPicked(Currency.USD))
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
 
         model.type("1000,00")
         assertEquals("USD", model.state.value.firstContribution?.symbol)
@@ -304,7 +305,7 @@ class InvestmentEditorViewModelTest {
     fun aNameOverFortyIsRefusedAndNothingIsSent() = runTest {
         val model = editor()
         model.identity(name = "a".repeat(41))
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("1000")
 
         val state = model.state.value
@@ -323,7 +324,7 @@ class InvestmentEditorViewModelTest {
     fun aDescriptionOverFortyIsRefused() = runTest {
         val model = editor()
         model.identity(description = "d".repeat(41))
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("1000")
         assertEquals(InvestmentTextError.TooLong, model.state.value.descriptionError)
         assertFalse(model.state.value.canSubmit)
@@ -349,7 +350,7 @@ class InvestmentEditorViewModelTest {
         model.onAction(InvestmentEditorAction.IconPicked("insights"))
         // Currency and amounts are not offered when editing.
         model.onAction(InvestmentEditorAction.CurrencyPicked(Currency.USD))
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         assertEquals(Currency.COP, model.state.value.currency)
         assertNull(model.state.value.padField)
         model.onAction(InvestmentEditorAction.Submit)
@@ -416,7 +417,7 @@ class InvestmentEditorViewModelTest {
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         val model = editor()
         model.identity()
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("10KK")
         model.onAction(InvestmentEditorAction.Submit)
 
@@ -442,7 +443,7 @@ class InvestmentEditorViewModelTest {
         commands.found = Outcome.Success(null)
         val model = editor()
         model.identity()
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("10KK")
         model.onAction(InvestmentEditorAction.Submit)
 
@@ -466,7 +467,7 @@ class InvestmentEditorViewModelTest {
             commands.answers += InvestmentCommandOutcome.Rejected(reason)
             val model = editor()
             model.identity()
-            model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+            model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
             model.type("1000")
             model.onAction(InvestmentEditorAction.Submit)
             assertEquals("$reason", error, model.state.value.saveError)
@@ -482,7 +483,7 @@ class InvestmentEditorViewModelTest {
         created()
         val model = editor()
         model.identity()
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("1000")
         reads.board.value =
             InvestmentBoardState.Ready(investmentsBoard(emptyList(), generation = 2))
@@ -498,13 +499,13 @@ class InvestmentEditorViewModelTest {
         val before = editor(saved)
         before.identity(name = "Acciones EE. UU.", description = "ETF", icon = "trending_up")
         before.onAction(InvestmentEditorAction.CurrencyPicked(Currency.USD))
-        before.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        before.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         before.type("250,5")
         before.onAction(InvestmentEditorAction.OpenDatePicker(InvestmentField.First))
         before.onAction(InvestmentEditorAction.DatePicked(LocalDate.of(2026, 10, 16)))
         before.onAction(InvestmentEditorAction.SameValuePicked(false))
         before.type("260")
-        before.onAction(InvestmentEditorAction.OpenPad(InvestmentField.Rate))
+        before.onAction(InvestmentEditorAction.TypeInto(InvestmentField.Rate))
         before.type("4180,7")
 
         val after = editor(SavedStateHandle(saved.keys().associateWith { saved.get<Any>(it) }))
@@ -532,7 +533,7 @@ class InvestmentEditorViewModelTest {
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         val before = editor(saved)
         before.identity()
-        before.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        before.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         before.type("1000")
         before.onAction(InvestmentEditorAction.Submit)
         assertEquals(InvestmentSaveError.Unknown, before.state.value.saveError)
@@ -555,7 +556,7 @@ class InvestmentEditorViewModelTest {
         assertEquals(Currency.USD, model.state.value.currency)
         // No rate yet: dollars ask for one before Crear inversión, as when picked here.
         model.identity(name = "Acciones EE. UU.", description = "ETF", icon = "trending_up")
-        model.onAction(InvestmentEditorAction.OpenPad(InvestmentField.First))
+        model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("1000")
         assertTrue(model.state.value.rateNeeded)
 
@@ -613,5 +614,52 @@ class InvestmentEditorViewModelTest {
         model.onAction(InvestmentEditorAction.OpenDatePicker(InvestmentField.First))
         model.onAction(InvestmentEditorAction.DatePicked(LocalDate.of(2026, 10, 26)))
         assertEquals(LocalDate.of(2026, 10, 25), model.state.value.date)
+    }
+
+    // --- The pad always under a new investment, and the shared icons ---
+
+    @Test
+    fun aNewInvestmentTypesItsFirstContributionStraightAway() = runTest {
+        val model = editor()
+
+        model.type("5K")
+
+        assertEquals(InvestmentField.First, model.state.value.padField)
+        assertEquals("5.000", model.state.value.firstContribution?.digits)
+    }
+
+    @Test
+    fun otroValorTakesThePadAndLoMismoGivesItBackToTheContribution() = runTest {
+        val model = editor()
+
+        model.onAction(InvestmentEditorAction.SameValuePicked(false))
+        assertEquals(InvestmentField.Value, model.state.value.padField)
+        model.onAction(InvestmentEditorAction.SameValuePicked(true))
+
+        assertEquals(InvestmentField.First, model.state.value.padField)
+    }
+
+    @Test
+    fun anInvestmentBeingChangedHasNoPad() = runTest {
+        reads.board.value = InvestmentBoardState.Ready(investmentsBoard(listOf(ecopetrol())))
+        val model = editing()
+
+        assertTrue(model.state.value.editing)
+        assertNull(model.state.value.padField)
+    }
+
+    @Test
+    fun anyIconOfTheSharedThirtyFiveCanBeChosen() = runTest {
+        val model = editor()
+
+        model.onAction(InvestmentEditorAction.IconPicked("pie_chart"))
+        assertEquals("pie_chart", model.state.value.iconKey)
+        model.onAction(InvestmentEditorAction.IconPicked("restaurant"))
+        assertEquals("restaurant", model.state.value.iconKey)
+        model.onAction(InvestmentEditorAction.IconPicked("rocket"))
+        assertEquals("restaurant", model.state.value.iconKey)
+
+        assertEquals(35, InvestmentIcons.options.size)
+        assertEquals(CategoryIcons.keys.toSet(), InvestmentIcons.keys)
     }
 }

@@ -8,8 +8,9 @@ import com.software.sello.designsystem.icon.SelloIcon
 data class CategoryIconOption(val key: String, val icon: SelloIcon, @StringRes val label: Int)
 
 /**
- * The icons offered for categories, in the order shown. The key is what is stored, so
- * it must never change once released; the drawing and the name may.
+ * The icons offered for categories, in the order shown: the one set of 35 that goals and
+ * investments choose from too. The key is what is stored, so it must never change once
+ * released; the drawing and the name may.
  */
 object CategoryIcons {
     val options: List<CategoryIconOption> = listOf(
@@ -72,7 +73,63 @@ object CategoryIcons {
             R.string.category_icon_sports_esports
         ),
         CategoryIconOption("spa", SelloIcon.Spa, R.string.category_icon_spa),
-        CategoryIconOption("handyman", SelloIcon.Handyman, R.string.category_icon_handyman)
+        CategoryIconOption("handyman", SelloIcon.Handyman, R.string.category_icon_handyman),
+        // Money and investments: the eleven that round the shared set to 35 (owner, 2026-10-26).
+        CategoryIconOption(
+            "account_balance",
+            SelloIcon.AccountBalance,
+            R.string.category_icon_account_balance
+        ),
+        CategoryIconOption(
+            "trending_up",
+            SelloIcon.TrendingUp,
+            R.string.category_icon_trending_up
+        ),
+        CategoryIconOption(
+            "insights",
+            SelloIcon.Insights,
+            R.string.category_icon_insights
+        ),
+        CategoryIconOption(
+            "payments",
+            SelloIcon.Payments,
+            R.string.category_icon_payments
+        ),
+        CategoryIconOption(
+            "currency_exchange",
+            SelloIcon.CurrencyExchange,
+            R.string.category_icon_currency_exchange
+        ),
+        CategoryIconOption(
+            "account_balance_wallet",
+            SelloIcon.AccountBalanceWallet,
+            R.string.category_icon_account_balance_wallet
+        ),
+        CategoryIconOption(
+            "pie_chart",
+            SelloIcon.PieChart,
+            R.string.category_icon_pie_chart
+        ),
+        CategoryIconOption(
+            "currency_bitcoin",
+            SelloIcon.CurrencyBitcoin,
+            R.string.category_icon_currency_bitcoin
+        ),
+        CategoryIconOption(
+            "storefront",
+            SelloIcon.Storefront,
+            R.string.category_icon_storefront
+        ),
+        CategoryIconOption(
+            "apartment",
+            SelloIcon.Apartment,
+            R.string.category_icon_apartment
+        ),
+        CategoryIconOption(
+            "agriculture",
+            SelloIcon.Agriculture,
+            R.string.category_icon_agriculture
+        )
     )
 
     val keys: List<String> = options.map { it.key }

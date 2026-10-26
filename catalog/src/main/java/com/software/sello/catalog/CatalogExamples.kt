@@ -34,7 +34,6 @@ import com.software.sello.catalog.components.GoalPillExample
 import com.software.sello.catalog.components.GoalsBandExample
 import com.software.sello.catalog.components.IconChoiceExample
 import com.software.sello.catalog.components.IconPickerExample
-import com.software.sello.catalog.components.IconStripExample
 import com.software.sello.catalog.components.InkSwatchesExample
 import com.software.sello.catalog.components.InvestmentStatesExample
 import com.software.sello.catalog.components.InvestmentsExample
@@ -55,6 +54,7 @@ import com.software.sello.catalog.components.OptionSlipExample
 import com.software.sello.catalog.components.PastMonthRibbonExample
 import com.software.sello.catalog.components.PlanSlipExample
 import com.software.sello.catalog.components.RankingExample
+import com.software.sello.catalog.components.ReciboPinExample
 import com.software.sello.catalog.components.RepeatSheetExample
 import com.software.sello.catalog.components.ScaffoldExample
 import com.software.sello.catalog.components.ScheduleRowExample
@@ -274,10 +274,10 @@ val catalogExamples: List<CatalogExample> = listOf(
         R.string.catalog_example_icon_picker
     ) { IconPickerExample() },
     CatalogExample(
-        "inputs.icon-strip",
+        "inputs.recibo-pin",
         CatalogGroup.Inputs,
-        R.string.catalog_example_icon_strip
-    ) { IconStripExample() },
+        R.string.catalog_example_recibo_pin
+    ) { ReciboPinExample() },
     CatalogExample(
         "inputs.amount",
         CatalogGroup.Inputs,

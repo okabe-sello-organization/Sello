@@ -9,10 +9,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasStateDescription
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -143,8 +151,9 @@ class InvestmentEditorScreenTest {
         ).assertExists()
         rule.onNodeWithTag(INVESTMENT_EDITOR_SUBMIT_TAG).assertIsNotEnabled()
 
-        rule.onNodeWithTag(INVESTMENT_EDITOR_RATE_TAG).performScrollTo().performClick()
-        assertEquals(listOf(InvestmentEditorAction.OpenPad(InvestmentField.Rate)), actions)
+        // The pad is on the first contribution; tapping the rate's slip moves it there.
+        rule.onNodeWithTag(INVESTMENT_EDITOR_RATE_SLIP_TAG).performScrollTo().performClick()
+        assertEquals(listOf(InvestmentEditorAction.TypeInto(InvestmentField.Rate)), actions)
     }
 
     @Test
@@ -180,7 +189,12 @@ class InvestmentEditorScreenTest {
     fun otroValorShowsASecondAmount() {
         show(creating.copy(sameValue = false, otherValue = pesos("0"), valueReady = true))
         rule.onNodeWithTag(INVESTMENT_EDITOR_VALUE_TAG).performScrollTo()
-        rule.onNodeWithContentDescription("Vale hoy: 0 pesos", substring = true).assertExists()
+        // The figure the pad is not on is one button, so its amount is found unmerged.
+        rule.onNode(
+            hasContentDescription("0 pesos") and
+                hasAnyAncestor(hasTestTag(INVESTMENT_EDITOR_VALUE_TAG)),
+            useUnmergedTree = true
+        ).assertExists()
         rule.onNodeWithTag(INVESTMENT_EDITOR_SAME_TAG).performScrollTo().performClick()
         assertEquals(listOf(InvestmentEditorAction.SameValuePicked(true)), actions)
     }
@@ -225,13 +239,64 @@ class InvestmentEditorScreenTest {
             val tag = if (field == InvestmentField.First) {
                 INVESTMENT_EDITOR_FIRST_TAG
             } else {
-                INVESTMENT_EDITOR_RATE_TAG
+                INVESTMENT_EDITOR_RATE_SLIP_TAG
             }
             val typed = rule.onNodeWithTag(tag).getUnclippedBoundsInRoot()
             val pad = rule.onNodeWithTag(INVESTMENT_EDITOR_PAD_TAG).getUnclippedBoundsInRoot()
             assertTrue("$field at $typed, pad at $pad", typed.bottom <= pad.top + 0.5.dp)
             assertTrue("$field at $typed", typed.top >= 0.dp)
         }
+    }
+
+    @Test
+    fun theFigureThePadTypesIntoSaysSoAndAnotherTakesThePadWhenTapped() {
+        show(creating.copy(sameValue = false, otherValue = null, padField = InvestmentField.First))
+
+        rule.onNodeWithTag(INVESTMENT_EDITOR_FIRST_TAG).performScrollTo()
+            .assert(hasStateDescription("Escribiendo aquí con el teclado de Sello"))
+        rule.onNodeWithTag(INVESTMENT_EDITOR_VALUE_TAG).performScrollTo()
+            .assert(!hasStateDescription("Escribiendo aquí con el teclado de Sello"))
+            .performClick()
+        rule.onNode(hasText("7") and hasAnyAncestor(hasTestTag(INVESTMENT_EDITOR_PAD_TAG)))
+            .performClick()
+
+        assertEquals(
+            listOf(
+                InvestmentEditorAction.TypeInto(InvestmentField.Value),
+                InvestmentEditorAction.Digit(7)
+            ),
+            actions
+        )
+    }
+
+    @Test
+    fun theCircleOpensTheSharedThirtyFiveWithTheMoneyIconsFirst() {
+        show(creating.copy(iconKey = null))
+
+        rule.onNodeWithTag(INVESTMENT_EDITOR_MISSING_TAG).assertExists()
+        rule.onNodeWithText("Elige un ícono.").assertExists()
+        rule.onNodeWithTag(INVESTMENT_EDITOR_ICON_TAG).performScrollTo()
+            .assertContentDescriptionEquals("Elegir ícono").performClick()
+        val icons = rule.onAllNodes(
+            hasAnyAncestor(hasTestTag(INVESTMENT_EDITOR_ICONS_TAG)) and isSelectable()
+        )
+        icons.assertCountEquals(35)
+        icons[0].assertContentDescriptionEquals("Banco")
+        rule.onNodeWithContentDescription("Comida").assertExists()
+        rule.onNodeWithContentDescription("Portafolio").performClick()
+
+        rule.onNodeWithTag(INVESTMENT_EDITOR_ICONS_TAG).assertDoesNotExist()
+        assertEquals(
+            listOf<InvestmentEditorAction>(InvestmentEditorAction.IconPicked("pie_chart")),
+            actions
+        )
+    }
+
+    @Test
+    fun aNewInvestmentHasThePadAndOneBeingChangedDoesNot() {
+        show(ecopetrol)
+
+        rule.onNodeWithTag(INVESTMENT_EDITOR_PAD_TAG).assertDoesNotExist()
     }
 
     private data class Look(val ink: SelloInk, val dark: Boolean, val scale: Float, val width: Int)

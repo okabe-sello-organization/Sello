@@ -137,14 +137,14 @@ class GoalEditorScreenTest {
     }
 
     @Test
-    fun theEmptyCircleInvitesAChoiceAndOpensTheSameTwentyFourIconsAsACategory() {
+    fun theEmptyCircleInvitesAChoiceAndOpensTheSameThirtyFiveIconsAsACategory() {
         show(planned.copy(iconKey = null))
 
         rule.onNodeWithTag(GOAL_EDITOR_ICON_TAG).assertContentDescriptionEquals("Elegir ícono")
             .performClick()
         rule.onAllNodes(
             hasAnyAncestor(hasTestTag(GOAL_EDITOR_ICONS_TAG)) and isSelectable()
-        ).assertCountEquals(24)
+        ).assertCountEquals(35)
         rule.onNodeWithContentDescription("Ahorro").assertExists()
         rule.onNodeWithContentDescription("Viaje").performClick()
 

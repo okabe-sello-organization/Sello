@@ -533,55 +533,6 @@ fun EntryLine(
 
 private val EntryShape = RoundedCornerShape(12.dp)
 
-@Composable
-fun IconChoiceStrip(
-    choices: List<IconChoice>,
-    selectedId: String?,
-    onPick: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    tone: ButtonTone = ButtonTone.Gain
-) {
-    val colors = SelloTheme.colors
-    val fill = when (tone) {
-        ButtonTone.Gain -> colors.semantic.gain
-        ButtonTone.Ink -> colors.ink
-        ButtonTone.Loss -> colors.semantic.loss
-        ButtonTone.Brand -> colors.brand
-    }
-    val onFill = when (tone) {
-        ButtonTone.Gain -> colors.semantic.onGain
-        ButtonTone.Ink -> colors.paper
-        ButtonTone.Loss -> colors.semantic.onLoss
-        ButtonTone.Brand -> colors.onBrand
-    }
-    Row(
-        modifier.horizontalScroll(rememberScrollState()).selectableGroup(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        choices.forEach { choice ->
-            val selected = choice.id == selectedId
-            Surface(
-                color = if (selected) fill else colors.paper,
-                shape = SelloTheme.shapes.control
-            ) {
-                IconButton(
-                    onClick = { onPick(choice.id) },
-                    modifier = Modifier.semantics {
-                        this.selected =
-                            selected
-                    }
-                ) {
-                    Icon(
-                        choice.icon.painter(),
-                        choice.label,
-                        tint = if (selected) onFill else colors.ink
-                    )
-                }
-            }
-        }
-    }
-}
-
 /**
  * Native text input docked above the IME. [context] says what the text belongs to, with
  * its facts in bold spans, and [contextIcon] leads it; [contextDescription] is what a

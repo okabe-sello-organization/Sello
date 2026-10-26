@@ -91,7 +91,7 @@
     <string name="catalog_example_goal_cards">Active and completed cards</string>
     <string name="catalog_example_movements">Contributions and withdrawals</string>
     <string name="catalog_example_investments">Return and valuation states</string>
-    <string name="catalog_example_icon_strip">Icon strip and Recibo pin</string>
+    <string name="catalog_example_recibo_pin">Recibo pin</string>
     <string name="catalog_example_danger_ticket">Confirmation, undo, ticket and danger</string>
     <string name="catalog_example_bullet_list">BulletList</string>
     <string name="catalog_example_backup_states">Backup save states</string>
@@ -298,7 +298,7 @@
     <string name="catalog_caller_preview">Vista del llamador · confirmación sintética sobre el dock</string>
     <string name="catalog_expense_confirmation">Gasto anotado: %1$s en %2$s</string>
     <string name="catalog_income_confirmation">Ingreso anotado: %1$s de %2$s</string>
-    <string name="catalog_example_goal_form">Goal icon circle and sliding pad</string>
+    <string name="catalog_example_goal_form">Goal icon circle, figure and pad</string>
     <string name="catalog_demo_repetir_encendido">Repetir: vuelve a encenderse</string>
     <string name="catalog_demo_vuelve_a_encenderse" formatted="false">De vuelta en el 50 %: el sello guardado se enciende otra vez en su sitio, sin sello nuevo.</string>
     <string name="catalog_demo_viaje_57_ver_meta">Viaje a la costa, 57 por ciento. Ver meta</string>
@@ -314,7 +314,7 @@
     <string name="catalog_demo_celular_marcala">Celular nuevo · márcala como lograda cuando quieras</string>
     <string name="catalog_demo_viaje_faltan_1_490">Viaje a la costa · faltan 1.490.000 para la meta</string>
     <string name="catalog_demo_sellos_centrados">Al crear una meta: centrados, cada uno en su parte del ancho.</string>
-    <string name="catalog_demo_sin_icono">Sin icono elegido: círculo punteado con la bandera.</string>
+    <string name="catalog_demo_sin_icono">Sin ícono elegido: un círculo punteado con un + que invita a elegirlo.</string>
     <string name="catalog_demo_cuanto_necesitas">Cuánto necesitas</string>
     <string name="catalog_demo_listo">Listo</string>
     <string name="catalog_demo_abrir_teclado">Escribir el monto</string>

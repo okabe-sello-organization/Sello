@@ -138,11 +138,9 @@ class InvestmentEditorViewModel(
                 changed()
             }
 
-            is InvestmentEditorAction.OpenPad -> if (editable && !now.editing) {
+            is InvestmentEditorAction.TypeInto -> if (editable && !now.editing) {
                 set(KEY_PAD, action.field.name)
             }
-
-            InvestmentEditorAction.ClosePad -> set(KEY_PAD, null)
 
             is InvestmentEditorAction.Digit -> if (editable) digit(now, action.digit)
 
@@ -271,6 +269,24 @@ class InvestmentEditorViewModel(
     }
 
     // ── The pad ──────────────────────────────────────────────────────────────────────
+
+    /**
+     * The figure the pad, always under a new investment, types into: the one last chosen
+     * while it is on the form, otherwise Primer aporte. Editing has no figures and no pad.
+     */
+    private fun padField(
+        editing: Boolean,
+        sameValue: Boolean,
+        rateNeeded: Boolean
+    ): InvestmentField? {
+        if (editing) return null
+        val chosen = saved.get<String>(KEY_PAD)?.let(InvestmentField::valueOf)
+        return when (chosen) {
+            InvestmentField.Value -> chosen.takeUnless { sameValue }
+            InvestmentField.Rate -> chosen.takeIf { rateNeeded }
+            else -> chosen
+        } ?: InvestmentField.First
+    }
 
     /** Whether [field] is typed with the comma: dollars and the rate (v2 *Dólares y la tasa*). */
     private fun decimal(field: InvestmentField, currency: Currency) =
@@ -468,6 +484,9 @@ class InvestmentEditorViewModel(
         val hundredths = rateDraft.hundredths()
         val text = name()
         val about = description()
+        val rateNeeded = !editing && currency == Currency.USD && read != null &&
+            read.rates.current == null
+        val sameValue = saved[KEY_SAME] ?: true
         return InvestmentEditorState(
             loading = (read == null && board !is InvestmentBoardState.Failed) ||
                 (editing && read != null && saved.get<Boolean>(KEY_DRAFTED) != true),
@@ -486,11 +505,10 @@ class InvestmentEditorViewModel(
             firstReady = first != null && InvestmentAmount.of(first) is Outcome.Success,
             date = date(KEY_DATE, today),
             today = today,
-            sameValue = saved[KEY_SAME] ?: true,
+            sameValue = sameValue,
             otherValue = shown(InvestmentField.Value, currency),
             valueReady = other != null && InvestmentAmount.ofValue(other) is Outcome.Success,
-            rateNeeded = !editing && currency == Currency.USD && read != null &&
-                read.rates.current == null,
+            rateNeeded = rateNeeded,
             rate = decimalText(rateDraft),
             rateProblem = when {
                 hundredths == null -> null
@@ -503,7 +521,7 @@ class InvestmentEditorViewModel(
             currentRate = read?.rates?.current?.let {
                 RateModel(money.decimal(it.rate.hundredths, Currency.USD.scale), it.date)
             },
-            padField = saved.get<String>(KEY_PAD)?.let(InvestmentField::valueOf),
+            padField = padField(editing, sameValue, rateNeeded),
             pulse = progress.pulse,
             atLimit = progress.atLimit,
             datePicker = saved.get<String>(KEY_PICKER)?.let(InvestmentField::valueOf),

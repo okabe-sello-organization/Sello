@@ -33,7 +33,7 @@ import org.junit.runner.RunWith
 
 /**
  * The goal parts that had no device test (gap list, SELLO-085): `GoalPill`,
- * `MovementRow`, `StampTicket`, `GoalPinPill` and `IconChoiceStrip`, in each of the four
+ * `MovementRow`, `StampTicket` and `GoalPinPill`, in each of the four
  * colour schemes. What a screen reader hears, what each control does and that every
  * target is at least 48dp.
  */
@@ -170,34 +170,6 @@ class GoalComponentsTest {
 
             assertTrue(scheme, chosen)
             assertTarget(off, scheme)
-        }
-    }
-
-    @Test
-    fun theIconStripSaysEachIconMarksThePickedOneAndScrollsToTheLast() {
-        val choices = listOf(
-            IconChoice("flight", SelloIcon.Flight, "Viaje"),
-            IconChoice("home", SelloIcon.Home, "Casa"),
-            IconChoice("school", SelloIcon.School, "Educación"),
-            IconChoice("pets", SelloIcon.Pets, "Mascotas"),
-            IconChoice("phone", SelloIcon.PhoneIphone, "Celular"),
-            IconChoice("bank", SelloIcon.AccountBalance, "Inversión"),
-            IconChoice("flag", SelloIcon.Flag, "Otra")
-        )
-        var picked = ""
-        rule.inEveryScheme(width = 200.dp, reset = { picked = "" }, content = {
-            IconChoiceStrip(choices, "home", { picked = it })
-        }) { scheme ->
-            rule.onNodeWithContentDescription("Casa", useUnmergedTree = true)
-                .assertExists()
-            rule.onNode(
-                SemanticsMatcher.expectValue(SemanticsProperties.Selected, true)
-            ).assertExists()
-            val last = rule.onNodeWithContentDescription("Otra").performScrollTo()
-            last.performClick()
-
-            assertEquals(scheme, "flag", picked)
-            assertTarget(last, scheme)
         }
     }
 }
