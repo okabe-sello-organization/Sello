@@ -28,7 +28,7 @@ class SlipStubTest {
     private var opened = ""
 
     @Composable
-    private fun stub() {
+    private fun Stub() {
         SlipStub(
             start = {
                 StubButton(
@@ -53,7 +53,7 @@ class SlipStubTest {
 
     @Test
     fun eachHalfIsOneButtonSaidAsItsLabelThenItsFact() {
-        rule.inEveryScheme(content = { stub() }) {
+        rule.inEveryScheme(content = { Stub() }) {
             val incomes = rule.onNodeWithTag("incomes").fetchSemanticsNode().config
             assertEquals(
                 listOf("Ingresos, 3 en octubre"),
@@ -76,7 +76,7 @@ class SlipStubTest {
 
     @Test
     fun bothHalvesShareTheWidthAndStayTallEnoughToTouchAtLargeText() {
-        rule.inEveryScheme(fontScale = 2f, content = { stub() }) {
+        rule.inEveryScheme(fontScale = 2f, content = { Stub() }) {
             val incomes = rule.onNodeWithTag("incomes").getUnclippedBoundsInRoot()
             val fixed = rule.onNodeWithTag("fixed").getUnclippedBoundsInRoot()
             assertEquals(incomes.width.value, fixed.width.value, 1f)
