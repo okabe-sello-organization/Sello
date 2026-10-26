@@ -82,7 +82,7 @@ function categoryGrid(s) {
       : `<span class="circle ${over ? "over" : ""}" style="--fill:${fill}%">${icon(ICONS[name])}<span class="on">${icon(ICONS[name])}</span></span>`;
     return `<button class="cell">${circle}<span class="cell-text"><span>${name}</span><b>${money(left)}</b>${unlimited ? "<small>sin límite</small>" : ""}</span></button>`;
   }).join("");
-  return `<section class="slip"><div class="section-head"><h2>Tus categorías</h2><button class="icon-btn" aria-label="Agregar categoría">${icon("add")}</button></div><div class="grid">${cells}</div></section>`;
+  return `<section class="slip"><div class="section-head"><h2>Tus categorías</h2><button class="band-chip paper">${icon("add")}Nueva categoría</button></div><div class="grid">${cells}</div></section>`;
 }
 
 function homeBody(s) {

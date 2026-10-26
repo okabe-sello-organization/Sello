@@ -408,6 +408,9 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .band-chip{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 14px 0 8px;margin:-6px -2px -6px 0;border:0;border-radius:99px;background:#fff;color:var(--band);font-weight:800;font-size:.93em;white-space:nowrap}
 .band-chip .icon{width:1.4em;height:1.4em}
 .app[data-theme=dark] .band-chip{background:var(--paper);color:var(--ink)}
+/* The same pill on paper (Recibo's + Nueva categoría, 2026-10-26). */
+.band-chip.paper{background:var(--brandsoft);color:var(--onbrandsoft);margin:0}
+.app[data-theme=dark] .band-chip.paper{background:var(--brandsoft);color:var(--onbrandsoft)}
 .goals-band b{font-size:2.6em;font-weight:900;letter-spacing:-.04em;line-height:1.05}
 .goals-band small{display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:.9em}
 .goals-band small .icon{width:1.3em;height:1.3em;background:var(--gain);color:#fff;border-radius:50%;padding:2px}

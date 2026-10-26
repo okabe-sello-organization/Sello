@@ -71,7 +71,9 @@ the goal. Only shown when Metas ships.
 example while the user was away), a green row appears under the pill: ✓ the goal's
 name, "Llegó al 100 %" and **Marcar como lograda**. The goal on Recibo stays in place.
 
-**Categories:** unchanged circle grid. A category without a limit on purpose (Sin
+**Categories:** unchanged circle grid. The card's header offers **+ Nueva categoría**, the
+same pill as Metas' **+ Nueva meta** in the soft brand fill on paper (owner, 2026-10-26),
+under the title at large text. A category without a limit on purpose (Sin
 límite) has a dashed ring with an ∞ badge at its lower right and **sin límite** under
 its amount instead of "gastado" (owner, 2026-10-26); one never configured or paused by
 archiving keeps the solid ring and "gastado". A category shows only its own remainder;
