@@ -62,7 +62,7 @@
     { "id": 3, "investmentId": 2, "entryType": "CASH_INJECTION", "amountMinorUnits": 5000000, "date": "2026-08-01", "notes": "Apertura" }
   ],
   "exchangeRates": [
-    { "fromCurrency": "USD", "toCurrency": "COP", "rate": 3900.5, "updatedDate": "2026-10-25T09:00" }
+    { "fromCurrency": "USD", "toCurrency": "COP", "rate": 3900.5, "updatedDate": "2026-10-25 09:00" }
   ],
   "goals": [
     { "id": 1, "name": "Viaje", "targetAmountCop": 18000000, "currentAmountCop": 6500000, "deadlineDate": "2027-03-31", "colorArgb": -291840 },

@@ -81,6 +81,10 @@ private fun LegacyRecord.plural() = when (this) {
 private fun LegacyReason.label() = when (this) {
     LegacyReason.Shortened -> R.string.restore_legacy_shortened
     LegacyReason.Renamed -> R.string.restore_legacy_renamed
+    LegacyReason.Rounded -> R.string.restore_legacy_rounded
+    LegacyReason.ValueAdded -> R.string.restore_legacy_value_added
+    LegacyReason.InterestAsValue -> R.string.restore_legacy_interest_as_value
+    LegacyReason.NoAutomaticInterest -> R.string.restore_legacy_no_interest
     LegacyReason.Unreadable -> R.string.restore_legacy_unreadable
     LegacyReason.DuplicateId -> R.string.restore_legacy_duplicate
     LegacyReason.AmountOutOfRange -> R.string.restore_legacy_amount
@@ -90,6 +94,13 @@ private fun LegacyReason.label() = when (this) {
     LegacyReason.CategoryMissing -> R.string.restore_legacy_category_missing
     LegacyReason.CategoryLeftOut -> R.string.restore_legacy_category_left_out
     LegacyReason.UnknownRepeat -> R.string.restore_legacy_repeat
+    LegacyReason.UnsupportedCurrency -> R.string.restore_legacy_currency
+    LegacyReason.InvestmentMissing -> R.string.restore_legacy_investment_missing
+    LegacyReason.InvestmentLeftOut -> R.string.restore_legacy_investment_left_out
+    LegacyReason.NoteOnly -> R.string.restore_legacy_note_only
+    LegacyReason.BeforeFirstContribution -> R.string.restore_legacy_before_first
+    LegacyReason.WithdrawalAboveValue -> R.string.restore_legacy_withdrawal
+    LegacyReason.NoContribution -> R.string.restore_legacy_no_contribution
     LegacyReason.NotImportedYet -> R.string.restore_legacy_not_yet
 }
 

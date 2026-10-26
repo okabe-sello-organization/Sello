@@ -172,9 +172,9 @@ Focused tests run first; the gate is the final integrated checkpoint.
 
 `Increment` is `MVP` for E01–E08, E12 and E13 and `Post-MVP` for the rest; an MVP
 ticket may not depend on a post-MVP one. The MVP shipped as the `0.1.0` candidate
-([checklist](../release/mvp-checklist.md)). E09 (signed carryover), E10 (legacy
-import) and E14 (assistive-technology pass) stay on the post-MVP roadmap; E15 holds
-the defects found during release work; E16–E19 bring the v2 screens, Metas,
+([checklist](../release/mvp-checklist.md)). E09 (signed carryover) and E14
+(assistive-technology pass) stay on the post-MVP roadmap; E10 (legacy import) is
+done; E15 holds the defects found during release work; E16–E19 bring the v2 screens, Metas,
 recurrence and Inversiones to the `0.2.0` release with the decisions in
 [ADR 0017](../decisions/0017-goals-recurrence-investments.md).
 

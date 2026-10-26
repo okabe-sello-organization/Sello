@@ -46,6 +46,8 @@ This summary is refreshed when an epic closes and adds no verification claims.
   for nonfinancial preferences.
 - Backups save and restore through the system file picker, also from the start-up
   failure screen; retry and confirmed start-over preserve an unreadable database privately.
+  Restaurar also imports a FinanceTracker backup, investments included, showing what it
+  changed and left out first (ADR 0019).
 - Configuración → Borrar todos los datos erases the history after counts and BORRAR.
 - No network permission or OS backup; every build checks its manifests, release
   libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md).
@@ -76,8 +78,9 @@ evidence and retained report. This file no longer repeats them.
   ([E18](../tickets/E18-recurrence/README.md), done) as `0.2.0`; decisions in
   [ADR 0017](../decisions/0017-goals-recurrence-investments.md). Each epic starts by
   verifying what already exists.
-- Signed carryover (E09), legacy import (E10) and the assistive-technology pass (E14)
-  stay on the post-MVP roadmap.
+- Signed carryover (E09) and the assistive-technology pass (E14) stay on the post-MVP
+  roadmap. Legacy import (E10) is done: Restaurar also takes a FinanceTracker backup,
+  investments included ([ADR 0019](../decisions/0019-legacy-import.md)).
 
 Every MVP ticket is Done. The post-MVP epics E09, E10 and E14–E19 live under
 [docs/tickets](../tickets/README.md).

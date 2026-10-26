@@ -12,6 +12,7 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalTargetChange
@@ -23,6 +24,7 @@ import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.LegacyImportLine
 import com.software.sello.domain.port.LegacyReason
 import com.software.sello.domain.port.LegacyRecord
@@ -110,9 +112,8 @@ class LegacyTranslatorTest {
                 LegacyImportLine(LegacyRecord.RepeatingEntry, LegacyReason.CategoryLeftOut, 1),
                 LegacyImportLine(LegacyRecord.RepeatingEntry, LegacyReason.UnknownRepeat, 1),
                 LegacyImportLine(LegacyRecord.Goal, LegacyReason.AmountOutOfRange, 1),
-                LegacyImportLine(LegacyRecord.Investment, LegacyReason.NotImportedYet, 2),
-                LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.NotImportedYet, 3),
-                LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.NotImportedYet, 1)
+                LegacyImportLine(LegacyRecord.Investment, LegacyReason.ValueAdded, 2),
+                LegacyImportLine(LegacyRecord.Investment, LegacyReason.NoAutomaticInterest, 1)
             ),
             result.report.lines
         )
@@ -122,6 +123,9 @@ class LegacyTranslatorTest {
         assertEquals(4, counts.incomes)
         assertEquals(1, counts.goals)
         assertEquals(3, counts.schedules)
+        assertEquals(2, counts.investments)
+        assertEquals(5, counts.investmentMovements)
+        assertEquals(1, counts.usdRates)
     }
 
     @Test
@@ -556,6 +560,296 @@ class LegacyTranslatorTest {
         )
 
         assertNull(translated(text).contents.preferences)
+    }
+
+    // Investments and the dollar rate (SELLO-118).
+
+    private fun investment(id: Int, name: String, currency: String = "COP", extra: String = "") =
+        "{\"id\": $id, \"name\": \"$name\", \"colorArgb\": -1, \"iconKey\": \"trending_up\", " +
+            "\"currency\": \"$currency\", \"createdDate\": \"2026-08-01\", " +
+            "\"updatedAt\": 1788274283794$extra}"
+
+    @Suppress("LongParameterList")
+    private fun entry(
+        id: Int,
+        investment: Int,
+        type: String,
+        amount: Long,
+        date: String,
+        notes: String? = null
+    ) = "{\"id\": $id, \"investmentId\": $investment, \"entryType\": \"$type\", " +
+        "\"amountMinorUnits\": $amount, \"date\": \"$date\"" +
+        (notes?.let { ", \"notes\": \"$it\"" } ?: "") + "}"
+
+    private fun investments(vararg rows: String) = "\"investments\": [${rows.joinToString()}]"
+
+    private fun entries(vararg rows: String) = "\"investmentEntries\": [${rows.joinToString()}]"
+
+    private fun rate(from: String, rate: String, date: String = "2026-10-20 08:30") =
+        "{\"fromCurrency\": \"$from\", \"toCurrency\": \"COP\", \"rate\": $rate, " +
+            "\"updatedDate\": \"$date\"}"
+
+    private fun rates(vararg rows: String) = "\"exchangeRates\": [${rows.joinToString()}]"
+
+    /** Each movement as "sequence kind minor-units day note". */
+    private fun BackupContents.movements(index: Int): List<String> =
+        financial.investments[index].movements.map {
+            "${it.sequence} ${it.kind} ${it.amount.money.minorUnits} ${it.date} ${it.note?.value}"
+        }
+
+    private fun BackupContents.value(index: Int): Long? =
+        InvestmentPolicy.figures(financial.investments[index]).value().value?.amount?.minorUnits
+
+    private fun assertRoundTrip(contents: BackupContents) {
+        val codec = BackupCodec()
+        assertEquals(contents, codec.read(codec.encode(contents).value()).value().contents)
+    }
+
+    @Test
+    fun `investments keep currency, icon and every movement in the old order`() {
+        val text = legacy(
+            investments(investment(2, "Acciones", "USD"), investment(1, "Fondo")),
+            entries(
+                entry(3, 1, "VALUE_SNAPSHOT", 1_050_000, "2026-09-01"),
+                entry(1, 1, "CASH_INJECTION", 1_000_000, "2026-08-01", "Apertura"),
+                entry(2, 1, "VALUE_SNAPSHOT", 1_000_000, "2026-08-01"),
+                entry(4, 1, "DIVIDEND", 20_000, "2026-09-15"),
+                entry(5, 1, "WITHDRAWAL", 50_000, "2026-10-01"),
+                entry(6, 2, "CASH_INJECTION", 150_050, "2026-08-10"),
+                entry(7, 2, "VALUE_SNAPSHOT", 149_999, "2026-08-10")
+            )
+        )
+
+        val result = translated(text)
+        val contents = result.contents
+        val stored = contents.financial.investments.map { it.investment }
+
+        assertEquals(emptyList<LegacyImportLine>(), result.report.lines)
+        assertEquals(listOf("Fondo", "Acciones"), stored.map { it.name.value })
+        assertEquals(listOf(Currency.COP, Currency.USD), stored.map { it.currency })
+        assertEquals(listOf("trending_up", "trending_up"), stored.map { it.icon.value })
+        assertEquals(listOf(null, null), stored.map { it.description })
+        assertEquals(Instant.parse("2026-08-01T05:00:00Z"), stored[0].createdAt)
+        assertEquals(
+            listOf(
+                "0 Contribution 1000000 2026-08-01 Apertura",
+                "1 Valuation 1000000 2026-08-01 null",
+                "2 Valuation 1050000 2026-09-01 null",
+                "3 Dividend 20000 2026-09-15 null",
+                "4 Withdrawal 50000 2026-10-01 null"
+            ),
+            contents.movements(0)
+        )
+        assertEquals(
+            listOf(
+                "0 Contribution 150050 2026-08-10 null",
+                "1 Valuation 149999 2026-08-10 null"
+            ),
+            contents.movements(1)
+        )
+        assertEquals(
+            listOf(Currency.USD, Currency.USD),
+            contents.financial.investments[1].movements.map { it.amount.money.currency }
+        )
+        // FinanceTracker showed 1.050.000 − 50.000 = 1.000.000 and USD 1.499,99.
+        assertEquals(1_000_000L, contents.value(0))
+        assertEquals(149_999L, contents.value(1))
+        assertRoundTrip(contents)
+    }
+
+    @Test
+    fun `interest becomes the value the old app reached, keeping its note`() {
+        val text = legacy(
+            investments(
+                investment(
+                    1,
+                    "CDT",
+                    extra = ", \"annualRatePercent\": 12.0, \"interestFrequency\": \"MONTHLY\""
+                )
+            ),
+            entries(
+                entry(1, 1, "CASH_INJECTION", 1_000_000, "2026-08-01"),
+                entry(2, 1, "VALUE_SNAPSHOT", 1_000_000, "2026-08-01"),
+                entry(3, 1, "INTEREST", 10_000, "2026-09-01", "Interés mensual (12.00% anual)"),
+                entry(4, 1, "CASH_INJECTION", 500_000, "2026-09-10"),
+                entry(5, 1, "INTEREST", 15_100, "2026-10-01")
+            )
+        )
+
+        val result = translated(text)
+
+        assertEquals(
+            listOf(
+                LegacyImportLine(LegacyRecord.Investment, LegacyReason.NoAutomaticInterest, 1),
+                LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.InterestAsValue, 2)
+            ),
+            result.report.lines
+        )
+        assertEquals(
+            listOf(
+                "0 Contribution 1000000 2026-08-01 null",
+                "1 Valuation 1000000 2026-08-01 null",
+                "2 Valuation 1010000 2026-09-01 Interés mensual (12.00% anual)",
+                "3 Contribution 500000 2026-09-10 null",
+                "4 Valuation 1525100 2026-10-01 null"
+            ),
+            result.contents.movements(0)
+        )
+        // 1.000.000 + 10.000 + 500.000 + 15.100, as FinanceTracker showed it.
+        assertEquals(1_525_100L, result.contents.value(0))
+        assertRoundTrip(result.contents)
+    }
+
+    @Test
+    fun `an investment with no value on its first aporte's day is valued at that aporte`() {
+        val text = legacy(
+            investments(investment(1, "Finca")),
+            entries(
+                entry(1, 1, "CASH_INJECTION", 200_000, "2026-08-01"),
+                entry(2, 1, "CASH_INJECTION", 100_000, "2026-08-01"),
+                entry(3, 1, "DIVIDEND", 5_000, "2026-08-20"),
+                entry(4, 1, "DIVIDEND", 5_000, "2026-09-20")
+            )
+        )
+
+        val result = translated(text)
+
+        assertEquals(
+            listOf(LegacyImportLine(LegacyRecord.Investment, LegacyReason.ValueAdded, 1)),
+            result.report.lines
+        )
+        assertEquals(
+            listOf(
+                "0 Contribution 200000 2026-08-01 null",
+                "1 Valuation 200000 2026-08-01 null",
+                "2 Contribution 100000 2026-08-01 null",
+                "3 Dividend 5000 2026-08-20 null",
+                "4 Dividend 5000 2026-09-20 null"
+            ),
+            result.contents.movements(0)
+        )
+        // FinanceTracker: 200.000 + 100.000, dividends apart.
+        assertEquals(300_000L, result.contents.value(0))
+        assertRoundTrip(result.contents)
+    }
+
+    @Test
+    fun `investments and movements that break a Sello rule are left out with their reason`() {
+        val text = legacy(
+            investments(
+                investment(1, "Fondo"),
+                investment(2, "Euros", "EUR"),
+                investment(3, "Sin aportes"),
+                investment(4, "")
+            ),
+            entries(
+                entry(1, 1, "CASH_INJECTION", 100_000, "2026-08-01"),
+                entry(2, 1, "NOTE", 0, "2026-08-02", "Nota"),
+                entry(3, 1, "VALUE_SNAPSHOT", 90_000, "2026-07-15"),
+                entry(4, 1, "WITHDRAWAL", 150_000, "2026-08-03"),
+                entry(5, 1, "WITHDRAWAL", 40_000, "2026-08-04"),
+                entry(6, 2, "CASH_INJECTION", 1_000, "2026-08-01"),
+                entry(7, 3, "VALUE_SNAPSHOT", 5_000, "2026-08-01"),
+                entry(8, 9, "CASH_INJECTION", 1_000, "2026-08-01"),
+                entry(9, 1, "BONUS", 1_000, "2026-08-01"),
+                entry(10, 1, "CASH_INJECTION", 0, "2026-08-01"),
+                entry(11, 1, "DIVIDEND", 1_000, "2026-10-26"),
+                entry(12, 4, "CASH_INJECTION", 1_000, "2026-08-01")
+            )
+        )
+
+        val result = translated(text)
+
+        assertEquals(
+            listOf(
+                LegacyImportLine(LegacyRecord.Investment, LegacyReason.ValueAdded, 1),
+                LegacyImportLine(LegacyRecord.Investment, LegacyReason.InvalidText, 1),
+                LegacyImportLine(LegacyRecord.Investment, LegacyReason.UnsupportedCurrency, 1),
+                LegacyImportLine(LegacyRecord.Investment, LegacyReason.NoContribution, 1),
+                LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.Unreadable, 1),
+                LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.AmountOutOfRange, 1),
+                LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.DateAfterExport, 1),
+                LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.InvestmentMissing, 1),
+                LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.InvestmentLeftOut, 3),
+                LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.NoteOnly, 1),
+                LegacyImportLine(
+                    LegacyRecord.InvestmentEntry,
+                    LegacyReason.BeforeFirstContribution,
+                    1
+                ),
+                LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.WithdrawalAboveValue, 1)
+            ),
+            result.report.lines
+        )
+        assertEquals(
+            listOf("Fondo"),
+            result.contents.financial.investments.map { it.investment.name.value }
+        )
+        assertEquals(
+            listOf(
+                "0 Contribution 100000 2026-08-01 null",
+                "1 Valuation 100000 2026-08-01 null",
+                "2 Withdrawal 40000 2026-08-04 null"
+            ),
+            result.contents.movements(0)
+        )
+        assertRoundTrip(result.contents)
+    }
+
+    @Test
+    fun `the dollar rate keeps its date and exact decimals, rounded half up to the centavo`() {
+        val text = legacy(
+            rates(
+                rate("USD", "4150.125"),
+                rate("EUR", "4500.5"),
+                rate("USD", "3900.5", date = "2026-10-01"),
+                rate("USD", "4150.123456"),
+                rate("USD", "4.15E3"),
+                rate("USD", "0.001"),
+                rate("USD", "\"4000\""),
+                rate("USD", "4000", date = "2026-10-26 09:00"),
+                rate("USD", "4000", date = "ayer")
+            )
+        )
+
+        val result = translated(text)
+
+        assertEquals(
+            listOf(
+                LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.Rounded, 2),
+                LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.Unreadable, 1),
+                LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.AmountOutOfRange, 1),
+                LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.InvalidDate, 1),
+                LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.DateAfterExport, 1),
+                LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.UnsupportedCurrency, 1)
+            ),
+            result.report.lines
+        )
+        assertEquals(
+            listOf(
+                "1 415013 2026-10-20 2026-10-20T05:00:00Z",
+                "2 390050 2026-10-01 2026-10-01T05:00:00Z",
+                "3 415012 2026-10-20 2026-10-20T05:00:00Z",
+                "4 415000 2026-10-20 2026-10-20T05:00:00Z"
+            ),
+            result.contents.financial.usdRates.map {
+                "${it.sequence} ${it.rate.hundredths} ${it.date} ${it.createdAt}"
+            }
+        )
+        assertRoundTrip(result.contents)
+    }
+
+    @Test
+    fun `merchant rules are still reported as not imported`() {
+        val text = legacy(
+            "\"merchantRules\": [{\"merchantKey\": \"exito\", \"direction\": \"EXPENSE\", " +
+                "\"action\": \"CATEGORIZE\", \"displayName\": \"Éxito\", \"updatedAt\": 1}]"
+        )
+
+        assertEquals(
+            listOf(LegacyImportLine(LegacyRecord.MerchantRule, LegacyReason.NotImportedYet, 1)),
+            translated(text).report.lines
+        )
     }
 
     private fun finite(pesos: Long): BudgetLimit = BudgetLimit.finite(Money.cop(pesos)).value()
