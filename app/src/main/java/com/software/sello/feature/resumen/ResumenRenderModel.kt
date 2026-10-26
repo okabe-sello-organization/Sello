@@ -3,7 +3,6 @@ package com.software.sello.feature.resumen
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ComparisonBar
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.WeekdayPattern
 import com.software.sello.domain.port.ResumenSnapshotState
@@ -151,28 +150,11 @@ class ResumenRenderModel(private val money: MoneyFormatter) {
         )
     }
 
-    private fun income(snapshot: ResumenSnapshot): ResumenIncome {
-        val destinations = snapshot.destinations
-        return ResumenIncome(
-            count = snapshot.incomeCount,
-            destinations = destinations.top.map {
-                ResumenDestination(
-                    it.category.id.value,
-                    it.category.name.value,
-                    it.category.icon.value,
-                    taken(it.spent)
-                )
-            },
-            others = destinations.takeIf { it.restCount > 0 }?.let {
-                ResumenOthers(it.restCount, taken(it.rest))
-            },
-            spentShare = share(snapshot.budget.spent.minorUnits, snapshot.income.minorUnits),
-            overspent = snapshot.netFlow.minorUnits < 0
-        )
-    }
-
-    /** What spending took off the income, written with a minus. Spending is never negative. */
-    private fun taken(spent: Money) = money.format(Money(-spent.minorUnits, spent.currency))
+    private fun income(snapshot: ResumenSnapshot) = ResumenIncome(
+        count = snapshot.incomeCount,
+        spentShare = share(snapshot.budget.spent.minorUnits, snapshot.income.minorUnits),
+        overspent = snapshot.netFlow.minorUnits < 0
+    )
 
     private fun weekdays(pattern: WeekdayPattern): ResumenWeekdays {
         val busiest = pattern.days.firstOrNull { it.day == pattern.busiest }

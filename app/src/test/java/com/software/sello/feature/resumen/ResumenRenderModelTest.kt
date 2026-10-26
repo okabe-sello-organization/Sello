@@ -1,13 +1,10 @@
 package com.software.sello.feature.resumen
 
 import com.software.sello.designsystem.component.ChartPeriod
-import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
-import com.software.sello.domain.model.CategorySpending
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DailySpending
-import com.software.sello.domain.model.IncomeDestinations
 import com.software.sello.domain.model.LimitAdjustment
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
@@ -60,17 +57,7 @@ internal fun resumenSnapshot(spent: Long = 30_000, income: Long = 150_000): Resu
             DailySpending(month.atDay(3), Money.cop(5_000), Money.cop(spent))
         ),
         listOf(SpendingMonth(month, Money.cop(spent), Money.cop(100_000), null, 3)), 0,
-        incomeCount = 1,
-        destinations = IncomeDestinations(
-            listOf(
-                CategorySpending(
-                    categoryIn(1, "Comida", null, icon = "restaurant").category,
-                    Money.cop(spent)
-                )
-            ),
-            Money.cop(0),
-            0
-        )
+        incomeCount = 1
     )
 }
 
@@ -150,73 +137,15 @@ class ResumenRenderModelTest {
 
     // --- SELLO-123: where the income went ---
 
-    private fun destinations(
-        income: Long,
-        spent: Long,
-        top: List<Triple<String, String, Long>>,
-        rest: Long,
-        others: Int
-    ) = resumenSnapshot(spent = spent, income = income).copy(
-        incomeCount = 3,
-        destinations = IncomeDestinations(
-            top.mapIndexed { index, (name, icon, pesos) ->
-                CategorySpending(
-                    categoryIn(index + 1, name, null, icon = icon).category,
-                    Money.cop(pesos)
-                )
-            },
-            Money.cop(rest),
-            others
-        )
-    )
-
     private fun incomeOf(snapshot: ResumenSnapshot) =
         (render.render(ResumenSnapshotState.Ready(snapshot)) as ResumenState.Ready).incomeSlip
 
     @Test
-    fun theIncomeSlipTakesOffTheCategoriesThatTookMostAndTheOthersTogether() {
-        val slip = incomeOf(
-            destinations(
-                2_000_000,
-                400_000,
-                listOf(
-                    Triple("Hogar", "home", 200_000),
-                    Triple("Comida", "restaurant", 80_000),
-                    Triple("Café", "local_cafe", 60_000)
-                ),
-                60_000,
-                2
-            )
-        )
+    fun theIncomeSlipCountsTheIncomesAndDrawsWhatWasSpentOfThem() {
+        val slip =
+            incomeOf(resumenSnapshot(spent = 400_000, income = 2_000_000).copy(incomeCount = 3))
 
         assertEquals(3, slip.count)
-        assertEquals(
-            listOf(
-                listOf(
-                    "00000000-0000-4000-8000-000000000001",
-                    "Hogar",
-                    "home",
-                    "menos 200.000 pesos"
-                ),
-                listOf(
-                    "00000000-0000-4000-8000-000000000002",
-                    "Comida",
-                    "restaurant",
-                    "menos 80.000 pesos"
-                ),
-                listOf(
-                    "00000000-0000-4000-8000-000000000003",
-                    "Café",
-                    "local_cafe",
-                    "menos 60.000 pesos"
-                )
-            ),
-            slip.destinations.map { listOf(it.id, it.name, it.iconKey, it.amount.spoken) }
-        )
-        assertEquals(MoneySign.Minus, slip.destinations.first().amount.sign)
-        assertEquals("200.000", slip.destinations.first().amount.digits)
-        assertEquals(2, slip.others?.count)
-        assertEquals("menos 60.000 pesos", slip.others?.amount?.spoken)
         // 400.000 of 2.000.000: a fifth of the bar.
         assertEquals(0.2f, slip.spentShare, 0.0001f)
         assertFalse(slip.overspent)
@@ -224,21 +153,15 @@ class ResumenRenderModelTest {
 
     @Test
     fun spendingAboveTheIncomeFillsTheBarAndSaysSo() {
-        val slip = incomeOf(
-            destinations(1_000_000, 1_120_000, listOf(Triple("Hogar", "home", 1_120_000)), 0, 0)
-        )
+        val slip = incomeOf(resumenSnapshot(spent = 1_120_000, income = 1_000_000))
 
         assertEquals(1f, slip.spentShare)
         assertTrue(slip.overspent)
-        assertNull(slip.others)
     }
 
     @Test
     fun withNoIncomeNothingIsDrawnAsSpentOfIt() {
-        val slip = incomeOf(
-            destinations(0, 30_000, listOf(Triple("Comida", "restaurant", 30_000)), 0, 0)
-                .copy(incomeCount = 0)
-        )
+        val slip = incomeOf(resumenSnapshot(spent = 30_000, income = 0).copy(incomeCount = 0))
 
         assertEquals(0, slip.count)
         assertEquals(0f, slip.spentShare)

@@ -63,20 +63,7 @@ internal fun resumenExample(money: MoneyFormatter): ResumenState.Ready {
         ),
         income = money.format(Money.cop(150_000)),
         spent = money.format(Money.cop(30_000)), netFlow = money.format(Money.cop(120_000)),
-        incomeSlip = ResumenIncome(
-            count = 2,
-            destinations = listOf(
-                ResumenDestination(
-                    "00000000-0000-4000-8000-000000000001",
-                    "Comida",
-                    "restaurant",
-                    money.format(Money.cop(-30_000))
-                )
-            ),
-            others = null,
-            spentShare = 0.2f,
-            overspent = false
-        ),
+        incomeSlip = ResumenIncome(count = 2, spentShare = 0.2f, overspent = false),
         history = listOf(
             point("2026-09", "sep", 20_000, 80_000),
             point("2026-10", "oct", 30_000, 100_000, current = true)

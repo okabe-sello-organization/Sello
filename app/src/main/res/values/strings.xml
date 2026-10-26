@@ -525,6 +525,7 @@
     <!-- Where the income went (SELLO-123): by spending only, ADR 0012 BG4. -->
     <string name="resumen_income_question">¿A dónde fue lo que entró?</string>
     <string name="resumen_income_in">Entró en %1$s</string>
+    <string name="resumen_income_spent">Gastos</string>
     <string name="resumen_income_bar_spent">Gastos: %1$s</string>
     <string name="resumen_income_bar_rest">Ingresos menos gastos: %1$s</string>
     <string name="resumen_income_overspent">Anotaste %1$s de ingresos y %2$s de gastos.</string>
@@ -541,7 +542,6 @@
     <string name="resumen_month_in_progress">mes en curso, hasta hoy</string>
     <string name="resumen_in_progress_note">* Mes en curso: lo gastado hasta hoy.</string>
     <string name="resumen_limit_line">Límite %1$s</string>
-    <string name="resumen_where_it_goes">¿Dónde se va?</string>
     <string name="resumen_actual_through">Movimientos anotados hasta el %1$s</string>
     <string name="resumen_empty">Aún no hay gastos</string>
     <string name="resumen_empty_body">Cuando anotes un gasto, aquí verás cómo crece tu historia.</string>
@@ -561,10 +561,6 @@
     <string name="resumen_hero_spent_in">gastados en %1$s</string>
     <string name="resumen_hero_first_month">Cuando completes otro mes podrás comparar los mismos días.</string>
     <string name="resumen_normal_month">Un mes normal</string>
-    <plurals name="resumen_income_others">
-        <item quantity="one">Otra categoría</item>
-        <item quantity="other">Otras %1$d categorías</item>
-    </plurals>
     <plurals name="resumen_stub_incomes_count">
         <item quantity="one">%1$d en %2$s</item>
         <item quantity="other">%1$d en %2$s</item>

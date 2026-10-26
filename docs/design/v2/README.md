@@ -151,8 +151,8 @@ button that returns to the current month in one tap.
 
 ## Resumen
 
-**Order, top to bottom:** hero → income → month by month → where the money goes →
-which days → one suggestion. The month in progress is never projected.
+**Order, top to bottom:** hero → income, with where the money goes (SELLO-124) → month
+by month → which days → one suggestion. The month in progress is never projected.
 
 - **Hero:** "¿Cómo va este mes?". The big number is the difference with the same days
   of the previous month (**50.000** "menos que en septiembre", ↓ 11,1 % al mismo día del
@@ -160,24 +160,25 @@ which days → one suggestion. The month in progress is never projected.
   with exact amounts. Up and down use the same neutral ink and arrow: spending more is
   a fact, not a failure. A past month asks "¿Cómo cerró septiembre?" and compares full
   months.
-- **Income** (right after the hero; redesigned by the owner 2026-10-26, SELLO-123):
-  "¿A dónde fue lo que entró?" as a receipt. **Entró en {mes}** and the recorded total,
-  a bar of spent (solid) against the rest of the income (striped), the three categories
-  that took most with their icons, each taken off ("− 200.000") and opening its
-  category, **Otras N categorías** together, then **Ingresos menos gastos** as the total.
+- **Income** (right after the hero; redesigned by the owner 2026-10-26, SELLO-123 and
+  SELLO-124):
+  "¿A dónde fue lo que entró?" as a receipt, and the only place categories are ranked.
+  **Entró en {mes}** and the recorded total, a bar of spent (solid) against the rest of
+  the income (striped), "Lo gastado en octubre, hasta el 22", then every category as
+  "¿Dónde se va?" showed it (circle, name, share bar against spending, exact amount,
+  opening the category), a **Gastos** line and **Ingresos menos gastos** as the total.
   Spending above the income signs it in red with "Anotaste 1.000.000 de ingresos y
   1.120.000 de gastos."; with no income recorded the slip says "Aún no anotas ingresos
-  en {mes}." and shows no negative figure. Spending only: goal and investment records
-  are not destinations (ADR 0012 BG4), and Sin asignar stays on the income screen.
-  Under the tear line, a stub of two halves: **Ingresos** ("3 en octubre") opens the
-  income list and **Fijos** ("Próximo: 28 oct", "hoy", "mañana" or "Ninguno activo")
-  opens Pagos e ingresos fijos. The mockup is in SELLO-123's `artifacts/`.
+  en {mes}." and shows the rows and their **Total**, with no negative figure. Spending
+  only: goal and investment records are not destinations (ADR 0012 BG4), and Sin asignar
+  stays on the income screen. Under the tear line, a stub of two centred halves:
+  **Ingresos** ("3 en octubre") opens the income list and **Fijos** ("Próximo: 28 oct",
+  "hoy", "mañana" or "Ninguno activo") opens Pagos e ingresos fijos. The mockup is in
+  SELLO-124's `artifacts/`.
 - **Mes a mes:** "Un mes normal" (average of the full months shown) first, then
   v1.1 columns: past months in `pastBar`, the month in progress striped and marked
   `*`, one dashed limit line, values printed only on the highest and current
   columns. Tapping a column gives its exact value.
-- **¿Dónde se va?** categories ranked by actual spending with share bars, exact
-  amounts, a total line and access to each category.
 - **¿Qué días gastas más?** the answer first ("Los sábados", the average), then the
   weekday columns.
 - **Suggestion:** at most one, as a tinted note (`brandSoft`, light-bulb circle,

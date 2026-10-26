@@ -12,7 +12,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertContentDescriptionContains
 import androidx.compose.ui.test.assertContentDescriptionEquals
-import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -107,7 +106,10 @@ class ResumenScreenTest {
         rule.onNodeWithText("¿A dónde fue lo que entró?").assertIsDisplayed()
         rule.onNodeWithText("Entró en octubre").assertIsDisplayed()
         rule.onNodeWithContentDescription("150.000 pesos").assertIsDisplayed()
-        rule.onNodeWithContentDescription("menos 30.000 pesos").assertIsDisplayed()
+        rule.onNode(
+            hasTestTag("resumen.category.00000000-0000-4000-8000-000000000001") and
+                hasAnyAncestor(hasTestTag("resumen.flow"))
+        ).assertTextContains("Comida")
         rule.onNodeWithText("Ingresos menos gastos").performScrollTo().assertIsDisplayed()
         rule.onNodeWithContentDescription("120.000 pesos").assertIsDisplayed()
         rule.onNodeWithContentDescription("Ingresos, 2 en octubre").performScrollTo()
@@ -249,7 +251,6 @@ class ResumenScreenTest {
             "resumen.hero",
             "resumen.flow",
             "resumen.history",
-            "resumen.categories",
             "resumen.weekdays",
             "resumen.suggestion"
         ).map { rule.onNodeWithTag(it).getUnclippedBoundsInRoot().top }
@@ -273,42 +274,50 @@ class ResumenScreenTest {
     }
 
     @Test
-    fun whereTheMoneyGoesIsRankedWithExactAmountsAndATotal() {
+    fun whereTheMoneyGoesIsRankedInsideTheIncomeSlipWithItsTotal() {
         show()
 
-        rule.onNodeWithText("¿Dónde se va?").performScrollTo().assertIsDisplayed()
+        // One slip: "¿Dónde se va?" has none of its own any more.
+        rule.onNodeWithText("¿Dónde se va?").assertDoesNotExist()
+        rule.onNodeWithText("Lo gastado en octubre, hasta el 3").performScrollTo()
+            .assertIsDisplayed()
         rule.onNodeWithTag("resumen.category.00000000-0000-4000-8000-000000000001")
             .performScrollTo().assertTextContains("Comida").performClick()
-        rule.onNodeWithText("Total").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag("resumen.spent").performScrollTo()
+            .assertTextContains("Gastos").assertContentDescriptionContains("30.000 pesos")
 
         rule.runOnIdle { assertEquals("00000000-0000-4000-8000-000000000001", category) }
     }
 
     // --- SELLO-123: where the income went ---
 
-    private fun destination(number: Int, name: String, icon: String, pesos: Long) =
-        ResumenDestination(
+    private fun row(number: Int, name: String, icon: String, pesos: Long, share: Float) =
+        ResumenCategory(
             "00000000-0000-4000-8000-%012d".format(number),
             name,
             icon,
-            money.format(Money.cop(-pesos))
+            money.format(Money.cop(pesos)),
+            share
         )
 
     private fun spending(
         income: Long,
         spent: Long,
-        destinations: List<ResumenDestination>,
-        others: ResumenOthers?,
         count: Int = 3,
         next: ResumenNextFixed = ResumenNextFixed.Unknown
     ) = example().copy(
         income = money.format(Money.cop(income)),
         spent = money.format(Money.cop(spent)),
         netFlow = money.format(Money.cop(income - spent)),
+        categories = listOf(
+            row(1, "Hogar", "home", 200_000, 0.5f),
+            row(2, "Comida", "restaurant", 80_000, 0.2f),
+            row(3, "Café", "local_cafe", 60_000, 0.15f),
+            row(4, "Transporte", "directions_bus", 40_000, 0.1f),
+            row(5, "Ocio", "theaters", 20_000, 0.05f)
+        ),
         incomeSlip = ResumenIncome(
             count,
-            destinations,
-            others,
             if (income == 0L) 0f else minOf(1f, spent.toFloat() / income),
             spent > income
         ),
@@ -318,16 +327,10 @@ class ResumenScreenTest {
     private val today = LocalDate.parse("2026-10-22")
 
     @Test
-    fun theIncomeSlipTakesOffWhatEachCategoryTookAndItsStubOpensBothScreens() {
+    fun theIncomeSlipRanksEveryCategoryAndItsStubOpensBothScreens() {
         state.value = spending(
             2_000_000,
             400_000,
-            listOf(
-                destination(1, "Hogar", "home", 200_000),
-                destination(2, "Comida", "restaurant", 80_000),
-                destination(3, "Café", "local_cafe", 60_000)
-            ),
-            ResumenOthers(2, money.format(Money.cop(-60_000))),
             next = ResumenNextFixed.On(LocalDate.parse("2026-10-28"), today)
         )
         show()
@@ -336,16 +339,17 @@ class ResumenScreenTest {
         rule.onNodeWithTag("resumen.income.bar").performScrollTo().assertContentDescriptionEquals(
             "Gastos: 400.000 pesos. Ingresos menos gastos: 1.600.000 pesos"
         )
-        rule.onNodeWithTag("resumen.income.00000000-0000-4000-8000-000000000002")
-            .performScrollTo()
-            .assertTextContains("Comida")
-            .assertContentDescriptionContains("menos 80.000 pesos")
-            .performClick()
+        // Every category, in the slip, as the ranking shows it.
+        listOf("Hogar", "Comida", "Café", "Transporte", "Ocio").forEachIndexed { index, name ->
+            rule.onNode(
+                hasTestTag("resumen.category.00000000-0000-4000-8000-%012d".format(index + 1)) and
+                    hasAnyAncestor(hasTestTag("resumen.flow"))
+            ).performScrollTo().assertTextContains(name)
+        }
+        rule.onNodeWithTag("resumen.category.00000000-0000-4000-8000-000000000002").performClick()
         rule.runOnIdle { assertEquals("00000000-0000-4000-8000-000000000002", category) }
-        rule.onNodeWithTag("resumen.income.others").performScrollTo()
-            .assertTextContains("Otras 2 categorías")
-            .assertContentDescriptionContains("menos 60.000 pesos")
-            .assertHasNoClickAction()
+        rule.onNodeWithTag("resumen.spent").performScrollTo()
+            .assertContentDescriptionContains("400.000 pesos")
         rule.onNodeWithContentDescription("1.600.000 pesos").performScrollTo().assertIsDisplayed()
         rule.onNodeWithTag("resumen.openSchedules").performScrollTo()
             .assertContentDescriptionEquals("Pagos e ingresos fijos, Próximo: 28 oct")
@@ -359,18 +363,11 @@ class ResumenScreenTest {
 
     @Test
     fun theFixedHalfSaysTodayTomorrowOrNoneAndNothingWhenUnknown() {
-        state.value = spending(
-            2_000_000,
-            400_000,
-            listOf(destination(1, "Hogar", "home", 400_000)),
-            null,
-            next = ResumenNextFixed.On(today, today)
-        )
+        state.value = spending(2_000_000, 400_000, next = ResumenNextFixed.On(today, today))
         show()
         val fixed = rule.onNodeWithTag("resumen.openSchedules")
-        fixed.performScrollTo().assertContentDescriptionEquals(
-            "Pagos e ingresos fijos, Próximo: hoy"
-        )
+        fixed.performScrollTo()
+            .assertContentDescriptionEquals("Pagos e ingresos fijos, Próximo: hoy")
         rule.runOnIdle {
             state.value = (state.value as ResumenState.Ready)
                 .copy(nextFixed = ResumenNextFixed.On(today.plusDays(1), today))
@@ -386,44 +383,33 @@ class ResumenScreenTest {
                 (state.value as ResumenState.Ready).copy(nextFixed = ResumenNextFixed.Unknown)
         }
         fixed.assertContentDescriptionEquals("Pagos e ingresos fijos")
-        // Three categories or fewer: no Otras line.
-        rule.onNodeWithTag("resumen.income.others").assertDoesNotExist()
     }
 
     @Test
     fun spendingAboveTheIncomeIsSignedAndRedWithTheTwoFactsBehindIt() {
-        state.value = spending(
-            1_000_000,
-            1_120_000,
-            listOf(destination(1, "Hogar", "home", 1_120_000)),
-            null
-        )
+        state.value = spending(1_000_000, 1_120_000, count = 1)
         show()
 
-        rule.onNodeWithContentDescription(
-            "menos 120.000 pesos"
-        ).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithContentDescription("menos 120.000 pesos").performScrollTo()
+            .assertIsDisplayed()
         rule.onNodeWithText("Anotaste 1.000.000 de ingresos y 1.120.000 de gastos.")
             .performScrollTo().assertIsDisplayed()
     }
 
     @Test
-    fun withNoIncomeTheSlipSaysSoWithoutANegativeFigure() {
-        state.value =
-            spending(
-                0,
-                30_000,
-                listOf(destination(1, "Comida", "restaurant", 30_000)),
-                null,
-                count = 0
-            )
+    fun withNoIncomeTheSlipIsTheRankingAndItsTotalWithoutANegativeFigure() {
+        state.value = spending(0, 400_000, count = 0)
         show()
 
         rule.onNodeWithText("Aún no anotas ingresos en octubre.").performScrollTo()
             .assertIsDisplayed()
         rule.onNodeWithTag("resumen.netFlow").assertDoesNotExist()
         rule.onNodeWithTag("resumen.income.bar").assertDoesNotExist()
-        rule.onNodeWithContentDescription("menos 30.000 pesos").assertDoesNotExist()
+        rule.onNodeWithContentDescription("menos 400.000 pesos").assertDoesNotExist()
+        rule.onNodeWithTag("resumen.category.00000000-0000-4000-8000-000000000001")
+            .performScrollTo().assertTextContains("Hogar")
+        rule.onNodeWithTag("resumen.spent").performScrollTo()
+            .assertTextContains("Total").assertContentDescriptionContains("400.000 pesos")
         rule.onNodeWithTag("resumen.openIncome").performScrollTo()
             .assertContentDescriptionEquals("Ingresos, Ninguno en octubre")
     }

@@ -103,13 +103,13 @@ fun ResumenScreen(
                             SummarySlips(state, onIncome, onSchedules, onAction, onCategory)
                         }
                         ResumenPane(Modifier.weight(1f)) {
-                            ChartSlips(state, onAction, onCategory, onExpense, onAdjustLimit)
+                            ChartSlips(state, onAction, onExpense, onAdjustLimit)
                         }
                     }
                 } else {
                     ResumenPane(content) {
                         SummarySlips(state, onIncome, onSchedules, onAction, onCategory)
-                        ChartSlips(state, onAction, onCategory, onExpense, onAdjustLimit)
+                        ChartSlips(state, onAction, onExpense, onAdjustLimit)
                     }
                 }
             }
@@ -150,9 +150,10 @@ private fun SummarySlips(
 
 /**
  * Where the month's recorded income went, as a receipt: what came in, a bar of spent
- * against the rest, the categories that took most taken off, the others together and
- * Ingresos menos gastos. Spending only: goals and investments are not destinations (ADR
- * 0012 BG4). Under the tear line, a stub to the income list and Pagos e ingresos fijos.
+ * against the rest, every category ranked by what it took, what was spent and Ingresos
+ * menos gastos. With no income, the ranking and its total alone. Spending only: goals and
+ * investments are not destinations (ADR 0012 BG4). Under the tear line, a stub to the
+ * income list and Pagos e ingresos fijos.
  */
 @Composable
 private fun IncomeSlip(
@@ -173,6 +174,13 @@ private fun IncomeSlip(
                 modifier = Modifier.testTag("resumen.income")
             )
             ResumenNote(stringResource(R.string.resumen_income_none_body))
+            Ranking(state, onCategory)
+            if (state.categories.isNotEmpty()) {
+                TotalLine(
+                    stringResource(R.string.income_list_total),
+                    Modifier.testTag("resumen.spent")
+                ) { MoneyText(state.spent, style = MoneyStyle.Title) }
+            }
         } else {
             IncomeLines(state, onCategory)
         }
@@ -239,20 +247,9 @@ private fun IncomeLines(state: ResumenState.Ready, onCategory: (String) -> Unit)
         ),
         Modifier.padding(vertical = SelloTheme.spacing.sm).testTag("resumen.income.bar")
     )
-    slip.destinations.forEach { destination ->
-        LeaderLine(
-            destination.name,
-            modifier = Modifier.testTag("resumen.income.${destination.id}"),
-            icon = CategoryIcons.iconFor(destination.iconKey),
-            onClick = { onCategory(destination.id) }
-        ) { MoneyText(destination.amount) }
-    }
-    slip.others?.let { others ->
-        LeaderLine(
-            pluralStringResource(R.plurals.resumen_income_others, others.count, others.count),
-            // Under the names above, past where their icons sit.
-            modifier = Modifier.padding(start = 25.dp).testTag("resumen.income.others")
-        ) { MoneyText(others.amount) }
+    Ranking(state, onCategory)
+    LeaderLine(stringResource(R.string.resumen_income_spent), Modifier.testTag("resumen.spent")) {
+        MoneyText(state.spent)
     }
     TotalLine(stringResource(R.string.resumen_net_flow), Modifier.testTag("resumen.netFlow")) {
         MoneyText(
@@ -271,6 +268,38 @@ private fun IncomeLines(state: ResumenState.Ready, onCategory: (String) -> Unit)
         )
     }
     ResumenNote(stringResource(R.string.resumen_actual_through, state.asOf))
+}
+
+/**
+ * Every category with spending, most first, each with its share of what was spent and
+ * opening its category; nothing when nothing was spent.
+ */
+@Composable
+private fun Ranking(state: ResumenState.Ready, onCategory: (String) -> Unit) {
+    if (state.categories.isEmpty()) return
+    Text(
+        if (state.hero.inProgress) {
+            stringResource(
+                R.string.resumen_where_basis_in_progress,
+                state.hero.monthName,
+                state.hero.throughDay
+            )
+        } else {
+            stringResource(R.string.resumen_where_basis, state.hero.monthName)
+        },
+        style = MaterialTheme.typography.bodySmall,
+        color = SelloTheme.colors.inkSoft
+    )
+    state.categories.forEach { category ->
+        SpendingRankRow(
+            name = category.name,
+            icon = CategoryIcons.iconFor(category.iconKey),
+            amount = category.amount,
+            share = category.share,
+            onClick = { onCategory(category.id) },
+            modifier = Modifier.testTag("resumen.category.${category.id}")
+        )
+    }
 }
 
 /** "Próximo: hoy", "mañana" or "28 oct"; nothing while the schedules cannot be read. */
@@ -296,7 +325,7 @@ private fun nextFixed(next: ResumenNextFixed): String? {
 }
 
 /**
- * Month by month, where the money goes, which days cost most and, at most, one
+ * Month by month, which days cost most and, at most, one
  * suggestion. The month in progress is striped, marked and said to be up to today,
  * never drawn as a whole month.
  */
@@ -304,7 +333,6 @@ private fun nextFixed(next: ResumenNextFixed): String? {
 private fun ChartSlips(
     state: ResumenState.Ready,
     onAction: (ResumenAction) -> Unit,
-    onCategory: (String) -> Unit,
     onExpense: () -> Unit,
     onAdjustLimit: (String) -> Unit
 ) {
@@ -398,37 +426,6 @@ private fun ChartSlips(
             )
         }
         if (state.insufficientHistory) Text(stringResource(R.string.resumen_insufficient_history))
-    }
-    if (state.categories.isNotEmpty()) {
-        Slip(Modifier.fillMaxWidth().testTag("resumen.categories")) {
-            ResumenHeading(stringResource(R.string.resumen_where_it_goes))
-            Text(
-                if (state.hero.inProgress) {
-                    stringResource(
-                        R.string.resumen_where_basis_in_progress,
-                        state.hero.monthName,
-                        state.hero.throughDay
-                    )
-                } else {
-                    stringResource(R.string.resumen_where_basis, state.hero.monthName)
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = SelloTheme.colors.inkSoft
-            )
-            state.categories.forEach { category ->
-                SpendingRankRow(
-                    name = category.name,
-                    icon = CategoryIcons.iconFor(category.iconKey),
-                    amount = category.amount,
-                    share = category.share,
-                    onClick = { onCategory(category.id) },
-                    modifier = Modifier.testTag("resumen.category.${category.id}")
-                )
-            }
-            TotalLine(stringResource(R.string.income_list_total)) {
-                MoneyText(state.spent, style = MoneyStyle.Title)
-            }
-        }
     }
     state.weekdays?.let { Weekdays(it, state.selectedWeekday, onAction) }
     state.suggestion?.let { suggestion ->
