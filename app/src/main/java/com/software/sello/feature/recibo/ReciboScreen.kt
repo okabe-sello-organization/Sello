@@ -425,7 +425,9 @@ private fun CategoriesSlip(
             }
         }
         val editLabel = stringResource(R.string.recibo_category_edit)
-        CategoryGrid(categories) { index, category ->
+        // Archived ones last and apart, each part in the order it came in.
+        val (archived, active) = categories.partition { it.archived }
+        val cell: @Composable (Int, ReciboCategory) -> Unit = { index, category ->
             val isSelected = category.id == selectedCategoryId
             CategoryCell(
                 name = category.name,
@@ -452,8 +454,22 @@ private fun CategoriesSlip(
                     else -> null
                 },
                 staggerIndex = index,
-                unlimited = category.unlimited
+                unlimited = category.unlimited,
+                archived = category.archived
             )
+        }
+        if (active.isNotEmpty()) CategoryGrid(active, cell = cell)
+        if (archived.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.recibo_archived_section),
+                // As Ajustar presupuesto's group headings.
+                style = MaterialTheme.typography.titleSmall,
+                color = SelloTheme.colors.inkSoft,
+                modifier = Modifier
+                    .padding(top = SelloTheme.spacing.md, bottom = SelloTheme.spacing.xs)
+                    .semantics { heading() }
+            )
+            CategoryGrid(archived, cell = cell)
         }
     }
 }

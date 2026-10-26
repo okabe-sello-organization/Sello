@@ -21,7 +21,7 @@ function row(name, spent, limit, { archived = false } = {}) {
   const label = archived
     ? `${name}. Archivada. Desarchívala para cambiar su límite. Abrir categoría`
     : `${name}. ${over ? "Te pasaste por " + spoken(-left) : "Quedan " + spoken(left)}. Gastaste ${spoken(spent)} de ${spoken(limit)}. Cambiar límite`;
-  return `<button class="rank-row" aria-label="${label}"><span class="circle ${over ? "over" : ""}" style="--fill:${fill}%" aria-hidden="true">${icon(ICONS[name] || "receipt_long")}<span class="on">${icon(ICONS[name] || "receipt_long")}</span></span><span class="rank-main"><span>${name}</span><small class="adj-cap">${caption}</small></span>${money(left)}${icon("chevron_right", "chev")}</button>`;
+  return `<button class="rank-row" aria-label="${label}"><span class="circle ${archived ? "archived" : over ? "over" : ""}" style="--fill:${fill}%" aria-hidden="true">${icon(ICONS[name] || "receipt_long")}<span class="on">${icon(ICONS[name] || "receipt_long")}</span></span><span class="rank-main"><span>${name}</span><small class="adj-cap">${caption}</small></span>${money(left)}${icon("chevron_right", "chev")}</button>`;
 }
 
 // Overspent first, then least room left; ties by name. Those without a limit go apart.
@@ -46,7 +46,7 @@ function body(s) {
   h += `<div class="leader"><span>Gastado</span><i class="dots"></i><b>${money(spent)}</b></div>`;
   if (s.reserved) h += `<button class="footnote">${icon("event")}<span>Incluye <b>${money(s.reserved)}</b> separado para 1 pago previsto</span>${icon("chevron_right", "chev")}</button>`;
   h += `</section>`;
-  h += `<section class="slip"><h2 class="q">Tus categorías</h2><p class="caption" style="margin:0">Toca una para cambiar su límite de octubre.</p><div class="rank">${rows(SPEND[s.spend], limits, s.extraRows || "")}</div>${s.open ? `<p class="open-head">Sin límite</p><div class="rank">${s.open}</div>` : ""}</section>`;
+  h += `<section class="slip"><h2 class="q">Tus categorías</h2><p class="caption" style="margin:0">Toca una para cambiar su límite de octubre.</p><div class="rank">${rows(SPEND[s.spend], limits, s.extraRows || "")}</div>${s.open ? `<p class="open-head">Sin límite</p><div class="rank">${s.open}</div>` : ""}${s.archived ? `<p class="open-head">Archivadas</p><div class="rank">${s.archived}</div>` : ""}</section>`;
   return h;
 }
 
@@ -81,8 +81,8 @@ const OPEN = row("Regalos", 10000, null);
 const ARCHIVED = row("Viejo", 0, 30000, { archived: true });
 
 const SCREENS = [
-  ["Excedido", "Overspent categories first, each with its own signed remainder. Categories without a limit are listed apart because their spending counts too; an archived one says why it cannot be changed here and opens its editor.",
-    { ...EXCEDIDO, open: OPEN, extraRows: ARCHIVED }],
+  ["Excedido", "Overspent categories first, each with its own signed remainder. Categories without a limit are listed apart because their spending counts too; archived ones come last in grey, say why they cannot be changed here and open their editor.",
+    { ...EXCEDIDO, open: OPEN, archived: ARCHIVED }],
   ["Revisar · payments are more than what is left", "The reserved payments stay as Recibo's footnote and open Pagos previstos; categories never show them.",
     { spend: "tight", label: "Falta para tus pagos", hero: 50000, status: "short", sentence: "Quedan 100.000 y tus pagos previstos suman 150.000.", reserved: 150000 }],
   ["Back from the sheet", "Café's limit for October went from 50.000 to 150.000. The screen re-reads the month: the stamp and the order change, and the notice names the period.",

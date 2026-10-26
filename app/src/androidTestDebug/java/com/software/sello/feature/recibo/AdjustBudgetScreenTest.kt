@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -18,6 +19,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.component.CATEGORY_ARCHIVED_TAG
 import com.software.sello.designsystem.component.CATEGORY_UNLIMITED_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
@@ -25,6 +27,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.press
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -94,9 +97,10 @@ class AdjustBudgetScreenTest {
         summary = summary,
         limit = plain("1.000.000"),
         spent = plain("1.080.000"),
-        limited = listOf(cafe, viejo),
+        limited = listOf(cafe),
         open = listOf(regalos),
-        stale = false
+        stale = false,
+        archived = listOf(viejo)
     )
 
     private val openSheet = LimitSheetState(
@@ -192,6 +196,24 @@ class AdjustBudgetScreenTest {
             .assertIsDisplayed()
         rule.onNode(hasText("sin límite") and inRow, useUnmergedTree = true).assertIsDisplayed()
         rule.onNode(hasText("gastado") and inRow, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun archivedCategoriesComeLastUnderTheirOwnHeadingInGrey() {
+        show(ready)
+
+        val heading = rule.onNodeWithText("Archivadas").performScrollTo().assertIsDisplayed()
+            .getUnclippedBoundsInRoot()
+        val row = rule.onNodeWithTag(adjustRowTag("viejo")).getUnclippedBoundsInRoot()
+        assertTrue(row.top >= heading.bottom)
+        rule.onNode(
+            hasTestTag(CATEGORY_ARCHIVED_TAG) and hasAnyAncestor(hasTestTag(adjustRowTag("viejo"))),
+            useUnmergedTree = true
+        ).assertExists()
+        rule.onNode(
+            hasTestTag(CATEGORY_ARCHIVED_TAG) and hasAnyAncestor(hasTestTag(adjustRowTag("cafe"))),
+            useUnmergedTree = true
+        ).assertDoesNotExist()
     }
 
     @Test

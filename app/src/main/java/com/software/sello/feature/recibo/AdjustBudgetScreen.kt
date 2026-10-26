@@ -202,6 +202,17 @@ private fun CategoriesSlip(state: AdjustBudgetState.Ready, onOpen: (AdjustRow) -
             )
             state.open.forEach { CategoryRow(it, onOpen) }
         }
+        if (state.archived.isNotEmpty()) {
+            Text(
+                stringResource(R.string.recibo_archived_section),
+                style = MaterialTheme.typography.titleSmall,
+                color = SelloTheme.colors.inkSoft,
+                modifier = Modifier
+                    .padding(top = 12.dp)
+                    .semantics { heading() }
+            )
+            state.archived.forEach { CategoryRow(it, onOpen) }
+        }
     }
 }
 
@@ -246,7 +257,8 @@ private fun CategoryRow(row: AdjustRow, onOpen: (AdjustRow) -> Unit) {
         spoken = spoken,
         onClick = { onOpen(row) },
         modifier = Modifier.testTag(adjustRowTag(row.id)),
-        unlimited = row.unlimited
+        unlimited = row.unlimited,
+        archived = row.archived
     )
 }
 

@@ -131,6 +131,24 @@ fun CategoryCircleExample() {
                     )
                 }
             }
+            Caption("Archivadas: en gris, con o sin límite")
+            Row(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
+                CategoryCircle(SelloIcon.Home, 0.4f, animate = false, archived = true)
+                CategoryCircle(
+                    SelloIcon.LocalCafe,
+                    1.2f,
+                    over = true,
+                    animate = false,
+                    archived = true
+                )
+                CategoryCircle(
+                    SelloIcon.ReceiptLong,
+                    null,
+                    animate = false,
+                    unlimited = true,
+                    archived = true
+                )
+            }
             Caption("Tamaños: 28, 46 y 62")
             Row(
                 verticalAlignment = Alignment.CenterVertically,

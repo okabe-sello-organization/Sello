@@ -45,6 +45,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.component.CATEGORY_ARCHIVED_TAG
 import com.software.sello.designsystem.component.CATEGORY_UNLIMITED_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
@@ -416,6 +417,76 @@ class ReciboScreenTest {
         listOf("e", "f").forEach { id ->
             rule.onNode(hasText("gastado") and inCell(id), useUnmergedTree = true).assertExists()
         }
+    }
+
+    @Test
+    fun archivedCategoriesComeLastUnderTheirOwnHeadingInGrey() {
+        val viejo = limited(
+            "z",
+            "Viejo",
+            ReciboHeadline.Remaining,
+            "18.000",
+            ReciboStamp.OnTrack,
+            "30.000"
+        ).copy(archived = true)
+        val regalos = open("u", "Regalos", ReciboStamp.NoLimit, archived = true)
+        // The archived ones come first from the render model; the screen moves them last.
+        show(
+            ReciboState.Month(
+                month(plain("937.200"), ReciboStamp.OnTrack, days = 9, perDay = "99.100").summary,
+                listOf(viejo, categories[0], regalos, categories[3]),
+                false
+            )
+        )
+
+        val heading = rule.onNodeWithText("Archivadas").performScrollTo().assertIsDisplayed()
+            .getUnclippedBoundsInRoot()
+        listOf("a", "d").forEach { id ->
+            val cell = rule.onNodeWithTag(reciboCategoryTag(id)).getUnclippedBoundsInRoot()
+            assertTrue("$id above the heading", cell.bottom <= heading.top)
+            rule.onNode(
+                hasTestTag(CATEGORY_ARCHIVED_TAG) and
+                    hasAnyAncestor(hasTestTag(reciboCategoryTag(id))),
+                useUnmergedTree = true
+            ).assertDoesNotExist()
+        }
+        listOf("z", "u").forEach { id ->
+            val cell = rule.onNodeWithTag(reciboCategoryTag(id)).getUnclippedBoundsInRoot()
+            assertTrue("$id below the heading", cell.top >= heading.bottom)
+            rule.onNode(
+                hasTestTag(CATEGORY_ARCHIVED_TAG) and
+                    hasAnyAncestor(hasTestTag(reciboCategoryTag(id))),
+                useUnmergedTree = true
+            ).assertExists()
+        }
+        // Without a limit it keeps its ∞, in grey.
+        rule.onNode(
+            hasTestTag(CATEGORY_UNLIMITED_TAG) and
+                hasAnyAncestor(hasTestTag(reciboCategoryTag("u"))),
+            useUnmergedTree = true
+        ).assertExists()
+    }
+
+    @Test
+    fun withOnlyArchivedCategoriesOnlyTheirSectionIsShown() {
+        val viejo = limited(
+            "z",
+            "Viejo",
+            ReciboHeadline.Remaining,
+            "18.000",
+            ReciboStamp.OnTrack,
+            "30.000"
+        ).copy(archived = true)
+        show(
+            ReciboState.Month(
+                month(plain("937.200"), ReciboStamp.OnTrack, days = 9, perDay = "99.100").summary,
+                listOf(viejo),
+                false
+            )
+        )
+
+        rule.onNodeWithText("Archivadas").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag(reciboCategoryTag("z")).performScrollTo().assertIsDisplayed()
     }
 
     @Test
