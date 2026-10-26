@@ -50,7 +50,7 @@ class ScheduleJourneyTest {
         rule.awaitText("Resumen")
         rule.onNodeWithText("Resumen").performClick()
         rule.awaitTag("resumen.income")
-        rule.onNodeWithText("Pagos e ingresos fijos").performScrollTo().performClick()
+        rule.onNodeWithTag("resumen.openSchedules").performScrollTo().performClick()
         rule.awaitTag(SCHEDULES_TAG)
     }
 

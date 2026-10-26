@@ -121,6 +121,14 @@ object ScheduleListPolicy {
         )
     }
 
+    /**
+     * The nearest date still to come among active [lines]; one already due that catch-up
+     * has not recorded yet is [today]'s. Null when none is active.
+     */
+    fun nextDate(lines: List<ScheduleLine>, today: LocalDate): LocalDate? =
+        lines.filter { it.status == ScheduleStatus.Active }.mapNotNull { it.next }.minOrNull()
+            ?.let { maxOf(it, today) }
+
     private fun occurrencesIn(stored: StoredSchedule, month: YearMonth) =
         SchedulePolicy.occurrences(stored.schedule.recurrence, month.atDay(1), month.atEndOfMonth())
 

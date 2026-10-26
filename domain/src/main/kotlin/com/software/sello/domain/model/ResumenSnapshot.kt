@@ -25,6 +25,9 @@ data class ResumenSnapshot(
     val daily: List<DailySpending>,
     val history: List<SpendingMonth>,
     val futureDatedIncomes: Int,
+    /** How many incomes make up [income]: the month's, dated up to today. */
+    val incomeCount: Int,
+    val destinations: IncomeDestinations,
     /** Null when the month before has nothing recorded: there is nothing to compare with. */
     val comparison: SpendingComparison? = null,
     /** Null until a month shown is complete and has something recorded. */
@@ -34,6 +37,17 @@ data class ResumenSnapshot(
     /** At most one, and only for the month in progress. */
     val suggestion: LimitAdjustment? = null
 )
+
+/** What one category took in the month. */
+data class CategorySpending(val category: Category, val spent: Money)
+
+/**
+ * Where the month's recorded income went, by spending only: goal and investment records
+ * are not destinations (ADR 0012 BG4). [top] are the categories that took most, most
+ * first, ties in category order; [rest] is what the [restCount] others took together.
+ * With [top], it adds up to the month's spending.
+ */
+data class IncomeDestinations(val top: List<CategorySpending>, val rest: Money, val restCount: Int)
 
 enum class SpendingDirection { More, Less, Same }
 

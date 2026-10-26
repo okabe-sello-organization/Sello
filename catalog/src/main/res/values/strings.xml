@@ -170,11 +170,16 @@
     <string name="catalog_demo_21_1_respecto_al_mes_anterior" formatted="false">↑ 21,1 % respecto al mes anterior</string>
     <string name="catalog_demo_meses_completos" formatted="false">Meses completos</string>
     <string name="catalog_demo_del_1_al_22_de_cada_mes" formatted="false">Del 1 al 22 de cada mes</string>
-    <string name="catalog_demo_ingresos_de_octubre" formatted="false">Ingresos de octubre</string>
-    <string name="catalog_demo_ingresos_anotados" formatted="false">Ingresos anotados</string>
+    <string name="catalog_income_question">¿A dónde fue lo que entró?</string>
+    <string name="catalog_income_in_october">Entró en octubre</string>
+    <string name="catalog_income_in_september">Entró en septiembre</string>
+    <string name="catalog_income_others">Otras 2 categorías</string>
+    <string name="catalog_income_stub_incomes">Ingresos</string>
+    <string name="catalog_income_stub_count">3 en octubre</string>
+    <string name="catalog_income_stub_fixed">Fijos</string>
+    <string name="catalog_income_stub_fixed_label">Pagos e ingresos fijos</string>
+    <string name="catalog_income_stub_next">Próximo: 28 oct</string>
     <string name="catalog_demo_ingresos_menos_gastos" formatted="false">Ingresos menos gastos</string>
-    <string name="catalog_demo_sin_asignar_a_categorias" formatted="false">Sin asignar a categorías</string>
-    <string name="catalog_demo_ver_ingresos_y_su_destino" formatted="false">Ver ingresos y su destino</string>
     <string name="catalog_demo_donde_se_va" formatted="false">¿Dónde se va?</string>
     <string name="catalog_demo_una_sugerencia" formatted="false">Una sugerencia</string>
     <string name="catalog_demo_cafe_supero_su_limite_dos_meses_seguidos" formatted="false">Café superó su límite dos meses seguidos.</string>
@@ -292,7 +297,6 @@
     <string name="catalog_caller_preview">Vista del llamador · confirmación sintética sobre el dock</string>
     <string name="catalog_expense_confirmation">Gasto anotado: %1$s en %2$s</string>
     <string name="catalog_income_confirmation">Ingreso anotado: %1$s de %2$s</string>
-    <string name="catalog_september_income">Ingresos de septiembre</string>
     <string name="catalog_example_goal_form">Goal icon circle and sliding pad</string>
     <string name="catalog_demo_repetir_encendido">Repetir: vuelve a encenderse</string>
     <string name="catalog_demo_vuelve_a_encenderse" formatted="false">De vuelta en el 50 %: el sello guardado se enciende otra vez en su sitio, sin sello nuevo.</string>

@@ -178,4 +178,27 @@ class ScheduleListPolicyTest {
             ScheduleListPolicy.month(lines, october).valueOrFail()
         )
     }
+
+    @Test
+    fun theNextOneIsTheNearestDateStillToComeAmongActiveSchedules() {
+        // Rent next 5 Nov, the gym 15 Nov, the bills 28 Oct; the bus is paused and the
+        // course ended, so neither counts.
+        val lines = ScheduleListPolicy.lines(listOf(rent, gym, bus, course, bills), today, october)
+        assertEquals(d("2026-10-28"), ScheduleListPolicy.nextDate(lines, today))
+
+        // Due on 10 Oct and not recorded yet: it is today's, never a past date.
+        val behind = payment(
+            6,
+            RepeatRule.EveryWeeks.of(1).valueOrFail(),
+            "2026-09-26",
+            20_000,
+            handled = "2026-10-03"
+        )
+        val late = ScheduleListPolicy.lines(listOf(rent, behind), today, october)
+        assertEquals(today, ScheduleListPolicy.nextDate(late, today))
+
+        val inactive = ScheduleListPolicy.lines(listOf(bus, course), today, october)
+        assertEquals(null, ScheduleListPolicy.nextDate(inactive, today))
+        assertEquals(null, ScheduleListPolicy.nextDate(emptyList(), today))
+    }
 }
