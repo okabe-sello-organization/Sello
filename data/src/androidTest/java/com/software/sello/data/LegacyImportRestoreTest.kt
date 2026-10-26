@@ -93,7 +93,8 @@ class LegacyImportRestoreTest {
     /**
      * Two categories kept, one renamed ("mercado" clashes with "Mercado"), one left out
      * for an empty name with its expense; one expense left out for a zero amount; a
-     * salary schedule with the October income it recorded; a goal; one investment.
+     * salary schedule with the October income it recorded; a goal; a USD investment of USD
+     * 1.000,00 with USD 15,00 of interest, and a dollar rate of 4.150,125.
      */
     private val legacy = """
         {"exportedAt": "2026-10-25 14:01",
@@ -122,9 +123,17 @@ class LegacyImportRestoreTest {
          "recurringIncome": [
            {"id": 1, "amountCop": 4000000, "source": "Salario", "recurrenceType": "MONTHLY",
             "startDate": "2026-09-15", "nextDueDate": "2026-11-01"}],
-         "investments": [{"id": 1, "name": "Fondo"}],
-         "investmentEntries": [],
-         "exchangeRates": [],
+         "investments": [
+           {"id": 1, "name": "Fondo", "colorArgb": -1, "iconKey": "trending_up",
+            "currency": "USD", "createdDate": "2026-09-01", "updatedAt": 1787000000000}],
+         "investmentEntries": [
+           {"id": 1, "investmentId": 1, "entryType": "CASH_INJECTION",
+            "amountMinorUnits": 100000, "date": "2026-09-01"},
+           {"id": 2, "investmentId": 1, "entryType": "INTEREST", "amountMinorUnits": 1500,
+            "date": "2026-10-01", "notes": "Interés"}],
+         "exchangeRates": [
+           {"fromCurrency": "USD", "toCurrency": "COP", "rate": 4150.125,
+            "updatedDate": "2026-10-20 08:30"}],
          "goals": [
            {"id": 1, "name": "Viaje", "targetAmountCop": 3000000, "currentAmountCop": 1000000,
             "deadlineDate": "2027-01-31", "colorArgb": -1}]}
@@ -136,7 +145,9 @@ class LegacyImportRestoreTest {
             LegacyImportLine(LegacyRecord.Category, LegacyReason.InvalidText, 1),
             LegacyImportLine(LegacyRecord.Expense, LegacyReason.AmountOutOfRange, 1),
             LegacyImportLine(LegacyRecord.Expense, LegacyReason.CategoryLeftOut, 1),
-            LegacyImportLine(LegacyRecord.Investment, LegacyReason.NotImportedYet, 1)
+            LegacyImportLine(LegacyRecord.Investment, LegacyReason.ValueAdded, 1),
+            LegacyImportLine(LegacyRecord.InvestmentEntry, LegacyReason.InterestAsValue, 1),
+            LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.Rounded, 1)
         )
     )
 
@@ -182,6 +193,12 @@ class LegacyImportRestoreTest {
         query("SELECT COUNT(*) FROM schedule_pause"),
         query("SELECT name, icon_key, target_month, completed_on FROM goal"),
         query("SELECT kind, amount_minor FROM goal_event ORDER BY sequence"),
+        query("SELECT name, icon_key, currency, next_sequence FROM investment"),
+        query(
+            "SELECT sequence, kind, amount_minor, currency, effective_date, note " +
+                "FROM investment_movement ORDER BY sequence"
+        ),
+        query("SELECT rate_hundredths, effective_date, sequence FROM usd_rate"),
         query("SELECT financial_zone, generation FROM profile")
     )
 
@@ -196,7 +213,7 @@ class LegacyImportRestoreTest {
 
         assertEquals(report, staged.legacy)
         assertEquals(BackupSummary(1, 1, 0, 0, 0), staged.current)
-        assertEquals(BackupSummary(2, 2, 1, 1, 1), staged.replacement)
+        assertEquals(BackupSummary(2, 2, 1, 1, 1, 1), staged.replacement)
         assertEquals(Instant.parse("2026-10-25T19:01:00Z"), staged.backupAt)
         assertTrue(outcome is RestoreOutcome.Restored)
         assertEquals(
@@ -210,6 +227,14 @@ class LegacyImportRestoreTest {
                 listOf("0"),
                 listOf("Viaje|savings|2027-01|null"),
                 listOf("target|3000000", "contribution|1000000"),
+                listOf("Fondo|trending_up|USD|3"),
+                // The added first value, then the interest as the value it reached.
+                listOf(
+                    "0|contribution|100000|USD|2026-09-01|null",
+                    "1|valuation|100000|USD|2026-09-01|null",
+                    "2|valuation|101500|USD|2026-10-01|Interés"
+                ),
+                listOf("415013|2026-10-20|1"),
                 // The current financial zone, and a new generation.
                 listOf("America/Bogota|2")
             ),
@@ -237,7 +262,7 @@ class LegacyImportRestoreTest {
         val resumed = restores().staged()
 
         assertEquals(report, resumed?.legacy)
-        assertEquals(BackupSummary(2, 2, 1, 1, 1), resumed?.replacement)
+        assertEquals(BackupSummary(2, 2, 1, 1, 1, 1), resumed?.replacement)
     }
 
     @Test

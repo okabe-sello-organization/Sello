@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P2
-- **Status:** Backlog
+- **Status:** In Progress
 - **Depends on:** SELLO-044, SELLO-108, SELLO-111, SELLO-004
 - **Gate:** G2
 
@@ -22,6 +22,12 @@ needed, and updates to ADR 0019's mapping in the legacy export format.
 - Amounts in other currencies keep their exact minor units and currency; nothing is
   converted with a floating-point rate.
 - Every investment, movement and rate is either imported or counted under a reason.
+- Owner decisions (2026-10-25, ADR 0019), each counted as changed in the preview: a
+  dollar rate with more than two decimals is rounded half up to the centavo from its
+  exact decimal text; interest becomes a recorded value of what FinanceTracker's value
+  reached; an investment with no value on its first aporte's day gets one equal to that
+  aporte; an annual rate no longer adds interest. EUR and GBP investments and rates are
+  left out as a currency Sello does not keep; merchant rules stay not imported.
 
 ### Tests
 Translator table tests over synthetic FinanceTracker investment records; real-Room

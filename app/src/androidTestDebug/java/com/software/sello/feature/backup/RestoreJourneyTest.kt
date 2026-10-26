@@ -302,7 +302,11 @@ class RestoreJourneyTest {
                     "\"description\": \"Pan\", \"date\": \"$day\"}, " +
                     "{\"id\": 2, \"categoryId\": 1, \"amountCop\": 0, " +
                     "\"description\": \"Cero\", \"date\": \"$day\"}], " +
-                    "\"income\": [], \"investments\": [{\"id\": 1}]}"
+                    "\"income\": [], \"exchangeRates\": [" +
+                    "{\"fromCurrency\": \"USD\", \"toCurrency\": \"COP\", " +
+                    "\"rate\": 4150.123456, \"updatedDate\": \"$day 08:00\"}, " +
+                    "{\"fromCurrency\": \"EUR\", \"toCurrency\": \"COP\", " +
+                    "\"rate\": 4500.5, \"updatedDate\": \"$day 08:00\"}]}"
                 ).toByteArray()
         )
         openRespaldoAndChoose()
@@ -311,7 +315,8 @@ class RestoreJourneyTest {
         rule.onNodeWithText("Desde FinanceTracker").performScrollTo().assertExists()
         rule.onNodeWithText("1 categoría: nombre repetido, ahora numerado").assertExists()
         rule.onNodeWithText("1 gasto: monto fuera de rango").assertExists()
-        rule.onNodeWithText("1 inversión: aún no se importan").assertExists()
+        rule.onNodeWithText("1 tasa de cambio: redondeada al centavo").assertExists()
+        rule.onNodeWithText("1 tasa de cambio: moneda que Sello no maneja").assertExists()
         rule.onNodeWithText(
             "Por eso los totales de Sello pueden no coincidir con los de FinanceTracker."
         ).assertExists()

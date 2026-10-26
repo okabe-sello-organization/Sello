@@ -71,6 +71,18 @@ enum class LegacyRecord {
 enum class LegacyReason(val changed: Boolean = false) {
     Shortened(changed = true),
     Renamed(changed = true),
+
+    /** A dollar rate with more than two decimals, rounded half up to the centavo. */
+    Rounded(changed = true),
+
+    /** An investment with no value on its first aporte's day, valued at that aporte. */
+    ValueAdded(changed = true),
+
+    /** Interest the old app added, kept as the value it reached. */
+    InterestAsValue(changed = true),
+
+    /** An investment whose annual rate no longer adds interest by itself. */
+    NoAutomaticInterest(changed = true),
     Unreadable,
     DuplicateId,
     AmountOutOfRange,
@@ -80,6 +92,23 @@ enum class LegacyReason(val changed: Boolean = false) {
     CategoryMissing,
     CategoryLeftOut,
     UnknownRepeat,
+
+    /** Not in pesos or dollars, or a rate to anything but pesos. */
+    UnsupportedCurrency,
+    InvestmentMissing,
+    InvestmentLeftOut,
+
+    /** An investment note with no amount. */
+    NoteOnly,
+
+    /** Not an aporte, and dated before the investment's first one. */
+    BeforeFirstContribution,
+
+    /** A retiro above the value on its date. */
+    WithdrawalAboveValue,
+
+    /** An investment with no aporte. */
+    NoContribution,
     NotImportedYet
 }
 

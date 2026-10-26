@@ -640,6 +640,17 @@
     <string name="restore_legacy_category_missing">su categoría no está en el archivo</string>
     <string name="restore_legacy_category_left_out">su categoría no se importa</string>
     <string name="restore_legacy_repeat">repetición que Sello no tiene</string>
+    <string name="restore_legacy_rounded">redondeada al centavo</string>
+    <string name="restore_legacy_value_added">valor de hoy igual al primer aporte</string>
+    <string name="restore_legacy_interest_as_value">intereses anotados como valor de hoy</string>
+    <string name="restore_legacy_no_interest">sin intereses automáticos</string>
+    <string name="restore_legacy_currency">moneda que Sello no maneja</string>
+    <string name="restore_legacy_investment_missing">su inversión no está en el archivo</string>
+    <string name="restore_legacy_investment_left_out">su inversión no se importa</string>
+    <string name="restore_legacy_note_only">nota sin monto</string>
+    <string name="restore_legacy_before_first">anterior al primer aporte</string>
+    <string name="restore_legacy_withdrawal">retiro mayor que el valor</string>
+    <string name="restore_legacy_no_contribution">sin aportes</string>
     <string name="restore_legacy_not_yet">aún no se importan</string>
     <string name="restore_preview_refreshed">Tus datos cambiaron mientras revisabas. Estas son las cifras de ahora.</string>
     <string name="restore_confirm">Reemplazar con el respaldo</string>
