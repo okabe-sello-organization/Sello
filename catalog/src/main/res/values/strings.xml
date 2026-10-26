@@ -382,6 +382,7 @@
     <string name="catalog_demo_guardado_en_metas">Guardado en metas</string>
     <string name="catalog_demo_mas_2_010_000_en_octubre">2.010.000 en octubre</string>
     <string name="catalog_demo_sin_aportes_este_mes">Un mes sin aportes: solo el total, sin segunda línea.</string>
+    <string name="catalog_demo_nueva_meta">Nueva meta</string>
     <string name="catalog_demo_dock_de_metas">Dock de Metas</string>
     <string name="catalog_example_investment_states">Investment answer, rows, chart and pad</string>
     <string name="catalog_demo_tus_inversiones_valen" formatted="false">Tus inversiones valen</string>

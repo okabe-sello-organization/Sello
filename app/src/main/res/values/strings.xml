@@ -850,7 +850,7 @@
     <!-- Metas (SELLO-089) -->
     <string name="tab_metas">Metas</string>
     <string name="metas_title">Metas</string>
-    <string name="metas_create">Crear una meta</string>
+    <string name="metas_create">Nueva meta</string>
     <string name="metas_dock_contribute">Aportar a una meta</string>
     <string name="metas_dock_create">Crear una meta</string>
     <string name="metas_band_label">Guardado en metas</string>
@@ -1066,8 +1066,8 @@
     <string name="schedules_failed_title">No pudimos leer tus pagos fijos</string>
     <string name="schedules_failed">Siguen guardados y Sello no anotó nada de más. Vuelve a intentarlo.</string>
     <string name="schedules_empty_title">Nada se repite todavía</string>
-    <string name="schedules_empty_body">Cuando anotes el arriendo o el salario, marca Se repite y Sello lo anotará solo en su fecha.</string>
-    <string name="schedules_footnote">Se anotan solos, cada uno en su fecha, cuando abres Sello. Para agregar uno, marca Se repite al anotar.</string>
+    <string name="schedules_empty_body">Cuando anotes el arriendo o el salario, toca Repetir y Sello lo anotará solo en su fecha.</string>
+    <string name="schedules_footnote">Se anotan solos, cada uno en su fecha, cuando abres Sello. Para agregar uno, toca Repetir al anotar.</string>
     <string name="schedules_summary_payments">Tus pagos fijos de %1$s</string>
     <string name="schedules_summary_incomes">Tus ingresos fijos de %1$s</string>
     <string name="schedules_summary_recorded_payments">Ya se anotaron</string>
@@ -1123,11 +1123,12 @@
         <item quantity="one">%d ingreso</item>
         <item quantity="other">%d ingresos</item>
     </plurals>
-    <string name="repeat_off">No</string>
+    <string name="repeat_add_expense">Repetir este gasto</string>
+    <string name="repeat_add_income">Repetir este ingreso</string>
     <string name="repeat_change">Cambiar</string>
     <string name="repeat_row">%1$s · próximo %2$s</string>
     <string name="repeat_row_spoken">Se repite %1$s. Próximo %2$s. Cambiar</string>
-    <string name="repeat_row_off_spoken">Se repite: no. Elegir cuándo se repite</string>
+    <string name="repeat_row_off_spoken">No se repite. %1$s</string>
     <string name="repeat_monthly">el %1$d de cada mes</string>
     <string name="repeat_twice_monthly">el %1$d y el %2$d de cada mes</string>
     <plurals name="repeat_weeks">

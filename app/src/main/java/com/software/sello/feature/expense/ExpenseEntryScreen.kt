@@ -418,6 +418,7 @@ private fun Choices(
     if (!state.editing) {
         RepeatRow(
             state.repeat,
+            income = false,
             state.date,
             state.today,
             dates,

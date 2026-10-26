@@ -242,26 +242,34 @@ fun TitleBar(
  * The total that sits on the band under Metas' title: what is saved across active goals
  * and, under it, what came in this month after a small gain plus. Display only; the
  * caller formats [change] and supplies the exact [amount]. Without a [change], as in a
- * month with no aportes, the second line is left out. It is meant for the scaffold's
- * ribbon, which already sets the side margins and the gap under it.
+ * month with no aportes, the second line is left out. An [action], such as a
+ * [BandChip], sits at the end of the label's line; at large text it goes under the total
+ * so neither is squeezed. It is meant for the scaffold's ribbon, which already sets the
+ * side margins and the gap under it.
  */
 @Composable
 fun GoalsBandTotal(
     label: String,
     amount: MoneyTextValue,
     change: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    action: (@Composable () -> Unit)? = null
 ) {
     val colors = SelloTheme.colors
+    val stacked = LocalDensity.current.fontScale >= 1.3f
     Column(
         modifier.fillMaxWidth().background(colors.band).padding(bottom = 6.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        Text(
-            label,
-            color = colors.onBand.copy(alpha = 0.85f),
-            style = MaterialTheme.typography.bodyMedium
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                label,
+                Modifier.weight(1f),
+                color = colors.onBand.copy(alpha = 0.85f),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            if (action != null && !stacked) action()
+        }
         FittedMoneyText(amount, color = colors.onBand, startSize = 42)
         if (change != null) {
             Row(
@@ -287,6 +295,38 @@ fun GoalsBandTotal(
                 )
             }
         }
+        if (action != null && stacked) action()
+    }
+}
+
+/**
+ * A secondary action on the band, as Metas' **+ Nueva meta**: a paper pill with a plus,
+ * the same paper on band as [PastMonthRibbon]'s return, so it stands out without
+ * competing with the dock. Its touch target is 48dp; the pill itself is 36dp.
+ */
+@Composable
+fun BandChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = SelloTheme.colors
+    val content = if (colors.isDark) colors.ink else colors.band
+    Row(
+        modifier
+            .minimumInteractiveComponentSize()
+            .heightIn(min = 36.dp)
+            .clip(CircleShape)
+            .background(if (colors.isDark) colors.paper else Color.White)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(start = 8.dp, end = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Icon(SelloIcon.Add.painter(), null, Modifier.size(20.dp), tint = content)
+        Text(
+            label,
+            color = content,
+            fontWeight = FontWeight.W800,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1
+        )
     }
 }
 
