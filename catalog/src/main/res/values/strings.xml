@@ -58,6 +58,7 @@
     <string name="catalog_example_switch">Switches</string>
     <string name="catalog_example_settings_controls">Settings controls</string>
     <string name="catalog_example_icon_choice">Elegir ícono</string>
+    <string name="catalog_example_icon_picker">Ícono de lo que se crea</string>
     <string name="catalog_example_category_circle">CategoryCircle</string>
     <string name="catalog_example_category_cell">CategoryCell</string>
     <string name="catalog_example_scaffold">SelloScaffold</string>
@@ -308,6 +309,7 @@
     <string name="catalog_demo_llegaste_al_100" formatted="false">Llegaste al 100 %</string>
     <string name="catalog_demo_celular_marcala">Celular nuevo · márcala como lograda cuando quieras</string>
     <string name="catalog_demo_viaje_faltan_1_490">Viaje a la costa · faltan 1.490.000 para la meta</string>
+    <string name="catalog_demo_sellos_centrados">Al crear una meta: centrados, cada uno en su parte del ancho.</string>
     <string name="catalog_demo_sin_icono">Sin icono elegido: círculo punteado con la bandera.</string>
     <string name="catalog_demo_cuanto_necesitas">Cuánto necesitas</string>
     <string name="catalog_demo_listo">Listo</string>

@@ -42,6 +42,7 @@ class CatalogExamplesTest {
                 "inputs.switch",
                 "inputs.settings-controls",
                 "inputs.icon-choice",
+                "inputs.icon-picker",
                 "inputs.icon-strip",
                 "inputs.amount",
                 "inputs.keypad",

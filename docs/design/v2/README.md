@@ -25,7 +25,7 @@ synthetic.
 | [Expense and income entry](entry.html) | Locked 2026-10-15 |
 | [Resumen](resumen.html) | Locked 2026-10-15 |
 | [Income](income.html) | Locked 2026-10-15 |
-| [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16; + Nueva meta moved to the band by the owner 2026-10-26 |
+| [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16; + Nueva meta moved to the band by the owner 2026-10-26; Nueva meta and Nueva categoría made alike by the owner 2026-10-26 (see below) |
 | [Inversiones](inversiones.html) | Locked 2026-10-16; USD and the rate added 2026-10-25 by owner delegation (SELLO-106) |
 | [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice; the list redesigned by the owner 2026-10-26 (SELLO-122) |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
@@ -284,20 +284,25 @@ no live preview, and the same saving / rejected / unknown-outcome / restore beha
 
 - **Top bar:** ✕ and **Nueva meta** (or **Editar meta**).
 - **Identity card:** the goal's icon in a large green circle beside **Nombre** (40
-  characters, with a counter), then a row of icons to choose from. Too long a name keeps
-  the text, turns the line red ("Máximo 40 caracteres. Tu texto sigue aquí.") and the
-  button waits.
-- **Amount card (pinked):** "Cuánto necesitas" and the amount as the big number. Tapping it
-  slides up the Sello pad with **Listo**; numbers always use the pad, text keeps the phone
-  keyboard. Under the tear line, **Para cuándo** with **Elegir mes** / **Sin fecha** chips.
-  With a date: "🏁 Son 769.231 al mes durante 26 meses." Whole pesos, never rounded
-  further (20.000.000 ÷ 26 = 769.230,77 → 769.231).
-- **Tus sellos:** the four stamps with the month each could arrive at that pace ("Si
-  aportas 769.231 cada mes": may 27, nov 27, jun 28, dic 28). These projected months appear
-  only while creating or editing, as a plan with its assumption spelled out. Without a
-  date: empty stamps and "Ponle fecha para ver cuándo podrías llegar a cada uno".
+  characters, with a counter). Empty, the circle is a dashed green ring around a centred
+  **+**, captioned **Elegir ícono**; chosen, it is filled with a small pencil and
+  **Cambiar**. Tapping it opens **Elige un ícono**, a sheet with the same 24 icons as a
+  category. A new goal opens on the name with the keyboard up. Too long a name keeps the
+  text, turns the line red ("Máximo 40 caracteres. Tu texto sigue aquí.") and the button
+  waits.
+- **Amount card (pinked):** "Cuánto necesitas" and the amount as the big number, typed on
+  the Sello pad, which is always under the form (the keyboard covers it only while the
+  name is typed). **Para cuándo** is the slip's corner, as Anotar's date: a chip-cornered
+  pill with the month or **Sin fecha**. It opens the month sheet, with **Sin fecha** as a
+  green outlined button on the title line. With a date: "Son 769.231 al mes durante 26
+  meses." Whole pesos, never rounded further (20.000.000 ÷ 26 = 769.230,77 → 769.231).
+- **Tus sellos:** centred, each stamp in an equal share of the width, with the month each
+  could arrive at that pace ("Si aportas 769.231 cada mes": may 27, nov 27, jun 28,
+  dic 28). These projected months appear only while creating or editing, as a plan with
+  its assumption spelled out. Without a date: empty stamps and "Ponle fecha para ver cuándo podrías llegar a cada uno".
 - **Action:** green **Crear meta** (or **Guardar cambios**) with the flag; it waits for a
-  name, an icon and an amount.
+  name, an icon and an amount, and the line above it says which is missing first
+  ("Elige un ícono.", "Escribe un nombre.", "Escribe cuánto necesitas."), as on Anotar.
 - **Editing:** earned stamps show "logrado"; the rest show their month at the new pace.
   Two separate decisions follow, each in its own card: **¿Ya la lograste?** with
   **Marcar como lograda** (for goals reached outside Sello), and **Borrar esta meta**, a
@@ -305,6 +310,15 @@ no live preview, and the same saving / rejected / unknown-outcome / restore beha
   se puede deshacer."). **Borrar meta** opens a confirm slip: "¿Borrar Viaje a la
   costa?", **Cancelar** and a red **Borrar**.
 - Automatic monthly contributions wait for recurrence.
+
+**Nueva categoría matches it** (owner, 2026-10-26): the same identity card in Sello blue,
+opening on the name with the keyboard up and the first unused icon already chosen; the
+icon sheet shows icons other categories use dashed, still choosable ("Ya lo usa otra
+categoría; puedes repetirlo."). **Límite mensual** is the pinked amount slip typed on the
+always-present Sello pad, with **Sin límite** in its corner; with it on, the amount,
+suggestions and pad grey out and what was typed comes back. Zero is a limit: 0 types it.
+Pasted text that is not an amount is kept as it came beside why. The same layout serves
+Editar categoría.
 
 **Celebrations** play only after a confirmed save; an uncertain outcome never celebrates.
 Reduced motion keeps the same text and final picture without movement or confetti.
