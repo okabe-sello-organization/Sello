@@ -89,6 +89,7 @@ class AdjustBudgetViewModel(
             spent = money.format(line.spent),
             limit = budget?.let { money.format(it.limit) },
             remaining = budget?.let { money.format(it.remaining) },
+            overBy = budget?.remaining?.takeIf { it.minorUnits < 0 }?.let(money::magnitude),
             fraction = budget?.let(render::fill),
             over = budget != null && budget.remaining.minorUnits < 0,
             archived = line.category.archived

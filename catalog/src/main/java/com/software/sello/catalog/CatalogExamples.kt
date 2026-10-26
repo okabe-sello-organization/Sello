@@ -40,6 +40,7 @@ import com.software.sello.catalog.components.InvestmentsExample
 import com.software.sello.catalog.components.KeyValueExample
 import com.software.sello.catalog.components.KeypadExample
 import com.software.sello.catalog.components.LeaderLineExample
+import com.software.sello.catalog.components.LimitRowExample
 import com.software.sello.catalog.components.LineChartExample
 import com.software.sello.catalog.components.MilestonesExample
 import com.software.sello.catalog.components.MoneyTextExample
@@ -186,6 +187,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         CatalogGroup.Paper,
         R.string.catalog_example_schedule_row
     ) { ScheduleRowExample() },
+    CatalogExample(
+        "paper.limit-row",
+        CatalogGroup.Paper,
+        R.string.catalog_example_limit_row
+    ) { LimitRowExample() },
     CatalogExample(
         "paper.setting-row",
         CatalogGroup.Paper,

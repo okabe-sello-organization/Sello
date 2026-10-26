@@ -28,9 +28,9 @@ sealed interface AdjustBudgetState {
 }
 
 /**
- * One category in the list. [limit] and [remaining] are null without a limit; [fraction]
- * is how full to draw its circle and nothing else. An [archived] one cannot be adjusted
- * here.
+ * One category in the list. [limit] and [remaining] are null without a limit; [overBy]
+ * is the overrun without its sign, only when [over]. [fraction] is how full to draw its
+ * circle and nothing else. An [archived] one cannot be adjusted here.
  */
 data class AdjustRow(
     val id: String,
@@ -39,6 +39,7 @@ data class AdjustRow(
     val spent: MoneyTextValue,
     val limit: MoneyTextValue?,
     val remaining: MoneyTextValue?,
+    val overBy: MoneyTextValue?,
     val fraction: Float?,
     val over: Boolean,
     val archived: Boolean

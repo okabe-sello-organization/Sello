@@ -90,6 +90,7 @@ class AdjustBudgetViewModelTest {
         assertEquals(listOf(uuid(6)), ready.open.map { it.id })
         val cafe = ready.limited.first()
         assertEquals("menos 40.000 pesos", cafe.remaining?.spoken)
+        assertEquals("40.000 pesos", cafe.overBy?.spoken)
         assertEquals("90.000 pesos", cafe.spent.spoken)
         assertEquals("50.000 pesos", cafe.limit?.spoken)
         assertTrue(cafe.over)

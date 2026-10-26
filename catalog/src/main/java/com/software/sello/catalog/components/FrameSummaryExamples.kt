@@ -40,6 +40,7 @@ import com.software.sello.designsystem.component.ExpectedChip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.Footnote
 import com.software.sello.designsystem.component.LeaderLine
+import com.software.sello.designsystem.component.LimitRow
 import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
@@ -625,5 +626,54 @@ private fun ExamplePlan(
             color = colors.inkSoft,
             modifier = Modifier.padding(top = SelloTheme.spacing.sm)
         )
+    }
+}
+
+/**
+ * Rows of Ajustar presupuesto: one category over its limit, one within it and one
+ * without a limit. Each row is one button read as one sentence.
+ */
+@Composable
+fun LimitRowExample() {
+    val strings = LocalResources.current
+    var opened by rememberSaveable { mutableStateOf("") }
+    ExampleStack {
+        Slip(Modifier.fillMaxWidth(), pinked = false) {
+            val cafe = strings.getString(R.string.catalog_demo_cafe)
+            val salud = strings.getString(R.string.catalog_demo_salud)
+            val regalos = strings.getString(R.string.catalog_demo_regalos)
+            LimitRow(
+                name = cafe,
+                icon = SelloIcon.LocalCafe,
+                caption = strings.getString(R.string.catalog_demo_gastaste_90_000_de_50_000),
+                amount = copFixture(-40_000),
+                fraction = 1f,
+                over = true,
+                spoken = cafe,
+                onClick = { opened = cafe },
+                modifier = Modifier.testTag("limit-row:over")
+            )
+            LimitRow(
+                name = salud,
+                icon = SelloIcon.MedicalServices,
+                caption = strings.getString(R.string.catalog_demo_gastaste_60_000_de_80_000),
+                amount = copFixture(20_000),
+                fraction = 0.75f,
+                over = false,
+                spoken = salud,
+                onClick = { opened = salud }
+            )
+            LimitRow(
+                name = regalos,
+                icon = SelloIcon.ReceiptLong,
+                caption = strings.getString(R.string.catalog_demo_gastado),
+                amount = copFixture(10_000),
+                fraction = null,
+                over = false,
+                spoken = regalos,
+                onClick = { opened = regalos }
+            )
+        }
+        if (opened.isNotEmpty()) ExampleCaption(opened)
     }
 }

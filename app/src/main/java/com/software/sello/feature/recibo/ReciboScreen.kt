@@ -194,13 +194,7 @@ internal fun StaleSlip(onRetry: () -> Unit, modifier: Modifier = Modifier) {
  */
 @Composable
 private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved: () -> Unit) {
-    val label = stringResource(
-        when (summary.label) {
-            ReciboAnswerLabel.Remaining -> R.string.recibo_answer_remaining
-            ReciboAnswerLabel.Spent -> R.string.recibo_answer_spent
-            ReciboAnswerLabel.ShortForPayments -> R.string.recibo_answer_short
-        }
-    )
+    val label = answerLabel(summary.label)
     val stamp = stampText(summary.stamp)
     AnswerSlip(
         label = label,
@@ -224,9 +218,19 @@ private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved
     }
 }
 
+/** The words above the month's big number. */
+@Composable
+internal fun answerLabel(label: ReciboAnswerLabel): String = stringResource(
+    when (label) {
+        ReciboAnswerLabel.Remaining -> R.string.recibo_answer_remaining
+        ReciboAnswerLabel.Spent -> R.string.recibo_answer_spent
+        ReciboAnswerLabel.ShortForPayments -> R.string.recibo_answer_short
+    }
+)
+
 /** "Quedan 100.000 y tus pagos previstos suman 150.000." or "Pasaste tu límite por …". */
 @Composable
-private fun ShortfallNote(shortfall: ReciboShortfall) {
+internal fun ShortfallNote(shortfall: ReciboShortfall) {
     val sentence = if (shortfall.over) R.string.recibo_shortfall_over else R.string.recibo_shortfall
     // On screen the figures as written; read aloud with their currency.
     val spoken = stringResource(sentence, shortfall.left.spoken, shortfall.reserved.spoken)
@@ -243,7 +247,7 @@ private fun ShortfallNote(shortfall: ReciboShortfall) {
 
 /** "Incluye 200.000 separado para 1 pago previsto ›": opens the payments reserved. */
 @Composable
-private fun ReservedFootnote(reserved: ReciboReserved, onClick: () -> Unit) {
+internal fun ReservedFootnote(reserved: ReciboReserved, onClick: () -> Unit) {
     val payments =
         pluralStringResource(R.plurals.recibo_reserved_payments, reserved.count, reserved.count)
     val template = stringResource(R.string.recibo_reserved, AMOUNT_MARK, payments)

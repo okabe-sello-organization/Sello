@@ -314,6 +314,12 @@
     <string name="catalog_demo_abrir_teclado">Escribir el monto</string>
     <string name="catalog_example_repeat_sheet">Se repite sheet, day grid and stepper</string>
     <string name="catalog_example_schedule_row">Schedule rows</string>
+    <string name="catalog_example_limit_row">Limit rows</string>
+    <string name="catalog_demo_salud" formatted="false">Salud</string>
+    <string name="catalog_demo_regalos" formatted="false">Regalos</string>
+    <string name="catalog_demo_gastado" formatted="false">gastado</string>
+    <string name="catalog_demo_gastaste_90_000_de_50_000" formatted="false">gastaste 90.000 de 50.000</string>
+    <string name="catalog_demo_gastaste_60_000_de_80_000" formatted="false">gastaste 60.000 de 80.000</string>
     <string name="catalog_example_choice_slip">ChoiceSlip</string>
     <string name="catalog_demo_se_repite">Se repite</string>
     <string name="catalog_demo_se_repite_no">Se repite · No</string>
