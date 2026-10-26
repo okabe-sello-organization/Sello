@@ -1,6 +1,7 @@
 package com.software.sello.feature.income
 
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasAnyDescendant
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -13,6 +14,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.MainActivity
 import com.software.sello.TestData
+import com.software.sello.await
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.hideKeyboard
@@ -100,8 +102,9 @@ class IncomeJourneyTest {
                 "SELECT amount_minor, source_key, version FROM income"
             )
         )
-        // Back on the history, the list is read again before the row is there.
-        rule.awaitTag("income.line.$id")
+        // Back on the history, the list is read again: the row from before the edit can
+        // still be shown and then leave while the list reloads, so wait for the edited row.
+        rule.await(hasTestTag("income.line.$id") and hasAnyDescendant(hasText("Salario")))
         rule.onNodeWithTag("income.line.$id").performScrollTo().performClick()
         rule.awaitText("Editar ingreso")
         rule.onNodeWithTag("income.delete").press()
