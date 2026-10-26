@@ -17,6 +17,7 @@ import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryReads
+import com.software.sello.domain.port.DataExports
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.DocumentRead
 import com.software.sello.domain.port.DocumentReader
@@ -116,6 +117,7 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<ScheduleRecordReads> { storage.scheduleRecordReads }
     single<ScheduleCatchUpStore> { storage.scheduleCatchUp(get(), get()) }
     single<BackupExports> { storage.backupExports(get(), get(), get(), get(), get()) }
+    single<DataExports> { storage.dataExports(get(), get()) }
     single<Restores> { storage.restores(get(), get(), get(), get(), get(), get(), get()) }
     // A new history after an erase takes the device's zone, read when the erase commits.
     single<Resets> { storage.resets(get(), ::deviceZone, get(), get()) }

@@ -254,6 +254,85 @@ fun ChoiceSlip(
     }
 }
 
+/**
+ * [ChoiceSlip] with any [content] under the title, such as a choice of format and the
+ * points to read before acting. The content scrolls when the slip would not fit, as at
+ * large text; the answers stay in view.
+ */
+@Composable
+fun ChoiceSlip(
+    title: String,
+    firstLabel: String,
+    onFirst: () -> Unit,
+    secondLabel: String,
+    onSecond: () -> Unit,
+    backLabel: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    busy: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    var answered by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    Dialog(onDismissRequest = { if (!busy) onBack() }) {
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
+        CompositionLocalProvider(LocalDensity provides density) {
+            Slip(
+                pinked = false,
+                contentPadding = SlipDefaults.PlainPadding,
+                modifier = modifier.semantics { paneTitle = title }
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
+                    modifier = Modifier.semantics { heading() }
+                )
+                Spacer(Modifier.height(SelloTheme.spacing.sm))
+                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                    content()
+                }
+                TearLine(bleed = 20.dp)
+                ButtonPair(
+                    firstWeight = 1f,
+                    secondWeight = 1f,
+                    gap = SelloTheme.spacing.md,
+                    first = {
+                        SelloButton(
+                            text = firstLabel,
+                            onClick = {
+                                answered = 1
+                                onFirst()
+                            },
+                            kind = ButtonKind.Outlined,
+                            enabled = !busy,
+                            loading = busy && answered == 1
+                        )
+                    },
+                    second = {
+                        SelloButton(
+                            text = secondLabel,
+                            onClick = {
+                                answered = 2
+                                onSecond()
+                            },
+                            enabled = !busy,
+                            loading = busy && answered == 2
+                        )
+                    }
+                )
+                SelloButton(
+                    text = backLabel,
+                    onClick = onBack,
+                    kind = ButtonKind.Text,
+                    enabled = !busy,
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp)
+                )
+            }
+        }
+    }
+}
+
 internal const val SCRIM_ALPHA = 0.55f
 
 /** A slip with nothing to show yet: a title, one sentence and at most one action. */

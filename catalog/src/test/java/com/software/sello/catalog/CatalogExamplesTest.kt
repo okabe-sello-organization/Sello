@@ -62,6 +62,7 @@ class CatalogExamplesTest {
                 "feedback.confirm-slip",
                 "feedback.choice-slip",
                 "feedback.option-slip",
+                "feedback.choice-points",
                 "feedback.confirm-points",
                 "feedback.empty-slip",
                 "feedback.error-slip",

@@ -51,11 +51,18 @@ fun registerManifestCheck(variant: String, applicationId: String) =
                 "androidx.activity.ComponentActivity" to
                     "Compose UI test host, debugImplementation"
             )
-            // Providers a build may declare, with why. None may be exported or grant URIs.
+            // Providers a build may declare, with why. None may be exported or grant URIs,
+            // except the export provider, which grants read access to one shared file.
             val allowedProviders = mapOf(
                 "androidx.startup.InitializationProvider" to
-                    "AndroidX start-up initializers; not exported"
+                    "AndroidX start-up initializers; not exported",
+                "androidx.core.content.FileProvider" to
+                    "exports the person shares (SELLO-121); not exported, only cache/exports/"
             )
+            val grantingProviders = mapOf(
+                "androidx.core.content.FileProvider" to "$applicationId.exports"
+            )
+            val exportPaths = rules.file("export_paths.xml")
 
             fun org.w3c.dom.Element.attr(name: String): String? =
                 getAttributeNS(androidNs, name).takeIf { it.isNotEmpty() }
@@ -138,7 +145,13 @@ fun registerManifestCheck(variant: String, applicationId: String) =
                         if (why == null) problems += "provider not allowed: $name"
                         if (isExported) problems += "provider is exported: $name"
                         if (element.attr("grantUriPermissions") == "true") {
-                            problems += "provider grants URI permissions: $name"
+                            val authority = grantingProviders[name]
+                            if (authority == null) {
+                                problems += "provider grants URI permissions: $name"
+                            } else if (element.attr("authorities") != authority) {
+                                problems += "provider $name has authority " +
+                                    "${element.attr("authorities")}, not $authority"
+                            }
                         }
                         lines += "  provider $name exported=$isExported: ${why ?: "NOT ALLOWED"}"
                         continue
@@ -152,6 +165,16 @@ fun registerManifestCheck(variant: String, applicationId: String) =
                         (if (isExported) ": ${why ?: "NOT ALLOWED"}" else "")
                 }
             }
+
+            // The export provider may serve one folder of the cache and nothing else.
+            val paths = parse(exportPaths.asFile)
+            val served = (0 until paths.childNodes.length).map { paths.childNodes.item(it) }
+                .filterIsInstance<org.w3c.dom.Element>()
+                .map { "${it.tagName}:${it.getAttribute("path")}" }
+            if (served != listOf("cache-path:exports/")) {
+                problems += "export_paths.xml serves $served, not only cache-path:exports/"
+            }
+            lines += "Export provider paths: $served"
 
             lines += ""
             lines += if (problems.isEmpty()) "PASS" else "FAIL"

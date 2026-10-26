@@ -12,6 +12,8 @@ import com.software.sello.domain.usecase.CatchUpNow
 import com.software.sello.domain.usecase.CatchUpSchedules
 import com.software.sello.feature.backup.BackupSession
 import com.software.sello.feature.backup.BackupViewModel
+import com.software.sello.feature.backup.ExportSession
+import com.software.sello.feature.backup.ExportViewModel
 import com.software.sello.feature.backup.RestoreSession
 import com.software.sello.feature.backup.RestoreViewModel
 import com.software.sello.feature.category.CategoryEditorViewModel
@@ -70,6 +72,7 @@ fun presentationModule(): Module = module {
     }
     // A save runs for as long as the process, not the screen that started it.
     single { BackupSession(get(), get(), get(), get(), get<CoroutineScope>()) }
+    single { ExportSession(get(), get(), get(), get<CoroutineScope>()) }
     // Created with the graph, so a restore left with preferences pending resumes at start.
     single(createdAtStart = true) {
         RestoreSession(get(), get(), get<CoroutineScope>(), BackupBounds().maxBytes)
@@ -99,6 +102,7 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get()
         )
     }
+    initializer { ExportViewModel(createSavedStateHandle(), koin.get()) }
     initializer {
         BackupViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
     }

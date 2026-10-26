@@ -281,3 +281,9 @@ private fun OptionSlipExamplePreview(
 private fun ConfirmPointsExamplePreview(
     @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
 ) = Frame(theme) { ConfirmPointsExample() }
+
+@ExampleThemePreviews
+@Composable
+private fun ChoicePointsExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { ChoicePointsExample() }

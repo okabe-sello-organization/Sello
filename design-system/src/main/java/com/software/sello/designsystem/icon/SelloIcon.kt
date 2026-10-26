@@ -39,6 +39,7 @@ enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: In
     DeleteForever(R.drawable.ic_sello_delete_forever),
     DirectionsBus(R.drawable.ic_sello_directions_bus),
     DirectionsCar(R.drawable.ic_sello_directions_car),
+    Download(R.drawable.ic_sello_download),
     EditNote(R.drawable.ic_sello_edit_note),
     Error(R.drawable.ic_sello_error),
     Event(R.drawable.ic_sello_event),
