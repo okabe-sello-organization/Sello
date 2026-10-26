@@ -143,6 +143,30 @@ known category/default configuration stays unconfigured; H03 is not permission t
 invent such history. An explicit November-only correction supersedes its resolved
 default without changing October/December or the default version history.
 
+## Adjusting a limit from Recibo — owner-approved design, 2026-10-26
+
+**Ajustar presupuesto** on Recibo changes one category's limit for the current month
+only, or from the current month on (D04). The shared fixture is October, financial
+date 22 October: finite limits L 1,000,000 with Café at 50,000 and 90,000 spent. The
+Excedido month has E 1,080,000; the Revisar month has E 900,000 (R 100,000) and
+reserved payments Q 150,000. T is the month's total finite limit after the change;
+"left" is T − E, minus Q when payments are reserved.
+
+| ID | Inputs/action | Expected outcome |
+| --- | --- | --- |
+| AJ01 | Excedido; Café "Solo octubre" 150,000 | October Café 150,000, its own limit; L 1,100,000; R 20,000, Al día; November Café 50,000 |
+| AJ02 | Excedido; Café "Desde octubre" 150,000 | October and November Café 150,000; no month-only limit stored |
+| AJ03 | AJ01, then Café "Desde octubre" 60,000; September has its own limit 90,000 | October Café 60,000 from the default, its own limit gone; November 60,000; September still 90,000 |
+| AJ04 | Excedido; shortcuts for Café, then for Salud (60,000 spent of 80,000) | Café: Lo gastado 90,000; Cubre el mes 130,000 (50,000 + 80,000). Salud: no Lo gastado; Cubre el mes 160,000 (80,000 + 80,000) |
+| AJ05 | Revisar; shortcuts for Café | Lo gastado 90,000; Cubre tus pagos 100,000 (50,000 + 50,000) |
+| AJ06 | Excedido; Café drafts 150,000 / 130,000 / 90,000 | T 1,100,000, left 20,000 · T 1,080,000, left 0 · T 1,040,000, left −40,000 |
+| AJ07 | Revisar; Café drafts 120,000 / 100,000 / 60,000 | After payments: T 1,070,000, left 20,000 · T 1,050,000, left 0 · T 1,010,000, left −40,000 |
+| AJ08 | Excedido by 80,000 (E 1,080,000 including 60,000 in Salud); Salud has no limit | Salud is offered Lo gastado 60,000 and Cubre el mes 80,000 (0 + 80,000); draft 80,000 → T 1,080,000, left 0 |
+| AJ09 | Excedido; remainders Café −40,000, Comida −30,000, Hogar 0, Ropa 0, Salud 20,000; Regalos has no limit and spent 10,000; Libros has no limit and spent 0 | Categories with a limit in that order (ties by name); Regalos listed apart, without a limit; Libros not listed |
+
+A shortcut equal to the category's current limit is not offered. A sum that does not
+fit an exact amount hides the shortcut or the line; it is never approximated.
+
 ## Category ordering — approved D06
 
 Synthetic fixture; all categories active. Times below are original real expense
