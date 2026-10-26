@@ -28,6 +28,7 @@ synthetic.
 | [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16 |
 | [Inversiones](inversiones.html) | Locked 2026-10-16; USD and the rate added 2026-10-25 by owner delegation (SELLO-106) |
 | [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice; the list redesigned by the owner 2026-10-26 (SELLO-122) |
+| [Ajustar presupuesto](ajustar.html) | Locked 2026-10-26 by the owner: the screen behind Recibo's **Ajustar presupuesto ›** and its limit sheet |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
 
 ## Recibo / Home
@@ -56,7 +57,7 @@ the same on every tab except Metas (see Metas).
 | --- | --- | --- | --- |
 | Spending below the limit | Al día | gain | — |
 | Spending equal to the limit | Al límite | neutral | — |
-| Spending above the limit | Excedido | loss | Signed red remainder, e.g. −80.000; link **Ajustar presupuesto** |
+| Spending above the limit | Excedido | loss | Signed red remainder, e.g. −80.000; link **Ajustar presupuesto**, which opens [Ajustar presupuesto](#ajustar-presupuesto) |
 | Reserved payments use up what is left | Sin margen | neutral | Big number 0 |
 | Reserved payments are more than what is left | Revisar | warn | Label **Falta para tus pagos**, positive shortfall (e.g. 50.000), one sentence `Quedan 100.000 y tus pagos previstos suman 150.000.`, link **Ajustar presupuesto**. Already over the limit (RE29): `Pasaste tu límite por 80.000 y tus pagos previstos suman 200.000.` |
 | No finite limit | Sin límite | neutral | Label **Has gastado este mes**; no per-day line |
@@ -451,6 +452,48 @@ shade (shades too close to tell apart; the rows carry the values).
 **Rejected during the review:** the Metas-band overview with one ticket per investment,
 a message on the overview for an investment without a value, a four-way switch in the
 top bar, a type pill with a sheet, and withdrawals above the last recorded value.
+
+## Ajustar presupuesto
+
+Locked 2026-10-26 by the owner. Before, **Ajustar presupuesto ›** only scrolled Recibo to
+its categories, which with few categories looked like nothing happened. The figures are
+the AJ examples in the [financial examples](../../testing/mvp-financial-examples.md).
+
+- **Reached from** the link on Recibo's answer slip, shown only in the month in progress
+  while it is Excedido or Revisar. A pushed screen titled **Ajustar presupuesto**, with
+  the tabs and no Anotar dock, like Pagos previstos.
+- **The answer slip** repeats Recibo's label, stamp, big number and Revisar sentence, without
+  the per-day line. Under the tear line: **Límite de octubre** and **Gastado** as receipt
+  lines, then, while payments are reserved, Recibo's footnote, which opens Pagos previstos.
+- **Tus categorías**, "Toca una para cambiar su límite de octubre.": the categories with a
+  limit, overspent first (by remainder, then name), each with "gastaste 90.000 de 50.000"
+  and its signed remainder; then **Sin límite**, those without one that spent something,
+  since their spending counts against the month. Each row is one button read as one
+  sentence. An archived one says "Archivada · desarchívala para cambiar su límite" and
+  opens its editor instead.
+- **The limit sheet** is docked like Se repite, with the Sello pad: **Límite de Café** and
+  "Gastaste 90.000 de 50.000 en octubre"; a switch **Solo octubre** (default) / **Desde
+  octubre** with the scope in one line; the amount with "antes 50.000"; shortcuts
+  **Lo gastado**, **Cubre el mes** (Excedido) or **Cubre tus pagos** (Revisar); one line
+  "Tu límite total de octubre pasaría a 1.100.000. Te quedarían 20.000." (or "Quedarías
+  justo en el límite.", "Aún te pasarías por …", and the "después de tus pagos" forms);
+  and **Guardar solo octubre / Guardar desde octubre**. Saving, a refusal and an unknown
+  outcome behave as in entry.
+- **The scope (owner):** Solo octubre sets October's own limit and nothing else; Desde
+  octubre sets the default from October on and replaces October's own limit (ADR 0001
+  D04). A one-off overrun is fixed on Recibo; a repeated one is Resumen's suggestion.
+- **Saved:** the sheet closes and the notice names the period, "Límite de Café para
+  octubre: 150.000". The screen stays, re-read, so the person sees the stamp change.
+- **The live line (owner):** an exception to "no live financial previews", which is about
+  entry: like the category editor's total, it says what the month would have left. Every
+  figure comes from the domain.
+- Default, Revisar, saved, stale, loading and failed-read frames; the sheet typed, with
+  each shortcut, Desde octubre and an unknown outcome.
+
+**Rejected:** scrolling to the categories (the old behaviour), a bottom sheet for the
+whole screen, opening the full category editor from each row, reserved amounts inside
+categories, a shortcut that raises later months silently, and naming next month's limit
+in the scope line (it would need a read of a month that has not started).
 
 ## Pagos e ingresos fijos
 
