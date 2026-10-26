@@ -63,7 +63,8 @@ class ScheduleJourneyTest {
         openList()
         rule.onNodeWithText("Ingresos").performClick()
         rule.awaitTag("schedules.empty")
-        rule.onNodeWithText("Anotar algo que se repite").performScrollTo().performClick()
+        // On Ingresos the top bar's + adds an income that repeats (SELLO-122).
+        rule.onNodeWithTag("schedules.add").performClick()
 
         // The entry opens with Se repite's sheet, each month on today's day.
         rule.awaitTag(REPEAT_SHEET_TAG)

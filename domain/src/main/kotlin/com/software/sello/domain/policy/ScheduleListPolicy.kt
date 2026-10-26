@@ -15,7 +15,8 @@ enum class ScheduleStatus { Active, Paused, Ended }
  * One schedule as Pagos e ingresos fijos lists it on a day: its [status], the first day of
  * the pause running then ([pausedFrom]), the [next] occurrence not yet recorded, which may
  * be due already while catch-up has not reached it, its first occurrence in the month
- * ([monthFirst]) and whether one is still to come that month ([toComeThisMonth]).
+ * ([monthFirst]), whether one is still to come that month ([toComeThisMonth]) and the date
+ * of the month's last occurrence already recorded ([recordedThisMonth]).
  */
 data class ScheduleLine(
     val stored: StoredSchedule,
@@ -23,7 +24,8 @@ data class ScheduleLine(
     val pausedFrom: LocalDate?,
     val next: LocalDate?,
     val monthFirst: LocalDate?,
-    val toComeThisMonth: Boolean
+    val toComeThisMonth: Boolean,
+    val recordedThisMonth: LocalDate?
 )
 
 /**
@@ -79,7 +81,10 @@ object ScheduleListPolicy {
                 monthFirst = inMonth.firstOrNull()?.date,
                 toComeThisMonth = inMonth.any {
                     stored.handled == null || it.isAfter(stored.handled)
-                }
+                },
+                recordedThisMonth = inMonth.lastOrNull {
+                    stored.handled != null && !it.isAfter(stored.handled)
+                }?.date
             )
         }
         return lines.sortedWith(

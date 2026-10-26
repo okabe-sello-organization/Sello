@@ -281,6 +281,33 @@ fun ScheduleRowExample() {
             SlipTitle(R.string.catalog_demo_tus_ingresos_fijos)
             ScheduleRows(Incomes, income = true) { opened = it }
         }
+        // SELLO-122: one still due with its day in a pill, one whose month went through.
+        Slip(Modifier.fillMaxWidth()) {
+            val due = strings.getString(R.string.catalog_demo_aseo_carro)
+            val done = strings.getString(R.string.catalog_demo_arriendo)
+            ScheduleRow(
+                name = due,
+                caption = strings.getString(R.string.catalog_demo_el_4_de_cada_mes),
+                amount = copFixture(30_000),
+                icon = SelloIcon.DirectionsCar,
+                onClick = { opened = due },
+                spoken = due,
+                pill = strings.getString(R.string.catalog_demo_manana_jue_4),
+                modifier = Modifier.testTag("schedule-row:due")
+            )
+            ScheduleRow(
+                name = done,
+                caption = strings.getString(R.string.catalog_demo_anotado_lun_1),
+                amount = copFixture(1_200_000),
+                icon = SelloIcon.Home,
+                onClick = { opened = done },
+                spoken = done,
+                pill = strings.getString(R.string.catalog_demo_proximo_lun_1_mar),
+                recorded = true,
+                last = true,
+                modifier = Modifier.testTag("schedule-row:recorded")
+            )
+        }
         if (opened.isNotEmpty()) {
             ExampleCaption(strings.getString(R.string.catalog_demo_abriste, opened))
         }

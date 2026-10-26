@@ -7,7 +7,9 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -44,7 +46,6 @@ class ScheduleScreensTest {
 
     private val today = LocalDate.of(2026, 10, 22)
     private val opened = mutableListOf<String>()
-    private val added = mutableListOf<Boolean>()
     private val listActions = mutableListOf<SchedulesAction>()
     private val editorActions = mutableListOf<ScheduleEditorAction>()
 
@@ -60,13 +61,15 @@ class ScheduleScreensTest {
         amount: String,
         soon: Boolean = false,
         pausedFrom: LocalDate? = null,
-        next: LocalDate? = null
+        next: LocalDate? = null,
+        group: ScheduleGroup = ScheduleGroup.Due,
+        recordedOn: LocalDate? = null
     ) = ScheduleRow(
         id, note, category, "home", null, null,
         monthly(
             day
         ),
-        LocalDate.of(2026, 10, 1), next, pesos(amount), soon, pausedFrom, null
+        LocalDate.of(2026, 10, 1), next, pesos(amount), soon, pausedFrom, null, group, recordedOn
     )
 
     private val ready = SchedulesState.Ready(
@@ -81,9 +84,27 @@ class ScheduleScreensTest {
             3
         ),
         rows = listOf(
-            row("a", "Arriendo", "Hogar", 5, "950.000", next = LocalDate.of(2026, 11, 5)),
+            row(
+                "a",
+                "Arriendo",
+                "Hogar",
+                5,
+                "950.000",
+                next = LocalDate.of(2026, 11, 5),
+                group = ScheduleGroup.Recorded,
+                recordedOn = LocalDate.of(2026, 10, 5)
+            ),
             row("b", null, "Hogar", 28, "200.000", soon = true, next = LocalDate.of(2026, 10, 28)),
-            row("c", "Bus", "Transporte", 3, "20.000", pausedFrom = LocalDate.of(2026, 10, 12))
+            row(
+                "c",
+                "Bus",
+                "Transporte",
+                3,
+                "20.000",
+                pausedFrom = LocalDate.of(2026, 10, 12),
+                group = ScheduleGroup.Paused
+            ),
+            row("d", "Gas", "Hogar", 23, "60.000", next = LocalDate.of(2026, 10, 23))
         ),
         ended = emptyList()
     )
@@ -93,25 +114,47 @@ class ScheduleScreensTest {
             val density = LocalDensity.current.density
             CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
                 SelloTheme(reducedMotion = true) {
-                    SchedulesScreen(state, today, { listActions += it }, { opened += it }, {
-                        added +=
-                            it
-                    }, PaddingValues(12.dp))
+                    SchedulesScreen(
+                        state,
+                        today,
+                        { listActions += it },
+                        { opened += it },
+                        PaddingValues(12.dp)
+                    )
                 }
             }
         }
     }
 
     @Test
-    fun theListShowsTheMonthAsAPlanAndEachScheduleAsOneSentence() {
+    fun theListLeadsWithTheMonthsTotalAndGroupsEachScheduleByWhatItsMonthHolds() {
         list(ready)
 
-        rule.onNodeWithText("PREVISTO EN OCTUBRE").assertIsDisplayed()
-        rule.onNodeWithText("3 pagos activos").assertIsDisplayed()
-        rule.onNodeWithText("Faltan (1)").assertIsDisplayed()
+        rule.onNodeWithText("Tus pagos fijos de octubre").assertIsDisplayed()
+        rule.onNodeWithText("1.249.900").assertIsDisplayed()
+        rule.onNodeWithText("Ya se anotaron").assertIsDisplayed()
+        rule.onNodeWithText("Faltan").assertIsDisplayed()
+        // Still due, nearest first; then what went through; then what is paused.
+        val tops = listOf(
+            "schedules.group.due",
+            "schedules.row.d",
+            "schedules.row.b",
+            "schedules.group.recorded",
+            "schedules.row.a",
+            "schedules.group.paused",
+            "schedules.row.c"
+        ).map { rule.onNodeWithTag(it).getUnclippedBoundsInRoot().top }
+        assertEquals(tops.sorted(), tops)
+        rule.onNodeWithText("FALTAN EN OCTUBRE · 2").assertExists()
         rule.onNode(
             hasContentDescription(
-                "Arriendo, 950.000 pesos, Hogar · el 5 de cada mes · próximo jue 5 nov"
+                "Gas, 60.000 pesos, Hogar · el 23 de cada mes, Mañana, vie 23 oct"
+            )
+        ).assertExists()
+        rule.onNode(
+            hasContentDescription(
+                "Arriendo, 950.000 pesos, Hogar · el 5 de cada mes · anotado lun 5 oct, " +
+                    "próximo jue 5 nov"
             )
         ).assertExists()
         rule.onNode(hasContentDescription("En pausa", substring = true)).assertExists()
@@ -121,12 +164,14 @@ class ScheduleScreensTest {
     }
 
     @Test
-    fun nothingRepeatingOffersToRecordSomethingThatDoesAndAFailedReadIsNeverEmpty() {
+    fun nothingRepeatingSaysHowToAddOneWithoutAnAnotarButton() {
         list(SchedulesState.Ready(ScheduleTab.Incomes, null, emptyList(), emptyList()))
         rule.onNodeWithText("Nada se repite todavía").assertIsDisplayed()
-        rule.onNodeWithText("Anotar algo que se repite").performClick()
 
-        assertEquals(listOf(true), added)
+        // The owner asked for no Anotar button here (SELLO-122); the top bar's + adds one.
+        rule.onNodeWithText("Anotar algo que se repite").assertDoesNotExist()
+        rule.onAllNodes(hasClickAction() and hasAnyAncestor(hasTestTag("schedules.empty")))
+            .assertCountEquals(0)
     }
 
     @Test

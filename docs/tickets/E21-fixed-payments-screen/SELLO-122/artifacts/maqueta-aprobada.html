@@ -1,0 +1,135 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=Saira+Stencil+One&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+:root{--fd:'Schibsted Grotesk',system-ui,sans-serif}
+html,body{background:transparent;color:var(--foreground);font-family:var(--font-sans)}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;line-height:1;display:inline-block;white-space:nowrap;font-feature-settings:'liga';vertical-align:middle;flex:none;font-variation-settings:'FILL' 1,'wght' 500,'opsz' 20}
+.th-lt{--bg:#D9E1F7;--surf:#FFFFFF;--surf3:#D3DCF3;--ink:#0E1630;--ink2:#434E72;--line:#B9C5E6;--pri:#1F3BE0;--prisoft:#DCE2FF;--gain:#0A6B4A;--band:#1F3BE0}
+.th-dk{--bg:#090D1C;--surf:#151C36;--surf3:#2A3560;--ink:#EEF1FB;--ink2:#A9B3D6;--line:#2F3B66;--pri:#8FA6FF;--prisoft:#23368F;--gain:#4FD6A0;--band:#2238B8}
+.wrap{display:flex;flex-direction:column;gap:20px}
+.phones{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;zoom:.93}
+figure{margin:0}
+figcaption{font:600 13px var(--font-sans);color:var(--muted-foreground);margin:0 0 6px 10px}
+.ph{width:360px;border-radius:40px;background:var(--bg);color:var(--ink);overflow:hidden;border:1px solid var(--line);box-shadow:0 0 0 7px #0c0c10;font-family:var(--fd);font-size:14px;line-height:1.35;margin:7px;padding-bottom:16px}
+.band{background:var(--band);color:#fff;padding:10px 18px 46px}
+.sb{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;opacity:.9}
+.tb{display:flex;align-items:center;gap:12px;margin-top:14px}
+.tb b{font-weight:800;font-size:19px}
+.seg{display:flex;background:rgba(255,255,255,.16);border-radius:10px;padding:3px;font-size:13.5px;font-weight:700;margin-top:14px}
+.seg span{flex:1;text-align:center;padding:7px;border-radius:7px;color:rgba(255,255,255,.75)}
+.seg span.on{background:var(--surf);color:var(--ink)}
+.desk{padding:0 12px;display:flex;flex-direction:column;gap:14px;margin-top:-34px}
+.slip{background:var(--surf);border-radius:11px 11px 0 0;padding:15px 16px 22px;position:relative}
+.slip::after{content:'';position:absolute;left:0;right:0;bottom:0;height:7px;background:linear-gradient(-45deg,var(--bg) 5px,transparent 0) 0 0/10px 10px repeat-x,linear-gradient(45deg,var(--bg) 5px,transparent 0) 0 0/10px 10px repeat-x;background-position:left bottom}
+.q{font-size:13px;font-weight:700;color:var(--ink2)}
+.big{font-weight:900;font-size:40px;letter-spacing:-.035em;line-height:1.05;margin-top:4px}
+.bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--surf3);margin:12px 0 10px}
+.bar i{background:var(--pri)}
+.leg{display:flex;justify-content:space-between;font-size:13px;color:var(--ink2)}
+.leg b{color:var(--ink);font-weight:700}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
+.stamp{font-family:'Saira Stencil One';text-transform:uppercase;letter-spacing:.05em;border:2.5px solid currentColor;border-radius:8px;padding:3px 9px 1px;transform:rotate(-6deg);display:inline-block;font-size:14px;color:var(--gain)}
+.r{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.gh{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:2px 0 4px}
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px dashed var(--line)}
+.gh+.row{border-top:0}
+.ic{width:38px;height:38px;border-radius:50%;background:var(--prisoft);color:var(--pri);display:flex;align-items:center;justify-content:center}
+.g1{flex:1;min-width:0}
+.row b{display:block;font-weight:700;font-size:14.5px}
+.row small{display:block;font-size:12.5px;color:var(--ink2)}
+.amt{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;margin-top:3px;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--prisoft);color:var(--pri)}
+.done .ic{background:var(--surf3);color:var(--gain)}
+.done b,.done .amt{color:var(--ink2)}
+.paused{opacity:.6}
+.inc{color:var(--gain)}
+.hint{display:flex;gap:8px;font-size:12.5px;color:var(--ink2);padding:0 6px}
+.hint .ms{color:var(--pri)}
+.empty{text-align:center;padding:26px 16px 30px}
+.empty .ms{color:var(--pri);font-size:34px}
+.empty h3{font-weight:800;font-size:17px;margin:8px 0 6px}
+.empty p{color:var(--ink2);font-size:13.5px}
+.btn{margin-top:14px;display:inline-flex;gap:6px;align-items:center;border:1.5px solid var(--pri);color:var(--pri);border-radius:12px;padding:11px 16px;font-weight:800}
+table.ch{width:100%;border-collapse:collapse;font:13.5px/1.4 var(--font-sans);color:var(--foreground)}
+table.ch th{text-align:left;font-weight:600;color:var(--muted-foreground);padding:6px 8px;border-bottom:1px solid var(--border)}
+table.ch td{padding:7px 8px;border-bottom:1px solid var(--border);vertical-align:top}
+h2.t{font:700 15px var(--font-sans);margin:0 0 8px}
+</style></head><body><div class="wrap">
+<div class="phones">
+
+<figure class="th-dk"><figcaption>Pagos · Oscuro</figcaption><div class="ph">
+<div class="band"><div class="sb"><span>10:28</span><span>61%</span></div>
+<div class="tb"><span class="ms" style="font-size:24px">arrow_back</span><b>Pagos e ingresos fijos</b></div>
+<div class="seg"><span class="on">Pagos</span><span>Ingresos</span></div></div>
+<div class="desk">
+ <div class="slip"><div class="q">Tus pagos fijos de febrero</div>
+  <div class="big">1.268.900</div>
+  <div class="bar"><i style="width:94.6%"></i></div>
+  <div class="leg"><span><span class="dot" style="background:var(--pri)"></span>Ya se anotaron <b>1.200.000</b></span><span><span class="dot" style="background:var(--surf3)"></span>Faltan <b>68.900</b></span></div>
+ </div>
+ <div class="slip">
+  <div class="gh">Faltan en febrero · 2</div>
+  <div class="row"><div class="ic"><span class="ms">directions_car</span></div><div class="g1"><b>Aseo carro</b><small>El 4 de cada mes</small></div><div class="amt">30.000<br><span class="pill">mañana, jue 4</span></div></div>
+  <div class="row"><div class="ic"><span class="ms">theaters</span></div><div class="g1"><b>Netflix</b><small>El 15 de cada mes</small></div><div class="amt">38.900<br><span class="pill">lun 15 feb</span></div></div>
+  <div class="gh" style="margin-top:12px">Ya se anotaron · 1</div>
+  <div class="row done"><div class="ic"><span class="ms">check</span></div><div class="g1"><b>Arriendo</b><small>El 1 de cada mes · anotado lun 1</small></div><div class="amt">1.200.000</div></div>
+  <div class="gh" style="margin-top:12px">En pausa · 1</div>
+  <div class="row paused"><div class="ic"><span class="ms">pause</span></div><div class="g1"><b>Gimnasio</b><small>El 10 de cada mes · en pausa desde 1 ene</small></div><div class="amt">150.000</div></div>
+ </div>
+ <div class="hint"><span class="ms">autorenew</span><span>Se anotan solos, cada uno en su fecha, cuando abres Sello. Para agregar uno, marca <b>Se repite</b> al anotar.</span></div>
+</div></div></figure>
+
+<figure class="th-dk"><figcaption>Ingresos · Oscuro</figcaption><div class="ph">
+<div class="band"><div class="sb"><span>10:28</span><span>61%</span></div>
+<div class="tb"><span class="ms" style="font-size:24px">arrow_back</span><b>Pagos e ingresos fijos</b></div>
+<div class="seg"><span>Pagos</span><span class="on">Ingresos</span></div></div>
+<div class="desk">
+ <div class="slip"><div class="q">Tus ingresos fijos de febrero</div>
+  <div class="r"><div class="big inc">15.149.640</div><span class="stamp">Todo entró</span></div>
+  <div class="bar"><i style="width:100%;background:var(--gain)"></i></div>
+  <div class="leg"><span><span class="dot" style="background:var(--gain)"></span>Ya entraron <b>15.149.640</b></span><span>Faltan <b>0</b></span></div>
+ </div>
+ <div class="slip">
+  <div class="gh">Ya entraron · 1</div>
+  <div class="row done"><div class="ic"><span class="ms">check</span></div><div class="g1"><b>Wizeline</b><small>El 1 de cada mes · entró lun 1</small></div><div class="amt inc">15.149.640<br><span class="pill">próximo lun 1 mar</span></div></div>
+ </div>
+ <div class="hint"><span class="ms">autorenew</span><span>Se anotan solos, cada uno en su fecha, cuando abres Sello. Para agregar uno, marca <b>Se repite</b> al anotar.</span></div>
+</div></div></figure>
+
+<figure class="th-lt"><figcaption>Pagos · Claro</figcaption><div class="ph">
+<div class="band"><div class="sb"><span>10:28</span><span>61%</span></div>
+<div class="tb"><span class="ms" style="font-size:24px">arrow_back</span><b>Pagos e ingresos fijos</b></div>
+<div class="seg"><span class="on">Pagos</span><span>Ingresos</span></div></div>
+<div class="desk">
+ <div class="slip"><div class="q">Tus pagos fijos de febrero</div>
+  <div class="big">1.268.900</div>
+  <div class="bar"><i style="width:94.6%"></i></div>
+  <div class="leg"><span><span class="dot" style="background:var(--pri)"></span>Ya se anotaron <b>1.200.000</b></span><span><span class="dot" style="background:var(--surf3)"></span>Faltan <b>68.900</b></span></div>
+ </div>
+ <div class="slip">
+  <div class="gh">Faltan en febrero · 2</div>
+  <div class="row"><div class="ic"><span class="ms">directions_car</span></div><div class="g1"><b>Aseo carro</b><small>El 4 de cada mes</small></div><div class="amt">30.000<br><span class="pill">mañana, jue 4</span></div></div>
+  <div class="row"><div class="ic"><span class="ms">theaters</span></div><div class="g1"><b>Netflix</b><small>El 15 de cada mes</small></div><div class="amt">38.900<br><span class="pill">lun 15 feb</span></div></div>
+  <div class="gh" style="margin-top:12px">Ya se anotaron · 1</div>
+  <div class="row done"><div class="ic"><span class="ms">check</span></div><div class="g1"><b>Arriendo</b><small>El 1 de cada mes · anotado lun 1</small></div><div class="amt">1.200.000</div></div>
+ </div>
+</div></div></figure>
+
+<figure class="th-lt"><figcaption>Sin nada que se repita</figcaption><div class="ph">
+<div class="band"><div class="sb"><span>10:28</span><span>61%</span></div>
+<div class="tb"><span class="ms" style="font-size:24px">arrow_back</span><b>Pagos e ingresos fijos</b></div>
+<div class="seg"><span class="on">Pagos</span><span>Ingresos</span></div></div>
+<div class="desk">
+ <div class="slip empty"><span class="ms">autorenew</span><h3>Nada se repite todavía</h3><p>Cuando anotes el arriendo o una suscripción, marca <b>Se repite</b> y aparecerá aquí.</p><span class="btn"><span class="ms" style="font-size:18px">add</span>Anotar un pago que se repite</span></div>
+</div></div></figure>
+
+</div>
+<div><h2 class="t">Qué cambia</h2>
+<table class="ch"><thead><tr><th>Parte</th><th>Hoy</th><th>Propuesta</th></tr></thead><tbody>
+<tr><td><b>Barra de arriba</b></td><td>Título con el selector de mes y un + a la derecha</td><td>Solo el título y volver. Sin +, sin selector de mes: la pantalla siempre habla del mes actual</td></tr>
+<tr><td><b>Resumen</b></td><td>Caja punteada con tres líneas; dos casi invisibles en oscuro</td><td>Un recibo que abre con el total del mes, una barra de cuánto ya se anotó y las dos partes debajo</td></tr>
+<tr><td><b>Lista</b></td><td>Una lista plana; la próxima fecha en letra pequeña</td><td>Agrupada: lo que falta (con su fecha en un sello, la más cercana primero), lo que ya se anotó y lo que está en pausa</td></tr>
+<tr><td><b>Ingresos</b></td><td>La misma caja</td><td>La misma forma en verde; cuando todo entró, el sello “Todo entró”</td></tr>
+<tr><td><b>Agregar uno</b></td><td>El + de la barra</td><td>La línea de abajo explica Se repite; solo la pantalla vacía tiene un botón</td></tr>
+</tbody></table></div>
+</div></body></html>

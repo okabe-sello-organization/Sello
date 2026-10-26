@@ -1,7 +1,9 @@
 package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -15,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
+import com.software.sello.designsystem.theme.SelloTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -112,6 +115,22 @@ class PlanPartsTest {
             assertTrue("$scheme ${chip.right}", chip.right <= 320.dp)
             // Wrapped onto more than one line rather than cut at the edge.
             assertTrue("$scheme ${chip.height}", chip.height > 48.dp)
+        }
+    }
+
+    @Test
+    fun aPlanSlipsLinesTakeTheThemesInkInEveryScheme() {
+        var ink: Color? = null
+        var expected: Color? = null
+        rule.inEveryScheme(reset = { ink = null }, content = {
+            expected = SelloTheme.colors.ink
+            PlanSlip(tag = "Plan del mes", caption = "octubre") {
+                ink = LocalContentColor.current
+            }
+        }) { scheme ->
+            rule.waitForIdle()
+            // Not the default black: the slip has no paper, so it must say its ink itself.
+            assertEquals(scheme, expected, ink)
         }
     }
 }

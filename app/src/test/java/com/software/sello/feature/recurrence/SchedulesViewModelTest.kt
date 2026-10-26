@@ -162,6 +162,32 @@ class SchedulesViewModelTest {
     }
 
     @Test
+    fun eachScheduleIsGroupedByWhatItsMonthHolds() {
+        // Starts in November: nothing this month.
+        val later = stored(6, pay(1, 50_000), monthly(3), "2026-11-01")
+        val model = list()
+        categories()
+        publish(rent, bills, bus, course, later)
+
+        val all = model.ready.rows + model.ready.ended
+        assertEquals(
+            mapOf(
+                "1" to ScheduleGroup.Recorded,
+                "2" to ScheduleGroup.Due,
+                "3" to ScheduleGroup.Paused,
+                "4" to ScheduleGroup.Ended,
+                "6" to ScheduleGroup.Later
+            ),
+            all.associate { it.id.takeLast(1) to it.group }
+        )
+        // The rent went through on the 5th; the bus on the 10th, before its pause.
+        assertEquals(
+            mapOf("1" to d("2026-10-05"), "3" to d("2026-10-10")),
+            all.filter { it.recordedOn != null }.associate { it.id.takeLast(1) to it.recordedOn }
+        )
+    }
+
+    @Test
     fun incomesAreTheirOwnTabAndTheTabSurvivesARestart() {
         val saved = SavedStateHandle()
         val model = list(saved)

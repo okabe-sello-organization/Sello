@@ -96,6 +96,42 @@ class ScheduleListPolicyTest {
     }
 
     @Test
+    fun eachScheduleSaysWhenItsLastOccurrenceThisMonthWentThrough() {
+        val behind = payment(
+            6,
+            RepeatRule.EveryWeeks.of(1).valueOrFail(),
+            "2026-09-26",
+            20_000,
+            handled = "2026-10-03"
+        )
+        // Twice a month on the 1st and 15th, the 1st recorded and the 15th not yet.
+        val half = payment(
+            7,
+            RepeatRule.TwiceMonthly.of(1, 15).valueOrFail(),
+            "2026-10-01",
+            300_000,
+            handled = "2026-10-01"
+        )
+        val lines = ScheduleListPolicy.lines(
+            listOf(rent, gym, bills, bus, course, behind, half),
+            today,
+            october
+        ).associateBy { it.stored.schedule.id }
+
+        // Rent on the 5th and the gym on the 15th went through; the bills' 28th has not
+        // come. The bus went through on 3 and 10 Oct before its pause; the course ended in
+        // September; the late one only reached 3 Oct; the twice-monthly one, the 1st.
+        assertEquals(d("2026-10-05"), lines.getValue(id(1)).recordedThisMonth)
+        assertEquals(d("2026-10-15"), lines.getValue(id(2)).recordedThisMonth)
+        assertEquals(null, lines.getValue(id(3)).recordedThisMonth)
+        assertEquals(d("2026-10-10"), lines.getValue(id(4)).recordedThisMonth)
+        assertEquals(null, lines.getValue(id(5)).recordedThisMonth)
+        assertEquals(d("2026-10-03"), lines.getValue(id(6)).recordedThisMonth)
+        assertEquals(d("2026-10-01"), lines.getValue(id(7)).recordedThisMonth)
+        assertEquals(true, lines.getValue(id(7)).toComeThisMonth)
+    }
+
+    @Test
     fun theMonthSaysWhatWentThroughAndWhatIsStillToComeApart() {
         val lines = ScheduleListPolicy.lines(listOf(rent, gym, bills, bus, course), today, october)
 
