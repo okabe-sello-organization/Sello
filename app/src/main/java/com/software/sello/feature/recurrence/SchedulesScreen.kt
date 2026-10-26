@@ -28,7 +28,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
-import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
@@ -38,6 +37,8 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
+import com.software.sello.designsystem.component.StubButton
+import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.category.CategoryIcons
@@ -55,19 +56,20 @@ const val SCHEDULES_TAG = "schedules"
 fun SchedulesRoot(
     viewModels: ViewModelProvider.Factory,
     padding: PaddingValues,
-    onOpen: (String) -> Unit
+    onOpen: (String) -> Unit,
+    onAdd: (ScheduleTab) -> Unit
 ) {
     val model: SchedulesViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
     val today by model.today.collectAsStateWithLifecycle()
-    SchedulesScreen(state, today, model::onAction, onOpen, padding)
+    SchedulesScreen(state, today, model::onAction, onOpen, padding, onAdd)
 }
 
 /**
  * Pagos e ingresos fijos (SELLO-122): Pagos or Ingresos, the month's total with how much
  * of it went through, then each schedule grouped by what its month holds. The month is
  * a plan, never recorded money. A failed read is said, never shown as nothing repeating.
- * Adding one is Se repite's, from the top bar's + or Anotar: there is no button here.
+ * The month's receipt ends in a stub that adds one to the tab with Se repite on (SELLO-125).
  */
 @Composable
 fun SchedulesScreen(
@@ -75,7 +77,8 @@ fun SchedulesScreen(
     today: LocalDate,
     onAction: (SchedulesAction) -> Unit,
     onOpen: (String) -> Unit,
-    padding: PaddingValues
+    padding: PaddingValues,
+    onAdd: (ScheduleTab) -> Unit
 ) {
     val dates = dateLabels()
     val tab = (state as? SchedulesState.Ready)?.tab ?: ScheduleTab.Payments
@@ -110,25 +113,18 @@ fun SchedulesScreen(
                 )
             }
 
-            is SchedulesState.Ready -> if (state.empty) {
-                item {
-                    EmptySlip(
-                        title = stringResource(R.string.schedules_empty_title),
-                        body = stringResource(R.string.schedules_empty_body),
-                        icon = SelloIcon.Autorenew,
-                        modifier = Modifier.testTag("schedules.empty")
-                    )
-                }
-            } else {
-                state.plan?.let { plan -> item { Summary(plan, state.tab) } }
-                item { Groups(state, today, dates, onOpen) }
-                item {
-                    Text(
-                        stringResource(R.string.schedules_footnote),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = SelloTheme.colors.inkSoft,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
+            is SchedulesState.Ready -> {
+                item { Summary(state.plan, state.tab, state.empty, today, onAdd) }
+                if (!state.empty) {
+                    item { Groups(state, today, dates, onOpen) }
+                    item {
+                        Text(
+                            stringResource(R.string.schedules_footnote),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SelloTheme.colors.inkSoft,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
                 }
             }
         }
@@ -136,14 +132,81 @@ fun SchedulesScreen(
 }
 
 /**
- * The month's total for the tab, a bar of how much of it went through, and both parts.
- * Incomes in gain ink. No stamp (owner, 2026-10-26).
+ * The month's receipt for the tab: its total, a bar of how much of it went through and
+ * both parts, incomes in gain ink, no stamp (owner, 2026-10-26). It ends in a tear-off
+ * stub that adds one to the tab (SELLO-125). With nothing repeating, the month at 0 and
+ * examples on the stub; with a sum that does not fit, the stub alone.
  */
 @Composable
-private fun Summary(plan: ScheduleMonthPlan, tab: ScheduleTab) {
-    val colors = SelloTheme.colors
+private fun Summary(
+    plan: ScheduleMonthPlan?,
+    tab: ScheduleTab,
+    empty: Boolean,
+    today: LocalDate,
+    onAdd: (ScheduleTab) -> Unit
+) {
     val income = tab == ScheduleTab.Incomes
-    val month = monthNames().inSentence(plan.month)
+    Slip(Modifier.fillMaxWidth().testTag("schedules.plan")) {
+        when {
+            empty -> Nothing(plan, income, plan?.month ?: YearMonth.from(today))
+            plan != null -> Figures(plan, income)
+        }
+        if (empty || plan != null) TearLine()
+        StubButton(
+            SelloIcon.Add,
+            stringResource(
+                if (income) R.string.schedules_new_income else R.string.schedules_new_payment
+            ),
+            { onAdd(tab) },
+            Modifier.testTag("schedules.add"),
+            fact = when {
+                !empty -> null
+                income -> stringResource(R.string.schedules_examples_incomes)
+                else -> stringResource(R.string.schedules_examples_payments)
+            }
+        )
+    }
+}
+
+@Composable
+private fun SummaryTitle(month: YearMonth, income: Boolean) {
+    Text(
+        stringResource(
+            if (income) R.string.schedules_summary_incomes else R.string.schedules_summary_payments,
+            monthNames().inSentence(month)
+        ),
+        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W700),
+        color = SelloTheme.colors.inkSoft,
+        modifier = Modifier.semantics { heading() }
+    )
+}
+
+/** Nothing repeats on this tab: the month at 0 when there is a plan to say it, and why. */
+@Composable
+private fun Nothing(plan: ScheduleMonthPlan?, income: Boolean, month: YearMonth) {
+    val colors = SelloTheme.colors
+    SummaryTitle(month, income)
+    plan?.let {
+        MoneyText(
+            it.total,
+            color = colors.inkSoft,
+            textStyle = MaterialTheme.typography.displaySmall,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+    Text(
+        stringResource(
+            if (income) R.string.schedules_none_incomes else R.string.schedules_none_payments
+        ),
+        style = MaterialTheme.typography.bodySmall,
+        color = colors.inkSoft,
+        modifier = Modifier.padding(top = 6.dp).testTag("schedules.empty")
+    )
+}
+
+@Composable
+private fun Figures(plan: ScheduleMonthPlan, income: Boolean) {
+    val colors = SelloTheme.colors
     val accent = if (income) colors.semantic.gain else colors.brand
     val recordedLabel = stringResource(
         if (income) {
@@ -155,64 +218,48 @@ private fun Summary(plan: ScheduleMonthPlan, tab: ScheduleTab) {
     val toComeLabel = stringResource(R.string.schedules_summary_to_come)
     val doneUnits = plan.doneUnits
     val totalUnits = plan.totalUnits
-    Slip(Modifier.fillMaxWidth().testTag("schedules.plan")) {
-        Text(
-            stringResource(
-                if (income) {
-                    R.string.schedules_summary_incomes
-                } else {
-                    R.string.schedules_summary_payments
-                },
-                month
-            ),
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W700),
-            color = colors.inkSoft,
-            modifier = Modifier.semantics { heading() }
-        )
-        MoneyText(
-            plan.total,
-            color = if (income) colors.semantic.gain else colors.ink,
-            textStyle = MaterialTheme.typography.displaySmall,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-        SplitBar(
-            listOf(
-                SplitSegment(
-                    fraction = if (totalUnits == 0L) 0f else doneUnits.toFloat() / totalUnits,
-                    spoken = stringResource(
-                        R.string.schedules_summary_spoken,
-                        recordedLabel,
-                        plan.done.spoken,
-                        plan.total.spoken
-                    ),
-                    color = accent
+    SummaryTitle(plan.month, income)
+    MoneyText(
+        plan.total,
+        color = if (income) colors.semantic.gain else colors.ink,
+        textStyle = MaterialTheme.typography.displaySmall,
+        modifier = Modifier.padding(top = 4.dp)
+    )
+    SplitBar(
+        listOf(
+            SplitSegment(
+                fraction = if (totalUnits == 0L) 0f else doneUnits.toFloat() / totalUnits,
+                spoken = stringResource(
+                    R.string.schedules_summary_spoken,
+                    recordedLabel,
+                    plan.done.spoken,
+                    plan.total.spoken
                 ),
-                SplitSegment(
-                    fraction = if (totalUnits ==
-                        0L
-                    ) {
-                        1f
-                    } else {
-                        (totalUnits - doneUnits).toFloat() / totalUnits
-                    },
-                    spoken = stringResource(
-                        R.string.schedules_summary_spoken,
-                        toComeLabel,
-                        plan.toCome.spoken,
-                        plan.total.spoken
-                    ),
-                    color = colors.paperDim
-                )
+                color = accent
             ),
-            modifier = Modifier.padding(vertical = 10.dp)
-        )
-        FlowRow(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Part(recordedLabel, plan.done, accent)
-            Part(toComeLabel, plan.toCome, colors.paperDim)
-        }
+            SplitSegment(
+                fraction = if (totalUnits == 0L) {
+                    1f
+                } else {
+                    (totalUnits - doneUnits).toFloat() / totalUnits
+                },
+                spoken = stringResource(
+                    R.string.schedules_summary_spoken,
+                    toComeLabel,
+                    plan.toCome.spoken,
+                    plan.total.spoken
+                ),
+                color = colors.paperDim
+            )
+        ),
+        modifier = Modifier.padding(vertical = 10.dp)
+    )
+    FlowRow(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Part(recordedLabel, plan.done, accent)
+        Part(toComeLabel, plan.toCome, colors.paperDim)
     }
 }
 

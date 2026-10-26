@@ -547,14 +547,18 @@ keeps everything on opening, with no notification or background work.
   starting today is recorded at once and shows in the notice. Confirmation: "Pago fijo
   guardado: Arriendo, el 5 de cada mes".
 - **The list (owner, redesigned 2026-10-26 in SELLO-122):** title **Pagos e ingresos
-  fijos** without the month, **+** opening the entry with Se repite on for the tab, a
-  **Pagos / Ingresos** switch, a pinked slip **Tus pagos fijos de octubre** with the
-  month's sum, a bar of what went through against what is still to come and both amounts
-  under it (incomes in gain ink; no stamp), then the rows grouped **Faltan en octubre**
+  fijos** without the month, a **Pagos / Ingresos** switch, a pinked slip **Tus pagos
+  fijos de octubre** with the month's sum, a bar of what went through against what is
+  still to come and both amounts under it (incomes in gain ink; no stamp), ending in a
+  tear-off stub **+ Nuevo pago fijo** (or **Nuevo ingreso fijo**) that opens the entry
+  with Se repite on for the tab (owner, 2026-10-26, SELLO-125; it replaced a bare + in
+  the top bar that was easy to miss), then the rows grouped **Faltan en octubre**
   (the day in a pill, Hoy or Mañana when it is), **Ya se anotaron / Ya entraron** (a
   check, "anotado lun 5 oct", the next date), **Más adelante**, **En pausa** (dimmed) and
-  **Terminados**, each with its count. Empty: "Nada se repite todavía" with no button; the
-  footnote says to mark Se repite when noting one.
+  **Terminados**, each with its count. Empty: the same slip with the month at 0, "Aún no
+  tienes pagos fijos" and the stub, its line giving examples ("Arriendo, servicios,
+  suscripciones…" or "Salario, honorarios, una renta…"). A footnote says they record
+  themselves on their dates.
 - **Changing a schedule:** tapping a row opens the entry layout titled **Pago fijo /
   Ingreso fijo**: amount, category or source, note, Se repite, "Los cambios aplican desde
   mañana. Lo que ya se anotó no cambia.", **Pausar** (with the next date) or, while

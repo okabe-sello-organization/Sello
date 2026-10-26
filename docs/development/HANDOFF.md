@@ -40,7 +40,7 @@ This summary is refreshed when an epic closes and adds no verification claims.
 - Pagos e ingresos fijos: Se repite in both entry forms makes a schedule (monthly,
   twice a month, every N days or weeks, optional end). The list, from Configuración and
   Resumen ([E21](../tickets/E21-fixed-payments-screen/README.md)), leads with the month's
-  total and a bar of what went through, then groups Faltan, Ya se anotaron, Más
+  total and a bar of what went through, ending in a **+ Nuevo pago fijo** stub, then groups Faltan, Ya se anotaron, Más
   adelante, En pausa and Terminados; it pauses, resumes, changes from tomorrow and
   deletes, keeping what was recorded; a recorded entry asks Solo este / Este y los siguientes. Sello records due
   occurrences on their own dates when it opens, at the day change and after a save,

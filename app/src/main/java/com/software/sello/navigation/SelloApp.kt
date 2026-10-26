@@ -565,10 +565,6 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
             }
         }
         composable<SchedulesRoute> {
-            // The list's own view model, so the + adds to the tab on screen.
-            val schedules: SchedulesViewModel = viewModel(factory = viewModels)
-            val listed by schedules.state.collectAsStateWithLifecycle()
-            val incomes = (listed as? SchedulesState.Ready)?.tab == ScheduleTab.Incomes
             ShellScreen(
                 state,
                 monthNames(),
@@ -579,36 +575,20 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 titleOnly = stringResource(R.string.schedules_title),
                 pastMonthRibbon = false,
                 entryDock = false,
-                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            if (incomes) {
-                                navigation.navigate(IncomeEntryRoute(repeat = true))
-                            } else {
-                                navigation.navigate(ExpenseEntryRoute(repeat = true))
-                            }
-                        },
-                        modifier = Modifier.testTag("schedules.add")
-                    ) {
-                        Icon(
-                            SelloIcon.Add.painter(),
-                            contentDescription = stringResource(
-                                if (incomes) {
-                                    R.string.schedules_add_income
-                                } else {
-                                    R.string.schedules_add_payment
-                                }
-                            )
-                        )
-                    }
-                }
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
             ) { padding ->
                 SchedulesRoot(
                     viewModels,
                     padding,
                     onOpen = { id ->
                         navigation.navigate(ScheduleRoute(id)) { launchSingleTop = true }
+                    },
+                    onAdd = { tab ->
+                        if (tab == ScheduleTab.Incomes) {
+                            navigation.navigate(IncomeEntryRoute(repeat = true))
+                        } else {
+                            navigation.navigate(ExpenseEntryRoute(repeat = true))
+                        }
                     }
                 )
             }
