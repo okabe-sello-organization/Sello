@@ -4,15 +4,17 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-10-25 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Epics E01–E08, E12, E13, E15, E17 and E18 are Done; E16 has work under way. Each ticket's
+**Snapshot:** 2026-10-26 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
+Epics E01–E08, E10, E12, E13, E15, E17, E18 and E20 are Done; E16 has work under way
+and E19 waits only for its `0.2.0` release ticket. Each ticket's
 own `handoff.md` and `evidence.md` under [docs/tickets](../tickets/README.md) carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
 This summary is refreshed when an epic closes and adds no verification claims.
 
 ## Current app
 
-- Offline, local-only COP expenses/income, with Recibo, Resumen and Metas as working tabs.
+- Offline, local-only COP expenses/income, with Recibo, Resumen, Metas and Inversiones
+  as working tabs.
 - Category creation/editing, archive/unarchive, monthly limits and past corrections.
   The editor opens with the keyboard on the name, offers 24 icons and the person's
   most used limits, and says what the month's total limit would become.
@@ -41,16 +43,27 @@ This summary is refreshed when an epic closes and adds no verification claims.
   this month's payments still due: the headline is after them, with Sin margen and
   Revisar, and its footnote opens Pagos previstos. Income history shows Plan del mes.
   Rules: [recurrence examples](../testing/recurrence-examples.md).
-- Shared month, restored drafts/navigation, appearance and category-order settings.
-- Room schema 5 for finances (goals since 4, recurring schedules since 5); DataStore
-  for nonfinancial preferences.
+- Inversiones: COP or USD investments with aportes, retiros, dividends and recorded
+  values, the portfolio total in pesos at one dated, manually entered dollar rate, and
+  each investment's simple return. Rules: [investment examples](../testing/investment-examples.md).
+- Configuración ([E20](../tickets/E20-settings/README.md)) opens on Tus datos: a backup
+  card with the last backup's date, age and a Guardado, Pendiente (after 30 days) or
+  Sin respaldo stamp, Respaldar and Restaurar right there, Exportar a CSV o JSON (saved
+  through the picker or shared through a one-file FileProvider) and Borrar todos los
+  datos. Then Lo que se repite, Apariencia (theme, ink swatches), Recibo (category order
+  and direction) and Inversiones (starting currency, list order, Dólar rate).
+- Shared month and restored drafts/navigation.
+- Room schema 6 for finances (goals since 4, recurring schedules since 5, investments
+  since 6); DataStore for nonfinancial preferences; backup format version 5
+  ([format](../data/backup-format.md)).
 - Backups save and restore through the system file picker, also from the start-up
   failure screen; retry and confirmed start-over preserve an unreadable database privately.
   Restaurar also imports a FinanceTracker backup, investments included, showing what it
   changed and left out first (ADR 0019).
 - Configuración → Borrar todos los datos erases the history after counts and BORRAR.
 - No network permission or OS backup; every build checks its manifests, release
-  libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md).
+  libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md). The
+  only provider that grants access is the export one, limited to `cache/exports/`.
 
 The modules are `:app`, `:domain`, `:data`, `:design-system` and the separate
 `:catalog`. The extra `:prototype` app renders v1.1 sample screens with no storage.
@@ -72,17 +85,17 @@ evidence and retained report. This file no longer repeats them.
 - SELLO-074 ([E14](../tickets/E14-assistive-technology/README.md)): the manual
   TalkBack, Switch Access and keyboard pass, moved post-MVP by the owner on
   2026-10-23. E13 is done without it.
-- SELLO-079, SELLO-083, SELLO-084, SELLO-105–113 ([E16](../tickets/E16-v2-today-gaps/README.md), [E19](../tickets/E19-investments/README.md)):
+- SELLO-079, SELLO-083 and SELLO-084 ([E16](../tickets/E16-v2-today-gaps/README.md)):
   the rest of today's v2 screens (SELLO-080–082 and SELLO-117 are done; the SELLO-079
-  audit credits them), then Inversiones, released with Metas and recurrence
-  ([E18](../tickets/E18-recurrence/README.md), done) as `0.2.0`; decisions in
-  [ADR 0017](../decisions/0017-goals-recurrence-investments.md). Each epic starts by
-  verifying what already exists.
+  audit credits them).
+- SELLO-113 ([E19](../tickets/E19-investments/README.md)): releasing Metas, recurrence
+  and Inversiones, with Configuración's E20 changes, as `0.2.0`; the owner starts it.
+  Decisions in [ADR 0017](../decisions/0017-goals-recurrence-investments.md).
 - Signed carryover (E09) and the assistive-technology pass (E14) stay on the post-MVP
   roadmap. Legacy import (E10) is done: Restaurar also takes a FinanceTracker backup,
   investments included ([ADR 0019](../decisions/0019-legacy-import.md)).
 
-Every MVP ticket is Done. The post-MVP epics E09, E10 and E14–E19 live under
+Every MVP ticket is Done. The post-MVP epics E09, E10 and E14–E20 live under
 [docs/tickets](../tickets/README.md).
 
 ## Detail references
