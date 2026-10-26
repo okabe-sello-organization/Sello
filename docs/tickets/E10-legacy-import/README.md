@@ -1,6 +1,6 @@
 # SELLO-E10 — Legacy data import after MVP
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** Let someone bring their history from the previous app into Sello without weakening Sello's rules.
 - **Exit:** A legacy export is translated into a validated Sello backup and restored through the released restore workflow, with every skipped record counted and explained; journeys without an import remain unchanged.
