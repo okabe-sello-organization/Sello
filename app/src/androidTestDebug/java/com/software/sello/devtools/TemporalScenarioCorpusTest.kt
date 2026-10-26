@@ -14,8 +14,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The whole scenario corpus on real Room, goals and schedules included, with the app's own
- * catch-up. Each scenario runs fresh, then again cut
+ * The whole scenario corpus on real Room, goals, schedules, investments and rates included,
+ * with the app's own catch-up. Each scenario runs fresh, then again cut
  * off after a committed step whose checkpoint was lost and resumed in a new process;
  * both runs must leave the same history and every `Verify` must match. Each check's
  * line is written to the log under [TAG] as the run's evidence. Each finished scenario
@@ -83,7 +83,25 @@ class TemporalScenarioCorpusTest {
         rows(
             "SELECT c.name, m.month, m.kind, m.limit_minor FROM month_limit m " +
                 "JOIN category c ON c.id = m.category_id ORDER BY c.name, m.month"
-        ) + goals(withVersions = true)
+        ) + goals(withVersions = true) + investments(withVersions = true)
+
+    /**
+     * Each investment, its movements in recording order and the rates in the order they
+     * were entered, without identifiers or audit times. A backup keeps no versions and no
+     * next recording position, so a restore is compared [withVersions] false.
+     */
+    private fun SandboxGraph.investments(withVersions: Boolean): List<String> = rows(
+        "SELECT name, icon_key, currency" +
+            (if (withVersions) ", next_sequence, version" else "") +
+            " FROM investment ORDER BY name"
+    ) +
+        rows(
+            "SELECT i.name, m.sequence, m.kind, m.amount_minor, m.currency, m.effective_date" +
+                (if (withVersions) ", m.version" else "") +
+                " FROM investment_movement m " +
+                "JOIN investment i ON i.id = m.investment_id ORDER BY i.name, m.sequence"
+        ) +
+        rows("SELECT rate_hundredths, effective_date, sequence FROM usd_rate ORDER BY sequence")
 
     /** Each schedule with its checkpoint, and its pauses. */
     private fun SandboxGraph.schedules(withVersions: Boolean): List<String> = rows(
@@ -201,8 +219,8 @@ class TemporalScenarioCorpusTest {
             assertEquals(scenario.key, before, sandbox.figures())
 
             if (!checkable) {
-                report += "${scenario.key}: backup ${bytes.size} bytes restored; " +
-                    "same rows; no check follows its last saved change"
+                report += "${scenario.key}: backup ${bytes.size} bytes restored; same rows; " +
+                    "no check follows its last saved change"
                 return@forEach
             }
             // After the restart a restore asks for, the last check runs on restored rows.
@@ -237,7 +255,7 @@ class TemporalScenarioCorpusTest {
         rows(
             "SELECT c.name, m.month, m.kind, m.limit_minor FROM month_limit m " +
                 "JOIN category c ON c.id = m.category_id ORDER BY c.name, m.month"
-        ) + goals(withVersions = false)
+        ) + goals(withVersions = false) + investments(withVersions = false)
 
     private companion object {
         const val TAG = "ScenarioCorpus"

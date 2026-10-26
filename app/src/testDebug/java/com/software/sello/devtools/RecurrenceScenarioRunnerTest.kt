@@ -260,6 +260,7 @@ class RecurrenceScenarioRunnerTest {
                 stored,
                 stored
             ),
+            noInvestments(),
             store,
             backgroundScope
         )

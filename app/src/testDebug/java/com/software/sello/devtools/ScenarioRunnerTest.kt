@@ -4,6 +4,7 @@ import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.IncomeId
+import com.software.sello.domain.model.InvestmentId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
@@ -16,6 +17,7 @@ import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CommittedIncome
+import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.CommittedSchedule
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateIncome
@@ -33,12 +35,18 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
+import com.software.sello.domain.port.InvestmentCommand
+import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentEdit
+import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
 import com.software.sello.domain.port.ScheduleCommand
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleRejection
+import com.software.sello.domain.port.SetUsdRate
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -213,6 +221,55 @@ class LedgerGoals(private val ledger: Ledger) : GoalCommands {
     override fun completionUndoOffer() = null
 }
 
+/**
+ * Investment commands on the [ledger]; each record is the investment the command names
+ * or makes, and a rate's record is none, as the real receipt has it.
+ */
+class LedgerInvestments(private val ledger: Ledger) : InvestmentCommands {
+    val sent = mutableListOf<InvestmentCommand>()
+
+    /** The answer to the next command instead of the ledger's, once. */
+    var refuseNext: InvestmentRejection? = null
+
+    override suspend fun submit(command: InvestmentCommand): InvestmentCommandOutcome = try {
+        sent += command
+        refuseNext?.let {
+            refuseNext = null
+            return InvestmentCommandOutcome.Rejected(it)
+        }
+        val subject = (command as? InvestmentEdit)?.investmentId
+        try {
+            ledger.write(command.operationId, OperationKind.CreateInvestment, null)
+        } finally {
+            // Even an unknown outcome committed: its receipt names what it changed.
+            ledger.receipts[command.operationId.value]?.let { (_, id) ->
+                subjects.putIfAbsent(
+                    command.operationId.value,
+                    if (command is SetUsdRate) null else subject ?: InvestmentId.of(id).value()
+                )
+            }
+        }?.let { (receipt, _, replayed) ->
+            InvestmentCommandOutcome.Committed(
+                CommittedInvestment(receipt, subjects[command.operationId.value]),
+                replayed
+            )
+        } ?: InvestmentCommandOutcome.Rejected(InvestmentRejection.VersionConflict(0))
+    } catch (_: Ledger.Unknown) {
+        InvestmentCommandOutcome.OutcomeUnknown(command.operationId)
+    }
+
+    /** What each committed operation changed: the investment it made or named; none for a rate. */
+    private val subjects = mutableMapOf<String, InvestmentId?>()
+
+    override suspend fun find(operationId: OperationId) = Outcome.Success(
+        ledger.receipts[operationId.value]?.let { (receipt, _) ->
+            CommittedInvestment(receipt, subjects[operationId.value])
+        }
+    )
+
+    override fun movementUndoOffer() = null
+}
+
 /** Schedule commands on the [ledger]; each record is the schedule the command names or makes. */
 class LedgerSchedules(private val ledger: Ledger) : ScheduleCommands {
     val sent = mutableListOf<ScheduleCommand>()
@@ -265,6 +322,7 @@ class ScenarioRunnerTest {
             NoSnapshots,
             NoGoalReads,
             noSchedules(time.clock),
+            noInvestments(),
             store,
             backgroundScope
         )
@@ -413,3 +471,14 @@ object NoGoalReads : com.software.sello.domain.port.GoalReads {
 
     override suspend fun goal(id: GoalId): Nothing = error("unused")
 }
+
+object NoInvestmentReads : com.software.sello.domain.port.InvestmentReads {
+    override suspend fun board(): Nothing = error("unused")
+
+    override fun observeBoard(): Nothing = error("unused")
+
+    override suspend fun investment(id: InvestmentId): Nothing = error("unused")
+}
+
+/** Investment ports for runner tests whose scenarios have no investment step. */
+fun noInvestments() = ScenarioInvestments(LedgerInvestments(Ledger()), NoInvestmentReads)

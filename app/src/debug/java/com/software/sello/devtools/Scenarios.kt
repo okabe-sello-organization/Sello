@@ -8,14 +8,19 @@ import com.software.sello.devtools.ScenarioStep.Category
 import com.software.sello.devtools.ScenarioStep.ChangeSchedule
 import com.software.sello.devtools.ScenarioStep.ChooseForRecibo
 import com.software.sello.devtools.ScenarioStep.DeleteExpense
+import com.software.sello.devtools.ScenarioStep.DeleteInvestment
+import com.software.sello.devtools.ScenarioStep.DeleteMovement
 import com.software.sello.devtools.ScenarioStep.DeleteOccurrence
 import com.software.sello.devtools.ScenarioStep.DeleteSchedule
 import com.software.sello.devtools.ScenarioStep.EditExpense
+import com.software.sello.devtools.ScenarioStep.EditMovement
 import com.software.sello.devtools.ScenarioStep.Expense
 import com.software.sello.devtools.ScenarioStep.Goal
 import com.software.sello.devtools.ScenarioStep.GoalTarget
 import com.software.sello.devtools.ScenarioStep.Income
+import com.software.sello.devtools.ScenarioStep.Investment
 import com.software.sello.devtools.ScenarioStep.MarkLograda
+import com.software.sello.devtools.ScenarioStep.Movement
 import com.software.sello.devtools.ScenarioStep.PauseSchedule
 import com.software.sello.devtools.ScenarioStep.Repeat
 import com.software.sello.devtools.ScenarioStep.ResumeSchedule
@@ -23,10 +28,14 @@ import com.software.sello.devtools.ScenarioStep.Retiro
 import com.software.sello.devtools.ScenarioStep.Schedule
 import com.software.sello.devtools.ScenarioStep.SetDefaultLimit
 import com.software.sello.devtools.ScenarioStep.SetMonthLimit
+import com.software.sello.devtools.ScenarioStep.SetRate
 import com.software.sello.devtools.ScenarioStep.Unarchive
 import com.software.sello.devtools.ScenarioStep.UndoDelete
 import com.software.sello.devtools.ScenarioStep.UndoLograda
+import com.software.sello.devtools.ScenarioStep.UndoMovementDelete
 import com.software.sello.devtools.ScenarioStep.Verify
+import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.GainDirection
 import com.software.sello.domain.model.Occurrence
 import java.time.LocalDate
 import java.time.YearMonth
@@ -48,6 +57,33 @@ private fun earned(count: Int): List<Stamp> =
 /** 25 %, 50 % and 75 % earned; the target reached, waiting for Marcar como lograda. */
 private val MetaWaiting: List<Stamp> =
     listOf(Stamp.Earned, Stamp.Earned, Stamp.Earned, Stamp.Waiting)
+
+/** A return of [tenths] of a percent with a gain, a loss or neither (investment rule 6). */
+private fun gana(tenths: Long) = Yield(GainDirection.Gain, tenths)
+
+private fun pierde(tenths: Long) = Yield(GainDirection.Loss, tenths)
+
+private val Neutral = Yield(GainDirection.Even, 0)
+
+private fun day(year: Int, month: Int, day: Int): LocalDate = LocalDate.of(year, month, day)
+
+/** The month of Fondo's first aporte, the earliest on the v2 page (IN04). */
+private val May2025 = YearMonth.of(2025, 5)
+
+/** IN06: the four investments of the v2 page together, values from 12 jun to 14 oct. */
+private val PageTotal = PortfolioCheck.Total(
+    value = 38_038_000,
+    contributed = 37_000_000,
+    withdrawn = 500_000,
+    dividends = 528_000,
+    gain = 2_066_000,
+    yield = gana(56),
+    since = May2025,
+    valuedFrom = day(2026, 6, 12),
+    valuedTo = day(2026, 10, 14),
+    rate = null,
+    source = "IN06"
+)
 
 /** The scenarios the tools offer, all synthetic. */
 object Scenarios {
@@ -1461,6 +1497,641 @@ object Scenarios {
         )
     )
 
+    /**
+     * IN02–IN07 and IN17: the four investments of the v2 page built over 18 months, the
+     * financial clock moving forward between movements. Fondo's two aportes carry the
+     * value of 3 may 2025 forward (rule 5); a double tap writes nothing new; each figure
+     * then matches the page, a Cripto without a value stays out of the total, and with
+     * Parqueadero and CDT deleted only Fondo and Ecopetrol remain.
+     */
+    val InvestmentPage = Scenario(
+        id = "inversiones-pagina",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2025, 5, 3),
+        title = "Inversiones · La página",
+        summary = "IN02–IN06: Parqueadero +7,5 %, CDT +7,5 %, Fondo −4,3 %, Ecopetrol +7,6 %; " +
+            "total 38.038.000, +5,6 %. IN17: Cripto sin valor no cuenta. IN07: −0,3 %.",
+        steps = listOf(
+            Investment("fondo", "Fondo de inversión", "insights", Currency.COP, 3_000_000),
+            AdvanceTo(day(2025, 10, 1)),
+            Investment("cdt", "CDT Banco", "account_balance", Currency.COP, 10_000_000),
+            AdvanceTo(day(2025, 11, 3)),
+            Movement("fondo", Move.Aporte, 3_000_000, 1),
+            Repeat(4),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "fondo",
+                        6_000_000,
+                        Worth(6_000_000, day(2025, 5, 3), 0, Neutral),
+                        "Regla 5 a mano: 3.000.000 del 3 may 2025 + el aporte de 3.000.000, " +
+                            "valor del 3 may; G 0, 0,0 % sin sello (IN15); repetido sin escribir",
+                        since = May2025
+                    )
+                )
+            ),
+            AdvanceTo(day(2026, 1, 15)),
+            Investment("parqueadero", "Parqueadero", "home", Currency.COP, 18_000_000),
+            AdvanceTo(day(2026, 2, 10)),
+            Investment("ecopetrol", "Ecopetrol", "trending_up", Currency.COP, 1_500_000),
+            AdvanceTo(day(2026, 3, 10)),
+            Movement("ecopetrol", Move.Aporte, 1_500_000, 1),
+            AdvanceTo(day(2026, 4, 1)),
+            Movement("parqueadero", Move.Dividendo, 350_000, 1),
+            AdvanceTo(day(2026, 4, 15)),
+            Movement("ecopetrol", Move.Dividendo, 89_000, 2),
+            AdvanceTo(day(2026, 5, 20)),
+            Movement("ecopetrol", Move.Valor, 3_100_000, 3),
+            AdvanceTo(day(2026, 6, 12)),
+            Movement("parqueadero", Move.Valor, 19_000_000, 2),
+            AdvanceTo(day(2026, 7, 15)),
+            Movement("ecopetrol", Move.Dividendo, 89_000, 4),
+            Movement("ecopetrol", Move.Valor, 2_950_000, 5),
+            AdvanceTo(day(2026, 8, 3)),
+            Movement("fondo", Move.Retiro, 500_000, 2),
+            AdvanceTo(day(2026, 8, 20)),
+            Movement("ecopetrol", Move.Valor, 3_000_000, 6),
+            AdvanceTo(day(2026, 9, 30)),
+            Movement("cdt", Move.Valor, 10_746_000, 1),
+            AdvanceTo(day(2026, 10, 9)),
+            Movement("ecopetrol", Move.Valor, 3_050_000, 7),
+            AdvanceTo(day(2026, 10, 14)),
+            Movement("fondo", Move.Valor, 5_242_000, 3),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "parqueadero",
+                        18_000_000,
+                        Worth(19_000_000, day(2026, 6, 12), 1_350_000, gana(75)),
+                        "IN02",
+                        dividends = 350_000
+                    ),
+                    InvestmentCheck(
+                        "cdt",
+                        10_000_000,
+                        Worth(10_746_000, day(2026, 9, 30), 746_000, gana(75)),
+                        "IN03"
+                    ),
+                    InvestmentCheck(
+                        "fondo",
+                        6_000_000,
+                        Worth(5_242_000, day(2026, 10, 14), -258_000, pierde(43)),
+                        "IN04",
+                        withdrawn = 500_000,
+                        since = May2025
+                    ),
+                    InvestmentCheck(
+                        "ecopetrol",
+                        3_000_000,
+                        Worth(3_050_000, day(2026, 10, 9), 228_000, gana(76)),
+                        "IN05; sus 9 movimientos (IN23)",
+                        dividends = 178_000,
+                        movements = 9
+                    )
+                ),
+                portfolio = PageTotal
+            ),
+            AdvanceTo(day(2026, 10, 20)),
+            Investment("cripto", "Cripto", "shopping_cart", Currency.COP, 2_000_000),
+            DeleteMovement(36, 1, firstValue = true),
+            Verify(
+                emptyList(),
+                investments = listOf(InvestmentCheck("cripto", 2_000_000, null, "IN17")),
+                portfolio = PageTotal.copy(source = "IN17: el total sigue como IN06")
+            ),
+            DeleteInvestment("parqueadero", 3),
+            DeleteInvestment("cdt", 2),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck.gone("parqueadero", "IN07: borrada"),
+                    InvestmentCheck.gone("cdt", "IN07: borrada")
+                ),
+                portfolio = PortfolioCheck.Total(
+                    value = 8_292_000,
+                    contributed = 9_000_000,
+                    withdrawn = 500_000,
+                    dividends = 178_000,
+                    gain = -30_000,
+                    yield = pierde(3),
+                    since = May2025,
+                    valuedFrom = day(2026, 10, 9),
+                    valuedTo = day(2026, 10, 14),
+                    rate = null,
+                    source = "IN07; fechas de valor a mano (Ecopetrol y Fondo)"
+                )
+            )
+        )
+    )
+
+    /**
+     * IN08–IN16 and IN26: a value carried forward. An aporte after the 1 oct value adds to
+     * it, a retiro takes from it, and both keep that value's date; a retiro above it is
+     * refused and exactly it is accepted; a later value replaces it; an aporte dated
+     * before it is already in it; a dividend never changes it. Recording order decides
+     * on one day; a gain of 0 has no stamp and a gain of −1 is a loss.
+     */
+    val CarriedForward = Scenario(
+        id = "valor-arrastrado",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2026, 9, 1),
+        title = "Inversiones · Valor arrastrado",
+        summary = "IN08 6.000.000 del 1 oct, +20,0 %; IN09 4.000.000; IN10 4.000.001 no, " +
+            "4.000.000 sí; IN11 +16,0 %; IN14 +17,0 %; IN12 sigue 3.800.000; IN13; IN15; IN16.",
+        steps = listOf(
+            Investment("ahorro", "Fondo de ahorro", "insights", Currency.COP, 4_000_000),
+            AdvanceTo(day(2026, 10, 1)),
+            Movement("ahorro", Move.Valor, 5_000_000, 1),
+            AdvanceTo(day(2026, 10, 10)),
+            Movement("ahorro", Move.Aporte, 1_000_000, 2),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "ahorro",
+                        5_000_000,
+                        Worth(6_000_000, day(2026, 10, 1), 1_000_000, gana(200)),
+                        "IN08"
+                    )
+                )
+            ),
+            AdvanceTo(day(2026, 10, 12)),
+            Movement("ahorro", Move.Retiro, 2_000_000, 3),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "ahorro",
+                        5_000_000,
+                        Worth(4_000_000, day(2026, 10, 1), 1_000_000, gana(200)),
+                        "IN09",
+                        withdrawn = 2_000_000
+                    )
+                )
+            ),
+            Movement("ahorro", Move.Retiro, 4_000_001, 4, expect = Expect.Rejected("AboveValue")),
+            Movement("ahorro", Move.Retiro, 4_000_000, 4),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "ahorro",
+                        5_000_000,
+                        Worth(0, day(2026, 10, 1), 1_000_000, gana(200)),
+                        "IN10: 4.000.000 se acepta, V 0; G a mano 0 + 6.000.000 − 5.000.000",
+                        withdrawn = 6_000_000
+                    )
+                )
+            ),
+            // Back to IN09 for the rest.
+            DeleteMovement(10, 5),
+            AdvanceTo(day(2026, 10, 14)),
+            Movement("ahorro", Move.Valor, 3_800_000, 6),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "ahorro",
+                        5_000_000,
+                        Worth(3_800_000, day(2026, 10, 14), 800_000, gana(160)),
+                        "IN11",
+                        withdrawn = 2_000_000
+                    )
+                )
+            ),
+            Movement("ahorro", Move.Dividendo, 50_000, 7),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "ahorro",
+                        5_000_000,
+                        Worth(3_800_000, day(2026, 10, 14), 850_000, gana(170)),
+                        "IN14",
+                        withdrawn = 2_000_000,
+                        dividends = 50_000
+                    )
+                )
+            ),
+            AdvanceTo(day(2026, 10, 20)),
+            Movement("ahorro", Move.Aporte, 300_000, 8, on = day(2026, 10, 5)),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "ahorro",
+                        5_300_000,
+                        Worth(3_800_000, day(2026, 10, 14), 550_000, gana(104)),
+                        "IN12 tras el dividendo de IN14: V sigue en 3.800.000; G a mano " +
+                            "3.800.000 + 2.000.000 + 50.000 − 5.300.000 = 550.000, 10,38 %",
+                        withdrawn = 2_000_000,
+                        dividends = 50_000
+                    )
+                )
+            ),
+            Movement("ahorro", Move.Aporte, 1_000_000_000_000, 9, expect = Expect.InvalidInput),
+            Investment("orden-a", "Orden A", "insights", Currency.COP, 1_000_000),
+            Movement("orden-a", Move.Valor, 4_000_000, 1),
+            Movement("orden-a", Move.Aporte, 500_000, 2),
+            Investment("orden-b", "Orden B", "insights", Currency.COP, 1_000_000),
+            Movement("orden-b", Move.Aporte, 500_000, 1),
+            Movement("orden-b", Move.Valor, 4_000_000, 2),
+            Investment("par", "Par", "school", Currency.COP, 1_000_000),
+            Investment("casi", "Casi", "school", Currency.COP, 3_000_000, value = 2_999_999),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "orden-a",
+                        1_500_000,
+                        Worth(4_500_000, day(2026, 10, 20), 3_000_000, gana(2_000)),
+                        "IN13: valor y luego aporte; G a mano 4.500.000 − 1.500.000, 200,0 %"
+                    ),
+                    InvestmentCheck(
+                        "orden-b",
+                        1_500_000,
+                        Worth(4_000_000, day(2026, 10, 20), 2_500_000, gana(1_667)),
+                        "IN13: aporte y luego valor; G a mano 4.000.000 − 1.500.000, 166,67 %"
+                    ),
+                    InvestmentCheck(
+                        "par",
+                        1_000_000,
+                        Worth(1_000_000, day(2026, 10, 20), 0, Neutral),
+                        "IN15"
+                    ),
+                    InvestmentCheck(
+                        "casi",
+                        3_000_000,
+                        Worth(2_999_999, day(2026, 10, 20), -1, pierde(0)),
+                        "IN16"
+                    )
+                )
+            )
+        )
+    )
+
+    /**
+     * IN27–IN34: the four of the page, entered with past dates on 20 oct, then Acciones
+     * EE. UU. in dollars: refused with no rate (IN33), saved with 4.150,25. The overview
+     * converts once at the current rate; a new rate changes it, a later one on the same
+     * day replaces it, an earlier-dated one only joins the history.
+     */
+    val Dollars = Scenario(
+        id = "dolares",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2026, 10, 20),
+        title = "Inversiones · Dólares",
+        summary = "IN33 sin tasa no; IN27 +5,1 % en USD; IN28 total 42.397.838 a 4.150,25; " +
+            "IN29 a 4.000,00; IN30 4.010,00 el mismo día; IN31 una tasa anterior no cambia.",
+        steps = listOf(
+            Investment(
+                "parqueadero",
+                "Parqueadero",
+                "home",
+                Currency.COP,
+                18_000_000,
+                on = day(2026, 1, 15)
+            ),
+            Movement("parqueadero", Move.Dividendo, 350_000, 1, on = day(2026, 4, 1)),
+            Movement("parqueadero", Move.Valor, 19_000_000, 2, on = day(2026, 6, 12)),
+            Investment(
+                "cdt",
+                "CDT Banco",
+                "account_balance",
+                Currency.COP,
+                10_000_000,
+                on = day(2025, 10, 1)
+            ),
+            Movement("cdt", Move.Valor, 10_746_000, 1, on = day(2026, 9, 30)),
+            Investment(
+                "fondo",
+                "Fondo de inversión",
+                "insights",
+                Currency.COP,
+                3_000_000,
+                on = day(2025, 5, 3)
+            ),
+            Movement("fondo", Move.Aporte, 3_000_000, 1, on = day(2025, 11, 3)),
+            Movement("fondo", Move.Retiro, 500_000, 2, on = day(2026, 8, 3)),
+            Movement("fondo", Move.Valor, 5_242_000, 3, on = day(2026, 10, 14)),
+            Investment(
+                "ecopetrol",
+                "Ecopetrol",
+                "trending_up",
+                Currency.COP,
+                3_000_000,
+                on = day(2026, 2, 10)
+            ),
+            Movement("ecopetrol", Move.Dividendo, 89_000, 1, on = day(2026, 4, 15)),
+            Movement("ecopetrol", Move.Dividendo, 89_000, 2, on = day(2026, 7, 15)),
+            Movement("ecopetrol", Move.Valor, 3_050_000, 3, on = day(2026, 10, 9)),
+            Verify(
+                emptyList(),
+                portfolio = PageTotal.copy(source = "IN06, anotado con fechas pasadas")
+            ),
+            Investment(
+                "acciones",
+                "Acciones EE. UU.",
+                "trending_up",
+                Currency.USD,
+                100_000,
+                value = 105_050,
+                expect = Expect.Rejected("RateRequired")
+            ),
+            Investment(
+                "acciones",
+                "Acciones EE. UU.",
+                "trending_up",
+                Currency.USD,
+                100_000,
+                value = 105_050,
+                rate = Rate(415_025)
+            ),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "acciones",
+                        100_000,
+                        Worth(105_050, day(2026, 10, 20), 5_050, gana(51)),
+                        "IN27"
+                    )
+                ),
+                portfolio = PortfolioCheck.Total(
+                    value = 42_397_838,
+                    contributed = 41_150_250,
+                    withdrawn = 500_000,
+                    dividends = 528_000,
+                    gain = 2_275_588,
+                    yield = gana(55),
+                    since = May2025,
+                    valuedFrom = day(2026, 6, 12),
+                    valuedTo = day(2026, 10, 20),
+                    rate = RateCheck(415_025, day(2026, 10, 20)),
+                    source = "IN28"
+                )
+            ),
+            SetRate(Rate(99), Expect.InvalidInput),
+            SetRate(Rate(10_000_001), Expect.InvalidInput),
+            SetRate(Rate(400_000, on = day(2026, 10, 21)), Expect.Rejected("FutureDate")),
+            Movement("acciones", Move.Aporte, 1_000_000_000_000, 1, expect = Expect.InvalidInput),
+            AdvanceTo(day(2026, 10, 24)),
+            SetRate(Rate(400_000)),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "acciones",
+                        100_000,
+                        Worth(105_050, day(2026, 10, 20), 5_050, gana(51)),
+                        "IN29: su rendimiento sigue en USD"
+                    )
+                ),
+                portfolio = PortfolioCheck.Total(
+                    value = 42_240_000,
+                    contributed = 41_000_000,
+                    withdrawn = 500_000,
+                    dividends = 528_000,
+                    gain = 2_268_000,
+                    yield = gana(55),
+                    since = May2025,
+                    valuedFrom = day(2026, 6, 12),
+                    valuedTo = day(2026, 10, 20),
+                    rate = RateCheck(400_000, day(2026, 10, 24)),
+                    source = "IN29: V 4.202.000 y C 4.000.000 convertidos; total a mano " +
+                        "38.038.000 + 4.202.000, 2.268.000 de 41.000.000, 5,53 %"
+                )
+            ),
+            SetRate(Rate(401_000)),
+            Verify(
+                emptyList(),
+                portfolio = PortfolioCheck.Total(
+                    value = 42_250_505,
+                    contributed = 41_010_000,
+                    withdrawn = 500_000,
+                    dividends = 528_000,
+                    gain = 2_268_505,
+                    yield = gana(55),
+                    since = May2025,
+                    valuedFrom = day(2026, 6, 12),
+                    valuedTo = day(2026, 10, 20),
+                    rate = RateCheck(401_000, day(2026, 10, 24)),
+                    source = "IN30: V 4.212.505 y C 4.010.000; total a mano " +
+                        "38.038.000 + 4.212.505, 2.268.505 de 41.010.000, 5,53 %"
+                )
+            ),
+            SetRate(Rate(390_000, on = day(2026, 10, 22))),
+            Verify(
+                emptyList(),
+                portfolio = PortfolioCheck.Total(
+                    value = 42_250_505,
+                    contributed = 41_010_000,
+                    withdrawn = 500_000,
+                    dividends = 528_000,
+                    gain = 2_268_505,
+                    yield = gana(55),
+                    since = May2025,
+                    valuedFrom = day(2026, 6, 12),
+                    valuedTo = day(2026, 10, 20),
+                    rate = RateCheck(401_000, day(2026, 10, 24)),
+                    source = "IN31: 3.900,00 del 22 oct entra al historial; sigue 4.010,00"
+                )
+            )
+        )
+    )
+
+    /**
+     * IN19–IN25: corrections replayed before they are saved. Deleting an aporte a later
+     * retiro needs, or raising that retiro above the value, is refused; deleting the
+     * retiro and Deshacer put IN09 back; the only aporte cannot go; nothing is dated
+     * before the first aporte or in the future. Deshacer comes late, so the corpus's cut
+     * and resume never falls between it and its deletion.
+     */
+    val Corrections = Scenario(
+        id = "correcciones",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2026, 9, 1),
+        title = "Inversiones · Correcciones",
+        summary = "IN22 el único aporte no se borra; IN25; IN24; IN19 y IN20 rechazados; " +
+            "IN21 borrar el retiro y Deshacer; una corrección y una inversión borrada.",
+        steps = listOf(
+            Investment("a", "Inversión A", "insights", Currency.COP, 4_000_000),
+            Investment("b", "Inversión B", "insights", Currency.COP, 4_000_000),
+            Investment("c", "Inversión C", "school", Currency.COP, 2_000_000),
+            DeleteMovement(2, 1, expect = Expect.Rejected("LastContribution")),
+            Movement(
+                "c",
+                Move.Valor,
+                1_900_000,
+                1,
+                on = day(2026, 8, 31),
+                expect = Expect.Rejected("BeforeFirstContribution")
+            ),
+            Movement(
+                "c",
+                Move.Aporte,
+                100_000,
+                1,
+                on = day(2026, 9, 2),
+                expect = Expect.Rejected("FutureDate")
+            ),
+            AdvanceTo(day(2026, 10, 1)),
+            Movement("a", Move.Valor, 5_000_000, 1),
+            Movement("b", Move.Valor, 5_000_000, 1),
+            AdvanceTo(day(2026, 10, 10)),
+            Movement("a", Move.Aporte, 1_000_000, 2),
+            Movement("b", Move.Aporte, 1_000_000, 2),
+            AdvanceTo(day(2026, 10, 12)),
+            Movement("a", Move.Retiro, 6_000_000, 3),
+            Movement("b", Move.Retiro, 2_000_000, 3),
+            DeleteMovement(10, 4, expect = Expect.Rejected("AboveValue")),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "a",
+                        5_000_000,
+                        Worth(0, day(2026, 10, 1), 1_000_000, gana(200)),
+                        "IN19: nada cambia; a mano 0 + 6.000.000 − 5.000.000",
+                        withdrawn = 6_000_000
+                    ),
+                    InvestmentCheck(
+                        "b",
+                        5_000_000,
+                        Worth(4_000_000, day(2026, 10, 1), 1_000_000, gana(200)),
+                        "IN09",
+                        withdrawn = 2_000_000
+                    )
+                )
+            ),
+            EditMovement(14, 7_000_000, 4, expect = Expect.Rejected("AboveValue")),
+            DeleteMovement(14, 4),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "b",
+                        5_000_000,
+                        Worth(6_000_000, day(2026, 10, 1), 1_000_000, gana(200)),
+                        "IN21"
+                    )
+                )
+            ),
+            UndoMovementDelete(18),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "b",
+                        5_000_000,
+                        Worth(4_000_000, day(2026, 10, 1), 1_000_000, gana(200)),
+                        "IN21: Deshacer devuelve IN09",
+                        withdrawn = 2_000_000
+                    )
+                )
+            ),
+            EditMovement(14, 1_500_000, 6),
+            DeleteMovement(13, 4),
+            DeleteMovement(10, 5),
+            DeleteInvestment("c", 1),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "a",
+                        4_000_000,
+                        Worth(5_000_000, day(2026, 10, 1), 1_000_000, gana(250)),
+                        "IN19: borrado primero el retiro, luego el aporte; a mano " +
+                            "5.000.000 − 4.000.000, 25,0 %"
+                    ),
+                    InvestmentCheck(
+                        "b",
+                        5_000_000,
+                        Worth(4_500_000, day(2026, 10, 1), 1_000_000, gana(200)),
+                        "IN20: el retiro corregido a 1.500.000; a mano 6.000.000 − 1.500.000",
+                        withdrawn = 1_500_000
+                    ),
+                    InvestmentCheck.gone("c", "IN23: borrada con sus movimientos, sin deshacer")
+                )
+            )
+        )
+    )
+
+    /**
+     * IN17, IN18 and IN35: with every value deleted an investment has no value and is
+     * left out of the overview, which has no total at all; a retiro waits for a value.
+     */
+    val NoValue = Scenario(
+        id = "sin-valor",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2026, 10, 20),
+        title = "Inversiones · Sin valor",
+        summary = "IN35: sin valores no hay total ni tasa; IN18: el retiro espera un valor y " +
+            "con uno se acepta; −10,0 %.",
+        steps = listOf(
+            Investment("cripto", "Cripto", "shopping_cart", Currency.COP, 2_000_000),
+            Investment(
+                "acciones",
+                "Acciones EE. UU.",
+                "trending_up",
+                Currency.USD,
+                100_000,
+                rate = Rate(415_025)
+            ),
+            DeleteMovement(0, 1, firstValue = true),
+            Movement("cripto", Move.Retiro, 100_000, 2, expect = Expect.Rejected("NoValue")),
+            DeleteMovement(1, 1, firstValue = true),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck("cripto", 2_000_000, null, "IN17: Sin valor · aportaste"),
+                    InvestmentCheck("acciones", 100_000, null, "IN35: Sin valor, en USD")
+                ),
+                portfolio = PortfolioCheck.NoValues("IN35")
+            ),
+            Movement("cripto", Move.Valor, 1_800_000, 2),
+            Movement("cripto", Move.Retiro, 100_000, 3),
+            Verify(
+                emptyList(),
+                investments = listOf(
+                    InvestmentCheck(
+                        "cripto",
+                        2_000_000,
+                        Worth(1_700_000, day(2026, 10, 20), -200_000, pierde(100)),
+                        "IN18: con un valor el retiro se acepta; a mano " +
+                            "1.800.000 − 100.000, 1.700.000 + 100.000 − 2.000.000",
+                        withdrawn = 100_000
+                    )
+                ),
+                portfolio = PortfolioCheck.Total(
+                    value = 1_700_000,
+                    contributed = 2_000_000,
+                    withdrawn = 100_000,
+                    dividends = 0,
+                    gain = -200_000,
+                    yield = pierde(100),
+                    since = YearMonth.of(2026, 10),
+                    valuedFrom = day(2026, 10, 20),
+                    valuedTo = day(2026, 10, 20),
+                    rate = null,
+                    source = "IN18 y regla 13: solo Cripto; sin dólar con valor, sin tasa"
+                )
+            )
+        )
+    )
+
     val all: List<Scenario> = listOf(
         CategoryDetail,
         G01,
@@ -1487,7 +2158,12 @@ object Scenarios {
         DeleteKeepsEntries,
         DeletedOccurrence,
         Reservations,
-        IncomePlan
+        IncomePlan,
+        InvestmentPage,
+        CarriedForward,
+        Dollars,
+        Corrections,
+        NoValue
     )
 
     fun find(key: String?): Scenario? = all.firstOrNull { it.key == key }

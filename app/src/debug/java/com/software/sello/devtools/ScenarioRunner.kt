@@ -8,14 +8,19 @@ import com.software.sello.devtools.ScenarioStep.Category
 import com.software.sello.devtools.ScenarioStep.ChangeSchedule
 import com.software.sello.devtools.ScenarioStep.ChooseForRecibo
 import com.software.sello.devtools.ScenarioStep.DeleteExpense
+import com.software.sello.devtools.ScenarioStep.DeleteInvestment
+import com.software.sello.devtools.ScenarioStep.DeleteMovement
 import com.software.sello.devtools.ScenarioStep.DeleteOccurrence
 import com.software.sello.devtools.ScenarioStep.DeleteSchedule
 import com.software.sello.devtools.ScenarioStep.EditExpense
+import com.software.sello.devtools.ScenarioStep.EditMovement
 import com.software.sello.devtools.ScenarioStep.Expense
 import com.software.sello.devtools.ScenarioStep.Goal
 import com.software.sello.devtools.ScenarioStep.GoalTarget
 import com.software.sello.devtools.ScenarioStep.Income
+import com.software.sello.devtools.ScenarioStep.Investment
 import com.software.sello.devtools.ScenarioStep.MarkLograda
+import com.software.sello.devtools.ScenarioStep.Movement
 import com.software.sello.devtools.ScenarioStep.PauseSchedule
 import com.software.sello.devtools.ScenarioStep.Repeat
 import com.software.sello.devtools.ScenarioStep.ResumeSchedule
@@ -23,21 +28,31 @@ import com.software.sello.devtools.ScenarioStep.Retiro
 import com.software.sello.devtools.ScenarioStep.Schedule
 import com.software.sello.devtools.ScenarioStep.SetDefaultLimit
 import com.software.sello.devtools.ScenarioStep.SetMonthLimit
+import com.software.sello.devtools.ScenarioStep.SetRate
 import com.software.sello.devtools.ScenarioStep.Unarchive
 import com.software.sello.devtools.ScenarioStep.UndoDelete
 import com.software.sello.devtools.ScenarioStep.UndoLograda
+import com.software.sello.devtools.ScenarioStep.UndoMovementDelete
 import com.software.sello.devtools.ScenarioStep.Verify
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.GainDirection
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalName
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InvestmentAmount
+import com.software.sello.domain.model.InvestmentFigures
+import com.software.sello.domain.model.InvestmentId
+import com.software.sello.domain.model.InvestmentMovement
+import com.software.sello.domain.model.InvestmentMovementKind
+import com.software.sello.domain.model.InvestmentName
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Occurrence
@@ -50,6 +65,7 @@ import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.policy.IncomePlanPolicy
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommand
@@ -63,11 +79,16 @@ import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.CreateIncome
+import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.CreateSchedule
+import com.software.sello.domain.port.DatedUsdRate
 import com.software.sello.domain.port.DeleteExpense as DeleteExpenseCommand
 import com.software.sello.domain.port.DeleteIncome
+import com.software.sello.domain.port.DeleteInvestment as DeleteInvestmentCommand
+import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.DeleteSchedule as DeleteScheduleCommand
 import com.software.sello.domain.port.EditExpense as EditExpenseCommand
+import com.software.sello.domain.port.EditInvestmentMovement
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseCursor
@@ -81,10 +102,18 @@ import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.InvestmentBoard
+import com.software.sello.domain.port.InvestmentCommand
+import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentReads
+import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PauseSchedule as PauseScheduleCommand
 import com.software.sello.domain.port.RecordGoalMovement
+import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RestoreExpense
+import com.software.sello.domain.port.RestoreInvestmentMovement
 import com.software.sello.domain.port.ResumeSchedule as ResumeScheduleCommand
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBook
@@ -94,6 +123,7 @@ import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SetDefaultLimit as SetDefaultLimitCommand
 import com.software.sello.domain.port.SetMonthLimit as SetMonthLimitCommand
+import com.software.sello.domain.port.SetUsdRate
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.domain.port.UnarchiveCategory
 import com.software.sello.domain.port.UndoGoalCompletion
@@ -155,9 +185,15 @@ class ScenarioSchedules(
 )
 
 /**
- * Replays the loaded [scenario] through the app's own category, expense, income, goal
- * and schedule commands and its catch-up, which the sandbox fences and audits like any
- * other write. Every step uses
+ * What the investment steps and checks use, both the app's own: the investment and rate
+ * [commands] and the [reads] Inversiones shows.
+ */
+class ScenarioInvestments(val commands: InvestmentCommands, val reads: InvestmentReads)
+
+/**
+ * Replays the loaded [scenario] through the app's own category, expense, income, goal,
+ * schedule and investment commands and its catch-up, which the sandbox fences and audits
+ * like any other write. Every step uses
  * the operation [Scenario.operation] gives it, so running a step again after the
  * process ended, even one that had committed, returns its original receipt instead
  * of writing a second record.
@@ -179,6 +215,7 @@ class ScenarioRunner(
     private val summaries: ResumenSnapshots,
     private val goalReads: GoalReads,
     private val schedules: ScenarioSchedules,
+    private val investments: ScenarioInvestments,
     private val store: SandboxSessionStore,
     private val scope: CoroutineScope,
     private val stepMillis: Long = SandboxTime.STEP_MILLIS
@@ -193,6 +230,7 @@ class ScenarioRunner(
     private val categoryIds = mutableMapOf<String, CategoryId>()
     private val goalIds = mutableMapOf<String, GoalId>()
     private val scheduleIds = mutableMapOf<String, ScheduleId>()
+    private val investmentIds = mutableMapOf<String, InvestmentId>()
 
     /** The last catch-up batch a catch-up step has reported in this process. */
     private var reportedBatch = 0L
@@ -209,7 +247,7 @@ class ScenarioRunner(
                 val receipt = receiptOf(loaded, index, step)
                 StepRecord(
                     index,
-                    describe(step),
+                    describe(loaded, step),
                     loaded.operation(index).takeIf { step.writes },
                     receipt?.revision,
                     when {
@@ -251,7 +289,7 @@ class ScenarioRunner(
         }
         val record = StepRecord(
             index,
-            describe(step),
+            describe(loaded, step),
             loaded.operation(index).takeIf { step.writes },
             done.revision,
             done.text
@@ -624,6 +662,125 @@ class ScenarioRunner(
 
             is DeleteOccurrence -> deleteOccurrence(loaded, operation, step)
 
+            is Investment -> createInvestment(operation, step, today)
+
+            is Movement -> {
+                val currency = loaded.steps.currencyOf(step.investment)
+                    ?: return Observed.Stop("No existe la inversión «${step.investment}»")
+                val kind = kind(step.kind)
+                val amount = when (val checked = investmentAmount(kind, step.minor, currency)) {
+                    is Outcome.Success -> checked.value
+                    is Outcome.Failure -> return checked.error
+                }
+                investmentCommand(loaded, step.investment) { id ->
+                    RecordInvestmentMovement(
+                        operation,
+                        generation,
+                        id,
+                        step.version,
+                        kind,
+                        amount,
+                        step.on ?: today,
+                        null
+                    )
+                }
+            }
+
+            is EditMovement -> {
+                val (id, movement) = when (
+                    val found = movementOf(
+                        loaded,
+                        step.of,
+                        step.firstValue
+                    )
+                ) {
+                    is Outcome.Success -> found.value
+                    is Outcome.Failure -> return found.error
+                }
+                val currency = movement.amount.money.currency
+                val amount = when (
+                    val checked = investmentAmount(
+                        movement.kind,
+                        step.minor,
+                        currency
+                    )
+                ) {
+                    is Outcome.Success -> checked.value
+                    is Outcome.Failure -> return checked.error
+                }
+                investment(
+                    investments.commands.submit(
+                        EditInvestmentMovement(
+                            operation,
+                            generation,
+                            id,
+                            step.version,
+                            movement.id,
+                            step.movementVersion,
+                            amount,
+                            step.on ?: movement.date,
+                            movement.note
+                        )
+                    )
+                )
+            }
+
+            is DeleteMovement -> {
+                // Once the deletion has committed the movement is gone, so a try again is
+                // answered from its receipt, the lookup the app itself recovers with.
+                val earlier = investments.commands.find(operation) as? Outcome.Success
+                    ?: return Observed.Stop("No se pudo leer el recibo del paso ${index + 1}")
+                earlier.value?.let { return Observed.Committed(it.receipt, replayed = true) }
+                val (id, movement) = when (
+                    val found = movementOf(
+                        loaded,
+                        step.of,
+                        step.firstValue
+                    )
+                ) {
+                    is Outcome.Success -> found.value
+                    is Outcome.Failure -> return found.error
+                }
+                investment(
+                    investments.commands.submit(
+                        DeleteInvestmentMovement(
+                            operation,
+                            generation,
+                            id,
+                            step.version,
+                            movement.id,
+                            step.movementVersion
+                        )
+                    )
+                )
+            }
+
+            is UndoMovementDelete -> investment(
+                investments.commands.submit(
+                    RestoreInvestmentMovement(
+                        operation,
+                        generation,
+                        OperationId.of(loaded.operation(step.of)).value()
+                    )
+                )
+            )
+
+            is DeleteInvestment -> investmentCommand(loaded, step.investment) { id ->
+                DeleteInvestmentCommand(operation, generation, id, step.version)
+            }
+
+            is SetRate -> {
+                val rate = when (val checked = rate(step.rate, today)) {
+                    is Outcome.Success -> checked.value
+                    is Outcome.Failure -> return checked.error
+                }
+                investment(
+                    investments.commands.submit(
+                        SetUsdRate(operation, generation, rate.rate, rate.date)
+                    )
+                )
+            }
+
             CatchUp -> catchUp()
 
             is UndoDelete -> expense(
@@ -727,7 +884,7 @@ class ScenarioRunner(
             "${if (ok) "✓" else "✗"} meta ${check.goal}: esperado $expected, " +
                 "real ${actual ?: "no se pudo leer"} (${check.source})"
         }
-        val all = lines + goalLines + recurrenceLines(loaded, step)
+        val all = lines + goalLines + recurrenceLines(loaded, step) + investmentLines(loaded, step)
         return Observed.Checked(all, all.all { it.startsWith("✓") })
     }
 
@@ -1137,6 +1294,309 @@ class ScenarioRunner(
         return found.value?.goalId?.also { goalIds[key] = it }
     }
 
+    /** Agregar inversión, with its first aporte and value and, when given, a new rate. */
+    private suspend fun createInvestment(
+        operation: OperationId,
+        step: Investment,
+        today: LocalDate
+    ): Observed {
+        val contribution = when (
+            val checked = investmentAmount(
+                InvestmentMovementKind.Contribution,
+                step.contribution,
+                step.currency
+            )
+        ) {
+            is Outcome.Success -> checked.value
+            is Outcome.Failure -> return checked.error
+        }
+        val value = when (
+            val checked = investmentAmount(
+                InvestmentMovementKind.Valuation,
+                step.value ?: step.contribution,
+                step.currency
+            )
+        ) {
+            is Outcome.Success -> checked.value
+            is Outcome.Failure -> return checked.error
+        }
+        val rate = step.rate?.let {
+            when (val checked = rate(it, today)) {
+                is Outcome.Success -> checked.value
+                is Outcome.Failure -> return checked.error
+            }
+        }
+        val outcome = investments.commands.submit(
+            CreateInvestment(
+                operation,
+                generation,
+                InvestmentName.of(step.name).value(),
+                null,
+                IconKey.of(step.icon).value(),
+                step.currency,
+                contribution,
+                value,
+                step.on ?: today,
+                rate
+            )
+        )
+        if (outcome is InvestmentCommandOutcome.Committed) {
+            outcome.change.investmentId?.let { investmentIds[step.key] = it }
+        }
+        return investment(outcome)
+    }
+
+    private fun kind(move: Move): InvestmentMovementKind = when (move) {
+        Move.Aporte -> InvestmentMovementKind.Contribution
+        Move.Retiro -> InvestmentMovementKind.Withdrawal
+        Move.Dividendo -> InvestmentMovementKind.Dividend
+        Move.Valor -> InvestmentMovementKind.Valuation
+    }
+
+    /** [minor] units of [currency] for a movement of [kind]; an amount out of range is never sent. */
+    private fun investmentAmount(
+        kind: InvestmentMovementKind,
+        minor: Long,
+        currency: Currency
+    ): Outcome<InvestmentAmount, Observed> {
+        val money = Money(minor, currency)
+        val checked = if (kind == InvestmentMovementKind.Valuation) {
+            InvestmentAmount.ofValue(money)
+        } else {
+            InvestmentAmount.of(money)
+        }
+        return when (checked) {
+            is Outcome.Success -> Outcome.Success(checked.value)
+            is Outcome.Failure -> Outcome.Failure(Observed.Invalid(name(checked.error)))
+        }
+    }
+
+    /** [rate] dated on its day or [today]; a rate outside its bounds is never sent. */
+    private fun rate(rate: Rate, today: LocalDate): Outcome<DatedUsdRate, Observed> =
+        when (val checked = UsdRate.ofHundredths(rate.hundredths)) {
+            is Outcome.Success -> Outcome.Success(DatedUsdRate(checked.value, rate.on ?: today))
+            is Outcome.Failure -> Outcome.Failure(Observed.Invalid(name(checked.error)))
+        }
+
+    private fun investment(outcome: InvestmentCommandOutcome): Observed = when (outcome) {
+        is InvestmentCommandOutcome.Committed ->
+            Observed.Committed(outcome.change.receipt, outcome.replayed)
+
+        is InvestmentCommandOutcome.Rejected -> Observed.Rejected(name(outcome.reason))
+
+        is InvestmentCommandOutcome.OutcomeUnknown -> Observed.Unknown
+    }
+
+    /** [command] for the investment the step named [key] made. */
+    private suspend fun investmentCommand(
+        loaded: Scenario,
+        key: String,
+        command: (InvestmentId) -> InvestmentCommand
+    ): Observed {
+        val id = investmentId(loaded, key)
+            ?: return Observed.Stop("No existe la inversión «$key»")
+        return investment(investments.commands.submit(command(id)))
+    }
+
+    /** The identity the saved investment step named [key] received, read back from its receipt. */
+    private suspend fun investmentId(loaded: Scenario, key: String): InvestmentId? {
+        investmentIds[key]?.let { return it }
+        val index = loaded.steps.indexOfFirst { it.makes(key) }
+        if (index < 0) return null
+        val operation = OperationId.of(loaded.operation(index)).value()
+        val found = investments.commands.find(operation) as? Outcome.Success ?: return null
+        return found.value?.investmentId?.also { investmentIds[key] = it }
+    }
+
+    /**
+     * The movement the step [of] recorded, as stored now, and its investment. A movement
+     * keeps the place it was recorded in, and no place is used twice (rule 4): an
+     * investment's first aporte is place 0 and its first value place 1, and each movement
+     * step saved after them takes the next. The place comes from the scenario; the
+     * movement at it, from the app's own reads.
+     */
+    private suspend fun movementOf(
+        loaded: Scenario,
+        of: Int,
+        firstValue: Boolean
+    ): Outcome<Pair<InvestmentId, InvestmentMovement>, Observed> {
+        val target = loaded.steps.getOrNull(of)
+        val key = when (target) {
+            is Investment -> target.key
+
+            is Movement -> target.investment
+
+            else -> return Outcome.Failure(
+                Observed.Stop("El paso ${of + 1} no registró un movimiento")
+            )
+        }
+        val place = if (target is Investment) {
+            if (firstValue) 1L else 0L
+        } else {
+            FIRST_PLACES + loaded.steps.subList(0, of).count {
+                it is Movement && it.investment == key && it.expect == Expect.Saved
+            }
+        }
+        val id = investmentId(loaded, key)
+            ?: return Outcome.Failure(Observed.Stop("No existe la inversión «$key»"))
+        val read = investments.reads.investment(id) as? Outcome.Success
+            ?: return Outcome.Failure(Observed.Stop("No se pudo leer la inversión «$key»"))
+        val movement = read.value?.history?.movements?.firstOrNull { it.sequence == place }
+            ?: return Outcome.Failure(Observed.Stop("No existe el movimiento del paso ${of + 1}"))
+        return Outcome.Success(id to movement)
+    }
+
+    /** The lines of [step]'s investment and overview checks, from one read of the board. */
+    private suspend fun investmentLines(loaded: Scenario, step: Verify): List<String> {
+        if (step.investments.isEmpty() && step.portfolio == null) return emptyList()
+        val board = (investments.reads.board() as? Outcome.Success)?.value
+        val lines = step.investments.map { check ->
+            val currency = loaded.steps.currencyOf(check.investment) ?: Currency.COP
+            val expected = if (check.present) {
+                investmentLine(
+                    currency,
+                    check.contributed,
+                    check.withdrawn,
+                    check.dividends,
+                    check.worth,
+                    check.since,
+                    check.movements
+                )
+            } else {
+                GONE_INVESTMENT
+            }
+            val actual = board?.let { read ->
+                summaryOf(loaded, check.investment, read)?.let { found ->
+                    val figures = found.figures
+                    investmentLine(
+                        found.history.investment.currency,
+                        figures.contributed.minorUnits,
+                        figures.withdrawn.minorUnits,
+                        figures.dividends.minorUnits,
+                        worth(figures),
+                        check.since?.let { figures.since },
+                        check.movements?.let { figures.movements }
+                    )
+                } ?: GONE_INVESTMENT
+            }
+            "${if (actual == expected) "✓" else "✗"} inversión ${check.investment}: " +
+                "esperado $expected, real ${actual ?: UNREADABLE} (${check.source})"
+        }
+        val total = step.portfolio?.let { check ->
+            val expected = when (check) {
+                is PortfolioCheck.NoValues -> NO_VALUES
+
+                is PortfolioCheck.Total -> totalLine(
+                    check.value,
+                    check.contributed,
+                    check.withdrawn,
+                    check.dividends,
+                    check.gain,
+                    check.yield,
+                    check.since,
+                    check.valuedFrom,
+                    check.valuedTo,
+                    check.rate
+                )
+            }
+            val actual = board?.let(::totalLine)
+            "${if (actual == expected) "✓" else "✗"} total de inversiones: esperado $expected, " +
+                "real ${actual ?: UNREADABLE} (${check.source})"
+        }
+        return lines + listOfNotNull(total)
+    }
+
+    /**
+     * The investment the step [key] made, as [board] has it: by identity, else by its name,
+     * unique in a scenario, as a history restored without receipts has it.
+     */
+    private suspend fun summaryOf(
+        loaded: Scenario,
+        key: String,
+        board: InvestmentBoard
+    ): InvestmentSummary? {
+        val id = investmentId(loaded, key)
+        if (id != null) return board.investments.firstOrNull { it.history.investment.id == id }
+        val name = loaded.steps.filterIsInstance<Investment>().firstOrNull { it.makes(key) }?.name
+            ?: return null
+        return board.investments.firstOrNull { it.history.investment.name.value == name }
+    }
+
+    private fun worth(figures: InvestmentFigures): Worth? {
+        val value = figures.value ?: return null
+        val gain = figures.gain ?: return null
+        val yield = figures.`return` ?: return null
+        return Worth(
+            value.amount.minorUnits,
+            value.valuedOn,
+            gain.minorUnits,
+            Yield(yield.direction, yield.tenths)
+        )
+    }
+
+    private fun investmentLine(
+        currency: Currency,
+        contributed: Long,
+        withdrawn: Long,
+        dividends: Long,
+        worth: Worth?,
+        since: YearMonth?,
+        movements: Int?
+    ): String {
+        fun amount(minor: Long) = amount(currency, minor)
+        val value = worth?.let { "valor ${amount(it.amount)} del ${it.on}" } ?: "sin valor"
+        val gain = worth?.let { ", ganancia ${amount(it.gain)}, ${yield(it.yield)}" } ?: ""
+        return "$value, aportado ${amount(contributed)}, retirado ${amount(withdrawn)}, " +
+            "dividendos ${amount(dividends)}$gain" +
+            (since?.let { ", desde $it" } ?: "") +
+            (movements?.let { ", $it movimientos" } ?: "")
+    }
+
+    /** The overview as [board] has it, or why it could not be made. */
+    private fun totalLine(board: InvestmentBoard): String = when (val overview = board.overview) {
+        is Outcome.Failure -> "sin total: ${name(overview.error)}"
+
+        is Outcome.Success -> overview.value.total?.let { total ->
+            totalLine(
+                total.value.minorUnits,
+                total.contributed.minorUnits,
+                total.withdrawn.minorUnits,
+                total.dividends.minorUnits,
+                total.gain.minorUnits,
+                Yield(total.`return`.direction, total.`return`.tenths),
+                total.since,
+                total.valuedFrom,
+                total.valuedTo,
+                overview.value.rate?.let { RateCheck(it.rate.hundredths, it.date) }
+            )
+        } ?: (NO_VALUES + (overview.value.rate?.let { ", con tasa" } ?: ""))
+    }
+
+    private fun totalLine(
+        value: Long,
+        contributed: Long,
+        withdrawn: Long,
+        dividends: Long,
+        gain: Long,
+        yield: Yield,
+        since: YearMonth,
+        valuedFrom: LocalDate,
+        valuedTo: LocalDate,
+        rate: RateCheck?
+    ): String = "valor ${pesos(value)}, aportado ${pesos(contributed)}, " +
+        "retirado ${pesos(withdrawn)}, dividendos ${pesos(dividends)}, ganancia ${pesos(gain)}, " +
+        "${yield(yield)}, desde $since, valores del $valuedFrom al $valuedTo, " +
+        (rate?.let { "dólar a ${rateText(it.hundredths)} del ${it.on}" } ?: "sin tasa")
+
+    private fun yield(yield: Yield): String {
+        val word = when (yield.direction) {
+            GainDirection.Gain -> "gana"
+            GainDirection.Loss -> "pierde"
+            GainDirection.Even -> "sin ganancia"
+        }
+        return "$word ${yield.tenths / TEN},${yield.tenths % TEN} %"
+    }
+
     private suspend fun actual(month: YearMonth, figure: Figure): String? = when (figure) {
         Figure.Spent, Figure.Limit, Figure.Remaining, Figure.NoLimit, Figure.Reserved,
         Figure.Margin, Figure.PerDay -> {
@@ -1271,6 +1731,10 @@ class ScenarioRunner(
                 else -> (expenses.find(operation) as? Outcome.Success)?.value?.receipt
             }
 
+            is Investment, is Movement, is EditMovement, is DeleteMovement, is UndoMovementDelete,
+            is DeleteInvestment, is SetRate ->
+                (investments.commands.find(operation) as? Outcome.Success)?.value?.receipt
+
             CatchUp -> null
         }
     }
@@ -1288,6 +1752,13 @@ class ScenarioRunner(
         private const val UNREADABLE = "no se pudo leer"
         private const val GONE = "borrado"
         private const val INCONSISTENT = " (con un origen que no es su fecha o de otro programado)"
+        private const val GONE_INVESTMENT = "borrada"
+        private const val NO_VALUES = "todavía no hay valores anotados"
+        private const val TEN = 10L
+        private const val HUNDRED = 100L
+
+        /** An investment's first aporte and first value take places 0 and 1 (rule 1). */
+        private const val FIRST_PLACES = 2L
 
         /** A check lists each entry up to this many, then only the first and the last. */
         private const val LISTED = 6
@@ -1295,7 +1766,7 @@ class ScenarioRunner(
         /** The longest Deshacer the app offers, with a screen reader; real elapsed time. */
         private val UNDO_FOR = 34.seconds
 
-        fun describe(step: ScenarioStep): String = when (step) {
+        fun describe(scenario: Scenario, step: ScenarioStep): String = when (step) {
             is AdvanceTo -> "Ir al ${spokenDate(step.date)}"
 
             is Category ->
@@ -1379,7 +1850,60 @@ class ScenarioRunner(
                     " (versión ${step.version})"
 
             CatchUp -> "Ponerse al día"
+
+            is Investment ->
+                "Inversión ${step.name} (${step.currency.code}), aporte " +
+                    amount(step.currency, step.contribution) +
+                    (step.value?.let { ", valor ${amount(step.currency, it)}" } ?: "") +
+                    (step.rate?.let { ", dólar a ${rate(it)}" } ?: "") +
+                    (step.on?.let { " con fecha ${spokenDate(it)}" } ?: "")
+
+            is Movement ->
+                "${step.kind.label.replaceFirstChar { it.uppercase() }} " +
+                    amount(scenario.steps.currencyOf(step.investment), step.minor) +
+                    " en ${step.investment} (versión ${step.version})" +
+                    (step.on?.let { " con fecha ${spokenDate(it)}" } ?: "")
+
+            is EditMovement ->
+                "Corregir el movimiento del paso ${step.of + 1}" +
+                    (if (step.firstValue) " (su primer valor)" else "") + " a " +
+                    amount(scenario.currencyAt(step.of), step.minor) +
+                    (step.on?.let { " con fecha ${spokenDate(it)}" } ?: "") +
+                    " (versión ${step.version})"
+
+            is DeleteMovement ->
+                "Borrar el movimiento del paso ${step.of + 1}" +
+                    (if (step.firstValue) " (su primer valor)" else "") +
+                    " (versión ${step.version})"
+
+            is UndoMovementDelete -> "Deshacer el borrado del movimiento del paso ${step.of + 1}"
+
+            is DeleteInvestment ->
+                "Borrar la inversión ${step.investment} (versión ${step.version})"
+
+            is SetRate -> "Dólar a ${rate(step.rate)}"
         }
+
+        private fun rate(rate: Rate): String =
+            rateText(rate.hundredths) + (rate.on?.let { " con fecha ${spokenDate(it)}" } ?: "")
+
+        /** Pesos per dollar with two decimals, as the app writes a rate: 4.150,25. */
+        private fun rateText(hundredths: Long): String =
+            "${pesos(hundredths / HUNDRED)},${"%02d".format(Locale.ROOT, hundredths % HUNDRED)}"
+
+        /** [minor] units of [currency]: whole pesos, or dollars with two decimals. */
+        private fun amount(currency: Currency?, minor: Long): String = when (currency) {
+            Currency.USD -> (if (minor < 0) "-" else "") + "USD " + rateText(Math.absExact(minor))
+            else -> pesos(minor)
+        }
+
+        /** The currency of the investment the movement step [index] is about. */
+        private fun Scenario.currencyAt(index: Int): Currency? =
+            when (val step = steps.getOrNull(index)) {
+                is Investment -> step.currency
+                is Movement -> steps.currencyOf(step.investment)
+                else -> null
+            }
 
         private fun every(rule: Every): String = when (rule) {
             is Every.Month -> "cada mes el ${rule.day}"
@@ -1394,3 +1918,11 @@ class ScenarioRunner(
             String.format(Locale.ROOT, "%,d", amount).replace(',', '.')
     }
 }
+
+/** Whether this is the saved step that makes the investment [key]; a refused one may share it. */
+internal fun ScenarioStep.makes(key: String): Boolean =
+    this is Investment && this.key == key && expect == Expect.Saved
+
+/** The currency of the investment the step [key] makes. */
+internal fun List<ScenarioStep>.currencyOf(key: String): Currency? =
+    filterIsInstance<Investment>().firstOrNull { it.makes(key) }?.currency

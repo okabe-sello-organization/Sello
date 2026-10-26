@@ -36,6 +36,7 @@ import com.software.sello.devtools.SandboxSession
 import com.software.sello.devtools.SandboxSessionStore
 import com.software.sello.devtools.SandboxTime
 import com.software.sello.devtools.SandboxTools
+import com.software.sello.devtools.ScenarioInvestments
 import com.software.sello.devtools.ScenarioRunner
 import com.software.sello.devtools.ScenarioSchedules
 import com.software.sello.devtools.Scenarios
@@ -241,7 +242,7 @@ class DebugComposition(
                         val diagnostics = SandboxDiagnostics(
                             faults,
                             log,
-                            OperationInspector(get(), get(), get(), get(), get()),
+                            OperationInspector(get(), get(), get(), get(), get(), get()),
                             store::read
                         )
                         ScenarioRunner(
@@ -265,6 +266,7 @@ class DebugComposition(
                                 get(),
                                 get()
                             ),
+                            ScenarioInvestments(get(), get()),
                             store,
                             scope
                         ).also {
