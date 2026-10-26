@@ -19,6 +19,37 @@ data object ResumenRoute
 @Serializable
 data object MetasRoute
 
+/** Investments: not tied to a month either. */
+@Serializable
+data object InversionesRoute
+
+/** One investment. The screen reads it itself. */
+@Serializable
+data class InvestmentRoute(val investmentId: String)
+
+/** Nueva inversión, or with [investmentId] Editar inversión. */
+@Serializable
+data class InvestmentEditorRoute(val investmentId: String? = null)
+
+/**
+ * Anotar movimiento: [investmentId] when chosen already, [kind] one of contribution,
+ * valuation, withdrawal or dividend; with [movementId] the correction of that movement.
+ */
+@Serializable
+data class InvestmentMovementRoute(
+    val investmentId: String? = null,
+    val kind: String? = null,
+    val movementId: String? = null
+)
+
+/** Dólar: the current USD rate and the earlier ones, from Configuración or Inversiones. */
+@Serializable
+data object UsdRateRoute
+
+/** Cambiar la tasa: a new dated USD rate. */
+@Serializable
+data object UsdRateEntryRoute
+
 /** One goal's detail. The screen reads the goal itself. */
 @Serializable
 data class GoalRoute(val goalId: String)
@@ -127,5 +158,6 @@ const val CREATED_CATEGORY_RESULT = "result.createdCategoryId"
 enum class ShellTab(val id: String) {
     Recibo("recibo"),
     Resumen("resumen"),
-    Metas("metas")
+    Metas("metas"),
+    Inversiones("inversiones")
 }

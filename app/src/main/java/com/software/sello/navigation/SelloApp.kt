@@ -81,6 +81,10 @@ import com.software.sello.feature.goals.celebrationLine
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.feature.income.IncomeHistoryScreen
 import com.software.sello.feature.income.IncomeHistoryViewModel
+import com.software.sello.feature.investments.InvestmentEditorRoot
+import com.software.sello.feature.investments.InvestmentMovementNoticeBar
+import com.software.sello.feature.investments.InvestmentMovementRoot
+import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_EDIT_TAG
 import com.software.sello.feature.recibo.CategoryDetailAction
 import com.software.sello.feature.recibo.CategoryDetailScreen
@@ -110,6 +114,7 @@ import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewMo
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.CorrectionsViewModel
 import com.software.sello.presentation.corrections.GoalCelebration
+import com.software.sello.presentation.corrections.InvestmentMovementNotice
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.corrections.celebration
 import com.software.sello.presentation.date.dateLabels
@@ -144,6 +149,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
     val selectedTab = when {
         entry?.destination?.hasRoute<ResumenRoute>() == true -> ShellTab.Resumen
         entry?.destination?.hasRoute<MetasRoute>() == true -> ShellTab.Metas
+        entry?.destination?.hasRoute<InversionesRoute>() == true -> ShellTab.Inversiones
         else -> ShellTab.Recibo
     }
     val tabs = SelloNavigation(
@@ -158,7 +164,12 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 stringResource(R.string.tab_resumen),
                 SelloIcon.Insights
             ),
-            SelloDestination(ShellTab.Metas.id, stringResource(R.string.tab_metas), SelloIcon.Flag)
+            SelloDestination(ShellTab.Metas.id, stringResource(R.string.tab_metas), SelloIcon.Flag),
+            SelloDestination(
+                ShellTab.Inversiones.id,
+                stringResource(R.string.tab_inversiones),
+                SelloIcon.AccountBalance
+            )
         ),
         selectedTab.id
     ) { id ->
@@ -166,6 +177,7 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
             val route: Any = when (id) {
                 ShellTab.Resumen.id -> ResumenRoute
                 ShellTab.Metas.id -> MetasRoute
+                ShellTab.Inversiones.id -> InversionesRoute
                 else -> ReciboRoute
             }
             navigation.navigate(route) {
@@ -252,6 +264,94 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     { StampNoticeBar(it, corrections::undo, corrections::lands) }
                 }
             )
+        }
+        composable<InversionesRoute> {
+            InversionesDestination(
+                state = state,
+                viewModels = viewModels,
+                onShell = shell::onAction,
+                tabs = tabs,
+                onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
+                onOpen = { id ->
+                    navigation.navigate(InvestmentRoute(id)) { launchSingleTop = true }
+                },
+                onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } },
+                onAdd = { navigation.navigate(InvestmentEditorRoute()) { launchSingleTop = true } },
+                onMove = {
+                    navigation.navigate(InvestmentMovementRoute()) { launchSingleTop = true }
+                },
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
+            )
+        }
+        composable<InvestmentRoute> { entry ->
+            val id = entry.toRoute<InvestmentRoute>().investmentId
+            InvestmentDestination(
+                state = state,
+                viewModels = viewModels,
+                onShell = shell::onAction,
+                onBack = {
+                    val here = navigation.currentBackStackEntry?.destination
+                        ?.hasRoute<InvestmentRoute>()
+                    if (here == true) navigation.popBackStack()
+                },
+                onEdit = {
+                    navigation.navigate(InvestmentEditorRoute(id)) { launchSingleTop = true }
+                },
+                onMove = { kind ->
+                    navigation.navigate(InvestmentMovementRoute(id, kind)) {
+                        launchSingleTop = true
+                    }
+                },
+                onEditMovement = { movement ->
+                    navigation.navigate(InvestmentMovementRoute(id, movementId = movement)) {
+                        launchSingleTop = true
+                    }
+                },
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
+            )
+        }
+        composable<InvestmentEditorRoute> {
+            InvestmentEditorRoot(
+                viewModels,
+                onCreated = { id ->
+                    navigation.navigate(InvestmentRoute(id)) {
+                        popUpTo<InvestmentEditorRoute> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onDeleted = {
+                    // The deleted investment has no page to go back to: Inversiones shows the rest.
+                    navigation.popBackStack<InversionesRoute>(inclusive = false)
+                },
+                onClosed = {
+                    val onForm = navigation.currentBackStackEntry?.destination
+                        ?.hasRoute<InvestmentEditorRoute>()
+                    if (onForm == true) navigation.popBackStack()
+                }
+            )
+        }
+        composable<InvestmentMovementRoute> {
+            InvestmentMovementRoot(viewModels) {
+                val onForm = navigation.currentBackStackEntry?.destination
+                    ?.hasRoute<InvestmentMovementRoute>()
+                if (onForm == true) navigation.popBackStack()
+            }
+        }
+        composable<UsdRateRoute> {
+            UsdRateDestination(
+                state = state,
+                viewModels = viewModels,
+                onShell = shell::onAction,
+                onBack = { navigation.popBackStack() },
+                onChange = { navigation.navigate(UsdRateEntryRoute) { launchSingleTop = true } }
+            )
+        }
+        composable<UsdRateEntryRoute> {
+            UsdRateEntryRoot(viewModels) {
+                val onForm =
+                    navigation.currentBackStackEntry?.destination?.hasRoute<UsdRateEntryRoute>()
+                if (onForm == true) navigation.popBackStack()
+            }
         }
         composable<GoalRoute> { entry ->
             val id = entry.toRoute<GoalRoute>().goalId
@@ -402,7 +502,8 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     onOpenReset = { navigation.navigate(ResetRoute) { launchSingleTop = true } },
                     onOpenSchedules = {
                         navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
-                    }
+                    },
+                    onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } }
                 )
             }
             BackHandler(enabled = !state.monthPickerOpen) { navigation.popBackStack() }
@@ -1371,6 +1472,8 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
             }
             SelloNotice(message, tagged, confirmation = true)
         }
+
+        is InvestmentMovementNotice -> InvestmentMovementNoticeBar(notice, onUndo, tagged)
 
         is CorrectionNotice.IncomeRecorded -> {
             val amount = notice.amount

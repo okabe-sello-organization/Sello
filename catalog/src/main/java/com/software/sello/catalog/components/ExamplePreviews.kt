@@ -192,6 +192,12 @@ private fun MovementsExamplePreview(
 
 @ExampleThemePreviews
 @Composable
+private fun InvestmentStatesExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { InvestmentStatesExample() }
+
+@ExampleThemePreviews
+@Composable
 private fun InvestmentsExamplePreview(
     @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
 ) = Frame(theme) { InvestmentsExample() }

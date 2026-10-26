@@ -13,6 +13,10 @@ object TestData {
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     private val tables = listOf(
+        // Movements point at investments; rates point at nothing.
+        "investment_movement",
+        "investment",
+        "usd_rate",
         "featured_goal",
         "goal_event",
         "goal",
@@ -40,6 +44,7 @@ object TestData {
             database.execSQL("DELETE FROM deleted_expense")
             database.execSQL("DELETE FROM deleted_income")
             database.execSQL("DELETE FROM deleted_goal_event")
+            database.execSQL("DELETE FROM deleted_investment_movement")
             database.execSQL("UPDATE profile SET revision = 0")
             database.setTransactionSuccessful()
         } finally {

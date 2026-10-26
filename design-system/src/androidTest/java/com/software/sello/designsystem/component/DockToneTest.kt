@@ -42,6 +42,7 @@ class DockToneTest {
     private var docked = 0
     private var brand = Color.Unspecified
     private var gain = Color.Unspecified
+    private var ink = Color.Unspecified
 
     private fun show(dock: SelloDock, width: Int = 360, height: Int = 700) {
         rule.setContent {
@@ -49,6 +50,7 @@ class DockToneTest {
                 SelloTheme(reducedMotion = true) {
                     brand = SelloTheme.colors.brand
                     gain = SelloTheme.colors.semantic.gain
+                    ink = SelloTheme.colors.ink
                     Box(Modifier.requiredSize(width.dp, height.dp)) {
                         SelloScaffold(
                             title = "Metas",
@@ -119,5 +121,22 @@ class DockToneTest {
         show(SelloDock("Anotar un gasto", "Anotar", { docked++ }))
 
         assertSame(brand, fill("Anotar un gasto"))
+    }
+
+    @Test
+    fun inversionesDockIsInkSoItIsNeverTakenForAnotarOrMetas() {
+        show(
+            SelloDock(
+                "Anotar movimiento",
+                "Anotar movimiento",
+                { docked++ },
+                tone = ButtonTone.Ink,
+                icon = SelloIcon.Add
+            )
+        )
+
+        assertSame(ink, fill("Anotar movimiento"))
+        rule.onNodeWithContentDescription("Anotar movimiento").performClick()
+        assertEquals(1, docked)
     }
 }

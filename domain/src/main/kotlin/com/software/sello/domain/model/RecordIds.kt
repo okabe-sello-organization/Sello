@@ -65,6 +65,31 @@ data class GoalMovementId private constructor(val value: String) {
     }
 }
 
+/** An investment's identity. It survives edits and every movement. */
+@ConsistentCopyVisibility
+data class InvestmentId private constructor(val value: String) {
+    companion object {
+        fun of(raw: String): Outcome<InvestmentId, RecordIdError> = canonical(raw, ::InvestmentId)
+    }
+}
+
+/** One aporte, retiro, dividend or recorded value of an investment. */
+@ConsistentCopyVisibility
+data class InvestmentMovementId private constructor(val value: String) {
+    companion object {
+        fun of(raw: String): Outcome<InvestmentMovementId, RecordIdError> =
+            canonical(raw, ::InvestmentMovementId)
+    }
+}
+
+/** One dated USD rate the person entered. Rates are never deleted. */
+@ConsistentCopyVisibility
+data class UsdRateId private constructor(val value: String) {
+    companion object {
+        fun of(raw: String): Outcome<UsdRateId, RecordIdError> = canonical(raw, ::UsdRateId)
+    }
+}
+
 /** A recurring payment's or income's identity. It survives changes, pauses and its end. */
 @ConsistentCopyVisibility
 data class ScheduleId private constructor(val value: String) {

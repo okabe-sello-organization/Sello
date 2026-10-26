@@ -76,6 +76,7 @@ class GoalScenarioRunnerTest {
         NoSnapshots,
         NoGoalReads,
         noSchedules(clock),
+        noInvestments(),
         store,
         backgroundScope
     )

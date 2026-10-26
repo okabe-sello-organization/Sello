@@ -35,6 +35,7 @@ import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
@@ -90,6 +91,7 @@ class GoalEditorViewModelTest {
             HandExpenseCommands(),
             HandIncomeCommands(),
             commands,
+            HandInvestmentCommands(),
             { 5.hours + scheduler.currentTime.milliseconds },
             ids,
             CoroutineScope(Dispatchers.Main)

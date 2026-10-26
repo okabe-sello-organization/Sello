@@ -24,6 +24,12 @@ import com.software.sello.feature.goals.MetasViewModel
 import com.software.sello.feature.goals.ReciboGoalViewModel
 import com.software.sello.feature.income.IncomeFormViewModel
 import com.software.sello.feature.income.IncomeHistoryViewModel
+import com.software.sello.feature.investments.InversionesViewModel
+import com.software.sello.feature.investments.InvestmentDetailViewModel
+import com.software.sello.feature.investments.InvestmentEditorViewModel
+import com.software.sello.feature.investments.InvestmentMovementViewModel
+import com.software.sello.feature.investments.UsdRateEntryViewModel
+import com.software.sello.feature.investments.UsdRateViewModel
 import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
 import com.software.sello.feature.recibo.ReciboViewModel
@@ -60,7 +66,7 @@ fun presentationModule(): Module = module {
         val scope = CoroutineScope(
             get<CoroutineScope>().coroutineContext + get<DispatcherProvider>().main
         )
-        ExpenseCorrections(get(), get(), get(), get(), get(), scope)
+        ExpenseCorrections(get(), get(), get(), get(), get(), get(), scope)
     }
     // A save runs for as long as the process, not the screen that started it.
     single { BackupSession(get(), get(), get(), get(), get<CoroutineScope>()) }
@@ -84,7 +90,15 @@ fun presentationModule(): Module = module {
 fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     initializer { AppearanceViewModel(koin.get()) }
     initializer {
-        SettingsViewModel(koin.get(), koin.get(), koin.get(), koin.get(), koin.get())
+        SettingsViewModel(
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
     }
     initializer {
         BackupViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
@@ -140,6 +154,42 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get(),
             koin.get(),
             koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
+    initializer { InversionesViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer { UsdRateViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer {
+        InvestmentDetailViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
+    }
+    initializer {
+        InvestmentEditorViewModel(
+            createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
+    initializer {
+        InvestmentMovementViewModel(
+            createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
+    initializer {
+        UsdRateEntryViewModel(
+            createSavedStateHandle(),
             koin.get(),
             koin.get(),
             koin.get(),

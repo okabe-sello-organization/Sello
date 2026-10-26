@@ -18,6 +18,7 @@ import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.feature.recurrence.HandScheduleCommands
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
@@ -94,6 +95,7 @@ class ExpenseFormViewModelTest {
             commands,
             HandIncomeCommands(),
             HandGoalCommands(),
+            HandInvestmentCommands(),
             {
                 Duration.ZERO
             },

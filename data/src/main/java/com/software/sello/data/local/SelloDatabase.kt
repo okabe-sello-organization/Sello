@@ -8,9 +8,11 @@ import com.software.sello.data.local.dao.CategoryDao
 import com.software.sello.data.local.dao.DeletedExpenseDao
 import com.software.sello.data.local.dao.DeletedGoalEventDao
 import com.software.sello.data.local.dao.DeletedIncomeDao
+import com.software.sello.data.local.dao.DeletedInvestmentMovementDao
 import com.software.sello.data.local.dao.ExpenseDao
 import com.software.sello.data.local.dao.GoalDao
 import com.software.sello.data.local.dao.IncomeDao
+import com.software.sello.data.local.dao.InvestmentDao
 import com.software.sello.data.local.dao.LimitDao
 import com.software.sello.data.local.dao.OperationReceiptDao
 import com.software.sello.data.local.dao.ProfileDao
@@ -20,16 +22,20 @@ import com.software.sello.data.local.entity.DefaultLimitEntity
 import com.software.sello.data.local.entity.DeletedExpenseEntity
 import com.software.sello.data.local.entity.DeletedGoalEventEntity
 import com.software.sello.data.local.entity.DeletedIncomeEntity
+import com.software.sello.data.local.entity.DeletedInvestmentMovementEntity
 import com.software.sello.data.local.entity.ExpenseEntity
 import com.software.sello.data.local.entity.FeaturedGoalEntity
 import com.software.sello.data.local.entity.GoalEntity
 import com.software.sello.data.local.entity.GoalEventEntity
 import com.software.sello.data.local.entity.IncomeEntity
+import com.software.sello.data.local.entity.InvestmentEntity
+import com.software.sello.data.local.entity.InvestmentMovementEntity
 import com.software.sello.data.local.entity.MonthLimitEntity
 import com.software.sello.data.local.entity.OperationReceiptEntity
 import com.software.sello.data.local.entity.ProfileEntity
 import com.software.sello.data.local.entity.ScheduleEntity
 import com.software.sello.data.local.entity.SchedulePauseEntity
+import com.software.sello.data.local.entity.UsdRateEntity
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -37,7 +43,9 @@ import kotlin.coroutines.CoroutineContext
  * the version, exports its schema to `data/schemas` and ships a tested migration.
  * Version 2 added `deleted_expense`; version 3 added `deleted_income`; version 4 added
  * goals: `goal`, `goal_event`, `deleted_goal_event` and `featured_goal`; version 5
- * added `schedule`, `schedule_pause` and the origin of a recorded entry.
+ * added `schedule`, `schedule_pause` and the origin of a recorded entry; version 6 added
+ * investments: `investment`, `investment_movement`, `deleted_investment_movement` and
+ * `usd_rate`.
  */
 @Database(
     entities = [
@@ -55,9 +63,13 @@ import kotlin.coroutines.CoroutineContext
         DeletedGoalEventEntity::class,
         FeaturedGoalEntity::class,
         ScheduleEntity::class,
-        SchedulePauseEntity::class
+        SchedulePauseEntity::class,
+        InvestmentEntity::class,
+        InvestmentMovementEntity::class,
+        DeletedInvestmentMovementEntity::class,
+        UsdRateEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class SelloDatabase : RoomDatabase() {
@@ -83,6 +95,10 @@ abstract class SelloDatabase : RoomDatabase() {
 
     abstract fun scheduleDao(): ScheduleDao
 
+    abstract fun investmentDao(): InvestmentDao
+
+    abstract fun deletedInvestmentMovementDao(): DeletedInvestmentMovementDao
+
     companion object {
         const val FILE_NAME = "sello.db"
     }
@@ -100,6 +116,6 @@ internal fun openSelloDatabase(
 ): SelloDatabase =
     Room.databaseBuilder(context.applicationContext, SelloDatabase::class.java, fileName)
         .openHelperFactory(NonDestructiveOpenHelperFactory())
-        .addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5)
+        .addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6)
         .setQueryCoroutineContext(queries)
         .build()

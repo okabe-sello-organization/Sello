@@ -3,7 +3,7 @@
 Rules: [architecture](../../ARCHITECTURE.md) §§4, 5, 7.
 
 One Room database, `sello.db`, in the app's private storage, is the only place
-financial facts live. Its schema is version 5; every version is exported to
+financial facts live. Its schema is version 6; every version is exported to
 `data/schemas/com.software.sello.data.local.SelloDatabase/`.
 
 ## What is stored
@@ -25,8 +25,12 @@ financial facts live. Its schema is version 5; every version is exported to
 | `featured_goal` | The goal chosen for Recibo, if any | `id` is always 1 |
 | `schedule` | A recurring payment (category) or income (source): amount, note, repeat rule, start and end, creation order, the last occurrence catch-up handled, version, audit times | `id`; unique `sequence` |
 | `schedule_pause` | One pause of a schedule: its first day and the day it resumed, if it did | (`schedule_id`, `from_date`) |
+| `investment` | Name, optional description, icon key, currency (`COP` or `USD`, never changed), the next recording position, version, audit times | `id` |
+| `investment_movement` | An investment's history: `contribution`, `withdrawal`, `dividend` or `valuation`, with amount and currency, date, note, version, audit times | `id`; unique (`investment_id`, `sequence`), the recording order; replayed by (`effective_date`, `sequence`) |
+| `deleted_investment_movement` | What a deleted investment movement was, for its undo | `deletion_id` |
+| `usd_rate` | One entered USD rate: pesos per dollar in whole hundredths (`rate_hundredths`, 4.150,25 is 415025), its date, audit time | `id`; unique `sequence`, the order rates were entered |
 
-There are no investment, widget or capture tables, and no
+There are no widget or capture tables, and no
 preference such as theme or category order: those are not financial and stay out
 of Room, in the DataStore file `sello-preferences` (`DataStoreUserPreferences`). A
 preference that cannot be read falls back to the last good value or the default and
@@ -55,7 +59,8 @@ never touches financial data.
 | Value | Stored as |
 | --- | --- |
 | Identifier | Lower-case hyphenated UUID text; any other spelling is damage |
-| Money | `*_minor` whole minor units plus a `currency` code; only `COP` is valid in the MVP |
+| Money | `*_minor` whole minor units plus a `currency` code; only `COP` is valid, except that an investment and its movements may be `USD` (cents) |
+| Rate | Whole hundredths of a peso per dollar, an `INTEGER`; never `REAL` |
 | Date, month | `yyyy-MM-dd`, `yyyy-MM` text, so text order is calendar order |
 | Audit time | Milliseconds since the epoch, from `AuditClock`. A writer truncates to milliseconds first so a value reads back equal |
 | Kind, source, icon | Stable lower-case keys (`finite`, `unlimited`, `paused` for a default only, `salary`, `shopping_cart`); never a label or an enum position |
@@ -160,6 +165,18 @@ with a `schedule.catch_up` receipt that has no subject ([commands](commands.md#c
 Backups (format version 3, SELLO-099) carry schedules, their pauses and checkpoints
 and every entry's origin; restore puts them back as they were and erase-all removes
 them.
+
+Investments (SELLO-107) are stored as their history: value, gain and return are worked
+out by `InvestmentPolicy` and never stored ([investment rules](../testing/investment-examples.md)).
+Every write replays the candidate history first, so a retiro above the value on its date,
+a movement before the first aporte or deleting the only aporte is refused with nothing
+written. A new investment writes its row, its first aporte and its first value (the next
+position, the same date) and, for a first USD investment, the rate in one transaction.
+Deleting an investment deletes its movements in that command's transaction, never by a
+cascade. Rates are only ever added; the current one is the latest date, then the last
+entered. Backups carry investments, their movements and the rates (format version 4,
+SELLO-108); restore puts them back as they were, each movement at its recording position,
+and erase-all removes them. Neither keeps a deleted movement's undo copy.
 
 ## Not here yet
 

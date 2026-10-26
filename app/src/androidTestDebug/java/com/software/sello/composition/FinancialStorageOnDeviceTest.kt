@@ -51,7 +51,7 @@ class FinancialStorageOnDeviceTest {
     fun startupCreatedTheRealDatabaseWithExactlyOneProfile() {
         assertTrue(file.exists())
         val zone = stored { database ->
-            assertEquals(5, database.version)
+            assertEquals(6, database.version)
             assertEquals(1, database.count("profile"))
             database.rawQuery("SELECT financial_zone FROM profile WHERE id = 1", null).use {
                 it.moveToFirst()

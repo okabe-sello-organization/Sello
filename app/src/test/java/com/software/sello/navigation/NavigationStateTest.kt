@@ -67,8 +67,11 @@ class NavigationStateTest {
     }
 
     @Test
-    fun onlyTheWorkingReciboResumenAndMetasDestinationsAreExposedAsTabs() {
-        assertEquals(listOf("recibo", "resumen", "metas"), ShellTab.entries.map { it.id })
+    fun onlyTheWorkingReciboResumenMetasAndInversionesDestinationsAreExposedAsTabs() {
+        assertEquals(
+            listOf("recibo", "resumen", "metas", "inversiones"),
+            ShellTab.entries.map { it.id }
+        )
         assertEquals(
             BackTarget.GoToRecibo,
             backTarget(panelOpen = false, onDetail = false, ShellTab.Resumen)

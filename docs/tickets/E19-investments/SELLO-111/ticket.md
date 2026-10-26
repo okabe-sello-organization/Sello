@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-107, SELLO-004
 - **Gate:** G2
 
@@ -10,7 +10,7 @@
 A person sets one USD-to-COP rate with its date; changing it records a new dated rate.
 
 ### Deliverables
-A rate setting with validation and its history, used by the overview total.
+A rate setting with validation and its history, used by the overview total, reached as SELLO-106 designs it and asked first when a USD investment is created (SELLO-110).
 
 ### Acceptance criteria
 - Rates are positive, bounded decimals with the date entered.
@@ -35,3 +35,15 @@ Changing the rate updates the total and says its date.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-111 --retain`.
+
+### Execution progress
+
+- **2026-10-25:** **Dólar** (`UsdRateScreen`, `UsdRateViewModel`) shows the current rate
+  on a pinked slip with its date and the earlier ones newest first, with empty, loading,
+  failed and stale states; it is reached from Configuración (**Tus datos → Dólar**, with
+  the current rate) and, once the tab is in the bar (SELLO-110), from the overview's rate
+  line. **Cambiar la tasa** (`UsdRateEntryScreen`, `UsdRateEntryViewModel`) takes pesos per
+  dollar with the Sello pad's comma (`DecimalDraft`, `AmountKeypad(onComma)`), a date
+  today or earlier, 1,00 to 100.000,00 with two decimals at most, and sends `SetUsdRate`
+  with its operation identifier kept across process death and an unknown outcome asked
+  about before anything else.

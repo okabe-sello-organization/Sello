@@ -181,7 +181,9 @@ class RestoreJourneyTest {
                     ),
                     goals = emptyList(),
                     featuredGoal = null,
-                    schedules = emptyList()
+                    schedules = emptyList(),
+                    investments = emptyList(),
+                    usdRates = emptyList()
                 ),
                 preferences = PortablePreferences(
                     AppearancePreference(ThemePreference.Dark, InkPreference.Violeta),

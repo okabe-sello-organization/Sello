@@ -17,6 +17,7 @@ import com.software.sello.domain.port.GoalUndoOffer
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
@@ -60,6 +61,7 @@ class GoalCompleterTest {
             HandExpenseCommands(),
             HandIncomeCommands(),
             commands,
+            HandInvestmentCommands(),
             { 5.seconds + scheduler.currentTime.milliseconds },
             ids,
             CoroutineScope(Dispatchers.Main)

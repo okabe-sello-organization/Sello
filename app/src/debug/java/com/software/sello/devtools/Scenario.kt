@@ -1,5 +1,7 @@
 package com.software.sello.devtools
 
+import com.software.sello.domain.model.Currency
+import com.software.sello.domain.model.GainDirection
 import com.software.sello.domain.model.Occurrence
 import java.time.LocalDate
 import java.time.YearMonth
@@ -180,6 +182,81 @@ data class ScheduleCheck(
     val present: Boolean = true
 )
 
+/**
+ * A return as Inversiones shows it (investment rule 6): its [direction], the sign of the
+ * gain, and its magnitude in [tenths] of a percent, rounded half up (7,46 % is 75).
+ */
+data class Yield(val direction: GainDirection, val tenths: Long)
+
+/** An investment's value carried forward (rule 5): [amount] from the value of [on]. */
+data class Worth(val amount: Long, val on: LocalDate, val gain: Long, val yield: Yield)
+
+/**
+ * The investment the step named [investment] made, as Inversiones reads it, in its own
+ * currency's minor units (pesos, or USD cents): [contributed], [withdrawn], [dividends]
+ * and its [worth], null when it has no value (Sin valor, rule 7). [since] and
+ * [movements] are compared only when given. Once deleted it is not [present], and
+ * nothing else is read. [source] is the approved example the values come from
+ * (IN01–IN36) or a hand derivation; none is computed by the code being checked.
+ */
+data class InvestmentCheck(
+    val investment: String,
+    val contributed: Long,
+    val worth: Worth?,
+    val source: String,
+    val withdrawn: Long = 0,
+    val dividends: Long = 0,
+    val since: YearMonth? = null,
+    val movements: Int? = null,
+    val present: Boolean = true
+) {
+    companion object {
+        /** The investment the step named [investment] made is deleted. */
+        fun gone(investment: String, source: String) =
+            InvestmentCheck(investment, 0, null, source, present = false)
+    }
+}
+
+/** The current USD rate, as the overview names it: [hundredths] of a peso, dated [on]. */
+data class RateCheck(val hundredths: Long, val on: LocalDate)
+
+/** The overview of Inversiones (rules 13 and 14), in pesos. */
+sealed interface PortfolioCheck {
+    val source: String
+
+    /**
+     * The total over the investments with a value: USD sums converted once at [rate],
+     * which is null when no USD investment with a value is in it (no rate line).
+     */
+    data class Total(
+        val value: Long,
+        val contributed: Long,
+        val withdrawn: Long,
+        val dividends: Long,
+        val gain: Long,
+        val yield: Yield,
+        val since: YearMonth,
+        val valuedFrom: LocalDate,
+        val valuedTo: LocalDate,
+        val rate: RateCheck?,
+        override val source: String
+    ) : PortfolioCheck
+
+    /** Investments exist and none has a value: "Todavía no hay valores anotados" (IN35). */
+    data class NoValues(override val source: String) : PortfolioCheck
+}
+
+/** An investment movement's kind, as the movement sheet offers it (rule 2). */
+enum class Move(val label: String) {
+    Aporte("aporte"),
+    Retiro("retiro"),
+    Dividendo("dividendo"),
+    Valor("valor")
+}
+
+/** A USD rate of [hundredths] of a peso per dollar, dated [on]; by default the sandbox's day. */
+data class Rate(val hundredths: Long, val on: LocalDate? = null)
+
 /** One action of a scenario. Amounts are whole pesos; entries are dated on the sandbox's day. */
 sealed interface ScenarioStep {
     val expect: Expect get() = Expect.Saved
@@ -221,17 +298,22 @@ sealed interface ScenarioStep {
     data class Archive(val category: String, val version: Long) : ScenarioStep
 
     /**
-     * Reads the real month snapshots, goal board, schedules and recorded entries and
-     * compares each of [checks], [goals], [occurrences] and [schedules]. Every expected
-     * value names where it comes from; none is computed by the code being checked.
+     * Reads the real month snapshots, goal board, schedules, recorded entries and
+     * investment board and compares each of [checks], [goals], [occurrences],
+     * [schedules], [investments] and the [portfolio]. Every expected value names where
+     * it comes from; none is computed by the code being checked.
      */
     data class Verify(
         val checks: List<Check>,
         val goals: List<GoalCheck> = emptyList(),
         val occurrences: List<OccurrenceCheck> = emptyList(),
-        val schedules: List<ScheduleCheck> = emptyList()
+        val schedules: List<ScheduleCheck> = emptyList(),
+        val investments: List<InvestmentCheck> = emptyList(),
+        val portfolio: PortfolioCheck? = null
     ) : ScenarioStep {
-        val figures: Int get() = checks.size + goals.size + occurrences.size + schedules.size
+        val figures: Int
+            get() = checks.size + goals.size + occurrences.size + schedules.size +
+                investments.size + (if (portfolio == null) 0 else 1)
     }
 
     /** [source] is a stored income source key, such as `salary`. */
@@ -373,6 +455,81 @@ sealed interface ScenarioStep {
         val version: Long = 1,
         override val expect: Expect = Expect.Saved
     ) : ScenarioStep
+
+    /**
+     * Agregar inversión: an investment the later steps call [key], in [currency], with a
+     * first aporte of [contribution] minor units and a first value of [value] (Otro
+     * valor), or the aporte itself when null (Lo mismo que aporté), both dated [on], by
+     * default the sandbox's day. [rate] is a USD rate entered with it (rule 12). Only
+     * one saved step makes each key; a refused one may share it.
+     */
+    data class Investment(
+        val key: String,
+        val name: String,
+        val icon: String,
+        val currency: Currency,
+        val contribution: Long,
+        val value: Long? = null,
+        val rate: Rate? = null,
+        val on: LocalDate? = null,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /**
+     * A movement of [minor] units of [kind] in [investment], read at [version]; [on]
+     * dates it earlier than the sandbox's day, or later to script a refusal.
+     */
+    data class Movement(
+        val investment: String,
+        val kind: Move,
+        val minor: Long,
+        val version: Long,
+        val on: LocalDate? = null,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /**
+     * Corrects the movement step [of] recorded to [minor] units, and to [on] when given,
+     * with the investment read at [version] and the movement at [movementVersion]. When
+     * [of] is an [Investment] step, it is that step's first aporte, or its first value
+     * when [firstValue].
+     */
+    data class EditMovement(
+        val of: Int,
+        val minor: Long,
+        val version: Long,
+        val movementVersion: Long = 1,
+        val firstValue: Boolean = false,
+        val on: LocalDate? = null,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /** Deletes the movement step [of] recorded, chosen as in [EditMovement]. */
+    data class DeleteMovement(
+        val of: Int,
+        val version: Long,
+        val movementVersion: Long = 1,
+        val firstValue: Boolean = false,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /**
+     * Deshacer the movement deletion step [of] made, while it is on offer: six real
+     * seconds, gone with the process that deleted it.
+     */
+    data class UndoMovementDelete(val of: Int, override val expect: Expect = Expect.Saved) :
+        ScenarioStep
+
+    /** Deletes [investment] and all its movements, read at [version]; no undo (rule 9). */
+    data class DeleteInvestment(
+        val investment: String,
+        val version: Long,
+        override val expect: Expect = Expect.Saved
+    ) : ScenarioStep
+
+    /** A new dated USD rate (rule 11). A rate outside its bounds is never sent. */
+    data class SetRate(val rate: Rate, override val expect: Expect = Expect.Saved) :
+        ScenarioStep
 
     /**
      * Runs the app's catch-up, the one Sello runs when it opens and when the financial

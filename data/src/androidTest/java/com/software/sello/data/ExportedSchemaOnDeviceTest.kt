@@ -8,6 +8,7 @@ import com.software.sello.data.local.Migration1To2
 import com.software.sello.data.local.Migration2To3
 import com.software.sello.data.local.Migration3To4
 import com.software.sello.data.local.Migration4To5
+import com.software.sello.data.local.Migration5To6
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.openSelloDatabase
 import com.software.sello.data.repository.RoomFinancialProfileStore
@@ -313,6 +314,92 @@ class ExportedSchemaOnDeviceTest {
     }
 
     @Test
+    fun upgradingFromVersionFiveKeepsEveryRowAndAddsOnlyEmptyInvestmentTables() {
+        val tables = versionOneTables + "deleted_expense" + "deleted_income" + "goal" +
+            "goal_event" + "deleted_goal_event" + "featured_goal" + "schedule" + "schedule_pause"
+        val investmentTables =
+            listOf("investment", "investment_movement", "deleted_investment_movement", "usd_rate")
+        fun SupportSQLiteDatabase.rows() = tables.associateWith { table ->
+            query("SELECT * FROM $table").use { cursor ->
+                buildList {
+                    while (cursor.moveToNext()) {
+                        add(
+                            (0 until cursor.columnCount).joinToString("|") {
+                                cursor.getString(it) ?: "null"
+                            }
+                        )
+                    }
+                }
+            }
+        }
+        val before = helper.createDatabase(name, 5).use { exported ->
+            exported.execSQL(
+                "INSERT INTO profile (id, financial_zone, generation, revision, created_at) " +
+                    "VALUES (1, 'America/Bogota', 4, 17, 0)"
+            )
+            exported.execSQL(
+                "INSERT INTO category VALUES ('${uuid(1)}', 'Hogar', 'hogar', 'home', 0, 3, 10, 20)"
+            )
+            exported.execSQL(
+                "INSERT INTO default_limit VALUES ('${uuid(1)}', '2026-09', 'finite', " +
+                    "300000, 'COP')"
+            )
+            exported.execSQL(
+                "INSERT INTO month_limit VALUES ('${uuid(1)}', '2026-10', 'unlimited', NULL, 'COP')"
+            )
+            exported.execSQL(
+                "INSERT INTO expense VALUES ('${uuid(2)}', '${uuid(1)}', '2026-10-05', 5, " +
+                    "950000, 'COP', 'Arriendo', 2, 30, 40, '${uuid(7)}', '2026-10-05', 1)"
+            )
+            exported.execSQL(
+                "INSERT INTO income VALUES ('${uuid(3)}', '2026-10-01', 2, 1600000, 'COP', " +
+                    "'salary', NULL, NULL, 1, 30, 40, NULL, NULL, NULL)"
+            )
+            exported.execSQL(
+                "INSERT INTO operation_receipt VALUES ('${uuid(9)}', 'expense.create', " +
+                    "'${"ab".repeat(32)}', 4, 17, '${uuid(2)}', 50)"
+            )
+            exported.execSQL(
+                "INSERT INTO deleted_income VALUES ('${uuid(10)}', 4, 50, '${uuid(4)}', " +
+                    "'2026-10-02', 3, 10000, 'COP', 'salary', NULL, NULL, 1, 30, 40, " +
+                    "NULL, NULL, NULL)"
+            )
+            exported.execSQL(
+                "INSERT INTO goal VALUES ('${uuid(5)}', 'Viaje', 'flight', NULL, NULL, " +
+                    "2, 1, 30, 40)"
+            )
+            exported.execSQL(
+                "INSERT INTO goal_event VALUES ('${uuid(6)}', '${uuid(5)}', 0, 'target', " +
+                    "3000000, 'COP', NULL, '2026-10-02', NULL, 1, 30, 40)"
+            )
+            exported.execSQL("INSERT INTO featured_goal VALUES (1, '${uuid(5)}')")
+            exported.execSQL(
+                "INSERT INTO schedule VALUES ('${uuid(7)}', 'payment', '${uuid(1)}', NULL, " +
+                    "NULL, 950000, 'COP', NULL, 'monthly', 5, NULL, '2026-10-05', NULL, 0, " +
+                    "'2026-10-05', 1, 1, 30, 40)"
+            )
+            exported.execSQL(
+                "INSERT INTO schedule_pause VALUES ('${uuid(7)}', '2026-10-07', NULL)"
+            )
+            exported.rows()
+        }
+
+        // Room compares the result with the exported version 6 schema and fails on any difference.
+        helper.runMigrationsAndValidate(name, 6, true, Migration5To6).use { upgraded ->
+            val investmentRows = investmentTables.associateWith { table ->
+                upgraded.query("SELECT COUNT(*) FROM $table").use { count ->
+                    count.moveToFirst()
+                    count.getInt(0)
+                }
+            }
+
+            assertEquals(13, before.values.sumOf { rows -> rows.size })
+            assertEquals(before, upgraded.rows())
+            assertEquals(investmentTables.associateWith { 0 }, investmentRows)
+        }
+    }
+
+    @Test
     fun aVersionOneDatabaseOpenedByThisBuildIsUpgradedThroughEveryVersionAndReadsTheSameData() =
         runBlocking {
             versionOneWithHistory()
@@ -331,12 +418,12 @@ class ExportedSchemaOnDeviceTest {
                 profile
             )
             assertEquals(listOf(48_700L), expenses.map { it.amountMinor })
-            assertEquals(5, version)
+            assertEquals(6, version)
         }
 
     @Test
     fun aDatabaseBuiltFromTheExportedCurrentSchemaOpensAndKeepsItsRows() = runBlocking {
-        helper.createDatabase(name, 5).use { exported ->
+        helper.createDatabase(name, 6).use { exported ->
             exported.execSQL(
                 "INSERT INTO profile (id, financial_zone, generation, revision, created_at) " +
                     "VALUES (1, 'America/Bogota', 4, 17, 0)"

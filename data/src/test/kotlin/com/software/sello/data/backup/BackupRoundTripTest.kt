@@ -42,16 +42,19 @@ class BackupRoundTripTest {
                 incomes = 1,
                 goals = 0,
                 goalEvents = 0,
-                schedules = 0
+                schedules = 0,
+                investments = 0,
+                investmentMovements = 0,
+                usdRates = 0
             ),
             plan.counts
         )
     }
 
     @Test
-    fun `G01 is written byte for byte as the documented version 3 file`() {
+    fun `G01 is written byte for byte as the documented version 4 file`() {
         assertEquals(
-            String(resource("valid-g01-v3.json")),
+            String(resource("valid-g01-v4.json")),
             String(codec.encode(g01()).value())
         )
     }
@@ -187,7 +190,9 @@ class BackupRoundTripTest {
                 "incomes",
                 "goals",
                 "featuredGoal",
-                "schedules"
+                "schedules",
+                "investments",
+                "usdRates"
             ),
             financial.keys
         )

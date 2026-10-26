@@ -1,8 +1,10 @@
 package com.software.sello.data.repository
 
+import com.software.sello.data.mapper.storedKey
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InvestmentAmount
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.RepeatRule
@@ -19,30 +21,40 @@ import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.CreateIncome
+import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteIncome
+import com.software.sello.domain.port.DeleteInvestment
+import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.EditGoal
 import com.software.sello.domain.port.EditGoalMovement
 import com.software.sello.domain.port.EditIncome
+import com.software.sello.domain.port.EditInvestment
+import com.software.sello.domain.port.EditInvestmentMovement
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalEdit
+import com.software.sello.domain.port.InvestmentCommand
+import com.software.sello.domain.port.InvestmentEdit
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.RecordGoalMovement
+import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.RestoreIncome
+import com.software.sello.domain.port.RestoreInvestmentMovement
 import com.software.sello.domain.port.ResumeSchedule
 import com.software.sello.domain.port.ScheduleCommand
 import com.software.sello.domain.port.ScheduleEdit
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
+import com.software.sello.domain.port.SetUsdRate
 import com.software.sello.domain.port.UnarchiveCategory
 import com.software.sello.domain.port.UndoGoalCompletion
 import java.security.MessageDigest
@@ -287,6 +299,73 @@ internal fun inputDigest(command: ScheduleCommand): String {
                 listOf(command.start.toString(), command.end?.toString().orEmpty())
 
         is PauseSchedule, is ResumeSchedule, is DeleteSchedule -> emptyList()
+    }
+    val head = listOf(command.kind.key, "1", command.generation.toString())
+    return digest(*(head + subject + change).toTypedArray())
+}
+
+internal val InvestmentCommand.kind: OperationKind
+    get() = when (this) {
+        is CreateInvestment -> OperationKind.CreateInvestment
+        is EditInvestment -> OperationKind.EditInvestment
+        is RecordInvestmentMovement -> OperationKind.RecordInvestmentMovement
+        is EditInvestmentMovement -> OperationKind.EditInvestmentMovement
+        is DeleteInvestmentMovement -> OperationKind.DeleteInvestmentMovement
+        is RestoreInvestmentMovement -> OperationKind.RestoreInvestmentMovement
+        is DeleteInvestment -> OperationKind.DeleteInvestment
+        is SetUsdRate -> OperationKind.SetUsdRate
+    }
+
+private val InvestmentAmount.fields: List<String>
+    get() = listOf(money.minorUnits.toString(), money.currency.code)
+
+/** Movement kinds by their stored key, so renaming the enum never changes an identity. */
+internal fun inputDigest(command: InvestmentCommand): String {
+    val subject = when (command) {
+        is InvestmentEdit ->
+            listOf(command.investmentId.value, command.expectedVersion.toString())
+
+        is CreateInvestment, is RestoreInvestmentMovement, is SetUsdRate -> emptyList()
+    }
+    val change = when (command) {
+        is CreateInvestment -> listOf(
+            command.name.value,
+            if (command.description == null) "0" else "1",
+            command.description?.value.orEmpty(),
+            command.icon.value,
+            command.currency.code,
+            command.date.toString()
+        ) + command.firstContribution.fields + command.firstValue.fields + listOf(
+            if (command.newRate == null) "0" else "1",
+            command.newRate?.rate?.hundredths?.toString().orEmpty(),
+            command.newRate?.date?.toString().orEmpty()
+        )
+
+        is EditInvestment -> listOf(
+            command.name.value,
+            if (command.description == null) "0" else "1",
+            command.description?.value.orEmpty(),
+            command.icon.value
+        )
+
+        is RecordInvestmentMovement ->
+            listOf(command.kind.storedKey, command.date.toString()) +
+                command.amount.fields + command.note.fields
+
+        is EditInvestmentMovement -> listOf(
+            command.movementId.value,
+            command.movementVersion.toString(),
+            command.date.toString()
+        ) + command.amount.fields + command.note.fields
+
+        is DeleteInvestmentMovement ->
+            listOf(command.movementId.value, command.movementVersion.toString())
+
+        is RestoreInvestmentMovement -> listOf(command.deletionId.value)
+
+        is DeleteInvestment -> emptyList()
+
+        is SetUsdRate -> listOf(command.rate.hundredths.toString(), command.date.toString())
     }
     val head = listOf(command.kind.key, "1", command.generation.toString())
     return digest(*(head + subject + change).toTypedArray())

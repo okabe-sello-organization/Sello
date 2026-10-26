@@ -26,7 +26,7 @@ synthetic.
 | [Resumen](resumen.html) | Locked 2026-10-15 |
 | [Income](income.html) | Locked 2026-10-15 |
 | [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16 |
-| [Inversiones](inversiones.html) | Locked 2026-10-16 (Later increment) |
+| [Inversiones](inversiones.html) | Locked 2026-10-16; USD and the rate added 2026-10-25 by owner delegation (SELLO-106) |
 | [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
 
@@ -362,15 +362,17 @@ All four notes are now applied in the mockups (2026-10-16).
 The fourth tab, for the Later increment. It answers "¿Cómo van mis inversiones?". Gain
 follows the architecture: value + withdrawals + dividends − contributions; the percentage
 is that gain over contributions since the first contribution (simple gain, not IRR), one
-decimal. Nothing is fetched or verified; every value shows when it was recorded. COP only:
-no benchmark, value target, interest accrual or exchange rates (still open policies).
+decimal. Nothing is fetched or verified; every value shows when it was recorded. No
+benchmark, value target or interest accrual. COP and USD with one rate the person types
+(ADR 0017; [Dólares y la tasa](#dólares-y-la-tasa)). Rules: [investment examples](../../testing/investment-examples.md).
 
 - **Top bar:** title **Inversiones**, **+** to add an investment, settings. No month bar.
 - **Answer slip (pinked, as on Recibo):** "Tus inversiones valen" with a **Gana** /
   **Pierde** stamp, the value as the big number in ink, then the signed return in green or
   red with an arrow and pesos ("▲ +5,6 % · +2.066.000 de ganancia", "En total, desde mar
   2025"). Under the tear: Aportaste, Retiraste, Dividendos y rentas and Ganancia as
-  receipt lines, and a quiet footnote "Valores anotados entre el 12 jun y el 14 oct ›".
+  receipt lines, and a quiet line "Valores anotados entre el 12 jun y el 14 oct" (a link
+  until SELLO-106 dropped it: each row carries its own date).
 - **Dónde está, de mayor a menor:** the income split bar with one shade of the ink per
   investment, then a row per investment: icon in its shade, name, description and "valor
   del 12 jun", value and signed %. Tapping a row opens it.
@@ -407,6 +409,44 @@ optional description, an icon; **Primer aporte** as the big number with its date
 hoy** with **Lo mismo que aporté** (default) or **Otro valor**, so a new investment
 starts with a recorded value. Editing changes name, description and icon only; movements
 are edited from their list. **Borrar esta inversión** is its own card with the confirm slip.
+
+### Dólares y la tasa
+
+Locked 2026-10-25 by owner delegation (SELLO-106): the owner answered the rules and asked
+the executor to design and lock this section; the owner reviews it in the pull request.
+Rules are [SELLO-106's](../../testing/investment-examples.md).
+
+- **Currency:** **Moneda: Pesos / Dólares** chips in Nueva inversión, under the
+  description, with "Lo que anotes de esta inversión queda en dólares. No se puede
+  cambiar después." Not shown when editing.
+- **Rate first (owner):** choosing Dólares with no rate adds a pinked slip "¿A cuánto
+  está el dólar?" with its date pill below the first contribution; Crear inversión waits
+  for it. With a rate, one quiet line names it.
+- **USD amounts** read as the app's money text already does for USD (`USD 1.050,50`),
+  everywhere inside a USD investment: slip, rows, movements, the chart and entry
+  ("Aporte en dólares"). Nothing inside it converts.
+- **The pad:** for dollars and the rate, the **000** key becomes the decimal comma,
+  spoken "Coma decimal"; at most two decimals. Pesos keep 000.
+- **The overview:** converts once per sum at the current rate and says so with a
+  `Footnote` "Dólar a 4.150,25 · tasa del 20 oct ›" under the dates line; it opens
+  **Dólar**. No USD investment with a value, no rate line. The bar uses values in pesos.
+- **Dólar:** reached from that line and from Configuración (**Tus datos → Dólar**, with the
+  current rate, between Pagos e ingresos fijos and Respaldo). A pinked slip "1 dólar
+  vale" with the rate as the big number and "pesos · tasa del 20 oct", one fact, **Cambiar
+  la tasa**, then **Tasas anteriores** as receipt lines, newest date first. No deleting.
+  Empty "Todavía no hay tasa" with **Anotar la tasa**; loading and failed read as usual.
+- **Cambiar la tasa:** the entry layout, "Pesos por 1 dólar", a date pill (today or
+  earlier), the comma pad and **Guardar tasa**.
+- **More states:** no values at all ("Todavía no hay valores anotados", rows only, IN35);
+  neither gain nor loss (no stamp, neutral "0,0 %", IN15); the four shades repeat in order
+  after the fourth investment, with a 2dp gap between segments.
+- Large-text and dark frames for the overview with dollars, Dólar and the rate entry.
+
+**Rejected:** a currency switch in the top bar (a fifth control on a four-tab screen);
+fetching rates (ADR 0017); a separate rate screen required before any USD investment
+(the owner chose asking inside Nueva inversión); converting a USD investment's own
+figures (ADR 0017); "US$" (the app's money text already writes `USD`); a fifth to eighth
+shade (shades too close to tell apart; the rows carry the values).
 
 **Rejected during the review:** the Metas-band overview with one ticket per investment,
 a message on the overview for an investment without a value, a four-way switch in the

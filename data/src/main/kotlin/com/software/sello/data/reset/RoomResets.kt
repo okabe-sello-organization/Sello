@@ -67,7 +67,8 @@ class RoomResets(
                             expenses = database.expenseDao().count(),
                             incomes = database.incomeDao().count(),
                             goals = database.goalDao().count(),
-                            schedules = database.scheduleDao().count()
+                            schedules = database.scheduleDao().count(),
+                            investments = database.investmentDao().count()
                         ),
                         profile.value.generation,
                         profile.value.revision
@@ -179,6 +180,10 @@ class RoomResets(
             deletedExpenseDao().clear()
             deletedIncomeDao().clear()
             deletedGoalEventDao().clear()
+            deletedInvestmentMovementDao().clear()
+            investmentDao().deleteAllMovements()
+            investmentDao().deleteAll()
+            investmentDao().deleteAllRates()
             goalDao().deleteFeatured()
             goalDao().deleteAllEvents()
             goalDao().deleteAll()

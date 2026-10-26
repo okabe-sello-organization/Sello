@@ -35,6 +35,7 @@ commands, so Recibo and Resumen grow exactly as they would by hand.
 | `seis-meses@1` · Seis meses | 67 | May–Oct 2026, a salary and six seeded expenses a month: the month-by-month columns grow |
 | `bordes@1` · Bordes | 10 | A double submit writes once; an edit of an old version is refused (`VersionConflict`); a deletion replaced by a later one cannot be undone (`UndoExpired`); an amount past the maximum never reaches a command (`AboveMaximum`) |
 | `semana-fuera@1` and the other *Programados* | 6–22 | Schedules, catch-up after a date jump, batches of 50, month ends, twice a month, pause, changes from tomorrow, archive, deletion; listed in the corpus |
+| `inversiones-pagina@1` and the other *Inversiones* | 9–42 | The v2 page's four investments over time, the carried value, USD and the rate, corrections with Deshacer, no value; listed in the corpus |
 
 A step may expect a rejection (`Expect`); meeting it is a pass, anything else stops.
 
@@ -59,6 +60,10 @@ A step may expect a rejection (`Expect`); meeting it is a pass, anything else st
 - A recurrence check reads what a schedule recorded through the app's reads, by each
   entry's origin, and its checkpoint and pause from the stored schedule; a manual entry
   is never counted as an occurrence.
+- Investment steps (`Investment`, `Movement`, `EditMovement`, `DeleteMovement`,
+  `UndoMovementDelete`, `DeleteInvestment`, `SetRate`) send the app's investment
+  commands; an investment check reads the real investment board, each investment's
+  figures in its own currency and the overview in pesos with its rate.
 - Scenario progress lives in `sandbox-session.xml`, never in Room, so a backup of
   financial data cannot contain it.
 - A scenario is Kotlin in `devtools/Scenarios.kt`. Changing its steps or seed means
@@ -112,7 +117,8 @@ was told and what storage holds. It carries no category name, note or amount.
   sandbox each write meets its fault first, then the fence. Catch-up goes through the
   fence too (`FencedScheduleCatchUp`); in the sandbox `LoggedScheduleCatchUp` keeps
   each batch's answer in a `CatchUpLog` for the scenario steps, and the runner gets the
-  graph's own `CatchUpRunner` and schedule ports (`ScenarioSchedules`).
+  graph's own `CatchUpRunner` and schedule ports (`ScenarioSchedules`) and its fenced
+  investment commands and investment reads (`ScenarioInvestments`).
 - `VariantComposition.newDataZone` lets a loaded scenario create the sandbox in its own
   zone; release returns none.
 - `:app:assembleRelease` is finalized by `verifyReleaseHasNoDeveloperTools`, which reads

@@ -162,7 +162,10 @@ class BackupSnapshotConsistencyTest {
                 incomes = 1,
                 goals = 0,
                 goalEvents = 0,
-                schedules = 0
+                schedules = 0,
+                investments = 0,
+                investmentMovements = 0,
+                usdRates = 0
             ),
             snapshot.counts
         )

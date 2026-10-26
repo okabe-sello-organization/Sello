@@ -552,33 +552,44 @@ fun MovementRow(
 
 /**
  * A signed return on one line: the arrow, the [percentage] large and the [amount] in
- * words smaller, all in gain or loss ink. The amount wraps on its own at large text.
+ * words smaller, all in gain or loss ink. With [even] (neither gain nor loss) there is
+ * no arrow and the ink is neutral. The amount wraps on its own at large text.
  */
 @Composable
 fun PerformanceLine(
     percentage: String,
     amount: String,
     loss: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    even: Boolean = false
 ) {
-    val ink = if (loss) SelloTheme.colors.semantic.loss else SelloTheme.colors.semantic.gain
+    val colors = SelloTheme.colors
+    val ink = when {
+        even -> colors.ink
+        loss -> colors.semantic.loss
+        else -> colors.semantic.gain
+    }
     Row(
         modifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Icon(
-            (if (loss) SelloIcon.TrendingDown else SelloIcon.TrendingUp).painter(),
-            null,
-            Modifier.size(26.dp),
-            tint = ink
-        )
+        if (!even) {
+            Icon(
+                (if (loss) SelloIcon.TrendingDown else SelloIcon.TrendingUp).painter(),
+                null,
+                Modifier.size(26.dp),
+                tint = ink
+            )
+        }
         Text(
             percentage,
             color = ink,
+            // Proportional figures: tabular ones give the decimal comma a digit's width.
             style = MaterialTheme.typography.titleLarge.copy(
                 fontSize = 20.sp,
-                fontWeight = FontWeight.W900
+                fontWeight = FontWeight.W900,
+                fontFeatureSettings = null
             )
         )
         Text(
@@ -594,19 +605,20 @@ private val ShadeMix = listOf(1f, 0.68f, 0.42f, 0.22f)
 
 /**
  * The brand mixed into paper for the [rank]-th largest investment, from 0: the circle
- * in its row and its share of the split bar use the same shade.
+ * in its row and its share of the split bar use the same shade. After the fourth the
+ * shades repeat in order; the rows carry the exact values.
  */
 @Composable
 fun investmentShade(rank: Int): Color {
     val colors = SelloTheme.colors
-    return lerp(colors.paper, colors.brand, ShadeMix[rank.coerceIn(0, ShadeMix.lastIndex)])
+    return lerp(colors.paper, colors.brand, ShadeMix[rank.coerceAtLeast(0) % ShadeMix.size])
 }
 
 /**
  * One investment in the overview: a [shade] circle with its icon, the name over its
  * kind and valuation date, and on the right the value over its signed change. Without a
  * value the circle is dashed and [missingLabel] and [secondary] read plainly. [divider]
- * rules it off from the next row.
+ * rules it off from the next row. Without [onOpen] it is not a button.
  */
 @Composable
 fun InvestmentRow(
@@ -617,10 +629,11 @@ fun InvestmentRow(
     value: MoneyTextValue?,
     missingLabel: String,
     secondary: String,
-    onOpen: () -> Unit,
+    onOpen: (() -> Unit)?,
     modifier: Modifier = Modifier,
     loss: Boolean = false,
-    divider: Boolean = true
+    divider: Boolean = true,
+    even: Boolean = false
 ) {
     val colors = SelloTheme.colors
     Row(
@@ -638,7 +651,15 @@ fun InvestmentRow(
                     )
                 }
             }
-            .clickable(role = Role.Button, onClick = onOpen)
+            .then(
+                if (onOpen ==
+                    null
+                ) {
+                    Modifier
+                } else {
+                    Modifier.clickable(role = Role.Button, onClick = onOpen)
+                }
+            )
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -646,7 +667,19 @@ fun InvestmentRow(
         Box(
             Modifier.size(36.dp).then(
                 if (value == null) {
-                    Modifier.border(2.dp, colors.outline, CircleShape)
+                    Modifier.drawBehind {
+                        val stroke = 2.dp.toPx()
+                        drawCircle(
+                            colors.outline,
+                            radius = (size.minDimension - stroke) / 2,
+                            style = Stroke(
+                                stroke,
+                                pathEffect = PathEffect.dashPathEffect(
+                                    floatArrayOf(4.dp.toPx(), 3.dp.toPx())
+                                )
+                            )
+                        )
+                    }
                 } else {
                     Modifier.background(shade, CircleShape)
                 }
@@ -662,13 +695,8 @@ fun InvestmentRow(
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(name, fontWeight = FontWeight.W800, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                detail,
-                style = MaterialTheme.typography.bodySmall,
-                color = colors.inkSoft,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            // It wraps, so "sin valor anotado" is never cut beside "aportaste …".
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)
         }
         Column(
             horizontalAlignment = Alignment.End,
@@ -684,17 +712,23 @@ fun InvestmentRow(
                         fontWeight = FontWeight.W800
                     )
                 )
-                val ink = if (loss) colors.semantic.loss else colors.semantic.gain
+                val ink = when {
+                    even -> colors.inkSoft
+                    loss -> colors.semantic.loss
+                    else -> colors.semantic.gain
+                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    Icon(
-                        (if (loss) SelloIcon.TrendingDown else SelloIcon.TrendingUp).painter(),
-                        null,
-                        Modifier.size(16.dp),
-                        tint = ink
-                    )
+                    if (!even) {
+                        Icon(
+                            (if (loss) SelloIcon.TrendingDown else SelloIcon.TrendingUp).painter(),
+                            null,
+                            Modifier.size(16.dp),
+                            tint = ink
+                        )
+                    }
                     Text(
                         secondary,
                         color = ink,
@@ -789,17 +823,24 @@ fun StampTicket(
 
 /**
  * A goal's icon in a large green circle, beside its name while creating or editing it.
- * Before an icon is chosen the circle is empty and dashed, with a soft flag. Decorative:
- * the icon strip says which icon is chosen.
+ * Before an icon is chosen the circle is empty and dashed, with a soft [emptyIcon].
+ * Decorative: the icon strip says which icon is chosen. An investment draws it in
+ * [ButtonTone.Ink], with a trending line while empty (v2 Agregar inversión).
  */
 @Composable
-fun GoalIconCircle(icon: SelloIcon?, modifier: Modifier = Modifier) {
+fun GoalIconCircle(
+    icon: SelloIcon?,
+    modifier: Modifier = Modifier,
+    tone: ButtonTone = ButtonTone.Gain,
+    emptyIcon: SelloIcon = SelloIcon.Flag
+) {
     val colors = SelloTheme.colors
+    val (fill, onFill) = tone.inks()
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier.size(64.dp).drawBehind {
             if (icon != null) {
-                drawCircle(colors.semantic.gain)
+                drawCircle(fill)
             } else {
                 val stroke = 2.dp.toPx()
                 drawCircle(
@@ -816,9 +857,9 @@ fun GoalIconCircle(icon: SelloIcon?, modifier: Modifier = Modifier) {
         }
     ) {
         Icon(
-            (icon ?: SelloIcon.Flag).painter(),
+            (icon ?: emptyIcon).painter(),
             contentDescription = null,
-            tint = if (icon != null) colors.semantic.onGain else colors.inkSoft,
+            tint = if (icon != null) onFill else colors.inkSoft,
             modifier = Modifier.size(30.dp)
         )
     }

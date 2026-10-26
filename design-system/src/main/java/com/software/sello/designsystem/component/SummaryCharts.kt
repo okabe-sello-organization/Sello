@@ -6,12 +6,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +37,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -49,8 +52,12 @@ data class SplitSegment(
     val striped: Boolean = false
 )
 
+/**
+ * One bar split by [segments], with [gap] of paper between them (Inversiones uses 2dp).
+ * The exact values belong in the lines or rows next to it.
+ */
 @Composable
-fun SplitBar(segments: List<SplitSegment>, modifier: Modifier = Modifier) {
+fun SplitBar(segments: List<SplitSegment>, modifier: Modifier = Modifier, gap: Dp = 0.dp) {
     require(segments.all { it.fraction.isFinite() && it.fraction >= 0f })
     val total = segments.sumOf { it.fraction.toDouble() }.toFloat()
     val summary = segments.joinToString(". ") { it.spoken }
@@ -61,9 +68,12 @@ fun SplitBar(segments: List<SplitSegment>, modifier: Modifier = Modifier) {
         }
     ) {
         if (total == 0f) return@Canvas
+        val drawn = segments.filter { it.fraction > 0f }
+        val space = gap.toPx()
+        val room = (size.width - space * (drawn.size - 1)).coerceAtLeast(0f)
         var start = 0f
-        segments.forEach { segment ->
-            val width = size.width * (segment.fraction / total)
+        drawn.forEach { segment ->
+            val width = room * (segment.fraction / total)
             if (segment.striped) {
                 clipRect(start, 0f, start + width, size.height) {
                     drawRect(
@@ -89,7 +99,7 @@ fun SplitBar(segments: List<SplitSegment>, modifier: Modifier = Modifier) {
                     androidx.compose.ui.geometry.Size(width, size.height)
                 )
             }
-            start += width
+            start += width + space
         }
     }
 }
@@ -254,6 +264,12 @@ fun SpendingRankRow(
 @Immutable
 data class RecordedMark(val id: String, val x: Float, val y: Float, val spoken: String)
 
+/**
+ * Recorded values as dots joined by a thin line, and what was put in as a dashed step
+ * line; nothing between recorded points is claimed. With [axis] the first and last
+ * month are written under it, and with [legend] what the line and the steps are.
+ * Each value is also a named row for keyboard and screen-reader users.
+ */
 @Composable
 fun RecordedValuesChart(
     values: List<RecordedMark>,
@@ -261,7 +277,9 @@ fun RecordedValuesChart(
     summary: String,
     selectedId: String?,
     onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    axis: Pair<String, String>? = null,
+    legend: Pair<String, String>? = null
 ) {
     val colors = SelloTheme.colors
     Column(modifier.fillMaxWidth()) {
@@ -314,6 +332,31 @@ fun RecordedValuesChart(
                 )
             }
         }
+        axis?.let { (start, end) ->
+            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+                Text(
+                    start,
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.inkSoft
+                )
+                Text(
+                    end,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.ink,
+                    fontWeight = FontWeight.W800
+                )
+            }
+        }
+        legend?.let { (value, put) ->
+            FlowRow(
+                Modifier.fillMaxWidth().padding(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                LegendItem(value, dashed = false, color = colors.brand)
+                LegendItem(put, dashed = true, color = colors.inkSoft)
+            }
+        }
         // Named controls expose each real recorded value to keyboard and screen-reader users.
         Column(Modifier.selectableGroup()) {
             values.forEach { mark ->
@@ -328,5 +371,30 @@ fun RecordedValuesChart(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun LegendItem(label: String, dashed: Boolean, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Canvas(Modifier.width(18.dp).height(10.dp)) {
+            drawLine(
+                color,
+                Offset(0f, size.height / 2),
+                Offset(size.width, size.height / 2),
+                2.dp.toPx(),
+                pathEffect = if (dashed) {
+                    PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))
+                } else {
+                    null
+                }
+            )
+        }
+        Text(
+            label,
+            Modifier.padding(start = 6.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = SelloTheme.colors.inkSoft
+        )
     }
 }

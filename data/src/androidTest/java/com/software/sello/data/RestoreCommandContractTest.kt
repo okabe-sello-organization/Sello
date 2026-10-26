@@ -148,7 +148,9 @@ class RestoreCommandContractTest {
                 incomes = listOf(income(201, "2026-10-01", 1, 200_000, IncomeSource.Salary)),
                 goals = emptyList(),
                 featuredGoal = null,
-                schedules = emptyList()
+                schedules = emptyList(),
+                investments = emptyList(),
+                usdRates = emptyList()
             ),
             preferences = preferences
         )
@@ -189,6 +191,9 @@ class RestoreCommandContractTest {
             "from_date" to "2026-10-07",
             "until_date" to null
         )
+        // An investment with its movements and a USD rate, as SELLO-107 stores them. The
+        // backup holds none, so a restore leaves none.
+        ledger.database.insertInvestmentRows()
     }
 
     private fun everyRow(): List<List<String>> = listOf(
@@ -199,6 +204,9 @@ class RestoreCommandContractTest {
         ledger.rows("income", "id", "effective_date", "sequence", "amount_minor", "source_key"),
         ledger.rows("schedule", "id", "category_id", "handled_date"),
         ledger.rows("schedule_pause", "schedule_id", "from_date"),
+        ledger.rows("investment", "id", "name"),
+        ledger.rows("investment_movement", "id", "investment_id", "amount_minor"),
+        ledger.rows("usd_rate", "id", "rate_hundredths"),
         ledger.rows("profile", "financial_zone", "generation", "revision")
     )
 
@@ -215,7 +223,10 @@ class RestoreCommandContractTest {
         val staged = stage()
         val outcome = restores().replace(staged)
 
-        assertEquals(BackupSummary(categories = 1, expenses = 2, incomes = 0, 0, 1), staged.current)
+        assertEquals(
+            BackupSummary(categories = 1, expenses = 2, incomes = 0, 0, 1, investments = 1),
+            staged.current
+        )
         assertEquals(
             BackupSummary(categories = 2, expenses = 3, incomes = 1, 0, 0),
             staged.replacement
@@ -238,6 +249,9 @@ class RestoreCommandContractTest {
                     "${uuid(103)}|${uuid(1)}|2026-10-03|3|5000"
                 ),
                 listOf("${uuid(201)}|2026-10-01|1|200000|salary"),
+                emptyList(),
+                emptyList(),
+                emptyList(),
                 emptyList(),
                 emptyList(),
                 // The backup's zone, a new generation and the next revision.
@@ -308,7 +322,7 @@ class RestoreCommandContractTest {
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
         val newer = restores().stage(
-            String(bytes).replaceFirst("\"version\": 3", "\"version\": 4").toByteArray()
+            String(bytes).replaceFirst("\"version\": 4", "\"version\": 5").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)
@@ -353,7 +367,7 @@ class RestoreCommandContractTest {
         assertEquals(before, everyRow())
 
         val fresh = restores().staged()!!
-        assertEquals(BackupSummary(1, 3, 0, 0, 1), fresh.current)
+        assertEquals(BackupSummary(1, 3, 0, 0, 1, investments = 1), fresh.current)
         assertTrue(restores().replace(fresh) is RestoreOutcome.Restored)
     }
 

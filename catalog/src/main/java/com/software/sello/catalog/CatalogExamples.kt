@@ -32,6 +32,7 @@ import com.software.sello.catalog.components.GoalPillExample
 import com.software.sello.catalog.components.GoalsBandExample
 import com.software.sello.catalog.components.IconChoiceExample
 import com.software.sello.catalog.components.IconStripExample
+import com.software.sello.catalog.components.InvestmentStatesExample
 import com.software.sello.catalog.components.InvestmentsExample
 import com.software.sello.catalog.components.KeyValueExample
 import com.software.sello.catalog.components.KeypadExample
@@ -417,5 +418,10 @@ val catalogExamples: List<CatalogExample> = listOf(
         "goals.investments",
         CatalogGroup.Goals,
         R.string.catalog_example_investments
-    ) { InvestmentsExample() }
+    ) { InvestmentsExample() },
+    CatalogExample(
+        "goals.investment-states",
+        CatalogGroup.Goals,
+        R.string.catalog_example_investment_states
+    ) { InvestmentStatesExample() }
 )

@@ -82,6 +82,7 @@ class ScheduleSandboxPortsTest {
             LedgerIncomes(ledger),
             LedgerCategories(ledger),
             LedgerGoals(ledger),
+            LedgerInvestments(ledger),
             schedules
         )
         faults.arm(Fault.LostAnswer)
