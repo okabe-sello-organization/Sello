@@ -27,6 +27,7 @@ class CatalogExamplesTest {
                 "paper.suggestion",
                 "paper.plan-slip",
                 "paper.schedule-row",
+                "paper.limit-row",
                 "paper.setting-row",
                 "stamps.stamp",
                 "money.money-text",

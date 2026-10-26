@@ -132,6 +132,12 @@ private fun ScheduleRowExamplePreview(
 
 @ExampleThemePreviews
 @Composable
+private fun LimitRowExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { LimitRowExample() }
+
+@ExampleThemePreviews
+@Composable
 private fun RepeatSheetOpenPreview(
     @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
 ) = Frame(theme) { RepeatSheetExample(startOpen = true) }

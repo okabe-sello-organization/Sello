@@ -218,6 +218,8 @@ class RoomCategoryCommands(
             is SetDefaultLimit -> {
                 if (category.archived) return refused(CategoryRejection.CategoryArchived)
                 limits.put(DefaultLimit(id, month, AutomaticBudget.Limit(command.limit)).toEntity())
+                // A new default sets this month too (D04), so its own limit gives way.
+                limits.removeMonth(id.value, month.toString())
                 next
             }
 

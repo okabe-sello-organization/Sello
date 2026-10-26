@@ -86,6 +86,7 @@ import com.software.sello.feature.investments.InvestmentEditorRoot
 import com.software.sello.feature.investments.InvestmentMovementNoticeBar
 import com.software.sello.feature.investments.InvestmentMovementRoot
 import com.software.sello.feature.investments.UsdRateEntryRoot
+import com.software.sello.feature.recibo.AdjustBudgetRoot
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_EDIT_TAG
 import com.software.sello.feature.recibo.CategoryDetailAction
 import com.software.sello.feature.recibo.CategoryDetailScreen
@@ -224,6 +225,11 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 onOpenRecorded = { navigation.navigate(CatchUpRoute) { launchSingleTop = true } },
                 onOpenReserved = {
                     navigation.navigate(UpcomingPaymentsRoute) { launchSingleTop = true }
+                },
+                onAdjustBudget = {
+                    navigation.navigate(AdjustBudgetRoute(state.selectedMonth.toString())) {
+                        launchSingleTop = true
+                    }
                 },
                 onEditCategory = { id ->
                     navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString())) {
@@ -631,6 +637,32 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 )
             }
         }
+        composable<AdjustBudgetRoute> { entry ->
+            val month = entry.toRoute<AdjustBudgetRoute>().month
+            ShellScreen(
+                state,
+                monthNames(),
+                shell::onAction,
+                navigation = null,
+                onBack = { navigation.popBackStack() },
+                screenTitle = stringResource(R.string.adjust_title),
+                pastMonthRibbon = false,
+                entryDock = false,
+                notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
+            ) { padding ->
+                AdjustBudgetRoot(
+                    viewModels,
+                    padding,
+                    onOpenReserved = {
+                        navigation.navigate(UpcomingPaymentsRoute) { launchSingleTop = true }
+                    },
+                    // An archived category is unarchived from its editor, for this month.
+                    onEditCategory = { id ->
+                        navigation.navigate(CategoryEditRoute(id, month)) { launchSingleTop = true }
+                    }
+                )
+            }
+        }
         composable<CatchUpRoute> {
             val model: CatchUpNoticeViewModel = viewModel(factory = viewModels)
             ShellScreen(
@@ -845,6 +877,7 @@ private fun ReciboDestination(
     onShowAllExpenses: (String) -> Unit,
     onOpenRecorded: () -> Unit,
     onOpenReserved: () -> Unit,
+    onAdjustBudget: () -> Unit,
     onCreateCategory: () -> Unit
 ) {
     val recibo: ReciboViewModel = viewModel(factory = viewModels)
@@ -920,6 +953,7 @@ private fun ReciboDestination(
                         is ReciboAction.EditCategory -> onEditCategory(action.id)
                         ReciboAction.Retry -> Unit
                         ReciboAction.OpenReserved -> onOpenReserved()
+                        ReciboAction.AdjustBudget -> onAdjustBudget()
                     }
                     recibo.onAction(action)
                 },
@@ -1332,6 +1366,22 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
             spoken = notice.spoken,
             confirmation = true
         )
+
+        is CorrectionNotice.LimitAdjusted -> {
+            val text = if (notice.fromThisMonth) {
+                R.string.notice_limit_adjusted_from
+            } else {
+                R.string.notice_limit_adjusted_this
+            }
+            val month = monthNames().inSentence(notice.month)
+            // On screen the figure as it is written; read aloud with its currency.
+            SelloNotice(
+                message = stringResource(text, notice.categoryName, month, notice.limit.digits),
+                modifier = tagged,
+                spoken = stringResource(text, notice.categoryName, month, notice.limit.spoken),
+                confirmation = true
+            )
+        }
 
         is CorrectionNotice.ExpenseRecorded -> {
             val category = notice.categoryName?.takeIf { it.isNotBlank() }

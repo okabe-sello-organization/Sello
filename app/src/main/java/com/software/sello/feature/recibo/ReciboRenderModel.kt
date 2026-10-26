@@ -52,7 +52,7 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
         ordering.direction
     ).map(::category)
 
-    private fun summary(snapshot: MonthlySnapshot): ReciboSummary =
+    internal fun summary(snapshot: MonthlySnapshot): ReciboSummary =
         when (val overall = snapshot.overall) {
             OverallBudget.NoLimit -> ReciboSummary(
                 ReciboAnswerLabel.Spent,
@@ -160,7 +160,7 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
      * How full to draw the circle. This is geometry: it is never shown as a number,
      * compared or turned back into money.
      */
-    private fun fill(budget: LimitedBudget): Float {
+    internal fun fill(budget: LimitedBudget): Float {
         val limit = budget.limit.minorUnits
         val spent = budget.spent.minorUnits
         return when {

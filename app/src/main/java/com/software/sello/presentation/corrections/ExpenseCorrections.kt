@@ -76,6 +76,17 @@ sealed interface CorrectionNotice {
      */
     data class CategorySaved(val limitOf: YearMonth?) : CorrectionNotice
 
+    /**
+     * A limit set from Ajustar presupuesto, as its receipt confirmed: "Límite de Café para
+     * octubre: 150.000", or "desde octubre" when [fromThisMonth].
+     */
+    data class LimitAdjusted(
+        val categoryName: String,
+        val limit: MoneyTextValue,
+        val month: YearMonth,
+        val fromThisMonth: Boolean
+    ) : CorrectionNotice
+
     data object CategoryArchived : CorrectionNotice
 
     data object CategoryUnarchived : CorrectionNotice

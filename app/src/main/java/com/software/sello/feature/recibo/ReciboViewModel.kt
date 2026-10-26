@@ -64,7 +64,8 @@ class ReciboViewModel(
             ReciboAction.CreateCategory,
             is ReciboAction.OpenCategory,
             is ReciboAction.EditCategory,
-            ReciboAction.OpenReserved -> Unit
+            ReciboAction.OpenReserved,
+            ReciboAction.AdjustBudget -> Unit
         }
     }
 

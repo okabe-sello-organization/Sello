@@ -189,7 +189,7 @@ class ReciboScreenTest {
     )
 
     private val adjust get() =
-        rule.onNodeWithContentDescription("Ajustar presupuesto, ir a tus categorías")
+        rule.onNodeWithContentDescription("Ajustar presupuesto, abre tus categorías y sus límites")
 
     /** Enough categories that the card can be brought to the top of any phone's list. */
     private val many = (1..24).map {
@@ -555,87 +555,23 @@ class ReciboScreenTest {
     }
 
     @Test
-    fun ajustarPresupuestoBringsTheCategoriesCardToTheTopAndFocusesItsHeading() {
-        show(overspent(shown = many))
-        val listTop = rule.onRoot().getUnclippedBoundsInRoot().top
-
-        adjust.performClick()
-        rule.waitForIdle()
-
-        val card = rule.onNodeWithTag(RECIBO_CATEGORIES_TAG).getUnclippedBoundsInRoot()
-        assertTrue("$card at the top", abs((card.top - listTop).value) <= 1f)
-        rule.onNodeWithTag(RECIBO_CATEGORIES_HEADING_TAG).assertIsFocused().assertIsDisplayed()
-        // Nothing is opened: each category still opens its detail and limit itself.
-        assertEquals(emptyList<ReciboAction>(), actions)
-    }
-
-    @Test
-    fun whenTheCardIsAlreadyInViewItOnlyMovesFocusToTheHeading() {
+    fun theLinkAsksToAdjust() {
         show(overspent(shown = categories.take(1)))
-        val before = rule.onNodeWithTag(RECIBO_CATEGORIES_TAG).getUnclippedBoundsInRoot()
 
         adjust.performClick()
-        rule.waitForIdle()
 
-        rule.onNodeWithTag(RECIBO_CATEGORIES_HEADING_TAG).assertIsFocused()
-        assertEquals(emptyList<ReciboAction>(), actions)
-        assertTrue(
-            rule.onNodeWithTag(RECIBO_CATEGORIES_TAG).getUnclippedBoundsInRoot().top <= before.top
-        )
+        // The root opens Ajustar presupuesto; the list itself does not move.
+        assertEquals(listOf<ReciboAction>(ReciboAction.AdjustBudget), actions)
     }
 
     @Test
-    fun withOlderFiguresAndAtTwiceTheFontSizeItStillWorks() {
+    fun withOlderFiguresAndAtTwiceTheFontSizeItStillAsks() {
         show(overspent(stale = true, shown = many), fontScale = 2f)
 
         adjust.performScrollTo().assertIsDisplayed().performClick()
-        rule.waitForIdle()
 
         rule.onNodeWithTag(RECIBO_STALE_TAG).assertExists()
-        rule.onNodeWithTag(RECIBO_CATEGORIES_HEADING_TAG).assertIsFocused().assertIsDisplayed()
-    }
-
-    @Test
-    fun besideItsDetailInATwoColumnWindowItStillFocusesTheHeading() {
-        rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
-                SelloTheme(reducedMotion = true) {
-                    Box(Modifier.requiredSize(900.dp, 700.dp)) {
-                        ShellScreen(
-                            ShellState(
-                                currentMonth = YearMonth.of(2026, 10),
-                                selectedMonth = YearMonth.of(2026, 10),
-                                monthPickerOpen = false,
-                                pickerYear = 2026,
-                                pendingEntry = null,
-                                detailCategoryId = "a"
-                            ),
-                            monthNames(),
-                            {},
-                            detail = ShellDetail("Alimentación") { padding ->
-                                Text("detalle", Modifier.padding(padding).testTag("detail"))
-                            }
-                        ) { padding ->
-                            ReciboScreen(
-                                overspent(shown = categories.take(2)),
-                                { actions += it },
-                                padding,
-                                selectedCategoryId = "a"
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        rule.onNodeWithTag("detail").assertExists()
-        rule.onNodeWithTag(SCAFFOLD_SECONDARY_TAG).assertExists()
-
-        adjust.performClick()
-        rule.waitForIdle()
-
-        rule.onNodeWithTag(RECIBO_CATEGORIES_HEADING_TAG).assertIsFocused()
-        rule.onNodeWithTag("detail").assertExists()
-        assertEquals(emptyList<ReciboAction>(), actions)
+        assertEquals(listOf<ReciboAction>(ReciboAction.AdjustBudget), actions)
     }
 
     // --- Payments reserved (SELLO-101) ---

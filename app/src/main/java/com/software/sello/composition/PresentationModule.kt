@@ -32,8 +32,10 @@ import com.software.sello.feature.investments.InvestmentEditorViewModel
 import com.software.sello.feature.investments.InvestmentMovementViewModel
 import com.software.sello.feature.investments.UsdRateEntryViewModel
 import com.software.sello.feature.investments.UsdRateViewModel
+import com.software.sello.feature.recibo.AdjustBudgetViewModel
 import com.software.sello.feature.recibo.CategoryDetailViewModel
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
+import com.software.sello.feature.recibo.LimitSheetViewModel
 import com.software.sello.feature.recibo.ReciboViewModel
 import com.software.sello.feature.recibo.UpcomingPaymentsViewModel
 import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
@@ -293,6 +295,21 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
         )
     }
     initializer { UpcomingPaymentsViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer {
+        AdjustBudgetViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
+    }
+    initializer {
+        LimitSheetViewModel(
+            createSavedStateHandle(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get(),
+            koin.get()
+        )
+    }
     initializer {
         CatchUpNoticeViewModel(
             koin.get(),

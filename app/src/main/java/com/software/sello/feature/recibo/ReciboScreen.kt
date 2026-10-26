@@ -94,30 +94,10 @@ fun ReciboScreen(
     // The start is complete once the month was read: its figures, a first run or a failure.
     ReportDrawnWhen { state !is ReciboState.Loading }
     val scroll = rememberScrollState()
-    val scope = rememberCoroutineScope()
-    val reducedMotion = SelloTheme.reducedMotion
-    val heading = remember { FocusRequester() }
-    // Where the list is seen and where the categories card is, as last laid out.
-    var viewport by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    var card by remember { mutableStateOf<LayoutCoordinates?>(null) }
-    // "Ajustar presupuesto": the categories card at the top of the list, and its heading
-    // focused. Nothing is opened; each category opens its detail and limit as before.
-    val toCategories: () -> Unit = {
-        scope.launch {
-            val shown = viewport
-            val target = card
-            if (shown != null && target != null && shown.isAttached && target.isAttached) {
-                val by = target.positionInWindow().y - shown.positionInWindow().y
-                if (reducedMotion) scroll.scrollBy(by) else scroll.animateScrollBy(by)
-            }
-            heading.requestFocus()
-        }
-    }
     Column(
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
         modifier = modifier
             .fillMaxSize()
-            .onGloballyPositioned { viewport = it }
             .verticalScroll(scroll)
             .padding(contentPadding)
     ) {
@@ -147,14 +127,16 @@ fun ReciboScreen(
                 if (state.stale) {
                     StaleSlip({ onAction(ReciboAction.Retry) }, Modifier.testTag(RECIBO_STALE_TAG))
                 }
-                SummarySlip(state.summary, toCategories) { onAction(ReciboAction.OpenReserved) }
+                SummarySlip(
+                    state.summary,
+                    onAdjust = { onAction(ReciboAction.AdjustBudget) },
+                    onReserved = { onAction(ReciboAction.OpenReserved) }
+                )
                 goal()
                 CategoriesSlip(
                     state.categories,
                     selectedCategoryId,
-                    onAction,
-                    heading,
-                    Modifier.onGloballyPositioned { card = it }
+                    onAction
                 )
             }
 
@@ -194,13 +176,7 @@ internal fun StaleSlip(onRetry: () -> Unit, modifier: Modifier = Modifier) {
  */
 @Composable
 private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved: () -> Unit) {
-    val label = stringResource(
-        when (summary.label) {
-            ReciboAnswerLabel.Remaining -> R.string.recibo_answer_remaining
-            ReciboAnswerLabel.Spent -> R.string.recibo_answer_spent
-            ReciboAnswerLabel.ShortForPayments -> R.string.recibo_answer_short
-        }
-    )
+    val label = answerLabel(summary.label)
     val stamp = stampText(summary.stamp)
     AnswerSlip(
         label = label,
@@ -224,9 +200,19 @@ private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved
     }
 }
 
+/** The words above the month's big number. */
+@Composable
+internal fun answerLabel(label: ReciboAnswerLabel): String = stringResource(
+    when (label) {
+        ReciboAnswerLabel.Remaining -> R.string.recibo_answer_remaining
+        ReciboAnswerLabel.Spent -> R.string.recibo_answer_spent
+        ReciboAnswerLabel.ShortForPayments -> R.string.recibo_answer_short
+    }
+)
+
 /** "Quedan 100.000 y tus pagos previstos suman 150.000." or "Pasaste tu límite por …". */
 @Composable
-private fun ShortfallNote(shortfall: ReciboShortfall) {
+internal fun ShortfallNote(shortfall: ReciboShortfall) {
     val sentence = if (shortfall.over) R.string.recibo_shortfall_over else R.string.recibo_shortfall
     // On screen the figures as written; read aloud with their currency.
     val spoken = stringResource(sentence, shortfall.left.spoken, shortfall.reserved.spoken)
@@ -243,7 +229,7 @@ private fun ShortfallNote(shortfall: ReciboShortfall) {
 
 /** "Incluye 200.000 separado para 1 pago previsto ›": opens the payments reserved. */
 @Composable
-private fun ReservedFootnote(reserved: ReciboReserved, onClick: () -> Unit) {
+internal fun ReservedFootnote(reserved: ReciboReserved, onClick: () -> Unit) {
     val payments =
         pluralStringResource(R.plurals.recibo_reserved_payments, reserved.count, reserved.count)
     val template = stringResource(R.string.recibo_reserved, AMOUNT_MARK, payments)
@@ -274,6 +260,8 @@ private fun AdjustBudgetLink(onClick: () -> Unit) {
             .padding(top = 4.dp)
             .heightIn(min = SelloTheme.spacing.minTouchTarget)
             .clickable(role = Role.Button, onClick = onClick)
+            // Before the clear: a tag after it would be cleared with everything else.
+            .testTag(RECIBO_ADJUST_TAG)
             .clearAndSetSemantics {
                 contentDescription = spoken
                 role = Role.Button
@@ -282,7 +270,6 @@ private fun AdjustBudgetLink(onClick: () -> Unit) {
                     true
                 }
             }
-            .testTag(RECIBO_ADJUST_TAG)
     ) {
         Text(
             text = stringResource(R.string.recibo_adjust_budget),
@@ -413,7 +400,6 @@ private fun CategoriesSlip(
     categories: List<ReciboCategory>,
     selectedCategoryId: String?,
     onAction: (ReciboAction) -> Unit,
-    heading: FocusRequester,
     modifier: Modifier = Modifier
 ) {
     // Only the answer slip above keeps the pinked edge; this card is plain paper.
@@ -422,11 +408,8 @@ private fun CategoriesSlip(
             Text(
                 text = stringResource(R.string.recibo_categories_title),
                 style = MaterialTheme.typography.titleMedium,
-                // Focusable so "Ajustar presupuesto" can bring focus here.
                 modifier = Modifier
                     .weight(1f)
-                    .focusRequester(heading)
-                    .focusable()
                     .semantics { heading() }
                     .testTag(RECIBO_CATEGORIES_HEADING_TAG)
             )
