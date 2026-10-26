@@ -115,6 +115,39 @@ class MonthlyBudgetHistoryTest {
     }
 
     @Test
+    fun aMonthOnlyLimitChangesThisMonthAndLeavesTheDefault() = runBlocking {
+        // AJ01: October's own 150.000; November keeps the default 50.000.
+        ledger.goTo("2026-10-02")
+        ledger.categories.submit(ledger.createCategory("Mercado", finite(50_000)))
+
+        setMonth(october, 150_000)
+        val inOctober = stateIn(october)
+        ledger.goTo("2026-11-02")
+
+        assertEquals(explicit(150_000), inOctober)
+        assertEquals(derived(50_000), stateIn(november))
+    }
+
+    @Test
+    fun aNewDefaultReplacesOnlyThisMonthsOwnLimit() = runBlocking {
+        // AJ03: September's own 90.000 stays; October's own 150.000 gives way to 60.000.
+        ledger.goTo("2026-09-10")
+        ledger.categories.submit(ledger.createCategory("Mercado", finite(50_000)))
+        ledger.goTo("2026-10-02")
+        setMonth(september, 90_000)
+        setMonth(october, 150_000)
+
+        setDefault(60_000)
+        val inOctober = stateIn(october)
+        ledger.goTo("2026-11-02")
+
+        assertEquals(derived(60_000), inOctober)
+        assertEquals(explicit(90_000), stateIn(september))
+        assertEquals(listOf("2026-09|90000"), ledger.rows("month_limit", "month", "limit_minor"))
+        assertEquals(derived(60_000), stateIn(november))
+    }
+
+    @Test
     fun aMonthNobodyOpenedUsesTheDefaultOfThatTimeHoweverLateItIsRead() = runBlocking {
         // H03, H04: 100.000 from October, the app closed all November, 120.000 from December.
         ledger.categories.submit(ledger.createCategory("Mercado", finite(100_000)))

@@ -32,6 +32,9 @@ interface LimitDao {
     @Query("DELETE FROM default_limit WHERE category_id = :categoryId AND effective_month = :month")
     suspend fun removeDefault(categoryId: String, month: String): Int
 
+    @Query("DELETE FROM month_limit WHERE category_id = :categoryId AND month = :month")
+    suspend fun removeMonth(categoryId: String, month: String): Int
+
     /**
      * For each category after [afterCategoryId], the default in force in [month]: its
      * latest entry effective that month or earlier. A category with none is absent.

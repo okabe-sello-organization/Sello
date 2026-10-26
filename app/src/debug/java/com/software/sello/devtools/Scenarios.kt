@@ -329,6 +329,46 @@ object Scenarios {
         )
     )
 
+    /**
+     * AJ01 and AJ03: October goes 80.000 over (AJ04's overrun). Café's own October limit
+     * of 150.000 leaves 20.000; a default of 60.000 set afterwards replaces it.
+     */
+    val AdjustBudget = Scenario(
+        id = "ajustar-presupuesto",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = LocalDate.of(2026, 10, 2),
+        title = "Ajustar presupuesto",
+        summary = "AJ01, AJ03: un límite solo para octubre y luego uno desde octubre, " +
+            "que reemplaza el de octubre.",
+        steps = listOf(
+            Category("cafe", "Café", "local_cafe", 50_000),
+            Category("comida", "Comida", "restaurant", 200_000),
+            Category("hogar", "Hogar", "home", 400_000),
+            Category("salud", "Salud", "medical_services", null),
+            Expense("cafe", 90_000),
+            Expense("comida", 230_000),
+            Expense("hogar", 400_000),
+            Expense("salud", 10_000),
+            Verify(
+                listOf(
+                    Check(Oct, Figure.Limit, 650_000, "AJ04"),
+                    Check(Oct, Figure.Remaining, -80_000, "AJ04")
+                )
+            ),
+            SetMonthLimit("cafe", Oct, 150_000, version = 1),
+            Verify(listOf(Check(Oct, Figure.Remaining, 20_000, "AJ01"))),
+            SetDefaultLimit("cafe", 60_000, version = 2),
+            Verify(
+                listOf(
+                    Check(Oct, Figure.Limit, 660_000, "AJ03"),
+                    Check(Oct, Figure.Remaining, -70_000, "AJ03")
+                )
+            )
+        )
+    )
+
     /** AR01/AR02: archiving keeps October's history and gives November no budget. */
     val Archived = Scenario(
         id = "archivada",
@@ -2141,6 +2181,7 @@ object Scenarios {
         LeapYear,
         SkippedMonths,
         PastLimits,
+        AdjustBudget,
         Archived,
         IncomeAllocation,
         GoalStamps,

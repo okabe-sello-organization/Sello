@@ -71,7 +71,10 @@ data class UnarchiveCategory(
     override val expectedVersion: Long
 ) : CategoryEdit
 
-/** The limit from the current financial month onwards. Earlier months are not touched. */
+/**
+ * The limit from the current financial month onwards, replacing that month's own limit
+ * if it has one. Earlier months are not touched.
+ */
 data class SetDefaultLimit(
     override val operationId: OperationId,
     override val generation: Long,
