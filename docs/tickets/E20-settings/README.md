@@ -1,6 +1,6 @@
 # SELLO-E20 — Configuración as designed
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** Configuración matches the design snapshot's screen 16, with backup and restore first and easiest to reach, and a person can export all their data to CSV or JSON.
 - **Exit:** Configuración shows Tus datos with the backup card first, then Lo que se repite, Apariencia, Recibo and Inversiones; investments have a default currency and list order; Exportar saves or shares a CSV or JSON of everything.
