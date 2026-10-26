@@ -1333,6 +1333,22 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
             confirmation = true
         )
 
+        is CorrectionNotice.LimitAdjusted -> {
+            val text = if (notice.fromThisMonth) {
+                R.string.notice_limit_adjusted_from
+            } else {
+                R.string.notice_limit_adjusted_this
+            }
+            val month = monthNames().inSentence(notice.month)
+            // On screen the figure as it is written; read aloud with its currency.
+            SelloNotice(
+                message = stringResource(text, notice.categoryName, month, notice.limit.digits),
+                modifier = tagged,
+                spoken = stringResource(text, notice.categoryName, month, notice.limit.spoken),
+                confirmation = true
+            )
+        }
+
         is CorrectionNotice.ExpenseRecorded -> {
             val category = notice.categoryName?.takeIf { it.isNotBlank() }
             // On screen the figure as it is written; read aloud with its currency.

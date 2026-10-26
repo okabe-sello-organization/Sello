@@ -235,6 +235,8 @@
     <string name="correction_blocked">No se pudo deshacer porque tus datos cambiaron. El gasto quedó borrado.</string>
     <string name="correction_updated">Gasto actualizado</string>
     <string name="notice_expense_recorded">Gasto anotado: %1$s en %2$s</string>
+    <string name="notice_limit_adjusted_this">Límite de %1$s para %2$s: %3$s</string>
+    <string name="notice_limit_adjusted_from">Límite de %1$s desde %2$s: %3$s</string>
     <string name="notice_expense_recorded_amount">Gasto anotado: %1$s</string>
     <string name="notice_expense_recorded_plain">Gasto anotado</string>
     <string name="notice_income_recorded">Ingreso anotado: %1$s</string>
