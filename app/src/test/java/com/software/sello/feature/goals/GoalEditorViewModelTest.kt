@@ -37,6 +37,7 @@ import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.corrections.GoalCelebration
@@ -153,13 +154,11 @@ class GoalEditorViewModelTest {
         GoalEditorViewModel(saved, reads, commands, clock, money, ids, corrections) { false }
 
     private fun GoalEditorViewModel.type(vararg keys: String) {
-        onAction(GoalEditorAction.OpenPad)
         keys.forEach {
             onAction(
                 if (it == "000") GoalEditorAction.TripleZero else GoalEditorAction.Digit(it.toInt())
             )
         }
-        onAction(GoalEditorAction.ClosePad)
     }
 
     private fun GoalEditorViewModel.casaPropia() {
@@ -222,6 +221,20 @@ class GoalEditorViewModelTest {
         assertEquals(YearMonth.of(2028, 12), sent.targetMonth)
         assertEquals(3L, sent.generation)
         assertEquals(GoalEditorResult.Created(viajeId), model.state.value.result)
+    }
+
+    @Test
+    fun sinFechaInTheMonthSheetClearsTheMonthAndClosesTheSheet() = runTest {
+        val model = model()
+        model.casaPropia()
+        model.onAction(GoalEditorAction.ChooseMonth)
+        model.onAction(GoalEditorAction.PickMonth(YearMonth.of(2028, 12)))
+        model.onAction(GoalEditorAction.ChooseMonth)
+
+        model.onAction(GoalEditorAction.NoDate)
+
+        assertNull(model.state.value.targetMonth)
+        assertFalse(model.state.value.choosingMonth)
     }
 
     @Test
@@ -438,7 +451,6 @@ class GoalEditorViewModelTest {
         val first = model(saved)
         first.casaPropia()
         first.onAction(GoalEditorAction.PickMonth(YearMonth.of(2028, 12)))
-        first.onAction(GoalEditorAction.OpenPad)
         commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         first.onAction(GoalEditorAction.Submit)
@@ -455,18 +467,16 @@ class GoalEditorViewModelTest {
     }
 
     @Test
-    fun aDraftWithoutASaveIsRestoredWithThePadStillOpen() = runTest {
+    fun aDraftWithoutASaveIsRestored() = runTest {
         val saved = SavedStateHandle()
         val first = model(saved)
         first.onAction(GoalEditorAction.NameChanged("Casa"))
-        first.onAction(GoalEditorAction.OpenPad)
         first.onAction(GoalEditorAction.Digit(5))
 
         val restored = model(saved)
 
         assertEquals("Casa", restored.state.value.name)
         assertEquals("5", restored.state.value.amount!!.digits)
-        assertTrue(restored.state.value.padOpen)
     }
 
     @Test
@@ -548,17 +558,13 @@ class GoalEditorViewModelTest {
     @Test
     fun onlyTheOfferedIconsCanBeChosen() = runTest {
         val model = model()
-        model.onAction(GoalEditorAction.IconPicked("credit_card"))
+        model.onAction(GoalEditorAction.IconPicked("rocket"))
         assertNull(model.state.value.iconKey)
-        model.onAction(GoalEditorAction.IconPicked("pets"))
-        assertEquals("pets", model.state.value.iconKey)
-        assertEquals(
-            listOf(
-                "home", "flight", "school", "phone_iphone", "pets",
-                "fitness_center", "child_care", "shopping_cart", "theaters", "medical_services"
-            ),
-            GoalIcons.options.map { it.key }
-        )
+        // A goal offers the same 24 icons as a category, in the same order.
+        model.onAction(GoalEditorAction.IconPicked("savings"))
+        assertEquals("savings", model.state.value.iconKey)
+        assertEquals(CategoryIcons.keys, GoalIcons.options.map { it.key })
+        assertEquals(24, GoalIcons.options.size)
         assertEquals(GoalPlace.entries, model.state.value.places.map { it.place.place })
     }
 

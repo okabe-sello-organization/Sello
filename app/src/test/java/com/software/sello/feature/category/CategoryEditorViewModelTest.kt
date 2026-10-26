@@ -709,4 +709,115 @@ class CategoryEditorViewModelTest {
 
         assertNull(editor.total)
     }
+
+    // --- The limit on the Sello pad ---
+
+    private fun CategoryEditorViewModel.press(vararg keys: CategoryEditorAction) =
+        keys.forEach(::onAction)
+
+    @Test
+    fun thePadTypesTheLimitAndItIsShownAsTheAmountItIs() {
+        val editor = editor()
+
+        editor.press(
+            CategoryEditorAction.LimitDigit(1),
+            CategoryEditorAction.LimitDigit(2),
+            CategoryEditorAction.LimitTripleZero
+        )
+
+        assertEquals("12000", editor.state.value.limitText)
+        assertEquals("12.000 pesos", editor.state.value.limitAmount?.spoken)
+    }
+
+    @Test
+    fun backspaceTakesTheLastDigitAndClearingEmptiesTheLimit() {
+        val editor = editor()
+
+        editor.press(
+            CategoryEditorAction.LimitDigit(5),
+            CategoryEditorAction.LimitDigit(0),
+            CategoryEditorAction.LimitBackspace
+        )
+        assertEquals("5", editor.state.value.limitText)
+
+        editor.press(CategoryEditorAction.LimitCleared)
+        assertEquals("", editor.state.value.limitText)
+        // Empty is not zero: nothing is shown as an amount.
+        assertNull(editor.state.value.limitAmount)
+    }
+
+    @Test
+    fun aThirteenthDigitIsRefusedAndTheLimitStaysAsItWas() {
+        val editor = editor()
+        editor.press(*Array(12) { CategoryEditorAction.LimitDigit(9) })
+
+        editor.press(CategoryEditorAction.LimitDigit(9), CategoryEditorAction.LimitTripleZero)
+
+        assertEquals("999999999999", editor.state.value.limitText)
+    }
+
+    @Test
+    fun aPastedLimitThatIsNotAnAmountIsKeptAsItWasAndThePadStartsAgain() {
+        val editor = editor()
+
+        editor.onAction(CategoryEditorAction.LimitChanged("12,5"))
+        assertEquals("12,5" to null, editor.state.value.let { it.limitText to it.limitAmount })
+
+        editor.press(CategoryEditorAction.LimitDigit(7))
+        assertEquals("7", editor.state.value.limitText)
+    }
+
+    @Test
+    fun withSinLimiteThePadChangesNothing() {
+        val editor = editor()
+        editor.press(CategoryEditorAction.LimitDigit(4))
+        editor.onAction(CategoryEditorAction.UnlimitedChanged(true))
+
+        editor.press(CategoryEditorAction.LimitDigit(5), CategoryEditorAction.LimitBackspace)
+
+        assertEquals("4", editor.state.value.limitText)
+    }
+
+    @Test
+    fun aLimitTypedOnThePadSurvivesTheProcessBeingStopped() {
+        val saved = SavedStateHandle()
+        editor(
+            saved
+        ).press(CategoryEditorAction.LimitDigit(3), CategoryEditorAction.LimitTripleZero)
+
+        val restored = editor(saved.afterProcessDeath()).state.value
+
+        assertEquals("3000" to "3.000 pesos", restored.limitText to restored.limitAmount?.spoken)
+    }
+
+    @Test
+    fun theIconsOtherCategoriesUseAreKnownArchivedOnesToo() {
+        reads.categories = listOf(
+            reads.category(1, "Comida", icon = "restaurant"),
+            reads.category(2, "Casa", icon = "home", archived = true)
+        )
+
+        assertEquals(setOf("restaurant", "home"), editor().state.value.usedIconKeys)
+    }
+
+    @Test
+    fun aZeroLimitIsALimitAndThePadTypesItAsASingleZero() {
+        val editor = editor()
+
+        editor.press(CategoryEditorAction.LimitDigit(0), CategoryEditorAction.LimitTripleZero)
+        assertEquals(
+            "0" to "0 pesos",
+            editor.state.value.let {
+                it.limitText to
+                    it.limitAmount?.spoken
+            }
+        )
+
+        // A digit after it replaces it; backspace empties it.
+        editor.press(CategoryEditorAction.LimitDigit(8))
+        assertEquals("8", editor.state.value.limitText)
+        editor.press(CategoryEditorAction.LimitBackspace, CategoryEditorAction.LimitDigit(0))
+        editor.press(CategoryEditorAction.LimitBackspace)
+        assertEquals("", editor.state.value.limitText)
+    }
 }

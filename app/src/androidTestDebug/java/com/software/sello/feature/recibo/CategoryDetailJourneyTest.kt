@@ -31,6 +31,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.feature.category.EDITOR_SUBMIT_TAG
+import com.software.sello.feature.category.typeLimit
 import com.software.sello.navigation.SelloAppRoot
 import com.software.sello.press
 import java.io.File
@@ -159,8 +160,7 @@ class CategoryDetailJourneyTest {
         rule.onNodeWithText("Promedio de 2 meses completos").assertIsDisplayed()
         rule.onNodeWithTag(CATEGORY_DETAIL_EDIT_TAG).performClick()
         rule.awaitText("Editar categoría")
-        rule.onNodeWithContentDescription("Límite en pesos").performScrollTo()
-            .performTextReplacement("500000")
+        rule.typeLimit("500000")
         Espresso.closeSoftKeyboard()
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).press()
         rule.awaitTag(CATEGORY_DETAIL_TAG)

@@ -19,9 +19,13 @@ import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onLast
@@ -37,6 +41,7 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.category.CategoryIcons
+import com.software.sello.revealed
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -73,7 +78,13 @@ class CategoryEditorScreenTest {
 
     /** A field is found by its label, which is also what a screen reader calls it. */
     private val name get() = rule.onNodeWithContentDescription("Nombre")
-    private val limit get() = rule.onNodeWithContentDescription("Límite en pesos")
+    private val limit get() = rule.onNodeWithTag(EDITOR_LIMIT_TAG)
+
+    /** A key of the Sello pad under the form. */
+    private fun key(label: String) =
+        rule.onNode(hasText(label) and hasAnyAncestor(hasTestTag(EDITOR_PAD_TAG)))
+
+    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     @Test
     fun whileItLoadsThereIsNoFormAndAFailureOffersRetry() {
@@ -90,26 +101,38 @@ class CategoryEditorScreenTest {
     fun anEmptyFormCannotBeSubmittedAndStartsAskingForAnAmountWithSinLimiteOff() {
         show(ready)
 
-        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).performScrollTo().assertIsNotEnabled()
-        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).performScrollTo().assertIsOff()
-        limit.performScrollTo().assertIsDisplayed().assertIsEnabled()
-        rule.onNodeWithText("200.000").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithContentDescription("Hogar").assertIsSelected()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().assertIsNotEnabled()
+        rule.onNodeWithTag(EDITOR_MISSING_TAG).assertIsDisplayed()
+        rule.onNodeWithText("Escribe un nombre.").assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).revealed().assertIsOff()
+        limit.revealed().assertIsDisplayed()
+        // The pad is there for the limit from the start; no field to open first.
+        key("5").assertIsDisplayed().assertIsEnabled()
+        rule.onNodeWithText("200.000").revealed().assertIsDisplayed()
+        // The chosen icon is in the circle beside the name, which says how to change it.
+        rule.onNodeWithTag(EDITOR_ICON_TAG).assertContentDescriptionEquals("Ícono: Hogar. Cambiar")
         rule.onNodeWithTag(EDITOR_PREREQUISITE_TAG).assertDoesNotExist()
     }
 
     @Test
     fun withSinLimiteChosenTheAmountAndSuggestionsStayGreyedOutAndCannotBeUsed() {
         // An amount typed before the switch is kept, greyed out, and is not sent.
-        show(ready.copy(name = "Mercado", unlimited = true, limitText = "450000"))
+        show(
+            ready.copy(
+                name = "Mercado",
+                unlimited = true,
+                limitText = "450000",
+                limitAmount = pesos("450.000")
+            )
+        )
 
-        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).performScrollTo().assertIsOn()
-        limit.performScrollTo().assertIsDisplayed().assertIsNotEnabled()
-        assertEquals("450.000", drawnLimit())
+        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).revealed().assertIsOn()
+        rule.onNodeWithContentDescription("450.000 pesos").revealed().assertIsDisplayed()
+        key("5").assertIsNotEnabled()
         for (suggestion in listOf("200.000 pesos", "300.000 pesos", "500.000 pesos")) {
-            rule.onNodeWithContentDescription(suggestion).performScrollTo().assertIsNotEnabled()
+            rule.onNodeWithContentDescription(suggestion).revealed().assertIsNotEnabled()
         }
-        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).performScrollTo().assertIsEnabled().performClick()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().assertIsEnabled().performClick()
 
         assertEquals(listOf<CategoryEditorAction>(CategoryEditorAction.Submit), actions)
     }
@@ -150,7 +173,7 @@ class CategoryEditorScreenTest {
     fun theMonthsTotalSaysWhatItWouldBecomeWithThisLimit() {
         show(ready.copy(limitText = "200000", limitTotal = total("1.400.000", changes = true)))
 
-        rule.onNodeWithTag(EDITOR_TOTAL_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_TOTAL_TAG).revealed().assertIsDisplayed()
             .assertContentDescriptionEquals("Tu límite total de octubre pasaría a 1.400.000 pesos")
     }
 
@@ -158,7 +181,7 @@ class CategoryEditorScreenTest {
     fun aTotalTheLimitDoesNotChangeIsSaidAsItIs() {
         show(editing.copy(limitTotal = total("1.200.000", changes = false)))
 
-        rule.onNodeWithTag(EDITOR_TOTAL_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_TOTAL_TAG).revealed()
             .assertContentDescriptionEquals("Tu límite total de octubre es 1.200.000 pesos")
     }
 
@@ -171,25 +194,28 @@ class CategoryEditorScreenTest {
 
     @Test
     fun switchingSinLimiteOffAgainShowsTheAmountThatHadBeenTyped() {
-        show(ready.copy(name = "Mercado", unlimited = false, limitText = "450000"))
+        show(
+            ready.copy(
+                name = "Mercado",
+                unlimited = false,
+                limitText = "450000",
+                limitAmount = pesos("450.000")
+            )
+        )
 
-        limit.performScrollTo()
-
-        assertEquals("450.000", drawnLimit())
+        rule.onNodeWithContentDescription("450.000 pesos").revealed().assertIsDisplayed()
+        key("5").assertIsEnabled()
     }
 
     @Test
     fun anAmountThatIsMissingIsSaidOnTheFieldWhenCreatingWasTried() {
         show(ready.copy(name = "Mercado", limitError = LimitError.Required))
 
-        rule.onNodeWithText("Escribe el límite o activa Sin límite.").performScrollTo()
-            .assertIsDisplayed()
-        limit.assert(
-            SemanticsMatcher.expectValue(
-                SemanticsProperties.Error,
-                "Escribe el límite o activa Sin límite."
-            )
-        )
+        // In the label's place, inside the limit's slip.
+        rule.onNode(
+            hasText("Escribe el límite o activa Sin límite.") and
+                hasAnyAncestor(hasTestTag(EDITOR_LIMIT_TAG))
+        ).revealed().assertIsDisplayed()
     }
 
     @Test
@@ -197,12 +223,20 @@ class CategoryEditorScreenTest {
         show(ready.copy(name = "Mer", unlimited = false))
 
         name.performTextInput("c")
-        rule.onNodeWithContentDescription("Mascotas").performScrollTo().performClick()
-        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).performScrollTo().performClick()
-        limit.performScrollTo().performTextInput("5")
+        rule.onNodeWithTag(EDITOR_ICON_TAG).performClick()
+        rule.onNodeWithContentDescription("Mascotas").performClick()
+        // Choosing an icon closes the sheet.
+        rule.onNodeWithTag(EDITOR_ICONS_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).revealed().performClick()
+        key("5").performClick()
+        key("000").performClick()
+        rule.onNode(
+            hasContentDescription("Borrar", substring = true) and
+                hasAnyAncestor(hasTestTag(EDITOR_PAD_TAG))
+        ).performClick()
         // A suggestion is read with its currency, not as a bare number.
-        rule.onNodeWithContentDescription("300.000 pesos").performScrollTo().performClick()
-        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).performScrollTo().performClick()
+        rule.onNodeWithContentDescription("300.000 pesos").revealed().performClick()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().performClick()
         rule.onNodeWithContentDescription("Volver").performClick()
 
         // The form is given the same state again, so the field goes back to "Mer" and
@@ -213,7 +247,9 @@ class CategoryEditorScreenTest {
             listOf(
                 CategoryEditorAction.IconPicked("pets"),
                 CategoryEditorAction.UnlimitedChanged(true),
-                CategoryEditorAction.LimitChanged("5"),
+                CategoryEditorAction.LimitDigit(5),
+                CategoryEditorAction.LimitTripleZero,
+                CategoryEditorAction.LimitBackspace,
                 CategoryEditorAction.SuggestionPicked(300_000),
                 CategoryEditorAction.Submit,
                 CategoryEditorAction.Back
@@ -239,12 +275,12 @@ class CategoryEditorScreenTest {
         rule.onNodeWithText("Ya tienes una categoría con ese nombre.").assertIsDisplayed()
         name.assertTextContains("CAFE")
         rule.onNodeWithText("Escribe solo el número, por ejemplo 300000 o 300.000.")
-            .performScrollTo().assertIsDisplayed()
-        limit.assertTextContains("1e3")
-        rule.onNodeWithTag(EDITOR_SAVE_ERROR_TAG).performScrollTo().assertIsDisplayed()
+            .revealed().assertIsDisplayed()
+        rule.onNodeWithText("1e3").revealed().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_SAVE_ERROR_TAG).revealed().assertIsDisplayed()
         // A name known to be taken cannot be sent (owner decision, SELLO-020): the
         // button waits for another name instead of offering a save that must fail.
-        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).performScrollTo().assertIsNotEnabled()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().assertIsNotEnabled()
     }
 
     @Test
@@ -252,8 +288,9 @@ class CategoryEditorScreenTest {
         show(ready.copy(name = "Mercado", busy = true))
 
         name.assertIsNotEnabled()
-        rule.onNodeWithContentDescription("Mascotas").performScrollTo().assertIsNotEnabled()
-        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).performScrollTo().performClick()
+        rule.onNodeWithTag(EDITOR_ICON_TAG).assertIsNotEnabled()
+        key("5").assertIsNotEnabled()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().performClick()
 
         assertEquals(emptyList<CategoryEditorAction>(), actions)
     }
@@ -264,7 +301,7 @@ class CategoryEditorScreenTest {
 
         rule.onNodeWithText("Crear categoría").assertDoesNotExist()
         name.assertIsNotEnabled()
-        rule.onNodeWithText("Comprobar si se guardó").performScrollTo().performClick()
+        rule.onNodeWithText("Comprobar si se guardó").revealed().performClick()
 
         assertEquals(listOf<CategoryEditorAction>(CategoryEditorAction.Retry), actions)
     }
@@ -298,60 +335,53 @@ class CategoryEditorScreenTest {
     fun atTwiceTheFontSizeEveryControlCanStillBeReached() {
         show(ready.copy(name = "Mercado de plaza", unlimited = false), fontScale = 2f)
 
-        name.performScrollTo().assertIsDisplayed()
-        rule.onNodeWithContentDescription("Hijos").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).performScrollTo().assertIsOff()
-        rule.onNodeWithText("500.000").performScrollTo().assertIsDisplayed()
+        name.revealed().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_ICON_TAG).revealed().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).revealed().assertIsOff()
+        rule.onNodeWithText("500.000").revealed().assertIsDisplayed()
         rule.onNodeWithTag(
             EDITOR_SUBMIT_TAG
-        ).performScrollTo().assertIsDisplayed().assertIsEnabled()
-    }
-
-    private fun drawnLimit(): String? = limit.fetchSemanticsNode().config
-        .getOrNull(SemanticsProperties.EditableText)?.text
-
-    @Test
-    fun aLimitIsDrawnInGroupsSoItsSizeCanBeRead() {
-        show(ready.copy(unlimited = false, limitText = "400000"))
-
-        limit.performScrollTo()
-
-        assertEquals("400.000", drawnLimit())
+        ).revealed().assertIsDisplayed().assertIsEnabled()
     }
 
     @Test
-    fun aSuggestedLimitIsDrawnTheWayItsChipReads() {
-        show(ready.copy(unlimited = false, limitText = "500000"))
+    fun theLimitIsTheAmountTheFormGivesAndItsSuggestionReadsTheSame() {
+        show(ready.copy(unlimited = false, limitText = "500000", limitAmount = pesos("500.000")))
 
-        limit.performScrollTo()
-
-        assertEquals("500.000", drawnLimit())
-        // The field and the chip now read the same; the chip is the one that is not typed in.
-        rule.onNode(hasText("500.000") and !hasSetTextAction()).performScrollTo().assertIsSelected()
+        rule.onNode(hasContentDescription("500.000 pesos") and !hasClickAction()).assertExists()
+        rule.onNode(hasText("500.000") and hasClickAction()).revealed().assertIsSelected()
     }
 
     @Test
-    fun whatIsTypedIntoAGroupedLimitIsReportedWithoutTheSeparators() {
-        show(ready.copy(unlimited = false, limitText = "400000"))
-
-        limit.performScrollTo().performTextInput("7")
-
-        // One digit more than the six there were, and nothing the person did not type.
-        val reported = (actions.single() as CategoryEditorAction.LimitChanged).text
-        assertEquals(7, reported.length)
-        assertEquals(true, reported.all { it in '0'..'9' })
-        assertEquals("400000", reported.replaceFirst("7", ""))
-    }
-
-    @Test
-    fun aLimitThatIsNotAnAmountIsDrawnAsTypedBesideItsError() {
+    fun aLimitThatIsNotAnAmountIsDrawnAsItCameBesideItsError() {
         show(ready.copy(unlimited = false, limitText = "1e3", limitError = LimitError.NotAnAmount))
 
-        limit.performScrollTo()
-
-        assertEquals("1e3", drawnLimit())
+        rule.onNodeWithText("1e3").revealed().assertIsDisplayed()
         rule.onNodeWithText("Escribe solo el número, por ejemplo 300000 o 300.000.")
-            .performScrollTo().assertIsDisplayed()
+            .revealed().assertIsDisplayed()
+    }
+
+    // --- Choosing the icon ---
+
+    @Test
+    fun theCircleOpensTheTwentyFourIconsAndTheOnesInUseSaySoButCanBeChosen() {
+        show(ready.copy(usedIconKeys = setOf("restaurant")))
+
+        rule.onNodeWithTag(EDITOR_ICONS_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(EDITOR_ICON_TAG).performClick()
+
+        rule.onNodeWithText("Elige un ícono").assertIsDisplayed()
+        rule.onAllNodes(
+            hasAnyAncestor(hasTestTag(EDITOR_ICONS_TAG)) and isSelectable()
+        ).assertCountEquals(24)
+        rule.onNodeWithContentDescription("Hogar").assertIsSelected()
+        rule.onNodeWithContentDescription("Comida. Ya lo usa otra categoría; puedes repetirlo.")
+            .assertIsEnabled().performClick()
+
+        assertEquals(
+            listOf<CategoryEditorAction>(CategoryEditorAction.IconPicked("restaurant")),
+            actions
+        )
     }
 
     // --- Changing an existing category ---
@@ -364,6 +394,7 @@ class CategoryEditorScreenTest {
         name = "Café",
         iconKey = "local_cafe",
         limitText = "100000",
+        limitAmount = pesos("100.000"),
         targetMonth = october
     )
 
@@ -374,9 +405,9 @@ class CategoryEditorScreenTest {
         rule.onNodeWithText("Editar categoría").assertIsDisplayed()
         rule.onNodeWithText("Nueva categoría").assertDoesNotExist()
         rule.onNodeWithText("Crear categoría").assertDoesNotExist()
-        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).performScrollTo().assertIsNotEnabled()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().assertIsNotEnabled()
         rule.onNodeWithText("Guardar cambios").assertExists()
-        rule.onNodeWithTag(EDITOR_NO_CHANGES_TAG).assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_NO_CHANGES_TAG).revealed().assertIsDisplayed()
         rule.onNodeWithText("Aún no cambiaste nada.").assertExists()
     }
 
@@ -385,7 +416,7 @@ class CategoryEditorScreenTest {
         show(editing.copy(name = "Cafetería", changed = true))
 
         rule.onNodeWithTag(EDITOR_NO_CHANGES_TAG).assertDoesNotExist()
-        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).performScrollTo().assertIsEnabled().performClick()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().assertIsEnabled().performClick()
 
         assertEquals(listOf<CategoryEditorAction>(CategoryEditorAction.Submit), actions)
     }
@@ -395,14 +426,14 @@ class CategoryEditorScreenTest {
         show(editing.copy(name = "Mercado", changed = true, nameError = NameError.Taken))
 
         rule.onNodeWithText("Ya tienes una categoría con ese nombre.").assertIsDisplayed()
-        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).performScrollTo().assertIsNotEnabled()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().assertIsNotEnabled()
     }
 
     @Test
     fun inTheCurrentMonthItSaysTheLimitAppliesFromThisMonthOn() {
         show(editing)
 
-        rule.onNodeWithTag(EDITOR_SCOPE_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_SCOPE_TAG).revealed().assertIsDisplayed()
         rule.onNodeWithText(
             "Vale desde Octubre 2026 en adelante. Los meses anteriores no cambian."
         ).assertExists()
@@ -412,7 +443,7 @@ class CategoryEditorScreenTest {
     fun fromAFinishedMonthItNamesThatMonthAndSaysNothingElseChanges() {
         show(editing.copy(targetMonth = october.minusMonths(1), historical = true))
 
-        rule.onNodeWithTag(EDITOR_SCOPE_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_SCOPE_TAG).revealed().assertIsDisplayed()
         rule.onNodeWithText(
             "Cambias solo el límite de Septiembre 2026. " +
                 "Los demás meses y el límite habitual no cambian."
@@ -429,7 +460,7 @@ class CategoryEditorScreenTest {
             )
         )
 
-        rule.onNodeWithTag(EDITOR_SAVED_PARTS_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_SAVED_PARTS_TAG).revealed().assertIsDisplayed()
         rule.onNodeWithText("Se guardó: nombre, ícono. Lo demás no se guardó; inténtalo de nuevo.")
             .assertExists()
         rule.onNodeWithText("No se pudo guardar. No se creó la categoría; inténtalo de nuevo.")
@@ -443,7 +474,7 @@ class CategoryEditorScreenTest {
         rule.onNodeWithText(
             "No se pudo guardar. La categoría quedó como estaba; inténtalo de nuevo."
         )
-            .performScrollTo().assertIsDisplayed()
+            .revealed().assertIsDisplayed()
     }
 
     @Test
@@ -451,10 +482,10 @@ class CategoryEditorScreenTest {
         show(editing.copy(name = "Cafetería", changed = true, saveError = SaveError.Conflict))
 
         rule.onNodeWithText("Esta categoría cambió mientras la editabas.")
-            .performScrollTo().assertIsDisplayed()
+            .revealed().assertIsDisplayed()
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).assertDoesNotExist()
-        rule.onNodeWithTag(EDITOR_CONFLICT_RELOAD_TAG).performScrollTo().performClick()
-        rule.onNodeWithTag(EDITOR_CONFLICT_KEEP_TAG).performScrollTo().performClick()
+        rule.onNodeWithTag(EDITOR_CONFLICT_RELOAD_TAG).revealed().performClick()
+        rule.onNodeWithTag(EDITOR_CONFLICT_KEEP_TAG).revealed().performClick()
 
         assertEquals(
             listOf(
@@ -472,8 +503,8 @@ class CategoryEditorScreenTest {
         show(editing.copy(saveError = SaveError.CategoryGone))
 
         rule.onNodeWithText("Esta categoría ya no existe. No se cambió nada.")
-            .performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).performScrollTo().assertIsNotEnabled()
+            .revealed().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().assertIsNotEnabled()
         rule.onNodeWithTag(EDITOR_ARCHIVE_TAG).assertIsNotEnabled()
     }
 
@@ -484,7 +515,7 @@ class CategoryEditorScreenTest {
         rule.onNodeWithText(
             "No se archivó: Sello no pudo anotar antes los pagos fijos de esta categoría " +
                 "que ya tocaban. Inténtalo de nuevo."
-        ).performScrollTo().assertIsDisplayed()
+        ).revealed().assertIsDisplayed()
     }
 
     @Test
@@ -554,11 +585,13 @@ class CategoryEditorScreenTest {
 
         rule.onNodeWithTag(EDITOR_ARCHIVED_TAG).assertIsDisplayed()
         rule.onNodeWithText("Desarchivar").assertIsDisplayed()
-        rule.onNodeWithContentDescription("Límite en pesos").assertDoesNotExist()
+        rule.onNodeWithTag(EDITOR_LIMIT_TAG).assertDoesNotExist()
         rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).assertDoesNotExist()
+        // Nothing to type: no pad either.
+        rule.onNodeWithTag(EDITOR_PAD_TAG).assertDoesNotExist()
         rule.onNodeWithText(
             "Está archivada: no tiene límite de aquí en adelante. Desarchívala para ponerle uno."
-        ).performScrollTo().assertIsDisplayed()
+        ).revealed().assertIsDisplayed()
     }
 
     @Test

@@ -26,6 +26,7 @@ import com.software.sello.hideKeyboard
 import com.software.sello.navigation.GOAL_EDIT_TAG
 import com.software.sello.navigation.METAS_CREATE_TAG
 import com.software.sello.press
+import com.software.sello.revealed
 import java.time.YearMonth
 import java.util.Locale
 import org.junit.After
@@ -72,9 +73,8 @@ class GoalEditorJourneyTest {
         scenario?.hideKeyboard()
     }
 
+    /** The Sello pad is always under the form: keys are pressed straight away. */
     private fun keys(vararg labels: String) {
-        rule.onNodeWithTag(GOAL_EDITOR_AMOUNT_TAG).performScrollTo().press()
-        rule.awaitText("Listo")
         labels.forEach { label ->
             val key = if (label == BACKSPACE) hasContentDescription("Borrar") else hasText(label)
             rule.onNode(key and hasAnyAncestor(hasTestTag(GOAL_EDITOR_PAD_TAG))).press()
@@ -100,15 +100,15 @@ class GoalEditorJourneyTest {
         rule.awaitTag(GOAL_EDITOR_TAG)
 
         name("Celular nuevo")
+        rule.onNodeWithTag(GOAL_EDITOR_ICON_TAG).press()
+        rule.awaitTag(GOAL_EDITOR_ICONS_TAG)
         rule.onNodeWithContentDescription("Tecnología").performClick()
         keys("1", "2", "000", "0", "0")
-        rule.onNodeWithText("Listo").press()
-        rule.onNodeWithContentDescription("Cuánto necesitas: 1.200.000 pesos", substring = true)
-            .assertExists()
+        rule.onNodeWithContentDescription("1.200.000 pesos", substring = true).assertExists()
 
         // Two months from now: 1.200.000 ÷ 2 = 600.000 a month, whatever today is.
         val month = YearMonth.from(TestCommands.today).plusMonths(2)
-        rule.onNodeWithTag("goal.editor.month").performScrollTo().press()
+        rule.onNodeWithTag("goal.editor.month").revealed().press()
         rule.awaitTag(GOAL_EDITOR_MONTHS_TAG)
         if (month.year > YearMonth.from(TestCommands.today).plusMonths(1).year) {
             rule.onNodeWithContentDescription("Año siguiente").performClick()
@@ -144,7 +144,6 @@ class GoalEditorJourneyTest {
 
         name("Viaje a Cartagena")
         keys(*Array(7) { BACKSPACE }, "2", "000", "000")
-        rule.onNodeWithText("Listo").press()
         rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).press()
 
         // 1.710.000 of 2.000.000 is 85 %.
@@ -181,9 +180,8 @@ class GoalEditorJourneyTest {
         keys("5", "000")
 
         scenario?.recreate()
-        rule.awaitText("Listo")
-        rule.onNodeWithContentDescription("Cuánto necesitas: 5.000 pesos", substring = true)
-            .assertExists()
+        rule.awaitTag(GOAL_EDITOR_PAD_TAG)
+        rule.onNodeWithContentDescription("5.000 pesos", substring = true).assertExists()
         rule.onNodeWithText("Casa").assertExists()
 
         rule.onNodeWithTag(GOAL_EDITOR_CLOSE_TAG).performClick()

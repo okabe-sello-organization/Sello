@@ -39,6 +39,7 @@ import com.software.sello.feature.recibo.RECIBO_FIRST_RUN_TAG
 import com.software.sello.hideKeyboard
 import com.software.sello.navigation.CORRECTION_NOTICE_TAG
 import com.software.sello.press
+import com.software.sello.revealed
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -83,7 +84,7 @@ class ExpenseEntryJourneyTest {
         rule.awaitDescription("Nombre")
         rule.onNodeWithContentDescription("Nombre").performTextInput(name)
         // These journeys are about expenses: the category is given no limit, on purpose.
-        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).performScrollTo().press()
+        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).revealed().press()
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).press()
     }
 

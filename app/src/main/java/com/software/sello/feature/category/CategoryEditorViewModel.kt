@@ -57,6 +57,7 @@ class CategoryEditorViewModel(
             // No limit is chosen, never assumed: a new draft starts asking for an amount.
             unlimited = saved[KEY_UNLIMITED] ?: false,
             limitText = saved[KEY_LIMIT] ?: "",
+            limitAmount = figures.amount(saved[KEY_LIMIT] ?: ""),
             suggestions = LimitFigures(money).suggestions(null),
             result = saved.get<String>(KEY_CREATED)?.let(EditorResult::Created)
         )
@@ -90,6 +91,24 @@ class CategoryEditorViewModel(
 
             is CategoryEditorAction.LimitChanged -> if (now.editable && !now.unlimited) {
                 setLimit(unlimited = false, text = action.text)
+            }
+
+            is CategoryEditorAction.LimitDigit -> if (now.editable && !now.unlimited) {
+                LimitKeys.press(now.limitText) { it.digit(action.digit) }
+                    ?.let { setLimit(unlimited = false, text = it) }
+            }
+
+            CategoryEditorAction.LimitTripleZero -> if (now.editable && !now.unlimited) {
+                LimitKeys.press(now.limitText) { it.tripleZero() }
+                    ?.let { setLimit(unlimited = false, text = it) }
+            }
+
+            CategoryEditorAction.LimitBackspace -> if (now.editable && !now.unlimited) {
+                setLimit(unlimited = false, text = LimitKeys.backspace(now.limitText))
+            }
+
+            CategoryEditorAction.LimitCleared -> if (now.editable && !now.unlimited) {
+                setLimit(unlimited = false, text = "")
             }
 
             is CategoryEditorAction.SuggestionPicked -> if (now.editable) {
@@ -140,6 +159,7 @@ class CategoryEditorViewModel(
             it.copy(
                 unlimited = unlimited,
                 limitText = text,
+                limitAmount = figures.amount(text),
                 limitError = null,
                 limitTotal = figures.total(budget, null, unlimited, text)
             )
@@ -167,8 +187,9 @@ class CategoryEditorViewModel(
                     budget = read.value
                     takenNames =
                         read.value.categories.map { it.category.name.uniquenessKey }.toSet()
+                    val used = read.value.categories.map { it.category.icon.value }.toSet()
+                    mutable.update { it.copy(usedIconKeys = used) }
                     if (mutable.value.iconKey.isEmpty()) {
-                        val used = read.value.categories.map { it.category.icon.value }.toSet()
                         val first = CategoryIcons.keys.firstOrNull { it !in used }
                             ?: CategoryIcons.keys.first()
                         saved[KEY_ICON] = first

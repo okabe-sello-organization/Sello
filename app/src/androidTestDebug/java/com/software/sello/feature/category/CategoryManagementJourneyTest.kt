@@ -34,6 +34,7 @@ import com.software.sello.hideKeyboard
 import com.software.sello.navigation.MONTH_PICKER_TAG
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.press
+import com.software.sello.revealed
 import java.time.YearMonth
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -127,8 +128,7 @@ class CategoryManagementJourneyTest {
         edit()
 
         rule.onNodeWithContentDescription("Nombre").performTextReplacement("Cafetería")
-        rule.onNodeWithContentDescription("Límite en pesos").performScrollTo()
-            .performTextReplacement("120000")
+        rule.typeLimit("120000")
         save()
 
         // 120.000 less the 10.000 of this month, under the new name, the same category.
@@ -154,10 +154,9 @@ class CategoryManagementJourneyTest {
         rule.awaitDescription("Restante del presupuesto: 80.000 pesos. Cumplido.")
         openCafe()
         edit()
-        rule.onNodeWithTag(EDITOR_SCOPE_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_SCOPE_TAG).revealed().assertIsDisplayed()
 
-        rule.onNodeWithContentDescription("Límite en pesos").performScrollTo()
-            .performTextReplacement("90000")
+        rule.typeLimit("90000")
         save()
 
         // 90.000 less 20.000 in that month; this month still 100.000 less 10.000.

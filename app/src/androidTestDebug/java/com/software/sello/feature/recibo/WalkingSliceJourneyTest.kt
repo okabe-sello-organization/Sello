@@ -34,6 +34,7 @@ import com.software.sello.awaitDescription
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.feature.category.EDITOR_SUBMIT_TAG
+import com.software.sello.feature.category.typeLimit
 import com.software.sello.feature.expense.ENTRY_CATEGORIES_TAG
 import com.software.sello.feature.expense.ENTRY_KEYPAD_TAG
 import com.software.sello.feature.expense.ENTRY_NOTE_TAG
@@ -92,8 +93,7 @@ class WalkingSliceJourneyTest {
         rule.onNodeWithText("Crear categoría").performClick()
         rule.awaitDescription("Nombre")
         rule.onNodeWithContentDescription("Nombre").performTextInput("Mercado")
-        rule.onNodeWithContentDescription("Límite en pesos").performScrollTo()
-            .performTextInput("300.000")
+        rule.typeLimit("300.000")
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).press()
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         return app

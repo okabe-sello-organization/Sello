@@ -46,7 +46,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Nueva meta and Editar meta through the real goal commands. The draft, a save in
- * progress and the open pad or month picker live in [saved], so rotation or the process
+ * progress and the open month picker live in [saved], so rotation or the process
  * being killed loses none of them. A save whose outcome is not known is asked about with
  * its own identifier before anything else is sent. Editing sends the name, icon and
  * month as one command and the target as another, each at the version it was read.
@@ -90,10 +90,6 @@ class GoalEditorViewModel(
             is GoalEditorAction.IconPicked ->
                 if (editable && action.key in GoalIcons.keys) set(KEY_ICON, action.key)
 
-            GoalEditorAction.OpenPad -> if (editable) set(KEY_PAD, true)
-
-            GoalEditorAction.ClosePad -> set(KEY_PAD, false)
-
             is GoalEditorAction.Digit -> if (editable) press { it.digit(action.digit) }
 
             GoalEditorAction.TripleZero -> if (editable) press { it.tripleZero() }
@@ -118,7 +114,11 @@ class GoalEditorViewModel(
 
             GoalEditorAction.CloseMonthPicker -> set(KEY_CHOOSING, false)
 
-            GoalEditorAction.NoDate -> if (editable) set(KEY_MONTH, null)
+            // From the month sheet: no date, and the sheet closes as after a month.
+            GoalEditorAction.NoDate -> if (editable) {
+                saved[KEY_MONTH] = null
+                set(KEY_CHOOSING, false)
+            }
 
             GoalEditorAction.Submit -> if (now.canSubmit && saved.get<String>(KEY_OP) == null) {
                 submit()
@@ -312,7 +312,6 @@ class GoalEditorViewModel(
                 amount = saved.get<String>(KEY_DIGITS)?.let {
                     money.format(Money.cop(it.toLong()))
                 },
-                padOpen = saved[KEY_PAD] ?: false,
                 targetMonth = month,
                 choosingMonth = saved[KEY_CHOOSING] ?: false,
                 pickerYear = saved[KEY_YEAR] ?: (month ?: first).year,
@@ -542,7 +541,6 @@ class GoalEditorViewModel(
         private const val KEY_ICON = "goal.editor.icon"
         private const val KEY_DIGITS = "goal.editor.digits"
         private const val KEY_MONTH = "goal.editor.month"
-        private const val KEY_PAD = "goal.editor.pad"
         private const val KEY_CHOOSING = "goal.editor.choosingMonth"
         private const val KEY_YEAR = "goal.editor.pickerYear"
         private const val KEY_DRAFTED = "goal.editor.drafted"

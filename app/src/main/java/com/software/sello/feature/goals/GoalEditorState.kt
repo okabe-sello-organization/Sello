@@ -65,7 +65,6 @@ data class GoalEditorState(
     val amount: MoneyTextValue? = null,
     /** Bumped when a key was refused for length, so the amount can shake. */
     val amountPulse: Int = 0,
-    val padOpen: Boolean = false,
     val targetMonth: YearMonth? = null,
     val choosingMonth: Boolean = false,
     val pickerYear: Int = 2026,
@@ -107,10 +106,6 @@ sealed interface GoalEditorAction {
     data class NameChanged(val text: String) : GoalEditorAction
 
     data class IconPicked(val key: String) : GoalEditorAction
-
-    data object OpenPad : GoalEditorAction
-
-    data object ClosePad : GoalEditorAction
 
     data class Digit(val digit: Int) : GoalEditorAction
 
