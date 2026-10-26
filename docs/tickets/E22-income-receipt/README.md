@@ -1,6 +1,6 @@
 # SELLO-E22 — Where the income went, on Resumen
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** Resumen's income slip answers where the month's recorded income went: what came in, the spending categories that took it and what is left.
 - **Exit:** The income slip reads as a receipt from what came in to Ingresos menos gastos, by spending category, and ends in a stub that opens the income list and Pagos e ingresos fijos with one fact each.

@@ -2,11 +2,11 @@
   "schema_version": 2,
   "coverage": {
     "mode": "full",
-    "base": "195ab0ed6af7c1eb7db2b63e930edfc078e474e8",
+    "base": "35497da23cfcfffdb9f93e23deda6f64d554baf2",
     "changed_paths": [],
     "device_modules": []
   },
-  "run_id": "20261026T193926Z-5cc27e7c",
+  "run_id": "20261026T194258Z-e90e01be",
   "ticket": "SELLO-123",
   "gate": {
     "required": "G2",
@@ -15,21 +15,21 @@
   "outcome": "passed",
   "failures": [],
   "warnings": [
-    "gradle-host: 35 lint warnings"
+    "gradle-host: 34 lint warnings"
   ],
   "snapshot": {
-    "head": "195ab0ed6af7c1eb7db2b63e930edfc078e474e8",
+    "head": "35497da23cfcfffdb9f93e23deda6f64d554baf2",
     "dirty": false,
     "dirty_files": [],
     "fingerprint": {
       "algorithm": "sha256",
-      "value": "d579e1209ad5bd7772061bdb3d57b189e94e9b0d4f34fa8c168af80362a976a8",
+      "value": "2f2e17863d8e6d768c391ae8210c4301b523a585f41b4e612d21f4e85a2c7f7e",
       "files": 1205
     },
     "changes": {
       "algorithm": "sha256",
       "base": "ea1263b92aa04f3a573605beaff06ce9b20a249e",
-      "value": "18ad002a5e8650fbaf48c715d5d431af036d3d55199cb40b0f402e84447975d2",
+      "value": "b21fad68fbbe3aca61198a4fd4167b5403b29b4e1c78d4b27c16891ba074ae5c",
       "paths": 25
     },
     "acceptance": "fb0f562466d001ef0bb53674c837466f70a677ae4d5f71ee25b88c8bb6d175ec"
@@ -49,49 +49,49 @@
       "name": "tickets-check",
       "command": "python3 scripts/quality/tickets.py check --skip-evidence",
       "log": "tickets-check.log",
-      "started_at": "2026-10-26T19:39:26+00:00",
+      "started_at": "2026-10-26T19:42:58+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-26T19:39:26+00:00"
+      "finished_at": "2026-10-26T19:42:58+00:00"
     },
     {
       "name": "quality-tests",
       "command": "python3 -m unittest discover -s scripts/quality -p test_*.py",
       "log": "quality-tests.log",
-      "started_at": "2026-10-26T19:39:26+00:00",
+      "started_at": "2026-10-26T19:42:58+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-26T19:39:38+00:00"
+      "finished_at": "2026-10-26T19:43:09+00:00"
     },
     {
       "name": "performance-tests",
       "command": "python3 -m unittest discover -s scripts/performance -p test_*.py",
       "log": "performance-tests.log",
-      "started_at": "2026-10-26T19:39:38+00:00",
+      "started_at": "2026-10-26T19:43:09+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-26T19:39:38+00:00"
+      "finished_at": "2026-10-26T19:43:09+00:00"
     },
     {
       "name": "architecture",
       "command": "python3 scripts/quality/architecture.py",
       "log": "architecture.log",
-      "started_at": "2026-10-26T19:39:38+00:00",
+      "started_at": "2026-10-26T19:43:09+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-26T19:39:39+00:00"
+      "finished_at": "2026-10-26T19:43:10+00:00"
     },
     {
       "name": "links",
       "command": "python3 scripts/quality/links.py",
       "log": "links.log",
-      "started_at": "2026-10-26T19:39:39+00:00",
+      "started_at": "2026-10-26T19:43:10+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-26T19:39:40+00:00"
+      "finished_at": "2026-10-26T19:43:11+00:00"
     },
     {
       "name": "gradle-host",
       "command": "./gradlew ktlintCheck :domain:test :data:testDebugUnitTest :design-system:testDebugUnitTest :app:testDebugUnitTest :catalog:testDebugUnitTest lintDebug :app:assembleDebug :app:assembleRelease :catalog:assembleDebug --continue",
       "log": "gradle-host.log",
-      "started_at": "2026-10-26T19:39:40+00:00",
+      "started_at": "2026-10-26T19:43:11+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-26T19:42:36+00:00",
+      "finished_at": "2026-10-26T19:43:27+00:00",
       "results": {
         "suites": 112,
         "tests": 1255,
@@ -103,10 +103,10 @@
       "lint": {
         "reports": 5,
         "errors": 0,
-        "warnings": 35
+        "warnings": 34
       }
     }
   ],
-  "started_at": "2026-10-26T19:39:26+00:00",
-  "finished_at": "2026-10-26T19:42:37+00:00"
+  "started_at": "2026-10-26T19:42:58+00:00",
+  "finished_at": "2026-10-26T19:43:27+00:00"
 }

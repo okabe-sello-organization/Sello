@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-100, SELLO-004
 - **Gate:** G2
 
@@ -72,3 +72,18 @@ On the running app the slip looks like the mockup in both themes.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-123 --retain`.
+
+### Execution progress
+
+- **2026-10-26:** Built as follows, proposed for review with this ticket's pull request.
+  The domain adds the month's income count and `IncomeDestinations` (the three
+  categories that took most, ties in category order, and the rest summed exactly) to the
+  Resumen snapshot, and `ScheduleListPolicy.nextDate` (the nearest date among active
+  schedules, an overdue one counting as today). Resumen's income slip asks "¿A dónde fue
+  lo que entró?" and reads Entró, a spent/rest bar, the top three taken off (each opens
+  its category), Otras N categorías and Ingresos menos gastos, red with both facts when
+  spending is higher; with no income it says so. The new `SlipStub`/`StubButton` in the
+  design system end it: Ingresos ("3 en octubre") and Fijos ("Próximo: 28 oct", hoy,
+  mañana, Ninguno activo, or nothing while schedules cannot be read). Sin asignar stays on
+  the income screen. The catalog's income example and the v2 Resumen paragraph follow.
+
