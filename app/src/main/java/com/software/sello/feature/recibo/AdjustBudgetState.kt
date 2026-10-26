@@ -23,7 +23,9 @@ sealed interface AdjustBudgetState {
         val spent: MoneyTextValue,
         val limited: List<AdjustRow>,
         val open: List<AdjustRow>,
-        val stale: Boolean
+        val stale: Boolean,
+        /** Archived categories, last and apart, in the same order as above. */
+        val archived: List<AdjustRow> = emptyList()
     ) : AdjustBudgetState
 }
 

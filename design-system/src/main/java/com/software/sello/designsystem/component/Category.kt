@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -67,6 +68,8 @@ import kotlinx.coroutines.delay
  * @param over spent more than the limit: full, in loss ink.
  * @param unlimited no limit on purpose ("Sin límite"): an open, dashed ring and a small
  * ∞ badge at its lower edge, so it never looks like a limit with nothing spent yet.
+ * @param archived drawn in the soft outline ink instead of the brand or loss ink; the
+ * fill and the badge keep their meaning.
  * @param staggerIndex position in a group, so the circles of a screen fill in turn.
  */
 @Composable
@@ -78,7 +81,8 @@ fun CategoryCircle(
     over: Boolean = false,
     animate: Boolean = true,
     staggerIndex: Int = 0,
-    unlimited: Boolean = false
+    unlimited: Boolean = false,
+    archived: Boolean = false
 ) {
     val colors = SelloTheme.colors
     val target = if (unlimited) 0f else fillLevel(fraction, over)
@@ -92,10 +96,19 @@ fun CategoryCircle(
             level.snapTo(target)
         }
     }
-    val ink = if (over) colors.semantic.loss else colors.brand
-    val onInk = if (over) colors.semantic.onLoss else colors.onBrand
+    val ink = when {
+        archived -> colors.outline
+        over -> colors.semantic.loss
+        else -> colors.brand
+    }
+    val onInk = when {
+        archived -> colors.paper
+        over -> colors.semantic.onLoss
+        else -> colors.onBrand
+    }
     val outline = 2.dp
-    Box(contentAlignment = Alignment.Center, modifier = modifier.size(size)) {
+    val tagged = if (archived) Modifier.testTag(CATEGORY_ARCHIVED_TAG) else Modifier
+    Box(contentAlignment = Alignment.Center, modifier = modifier.size(size).then(tagged)) {
         Canvas(Modifier.size(size)) {
             val stroke = outline.toPx()
             val inner = this.size.minDimension - 2 * stroke
@@ -141,13 +154,13 @@ fun CategoryCircle(
                 }
             }
         )
-        if (unlimited) UnlimitedBadge(size)
+        if (unlimited) UnlimitedBadge(size, ink)
     }
 }
 
 /** The ∞ mark on a circle without a limit, overlapping its lower right edge. */
 @Composable
-private fun BoxScope.UnlimitedBadge(circle: Dp) {
+private fun BoxScope.UnlimitedBadge(circle: Dp, ink: Color) {
     val colors = SelloTheme.colors
     val badge = circle * BADGE_SHARE
     Box(
@@ -157,10 +170,10 @@ private fun BoxScope.UnlimitedBadge(circle: Dp) {
             .offset(x = badge * BADGE_OVERHANG, y = badge * BADGE_OVERHANG)
             .size(badge)
             .background(colors.paper, CircleShape)
-            .border(1.5.dp, colors.brand, CircleShape)
+            .border(1.5.dp, ink, CircleShape)
             .testTag(CATEGORY_UNLIMITED_TAG)
     ) {
-        Icon(SelloIcon.AllInclusive.painter(), null, Modifier.size(badge * 0.7f), colors.brand)
+        Icon(SelloIcon.AllInclusive.painter(), null, Modifier.size(badge * 0.7f), ink)
     }
 }
 
@@ -172,6 +185,9 @@ private const val FILL_STAGGER_MILLIS = 30L
 
 /** The test tag of the ∞ badge a circle without a limit carries. */
 const val CATEGORY_UNLIMITED_TAG = "category-circle:unlimited"
+
+/** The test tag of a circle drawn in grey because its category is archived. */
+const val CATEGORY_ARCHIVED_TAG = "category-circle:archived"
 
 /**
  * A circle with the category's name and one amount beside it: what is left, or what was
@@ -198,7 +214,8 @@ fun CategoryCell(
     amountCaption: String? = null,
     staggerIndex: Int = 0,
     actions: List<LineAction> = emptyList(),
-    unlimited: Boolean = false
+    unlimited: Boolean = false,
+    archived: Boolean = false
 ) {
     val colors = SelloTheme.colors
     val largeType = LocalDensity.current.fontScale >= LARGE_NAME_SCALE
@@ -237,7 +254,8 @@ fun CategoryCell(
             fraction,
             over = over,
             staggerIndex = staggerIndex,
-            unlimited = unlimited
+            unlimited = unlimited,
+            archived = archived
         )
         Column {
             Text(

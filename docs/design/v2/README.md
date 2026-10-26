@@ -74,7 +74,10 @@ name, "Llegó al 100 %" and **Marcar como lograda**. The goal on Recibo stays in
 **Categories:** unchanged circle grid. A category without a limit on purpose (Sin
 límite) has a dashed ring with an ∞ badge at its lower right and **sin límite** under
 its amount instead of "gastado" (owner, 2026-10-26); one never configured or paused by
-archiving keeps the solid ring and "gastado". A category shows only its own remainder;
+archiving keeps the solid ring and "gastado". Archived categories come last, under
+**Archivadas**, in grey ink (circle, fill and badge; amounts unchanged), each section in the
+chosen order (owner, 2026-10-26); Ajustar presupuesto groups them the same way. A
+category shows only its own remainder;
 reserved payments are not shown inside categories. Overruns use the signed red
 remainder.
 
@@ -500,8 +503,8 @@ the AJ examples in the [financial examples](../../testing/mvp-financial-examples
   limit, overspent first (by remainder, then name), each with "gastaste 90.000 de 50.000"
   and its signed remainder; then **Sin límite**, those without one that spent something,
   since their spending counts against the month. Each row is one button read as one
-  sentence. An archived one says "Archivada · desarchívala para cambiar su límite" and
-  opens its editor instead.
+  sentence. Archived ones come last under **Archivadas**, in grey; each says
+  "Archivada · desarchívala para cambiar su límite" and opens its editor instead.
 - **The limit sheet** is docked like Se repite, with the Sello pad: **Límite de Café** and
   "Gastaste 90.000 de 50.000 en octubre"; a switch **Solo octubre** (default) / **Desde
   octubre** with the scope in one line; the amount with "antes 50.000"; shortcuts

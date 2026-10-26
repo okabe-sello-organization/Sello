@@ -84,7 +84,7 @@ class AdjustBudgetViewModelTest {
         assertEquals("830.000 pesos", ready.limit?.spoken)
         assertEquals("860.000 pesos", ready.spent.spoken)
         assertEquals(
-            listOf(uuid(1), uuid(2), uuid(3), uuid(4), uuid(5), uuid(8)),
+            listOf(uuid(1), uuid(2), uuid(3), uuid(4), uuid(5)),
             ready.limited.map { it.id }
         )
         assertEquals(listOf(uuid(6)), ready.open.map { it.id })
@@ -100,12 +100,14 @@ class AdjustBudgetViewModelTest {
     }
 
     @Test
-    fun anArchivedCategoryIsListedAndMarked() {
+    fun anArchivedCategoryIsListedLastAndApart() {
         val model = model()
         snapshots.ready(month)
 
         val ready = model.state.value as AdjustBudgetState.Ready
-        assertEquals(listOf(uuid(8)), ready.limited.filter { it.archived }.map { it.id })
+        assertEquals(listOf(uuid(8)), ready.archived.map { it.id })
+        assertTrue(ready.archived.single().archived)
+        assertEquals(emptyList<AdjustRow>(), (ready.limited + ready.open).filter { it.archived })
     }
 
     @Test
