@@ -148,7 +148,7 @@
     <string name="recibo_month_closed_description">Mes cerrado. Gastaste %1$s de %2$s.</string>
     <string name="recibo_categories_title">Tus categorías</string>
     <string name="recibo_adjust_budget">Ajustar presupuesto</string>
-    <string name="recibo_adjust_budget_description">Ajustar presupuesto, ir a tus categorías</string>
+    <string name="recibo_adjust_budget_description">Ajustar presupuesto, abre tus categorías y sus límites</string>
     <string name="adjust_title">Ajustar presupuesto</string>
     <string name="adjust_limit_line">Límite de %1$s</string>
     <string name="adjust_spent_line">Gastado</string>

@@ -102,6 +102,13 @@ data class SchedulesRoute(val income: Boolean = false)
 @Serializable
 data object CatchUpRoute
 
+/**
+ * Ajustar presupuesto for [month], opened from Recibo's answer slip. The month is the one
+ * Recibo showed, as `YYYY-MM`; the screen keeps it even if the month changes meanwhile.
+ */
+@Serializable
+data class AdjustBudgetRoute(val month: String)
+
 /** The payments reserved this month, opened from Recibo's footnote. */
 @Serializable
 data object UpcomingPaymentsRoute

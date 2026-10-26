@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +19,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -27,6 +29,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.AnswerSlip
@@ -51,6 +56,42 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.month.monthNames
 import java.util.Locale
+
+/** The screen and its sheet, each from its own view model; Back closes the sheet first. */
+@Composable
+fun AdjustBudgetRoot(
+    viewModels: ViewModelProvider.Factory,
+    padding: PaddingValues,
+    onOpenReserved: () -> Unit,
+    onEditCategory: (String) -> Unit
+) {
+    val screen: AdjustBudgetViewModel = viewModel(factory = viewModels)
+    val limits: LimitSheetViewModel = viewModel(factory = viewModels)
+    val state by screen.state.collectAsStateWithLifecycle()
+    val sheet by limits.state.collectAsStateWithLifecycle()
+    BackHandler(enabled = sheet.categoryId != null) {
+        limits.onAction(LimitSheetAction.Close)
+    }
+    AdjustBudgetScreen(
+        state = state,
+        sheet = sheet,
+        onAction = { action ->
+            when (action) {
+                is AdjustBudgetAction.Open -> limits.onAction(
+                    LimitSheetAction.Open(action.categoryId)
+                )
+
+                AdjustBudgetAction.OpenReserved -> onOpenReserved()
+
+                AdjustBudgetAction.Retry -> Unit
+            }
+            screen.onAction(action)
+        },
+        onSheet = limits::onAction,
+        onEditCategory = onEditCategory,
+        contentPadding = padding
+    )
+}
 
 /**
  * Ajustar presupuesto (docs/design/v2/ajustar.html): the month's answer with its limit
@@ -365,6 +406,7 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             onTripleZero = { onSheet(LimitSheetAction.TripleZero) },
             onBackspace = { onSheet(LimitSheetAction.Backspace) },
             onClearAll = { onSheet(LimitSheetAction.ClearAll) },
+            modifier = Modifier.testTag(LIMIT_KEYPAD_TAG),
             enabled = !locked,
             compact = true
         )
@@ -432,5 +474,6 @@ private fun errorText(error: LimitSheetError, sheet: LimitSheetState): String = 
 
 const val ADJUST_TAG = "adjust"
 const val LIMIT_SHEET_TAG = "adjust:sheet"
+const val LIMIT_KEYPAD_TAG = "adjust:keypad"
 
 fun adjustRowTag(id: String) = "adjust:row:$id"

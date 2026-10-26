@@ -92,7 +92,8 @@ enum class ReciboAnswerLabel {
  * The month as a whole, as the answer slip shows it. [amount] carries its sign: a
  * month over its limit shows a minus. [perDay] exists only in the month in progress
  * with a limit; [closed] only in a finished month with one. [adjustable] offers
- * "Ajustar presupuesto" and is true only for a month in progress that is Excedido.
+ * "Ajustar presupuesto" and is true only for a month in progress that is Excedido or
+ * Revisar.
  */
 data class ReciboSummary(
     val label: ReciboAnswerLabel,
@@ -159,4 +160,7 @@ sealed interface ReciboAction {
 
     /** Open the payments reserved this month. Navigation is the root's. */
     data object OpenReserved : ReciboAction
+
+    /** Open Ajustar presupuesto for the month shown. Navigation is the root's. */
+    data object AdjustBudget : ReciboAction
 }
