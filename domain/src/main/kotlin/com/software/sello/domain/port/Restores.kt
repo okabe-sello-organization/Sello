@@ -38,8 +38,50 @@ data class StagedRestore(
     val current: BackupSummary,
     val replacement: BackupSummary,
     val generation: Long,
-    val revision: Long
+    val revision: Long,
+    /** Present when the file was a FinanceTracker backup, translated first (ADR 0019). */
+    val legacy: LegacyImportReport? = null
 )
+
+/**
+ * What translating a FinanceTracker backup changed and left out, as counts by kind of
+ * record and reason. What was imported is the staged replacement's own summary.
+ */
+data class LegacyImportReport(val lines: List<LegacyImportLine>) {
+    val changed: List<LegacyImportLine> get() = lines.filter { it.reason.changed }
+    val leftOut: List<LegacyImportLine> get() = lines.filterNot { it.reason.changed }
+}
+
+data class LegacyImportLine(val record: LegacyRecord, val reason: LegacyReason, val count: Int)
+
+enum class LegacyRecord {
+    Category,
+    Limit,
+    Expense,
+    Income,
+    RepeatingEntry,
+    Goal,
+    Investment,
+    InvestmentEntry,
+    ExchangeRate,
+    MerchantRule
+}
+
+/** Why a record was changed ([changed]) or left out; docs/data/legacy-export-format.md. */
+enum class LegacyReason(val changed: Boolean = false) {
+    Shortened(changed = true),
+    Renamed(changed = true),
+    Unreadable,
+    DuplicateId,
+    AmountOutOfRange,
+    InvalidDate,
+    DateAfterExport,
+    InvalidText,
+    CategoryMissing,
+    CategoryLeftOut,
+    UnknownRepeat,
+    NotImportedYet
+}
 
 /**
  * A backup read and checked whole without opening any storage, as when the data could

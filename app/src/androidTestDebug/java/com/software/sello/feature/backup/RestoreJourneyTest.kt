@@ -274,9 +274,58 @@ class RestoreJourneyTest {
         openRespaldoAndChoose()
         rule.awaitTag(RESTORE_REJECTED_TAG)
 
-        rule.onNodeWithText("No es un respaldo de Sello.", substring = true).assertExists()
+        rule.onNodeWithText("No es un respaldo de Sello ni de FinanceTracker.", substring = true)
+            .assertExists()
         assertEquals(before, financialRows())
         assertEquals(0, restarts)
+    }
+
+    /**
+     * A FinanceTracker backup (ADR 0019): its preview names what was changed and left out
+     * before anything is replaced, and confirming restores the translation.
+     */
+    @Test
+    fun aFinanceTrackerFileShowsWhatChangedAndIsRestored() {
+        val day = TestCommands.today
+        answerWith(
+            (
+                "{\"exportedAt\": \"$day 09:00\", \"preferences\": {}, " +
+                    "\"categories\": [" +
+                    "{\"id\": 1, \"name\": \"Mercado\", \"colorArgb\": -1, " +
+                    "\"iconKey\": \"shopping_cart\", \"monthlyLimitCop\": 300000, " +
+                    "\"updatedAt\": 1787000000000}, " +
+                    "{\"id\": 2, \"name\": \"mercado\", \"colorArgb\": -1, " +
+                    "\"iconKey\": \"work\", \"monthlyLimitCop\": null, " +
+                    "\"updatedAt\": 1787000000000}], " +
+                    "\"expenses\": [" +
+                    "{\"id\": 1, \"categoryId\": 1, \"amountCop\": 12000, " +
+                    "\"description\": \"Pan\", \"date\": \"$day\"}, " +
+                    "{\"id\": 2, \"categoryId\": 1, \"amountCop\": 0, " +
+                    "\"description\": \"Cero\", \"date\": \"$day\"}], " +
+                    "\"income\": [], \"investments\": [{\"id\": 1}]}"
+                ).toByteArray()
+        )
+        openRespaldoAndChoose()
+        rule.awaitTag(RESTORE_PREVIEW_TAG)
+
+        rule.onNodeWithText("Desde FinanceTracker").performScrollTo().assertExists()
+        rule.onNodeWithText("1 categoría: nombre repetido, ahora numerado").assertExists()
+        rule.onNodeWithText("1 gasto: monto fuera de rango").assertExists()
+        rule.onNodeWithText("1 inversión: aún no se importan").assertExists()
+        rule.onNodeWithText(
+            "Por eso los totales de Sello pueden no coincidir con los de FinanceTracker."
+        ).assertExists()
+        assertEquals(
+            listOf(listOf("Mercado"), listOf("7000", "8000"), emptyList(), listOf("1")),
+            financialRows()
+        )
+        rule.onNodeWithTag(RESTORE_CONFIRM_TAG).performScrollTo().performClick()
+        rule.awaitTag(RESTORE_DONE_TAG)
+
+        assertEquals(
+            listOf(listOf("Mercado", "mercado_2"), listOf("12000"), emptyList(), listOf("2")),
+            financialRows()
+        )
     }
 
     @Test

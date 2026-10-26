@@ -175,6 +175,10 @@ state, one-time notice dismissals, permissions, URIs, paths and credentials.
 
 ## Reading a file
 
+A file that is not a Sello backup may be a FinanceTracker one; restore then translates
+it first and keeps the translation as a version 3 file read by these same rules
+([legacy export format](legacy-export-format.md)).
+
 `BackupCodec.read` writes nothing. It checks in this order and stops at the first
 problem, rejecting the whole file with a `BackupRejection` that names where it is
 (`financial.expenses[3].amount`), never what the file says there:

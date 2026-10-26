@@ -1,0 +1,71 @@
+{
+  "exportedAt": "2026-10-25 14:01",
+  "preferences": {
+    "notificationsEnabled": true,
+    "themeMode": "DARK",
+    "defaultCurrency": "COP",
+    "useCustomExchangeRates": false,
+    "customUsdRate": 4000.0,
+    "customEurRate": 4500.0,
+    "customGbpRate": 5000.0,
+    "investmentSortField": "NAME",
+    "investmentSortDirection": "ASC",
+    "homeSortField": "AMOUNT_SPENT",
+    "homeSortDirection": "DESC"
+  },
+  "categories": [
+    { "id": 1, "name": "Mercado", "colorArgb": -16540699, "iconKey": "shopping_cart", "monthlyLimitCop": 500000, "updatedAt": 1786999692267 },
+    { "id": 2, "name": "Ocio", "colorArgb": -606426, "iconKey": "celebrate", "monthlyLimitCop": null, "updatedAt": 1787000000000 },
+    { "id": 3, "name": "mercado", "colorArgb": -606426, "iconKey": "work", "monthlyLimitCop": 100000, "updatedAt": 1787000000000 },
+    { "id": 4, "name": "Una categoría de nombre largo", "colorArgb": -606426, "iconKey": "checkroom", "monthlyLimitCop": 200000, "updatedAt": 1787000000000 },
+    { "id": 5, "name": "   ", "colorArgb": -606426, "iconKey": "work", "monthlyLimitCop": 50000, "updatedAt": 1787000000000 },
+    { "id": 6, "name": "Carro", "colorArgb": -606426, "iconKey": "directions_car", "monthlyLimitCop": -5, "updatedAt": 1787000000000 }
+  ],
+  "expenses": [
+    { "id": 1, "categoryId": 1, "amountCop": 25000, "description": "Pan", "date": "2026-09-03" },
+    { "id": 1, "categoryId": 1, "amountCop": 99000, "description": "Repetido", "date": "2026-09-04" },
+    { "id": 2, "categoryId": 1, "amountCop": 120000, "description": "", "date": "2026-10-02" },
+    { "id": 3, "categoryId": 2, "amountCop": 60000, "description": "Cine", "date": "2026-10-10" },
+    { "id": 4, "categoryId": 3, "amountCop": 8000, "description": "Una nota que pasa de sesenta caracteres y hay que cortarla aquí", "date": "2026-10-11" },
+    { "id": 5, "categoryId": 5, "amountCop": 10000, "description": "Sin categoría válida", "date": "2026-10-12" },
+    { "id": 6, "categoryId": 99, "amountCop": 10000, "description": "Categoría borrada", "date": "2026-10-12" },
+    { "id": 7, "categoryId": 1, "amountCop": 0, "description": "Cero", "date": "2026-10-12" },
+    { "id": 8, "categoryId": 1, "amountCop": 1000000000000, "description": "Demasiado", "date": "2026-10-12" },
+    { "id": 9, "categoryId": 1, "amountCop": 10000, "description": "Día imposible", "date": "2026-02-30" },
+    { "id": 10, "categoryId": 1, "amountCop": 10000, "description": "Mañana", "date": "2026-10-26" },
+    { "id": 12, "categoryId": 1, "amountCop": "5000", "description": "Texto", "date": "2026-10-12" },
+    { "id": 13, "categoryId": 1, "amountCop": 5000, "description": "Dos\nlíneas", "date": "2026-10-12" },
+    { "id": 14, "categoryId": 4, "amountCop": 30000, "description": "Camisa", "date": "2026-10-20", "recurringExpenseId": 7 }
+  ],
+  "recurringExpenses": [
+    { "id": 1, "categoryId": 2, "amountCop": 45000, "description": "Streaming", "recurrenceType": "MONTHLY_ON_DAY", "startDate": "2026-08-31", "nextDueDate": "2026-10-31", "isActive": false },
+    { "id": 2, "categoryId": 1, "amountCop": 45000, "description": "Raro", "recurrenceType": "CUSTOM:400", "startDate": "2026-08-01", "nextDueDate": "2027-09-05" },
+    { "id": 3, "categoryId": 5, "amountCop": 45000, "description": "Huérfano", "recurrenceType": "MONTHLY", "startDate": "2026-08-01", "nextDueDate": "2026-11-01" },
+    { "id": 4, "categoryId": 1, "amountCop": 30000, "description": "Plaza", "recurrenceType": "WEEKLY", "startDate": "2026-10-01", "nextDueDate": "2026-10-29" }
+  ],
+  "income": [
+    { "id": 3, "amountCop": 7000000, "source": "Salario", "date": "2026-09-24", "notes": "Mensual", "recurringIncomeId": 3 },
+    { "id": 4, "amountCop": 7000000, "source": "Salario", "date": "2026-10-01", "notes": "Mensual", "recurringIncomeId": 3 },
+    { "id": 5, "amountCop": 1500000, "source": "Prima", "date": "2026-06-15" },
+    { "id": 6, "amountCop": 6500000, "source": "Salario", "date": "2026-08-01", "notes": "Nómina", "recurringIncomeId": 1 }
+  ],
+  "recurringIncome": [
+    { "id": 3, "amountCop": 7000000, "source": "Salario", "notes": "Mensual", "recurrenceType": "MONTHLY", "startDate": "2026-09-24", "nextDueDate": "2026-11-01" }
+  ],
+  "investments": [
+    { "id": 1, "name": "Fondo", "colorArgb": -606426, "iconKey": "trending_up", "currency": "USD", "createdDate": "2026-08-01", "updatedAt": 1788274283794 },
+    { "id": 2, "name": "CDT", "colorArgb": -606426, "iconKey": "savings", "currency": "COP", "createdDate": "2026-08-01", "updatedAt": 1788274283794, "annualRatePercent": 11.0, "interestFrequency": "MONTHLY", "lastInterestDate": "2026-10-01" }
+  ],
+  "investmentEntries": [
+    { "id": 1, "investmentId": 1, "entryType": "CASH_INJECTION", "amountMinorUnits": 100000, "date": "2026-08-01" },
+    { "id": 2, "investmentId": 1, "entryType": "VALUE_SNAPSHOT", "amountMinorUnits": 101000, "date": "2026-09-01" },
+    { "id": 3, "investmentId": 2, "entryType": "CASH_INJECTION", "amountMinorUnits": 5000000, "date": "2026-08-01", "notes": "Apertura" }
+  ],
+  "exchangeRates": [
+    { "fromCurrency": "USD", "toCurrency": "COP", "rate": 3900.5, "updatedDate": "2026-10-25T09:00" }
+  ],
+  "goals": [
+    { "id": 1, "name": "Viaje", "targetAmountCop": 18000000, "currentAmountCop": 6500000, "deadlineDate": "2027-03-31", "colorArgb": -291840 },
+    { "id": 2, "name": "Sin meta", "targetAmountCop": 0, "deadlineDate": "2027-03-31", "colorArgb": -291840 }
+  ]
+}
