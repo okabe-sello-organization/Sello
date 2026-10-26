@@ -8,6 +8,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -82,6 +84,23 @@ class SlipStubTest {
             assertEquals(incomes.width.value, fixed.width.value, 1f)
             assertTrue(incomes.right <= fixed.left)
             assertTrue(incomes.height >= 48.dp && fixed.height >= 48.dp)
+        }
+    }
+
+    @Test
+    fun eachHalfCentresItsIconAndWordsInItsSpace() {
+        rule.inEveryScheme(content = { Stub() }) {
+            listOf("incomes", "fixed").forEach { tag ->
+                val half = rule.onNodeWithTag(tag).getUnclippedBoundsInRoot()
+                val content = rule.onNode(
+                    hasTestTag(STUB_CONTENT_TAG) and hasAnyAncestor(hasTestTag(tag)),
+                    useUnmergedTree = true
+                ).getUnclippedBoundsInRoot()
+                val left = content.left - half.left
+                val right = half.right - content.right
+                assertTrue("$tag: $left on the left, $right on the right", left > 8.dp)
+                assertEquals(left.value, right.value, 1f)
+            }
         }
     }
 }

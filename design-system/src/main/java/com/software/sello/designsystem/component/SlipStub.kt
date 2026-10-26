@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -65,8 +66,8 @@ fun SlipStub(
 
 /**
  * One half of a [SlipStub]: an icon, a short [title] in the brand ink and, when known,
- * one [fact] under it. One button, said as [label] then the fact; [label] should contain
- * the [title] so a spoken command finds it.
+ * one [fact] under it, centred in the half. One button, said as [label] then the fact;
+ * [label] should contain the [title] so a spoken command finds it.
  */
 @Composable
 fun StubButton(
@@ -80,6 +81,7 @@ fun StubButton(
     val colors = SelloTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
@@ -90,17 +92,25 @@ fun StubButton(
             }
             .padding(horizontal = 8.dp, vertical = 6.dp)
     ) {
-        Icon(
-            icon.painter(),
-            contentDescription = null,
-            tint = colors.brand,
-            modifier = Modifier.padding(end = 8.dp).size(24.dp)
-        )
-        Column(Modifier.clearAndSetSemantics {}) {
-            Text(title, fontWeight = FontWeight.W800, color = colors.brand)
-            if (fact != null) {
-                Text(fact, style = MaterialTheme.typography.labelSmall, color = colors.inkSoft)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.testTag(STUB_CONTENT_TAG)
+        ) {
+            Icon(
+                icon.painter(),
+                contentDescription = null,
+                tint = colors.brand,
+                modifier = Modifier.padding(end = 8.dp).size(24.dp)
+            )
+            Column(Modifier.clearAndSetSemantics {}) {
+                Text(title, fontWeight = FontWeight.W800, color = colors.brand)
+                if (fact != null) {
+                    Text(fact, style = MaterialTheme.typography.labelSmall, color = colors.inkSoft)
+                }
             }
         }
     }
 }
+
+/** The icon and words of a [StubButton], for tests that check where they sit. */
+internal const val STUB_CONTENT_TAG = "stub.content"
