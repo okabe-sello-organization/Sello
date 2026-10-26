@@ -13,6 +13,7 @@ import com.software.sello.catalog.components.CategoryCircleExample
 import com.software.sello.catalog.components.CelebrationExample
 import com.software.sello.catalog.components.ChipExample
 import com.software.sello.catalog.components.ChipRowsExample
+import com.software.sello.catalog.components.ChoicePointsExample
 import com.software.sello.catalog.components.ChoiceSlipExample
 import com.software.sello.catalog.components.ColumnsChartExample
 import com.software.sello.catalog.components.ComparisonExample
@@ -363,6 +364,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         CatalogGroup.Feedback,
         R.string.catalog_example_option_slip
     ) { OptionSlipExample() },
+    CatalogExample(
+        "feedback.choice-points",
+        CatalogGroup.Feedback,
+        R.string.catalog_example_choice_points
+    ) { ChoicePointsExample() },
     CatalogExample(
         "feedback.confirm-points",
         CatalogGroup.Feedback,

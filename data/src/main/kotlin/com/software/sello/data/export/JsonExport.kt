@@ -61,7 +61,10 @@ internal object JsonExport {
                 )
             },
             usdRates = snapshot.usdRates.sortedWith(compareBy({ it.date }, { it.sequence })).map {
-                RateJson(it.date.toString(), BigDecimal.valueOf(it.rate.hundredths, 2).toPlainString())
+                RateJson(
+                    it.date.toString(),
+                    BigDecimal.valueOf(it.rate.hundredths, 2).toPlainString()
+                )
             },
             recurring = snapshot.schedules.sortedBy { it.sequence }.map { stored ->
                 val schedule = stored.schedule
@@ -117,28 +120,31 @@ internal object JsonExport {
         note = note
     )
 
-    private fun categories(snapshot: FinancialSnapshot) =
-        snapshot.categories.sortedWith(compareBy({ it.createdAt }, { it.id.value })).map { category ->
-            CategoryJson(
-                name = category.name.value,
-                icon = category.icon.value,
-                archived = category.archived,
-                limits = snapshot.defaultLimits.filter { it.categoryId == category.id }
-                    .sortedBy { it.effectiveMonth }
-                    .map {
-                        when (val budget = it.budget) {
-                            AutomaticBudget.Paused ->
-                                LimitJson(it.effectiveMonth.toString(), "paused", null, null)
+    private fun categories(snapshot: FinancialSnapshot) = snapshot.categories.sortedWith(
+        compareBy({
+            it.createdAt
+        }, { it.id.value })
+    ).map { category ->
+        CategoryJson(
+            name = category.name.value,
+            icon = category.icon.value,
+            archived = category.archived,
+            limits = snapshot.defaultLimits.filter { it.categoryId == category.id }
+                .sortedBy { it.effectiveMonth }
+                .map {
+                    when (val budget = it.budget) {
+                        AutomaticBudget.Paused ->
+                            LimitJson(it.effectiveMonth.toString(), "paused", null, null)
 
-                            is AutomaticBudget.Limit ->
-                                limit(it.effectiveMonth.toString(), budget.limit)
-                        }
-                    },
-                monthLimits = snapshot.monthLimits.filter { it.categoryId == category.id }
-                    .sortedBy { it.month }
-                    .map { limit(it.month.toString(), it.limit) }
-            )
-        }
+                        is AutomaticBudget.Limit ->
+                            limit(it.effectiveMonth.toString(), budget.limit)
+                    }
+                },
+            monthLimits = snapshot.monthLimits.filter { it.categoryId == category.id }
+                .sortedBy { it.month }
+                .map { limit(it.month.toString(), it.limit) }
+        )
+    }
 
     private fun limit(month: String, limit: BudgetLimit): LimitJson = when (limit) {
         BudgetLimit.Unlimited -> LimitJson(month, "unlimited", null, null)

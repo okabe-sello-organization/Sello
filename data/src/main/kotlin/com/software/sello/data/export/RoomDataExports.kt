@@ -41,7 +41,9 @@ class RoomDataExports(
                 ExportFormat.Csv -> CsvExport.encode(movements(snapshot), words)
                 ExportFormat.Json -> JsonExport.encode(snapshot, at)
             }
-            Outcome.Success(PreparedExport(bytes, fileName(format, at, snapshot.zone), mime(format)))
+            Outcome.Success(
+                PreparedExport(bytes, fileName(format, at, snapshot.zone), mime(format))
+            )
         }
     }
 

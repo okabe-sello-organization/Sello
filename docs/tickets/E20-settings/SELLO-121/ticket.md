@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P2
-- **Status:** Backlog
+- **Status:** In Progress
 - **Depends on:** SELLO-119, SELLO-004
 - **Gate:** G2
 
@@ -55,3 +55,19 @@ the backup writer and its document ports.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-121 --retain`.
+
+### Execution progress
+
+- **2026-10-26:** Built as follows, proposed for review with this ticket's pull request.
+  The CSV has the columns Fecha, Tipo, Nombre, Monto, Moneda, Nota, one line per
+  movement by date (on one date: expenses, incomes, goal movements, investment
+  movements, each in recording order); amounts are written from minor units with a
+  point (`12500`, `1050.50`); it starts with a UTF-8 byte order mark so spreadsheets
+  read accents, uses commas and CRLF, and a cell starting with `=`, `+`, `-`, `@`, tab
+  or carriage return gets a leading `'`. The JSON (`sello-export`, version 1) keeps text
+  as written and uses stable codes; it names categories, goals and investments instead
+  of carrying identifiers, so it cannot be restored. Files are named
+  `sello-datos-AAAA-MM-DD.csv|json` in the financial zone. A shared export lives in
+  `cache/exports/`, served by Sello's FileProvider with read access granted per share;
+  the next share and the next start remove it. The manifest privacy check now allows
+  that one provider to grant access, with its authority and paths checked.

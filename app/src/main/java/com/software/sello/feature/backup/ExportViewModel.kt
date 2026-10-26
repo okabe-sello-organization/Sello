@@ -20,10 +20,8 @@ import kotlinx.coroutines.launch
  * across process death while the picker is open, because its answer arrives in a new
  * process. The words come with each request, from the app's text.
  */
-class ExportViewModel(
-    private val handle: SavedStateHandle,
-    private val session: ExportSession
-) : ViewModel() {
+class ExportViewModel(private val handle: SavedStateHandle, private val session: ExportSession) :
+    ViewModel() {
     private val choosing = MutableStateFlow(false)
     private val pickerRequest = MutableStateFlow<ExportPickerRequest?>(null)
 

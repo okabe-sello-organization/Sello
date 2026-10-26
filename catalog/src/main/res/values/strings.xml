@@ -424,4 +424,8 @@
     <string name="catalog_demo_punto_tuyo_lead" formatted="false">Tú lo guardas y lo cuidas.</string>
     <string name="catalog_demo_punto_tuyo" formatted="false">Solo tu respaldo recupera los datos.</string>
     <string name="catalog_demo_punto_borrar" formatted="false">Borrar los datos no borra los respaldos guardados.</string>
+    <string name="catalog_example_choice_points">ChoiceSlip with content</string>
+    <string name="catalog_demo_exportar" formatted="false">Exportar tus datos</string>
+    <string name="catalog_demo_compartir" formatted="false">Compartir</string>
+    <string name="catalog_demo_guardar" formatted="false">Guardar</string>
 </resources>

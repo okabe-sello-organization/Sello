@@ -55,7 +55,13 @@ internal fun movements(snapshot: FinancialSnapshot): List<ExportRow> {
         )
     }
     val incomes = snapshot.incomes.sortedBy { it.sequence }.map {
-        ExportRow(it.date, ExportKind.Income, it.source.exportName(), it.amount.money, it.note?.value)
+        ExportRow(
+            it.date,
+            ExportKind.Income,
+            it.source.exportName(),
+            it.amount.money,
+            it.note?.value
+        )
     }
     val goals = snapshot.goals.flatMap { history ->
         history.events.filterIsInstance<GoalMovement>().sortedBy { it.sequence }.map {

@@ -15,7 +15,10 @@ internal object CsvExport {
 
     fun encode(rows: List<ExportRow>, words: ExportWords): ByteArray {
         val text = StringBuilder(BYTE_ORDER_MARK)
-        line(text, listOf(words.date, words.kind, words.name, words.amount, words.currency, words.note))
+        line(
+            text,
+            listOf(words.date, words.kind, words.name, words.amount, words.currency, words.note)
+        )
         for (row in rows) {
             line(
                 text,
@@ -58,6 +61,6 @@ internal object CsvExport {
         ExportKind.InvestmentValue -> investmentValue
     }
 
-    private const val BYTE_ORDER_MARK = "﻿"
+    private const val BYTE_ORDER_MARK = ""
     private val FORMULA_STARTS = setOf('=', '+', '-', '@', '\t', '\r')
 }

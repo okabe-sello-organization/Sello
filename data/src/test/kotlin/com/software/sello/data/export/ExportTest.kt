@@ -41,6 +41,7 @@ import java.time.ZoneId
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -184,7 +185,7 @@ class ExportTest {
 
     @Test
     fun `the CSV lists every movement by date with exact amounts and neutralized text`() {
-        val expected = "﻿" +
+        val expected = "" +
             "Fecha,Tipo,Nombre,Monto,Moneda,Nota\r\n" +
             "2026-10-01,Gasto,Mercado,10000,COP,'=SUM(A1:A9)\r\n" +
             "2026-10-01,Ingreso,Salario,200000,COP,\r\n" +
@@ -253,10 +254,16 @@ class ExportTest {
         assertEquals("salary", movements[1].text("source"))
         assertEquals("null", movements[1]["name"].toString())
         val other = movements[6]
-        assertEquals(listOf("other", "+Venta bici"), listOf(other.text("source"), other.text("name")))
+        assertEquals(
+            listOf("other", "+Venta bici"),
+            listOf(other.text("source"), other.text("name"))
+        )
         // The JSON keeps text as written: neutralizing is for spreadsheets.
         assertEquals("=SUM(A1:A9)", movements[0].text("note"))
-        assertEquals(listOf("1050.50", "USD"), listOf(movements[8].text("amount"), movements[8].text("currency")))
+        assertEquals(
+            listOf("1050.50", "USD"),
+            listOf(movements[8].text("amount"), movements[8].text("currency"))
+        )
         assertEquals("dividend", movements[9].text("kind"))
     }
 
@@ -282,11 +289,30 @@ class ExportTest {
             }
         )
         val goal = file.getValue("goals").jsonArray.single().jsonObject
-        assertEquals(listOf("Viaje", "1000000", "COP"), listOf("name", "target", "currency").map { goal.text(it) })
+        assertEquals(
+            listOf("Viaje", "1000000", "COP"),
+            listOf("name", "target", "currency").map {
+                goal.text(it)
+            }
+        )
         val investment = file.getValue("investments").jsonArray.single().jsonObject
-        assertEquals(listOf("Acciones EE. UU.", "USD"), listOf(investment.text("name"), investment.text("currency")))
+        assertEquals(
+            listOf("Acciones EE. UU.", "USD"),
+            listOf(investment.text("name"), investment.text("currency"))
+        )
         val rate = file.getValue("usdRates").jsonArray.single().jsonObject
-        assertEquals(listOf("2026-10-01", "4150.25"), listOf(rate.text("date"), rate.text("rate")))
+        assertEquals(
+            listOf("2026-10-01", "4150.25"),
+            listOf(rate.text("date"), rate.text("rate"))
+        )
+    }
+
+    private val fields =
+        listOf("kind", "category", "amount", "repeat", "days", "every", "start", "end", "pauses")
+
+    /** A value as text: a plain value as written, anything else as JSON. */
+    private fun JsonObject.shown(key: String) = getValue(key).let {
+        if (it is JsonPrimitive) it.content else it.toString()
     }
 
     @Test
@@ -303,12 +329,7 @@ class ExportTest {
                     "[{\"from\":\"2026-11-01\",\"until\":null}]",
                 "income|null|800000|twice_monthly|[15,30]|null|2026-10-01|2026-12-31|[]"
             ),
-            recurring.map { entry ->
-                listOf("kind", "category", "amount", "repeat", "days", "every", "start", "end", "pauses")
-                    .joinToString("|") { key ->
-                        entry.getValue(key).let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else it.toString() }
-                    }
-            }
+            recurring.map { entry -> fields.joinToString("|") { key -> entry.shown(key) } }
         )
         assertEquals("salary", recurring[2].text("source"))
     }
@@ -319,11 +340,19 @@ class ExportTest {
 
         assertEquals(
             "sello-datos-2026-10-26.csv",
-            RoomDataExports.fileName(com.software.sello.domain.port.ExportFormat.Csv, late, ZoneId.of("America/Bogota"))
+            RoomDataExports.fileName(
+                com.software.sello.domain.port.ExportFormat.Csv,
+                late,
+                ZoneId.of("America/Bogota")
+            )
         )
         assertEquals(
             "sello-datos-2026-10-27.json",
-            RoomDataExports.fileName(com.software.sello.domain.port.ExportFormat.Json, late, ZoneId.of("UTC"))
+            RoomDataExports.fileName(
+                com.software.sello.domain.port.ExportFormat.Json,
+                late,
+                ZoneId.of("UTC")
+            )
         )
         assertEquals(
             "sello-datos.csv",
