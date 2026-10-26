@@ -28,7 +28,8 @@ import com.software.sello.designsystem.theme.SelloTheme
  * One category whose limit can be changed: its circle, [name] with a [caption] under it
  * ("gastaste 90.000 de 50.000"), the signed [amount] it has left (in loss ink when
  * [over]) and a chevron. Without a limit, [fraction] is null and [amount] is what it
- * spent. The row is one button, read as [spoken].
+ * spent; with [unlimited] (no limit on purpose) the circle carries the ∞ badge. The row
+ * is one button, read as [spoken].
  */
 @Composable
 fun LimitRow(
@@ -40,7 +41,8 @@ fun LimitRow(
     over: Boolean,
     spoken: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    unlimited: Boolean = false
 ) {
     val colors = SelloTheme.colors
     Row(
@@ -59,7 +61,14 @@ fun LimitRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        CategoryCircle(icon, fraction, size = 36.dp, over = over, animate = false)
+        CategoryCircle(
+            icon,
+            fraction,
+            size = 36.dp,
+            over = over,
+            animate = false,
+            unlimited = unlimited
+        )
         Column(Modifier.weight(1f)) {
             Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.W700)
             Text(caption, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)

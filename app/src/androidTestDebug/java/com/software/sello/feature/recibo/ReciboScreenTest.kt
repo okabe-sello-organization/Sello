@@ -31,6 +31,7 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
@@ -44,6 +45,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.component.CATEGORY_UNLIMITED_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SCAFFOLD_SECONDARY_TAG
@@ -392,6 +394,28 @@ class ReciboScreenTest {
             listOf(ReciboAction.OpenCategory("c"), ReciboAction.CreateCategory),
             actions
         )
+    }
+
+    @Test
+    fun onlyACategoryWithoutALimitOnPurposeGetsTheBadgeAndSaysSinLimite() {
+        show(month(plain("937.200"), ReciboStamp.OnTrack, days = 9, perDay = "99.100"))
+
+        fun inCell(id: String) = hasAnyAncestor(hasTestTag(reciboCategoryTag(id)))
+        rule.onNodeWithTag(reciboCategoryTag("d")).performScrollTo()
+        rule.onNode(hasTestTag(CATEGORY_UNLIMITED_TAG) and inCell("d"), useUnmergedTree = true)
+            .assertIsDisplayed()
+        rule.onNode(hasText("sin límite") and inCell("d"), useUnmergedTree = true)
+            .assertIsDisplayed()
+        rule.onNode(hasText("gastado") and inCell("d"), useUnmergedTree = true)
+            .assertDoesNotExist()
+        // Never set, or paused by archiving: no limit, but not on purpose.
+        listOf("e", "f", "a").forEach { id ->
+            rule.onNode(hasTestTag(CATEGORY_UNLIMITED_TAG) and inCell(id), useUnmergedTree = true)
+                .assertDoesNotExist()
+        }
+        listOf("e", "f").forEach { id ->
+            rule.onNode(hasText("gastado") and inCell(id), useUnmergedTree = true).assertExists()
+        }
     }
 
     @Test

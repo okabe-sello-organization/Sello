@@ -7,6 +7,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -15,6 +18,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.component.CATEGORY_UNLIMITED_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloTheme
@@ -73,13 +77,25 @@ class AdjustBudgetScreenTest {
         archived = true
     )
 
+    private val regalos = cafe.copy(
+        id = "regalos",
+        name = "Regalos",
+        spent = plain("10.000"),
+        limit = null,
+        remaining = null,
+        overBy = null,
+        fraction = null,
+        over = false,
+        unlimited = true
+    )
+
     private val ready = AdjustBudgetState.Ready(
         month = october,
         summary = summary,
         limit = plain("1.000.000"),
         spent = plain("1.080.000"),
         limited = listOf(cafe, viejo),
-        open = emptyList(),
+        open = listOf(regalos),
         stale = false
     )
 
@@ -164,6 +180,18 @@ class AdjustBudgetScreenTest {
             listOf<LimitSheetAction>(LimitSheetAction.Scope(LimitScope.FromThisMonth)),
             sheetActions
         )
+    }
+
+    @Test
+    fun aCategoryWithoutALimitGetsTheBadgeAndSaysSinLimite() {
+        show(ready)
+
+        val inRow = hasAnyAncestor(hasTestTag(adjustRowTag("regalos")))
+        rule.onNodeWithTag(adjustRowTag("regalos")).performScrollTo()
+        rule.onNode(hasTestTag(CATEGORY_UNLIMITED_TAG) and inRow, useUnmergedTree = true)
+            .assertIsDisplayed()
+        rule.onNode(hasText("sin límite") and inRow, useUnmergedTree = true).assertIsDisplayed()
+        rule.onNode(hasText("gastado") and inRow, useUnmergedTree = true).assertDoesNotExist()
     }
 
     @Test

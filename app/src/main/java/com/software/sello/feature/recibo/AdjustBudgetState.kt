@@ -42,7 +42,9 @@ data class AdjustRow(
     val overBy: MoneyTextValue?,
     val fraction: Float?,
     val over: Boolean,
-    val archived: Boolean
+    val archived: Boolean,
+    /** No limit on purpose ("Sin límite"), not one never set or paused by archiving. */
+    val unlimited: Boolean = false
 )
 
 sealed interface AdjustBudgetAction {

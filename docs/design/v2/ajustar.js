@@ -14,7 +14,7 @@ const stamp = k => `<span class="stamp ${STAMPS[k][1]}">${STAMPS[k][0]}</span>`;
 // A category row: circle, name, "gastaste X de Y", signed remainder, chevron; one sentence.
 function row(name, spent, limit, { archived = false } = {}) {
   if (limit === null) {
-    return `<button class="rank-row" aria-label="${name}. Sin límite. Gastaste ${spoken(spent)}. Ponerle límite"><span class="circle unlimited" aria-hidden="true">${icon(ICONS[name])}</span><span class="rank-main"><span>${name}</span><small class="adj-cap">gastado</small></span>${money(spent)}${icon("chevron_right", "chev")}</button>`;
+    return `<button class="rank-row" aria-label="${name}. Sin límite. Gastaste ${spoken(spent)}. Ponerle límite">${unlimitedCircle(ICONS[name])}<span class="rank-main"><span>${name}</span><small class="adj-cap">sin límite</small></span>${money(spent)}${icon("chevron_right", "chev")}</button>`;
   }
   const left = limit - spent, over = left < 0, fill = over ? 100 : Math.round(100 * spent / limit);
   const caption = archived ? "Archivada · desarchívala para cambiar su límite" : `gastaste ${fmt(spent)} de ${fmt(limit)}`;

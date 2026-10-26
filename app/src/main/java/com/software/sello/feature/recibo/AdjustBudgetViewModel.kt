@@ -3,10 +3,12 @@ package com.software.sello.feature.recibo
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryMonth
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.policy.LimitAdjustmentPolicy
+import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
@@ -92,7 +94,8 @@ class AdjustBudgetViewModel(
             overBy = budget?.remaining?.takeIf { it.minorUnits < 0 }?.let(money::magnitude),
             fraction = budget?.let(render::fill),
             over = budget != null && budget.remaining.minorUnits < 0,
-            archived = line.category.archived
+            archived = line.category.archived,
+            unlimited = (line.state as? MonthBudgetState.Limited)?.limit == BudgetLimit.Unlimited
         )
     }
 

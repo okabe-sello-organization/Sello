@@ -144,7 +144,10 @@ data class ReciboCategory(
     val fraction: Float?,
     val over: Boolean,
     val expenseCount: Int
-)
+) {
+    /** No limit on purpose, as its stamp says; never set or paused is something else. */
+    val unlimited: Boolean get() = figure.stamp == ReciboStamp.NoLimit
+}
 
 sealed interface ReciboAction {
     data object Retry : ReciboAction

@@ -11,6 +11,7 @@ import com.software.sello.designsystem.R
  * the outlined drawing exists only where the reference uses it (unselected tabs).
  */
 enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: Int? = null) {
+    AllInclusive(R.drawable.ic_sello_all_inclusive),
     AccountBalance(
         R.drawable.ic_sello_account_balance,
         R.drawable.ic_sello_account_balance_outlined
