@@ -27,7 +27,8 @@
 - **Gate results:** `./scripts/verify-ticket SELLO-044 --retain`: G1 full passed
   (tickets-check, quality-tests, performance-tests, architecture, links, gradle-host);
   34 lint warnings, none in files this ticket touches; no failures.
-- **Quality run:** run 20261025T194145Z-734df31a; SELLO-044 G1 passed; HEAD a721821, inputs sha256 56ff70bdafd8, changes sha256 a6673a43ea63; report docs/tickets/E10-legacy-import/SELLO-044/quality-report.json sha256 8586968b6106cc7faeefc158e2cb7f212af2a2c487f29d5e7a63636e9cdaf814
+- **Quality run:** run 20261026T021237Z-895fc50f; SELLO-044 G1 passed; HEAD 7f050e2, inputs sha256 bad84d7473a2, changes sha256 bd14b2215b59; report docs/tickets/E10-legacy-import/SELLO-044/quality-report.json sha256 356b590ddfd0071d33f7dac0316344d5a907db8e18cebacbf7b6fd703473826e
+  (after merging main with E19 once; the translator now passes empty investments and rates)
 - **Device / Artifact:** focused device runs on a new API 30 emulator (`sello044-legacy`,
   `emulator-5730`): `:data:connectedDebugAndroidTest` for `LegacyImportRestoreTest` and
   `RestoreCommandContractTest`, 18 passed; `:app:connectedDebugAndroidTest` for

@@ -2,11 +2,11 @@
   "schema_version": 2,
   "coverage": {
     "mode": "full",
-    "base": "a7218213c602eea31ecbe83688811a7ea62e61cd",
+    "base": "7f050e2df8ed5e7707e366155c69389ee85cd7e3",
     "changed_paths": [],
     "device_modules": []
   },
-  "run_id": "20261025T194145Z-734df31a",
+  "run_id": "20261026T021237Z-895fc50f",
   "ticket": "SELLO-044",
   "gate": {
     "required": "G2",
@@ -18,18 +18,18 @@
     "gradle-host: 34 lint warnings"
   ],
   "snapshot": {
-    "head": "a7218213c602eea31ecbe83688811a7ea62e61cd",
+    "head": "7f050e2df8ed5e7707e366155c69389ee85cd7e3",
     "dirty": false,
     "dirty_files": [],
     "fingerprint": {
       "algorithm": "sha256",
-      "value": "56ff70bdafd86f12654f08039d8076d17c6c1e66b4401a3877f52484e7c59ab0",
-      "files": 1099
+      "value": "bad84d7473a24682ba7904352ce38fd6f533ca21f3c2183edbdad332d83520db",
+      "files": 1159
     },
     "changes": {
       "algorithm": "sha256",
-      "base": "c8d0b4c9faab293a83bbbb9b738c5f735c9ab22d",
-      "value": "a6673a43ea6329766d8720a241ed0228203dc22042df31a7317b23db6369bb31",
+      "base": "08434659aa85182419b6409b967c0dcec655f0fd",
+      "value": "bd14b2215b59b0960d376e7b61d0926b4f79644f26314786a10bd06a79ce5ea6",
       "paths": 16
     },
     "acceptance": "ccd66816ea9a8faa1d427a294e25f07e7c08e41cdfed49b8b692ece14e0dff34"
@@ -49,52 +49,52 @@
       "name": "tickets-check",
       "command": "python3 scripts/quality/tickets.py check --skip-evidence",
       "log": "tickets-check.log",
-      "started_at": "2026-10-25T19:41:45+00:00",
+      "started_at": "2026-10-26T02:12:37+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-25T19:41:45+00:00"
+      "finished_at": "2026-10-26T02:12:37+00:00"
     },
     {
       "name": "quality-tests",
       "command": "python3 -m unittest discover -s scripts/quality -p test_*.py",
       "log": "quality-tests.log",
-      "started_at": "2026-10-25T19:41:45+00:00",
+      "started_at": "2026-10-26T02:12:37+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-25T19:41:56+00:00"
+      "finished_at": "2026-10-26T02:12:48+00:00"
     },
     {
       "name": "performance-tests",
       "command": "python3 -m unittest discover -s scripts/performance -p test_*.py",
       "log": "performance-tests.log",
-      "started_at": "2026-10-25T19:41:56+00:00",
+      "started_at": "2026-10-26T02:12:48+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-25T19:41:56+00:00"
+      "finished_at": "2026-10-26T02:12:48+00:00"
     },
     {
       "name": "architecture",
       "command": "python3 scripts/quality/architecture.py",
       "log": "architecture.log",
-      "started_at": "2026-10-25T19:41:56+00:00",
+      "started_at": "2026-10-26T02:12:48+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-25T19:41:57+00:00"
+      "finished_at": "2026-10-26T02:12:49+00:00"
     },
     {
       "name": "links",
       "command": "python3 scripts/quality/links.py",
       "log": "links.log",
-      "started_at": "2026-10-25T19:41:57+00:00",
+      "started_at": "2026-10-26T02:12:49+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-25T19:41:57+00:00"
+      "finished_at": "2026-10-26T02:12:49+00:00"
     },
     {
       "name": "gradle-host",
       "command": "./gradlew ktlintCheck :domain:test :data:testDebugUnitTest :design-system:testDebugUnitTest :app:testDebugUnitTest :catalog:testDebugUnitTest lintDebug :app:assembleDebug :app:assembleRelease :catalog:assembleDebug --continue",
       "log": "gradle-host.log",
-      "started_at": "2026-10-25T19:41:57+00:00",
+      "started_at": "2026-10-26T02:12:49+00:00",
       "exit_code": 0,
-      "finished_at": "2026-10-25T19:43:23+00:00",
+      "finished_at": "2026-10-26T02:15:07+00:00",
       "results": {
-        "suites": 98,
-        "tests": 1070,
+        "suites": 107,
+        "tests": 1198,
         "failures": 0,
         "errors": 0,
         "skipped": 0
@@ -107,6 +107,6 @@
       }
     }
   ],
-  "started_at": "2026-10-25T19:41:45+00:00",
-  "finished_at": "2026-10-25T19:43:23+00:00"
+  "started_at": "2026-10-26T02:12:37+00:00",
+  "finished_at": "2026-10-26T02:15:07+00:00"
 }
