@@ -64,6 +64,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.feature.backup.BackupRoot
 import com.software.sello.feature.backup.RestoreAction
 import com.software.sello.feature.backup.RestoreViewModel
+import com.software.sello.feature.backup.TusDatosRoot
 import com.software.sello.feature.category.CategoryEditorRoot
 import com.software.sello.feature.category.CategoryManagementRoot
 import com.software.sello.feature.expense.ExpenseEntryRoot
@@ -498,13 +499,19 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 SettingsRoot(
                     viewModels,
                     padding,
-                    onOpenBackup = { navigation.navigate(BackupRoute) { launchSingleTop = true } },
-                    onOpenReset = { navigation.navigate(ResetRoute) { launchSingleTop = true } },
                     onOpenSchedules = {
                         navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
                     },
                     onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } }
-                )
+                ) {
+                    TusDatosRoot(
+                        viewModels,
+                        onOpenBackup = {
+                            navigation.navigate(BackupRoute) { launchSingleTop = true }
+                        },
+                        onOpenReset = { navigation.navigate(ResetRoute) { launchSingleTop = true } }
+                    )
+                }
             }
             BackHandler(enabled = !state.monthPickerOpen) { navigation.popBackStack() }
         }

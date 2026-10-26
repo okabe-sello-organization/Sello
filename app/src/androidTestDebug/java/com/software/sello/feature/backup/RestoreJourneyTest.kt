@@ -4,6 +4,8 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -47,7 +49,6 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
-import com.software.sello.feature.settings.SETTINGS_BACKUP_TAG
 import com.software.sello.feature.settings.SETTINGS_TAG
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.platform.ProcessAppRestart
@@ -218,7 +219,7 @@ class RestoreJourneyTest {
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
         rule.awaitTag(SETTINGS_TAG)
-        rule.onNodeWithTag(SETTINGS_BACKUP_TAG).performScrollTo().performClick()
+        rule.onNodeWithTag(BACKUP_CARD_CONTENTS_TAG).performScrollTo().performClick()
         rule.awaitTag(BACKUP_TAG)
         rule.onNodeWithTag(RESTORE_CHOOSE_TAG).performScrollTo().performClick()
     }
@@ -265,6 +266,50 @@ class RestoreJourneyTest {
         rule.onNodeWithTag(RESTORE_LEAVE_TAG).performScrollTo().performClick()
         rule.waitForIdle()
         assertEquals(1, restarts)
+    }
+
+    @Test
+    fun restaurarOnTheCardOpensThePreviewOnRespaldoAndChangesNothing() {
+        answerWith(backup())
+        val before = financialRows()
+        scenario = ActivityScenario.launch(Intent(context, MainActivity::class.java))
+        rule.awaitTag(RECIBO_SUMMARY_TAG)
+        rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
+        rule.awaitTag(SETTINGS_TAG)
+        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).performScrollTo().performClick()
+
+        rule.awaitTag(RESTORE_PREVIEW_TAG)
+        rule.onNodeWithTag(BACKUP_TAG).assertExists()
+        rule.onNodeWithText("¿Reemplazar tus datos?").assertExists()
+        assertEquals(before, financialRows())
+        assertEquals(0, restarts)
+    }
+
+    @Test
+    fun aDismissedPickerLeavesConfiguracionAsItWas() {
+        val monitor = object : Instrumentation.ActivityMonitor() {
+            override fun onStartActivity(intent: Intent): Instrumentation.ActivityResult? =
+                if (intent.action == Intent.ACTION_OPEN_DOCUMENT) {
+                    Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null)
+                } else {
+                    null
+                }
+        }
+        instrumentation.addMonitor(monitor)
+        picker = monitor
+        val before = financialRows()
+        scenario = ActivityScenario.launch(Intent(context, MainActivity::class.java))
+        rule.awaitTag(RECIBO_SUMMARY_TAG)
+        rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
+        rule.awaitTag(SETTINGS_TAG)
+        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).performScrollTo().performClick()
+        rule.waitUntil(timeoutMillis = 10_000) { monitor.hits == 1 }
+        rule.waitForIdle()
+
+        rule.onNodeWithTag(SETTINGS_TAG).assertExists()
+        assertEquals(0, rule.onAllNodes(hasTestTag(BACKUP_TAG)).fetchSemanticsNodes().size)
+        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).assertIsEnabled()
+        assertEquals(before, financialRows())
     }
 
     @Test

@@ -95,8 +95,6 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
             koin.get(),
             koin.get(),
             koin.get(),
-            koin.get(),
-            koin.get(),
             koin.get()
         )
     }

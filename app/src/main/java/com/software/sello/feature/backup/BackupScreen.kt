@@ -1,10 +1,7 @@
 package com.software.sello.feature.backup
 
-import android.content.ActivityNotFoundException
 import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -47,44 +44,16 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
 
-/** Backups are plain JSON; the picker offers this type and the suggested name. */
-private const val BACKUP_MIME = "application/json"
-
 @Composable
 fun BackupRoot(viewModels: ViewModelProvider.Factory, contentPadding: PaddingValues) {
     val model: BackupViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
     val restoreModel: RestoreViewModel = viewModel(factory = viewModels)
     val restore by restoreModel.state.collectAsStateWithLifecycle()
-    // Any file may be a backup: providers name JSON differently, and the check decides.
-    val opener = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        restoreModel.onAction(RestoreAction.Chosen(uri?.toString()))
-    }
-    LaunchedEffect(restore.pickerRequest) {
-        if (!restore.pickerRequest) return@LaunchedEffect
-        restoreModel.onAction(RestoreAction.PickerOpened)
-        try {
-            opener.launch(arrayOf("*/*"))
-        } catch (_: ActivityNotFoundException) {
-            restoreModel.onAction(RestoreAction.Chosen(null))
-        }
-    }
+    RestoreFilePicker(restore, restoreModel::onAction)
     // Once the history is replaced, leaving starts the app again from Recibo.
     BackHandler(enabled = restore.replaced) { restoreModel.onAction(RestoreAction.Leave) }
-    // The launcher is restored with the screen, so an answer that arrives after the
-    // process was recreated still reaches the new view model.
-    val picker = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument(BACKUP_MIME)
-    ) { uri -> model.onAction(BackupAction.DestinationChosen(uri?.toString())) }
-    LaunchedEffect(state.pickerRequest) {
-        val name = state.pickerRequest ?: return@LaunchedEffect
-        model.onAction(BackupAction.PickerOpened)
-        try {
-            picker.launch(name)
-        } catch (_: ActivityNotFoundException) {
-            model.onAction(BackupAction.DestinationChosen(null))
-        }
-    }
+    BackupSavePicker(state, model::onAction)
     BackupScreen(
         state,
         model::onAction,
@@ -135,31 +104,7 @@ fun BackupScreen(
         // history is replaced it is the only thing on the screen.
         if (restoreFirst || restoreOnly) restore()
         if (restoreOnly) return@Column
-        state.failure?.let { failure ->
-            ErrorSlip(
-                title = stringResource(R.string.backup_failed_title),
-                message = stringResource(
-                    when (failure) {
-                        BackupFailure.Write -> R.string.backup_failed_write
-                        BackupFailure.Storage -> R.string.backup_failed_storage
-                        BackupFailure.TooLarge -> R.string.backup_failed_too_large
-                        BackupFailure.SelfCheck -> R.string.backup_failed_self_check
-                    }
-                ),
-                retryLabel = stringResource(R.string.backup_retry),
-                onRetry = { if (!state.busy) onAction(BackupAction.Create) },
-                modifier = Modifier.testTag(BACKUP_FAILED_TAG)
-            )
-        }
-        if (state.unknownOutcome && state.failure == null) {
-            ErrorSlip(
-                title = stringResource(R.string.backup_unknown_title),
-                message = stringResource(R.string.backup_unknown),
-                retryLabel = stringResource(R.string.backup_unknown_action),
-                onRetry = { if (!state.busy) onAction(BackupAction.Create) },
-                modifier = Modifier.testTag(BACKUP_UNKNOWN_TAG)
-            )
-        }
+        BackupProblems(state) { onAction(BackupAction.Create) }
         LastBackupSlip(state, onAction)
         Disclosure()
         SelloButton(
@@ -271,23 +216,58 @@ private fun Disclosure() {
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.semantics { heading() }
         )
-        BulletList(
-            listOf(
-                Bullet(
-                    stringResource(R.string.backup_disclosure_readable_lead),
-                    stringResource(R.string.backup_disclosure_readable)
-                ),
-                Bullet(
-                    stringResource(R.string.backup_disclosure_yours_lead),
-                    stringResource(R.string.backup_disclosure_yours)
-                ),
-                Bullet(
-                    stringResource(R.string.backup_disclosure_cloud_lead),
-                    stringResource(R.string.backup_disclosure_cloud)
-                ),
-                Bullet(null, stringResource(R.string.backup_disclosure_reset))
+        BulletList(backupDisclosure(), Modifier.padding(top = SelloTheme.spacing.sm))
+    }
+}
+
+/** What a backup file is, and is not, read before choosing where to save one. */
+@Composable
+internal fun backupDisclosure(): List<Bullet> = listOf(
+    Bullet(
+        stringResource(R.string.backup_disclosure_readable_lead),
+        stringResource(R.string.backup_disclosure_readable)
+    ),
+    Bullet(
+        stringResource(R.string.backup_disclosure_yours_lead),
+        stringResource(R.string.backup_disclosure_yours)
+    ),
+    Bullet(
+        stringResource(R.string.backup_disclosure_cloud_lead),
+        stringResource(R.string.backup_disclosure_cloud)
+    ),
+    Bullet(null, stringResource(R.string.backup_disclosure_reset))
+)
+
+/**
+ * A save that failed, or one a closed process may have left unfinished, as Respaldo and
+ * Configuración's backup card both say it, with [onCreate] to try again the way that
+ * screen starts a save. Nothing when there is neither.
+ */
+@Composable
+internal fun BackupProblems(state: BackupState, onCreate: () -> Unit) {
+    state.failure?.let { failure ->
+        ErrorSlip(
+            title = stringResource(R.string.backup_failed_title),
+            message = stringResource(
+                when (failure) {
+                    BackupFailure.Write -> R.string.backup_failed_write
+                    BackupFailure.Storage -> R.string.backup_failed_storage
+                    BackupFailure.TooLarge -> R.string.backup_failed_too_large
+                    BackupFailure.SelfCheck -> R.string.backup_failed_self_check
+                }
             ),
-            Modifier.padding(top = SelloTheme.spacing.sm)
+            retryLabel = stringResource(R.string.backup_retry),
+            onRetry = { if (!state.busy) onCreate() },
+            modifier = Modifier.testTag(BACKUP_FAILED_TAG)
+        )
+    }
+    if (state.unknownOutcome && state.failure == null) {
+        ErrorSlip(
+            title = stringResource(R.string.backup_unknown_title),
+            message = stringResource(R.string.backup_unknown),
+            retryLabel = stringResource(R.string.backup_unknown_action),
+            onRetry = { if (!state.busy) onCreate() },
+            modifier = Modifier.testTag(BACKUP_UNKNOWN_TAG)
         )
     }
 }

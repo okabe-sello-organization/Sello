@@ -43,8 +43,8 @@ import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.feature.backup.BACKUP_CARD_RESET_TAG
 import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
-import com.software.sello.feature.settings.SETTINGS_RESET_TAG
 import com.software.sello.feature.settings.SETTINGS_TAG
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.platform.ProcessAppRestart
@@ -125,7 +125,7 @@ class ResetReuseJourneyTest {
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
         rule.awaitTag(SETTINGS_TAG)
-        rule.onNodeWithTag(SETTINGS_RESET_TAG).performScrollTo().performClick()
+        rule.onNodeWithTag(BACKUP_CARD_RESET_TAG).performScrollTo().performClick()
         rule.awaitTag(RESET_COUNTS_TAG)
     }
 

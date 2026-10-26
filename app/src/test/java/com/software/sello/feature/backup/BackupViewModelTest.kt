@@ -14,6 +14,7 @@ import com.software.sello.domain.port.DocumentWrite
 import com.software.sello.domain.port.LastBackup
 import com.software.sello.navigation.HandFinancialClock
 import java.time.Instant
+import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -84,6 +85,30 @@ class BackupViewModelTest {
         assertNull(state.last)
         assertFalse(state.unknownOutcome)
         assertFalse(state.busy)
+    }
+
+    @Test
+    fun theStateKnowsTheFinancialDaySoTheBackupsAgeFollowsRollover() = runTest {
+        val model = model()
+        assertEquals(LocalDate.parse("2026-10-22"), model.state.value.today)
+
+        clock.goTo("2026-10-23")
+        runCurrent()
+
+        assertEquals(LocalDate.parse("2026-10-23"), model.state.value.today)
+    }
+
+    @Test
+    fun anUnreadableRecordIsSaidSoAndABackupCanStillBeMade() = runTest {
+        val model = model()
+        records.failReads()
+        runCurrent()
+
+        assertTrue(model.state.value.recordFailed)
+        assertNull(model.state.value.last)
+        assertFalse(model.state.value.busy)
+        // The picker still opens with a name to suggest.
+        assertTrue(openPicker(model).isNotEmpty())
     }
 
     @Test

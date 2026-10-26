@@ -16,6 +16,7 @@ import com.software.sello.catalog.components.ChipRowsExample
 import com.software.sello.catalog.components.ChoiceSlipExample
 import com.software.sello.catalog.components.ColumnsChartExample
 import com.software.sello.catalog.components.ComparisonExample
+import com.software.sello.catalog.components.ConfirmPointsExample
 import com.software.sello.catalog.components.ConfirmSlipExample
 import com.software.sello.catalog.components.CountingExample
 import com.software.sello.catalog.components.DangerAndTicketExample
@@ -32,6 +33,7 @@ import com.software.sello.catalog.components.GoalPillExample
 import com.software.sello.catalog.components.GoalsBandExample
 import com.software.sello.catalog.components.IconChoiceExample
 import com.software.sello.catalog.components.IconStripExample
+import com.software.sello.catalog.components.InkSwatchesExample
 import com.software.sello.catalog.components.InvestmentStatesExample
 import com.software.sello.catalog.components.InvestmentsExample
 import com.software.sello.catalog.components.KeyValueExample
@@ -46,12 +48,14 @@ import com.software.sello.catalog.components.MovementsExample
 import com.software.sello.catalog.components.NavigationBarExample
 import com.software.sello.catalog.components.NoteComposerExample
 import com.software.sello.catalog.components.NoticeExample
+import com.software.sello.catalog.components.OptionSlipExample
 import com.software.sello.catalog.components.PastMonthRibbonExample
 import com.software.sello.catalog.components.PlanSlipExample
 import com.software.sello.catalog.components.RankingExample
 import com.software.sello.catalog.components.RepeatSheetExample
 import com.software.sello.catalog.components.ScaffoldExample
 import com.software.sello.catalog.components.ScheduleRowExample
+import com.software.sello.catalog.components.SettingRowExample
 import com.software.sello.catalog.components.SettingsControlsExample
 import com.software.sello.catalog.components.SlipExample
 import com.software.sello.catalog.components.SlipSkeletonExample
@@ -182,6 +186,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         R.string.catalog_example_schedule_row
     ) { ScheduleRowExample() },
     CatalogExample(
+        "paper.setting-row",
+        CatalogGroup.Paper,
+        R.string.catalog_example_setting_row
+    ) { SettingRowExample() },
+    CatalogExample(
         "stamps.stamp",
         CatalogGroup.Stamps,
         R.string.catalog_example_stamp
@@ -211,6 +220,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         CatalogGroup.Inputs,
         R.string.catalog_example_button
     ) { ButtonExample() },
+    CatalogExample(
+        "inputs.ink-swatches",
+        CatalogGroup.Inputs,
+        R.string.catalog_example_ink_swatches
+    ) { InkSwatchesExample() },
     CatalogExample(
         "inputs.chip",
         CatalogGroup.Inputs,
@@ -344,6 +358,16 @@ val catalogExamples: List<CatalogExample> = listOf(
         CatalogGroup.Feedback,
         R.string.catalog_example_choice_slip
     ) { ChoiceSlipExample() },
+    CatalogExample(
+        "feedback.option-slip",
+        CatalogGroup.Feedback,
+        R.string.catalog_example_option_slip
+    ) { OptionSlipExample() },
+    CatalogExample(
+        "feedback.confirm-points",
+        CatalogGroup.Feedback,
+        R.string.catalog_example_confirm_points
+    ) { ConfirmPointsExample() },
     CatalogExample(
         "feedback.empty-slip",
         CatalogGroup.Feedback,

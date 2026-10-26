@@ -388,7 +388,7 @@ fun ScheduleRow(
  * one above the other at full width when a word of either label would not fit its share.
  */
 @Composable
-internal fun ButtonPair(
+fun ButtonPair(
     firstWeight: Float,
     secondWeight: Float,
     modifier: Modifier = Modifier,

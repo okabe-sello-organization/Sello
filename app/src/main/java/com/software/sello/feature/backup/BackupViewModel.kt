@@ -9,6 +9,7 @@ import com.software.sello.domain.port.DocumentDestination
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.LastBackup
 import com.software.sello.domain.port.PreferenceRead
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -58,6 +59,7 @@ class BackupViewModel(
             loading = false,
             last = (progress as? BackupProgress.Saved)?.backup ?: stored.last,
             zone = today.zone,
+            today = today.date,
             recordFailed = failed,
             // While this process is saving, the recorded start is its own.
             unknownOutcome = stored.unfinished && !saving,
@@ -119,6 +121,7 @@ data class BackupState(
     val loading: Boolean = true,
     val last: LastBackup? = null,
     val zone: ZoneId? = null,
+    val today: LocalDate? = null,
     val recordFailed: Boolean = false,
     val unknownOutcome: Boolean = false,
     val choosing: Boolean = false,

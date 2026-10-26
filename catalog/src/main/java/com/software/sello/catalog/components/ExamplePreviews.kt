@@ -257,3 +257,27 @@ private fun CelebrationOpenPreview(
         "Listo", "Ver mi meta", {}, {}
     )
 }
+
+@ExampleThemePreviews
+@Composable
+private fun SettingRowExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { SettingRowExample() }
+
+@ExampleThemePreviews
+@Composable
+private fun InkSwatchesExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { InkSwatchesExample() }
+
+@ExampleThemePreviews
+@Composable
+private fun OptionSlipExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { OptionSlipExample() }
+
+@ExampleThemePreviews
+@Composable
+private fun ConfirmPointsExamplePreview(
+    @PreviewParameter(ExamplePreviewThemes::class) theme: ExamplePreviewTheme
+) = Frame(theme) { ConfirmPointsExample() }
