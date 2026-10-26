@@ -104,7 +104,10 @@ import com.software.sello.feature.recurrence.CatchUpNoticeBar
 import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
 import com.software.sello.feature.recurrence.CatchUpRecordedRoot
 import com.software.sello.feature.recurrence.ScheduleEditorRoot
+import com.software.sello.feature.recurrence.ScheduleTab
 import com.software.sello.feature.recurrence.SchedulesRoot
+import com.software.sello.feature.recurrence.SchedulesState
+import com.software.sello.feature.recurrence.SchedulesViewModel
 import com.software.sello.feature.reset.ResetRoot
 import com.software.sello.feature.reset.ResetViewModel
 import com.software.sello.feature.reset.back
@@ -556,24 +559,41 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
             }
         }
         composable<SchedulesRoute> {
+            // The list's own view model, so the + adds to the tab on screen.
+            val schedules: SchedulesViewModel = viewModel(factory = viewModels)
+            val listed by schedules.state.collectAsStateWithLifecycle()
+            val incomes = (listed as? SchedulesState.Ready)?.tab == ScheduleTab.Incomes
             ShellScreen(
                 state,
                 monthNames(),
                 shell::onAction,
                 navigation = null,
                 onBack = { navigation.popBackStack() },
-                screenTitle = stringResource(R.string.schedules_title),
+                // Always the current month: the title has no month to pick (SELLO-122).
+                titleOnly = stringResource(R.string.schedules_title),
                 pastMonthRibbon = false,
                 entryDock = false,
                 notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } },
                 actions = {
                     IconButton(
-                        onClick = { navigation.navigate(ExpenseEntryRoute(repeat = true)) },
+                        onClick = {
+                            if (incomes) {
+                                navigation.navigate(IncomeEntryRoute(repeat = true))
+                            } else {
+                                navigation.navigate(ExpenseEntryRoute(repeat = true))
+                            }
+                        },
                         modifier = Modifier.testTag("schedules.add")
                     ) {
                         Icon(
                             SelloIcon.Add.painter(),
-                            contentDescription = stringResource(R.string.schedules_add_payment)
+                            contentDescription = stringResource(
+                                if (incomes) {
+                                    R.string.schedules_add_income
+                                } else {
+                                    R.string.schedules_add_payment
+                                }
+                            )
                         )
                     }
                 }
@@ -583,13 +603,6 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                     padding,
                     onOpen = { id ->
                         navigation.navigate(ScheduleRoute(id)) { launchSingleTop = true }
-                    },
-                    onAdd = { addIncome ->
-                        if (addIncome) {
-                            navigation.navigate(IncomeEntryRoute(repeat = true))
-                        } else {
-                            navigation.navigate(ExpenseEntryRoute(repeat = true))
-                        }
                     }
                 )
             }

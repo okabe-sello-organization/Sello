@@ -27,7 +27,7 @@ synthetic.
 | [Income](income.html) | Locked 2026-10-15 |
 | [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16 |
 | [Inversiones](inversiones.html) | Locked 2026-10-16; USD and the rate added 2026-10-25 by owner delegation (SELLO-106) |
-| [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice |
+| [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice; the list redesigned by the owner 2026-10-26 (SELLO-122) |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
 
 ## Recibo / Home
@@ -470,12 +470,15 @@ keeps everything on opening, with no notification or background work.
   earlier. The button reads **Guardar pago fijo / Guardar ingreso fijo**; a schedule
   starting today is recorded at once and shows in the notice. Confirmation: "Pago fijo
   guardado: Arriendo, el 5 de cada mes".
-- **The list:** title **Pagos e ingresos fijos**, **+** opening the entry with Se repite
-  on, a **Pagos / Ingresos** switch, a dashed **Previsto en octubre** plan (what already
-  went through, what is still to come in soft ink, the month's sum under one rule; never
-  a recorded total), then one row per schedule (icon, name, category, rule, next date,
-  amount; still to come in soft ink; **En pausa** stamped and dimmed) and **Terminados**.
-  Empty: "Nada se repite todavía" with **Anotar algo que se repite**.
+- **The list (owner, redesigned 2026-10-26 in SELLO-122):** title **Pagos e ingresos
+  fijos** without the month, **+** opening the entry with Se repite on for the tab, a
+  **Pagos / Ingresos** switch, a pinked slip **Tus pagos fijos de octubre** with the
+  month's sum, a bar of what went through against what is still to come and both amounts
+  under it (incomes in gain ink; no stamp), then the rows grouped **Faltan en octubre**
+  (the day in a pill, Hoy or Mañana when it is), **Ya se anotaron / Ya entraron** (a
+  check, "anotado lun 5 oct", the next date), **Más adelante**, **En pausa** (dimmed) and
+  **Terminados**, each with its count. Empty: "Nada se repite todavía" with no button; the
+  footnote says to mark Se repite when noting one.
 - **Changing a schedule:** tapping a row opens the entry layout titled **Pago fijo /
   Ingreso fijo**: amount, category or source, note, Se repite, "Los cambios aplican desde
   mañana. Lo que ya se anotó no cambia.", **Pausar** (with the next date) or, while

@@ -32,9 +32,17 @@ import kotlinx.coroutines.flow.update
 enum class ScheduleTab { Payments, Incomes }
 
 /**
+ * Where a schedule sits in the list on the financial day, in this order: something still
+ * [Due] this month, this month already [Recorded], nothing this month ([Later]), [Paused]
+ * or [Ended].
+ */
+enum class ScheduleGroup { Due, Recorded, Later, Paused, Ended }
+
+/**
  * One schedule's row. A payment is named by its note, else its category ([categoryName]
  * with [iconKey]); an income by its note, else its source ([sourceKey], [sourceName]).
- * [soon] says one is still to come this month; [pausedFrom] and [endedOn] dim it.
+ * [soon] says one is still to come this month; [pausedFrom] and [endedOn] dim it. [group]
+ * places it in the list; [recordedOn] is when this month's last occurrence went through.
  */
 data class ScheduleRow(
     val id: String,
@@ -49,7 +57,9 @@ data class ScheduleRow(
     val amount: MoneyTextValue,
     val soon: Boolean,
     val pausedFrom: LocalDate?,
-    val endedOn: LocalDate?
+    val endedOn: LocalDate?,
+    val group: ScheduleGroup = ScheduleGroup.Due,
+    val recordedOn: LocalDate? = null
 )
 
 /** The month as a plan: what went through, what is still to come, both. Never recorded money. */
@@ -60,7 +70,10 @@ data class ScheduleMonthPlan(
     val toCome: MoneyTextValue,
     val toComeCount: Int,
     val total: MoneyTextValue,
-    val active: Int
+    val active: Int,
+    /** The minor units behind [done] and [total], only to draw the bar's share. */
+    val doneUnits: Long = 0,
+    val totalUnits: Long = 0
 )
 
 sealed interface SchedulesState {
@@ -176,7 +189,15 @@ class SchedulesViewModel(
                 amount = money.format(entry.amount.money),
                 soon = line.toComeThisMonth,
                 pausedFrom = line.pausedFrom,
-                endedOn = schedule.recurrence.end.takeIf { line.status == ScheduleStatus.Ended }
+                endedOn = schedule.recurrence.end.takeIf { line.status == ScheduleStatus.Ended },
+                group = when {
+                    line.status == ScheduleStatus.Ended -> ScheduleGroup.Ended
+                    line.status == ScheduleStatus.Paused -> ScheduleGroup.Paused
+                    line.toComeThisMonth -> ScheduleGroup.Due
+                    line.recordedThisMonth != null -> ScheduleGroup.Recorded
+                    else -> ScheduleGroup.Later
+                },
+                recordedOn = line.recordedThisMonth
             )
         }
         return SchedulesState.Ready(
@@ -189,7 +210,9 @@ class SchedulesViewModel(
                     money.format(it.toCome),
                     it.toComeCount,
                     money.format(it.total),
-                    it.active
+                    it.active,
+                    it.done.minorUnits,
+                    it.total.minorUnits
                 )
             },
             rows = rows.filter { it.first != ScheduleStatus.Ended }.map { it.second },

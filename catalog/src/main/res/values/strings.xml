@@ -428,4 +428,9 @@
     <string name="catalog_demo_exportar" formatted="false">Exportar tus datos</string>
     <string name="catalog_demo_compartir" formatted="false">Compartir</string>
     <string name="catalog_demo_guardar" formatted="false">Guardar</string>
+    <string name="catalog_demo_aseo_carro" formatted="false">Aseo carro</string>
+    <string name="catalog_demo_el_4_de_cada_mes" formatted="false">el 4 de cada mes</string>
+    <string name="catalog_demo_manana_jue_4" formatted="false">Mañana, jue 4 feb</string>
+    <string name="catalog_demo_anotado_lun_1" formatted="false">el 1 de cada mes · anotado lun 1 feb</string>
+    <string name="catalog_demo_proximo_lun_1_mar" formatted="false">próximo lun 1 mar</string>
 </resources>

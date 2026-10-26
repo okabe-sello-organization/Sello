@@ -2,6 +2,7 @@ package com.software.sello.designsystem.component
 
 import android.view.KeyEvent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -457,6 +458,42 @@ class RecurrencePartsTest {
                 useUnmergedTree = true
             )
             assertFalse(scheme, checks.fetchSemanticsNodes().isNotEmpty())
+        }
+    }
+
+    @Test
+    fun aRowCarriesItsDayInAPillAndARecordedOneStaysOneButton() {
+        var opened = 0
+        rule.inEveryScheme(reset = { opened = 0 }, content = {
+            Column {
+                ScheduleRow(
+                    name = "Aseo carro",
+                    caption = "el 4 de cada mes",
+                    amount = pesos("30.000"),
+                    icon = SelloIcon.DirectionsCar,
+                    onClick = {},
+                    spoken = "Aseo carro, 30.000 pesos, el 4 de cada mes, Mañana, jue 4 feb",
+                    pill = "Mañana, jue 4 feb"
+                )
+                ScheduleRow(
+                    name = "Arriendo",
+                    caption = "el 1 de cada mes · anotado lun 1 feb",
+                    amount = pesos("1.200.000"),
+                    icon = SelloIcon.Home,
+                    onClick = { opened++ },
+                    spoken = "Arriendo, 1.200.000 pesos, anotado lun 1 feb, próximo lun 1 mar",
+                    pill = "próximo lun 1 mar",
+                    recorded = true,
+                    last = true
+                )
+            }
+        }) { scheme ->
+            rule.onNodeWithText("Mañana, jue 4 feb", useUnmergedTree = true).assertExists()
+            rule.onNodeWithText("próximo lun 1 mar", useUnmergedTree = true).assertExists()
+            rule.onNodeWithContentDescription(
+                "Arriendo, 1.200.000 pesos, anotado lun 1 feb, próximo lun 1 mar"
+            ).assert(isButton).performClick()
+            assertEquals(scheme, 1, opened)
         }
     }
 }

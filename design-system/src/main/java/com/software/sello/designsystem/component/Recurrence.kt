@@ -289,11 +289,13 @@ fun RepeatNext(text: String, modifier: Modifier = Modifier) {
 
 /**
  * One payment or income that repeats: its [icon] in a circle, [name] over [caption] (the
- * category, the rule, the next date), an optional [pausedLabel] stamp and the [amount].
- * One still [soon] to come is in soft ink; an [income] is in gain ink. [dimmed], for one
- * paused or ended, softens it while every text keeps its contrast. The whole row is one
- * button read as [spoken]. From font scale 1.6 the amount goes under the name. A rule
- * separates it from the next row unless it is the [last].
+ * category, the rule, the next date), an optional [pausedLabel] stamp and the [amount],
+ * with an optional date [pill] under it. One still [soon] to come is in soft ink; an
+ * [income] is in gain ink. [recorded], for one whose month already went through, shows a
+ * check instead of its icon and softens a payment's amount. [dimmed], for one paused or
+ * ended, softens it while every text keeps its contrast. The whole row is one button read
+ * as [spoken]. From font scale 1.6 the amount goes under the name. A rule separates it
+ * from the next row unless it is the [last].
  */
 @Composable
 fun ScheduleRow(
@@ -308,23 +310,29 @@ fun ScheduleRow(
     income: Boolean = false,
     pausedLabel: String? = null,
     dimmed: Boolean = false,
-    last: Boolean = false
+    last: Boolean = false,
+    pill: String? = null,
+    recorded: Boolean = false
 ) {
     val colors = SelloTheme.colors
     val large = LocalDensity.current.fontScale >= LARGE_TYPE_SCALE
     val amountInk = when {
         dimmed || soon -> colors.inkSoft
         income -> colors.semantic.gain
+        recorded -> colors.inkSoft
         else -> colors.ink
     }
     val figure: @Composable () -> Unit = {
-        MoneyText(
-            amount,
-            color = amountInk,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                fontWeight = if (soon) FontWeight.W700 else FontWeight.W800
+        Column(horizontalAlignment = if (large) Alignment.Start else Alignment.End) {
+            MoneyText(
+                amount,
+                color = amountInk,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = if (soon) FontWeight.W700 else FontWeight.W800
+                )
             )
-        )
+            if (pill != null) DatePill(pill, Modifier.padding(top = 3.dp))
+        }
     }
     val stamp: @Composable () -> Unit = {
         if (pausedLabel != null) Stamp(pausedLabel, StampInk.Neutral)
@@ -359,20 +367,26 @@ fun ScheduleRow(
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(34.dp).background(colors.paperAlt, CircleShape)
+            modifier = Modifier
+                .size(34.dp)
+                .background(if (recorded) colors.paperDim else colors.paperAlt, CircleShape)
         ) {
             Icon(
-                icon.painter(),
+                if (recorded) SelloIcon.Check.painter() else icon.painter(),
                 null,
                 Modifier.size(19.dp),
-                if (dimmed) colors.inkSoft else colors.brand
+                when {
+                    recorded -> colors.semantic.gain
+                    dimmed -> colors.inkSoft
+                    else -> colors.brand
+                }
             )
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 name,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),
-                color = if (dimmed) colors.inkSoft else colors.ink
+                color = if (dimmed || recorded) colors.inkSoft else colors.ink
             )
             Text(caption, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)
             // Under the caption, so a paused row's caption keeps the row's width.
@@ -381,6 +395,20 @@ fun ScheduleRow(
         }
         if (!large) figure()
     }
+}
+
+/** A day in a small brand pill, such as "Mañana, jue 4 feb": information, not a button. */
+@Composable
+private fun DatePill(text: String, modifier: Modifier = Modifier) {
+    val colors = SelloTheme.colors
+    Text(
+        text,
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W700),
+        color = colors.onBrandSoft,
+        modifier = modifier
+            .background(colors.brandSoft, CircleShape)
+            .padding(horizontal = 7.dp, vertical = 1.dp)
+    )
 }
 
 /**

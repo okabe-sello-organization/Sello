@@ -1,17 +1,24 @@
 package com.software.sello.feature.recurrence
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -23,16 +30,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
-import com.software.sello.designsystem.component.LeaderLine
-import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneyText
-import com.software.sello.designsystem.component.PlanSlip
+import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.ScheduleRow
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
-import com.software.sello.designsystem.component.TotalLine
-import com.software.sello.designsystem.component.TotalRule
+import com.software.sello.designsystem.component.SplitBar
+import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.category.CategoryIcons
@@ -42,6 +47,7 @@ import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.presentation.recurrence.repeatRuleLabel
 import java.time.LocalDate
+import java.time.YearMonth
 
 const val SCHEDULES_TAG = "schedules"
 
@@ -49,19 +55,19 @@ const val SCHEDULES_TAG = "schedules"
 fun SchedulesRoot(
     viewModels: ViewModelProvider.Factory,
     padding: PaddingValues,
-    onOpen: (String) -> Unit,
-    onAdd: (income: Boolean) -> Unit
+    onOpen: (String) -> Unit
 ) {
     val model: SchedulesViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
     val today by model.today.collectAsStateWithLifecycle()
-    SchedulesScreen(state, today, model::onAction, onOpen, onAdd, padding)
+    SchedulesScreen(state, today, model::onAction, onOpen, padding)
 }
 
 /**
- * Pagos e ingresos fijos (docs/design/v2/fijos.html): Pagos or Ingresos, the month as a
- * dashed plan, never recorded money, then each schedule by day, paused ones dimmed, and
- * the ended ones apart. A failed read is said, never shown as nothing repeating.
+ * Pagos e ingresos fijos (SELLO-122): Pagos or Ingresos, the month's total with how much
+ * of it went through, then each schedule grouped by what its month holds. The month is
+ * a plan, never recorded money. A failed read is said, never shown as nothing repeating.
+ * Adding one is Se repite's, from the top bar's + or Anotar: there is no button here.
  */
 @Composable
 fun SchedulesScreen(
@@ -69,7 +75,6 @@ fun SchedulesScreen(
     today: LocalDate,
     onAction: (SchedulesAction) -> Unit,
     onOpen: (String) -> Unit,
-    onAdd: (income: Boolean) -> Unit,
     padding: PaddingValues
 ) {
     val dates = dateLabels()
@@ -111,50 +116,12 @@ fun SchedulesScreen(
                         title = stringResource(R.string.schedules_empty_title),
                         body = stringResource(R.string.schedules_empty_body),
                         icon = SelloIcon.Autorenew,
-                        actionLabel = stringResource(R.string.schedules_empty_action),
-                        onAction = { onAdd(state.tab == ScheduleTab.Incomes) },
                         modifier = Modifier.testTag("schedules.empty")
                     )
                 }
             } else {
-                state.plan?.let { plan -> item { MonthPlan(plan, state.tab) } }
-                item {
-                    Slip(Modifier.fillMaxWidth().testTag("schedules.list"), pinked = false) {
-                        Text(
-                            stringResource(
-                                if (state.tab == ScheduleTab.Incomes) {
-                                    R.string.schedules_list_incomes
-                                } else {
-                                    R.string.schedules_list_payments
-                                }
-                            ),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.semantics { heading() }
-                        )
-                        state.rows.forEachIndexed { index, row ->
-                            Row(row, today, dates, onOpen, last = index == state.rows.lastIndex)
-                        }
-                        if (state.ended.isNotEmpty()) {
-                            Text(
-                                stringResource(R.string.schedules_ended).uppercase(),
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.W800
-                                ),
-                                color = SelloTheme.colors.inkSoft,
-                                modifier = Modifier.padding(top = 14.dp).semantics { heading() }
-                            )
-                            state.ended.forEachIndexed { index, row ->
-                                Row(
-                                    row,
-                                    today,
-                                    dates,
-                                    onOpen,
-                                    last = index == state.ended.lastIndex
-                                )
-                            }
-                        }
-                    }
-                }
+                state.plan?.let { plan -> item { Summary(plan, state.tab) } }
+                item { Groups(state, today, dates, onOpen) }
                 item {
                     Text(
                         stringResource(R.string.schedules_footnote),
@@ -168,30 +135,163 @@ fun SchedulesScreen(
     }
 }
 
+/**
+ * The month's total for the tab, a bar of how much of it went through, and both parts.
+ * Incomes in gain ink. No stamp (owner, 2026-10-26).
+ */
 @Composable
-private fun MonthPlan(plan: ScheduleMonthPlan, tab: ScheduleTab) {
+private fun Summary(plan: ScheduleMonthPlan, tab: ScheduleTab) {
+    val colors = SelloTheme.colors
     val income = tab == ScheduleTab.Incomes
-    PlanSlip(
-        tag = stringResource(R.string.schedules_plan_tag, monthNames().inSentence(plan.month)),
-        caption = pluralStringResource(
-            if (income) R.plurals.schedules_active_incomes else R.plurals.schedules_active_payments,
-            plan.active,
-            plan.active
-        ),
-        modifier = Modifier.testTag("schedules.plan")
-    ) {
-        LeaderLine(
+    val month = monthNames().inSentence(plan.month)
+    val accent = if (income) colors.semantic.gain else colors.brand
+    val recordedLabel = stringResource(
+        if (income) {
+            R.string.schedules_summary_recorded_incomes
+        } else {
+            R.string.schedules_summary_recorded_payments
+        }
+    )
+    val toComeLabel = stringResource(R.string.schedules_summary_to_come)
+    val doneUnits = plan.doneUnits
+    val totalUnits = plan.totalUnits
+    Slip(Modifier.fillMaxWidth().testTag("schedules.plan")) {
+        Text(
             stringResource(
-                if (income) R.string.schedules_plan_done_incomes else R.string.schedules_plan_done,
-                plan.doneCount
+                if (income) {
+                    R.string.schedules_summary_incomes
+                } else {
+                    R.string.schedules_summary_payments
+                },
+                month
+            ),
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W700),
+            color = colors.inkSoft,
+            modifier = Modifier.semantics { heading() }
+        )
+        MoneyText(
+            plan.total,
+            color = if (income) colors.semantic.gain else colors.ink,
+            textStyle = MaterialTheme.typography.displaySmall,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        SplitBar(
+            listOf(
+                SplitSegment(
+                    fraction = if (totalUnits == 0L) 0f else doneUnits.toFloat() / totalUnits,
+                    spoken = stringResource(
+                        R.string.schedules_summary_spoken,
+                        recordedLabel,
+                        plan.done.spoken,
+                        plan.total.spoken
+                    ),
+                    color = accent
+                ),
+                SplitSegment(
+                    fraction = if (totalUnits ==
+                        0L
+                    ) {
+                        1f
+                    } else {
+                        (totalUnits - doneUnits).toFloat() / totalUnits
+                    },
+                    spoken = stringResource(
+                        R.string.schedules_summary_spoken,
+                        toComeLabel,
+                        plan.toCome.spoken,
+                        plan.total.spoken
+                    ),
+                    color = colors.paperDim
+                )
+            ),
+            modifier = Modifier.padding(vertical = 10.dp)
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Part(recordedLabel, plan.done, accent)
+            Part(toComeLabel, plan.toCome, colors.paperDim)
+        }
+    }
+}
+
+@Composable
+private fun Part(label: String, amount: MoneyTextValue, dot: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(8.dp).background(dot, CircleShape))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall,
+            color = SelloTheme.colors.inkSoft,
+            modifier = Modifier.padding(start = 5.dp, end = 4.dp)
+        )
+        MoneyText(
+            amount,
+            color = SelloTheme.colors.ink,
+            textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W700)
+        )
+    }
+}
+
+/** The schedules by what their month holds; a group with none is left out. */
+@Composable
+private fun Groups(
+    state: SchedulesState.Ready,
+    today: LocalDate,
+    dates: DateLabels,
+    onOpen: (String) -> Unit
+) {
+    val income = state.tab == ScheduleTab.Incomes
+    val month = monthNames().inSentence(YearMonth.from(today))
+    val all = state.rows + state.ended
+    val groups = ScheduleGroup.entries.associateWith { group ->
+        val rows = all.filter { it.group == group }
+        when (group) {
+            ScheduleGroup.Due -> rows.sortedBy { it.next ?: LocalDate.MAX }
+            ScheduleGroup.Recorded -> rows.sortedBy { it.recordedOn }
+            ScheduleGroup.Later -> rows.sortedBy { it.next ?: LocalDate.MAX }
+            else -> rows
+        }
+    }.filterValues { it.isNotEmpty() }
+    Slip(Modifier.fillMaxWidth().testTag("schedules.list")) {
+        groups.entries.forEachIndexed { index, (group, rows) ->
+            Text(
+                when (group) {
+                    ScheduleGroup.Due -> stringResource(
+                        R.string.schedules_group_due,
+                        month,
+                        rows.size
+                    )
+
+                    ScheduleGroup.Recorded -> stringResource(
+                        if (income) {
+                            R.string.schedules_group_recorded_incomes
+                        } else {
+                            R.string.schedules_group_recorded_payments
+                        },
+                        rows.size
+                    )
+
+                    ScheduleGroup.Later -> stringResource(R.string.schedules_group_later, rows.size)
+
+                    ScheduleGroup.Paused -> stringResource(
+                        R.string.schedules_group_paused,
+                        rows.size
+                    )
+
+                    ScheduleGroup.Ended -> stringResource(R.string.schedules_group_ended, rows.size)
+                }.uppercase(),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W800),
+                color = SelloTheme.colors.inkSoft,
+                modifier = Modifier
+                    .padding(top = if (index == 0) 0.dp else 14.dp, bottom = 2.dp)
+                    .semantics { heading() }
+                    .testTag("schedules.group.${group.name.lowercase()}")
             )
-        ) { MoneyText(plan.done) }
-        LeaderLine(
-            stringResource(R.string.schedules_plan_to_come, plan.toComeCount),
-            emphasis = LineEmphasis.Soft
-        ) { MoneyText(plan.toCome, fontWeight = FontWeight.W700) }
-        TotalLine(stringResource(R.string.schedules_plan_total), rule = TotalRule.Single) {
-            MoneyText(plan.total)
+            rows.forEachIndexed { at, row ->
+                Row(row, today, dates, onOpen, income, last = at == rows.lastIndex)
+            }
         }
     }
 }
@@ -202,27 +302,49 @@ private fun Row(
     today: LocalDate,
     dates: DateLabels,
     onOpen: (String) -> Unit,
+    income: Boolean,
     last: Boolean
 ) {
-    val income = row.sourceKey != null
     val name =
         row.note ?: row.categoryName ?: row.sourceKey?.let { incomeSourceLabel(it, row.sourceName) }
             ?: ""
     val rule = repeatRuleLabel(row.rule, row.start)
-    val state = when {
-        row.endedOn != null -> stringResource(
-            R.string.schedules_ended_on,
-            dates.day(row.endedOn, today)
-        )
+    val state = when (row.group) {
+        ScheduleGroup.Ended -> row.endedOn?.let {
+            stringResource(R.string.schedules_ended_on, dates.day(it, today))
+        }
 
-        row.pausedFrom != null -> stringResource(
-            R.string.schedules_paused_since,
-            dates.day(row.pausedFrom, today)
-        )
+        ScheduleGroup.Paused -> row.pausedFrom?.let {
+            stringResource(R.string.schedules_paused_since, dates.day(it, today))
+        }
 
-        row.next != null -> stringResource(R.string.schedules_next, dates.day(row.next, today))
+        ScheduleGroup.Recorded -> row.recordedOn?.let {
+            stringResource(
+                if (income) {
+                    R.string.schedules_recorded_income
+                } else {
+                    R.string.schedules_recorded_payment
+                },
+                dates.day(it, today)
+            )
+        }
 
-        else -> null
+        ScheduleGroup.Due, ScheduleGroup.Later -> null
+    }
+    val pill = row.next?.let { next ->
+        when (row.group) {
+            // The day already says "Hoy" for today; tomorrow says so too.
+            ScheduleGroup.Due -> if (next == today.plusDays(1)) {
+                stringResource(R.string.schedules_due_tomorrow, dates.day(next, today))
+            } else {
+                dates.day(next, today)
+            }
+
+            ScheduleGroup.Recorded, ScheduleGroup.Later ->
+                stringResource(R.string.schedules_next, dates.day(next, today))
+
+            else -> null
+        }
     }
     val caption = listOfNotNull(row.categoryName?.takeIf { row.note != null }, rule, state)
         .joinToString(" · ")
@@ -241,13 +363,16 @@ private fun Row(
             name,
             row.amount.spoken,
             caption,
-            paused.takeIf { row.pausedFrom != null }
+            pill,
+            paused.takeIf { row.group == ScheduleGroup.Paused }
         ).joinToString(", "),
         modifier = Modifier.testTag("schedules.row.${row.id}"),
-        soon = row.soon,
+        soon = false,
         income = income,
-        pausedLabel = paused.takeIf { row.pausedFrom != null },
-        dimmed = row.pausedFrom != null || row.endedOn != null,
-        last = last
+        pausedLabel = null,
+        dimmed = row.group == ScheduleGroup.Paused || row.group == ScheduleGroup.Ended,
+        last = last,
+        pill = pill,
+        recorded = row.group == ScheduleGroup.Recorded
     )
 }

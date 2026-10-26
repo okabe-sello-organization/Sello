@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -99,7 +101,9 @@ fun PlanSlip(
                 modifier = Modifier.weight(1f).alignByBaseline()
             )
         }
-        content()
+        // The slip has no paper of its own: its lines take the theme's ink, not the
+        // default black, so they read on the dark desk too.
+        CompositionLocalProvider(LocalContentColor provides colors.ink) { content() }
     }
 }
 
