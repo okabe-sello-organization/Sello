@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** In Progress
+- **Status:** Done
 - **Depends on:** SELLO-123, SELLO-004
 - **Gate:** G2
 
@@ -60,3 +60,13 @@ design system; SELLO-123's slip and stub.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-124 --retain`.
+
+### Execution progress
+
+- **2026-10-26:** Built as follows, proposed for review with this ticket's pull request.
+  The income slip ranks every category under Entró and its bar, with the ranking's basis
+  line and rows, then a Gastos line and Ingresos menos gastos; with no income it shows the
+  rows and their Total. The separate "¿Dónde se va?" slip, the top three and Otras lines
+  and the domain's top-three sum are gone; the income count stays. The catalog example,
+  the v2 Resumen paragraphs and HANDOFF follow.
+
