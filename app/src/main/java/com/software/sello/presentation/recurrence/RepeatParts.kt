@@ -45,12 +45,14 @@ const val REPEAT_DONE_TAG = "repeat:done"
 const val REPEAT_END_CONFIRM_TAG = "repeat:end-confirm"
 
 /**
- * Se repite's row under the note: "Se repite · No" while the entry is recorded once, or
- * the rule and its next date with Cambiar. [start] is the day the rule counts from.
+ * Se repite's row under the note: while the entry is recorded once, an invitation like
+ * Agregar nota ("Repetir este gasto", or ingreso when [income]); otherwise the rule and its
+ * next date with Cambiar. [start] is the day the rule counts from.
  */
 @Composable
 fun RepeatRow(
     repeat: RepeatUi,
+    income: Boolean,
     start: LocalDate,
     today: LocalDate,
     dates: DateLabels,
@@ -79,13 +81,15 @@ fun RepeatRow(
             enabled = enabled
         )
     } else {
-        val spoken = stringResource(R.string.repeat_row_off_spoken)
+        val text = stringResource(
+            if (income) R.string.repeat_add_income else R.string.repeat_add_expense
+        )
+        val spoken = stringResource(R.string.repeat_row_off_spoken, text)
         EntryLine(
-            text = stringResource(R.string.repeat_title),
+            text = text,
             icon = SelloIcon.Autorenew,
             onClick = { onAction(RepeatAction.Open) },
             modifier = modifier.testTag(REPEAT_ROW_TAG).semantics { contentDescription = spoken },
-            action = stringResource(R.string.repeat_off),
             placeholder = true,
             enabled = enabled
         )

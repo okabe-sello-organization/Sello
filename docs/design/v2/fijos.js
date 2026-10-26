@@ -34,7 +34,7 @@ function amountSlip(s) {
 
 const repPill = s => s.repeat
   ? `<button class="note-pill filled rep-pill">${icon("autorenew")}<span>${s.repeat}</span><span class="edit">Cambiar</span></button>`
-  : `<button class="note-pill rep-pill">${icon("autorenew")}<span>Se repite</span><span class="edit" style="color:var(--soft);font-weight:600">No</span></button>`;
+  : `<button class="note-pill rep-pill">${icon("autorenew")}<span>Repetir este ${s.mode === "income" ? "ingreso" : "gasto"}</span></button>`;
 
 function middle(s, extra = "", scrolled = false) {
   const income = s.mode === "income";
@@ -105,7 +105,7 @@ function listBody(kind = "pagos", state) {
   const seg = `<div class="seg" role="group" aria-label="Tipo" style="margin:0 0 12px"><button aria-pressed="${!income}">Pagos</button><button aria-pressed="${income}">Ingresos</button></div>`;
   if (state === "loading") return seg + `<div role="status" aria-label="Cargando"><section class="slip"><div class="skel" style="width:45%"></div><div class="skel"></div><div class="skel" style="width:60%"></div></section><section class="slip"><div class="skel"></div><div class="skel"></div><div class="skel"></div></section></div>`;
   if (state === "failed") return seg + `<section class="slip empty">${icon("error")}<h2>No pudimos leer tus pagos fijos</h2><p>Siguen guardados y Sello no anotó nada de más. Vuelve a intentarlo.</p><button class="outline-btn">Reintentar</button></section>`;
-  if (state === "empty") return seg + `<section class="slip empty">${icon("autorenew")}<h2>Nada se repite todavía</h2><p>Cuando anotes el arriendo o el salario, marca <b>Se repite</b> y Sello lo anotará solo en su fecha.</p><button class="outline-btn">Anotar algo que se repite</button></section>`;
+  if (state === "empty") return seg + `<section class="slip empty">${icon("autorenew")}<h2>Nada se repite todavía</h2><p>Cuando anotes el arriendo o el salario, toca <b>Repetir</b> y Sello lo anotará solo en su fecha.</p><button class="outline-btn">Anotar algo que se repite</button></section>`;
   const rows = income ? INCOMES : PAYMENTS;
   let h = seg + monthPlan(rows, income) + `<section class="slip"><h2 class="q" style="margin-bottom:4px">${income ? "Tus ingresos fijos" : "Tus pagos fijos"}</h2>${rows.map((x, i) => fxRow(x, i === rows.length - 1)).join("")}`;
   if (!income) h += `<p class="fx-group">Terminados</p>${ENDED.map((x, i) => fxRow(x, i === ENDED.length - 1)).join("")}`;
@@ -176,7 +176,7 @@ function render() {
   const on = { ...ready, repeat: "Cada mes, el 5 · desde jue 5 nov", date: "jue 5 nov" };
 
   set("create",
-    card("Ready to save · Se repite off", "The locked entry with one more row under the note. Off by default: Anotar records one expense, as today.", phone(o, entry(ready))) +
+    card("Ready to save · Se repite off", "The locked entry with one more row under the note. Off by default, it invites like Agregar nota (Repetir este gasto, or ingreso) and never says it repeats: Anotar records one expense, as today.", phone(o, entry(ready))) +
     card("Se repite · each month", "Tapping the row opens the rule. The day starts as the entry’s date; Próximo says when Sello records the first one.", phone(o, entry(ready, { sheet: ruleSheet("month", { days: [5], next: "jue 5 nov" }) }))) +
     card("Twice a month · 15 and 30", "The person picks both days (SELLO-096). Past day 28, shorter months use their last day.", phone(o, entry({ mode: "income", amount: 1000000, category: "Salario" }, { sheet: ruleSheet("twice", { days: [15, 30], next: "vie 30 oct" }) }))) +
     card("Every N weeks", "A stepper, 1–52 weeks (or 1–365 days), counted from the entry’s date.", phone(o, entry({ mode: "expense", amount: 20000, category: "Transporte", note: "Bus" }, { sheet: ruleSheet("weeks", { n: 1, next: "sáb 24 oct" }) }))) +

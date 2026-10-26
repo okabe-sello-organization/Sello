@@ -255,6 +255,7 @@ private fun Choices(
     )
     RepeatRow(
         state.repeat,
+        income = state.income,
         state.start ?: state.today,
         state.today,
         dates,
