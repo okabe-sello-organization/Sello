@@ -135,7 +135,7 @@ fun SchedulesScreen(
  * The month's receipt for the tab: its total, a bar of how much of it went through and
  * both parts, incomes in gain ink, no stamp (owner, 2026-10-26). It ends in a tear-off
  * stub that adds one to the tab (SELLO-125). With nothing repeating, the month at 0 and
- * examples on the stub; with a sum that does not fit, the stub alone.
+ * the same stub; with a sum that does not fit, the stub alone.
  */
 @Composable
 private fun Summary(
@@ -146,12 +146,15 @@ private fun Summary(
     onAdd: (ScheduleTab) -> Unit
 ) {
     val income = tab == ScheduleTab.Incomes
-    Slip(Modifier.fillMaxWidth().testTag("schedules.plan")) {
+    // A compact stub: half the room around its words of SELLO-123's (owner, 2026-10-26).
+    Slip(Modifier.fillMaxWidth().testTag("schedules.plan"), contentPadding = CompactStubPadding) {
         when {
             empty -> Nothing(plan, income, plan?.month ?: YearMonth.from(today))
             plan != null -> Figures(plan, income)
         }
-        if (empty || plan != null) TearLine()
+        if (empty || plan != null) {
+            TearLine(Modifier.padding(top = 7.dp), verticalMargin = 7.dp)
+        }
         StubButton(
             SelloIcon.Add,
             stringResource(
@@ -159,14 +162,13 @@ private fun Summary(
             ),
             { onAdd(tab) },
             Modifier.testTag("schedules.add"),
-            fact = when {
-                !empty -> null
-                income -> stringResource(R.string.schedules_examples_incomes)
-                else -> stringResource(R.string.schedules_examples_payments)
-            }
+            minHeight = 48.dp
         )
     }
 }
+
+private val CompactStubPadding =
+    PaddingValues(start = 16.dp, top = 15.dp, end = 16.dp, bottom = 12.dp)
 
 @Composable
 private fun SummaryTitle(month: YearMonth, income: Boolean) {

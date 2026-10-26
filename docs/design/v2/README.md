@@ -556,9 +556,8 @@ keeps everything on opening, with no notification or background work.
   (the day in a pill, Hoy or Mañana when it is), **Ya se anotaron / Ya entraron** (a
   check, "anotado lun 5 oct", the next date), **Más adelante**, **En pausa** (dimmed) and
   **Terminados**, each with its count. Empty: the same slip with the month at 0, "Aún no
-  tienes pagos fijos" and the stub, its line giving examples ("Arriendo, servicios,
-  suscripciones…" or "Salario, honorarios, una renta…"). A footnote says they record
-  themselves on their dates.
+  tienes pagos fijos" and the same stub. The stub is compact: one line, a 48dp button,
+  the same size on both tabs. A footnote says they record themselves on their dates.
 - **Changing a schedule:** tapping a row opens the entry layout titled **Pago fijo /
   Ingreso fijo**: amount, category or source, note, Se repite, "Los cambios aplican desde
   mañana. Lo que ya se anotó no cambia.", **Pausar** (with the next date) or, while

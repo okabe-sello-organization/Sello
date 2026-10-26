@@ -2,6 +2,7 @@ package com.software.sello.feature.recurrence
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
@@ -200,7 +201,7 @@ class ScheduleScreensTest {
     }
 
     @Test
-    fun nothingRepeatingShowsTheMonthAtZeroAndTheStubWithExamples() {
+    fun nothingRepeatingShowsTheMonthAtZeroAndTheStub() {
         val zero = ScheduleMonthPlan(
             YearMonth.of(2026, 10),
             pesos("0"),
@@ -215,9 +216,8 @@ class ScheduleScreensTest {
         rule.onNodeWithText("Tus pagos fijos de octubre").assertIsDisplayed()
         rule.onNodeWithText("Aún no tienes pagos fijos").assertIsDisplayed()
         rule.onNodeWithTag("schedules.empty").assertExists()
-        stub().assertContentDescriptionEquals(
-            "Nuevo pago fijo, Arriendo, servicios, suscripciones…"
-        ).performClick()
+        // No extra line: the same stub as on a list (owner, 2026-10-26).
+        stub().assertContentDescriptionEquals("Nuevo pago fijo").performClick()
         assertEquals(listOf(ScheduleTab.Payments), added)
     }
 
@@ -227,11 +227,36 @@ class ScheduleScreensTest {
 
         rule.onNodeWithText("Tus ingresos fijos de octubre").assertIsDisplayed()
         rule.onNodeWithText("Aún no tienes ingresos fijos").assertIsDisplayed()
-        stub().assertContentDescriptionEquals(
-            "Nuevo ingreso fijo, Salario, honorarios, una renta…"
-        )
+        stub().assertContentDescriptionEquals("Nuevo ingreso fijo")
         // No invented figure when there is no plan to show.
         rule.onNodeWithText("0").assertDoesNotExist()
+    }
+
+    @Test
+    fun theStubIsTheSameCompactSizeOnBothTabsEmptyOrNot() {
+        val zero = ScheduleMonthPlan(
+            YearMonth.of(2026, 10),
+            pesos("0"),
+            0,
+            pesos("0"),
+            0,
+            pesos("0"),
+            0
+        )
+        val shown = mutableStateOf<SchedulesState>(
+            SchedulesState.Ready(ScheduleTab.Payments, zero, emptyList(), emptyList())
+        )
+        rule.setContent {
+            SelloTheme(reducedMotion = true) {
+                SchedulesScreen(shown.value, today, {}, {}, PaddingValues(12.dp), {})
+            }
+        }
+        fun height() = stub().getUnclippedBoundsInRoot().let { it.bottom - it.top }
+        val empty = height()
+        rule.runOnIdle { shown.value = ready.copy(tab = ScheduleTab.Incomes) }
+        val heights = listOf(empty, height())
+        // Half the space around the words, never below a 48dp target (SELLO-125).
+        heights.forEach { assertEquals(48f, it.value, 0.5f) }
     }
 
     @Test

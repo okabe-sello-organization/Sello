@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Done
+- **Status:** In Progress
 - **Depends on:** SELLO-122, SELLO-004
 - **Gate:** G2
 
@@ -10,15 +10,17 @@
 On Pagos e ingresos fijos, adding one is no longer a bare + in the top bar: the month's
 receipt ends in a tear-off stub, **+ Nuevo pago fijo** (or **Nuevo ingreso fijo** on
 Ingresos), that opens the entry with Se repite on. With nothing repeating, the receipt
-shows the month at 0 with the same stub and a few examples, as concept 1 in
-`artifacts/conceptos-cta.png`.
+shows the month at 0 with the same stub, as concept 1 in `artifacts/conceptos-cta.png`,
+made compact on the owner's review: one line, the same size on both tabs, about half the
+room around its words.
 
 ### Deliverables
 - The summary slip ends in a tear line and a stub whose button follows the tab shown and
   opens the expense or income entry with Se repite on.
 - With nothing repeating on the tab: the same slip with the month's title, 0, "Aún no
-  tienes pagos fijos" (or "ingresos fijos") and the stub, its fact giving examples
-  ("Arriendo, servicios, suscripciones…" or "Salario, honorarios, una renta…").
+  tienes pagos fijos" (or "ingresos fijos") and the same one-line stub.
+- The stub is compact: a 48dp button, and about half the room between the tear line, its
+  words and the slip's edge.
 - When the month's sum does not fit, the figures stay hidden and the stub still shows.
 - The top bar's + is removed; the footnote no longer tells how to add one.
 - The v2 reference's list paragraph describes the stub.
@@ -27,13 +29,14 @@ shows the month at 0 with the same stub and a few examples, as concept 1 in
 - The stub adds to the tab shown: a payment on Pagos, an income on Ingresos.
 - Nothing repeating never hides the way to add one, and shows no negative or invented
   figure; a failed read still says so, with no stub.
-- The stub is one button of at least 48dp, said as its label and its fact, and stays
-  reachable at large text; both themes read.
+- The stub is one 48dp button, the same size on Pagos and Ingresos, empty or not, said
+  as its label, and stays reachable at large text; both themes read.
 - The list, its groups and the rows open their schedules as before.
 
 ### Tests
 - App device: the stub inside the receipt, its label per tab and what it opens; the empty
-  receipt per tab; the stub when the sum is hidden; no stub on a failed read; large text.
+  receipt per tab; the stub's size on both tabs; the stub when the sum is hidden; no stub
+  on a failed read; large text.
 - App device journey: adding an income that repeats from the empty Ingresos receipt.
 
 ### Working checkpoint
@@ -63,7 +66,9 @@ Focused tests, then `./scripts/verify-ticket SELLO-125 --retain`.
   The month's receipt ends in a tear line and a `StubButton`, **Nuevo pago fijo** or
   **Nuevo ingreso fijo** by the tab, opening the expense or income entry with Se repite
   on. With nothing repeating, the receipt shows the month's title, 0 when there is a plan,
-  "Aún no tienes pagos fijos" (or "ingresos fijos") and the stub with examples; with a
-  sum that does not fit, the stub alone. The top bar's + is gone, the footnote keeps only
-  that they record themselves, and the v2 list paragraph and HANDOFF describe the stub.
-
+  "Aún no tienes pagos fijos" (or "ingresos fijos") and the stub; with a sum that does not
+  fit, the stub alone. After trying it on the phone the owner asked for a compact stub:
+  no example line, the same size on both tabs and half the room around it, so
+  `StubButton` takes a `minHeight` (48dp here) and the slip and tear line sit closer. The
+  top bar's + is gone, the footnote keeps only that they record themselves, and the v2
+  list paragraph and HANDOFF describe the stub.
