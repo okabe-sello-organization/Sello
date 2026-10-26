@@ -1,0 +1,6 @@
+<!-- Material Symbols Rounded; https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsrounded/contrast/wght500fill1/24px.svg; Apache 2.0. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="960" android:viewportHeight="960">
+  <group android:translateY="960.0">
+    <path android:fillColor="@android:color/white" android:pathData="M320.89-103.97q-74.43-32.1-129.63-87.29-55.19-55.2-87.29-129.63-32.1-74.44-32.1-159.11 0-84.67 32.1-159.11 32.1-74.43 87.29-129.63 55.2-55.19 129.63-87.29 74.44-32.1 159.11-32.1 84.67 0 159.11 32.1 74.43 32.1 129.63 87.29 55.19 55.2 87.29 129.63 32.1 74.44 32.1 159.11 0 84.67-32.1 159.11-32.1 74.43-87.29 129.63-55.2 55.19-129.63 87.29-74.44 32.1-159.11 32.1-84.67 0-159.11-32.1Zm201.98-62.38q117.09-15.95 195.67-103.9Q797.13-358.2 797.13-480q0-121.09-78.59-209.27-78.58-88.19-195.67-104.14v627.06Z" />
+  </group>
+</vector>

@@ -10,9 +10,7 @@ import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
-import com.software.sello.domain.port.BackupRecords
 import com.software.sello.domain.port.CategoryOrderingPreferences
-import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.PreferenceFailure
@@ -21,13 +19,10 @@ import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.presentation.money.MoneyFormatter
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -37,15 +32,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * Coordinates the appearance and Recibo-order controls, the last backup's date, how
- * many payments and incomes repeat and the current USD rate.
+ * Coordinates the appearance and Recibo-order controls, how many payments and incomes
+ * repeat and the current USD rate. The backup card reads the backup's own state.
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class SettingsViewModel(
     private val appearancePreferences: AppearancePreferences,
     private val orderingPreferences: CategoryOrderingPreferences,
-    backupRecords: BackupRecords,
-    clock: FinancialClock,
     schedules: ScheduleReads,
     investments: InvestmentReads,
     money: MoneyFormatter
@@ -93,16 +86,6 @@ class SettingsViewModel(
         }.let { it.copy(loading = !it.appearanceLoaded || !it.orderingLoaded) }
     }
 
-    private val backup = combine(
-        retry.flatMapLatest { backupRecords.observeBackups() },
-        clock.today
-    ) { read, today ->
-        when (read) {
-            is PreferenceRead.Ready -> BackupLine.Read(read.value.last?.at, today.zone)
-            is PreferenceRead.Failed -> BackupLine.Unreadable
-        }
-    }
-
     private val scheduleCount = retry.flatMapLatest { schedules.observe() }.map { read ->
         when (read) {
             ScheduleBookState.Loading -> ScheduleCountLine.Loading
@@ -137,13 +120,11 @@ class SettingsViewModel(
                 read.copy(
                     busy = old.busy,
                     writeFailure = old.writeFailure,
-                    backup = old.backup,
                     schedules = old.schedules,
                     rate = old.rate
                 )
             }
         },
-        backup.map { value -> { old: SettingsState -> old.copy(backup = value) } },
         scheduleCount.map { value -> { old: SettingsState -> old.copy(schedules = value) } },
         rateLine.map { value -> { old: SettingsState -> old.copy(rate = value) } },
         busy.map { value -> { old: SettingsState -> old.copy(busy = value) } },
@@ -197,7 +178,6 @@ data class SettingsState(
     val orderingFailure: PreferenceFailure? = null,
     val writeFailure: PreferenceFailure? = null,
     val busy: Boolean = false,
-    val backup: BackupLine = BackupLine.Loading,
     val schedules: ScheduleCountLine = ScheduleCountLine.Loading,
     val rate: RateLine = RateLine.Loading
 ) {
@@ -225,15 +205,6 @@ sealed interface ScheduleCountLine {
     data object Unreadable : ScheduleCountLine
 
     data class Read(val payments: Int, val incomes: Int) : ScheduleCountLine
-}
-
-/** The Respaldo row: when the last backup was made, if one was and that can be read. */
-sealed interface BackupLine {
-    data object Loading : BackupLine
-
-    data object Unreadable : BackupLine
-
-    data class Read(val lastAt: Instant?, val zone: ZoneId) : BackupLine
 }
 
 private sealed interface SettingsRead {

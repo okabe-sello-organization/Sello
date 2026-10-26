@@ -102,6 +102,39 @@ class SettingsJourneyTest {
         hasText(text) and hasAnyAncestor(hasTestTag(tag))
     )
 
+    /** Opens the option slip behind [row] and chooses [option] in the slip tagged [slip]. */
+    private fun choose(row: String, slip: String, option: String) {
+        rule.onNodeWithTag(row).performScrollTo().performClick()
+        rule.awaitTag(slip)
+        inSettings(slip, option).performClick()
+        rule.waitForIdle()
+    }
+
+    /** [option] is the one marked in the slip behind [row]; the slip is closed again. */
+    private fun assertChosen(row: String, slip: String, option: String) {
+        rule.onNodeWithTag(row).performScrollTo().performClick()
+        rule.awaitTag(slip)
+        inSettings(slip, option).assertIsSelected()
+        Espresso.pressBack()
+        rule.waitForIdle()
+    }
+
+    @Test
+    fun tusDatosComesFirstThenLoQueSeRepiteAndThereIsNoAvisos() {
+        launch()
+        openSettings()
+
+        val tops = listOf(
+            SETTINGS_DATA_TAG,
+            SETTINGS_RECURRING_TAG,
+            SETTINGS_APPEARANCE_TAG,
+            SETTINGS_ORDERING_TAG,
+            SETTINGS_INVESTMENTS_TAG
+        ).map { rule.onNodeWithTag(it).getUnclippedBoundsInRoot().top }
+        assertEquals(tops.sorted(), tops)
+        assertEquals(0, rule.onAllNodes(hasText("Avisos")).fetchSemanticsNodes().size)
+    }
+
     @Test
     fun settingsPreserveTheSelectedMonthFinancialRowsAndTheReciboBackStack() {
         val selected = YearMonth.from(TestCommands.today).minusMonths(1)
@@ -113,7 +146,7 @@ class SettingsJourneyTest {
         val spent = TestData.long("SELECT SUM(amount_minor) FROM expense")
 
         openSettings()
-        inSettings(SETTINGS_ORDER_TAG, "Alfabético").performScrollTo().performClick()
+        choose(SETTINGS_ORDER_ROW_TAG, SETTINGS_ORDER_TAG, "Alfabético")
 
         Espresso.pressBack()
         rule.awaitTag(RECIBO_SUMMARY_TAG)
@@ -133,10 +166,13 @@ class SettingsJourneyTest {
         assertTrue(zeta.getUnclippedBoundsInRoot().left < alfa.getUnclippedBoundsInRoot().left)
 
         openSettings()
-        inSettings(SETTINGS_THEME_TAG, "Oscuro").performClick()
-        inSettings(SETTINGS_INK_TAG, "Violeta").performClick()
-        inSettings(SETTINGS_ORDER_TAG, "Alfabético").performScrollTo().performClick()
-        inSettings(SETTINGS_DIRECTION_TAG, "Menor a mayor").performScrollTo().performClick()
+        inSettings(SETTINGS_THEME_TAG, "Oscuro").performScrollTo().performClick()
+        inSettings(SETTINGS_INK_TAG, "Violeta").performScrollTo().performClick()
+        choose(SETTINGS_ORDER_ROW_TAG, SETTINGS_ORDER_TAG, "Alfabético")
+        choose(SETTINGS_DIRECTION_ROW_TAG, SETTINGS_DIRECTION_TAG, "Menor a mayor")
+        // The rows say what was chosen.
+        rule.onNodeWithTag(SETTINGS_ORDER_ROW_TAG).assert(hasText("Alfabético"))
+        rule.onNodeWithTag(SETTINGS_DIRECTION_ROW_TAG).assert(hasText("Menor a mayor"))
         scenario!!.close()
 
         launch()
@@ -151,8 +187,8 @@ class SettingsJourneyTest {
         openSettings()
         inSettings(SETTINGS_THEME_TAG, "Oscuro").assertIsSelected()
         inSettings(SETTINGS_INK_TAG, "Violeta").assertIsSelected()
-        inSettings(SETTINGS_ORDER_TAG, "Alfabético").assertIsSelected()
-        inSettings(SETTINGS_DIRECTION_TAG, "Menor a mayor").assertIsSelected()
+        assertChosen(SETTINGS_ORDER_ROW_TAG, SETTINGS_ORDER_TAG, "Alfabético")
+        assertChosen(SETTINGS_DIRECTION_ROW_TAG, SETTINGS_DIRECTION_TAG, "Menor a mayor")
         assertEquals(Lifecycle.State.RESUMED, scenario!!.state)
     }
 

@@ -520,11 +520,12 @@
     <string name="settings_theme_light">Claro</string>
     <string name="settings_theme_dark">Oscuro</string>
     <string name="settings_ink">Tinta</string>
+    <string name="settings_ink_caption">El color de los sellos, la franja y los botones</string>
     <string name="settings_ink_cobalto">Cobalto</string>
     <string name="settings_ink_violeta">Violeta</string>
     <string name="settings_recibo">Recibo</string>
-    <string name="settings_recibo_body">El orden usa solo los gastos del mes que estás viendo.</string>
-    <string name="settings_order">Orden de categorías</string>
+    <string name="settings_order">Orden de las categorías</string>
+    <string name="settings_order_caption">Con los gastos del mes que ves</string>
     <string name="settings_order_most_used">Más usadas</string>
     <string name="settings_order_alphabetical">Alfabético</string>
     <string name="settings_order_amount_spent">Monto gastado</string>
@@ -536,8 +537,25 @@
     <string name="settings_data">Tus datos</string>
     <string name="settings_backup">Respaldo</string>
     <string name="settings_backup_never">Nunca</string>
-    <string name="settings_backup_body">Guarda una copia de tus gastos, ingresos y categorías en un archivo.</string>
-    <string name="settings_backup_unreadable">No disponible</string>
+    <string name="settings_backup_never_caption">Si pierdes el teléfono, pierdes tus datos</string>
+    <string name="settings_backup_today">Hoy</string>
+    <string name="settings_backup_yesterday">Ayer</string>
+    <plurals name="settings_backup_days">
+        <item quantity="one">Hace %d día</item>
+        <item quantity="other">Hace %d días</item>
+    </plurals>
+    <string name="settings_backup_age_size">%1$s · %2$s</string>
+    <string name="settings_backup_stamp_old">Pendiente</string>
+    <string name="settings_backup_stamp_none">Sin respaldo</string>
+    <string name="settings_backup_create">Respaldar</string>
+    <string name="settings_backup_create_first">Crear</string>
+    <string name="settings_backup_restore">Restaurar</string>
+    <string name="settings_backup_contents">Ver qué contiene</string>
+    <string name="settings_backup_choose">Elegir dónde guardar</string>
+    <string name="settings_recurring">Lo que se repite</string>
+    <string name="settings_investments">Inversiones</string>
+    <string name="settings_rate_date">Tasa del %1$s</string>
+    <string name="settings_footer">Sello · tus datos no salen de este teléfono</string>
     <string name="settings_reset">Borrar todos los datos</string>
     <string name="settings_reset_caption">Pide confirmación dos veces</string>
     <string name="reset_title">Borrar datos</string>
@@ -1156,7 +1174,6 @@
     <string name="usd_rate_data_changed">Tus datos cambiaron mientras escribías. No se guardó la tasa.</string>
     <string name="usd_rate_not_saved">No se guardó la tasa. Puedes intentarlo de nuevo.</string>
     <string name="usd_rate_save">Guardar tasa</string>
-    <string name="settings_rate_current">%1$s · tasa del %2$s</string>
     <string name="settings_rate_none">Sin tasa todavía</string>
     <string name="settings_rate_unreadable">No pudimos leer la tasa</string>
     <!-- Anotar movimiento (SELLO-110) -->

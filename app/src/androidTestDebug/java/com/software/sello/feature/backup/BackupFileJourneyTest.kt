@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -29,7 +30,10 @@ import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupRecords
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
+import com.software.sello.feature.settings.SETTINGS_BACKUP_CARD_TAG
+import com.software.sello.feature.settings.SETTINGS_BACKUP_CREATE_TAG
 import com.software.sello.feature.settings.SETTINGS_BACKUP_TAG
+import com.software.sello.feature.settings.SETTINGS_DISCLOSURE_TAG
 import com.software.sello.feature.settings.SETTINGS_TAG
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.platform.TestDocuments
@@ -172,6 +176,59 @@ class BackupFileJourneyTest {
         assertFalse(record().unfinished)
         assertFalse(last.at.isBefore(started.minusSeconds(1)))
         rule.onNodeWithText(name).assertExists()
+    }
+
+    private fun openSettings() {
+        scenario = ActivityScenario.launch(Intent(context, MainActivity::class.java))
+        rule.awaitTag(RECIBO_SUMMARY_TAG)
+        rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
+        rule.awaitTag(SETTINGS_BACKUP_CARD_TAG)
+    }
+
+    private fun onCard(text: String) =
+        rule.onNode(hasText(text) and hasAnyAncestor(hasTestTag(SETTINGS_BACKUP_CARD_TAG)))
+
+    @Test
+    fun theCardSavesOnlyAfterTheDisclosureAndThenSaysGuardadoToday() {
+        val name = "sello-respaldo-${UUID.randomUUID()}.json"
+        val picker = answerWith { document(name) }
+        openSettings()
+
+        rule.onNodeWithTag(SETTINGS_BACKUP_CREATE_TAG).performScrollTo().performClick()
+        rule.awaitTag(SETTINGS_DISCLOSURE_TAG)
+        rule.onNode(hasText("Cualquiera que abra el archivo puede leerlo.", substring = true))
+            .assertExists()
+        // Nothing is asked of the system before the disclosure is accepted.
+        assertEquals(0, picker.requests.size)
+
+        rule.onNodeWithText("Elegir dónde guardar").performClick()
+        waitUntil("the backup was recorded") { record().last?.name == name }
+        rule.waitForIdle()
+
+        assertEquals(1, picker.requests.size)
+        assertEquals(1, readBack(name).counts.categories)
+        onCard("Respaldar").assertExists()
+        rule.onNode(
+            hasText("Hoy", substring = true) and
+                hasAnyAncestor(hasTestTag(SETTINGS_BACKUP_CARD_TAG))
+        ).assertExists()
+    }
+
+    @Test
+    fun cancellingTheDisclosureAsksForNothingAndSavesNothing() {
+        val before = record().last
+        val picker = answerWith { document("sello-respaldo-${UUID.randomUUID()}.json") }
+        openSettings()
+
+        rule.onNodeWithTag(SETTINGS_BACKUP_CREATE_TAG).performScrollTo().performClick()
+        rule.awaitTag(SETTINGS_DISCLOSURE_TAG)
+        rule.onNodeWithText("Cancelar").performClick()
+        rule.waitForIdle()
+
+        assertEquals(0, rule.onAllNodes(hasTestTag(SETTINGS_DISCLOSURE_TAG)).fetchSemanticsNodes().size)
+        assertEquals(0, picker.requests.size)
+        assertEquals(before, record().last)
+        assertFalse(record().unfinished)
     }
 
     @Test

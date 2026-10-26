@@ -9,12 +9,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -105,6 +108,71 @@ fun ConfirmSlip(
 }
 
 /**
+ * [ConfirmSlip] with any [content] under the title, such as points to read before
+ * saving a file. The content scrolls when the slip would not fit, as at large text,
+ * the buttons stay in view and go one above the other when a label would not fit.
+ */
+@Composable
+fun ConfirmSlip(
+    title: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    destructive: Boolean = true,
+    busy: Boolean = false,
+    dismissLabel: String = stringResource(R.string.sello_cancel),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val density = LocalDensity.current
+    Dialog(onDismissRequest = { if (!busy) onDismiss() }) {
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
+        // The dialog's own window would take the system's text size; keep the caller's.
+        CompositionLocalProvider(LocalDensity provides density) {
+            Slip(
+                pinked = false,
+                contentPadding = SlipDefaults.PlainPadding,
+                modifier = modifier.semantics { paneTitle = title }
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontSize = 22.sp),
+                    modifier = Modifier.semantics { heading() }
+                )
+                Spacer(Modifier.height(SelloTheme.spacing.sm))
+                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                    content()
+                }
+                TearLine(bleed = 20.dp)
+                // The action's label is usually the longer one: it gets two thirds.
+                ButtonPair(
+                    firstWeight = 1f,
+                    secondWeight = 2f,
+                    gap = SelloTheme.spacing.md,
+                    first = {
+                        SelloButton(
+                            text = dismissLabel,
+                            onClick = onDismiss,
+                            kind = ButtonKind.Outlined,
+                            enabled = !busy
+                        )
+                    },
+                    second = {
+                        SelloButton(
+                            text = confirmLabel,
+                            onClick = onConfirm,
+                            kind = if (destructive) ButtonKind.Destructive else ButtonKind.Filled,
+                            loading = busy
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
  * A question with two answers, neither of them destructive, such as whether a change
  * applies to the next ones too: [firstLabel] outlined, [secondLabel] filled, and
  * [backLabel] under them to go back without answering. The slip is [ConfirmSlip]'s.
@@ -186,7 +254,7 @@ fun ChoiceSlip(
     }
 }
 
-private const val SCRIM_ALPHA = 0.55f
+internal const val SCRIM_ALPHA = 0.55f
 
 /** A slip with nothing to show yet: a title, one sentence and at most one action. */
 @Composable
