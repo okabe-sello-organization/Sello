@@ -174,7 +174,7 @@
     <string name="catalog_income_question">¿A dónde fue lo que entró?</string>
     <string name="catalog_income_in_october">Entró en octubre</string>
     <string name="catalog_income_in_september">Entró en septiembre</string>
-    <string name="catalog_income_others">Otras 2 categorías</string>
+    <string name="catalog_income_spent">Gastos</string>
     <string name="catalog_income_stub_incomes">Ingresos</string>
     <string name="catalog_income_stub_count">3 en octubre</string>
     <string name="catalog_income_stub_fixed">Fijos</string>

@@ -91,9 +91,10 @@ class ResumenJourneyTest {
         Espresso.pressBack()
         rule.awaitTag("resumen.flow")
         rule.onNodeWithContentDescription("120.000 pesos").performScrollTo().assertIsDisplayed()
-        // Where it went: Comida took 30.000 of it, and the stub counts the one income.
-        rule.onNodeWithContentDescription(
-            "menos 30.000 pesos"
+        // Where it went: Comida, inside the income slip, and the stub counts the one income.
+        val comida = TestData.rows("SELECT id FROM category WHERE name = 'Comida'").single()
+        rule.onNode(
+            hasTestTag("resumen.category.$comida") and hasAnyAncestor(hasTestTag("resumen.flow"))
         ).performScrollTo().assertIsDisplayed()
         rule.onNodeWithContentDescription("Ingresos, 1 en", substring = true).performScrollTo()
             .assertIsDisplayed()

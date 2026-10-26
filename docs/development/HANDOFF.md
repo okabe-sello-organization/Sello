@@ -26,10 +26,10 @@ This summary is refreshed when an epic closes and adds no verification claims.
 - Expense/income history, editing, deletion and guarded six-second undo.
 - Exact totals, budget remaining/allowance, net flow and allocation. Resumen leads with
   the same-days comparison, then where the income went
-  ([E22](../tickets/E22-income-receipt/README.md)): what came in, the three categories
-  that took most and the others, Ingresos menos gastos, and a stub to the income list
-  and Pagos e ingresos fijos. Then "Un mes normal" over the monthly columns, the
-  ranking, the weekday averages (six months) and at most one dismissible suggestion.
+  ([E22](../tickets/E22-income-receipt/README.md)): what came in, every category ranked
+  by what it took (the former "¿Dónde se va?"), Ingresos menos gastos, and a stub to the
+  income list and Pagos e ingresos fijos. Then "Un mes normal" over the monthly columns,
+  the weekday averages (six months) and at most one dismissible suggestion.
 - Metas: goals with a target and an optional month, most complete first; the goal page
   with its stamps, Aportes por mes and movements; Aportar/Retirar with past dates,
   corrections and Deshacer. Stamps at 25, 50 and 75 % are celebrated once per confirmed
