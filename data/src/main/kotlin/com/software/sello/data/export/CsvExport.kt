@@ -61,6 +61,7 @@ internal object CsvExport {
         ExportKind.InvestmentValue -> investmentValue
     }
 
-    private const val BYTE_ORDER_MARK = ""
+    /** Written as an escape: the character itself is invisible and easily lost in edits. */
+    private const val BYTE_ORDER_MARK = "\uFEFF"
     private val FORMULA_STARTS = setOf('=', '+', '-', '@', '\t', '\r')
 }

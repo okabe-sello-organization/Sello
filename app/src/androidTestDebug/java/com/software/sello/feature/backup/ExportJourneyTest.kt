@@ -137,7 +137,7 @@ class ExportJourneyTest {
         val day = TestCommands.today.toString()
         assertEquals(
             listOf(
-                "Fecha,Tipo,Nombre,Monto,Moneda,Nota",
+                "\uFEFFFecha,Tipo,Nombre,Monto,Moneda,Nota",
                 "$day,Gasto,Mercado,12500,COP,'=plaza",
                 "$day,Ingreso,Salario,200000,COP,",
                 ""
