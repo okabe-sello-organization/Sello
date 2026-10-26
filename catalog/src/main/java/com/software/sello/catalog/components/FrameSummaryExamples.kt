@@ -446,17 +446,20 @@ private fun IncomeSlipExample(mode: Int) {
     val october = mode == 0
     val brand = SelloTheme.colors.brand
     val spent = if (october) 400_000L else 920_000L
-    val lines = if (october) {
+    // Ranked by what each took, with its share of what was spent.
+    val rows = if (october) {
         listOf(
             Triple("Hogar", SelloIcon.Home, 200_000L),
             Triple("Comida", SelloIcon.Restaurant, 80_000L),
-            Triple(strings.getString(R.string.catalog_demo_cafe), SelloIcon.LocalCafe, 60_000L)
+            Triple(strings.getString(R.string.catalog_demo_cafe), SelloIcon.LocalCafe, 60_000L),
+            Triple("Transporte", SelloIcon.DirectionsBus, 60_000L)
         )
     } else {
         listOf(
             Triple("Hogar", SelloIcon.Home, 500_000L),
             Triple("Comida", SelloIcon.Restaurant, 250_000L),
-            Triple(strings.getString(R.string.catalog_demo_cafe), SelloIcon.LocalCafe, 100_000L)
+            Triple(strings.getString(R.string.catalog_demo_cafe), SelloIcon.LocalCafe, 100_000L),
+            Triple("Transporte", SelloIcon.DirectionsBus, 70_000L)
         )
     }
     Slip(Modifier.fillMaxWidth()) {
@@ -484,14 +487,11 @@ private fun IncomeSlipExample(mode: Int) {
             ),
             Modifier.padding(vertical = 8.dp)
         )
-        lines.forEach { (name, icon, pesos) ->
-            LeaderLine(name, icon = icon, onClick = {}) { MoneyText(copFixture(-pesos)) }
+        rows.forEach { (name, icon, pesos) ->
+            SpendingRankRow(name, icon, copFixture(pesos), pesos.toFloat() / spent, {})
         }
-        LeaderLine(
-            strings.getString(R.string.catalog_income_others),
-            Modifier.padding(start = 25.dp)
-        ) {
-            MoneyText(copFixture(if (october) -60_000 else -70_000))
+        LeaderLine(strings.getString(R.string.catalog_income_spent)) {
+            MoneyText(copFixture(spent))
         }
         TotalLine(strings.getString(R.string.catalog_demo_ingresos_menos_gastos)) {
             MoneyText(copFixture(2_000_000 - spent), style = MoneyStyle.Title)

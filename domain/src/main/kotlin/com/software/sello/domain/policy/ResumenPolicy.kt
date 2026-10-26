@@ -1,13 +1,11 @@
 package com.software.sello.domain.policy
 
 import com.software.sello.domain.model.BudgetStanding
-import com.software.sello.domain.model.CategorySpending
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DailySpending
 import com.software.sello.domain.model.ExactTotal
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.Income
-import com.software.sello.domain.model.IncomeDestinations
 import com.software.sello.domain.model.LimitAdjustment
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
@@ -124,12 +122,6 @@ object ResumenPolicy {
                 },
                 incomes.count { YearMonth.from(it.date) == month && it.date > today.date },
                 applicable.size,
-                destinations(budget).let { destinations ->
-                    when (destinations) {
-                        is Outcome.Failure -> return destinations
-                        is Outcome.Success -> destinations.value
-                    }
-                },
                 comparison = comparison(month, currentMonth, today, months, snapshots),
                 normalMonth = normalMonth(currentMonth, snapshots),
                 weekdays = weekdays(month, currentMonth, today, months),
@@ -282,28 +274,6 @@ object ResumenPolicy {
             )
         }.maxByOrNull { it.limit.minorUnits }
     }
-
-    /** The categories that took most, most first as in "¿Dónde se va?", and the rest summed. */
-    private fun destinations(
-        budget: MonthlySnapshot
-    ): Outcome<IncomeDestinations, SnapshotFailure> {
-        val ranked = budget.categories.filter { it.expenseCount > 0 }
-            .sortedByDescending { it.spent.minorUnits }
-        val others = ranked.drop(TOP_DESTINATIONS)
-        val rest = when (val sum = total(others.map { it.spent })) {
-            is Outcome.Failure -> return sum
-            is Outcome.Success -> sum.value
-        }
-        return Outcome.Success(
-            IncomeDestinations(
-                ranked.take(TOP_DESTINATIONS).map { CategorySpending(it.category, it.spent) },
-                rest,
-                others.size
-            )
-        )
-    }
-
-    private const val TOP_DESTINATIONS = 3
 
     private fun sum(expenses: List<Expense>): BigInteger =
         expenses.fold(BigInteger.ZERO) { total, it ->

@@ -117,6 +117,22 @@ class ResumenSnapshotTest {
         .budget.remaining
 
     @Test
+    fun theIncomeCountIsTheMonthsRecordedIncomesUpToToday() {
+        val snapshot = read(
+            incomes = listOf(
+                income(1, 1_600_000, "2026-10-01"),
+                income(2, 250_000, "2026-10-09"),
+                // Dated after today (9 Oct): not counted, as the total leaves it out.
+                income(3, 150_000, "2026-10-20"),
+                income(4, 100_000, "2026-09-30")
+            )
+        ).valueOrFail()
+
+        assertEquals(2, snapshot.incomeCount)
+        assertEquals(Money.cop(1_850_000), snapshot.income)
+    }
+
+    @Test
     fun i01DistinguishesRecordedNetFlowRemainingAndUnassignedBudget() {
         val snapshot = read(listOf(expense(1, 30_000)), listOf(income(1, 150_000))).valueOrFail()
         assertEquals(Money.cop(150_000), snapshot.income)
