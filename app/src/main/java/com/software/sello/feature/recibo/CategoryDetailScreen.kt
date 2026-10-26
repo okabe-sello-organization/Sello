@@ -229,7 +229,8 @@ private fun HeaderSlip(
                         category.fraction,
                         size = 56.dp,
                         over = category.over,
-                        unlimited = category.unlimited
+                        unlimited = category.unlimited,
+                        archived = category.archived
                     )
                 }
                 val amount: @Composable () -> Unit = {

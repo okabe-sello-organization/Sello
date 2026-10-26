@@ -76,9 +76,11 @@ class AdjustBudgetViewModel(
             summary = render.summary(snapshot),
             limit = (snapshot.overall as? OverallBudget.Limited)?.budget?.limit?.let(money::format),
             spent = money.format(snapshot.spent),
-            limited = order.limited.map(::row),
-            open = order.open.map(::row),
-            stale = stale
+            limited = order.limited.filterNot { it.category.archived }.map(::row),
+            open = order.open.filterNot { it.category.archived }.map(::row),
+            stale = stale,
+            // Archived ones last and apart, in the same order as above.
+            archived = (order.limited + order.open).filter { it.category.archived }.map(::row)
         )
     }
 

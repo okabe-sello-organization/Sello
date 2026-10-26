@@ -96,6 +96,11 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .circle.unlimited{border-style:dashed}
 /* No limit on purpose: the dashed ring carries an ∞ badge at its lower right (2026-10-26). */
 .inf-wrap{position:relative;display:inline-grid;flex:none}
+/* Archived: grey ink, in their own section last (2026-10-26). */
+.circle.archived{--c:var(--outline)}
+.circle.archived .on{color:var(--paper)}
+.inf-wrap .circle.archived+.inf{border-color:var(--outline);color:var(--soft)}
+.grid-sub{font-size:.86em;font-weight:800;color:var(--soft);margin:14px 0 4px}
 .inf-wrap .inf{position:absolute;right:-4px;bottom:-4px;width:19px;height:19px;border-radius:50%;background:var(--paper);border:1.5px solid var(--brand);color:var(--brand);font:800 12px/15px system-ui,sans-serif;text-align:center}
 .rank-row .inf-wrap .inf{width:16px;height:16px;font-size:10px;line-height:13px;right:-5px;bottom:-5px}
 .cell-text{display:grid;min-width:0}

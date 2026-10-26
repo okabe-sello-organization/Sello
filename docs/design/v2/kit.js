@@ -28,4 +28,4 @@ function subShell({ title, body, tabs = 3, active = 1, dock = "Anotar", dockClas
 
 // A category without a limit on purpose: dashed ring and ∞ badge (mock: the badge is
 // text; the app draws Material's all_inclusive icon).
-const unlimitedCircle = ic => `<span class="inf-wrap"><span class="circle unlimited" aria-hidden="true">${icon(ic)}</span><span class="inf" aria-hidden="true">∞</span></span>`;
+const unlimitedCircle = (ic, archived = false) => `<span class="inf-wrap"><span class="circle unlimited ${archived ? "archived" : ""}" aria-hidden="true">${icon(ic)}</span><span class="inf" aria-hidden="true">∞</span></span>`;
