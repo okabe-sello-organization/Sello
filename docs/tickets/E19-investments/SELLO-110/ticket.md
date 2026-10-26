@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-109, SELLO-111, SELLO-004
 - **Gate:** G2
 
@@ -36,3 +36,21 @@ v2 Inversiones page.
 
 ### Verification recipe
 Focused tests, then `./scripts/verify-ticket SELLO-110 --retain`.
+
+### Execution progress
+
+- **2026-10-25:** the Inversiones tab joins the bar now that it can be used: **+** and the
+  empty dock open **Nueva inversión**, the dock is **Anotar movimiento** in ink, rows open
+  the investment and the total's rate line opens Dólar. **The investment**
+  (`InvestmentDetailScreen`): "Vale" with Gana / Pierde, the signed return, "Valor anotado
+  el … · desde …", the breakdown and **Anotar el valor de hoy**; recorded values as dots
+  with what was put in as steps (`RecordedValuesChart` gains its months and legend); the
+  movements newest first, each opening its correction. **Anotar movimiento**
+  (`InvestmentMovementScreen`): the four types, the investments largest first, the sign
+  and label per type, one fact, the withdrawal limit with **Anotar el valor de hoy**, the
+  comma pad for dollars, a value of 0 pesos, corrections and deletion with the shared
+  Deshacer. **Nueva / Editar inversión** (`InvestmentEditorScreen`): name, description,
+  icon, Pesos / Dólares, the first aporte with Lo mismo que aporté / Otro valor, the rate
+  asked first for a first dollar investment and sent in the same command, the amount
+  kept above the pad while typing, editing and deleting with the confirm slip. The
+  movement form and the editor were built by delegated agents and integrated here.

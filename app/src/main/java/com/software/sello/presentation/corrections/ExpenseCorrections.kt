@@ -4,6 +4,7 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.IncomeId
+import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
@@ -12,6 +13,7 @@ import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteIncome
+import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseRejection
@@ -21,11 +23,15 @@ import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeRejection
+import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.RestoreIncome
+import com.software.sello.domain.port.RestoreInvestmentMovement
 import com.software.sello.domain.port.UndoGoalCompletion
 import java.time.LocalDate
 import java.time.YearMonth
@@ -163,7 +169,34 @@ sealed interface CorrectionNotice {
 
     /** A new target, storage confirmed, that earned or relit a stamp (rule 7, MT18). */
     data class GoalTargetChanged(val celebration: GoalCelebration) : CorrectionNotice
+
+    /** The same as [GoalMovementDeleted] and the notices after it, for an investment's movement. */
+    data class InvestmentMovementDeleted(
+        val canUndo: Boolean,
+        val undoing: Boolean = false,
+        val undoFailed: Boolean = false
+    ) : InvestmentMovementNotice
+
+    data object InvestmentMovementRestored : InvestmentMovementNotice
+
+    data object InvestmentMovementUndoTooLate : InvestmentMovementNotice
+
+    data object InvestmentMovementUndoBlocked : InvestmentMovementNotice
+
+    data object InvestmentMovementUpdated : InvestmentMovementNotice
+
+    /**
+     * A new movement of [kind] storage confirmed: "Aporte anotado: 500.000". [amount] is
+     * null when it is saved but could not be read back.
+     */
+    data class InvestmentMovementRecorded(
+        val kind: InvestmentMovementKind,
+        val amount: MoneyTextValue?
+    ) : InvestmentMovementNotice
 }
+
+/** What is said about an investment's movement (SELLO-110), drawn in its own words. */
+sealed interface InvestmentMovementNotice : CorrectionNotice
 
 /** The stamps a confirmed save earned, if this notice says so. */
 val CorrectionNotice.celebration: GoalCelebration?
@@ -192,7 +225,7 @@ data class GoalCelebration(
 enum class DeleteResult { Deleted, Gone, Changed, DataChanged, Failed }
 
 /**
- * Deleting an expense, an income or a goal's movement, undoing that, and what is said
+ * Deleting an expense, an income, a goal's movement or an investment's movement, undoing that, and what is said
  * about the last correction. One instance serves the whole process, so the offer to undo is the same
  * whatever screen is showing and however often it is redrawn, and a deletion is
  * finished and offered even if the screen that asked for it is gone. There is one
@@ -207,6 +240,7 @@ class ExpenseCorrections(
     private val commands: ExpenseCommands,
     private val incomes: IncomeCommands,
     private val goals: GoalCommands,
+    private val investments: InvestmentCommands,
     private val monotonic: MonotonicClock,
     private val ids: RecordIdSource,
     private val scope: CoroutineScope
@@ -225,7 +259,7 @@ class ExpenseCorrections(
     )
 
     /** What the deletion on offer removed. */
-    private enum class Kind { Expense, Income, GoalMovement, GoalCompletion }
+    private enum class Kind { Expense, Income, GoalMovement, GoalCompletion, InvestmentMovement }
 
     /** How an attempt to undo ended. [Retry]: nothing was restored and nothing forbids it. */
     private enum class Undone { Restored, TooLate, Blocked, Retry }
@@ -246,9 +280,15 @@ class ExpenseCorrections(
         goalName: String = ""
     ) = when (kind) {
         Kind.Expense -> CorrectionNotice.Deleted(canUndo, undoing, failed)
+
         Kind.Income -> CorrectionNotice.IncomeDeleted(canUndo, undoing, failed)
+
         Kind.GoalMovement -> CorrectionNotice.GoalMovementDeleted(canUndo, undoing, failed)
+
         Kind.GoalCompletion -> CorrectionNotice.GoalCompleted(goalName, canUndo, undoing, failed)
+
+        Kind.InvestmentMovement ->
+            CorrectionNotice.InvestmentMovementDeleted(canUndo, undoing, failed)
     }
 
     /** Whether an offer is on screen, and if so whether it can be taken and is being taken. */
@@ -257,6 +297,7 @@ class ExpenseCorrections(
         is CorrectionNotice.IncomeDeleted -> now.canUndo to now.undoing
         is CorrectionNotice.GoalMovementDeleted -> now.canUndo to now.undoing
         is CorrectionNotice.GoalCompleted -> now.canUndo to now.undoing
+        is CorrectionNotice.InvestmentMovementDeleted -> now.canUndo to now.undoing
         else -> null
     }
 
@@ -362,6 +403,7 @@ class ExpenseCorrections(
                     Kind.Income -> restoreIncome(offered)
                     Kind.GoalMovement -> restoreGoalMovement(offered)
                     Kind.GoalCompletion -> undoCompletion(offered)
+                    Kind.InvestmentMovement -> restoreInvestmentMovement(offered)
                 }
             )
         }
@@ -415,6 +457,7 @@ class ExpenseCorrections(
                     Kind.Income -> CorrectionNotice.IncomeRestored
                     Kind.GoalMovement -> CorrectionNotice.GoalMovementRestored
                     Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndone(offered.goalName)
+                    Kind.InvestmentMovement -> CorrectionNotice.InvestmentMovementRestored
                 }
             )
 
@@ -424,6 +467,7 @@ class ExpenseCorrections(
                     Kind.Income -> CorrectionNotice.IncomeUndoBlocked
                     Kind.GoalMovement -> CorrectionNotice.GoalMovementUndoBlocked
                     Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndoTooLate
+                    Kind.InvestmentMovement -> CorrectionNotice.InvestmentMovementUndoBlocked
                 }
             )
 
@@ -441,6 +485,7 @@ class ExpenseCorrections(
                     Kind.Income -> CorrectionNotice.IncomeUndoTooLate
                     Kind.GoalMovement -> CorrectionNotice.GoalMovementUndoTooLate
                     Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndoTooLate
+                    Kind.InvestmentMovement -> CorrectionNotice.InvestmentMovementUndoTooLate
                 }
             )
         }
@@ -481,6 +526,56 @@ class ExpenseCorrections(
             }
         }
     }
+
+    /**
+     * Deletes an investment's movement and offers to undo it, as for a goal's movement. It
+     * runs to its end even if the caller is cancelled meanwhile.
+     */
+    suspend fun deleteInvestmentMovement(
+        command: DeleteInvestmentMovement
+    ): InvestmentCommandOutcome = scope.async {
+        val outcome = investments.submit(command)
+        if (outcome is InvestmentCommandOutcome.Committed) {
+            investmentMovementDeleted(outcome.change.receipt)
+        }
+        outcome
+    }.await()
+
+    /** An investment movement's deletion committed, as found again after its outcome was not known. */
+    fun investmentMovementDeleted(receipt: OperationReceipt) {
+        val until = investments.movementUndoOffer()
+            ?.takeIf { it.operationId == receipt.operationId }?.until
+        deleted(Kind.InvestmentMovement, receipt.operationId, receipt.generation, until)
+    }
+
+    private suspend fun restoreInvestmentMovement(offered: Pending): Undone {
+        val command =
+            RestoreInvestmentMovement(offered.undoOperation, offered.generation, offered.deletionId)
+        return when (val outcome = investments.submit(command)) {
+            is InvestmentCommandOutcome.Committed -> Undone.Restored
+
+            is InvestmentCommandOutcome.OutcomeUnknown -> {
+                val found = (investments.find(offered.undoOperation) as? Outcome.Success)?.value
+                if (found != null) Undone.Restored else Undone.Retry
+            }
+
+            is InvestmentCommandOutcome.Rejected -> when (outcome.reason) {
+                InvestmentRejection.UndoExpired -> Undone.TooLate
+
+                InvestmentRejection.UndoConflict, is InvestmentRejection.StaleGeneration ->
+                    Undone.Blocked
+
+                else -> Undone.Retry
+            }
+        }
+    }
+
+    /** A screen reports that a correction of an investment's movement was saved. */
+    fun investmentMovementUpdated() = said(CorrectionNotice.InvestmentMovementUpdated)
+
+    /** A screen reports a new investment movement its receipt confirmed. */
+    fun investmentMovementRecorded(notice: CorrectionNotice.InvestmentMovementRecorded) =
+        said(notice)
 
     /**
      * Marks a goal lograda and offers Deshacer, in its name, for the time [command] asked.
@@ -570,7 +665,8 @@ class ExpenseCorrections(
     fun categoryChanged(notice: CorrectionNotice) {
         require(
             notice !is CorrectionNotice.Deleted && notice !is CorrectionNotice.IncomeDeleted &&
-                notice !is CorrectionNotice.GoalMovementDeleted
+                notice !is CorrectionNotice.GoalMovementDeleted &&
+                notice !is CorrectionNotice.InvestmentMovementDeleted
         ) {
             "An offer to undo is not a statement"
         }

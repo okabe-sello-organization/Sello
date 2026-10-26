@@ -215,4 +215,31 @@ class InvestmentPartsTest {
         assertEquals(1, zeros)
         rule.onNodeWithContentDescription("Coma decimal").assertDoesNotExist()
     }
+
+    @Test
+    fun theValuesChartNamesItsMonthsItsLinesAndEveryRecordedValue() {
+        var chosen: String? = null
+        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+            RecordedValuesChart(
+                values = listOf(
+                    RecordedMark("a", 0f, 0.5f, "3 may 2025: 3.000.000 pesos"),
+                    RecordedMark("b", 1f, 0.9f, "14 oct 2026: 5.242.000 pesos")
+                ),
+                contributions = listOf(RecordedMark("c", 0f, 0.5f, "3.000.000 pesos")),
+                summary = "Valores anotados de may 2025 a oct 2026",
+                selectedId = null,
+                onSelect = { chosen = it },
+                axis = "may 25" to "oct 26",
+                legend = "Valor anotado" to "Lo que pusiste"
+            )
+        }) { scheme ->
+            listOf("may 25", "oct 26", "Valor anotado", "Lo que pusiste").forEach {
+                rule.onNodeWithText(it).assertExists()
+            }
+            rule.onNodeWithContentDescription("Valores anotados de may 2025 a oct 2026")
+                .assertExists()
+            rule.onNodeWithText("14 oct 2026: 5.242.000 pesos").performClick()
+            assertEquals(scheme, "b", chosen)
+        }
+    }
 }
