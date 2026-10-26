@@ -5,6 +5,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -12,6 +13,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -489,6 +491,16 @@ class ExpenseEntryScreenTest {
 
         assertEquals(ExpenseEntryAction.Repeat(RepeatAction.Open), actions.last())
         rule.onNodeWithText("Anotar gasto").assertExists()
+    }
+
+    @Test
+    fun anExpenseRecordedOnceOffersToRepeatItWithoutSayingItRepeats() {
+        show(complete)
+
+        rule.onNodeWithTag(REPEAT_ROW_TAG).performScrollTo()
+            .assertTextEquals("Repetir este gasto")
+            .assertContentDescriptionEquals("No se repite. Repetir este gasto")
+        rule.onNodeWithText("Se repite").assertDoesNotExist()
     }
 
     @Test

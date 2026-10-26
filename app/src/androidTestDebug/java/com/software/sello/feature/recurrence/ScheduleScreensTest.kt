@@ -3,10 +3,12 @@ package com.software.sello.feature.recurrence
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
@@ -29,6 +31,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.recurrence.REPEAT_ROW_TAG
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatUi
 import java.time.LocalDate
@@ -167,6 +170,10 @@ class ScheduleScreensTest {
     fun nothingRepeatingSaysHowToAddOneWithoutAnAnotarButton() {
         list(SchedulesState.Ready(ScheduleTab.Incomes, null, emptyList(), emptyList()))
         rule.onNodeWithText("Nada se repite todavía").assertIsDisplayed()
+        rule.onNodeWithText(
+            "Cuando anotes el arriendo o el salario, toca Repetir y Sello lo anotará solo en su " +
+                "fecha."
+        ).assertIsDisplayed()
 
         // The owner asked for no Anotar button here (SELLO-122); the top bar's + adds one.
         rule.onNodeWithText("Anotar algo que se repite").assertDoesNotExist()
@@ -234,6 +241,16 @@ class ScheduleScreensTest {
         ).performScrollTo().performClick()
 
         assertEquals(listOf(ScheduleEditorAction.Pause, ScheduleEditorAction.Delete), editorActions)
+    }
+
+    @Test
+    fun aScheduleWhoseRuleWasRemovedOffersToRepeatItAgain() {
+        editor(editing.copy(repeat = RepeatUi(), missing = ScheduleMissing.Repeat))
+
+        rule.onNodeWithTag(REPEAT_ROW_TAG).performScrollTo()
+            .assertTextEquals("Repetir este gasto")
+            .assertContentDescriptionEquals("No se repite. Repetir este gasto")
+        rule.onNodeWithTag(SCHEDULE_SAVE_TAG).assertIsNotEnabled()
     }
 
     @Test
