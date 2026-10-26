@@ -33,6 +33,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
+import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.CompletedGoalRow
 import com.software.sello.designsystem.component.ErrorSlip
@@ -205,9 +206,12 @@ private fun EmptyMetas() {
     }
 }
 
-/** "Guardado en metas" on the band, and the aportes of this month when there were any. */
+/**
+ * "Guardado en metas" on the band, the aportes of this month when there were any, and
+ * **+ Nueva meta** once [onCreate] exists.
+ */
 @Composable
-fun MetasBandTotal(band: MetasBand, months: MonthNames) {
+fun MetasBandTotal(band: MetasBand, months: MonthNames, onCreate: (() -> Unit)? = null) {
     GoalsBandTotal(
         label = stringResource(R.string.metas_band_label),
         amount = band.saved,
@@ -218,8 +222,18 @@ fun MetasBandTotal(band: MetasBand, months: MonthNames) {
                 months.inSentence(band.month)
             )
         },
-        modifier = Modifier.testTag("metas.band")
+        modifier = Modifier.testTag("metas.band"),
+        action = onCreate?.let {
+            {
+                BandChip(
+                    stringResource(R.string.metas_create),
+                    it,
+                    Modifier.testTag(METAS_CREATE_TAG)
+                )
+            }
+        }
     )
 }
 
 const val METAS_LIST_TAG = "metas.list"
+const val METAS_CREATE_TAG = "metas.create"

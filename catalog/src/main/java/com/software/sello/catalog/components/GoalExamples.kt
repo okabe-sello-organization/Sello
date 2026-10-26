@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.software.sello.catalog.R
+import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChartPeriod
@@ -644,7 +645,8 @@ fun GoalsBandExample() {
             GoalsBandTotal(
                 strings.getString(R.string.catalog_demo_guardado_en_metas),
                 copFixture(2_760_000),
-                strings.getString(R.string.catalog_demo_mas_2_010_000_en_octubre)
+                strings.getString(R.string.catalog_demo_mas_2_010_000_en_octubre),
+                action = { BandChip(strings.getString(R.string.catalog_demo_nueva_meta), {}) }
             )
         }
         ExampleCaption(strings.getString(R.string.catalog_demo_sin_aportes_este_mes))

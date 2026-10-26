@@ -24,7 +24,6 @@ import com.software.sello.awaitText
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.hideKeyboard
 import com.software.sello.navigation.GOAL_EDIT_TAG
-import com.software.sello.navigation.METAS_CREATE_TAG
 import com.software.sello.press
 import com.software.sello.revealed
 import java.time.YearMonth
@@ -95,8 +94,7 @@ class GoalEditorJourneyTest {
     @Test
     fun aGoalTypedOnThePadWithAMonthAppearsInMetasWithItsPlan() {
         openMetas()
-        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Crear una meta"))
-        rule.onNodeWithTag(METAS_CREATE_TAG).performClick()
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Crear una meta")).performClick()
         rule.awaitTag(GOAL_EDITOR_TAG)
 
         name("Celular nuevo")
@@ -173,8 +171,11 @@ class GoalEditorJourneyTest {
 
     @Test
     fun aDraftSurvivesRecreationAndLeavingAsksBeforeDiscardingIt() {
+        val viaje = TestCommands.createGoal("Viaje a la costa", 3_000_000)
         openMetas()
-        rule.onNodeWithTag(METAS_CREATE_TAG).performClick()
+        // With goals, Nueva meta on the band creates the next one.
+        rule.awaitTag("metas.band")
+        rule.onNodeWithTag(METAS_CREATE_TAG).assert(hasText("Nueva meta")).performClick()
         rule.awaitTag(GOAL_EDITOR_TAG)
         name("Casa")
         keys("5", "000")
@@ -187,7 +188,7 @@ class GoalEditorJourneyTest {
         rule.onNodeWithTag(GOAL_EDITOR_CLOSE_TAG).performClick()
         rule.awaitText("¿Descartar los cambios?")
         rule.onNodeWithText("Descartar").press()
-        rule.awaitTag("metas.empty")
-        assertEquals(0L, TestData.count("goal"))
+        rule.awaitTag("metas.goal.$viaje")
+        assertEquals(1L, TestData.count("goal"))
     }
 }
