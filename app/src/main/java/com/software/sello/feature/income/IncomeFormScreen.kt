@@ -302,6 +302,7 @@ private fun IncomeChoices(state: IncomeFormState, onAction: (IncomeFormAction) -
     if (!state.editing) {
         RepeatRow(
             state.repeat,
+            income = true,
             state.date,
             state.today,
             dateLabels(),

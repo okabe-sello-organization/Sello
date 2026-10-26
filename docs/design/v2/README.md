@@ -463,7 +463,9 @@ keeps everything on opening, with no notification or background work.
   and Resumen's income slip (**Pagos e ingresos fijos ›**). Recibo's reserved footnote
   opens the upcoming payments.
 - **Creating (owner):** **Se repite** in the locked entry, a row under the note, off by
-  default. It opens a sheet: **Cada mes** (a day, 1–31), **Dos veces al mes** (two
+  default. While off it reads **Repetir este gasto / Repetir este ingreso**, an invitation
+  like Agregar nota, never a statement that it repeats (owner, 2026-10-26, #172). It opens
+  a sheet: **Cada mes** (a day, 1–31), **Dos veces al mes** (two
   days), **Cada semana o más** (1–52 weeks) or **Cada cierto número de días** (1–365),
   then **Termina: Nunca / En una fecha**, and **Próximo: …** with "Se anota solo en su
   fecha." The start is the entry's date: today or later while Se repite is on, never

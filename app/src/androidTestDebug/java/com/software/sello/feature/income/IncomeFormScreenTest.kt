@@ -4,7 +4,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -15,6 +17,7 @@ import androidx.compose.ui.unit.Density
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.presentation.recurrence.REPEAT_ROW_TAG
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -111,6 +114,16 @@ class IncomeFormScreenTest {
         rule.onNodeWithTag("income.submit").assertTextContains("Anotar ingreso").performClick()
 
         assertEquals(listOf<IncomeFormAction>(IncomeFormAction.Submit), actions)
+    }
+
+    @Test
+    fun anIncomeRecordedOnceOffersToRepeatItWithoutSayingItRepeats() {
+        showForm(ready, mutableListOf())
+
+        rule.onNodeWithTag(REPEAT_ROW_TAG).performScrollTo()
+            .assertTextEquals("Repetir este ingreso")
+            .assertContentDescriptionEquals("No se repite. Repetir este ingreso")
+        rule.onNodeWithText("Se repite").assertDoesNotExist()
     }
 
     @Test
