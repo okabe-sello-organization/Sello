@@ -116,6 +116,8 @@ fun MilestonesExample() {
                 )
             }
         )
+        ExampleCaption(strings.getString(R.string.catalog_demo_sellos_centrados))
+        MilestoneRow(GoalPlaces, evenly = true)
         key(replay) { MilestoneRow(GoalPlaces, landingIndex = if (replay > 0) 1 else null) }
         SelloButton(strings.getString(R.string.catalog_demo_repetir_aterrizaje), {
             replay++

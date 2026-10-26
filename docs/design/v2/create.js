@@ -1,4 +1,7 @@
-// Sello v2 · Create and edit a goal (locked 2026-10-15): v1.1's "Nueva meta" blended with the first round.
+// Sello v2 · Create and edit a goal (locked 2026-10-15; made alike with Nueva categoría by the
+// owner 2026-10-26: icon circle opening a sheet, the pad always there, the date in the
+// amount slip's corner, Sin fecha on the month sheet's title line, the stamps centred).
+// v1.1's "Nueva meta" blended with the first round.
 // From v1.1: name and icon as their own section, the amount as the big number, the monthly
 // reminder and the four stamps with the months they could arrive (a plan, shown only while
 // creating or editing, with its assumption spelled out). From the first round: the date / Sin fecha
@@ -22,23 +25,27 @@ const SCENES = {
   edit:   { name: "Viaje a la costa", icon: "flight", amount: 3000000, date: "dic 2026", monthly: [645000, 2], edit: true, stamps: [["25 %", null, true], ["50 %", null, true], ["75 %", "nov 26"], ["Meta", "dic 26"]] },
 };
 
+// The circle opens the icon sheet: dashed with a centred + while empty, filled with "Cambiar".
+const pick = s => s.icon
+  ? `<button class="pick" aria-label="Ícono: ${ICON_NAMES[s.icon] ?? s.icon}. Cambiar"><span class="ident-icon">${icon(s.icon)}</span>Cambiar</button>`
+  : `<button class="pick" aria-label="Elegir ícono"><span class="ident-icon empty pick-empty">${icon("add")}</span>Elegir ícono</button>`;
+
 function identity(s) {
   const len = [...s.name].length, tooLong = len > 40;
-  const strip = ICONS.map(ic => `<button class="icon-choice" aria-pressed="${ic === s.icon}" aria-label="${ICON_NAMES[ic]}">${icon(ic)}</button>`).join("");
-  return `<section class="slip form-slip"><div class="ident"><span class="ident-icon ${s.icon ? "" : "empty"}" aria-hidden="true">${icon(s.icon ?? "flag")}</span><div><label class="form-label">Nombre</label><div class="form-field ${s.focus === "name" ? "focus" : ""} ${s.name ? "" : "placeholder"} ${tooLong ? "error" : ""}">${s.name || "¿Para qué estás guardando?"}${s.focus === "name" ? `<span class="caret"></span>` : ""}</div></div></div><div class="form-msg">${tooLong ? `<span class="err">Máximo 40 caracteres. Tu texto sigue aquí.</span>` : "<span></span>"}<span class="${tooLong ? "err" : ""}">${len}/40</span></div><div class="icon-strip" role="group" aria-label="Ícono">${strip}</div></section>`;
+  return `<section class="slip form-slip"><div class="ident" style="align-items:center">${pick(s)}<div><label class="form-label">Nombre</label><div class="form-field ${s.focus === "name" ? "focus" : ""} ${s.name ? "" : "placeholder"} ${tooLong ? "error" : ""}">${s.name || "¿Para qué estás guardando?"}${s.focus === "name" ? `<span class="caret"></span>` : ""}</div></div></div><div class="form-msg">${tooLong ? `<span class="err">Máximo 40 caracteres. Tu texto sigue aquí.</span>` : "<span></span>"}<span class="${tooLong ? "err" : ""}">${len}/40</span></div></section>`;
 }
 
 function plan(s) {
   const value = s.amount === null ? `<p class="plan-amount placeholder">0${s.focus === "amount" ? `<span class="caret"></span>` : ""}</p>` : `<p class="plan-amount ${String(s.amount).length > 9 ? "mid" : ""}">${money(s.amount)}${s.focus === "amount" ? `<span class="caret"></span>` : ""}</p>`;
   const monthly = s.monthly ? `<p class="monthly">${icon("flag")}<span>Son <b>${fmt(s.monthly[0])}</b> al mes durante <b>${s.monthly[1]} ${s.monthly[1] === 1 ? "mes" : "meses"}</b>.</span></p>` : "";
-  return `<section class="slip pinked"><div class="plan-label"><span class="label">Cuánto necesitas</span></div>${value}<div class="tear" aria-hidden="true"></div><span class="form-label">Para cuándo</span><div class="date-row"><button class="chip" aria-pressed="${!!s.date}">${icon("event")}${s.date ?? "Elegir mes"}</button><button class="chip" aria-pressed="${!s.date}">Sin fecha</button></div>${monthly}</section>`;
+  return `<section class="slip pinked"><div class="plan-label"><span class="label">Cuánto necesitas</span><button class="chip" aria-label="Para cuándo: ${s.date ?? "Sin fecha"}. Cambiar">${icon("event")}${s.date ?? "Sin fecha"}</button></div>${value}${monthly}</section>`;
 }
 
 function stamps(s) {
   const list = s.stamps ?? [["25 %"], ["50 %"], ["75 %"], ["Meta"]];
   const places = list.map(([t, when, done]) => `<span class="stamp-when"><span class="v1-place ${done ? "done" : ""}">${t}</span>${done ? "logrado" : when ?? "&nbsp;"}</span>`).join("");
   const caption = s.monthly ? `Si aportas <b>${fmt(s.monthly[0])}</b> cada mes` : "Ponle fecha para ver cuándo podrías llegar a cada uno";
-  return `<section class="slip stamps-plan"><div class="gd-stamps-head"><b>Tus sellos</b></div><p class="caption" style="margin:2px 0 0">${caption}</p><div class="v1-places">${places}</div></section>`;
+  return `<section class="slip stamps-plan" style="text-align:center"><div class="gd-stamps-head" style="justify-content:center"><b>Tus sellos</b></div><p class="caption" style="margin:2px 0 0">${caption}</p><div class="v1-places" style="display:grid;grid-template-columns:repeat(4,1fr);justify-items:center">${places}</div></section>`;
 }
 
 const doneAsk = () => `<section class="slip done-ask"><h2>¿Ya la lograste?</h2><p>Si llegaste a tu meta por fuera de Sello, márcala como lograda.</p><button class="outline-btn gain wide">${icon("check")}Marcar como lograda</button></section>`;
@@ -49,9 +56,8 @@ const pad = () => `<div class="pad" role="group" aria-label="Teclado de Sello">$
 function form(s, { confirm = false } = {}) {
   const tooLong = [...s.name].length > 40;
   const ok = s.name && !tooLong && s.icon && s.amount;
-  const action = s.focus === "amount"
-    ? `<div class="pad-done"><button class="text-btn">Listo</button></div>${pad()}`
-    : `<div class="entry-action"><button class="primary goal" ${ok ? "" : "disabled"}>${icon("flag")}${s.edit ? "Guardar cambios" : "Crear meta"}</button></div>`;
+  const missing = !s.icon ? "Elige un ícono." : !s.name ? "Escribe un nombre." : !s.amount ? "Escribe cuánto necesitas." : "";
+  const action = `<div class="entry-action">${missing ? `<p class="caption" style="margin:0 2px 6px">${missing}</p>` : ""}<button class="primary goal" ${ok ? "" : "disabled"}>${icon("flag")}${s.edit ? "Guardar cambios" : "Crear meta"}</button></div>${pad()}`;
   const extra = s.edit ? doneAsk() + danger() : "";
   return `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button><b style="flex:1;font-size:1.2em;margin-left:4px">${s.edit ? "Editar meta" : "Nueva meta"}</b></div></div><div class="entry-mid" style="padding-top:2px">${identity(s)}${plan(s)}${stamps(s)}${extra}</div>${action}<div class="gesture" style="background:var(--desk)"></div>${confirm ? confirmSlip() : ""}`;
 }
@@ -63,10 +69,10 @@ function render() {
   const o = reviewOptions(["ink", "theme"]);
   const set = (id, h) => document.getElementById(id).innerHTML = h;
   set("top",
-    card("Nueva meta", "Name and icon as their own section; the amount is the big number; date or Sin fecha under the tear line with the monthly line; the stamps show when they could arrive at that pace.", phone(o, form(SCENES.dated), true)) +
-    card("Typing the amount", "Tapping the amount brings up the Sello pad; Listo closes it. Text uses the phone keyboard, numbers always use the pad.", phone(o, form(SCENES.amount))) +
-    card("Sin fecha", "No monthly line; the stamps have no months and invite setting a date.", phone(o, form(SCENES.nodate))) +
-    card("Just opened", "Empty icon place, empty name, 0. Crear meta waits for name, icon and amount.", phone(o, form(SCENES.empty))));
+    card("Nueva meta", "The icon circle beside the name; the amount is the big number on the pad, with the month in the slip's corner and the monthly line under it; the stamps, centred, show when they could arrive at that pace.", phone(o, form(SCENES.dated), true)) +
+    card("Typing the amount", "The Sello pad is always under the form; the keyboard covers it only while the name is typed.", phone(o, form(SCENES.amount))) +
+    card("Sin fecha", "The corner says Sin fecha; no monthly line; the stamps have no months and invite setting a date. The month sheet has Sin fecha on its title line.", phone(o, form(SCENES.nodate))) +
+    card("Just opened", "A dashed + circle, Elegir ícono; the name with the keyboard up; 0. The line above Crear meta says what is missing first.", phone(o, form(SCENES.empty))));
   set("edit",
     card("Editar meta", "Same screen. Earned stamps show “logrado”; the rest show when they could arrive at the new pace. Then two clear decisions, each in its own card: mark as reached, or delete.", phone(o, form(SCENES.edit), true)) +
     card("Deleting asks once more", "Sello’s confirm slip: what is deleted and how many movements, a tear line, Cancelar and a red Borrar.", phone(o, form(SCENES.edit, { confirm: true }))) +

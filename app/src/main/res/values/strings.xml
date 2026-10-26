@@ -60,7 +60,13 @@
     <string name="category_editor_name_too_long">El nombre puede tener hasta 24 caracteres.</string>
     <string name="category_editor_name_not_allowed">El nombre tiene caracteres que no se pueden usar.</string>
     <string name="category_editor_name_taken">Ya tienes una categoría con ese nombre.</string>
-    <string name="category_editor_icon">Ícono</string>
+    <string name="category_editor_icon">Elige un ícono</string>
+    <string name="category_icon_sheet_note">Así reconocerás la categoría en tu recibo.</string>
+    <string name="category_icon_in_use">Ya lo usa otra categoría; puedes repetirlo.</string>
+    <string name="category_editor_missing_name">Escribe un nombre.</string>
+    <string name="icon_picker_choose">Elegir ícono</string>
+    <string name="icon_picker_change">Cambiar</string>
+    <string name="icon_picker_spoken">Ícono: %1$s. Cambiar</string>
     <string name="category_editor_limit">Límite mensual</string>
     <string name="category_editor_unlimited">Sin límite</string>
     <string name="category_editor_limit_amount">Límite en pesos</string>
@@ -995,12 +1001,10 @@
     <string name="goal_editor_name_too_long">Máximo 40 caracteres. Tu texto sigue aquí.</string>
     <string name="goal_editor_name_not_allowed">El nombre tiene caracteres que no se pueden guardar.</string>
     <string name="goal_editor_amount">Cuánto necesitas</string>
-    <string name="goal_editor_amount_spoken">Cuánto necesitas: %s. Toca para escribirlo con el teclado de Sello.</string>
-    <string name="goal_editor_amount_empty">Cuánto necesitas: sin monto. Toca para escribirlo con el teclado de Sello.</string>
-    <string name="goal_editor_when">Para cuándo</string>
-    <string name="goal_editor_choose_month">Elegir mes</string>
+    <string name="goal_editor_when">Para cuándo: %1$s. Cambiar</string>
     <string name="goal_editor_no_date">Sin fecha</string>
-    <string name="goal_editor_month_title">¿Para cuándo?</string>
+    <string name="goal_editor_month_title">Para cuándo</string>
+    <string name="goal_editor_month_note">El mes en que quieres tenerla.</string>
     <string name="goal_editor_previous_year">Año anterior</string>
     <string name="goal_editor_next_year">Año siguiente</string>
     <plurals name="goal_editor_monthly"><item quantity="one">Son %1$s al mes durante %2$d mes.</item><item quantity="other">Son %1$s al mes durante %2$d meses.</item></plurals>
@@ -1011,8 +1015,11 @@
     <string name="goal_editor_earned">logrado</string>
     <string name="goal_editor_projected">%1$s, podrías llegar en %2$s</string>
     <string name="goal_editor_create">Crear meta</string>
+    <string name="goal_editor_missing_icon">Elige un ícono.</string>
+    <string name="goal_editor_missing_name">Escribe un nombre.</string>
+    <string name="goal_editor_missing_amount">Escribe cuánto necesitas.</string>
+    <string name="goal_icon_sheet_note">Así reconocerás la meta en Metas.</string>
     <string name="goal_editor_save">Guardar cambios</string>
-    <string name="goal_editor_done">Listo</string>
     <string name="goal_editor_completed">Esta meta ya está lograda. Solo se puede borrar.</string>
     <string name="goal_editor_load_failed">No pudimos leer esta meta. Tus registros siguen guardados.</string>
     <string name="goal_editor_not_saved">No se guardó. Puedes intentarlo de nuevo.</string>

@@ -150,6 +150,21 @@ class CategoryManagementViewModel(
             is CategoryEditorAction.LimitChanged ->
                 if (now.editable && !now.limitLocked && !now.unlimited) setLimit(false, action.text)
 
+            is CategoryEditorAction.LimitDigit -> if (typesLimit(now)) {
+                LimitKeys.press(now.limitText) {
+                    it.digit(action.digit)
+                }?.let { setLimit(false, it) }
+            }
+
+            CategoryEditorAction.LimitTripleZero -> if (typesLimit(now)) {
+                LimitKeys.press(now.limitText) { it.tripleZero() }?.let { setLimit(false, it) }
+            }
+
+            CategoryEditorAction.LimitBackspace ->
+                if (typesLimit(now)) setLimit(false, LimitKeys.backspace(now.limitText))
+
+            CategoryEditorAction.LimitCleared -> if (typesLimit(now)) setLimit(false, "")
+
             is CategoryEditorAction.SuggestionPicked ->
                 if (now.editable && !now.limitLocked) setLimit(false, action.pesos.toString())
 
@@ -192,6 +207,10 @@ class CategoryManagementViewModel(
         }
     }
 
+    /** The pad types the limit only while it can change and "Sin límite" is off. */
+    private fun typesLimit(state: CategoryEditorState) =
+        state.editable && !state.limitLocked && !state.unlimited
+
     private fun month(text: String): YearMonth? = runCatching { YearMonth.parse(text) }.getOrNull()
 
     private fun setLimit(unlimited: Boolean, text: String) {
@@ -216,7 +235,8 @@ class CategoryManagementViewModel(
                 archived = stored?.archived ?: false,
                 // An archived category has no limit from this month onwards to change.
                 limitLocked = stored != null && stored.archived && targetMonth == currentMonth,
-                limitTotal = figures.total(budget, categoryId, after.unlimited, after.limitText)
+                limitTotal = figures.total(budget, categoryId, after.unlimited, after.limitText),
+                limitAmount = figures.amount(after.limitText)
             )
         }
     }
@@ -323,9 +343,14 @@ class CategoryManagementViewModel(
         }
         generation = read.generation
         budget = read
-        mutable.update { it.copy(suggestions = figures.suggestions(read)) }
-        takenNames = read.categories.filter { it.category.id != categoryId }
-            .map { it.category.name.uniquenessKey }.toSet()
+        val others = read.categories.filter { it.category.id != categoryId }
+        mutable.update {
+            it.copy(
+                suggestions = figures.suggestions(read),
+                usedIconKeys = others.map { other -> other.category.icon.value }.toSet()
+            )
+        }
+        takenNames = others.map { it.category.name.uniquenessKey }.toSet()
         val found = read.categories.firstOrNull { it.category.id == categoryId }
         if (!keepOriginal) {
             if (found == null) {

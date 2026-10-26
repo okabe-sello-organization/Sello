@@ -9,15 +9,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.test.assertContentDescriptionEquals
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isFocused
+import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -26,6 +35,7 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.GoalPlace
+import com.software.sello.revealed
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -97,34 +107,102 @@ class GoalEditorScreenTest {
                 "999.999.999.999 pesos",
                 substring = true
             )
-                .performScrollTo().getUnclippedBoundsInRoot()
+                .revealed().getUnclippedBoundsInRoot()
             assertTrue("$each: amount at $amount", amount.right <= window.right + 0.5.dp)
-            val monthly = rule.onNodeWithTag("goal.editor.monthly").performScrollTo()
+            val monthly = rule.onNodeWithTag("goal.editor.monthly").revealed()
                 .getUnclippedBoundsInRoot()
             assertTrue("$each: monthly at $monthly", monthly.right <= window.right + 0.5.dp)
             rule.onNodeWithText("Son 38.461.538.462 al mes durante 26 meses.").assertExists()
-            rule.onNodeWithTag("goal.editor.places").performScrollTo()
+            rule.onNodeWithTag("goal.editor.places").revealed()
             rule.onNodeWithText("dic 28", useUnmergedTree = true).assertExists()
             rule.onNodeWithText("40/40", useUnmergedTree = true).assertExists()
         }
     }
 
+    private fun show(state: GoalEditorState) = rule.setContent {
+        SelloTheme(reducedMotion = true) { GoalEditorScreen(state) { actions += it } }
+    }
+
     @Test
-    fun theActionWaitsAndTheAmountOpensThePad() {
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                GoalEditorScreen(planned.copy(iconKey = null)) { actions += it }
-            }
-        }
+    fun theActionSaysWhatIsMissingAndThePadIsAlwaysThere() {
+        show(planned.copy(iconKey = null))
 
         rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).assertIsNotEnabled()
-        rule.onNodeWithTag(GOAL_EDITOR_AMOUNT_TAG).performClick()
+        rule.onNodeWithTag(GOAL_EDITOR_MISSING_TAG).assertIsDisplayed()
+        rule.onNodeWithText("Elige un ícono.").assertIsDisplayed()
+        rule.onNode(hasText("7") and hasAnyAncestor(hasTestTag(GOAL_EDITOR_PAD_TAG)))
+            .performClick()
+
+        assertEquals(listOf<GoalEditorAction>(GoalEditorAction.Digit(7)), actions)
+    }
+
+    @Test
+    fun theEmptyCircleInvitesAChoiceAndOpensTheSameTwentyFourIconsAsACategory() {
+        show(planned.copy(iconKey = null))
+
+        rule.onNodeWithTag(GOAL_EDITOR_ICON_TAG).assertContentDescriptionEquals("Elegir ícono")
+            .performClick()
+        rule.onAllNodes(
+            hasAnyAncestor(hasTestTag(GOAL_EDITOR_ICONS_TAG)) and isSelectable()
+        ).assertCountEquals(24)
+        rule.onNodeWithContentDescription("Ahorro").assertExists()
         rule.onNodeWithContentDescription("Viaje").performClick()
 
-        assertEquals(
-            listOf(GoalEditorAction.OpenPad, GoalEditorAction.IconPicked("flight")),
-            actions
-        )
+        rule.onNodeWithTag(GOAL_EDITOR_ICONS_TAG).assertDoesNotExist()
+        assertEquals(listOf<GoalEditorAction>(GoalEditorAction.IconPicked("flight")), actions)
+    }
+
+    @Test
+    fun theMonthIsInTheAmountsCornerAndItsSheetOffersSinFechaBesideItsTitle() {
+        show(planned.copy(targetMonth = null, pace = null))
+
+        rule.onNodeWithTag("goal.editor.month")
+            .assertContentDescriptionEquals("Para cuándo: Sin fecha. Cambiar").performClick()
+        assertEquals(listOf<GoalEditorAction>(GoalEditorAction.ChooseMonth), actions)
+    }
+
+    @Test
+    fun sinFechaSitsOnTheMonthSheetsTitleLineAndReportsItself() {
+        show(planned.copy(choosingMonth = true, pickerYear = 2028))
+
+        val title = rule.onNodeWithText("Para cuándo").getUnclippedBoundsInRoot()
+        val noDate = rule.onNodeWithTag("goal.editor.noDate").assertIsDisplayed()
+            .getUnclippedBoundsInRoot()
+        // One line: the button beside the title, to its right.
+        assertTrue("title $title, button $noDate", noDate.top < title.bottom)
+        assertTrue("title $title, button $noDate", noDate.bottom > title.top)
+        assertTrue("title $title, button $noDate", noDate.left >= title.right)
+        rule.onNodeWithTag("goal.editor.noDate").performClick()
+
+        assertEquals(listOf<GoalEditorAction>(GoalEditorAction.NoDate), actions)
+    }
+
+    @Test
+    fun theStampsAreCentredWithEqualRoomOnEitherSide() {
+        show(planned)
+
+        val row = rule.onNodeWithTag("goal.editor.places").revealed().getUnclippedBoundsInRoot()
+        val first = rule.onNodeWithText("25 %", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val last = rule.onNodeWithText("Meta", useUnmergedTree = true).getUnclippedBoundsInRoot()
+        val left = first.left - row.left
+        val right = row.right - last.right
+        assertTrue("left $left, right $right", (left - right).value in -2f..2f)
+        // Not huddled at the start: the four share the width, with room before the first.
+        assertTrue("left $left of the row", left > 4.dp)
+    }
+
+    @Test
+    fun aNewGoalOpensOnTheNameAndAGoalBeingChangedDoesNot() {
+        show(GoalEditorState(loading = false))
+        rule.waitForIdle()
+        rule.onNodeWithContentDescription("Nombre").assertIsFocused()
+    }
+
+    @Test
+    fun aGoalBeingChangedDoesNotTakeFocus() {
+        show(planned.copy(editing = true))
+        rule.waitForIdle()
+        rule.onAllNodes(isFocused()).assertCountEquals(0)
     }
 
     @Test
@@ -163,7 +241,7 @@ class GoalEditorScreenTest {
         rule.onNodeWithTag(GOAL_EDITOR_AMOUNT_TAG).assertDoesNotExist()
         rule.onNodeWithText("Se borran la meta y sus 4 movimientos. Esto no se puede deshacer.")
             .assertExists()
-        rule.onNodeWithText("Borrar meta").performScrollTo().performClick()
+        rule.onNodeWithText("Borrar meta").revealed().performClick()
         assertEquals(listOf(GoalEditorAction.AskToDelete), actions)
     }
 }

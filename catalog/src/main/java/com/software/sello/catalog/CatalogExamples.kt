@@ -33,6 +33,7 @@ import com.software.sello.catalog.components.GoalFormExample
 import com.software.sello.catalog.components.GoalPillExample
 import com.software.sello.catalog.components.GoalsBandExample
 import com.software.sello.catalog.components.IconChoiceExample
+import com.software.sello.catalog.components.IconPickerExample
 import com.software.sello.catalog.components.IconStripExample
 import com.software.sello.catalog.components.InkSwatchesExample
 import com.software.sello.catalog.components.InvestmentStatesExample
@@ -267,6 +268,11 @@ val catalogExamples: List<CatalogExample> = listOf(
         CatalogGroup.Inputs,
         R.string.catalog_example_icon_choice
     ) { IconChoiceExample() },
+    CatalogExample(
+        "inputs.icon-picker",
+        CatalogGroup.Inputs,
+        R.string.catalog_example_icon_picker
+    ) { IconPickerExample() },
     CatalogExample(
         "inputs.icon-strip",
         CatalogGroup.Inputs,

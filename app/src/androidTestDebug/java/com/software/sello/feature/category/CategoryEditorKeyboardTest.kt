@@ -27,8 +27,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * With the keyboard up, the form scrolls just far enough for its last control to sit
- * above the keyboard, and no further.
+ * With the keyboard up for the name, the form keeps the height it had, as Anotar does:
+ * the name stays where it was, in view above the keyboard, and nothing is squeezed.
  */
 @RunWith(AndroidJUnit4::class)
 class CategoryEditorKeyboardTest {
@@ -50,7 +50,7 @@ class CategoryEditorKeyboardTest {
     }
 
     @Test
-    fun scrolledToTheEndTheCreateButtonRestsJustAboveTheKeyboard() {
+    fun theNameStaysInViewAboveTheKeyboardWhereItWas() {
         rule.setContent {
             // One pixel per dp on a phone-sized stage, whatever the test device is.
             CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
@@ -68,19 +68,15 @@ class CategoryEditorKeyboardTest {
                 }
             }
         }
+        val before = rule.onNodeWithTag(EDITOR_NAME_TAG).getUnclippedBoundsInRoot()
+
         keyboard(KEYBOARD)
 
-        rule.onNode(hasScrollAction()).performSemanticsAction(SemanticsActions.ScrollBy) {
-            it(0f, 10_000f)
-        }
-        rule.waitForIdle()
-
         val stage = rule.onNodeWithTag(STAGE).getUnclippedBoundsInRoot()
-        val button = rule.onNodeWithTag(EDITOR_SUBMIT_TAG).getUnclippedBoundsInRoot()
+        val name = rule.onNodeWithTag(EDITOR_NAME_TAG).getUnclippedBoundsInRoot()
         val keyboardTop = stage.bottom.value - KEYBOARD
-        val gap = keyboardTop - button.bottom.value
-        // Not under the keyboard, and not a keyboard's height above it either.
-        assertTrue("The button is ${gap}dp above the keyboard", gap in 0f..48f)
+        assertTrue("The name ends at ${name.bottom}", name.bottom.value <= keyboardTop)
+        assertTrue("The name moved from $before to $name", name.top == before.top)
     }
 
     private companion object {

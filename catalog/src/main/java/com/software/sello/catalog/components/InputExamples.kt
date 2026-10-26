@@ -1,6 +1,7 @@
 package com.software.sello.catalog.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import com.software.sello.catalog.R
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.DigitGrouping
 import com.software.sello.designsystem.component.FieldMessage
@@ -28,6 +30,9 @@ import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.IconChoice
 import com.software.sello.designsystem.component.IconChoiceGrid
+import com.software.sello.designsystem.component.IconChoiceSheetContent
+import com.software.sello.designsystem.component.IconPickerCircle
+import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
@@ -253,6 +258,83 @@ fun IconChoiceExample() {
         )
         Slip(modifier = Modifier.fillMaxWidth(), pinked = false) {
             IconChoiceGrid(choices.take(4), "home", { picked = it }, enabled = false)
+        }
+    }
+}
+
+/**
+ * What a creation screen starts from: the big circle beside the name, empty and inviting
+ * in a goal's green, chosen in a category's blue. Tapping one opens the icons as round
+ * cells; the ones already in use are dashed and can still be picked.
+ */
+@Composable
+fun IconPickerExample() {
+    var category by rememberSaveable { mutableStateOf("restaurant") }
+    var goal by rememberSaveable { mutableStateOf<String?>(null) }
+    var open by rememberSaveable { mutableStateOf<String?>(null) }
+    val choices = remember {
+        listOf(
+            IconChoice("restaurant", SelloIcon.Restaurant, "Comida"),
+            IconChoice("home", SelloIcon.Home, "Hogar"),
+            IconChoice("directions_bus", SelloIcon.DirectionsBus, "Transporte"),
+            IconChoice("savings", SelloIcon.Savings, "Ahorro"),
+            IconChoice("flight", SelloIcon.Flight, "Viajes"),
+            IconChoice("pets", SelloIcon.Pets, "Mascotas")
+        )
+    }
+    val iconOf = { key: String? -> choices.firstOrNull { it.id == key } }
+    Box {
+        Row(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)) {
+            IconPickerCircle(
+                icon = iconOf(goal)?.icon,
+                caption = if (goal == null) "Elegir ícono" else "Cambiar",
+                description = iconOf(goal)?.let { "Ícono: ${it.label}. Cambiar" } ?: "Elegir ícono",
+                onClick = { open = "goal" },
+                modifier = Modifier.testTag("icon-picker:goal"),
+                tone = ButtonTone.Gain
+            )
+            IconPickerCircle(
+                icon = iconOf(category)?.icon,
+                caption = "Cambiar",
+                description = "Ícono: ${iconOf(category)?.label}. Cambiar",
+                onClick = { open = "category" },
+                modifier = Modifier.testTag("icon-picker:category")
+            )
+            IconPickerCircle(
+                icon = SelloIcon.Home,
+                caption = "Cambiar",
+                description = "Ícono: Hogar. Cambiar",
+                onClick = {},
+                enabled = false
+            )
+        }
+    }
+    when (open) {
+        "goal" -> RepeatSheet("Elige un ícono", { open = null }) {
+            IconChoiceSheetContent(
+                choices,
+                goal,
+                {
+                    goal = it
+                    open = null
+                },
+                note = "Así reconocerás la meta en Metas.",
+                tone = ButtonTone.Gain
+            )
+        }
+
+        "category" -> RepeatSheet("Elige un ícono", { open = null }) {
+            IconChoiceSheetContent(
+                choices,
+                category,
+                {
+                    category = it
+                    open = null
+                },
+                note = "Así reconocerás la categoría en tu recibo.",
+                inUse = setOf("home", "savings"),
+                inUseNote = "Ya lo usa otra categoría; puedes repetirlo."
+            )
         }
     }
 }

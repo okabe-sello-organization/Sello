@@ -93,8 +93,12 @@ data class CategoryEditorState(
     val nameError: NameError? = null,
     val iconKeys: List<String> = emptyList(),
     val iconKey: String = "",
+    /** Icons other categories have, archived ones too: they can still be chosen. */
+    val usedIconKeys: Set<String> = emptySet(),
     val unlimited: Boolean = false,
     val limitText: String = "",
+    /** [limitText] drawn as an amount, or null while it is empty or not one. */
+    val limitAmount: MoneyTextValue? = null,
     val limitError: LimitError? = null,
     val suggestions: List<LimitSuggestion> = emptyList(),
     /** Shown under the limit; null while the draft's limit is not usable or cannot be added. */
@@ -147,7 +151,18 @@ sealed interface CategoryEditorAction {
 
     data class UnlimitedChanged(val unlimited: Boolean) : CategoryEditorAction
 
+    /** Pasted text for the limit, kept exactly as it came. */
     data class LimitChanged(val text: String) : CategoryEditorAction
+
+    /** A Sello pad digit, 0–9, on the limit. */
+    data class LimitDigit(val digit: Int) : CategoryEditorAction
+
+    data object LimitTripleZero : CategoryEditorAction
+
+    data object LimitBackspace : CategoryEditorAction
+
+    /** A long press on backspace: the limit is emptied. */
+    data object LimitCleared : CategoryEditorAction
 
     /** One of the suggested limits, in whole pesos. */
     data class SuggestionPicked(val pesos: Long) : CategoryEditorAction

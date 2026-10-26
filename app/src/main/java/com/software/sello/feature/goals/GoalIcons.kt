@@ -9,11 +9,12 @@ import com.software.sello.presentation.category.CategoryIcons
 data class GoalIconOption(val key: String, val icon: SelloIcon, @StringRes val label: Int)
 
 /**
- * The icons offered for goals, in the order shown (v2 create). The keys are the ones
- * categories store, so a goal and a category with the same key draw the same icon.
+ * The icons offered for goals: the same 24 as for a category, in the same order, so both
+ * creation screens choose from one set. The ten goals had first keep their goal names
+ * ("Casa", "Viaje"); the rest are called as for a category.
  */
 object GoalIcons {
-    val options: List<GoalIconOption> = listOf(
+    private val goalLabels: Map<String, Int> = mapOf(
         "home" to R.string.goal_icon_home,
         "flight" to R.string.goal_icon_flight,
         "school" to R.string.goal_icon_school,
@@ -24,7 +25,11 @@ object GoalIcons {
         "shopping_cart" to R.string.goal_icon_shopping_cart,
         "theaters" to R.string.goal_icon_theaters,
         "medical_services" to R.string.goal_icon_medical_services
-    ).map { (key, label) -> GoalIconOption(key, CategoryIcons.iconFor(key), label) }
+    )
+
+    val options: List<GoalIconOption> = CategoryIcons.options.map {
+        GoalIconOption(it.key, it.icon, goalLabels[it.key] ?: it.label)
+    }
 
     val keys: List<String> = options.map { it.key }
 }

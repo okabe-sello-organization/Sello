@@ -868,4 +868,30 @@ class CategoryManagementViewModelTest {
 
         assertNull(form.now.limitTotal)
     }
+
+    // --- The limit on the Sello pad ---
+
+    @Test
+    fun thePadChangesTheStoredLimitAndShowsItAsAnAmount() {
+        val form = form()
+
+        form.onAction(CategoryEditorAction.LimitBackspace)
+        form.onAction(CategoryEditorAction.LimitTripleZero)
+
+        // 100000 → 10000 → 10000000.
+        assertEquals("10000000", form.now.limitText)
+        assertEquals("10.000.000 pesos", form.now.limitAmount?.spoken)
+        assertTrue(form.now.changed)
+    }
+
+    @Test
+    fun itOpensShowingTheStoredLimitAsAnAmount() {
+        assertEquals("100.000 pesos", form().now.limitAmount?.spoken)
+    }
+
+    @Test
+    fun theIconsTheOtherCategoriesUseAreKnownButNotItsOwn() {
+        // Café is local_cafe; Mercado, archived, is home.
+        assertEquals(setOf("home"), form().now.usedIconKeys)
+    }
 }

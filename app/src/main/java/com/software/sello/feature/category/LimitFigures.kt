@@ -1,9 +1,11 @@
 package com.software.sello.feature.category
 
+import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.CategoryBudgetPolicy
 import com.software.sello.domain.policy.CategoryInMonth
 import com.software.sello.domain.policy.CopAmountInput
@@ -48,6 +50,10 @@ class LimitFigures(private val money: MoneyFormatter) {
         return LimitTotal(budget.month, money.format(total), changes = total != now.value)
     }
 
+    /** [limitText] as the amount it is, or null while it is empty or not an amount. */
+    fun amount(limitText: String): MoneyTextValue? =
+        (CopAmountInput.parse(limitText) as? Outcome.Success)?.value?.let(money::format)
+
     private fun MonthBudget?.inMonth() =
         this?.categories.orEmpty().map { CategoryInMonth(it.category, it.state) }
 
@@ -55,4 +61,30 @@ class LimitFigures(private val money: MoneyFormatter) {
         /** Limits offered before the person has three of their own, in pesos. */
         val STARTING_LIMITS = listOf(200_000L, 300_000L, 500_000L)
     }
+}
+
+/**
+ * The Sello pad typing a limit, through the same draft rules as an expense: no leading
+ * zeros and no thirteenth digit. Unlike an expense, zero is a limit: 0 or 000 on an empty
+ * limit types it, and a digit after it takes its place. A limit that is not plain pad
+ * digits, such as a refused paste, is started again rather than built on.
+ */
+internal object LimitKeys {
+    /** The limit after [press], or null when the press is refused for length. */
+    fun press(text: String, press: (AmountDraft) -> AmountDraft.Change): String? {
+        val change = press(draft(text))
+        if (change.limitReached) return null
+        // Only zeros pressed on nothing leave the draft empty: that is the zero limit.
+        return change.draft.digits().ifEmpty { ZERO }
+    }
+
+    fun backspace(text: String): String = draft(text).backspace().digits()
+
+    private fun draft(text: String): AmountDraft =
+        if (PadDigits.matches(text)) AmountDraft.Digits(text) else AmountDraft.Empty
+
+    private fun AmountDraft.digits() = (this as? AmountDraft.Digits)?.digits.orEmpty()
+
+    private val PadDigits = Regex("[1-9][0-9]{0,11}")
+    private const val ZERO = "0"
 }

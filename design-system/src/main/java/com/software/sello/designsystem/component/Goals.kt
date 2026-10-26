@@ -207,26 +207,42 @@ fun MilestonePlace(
     }
 }
 
+/**
+ * The stamps in a row. By default they sit side by side and scroll when they do not fit;
+ * [evenly] centres each in an equal share of the width instead, as on Nueva meta.
+ */
 @Composable
 fun MilestoneRow(
     places: List<MilestoneSpec>,
     modifier: Modifier = Modifier,
     landingIndex: Int? = null,
     landing: Set<Int> = setOfNotNull(landingIndex),
-    relighting: Set<Int> = emptySet()
+    relighting: Set<Int> = emptySet(),
+    evenly: Boolean = false
 ) {
-    Row(
-        modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        val landingOrder = landing.sorted()
-        places.forEachIndexed { index, spec ->
-            MilestonePlace(
-                spec,
-                land = index in landing,
-                relight = index in relighting,
-                landDelayMillis = landingOrder.indexOf(index).coerceAtLeast(0) * LAND_STAGGER_MILLIS
-            )
+    val landingOrder = landing.sorted()
+    val place: @Composable (Int, MilestoneSpec) -> Unit = { index, spec ->
+        MilestonePlace(
+            spec,
+            land = index in landing,
+            relight = index in relighting,
+            landDelayMillis = landingOrder.indexOf(index).coerceAtLeast(0) * LAND_STAGGER_MILLIS
+        )
+    }
+    if (evenly) {
+        Row(modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+            places.forEachIndexed { index, spec ->
+                Box(Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
+                    place(index, spec)
+                }
+            }
+        }
+    } else {
+        Row(
+            modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            places.forEachIndexed { index, spec -> place(index, spec) }
         }
     }
 }

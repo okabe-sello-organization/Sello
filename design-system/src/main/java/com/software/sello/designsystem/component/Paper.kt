@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -122,7 +123,7 @@ fun FittedMoneyText(
  * The amount being entered: [label] (or [error] in its place, so nothing moves), the
  * [date] pill, an [icon] circle and the fitted amount. Text pasted that cannot be an
  * amount is shown as it was in [rejectedText]; with [onPaste] a paste button hands the
- * clipboard text to the caller untouched.
+ * clipboard text to the caller untouched. [content] follows the amount inside the slip.
  */
 @Composable
 fun EntryAmountSlip(
@@ -136,7 +137,9 @@ fun EntryAmountSlip(
     limitPulse: Int = 0,
     rejectedText: String? = null,
     onPaste: ((String) -> Unit)? = null,
-    pasteLabel: String = stringResource(R.string.sello_paste)
+    pasteLabel: String = stringResource(R.string.sello_paste),
+    amountAlpha: Float = 1f,
+    content: @Composable ColumnScope.() -> Unit = {}
 ) {
     val reduced = SelloTheme.reducedMotion
     val shake = remember { Animatable(0f) }
@@ -207,6 +210,7 @@ fun EntryAmountSlip(
             }
             val moved = Modifier.weight(1f).graphicsLayer {
                 translationX = shake.value * 4.dp.toPx()
+                alpha = amountAlpha
             }
             if (rejectedText != null) {
                 Text(
@@ -245,6 +249,7 @@ fun EntryAmountSlip(
                 ) { Icon(SelloIcon.ContentPaste.painter(), pasteLabel, tint = colors.brand) }
             }
         }
+        content()
     }
 }
 

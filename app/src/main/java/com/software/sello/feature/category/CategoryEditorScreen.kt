@@ -2,21 +2,16 @@ package com.software.sello.feature.category
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,10 +25,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -41,29 +34,31 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
+import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.ConfirmSlip
-import com.software.sello.designsystem.component.DigitGrouping
+import com.software.sello.designsystem.component.EntryAmountSlip
+import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.IconChoice
-import com.software.sello.designsystem.component.IconChoiceGrid
+import com.software.sello.designsystem.component.IconChoiceSheetContent
+import com.software.sello.designsystem.component.IconPickerCircle
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
@@ -113,18 +108,22 @@ fun CategoryManagementRoot(viewModels: ViewModelProvider.Factory, onFinished: ()
     CategoryEditorScreen(state, viewModel::onAction)
 }
 
+/**
+ * Nueva categoría and Editar categoría (owner-revised 2026-10-26 to match Nueva meta): the
+ * icon as a large circle beside the name, opening the icons to choose from; the monthly
+ * limit as the big number on the Sello pad, which is always there, with Sin límite in the
+ * slip's corner. It opens on the name with the keyboard up; the pad is there again once
+ * the keyboard closes.
+ */
 @Composable
 fun CategoryEditorScreen(
     state: CategoryEditorState,
     onAction: (CategoryEditorAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val scroll = rememberScrollState()
-    // The name is at the top and the button at the bottom: an error on the name must
-    // not appear where the person cannot see it.
-    LaunchedEffect(state.nameError) {
-        if (state.nameError != null) scroll.scrollTo(0)
-    }
+    var choosingIcon by rememberSaveable { mutableStateOf(false) }
+    // Kept here, not in the form: reading the form again must not take focus again.
+    var nameFocused by rememberSaveable { mutableStateOf(false) }
     SelloScaffold(
         title = stringResource(
             if (state.editing) R.string.category_edit_title else R.string.category_editor_title
@@ -163,25 +162,55 @@ fun CategoryEditorScreen(
             }
         }
     ) { padding ->
-        // The scaffold's padding already keeps the keyboard clear.
-        Column(
-            verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scroll)
-                .padding(padding)
-        ) {
-            when {
-                state.loading -> SlipSkeleton(Modifier.testTag(EDITOR_LOADING_TAG))
-
-                state.loadFailed -> ErrorSlip(
-                    message = stringResource(R.string.category_editor_load_failed),
-                    onRetry = { onAction(CategoryEditorAction.Retry) },
-                    modifier = Modifier.testTag(EDITOR_LOAD_FAILED_TAG)
-                )
-
-                else -> Form(state, onAction)
+        when {
+            state.loading || state.loadFailed -> Column(
+                verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
+                modifier = Modifier.fillMaxSize().padding(padding)
+            ) {
+                if (state.loading) {
+                    SlipSkeleton(Modifier.testTag(EDITOR_LOADING_TAG))
+                } else {
+                    ErrorSlip(
+                        message = stringResource(R.string.category_editor_load_failed),
+                        onRetry = { onAction(CategoryEditorAction.Retry) },
+                        modifier = Modifier.testTag(EDITOR_LOAD_FAILED_TAG)
+                    )
+                }
             }
+
+            // As Anotar: the identity and the limit hold still above what scrolls, and the
+            // button and the pad stay put; short or wide windows rearrange it.
+            else -> EntryLayout(
+                modifier = Modifier.padding(padding),
+                header = {
+                    Identity(state, onAction, focusName = !nameFocused, { nameFocused = true }) {
+                        choosingIcon = true
+                    }
+                },
+                amount = { Limit(state, onAction) },
+                choices = { Said(state) },
+                action = { Action(state, onAction) },
+                keypad = {
+                    if (!state.limitLocked) {
+                        AmountKeypad(
+                            onDigit = { onAction(CategoryEditorAction.LimitDigit(it)) },
+                            onTripleZero = { onAction(CategoryEditorAction.LimitTripleZero) },
+                            onBackspace = { onAction(CategoryEditorAction.LimitBackspace) },
+                            onClearAll = { onAction(CategoryEditorAction.LimitCleared) },
+                            modifier = Modifier.testTag(EDITOR_PAD_TAG),
+                            enabled = state.editable && !state.unlimited,
+                            compact = true
+                        )
+                    }
+                }
+            )
+        }
+    }
+    if (choosingIcon) {
+        BackHandler { choosingIcon = false }
+        IconSheet(state, { choosingIcon = false }) {
+            onAction(CategoryEditorAction.IconPicked(it))
+            choosingIcon = false
         }
     }
     if (state.confirmDiscard) {
@@ -269,8 +298,18 @@ private fun ArchiveConfirmation(
     )
 }
 
+/**
+ * What the form says above the button: that a category is needed first or is archived,
+ * the name's problem, and what is missing.
+ */
 @Composable
-private fun Form(state: CategoryEditorState, onAction: (CategoryEditorAction) -> Unit) {
+private fun Identity(
+    state: CategoryEditorState,
+    onAction: (CategoryEditorAction) -> Unit,
+    focusName: Boolean,
+    onNameFocused: () -> Unit,
+    onChooseIcon: () -> Unit
+) {
     if (state.forEntry) {
         FieldMessageText(
             FieldMessage(
@@ -287,24 +326,40 @@ private fun Form(state: CategoryEditorState, onAction: (CategoryEditorAction) ->
         )
     }
     // The name is what is typed first, so the keyboard is ready for it. Only once, when
-    // the form can first be changed: not again after the person moves elsewhere.
+    // the form can first be changed: not again after the person moves elsewhere, nor
+    // when the form is read again, as archiving does just before the editor closes.
     val nameFocus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
-    var nameFocused by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.editable) {
-        if (state.editable && !nameFocused) {
+        if (state.editable && focusName) {
             nameFocus.requestFocus()
             keyboard?.show()
-            nameFocused = true
+            onNameFocused()
         }
     }
+    val option = CategoryIcons.options.firstOrNull { it.key == state.iconKey }
     Slip(modifier = Modifier.fillMaxWidth(), pinked = false) {
-        Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            IconPickerCircle(
+                icon = option?.icon,
+                caption = stringResource(
+                    if (option == null) R.string.icon_picker_choose else R.string.icon_picker_change
+                ),
+                description = option?.let {
+                    stringResource(R.string.icon_picker_spoken, stringResource(it.label))
+                } ?: stringResource(R.string.icon_picker_choose),
+                onClick = onChooseIcon,
+                modifier = Modifier.testTag(EDITOR_ICON_TAG),
+                enabled = state.editable
+            )
             FormField(
                 label = stringResource(R.string.category_editor_name),
                 value = state.name,
                 onValueChange = { onAction(CategoryEditorAction.NameChanged(it)) },
-                modifier = Modifier.testTag(EDITOR_NAME_TAG).focusRequester(nameFocus),
+                modifier = Modifier.weight(1f).testTag(EDITOR_NAME_TAG).focusRequester(nameFocus),
                 message = state.nameError?.let { FieldMessage(stringResource(it.text())) },
                 counter = stringResource(
                     R.string.category_editor_name_counter,
@@ -317,50 +372,105 @@ private fun Form(state: CategoryEditorState, onAction: (CategoryEditorAction) ->
                     imeAction = ImeAction.Done
                 )
             )
-            SectionLabel(stringResource(R.string.category_editor_icon))
-            IconChoiceGrid(
-                choices = state.iconKeys.map { key ->
-                    val option = CategoryIcons.options.first { it.key == key }
-                    IconChoice(key, option.icon, stringResource(option.label))
-                },
-                selectedId = state.iconKey,
-                onPick = { onAction(CategoryEditorAction.IconPicked(it)) },
-                enabled = state.editable
+        }
+    }
+}
+
+/** The 24 icons; the ones other categories use are dashed and can still be chosen. */
+@Composable
+private fun IconSheet(state: CategoryEditorState, onDismiss: () -> Unit, onPick: (String) -> Unit) {
+    RepeatSheet(
+        title = stringResource(R.string.category_editor_icon),
+        onDismiss = onDismiss,
+        modifier = Modifier.testTag(EDITOR_ICONS_TAG)
+    ) {
+        IconChoiceSheetContent(
+            choices = state.iconKeys.map { key ->
+                val option = CategoryIcons.options.first { it.key == key }
+                IconChoice(key, option.icon, stringResource(option.label))
+            },
+            selectedId = state.iconKey,
+            onPick = onPick,
+            note = stringResource(R.string.category_icon_sheet_note),
+            inUse = state.usedIconKeys,
+            inUseNote = stringResource(R.string.category_icon_in_use)
+        )
+    }
+}
+
+/**
+ * Límite mensual, typed on the pad below, with Sin límite in the slip's corner. With Sin
+ * límite on, the amount and the suggestions stay where they are, greyed out and unusable:
+ * what was typed is kept, comes back with the switch, and is not sent. Text pasted that
+ * is not an amount is shown as it came, with why in place of the label.
+ */
+@Composable
+private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -> Unit) {
+    val label = stringResource(R.string.category_editor_limit)
+    if (state.limitLocked) {
+        Slip(Modifier.fillMaxWidth()) {
+            Text(
+                label,
+                style = MaterialTheme.typography.labelMedium,
+                color = SelloTheme.colors.inkSoft
+            )
+            Text(
+                text = stringResource(R.string.category_edit_limit_locked),
+                style = MaterialTheme.typography.bodyMedium,
+                color = SelloTheme.colors.inkSoft,
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
+        return
     }
-    Slip(modifier = Modifier.fillMaxWidth(), pinked = false) {
-        Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                SectionLabel(stringResource(R.string.category_editor_limit), Modifier.weight(1f))
-                if (!state.limitLocked) {
-                    SwitchRow(
-                        title = stringResource(R.string.category_editor_unlimited),
-                        checked = state.unlimited,
-                        onCheckedChange = { onAction(CategoryEditorAction.UnlimitedChanged(it)) },
-                        modifier = Modifier.width(IntrinsicSize.Max).testTag(EDITOR_UNLIMITED_TAG),
-                        enabled = state.editable
-                    )
-                }
-            }
-            if (state.limitLocked) {
-                Text(
-                    text = stringResource(R.string.category_edit_limit_locked),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SelloTheme.colors.inkSoft
-                )
-            } else {
-                LimitFields(state, onAction)
-                state.limitTotal?.let { LimitTotalLine(it) }
-                Text(
-                    text = limitScope(state),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = SelloTheme.colors.inkSoft,
-                    modifier = Modifier.testTag(EDITOR_SCOPE_TAG)
+    val usable = state.editable && !state.unlimited
+    val rejected = state.limitText.takeIf { it.isNotBlank() && state.limitAmount == null }
+    EntryAmountSlip(
+        label = label,
+        amount = state.limitAmount,
+        modifier = Modifier.testTag(EDITOR_LIMIT_TAG),
+        error = state.limitError?.let { stringResource(it.text()) },
+        date = {
+            SwitchRow(
+                title = stringResource(R.string.category_editor_unlimited),
+                checked = state.unlimited,
+                onCheckedChange = { onAction(CategoryEditorAction.UnlimitedChanged(it)) },
+                modifier = Modifier.width(IntrinsicSize.Max).testTag(EDITOR_UNLIMITED_TAG),
+                enabled = state.editable
+            )
+        },
+        rejectedText = rejected,
+        onPaste = if (usable) {
+            { onAction(CategoryEditorAction.LimitChanged(it)) }
+        } else {
+            null
+        },
+        amountAlpha = if (state.unlimited) GREYED_OUT_ALPHA else 1f
+    ) {
+        ChipFlow(Modifier.padding(top = 8.dp)) {
+            state.suggestions.forEach { suggestion ->
+                SelloChip(
+                    label = suggestion.label,
+                    selected = !state.unlimited && state.limitText == suggestion.pesos.toString(),
+                    onClick = { onAction(CategoryEditorAction.SuggestionPicked(suggestion.pesos)) },
+                    modifier = Modifier.semantics { contentDescription = suggestion.spoken },
+                    enabled = usable
                 )
             }
         }
+        state.limitTotal?.let { LimitTotalLine(it, Modifier.padding(top = 8.dp)) }
+        Text(
+            text = limitScope(state),
+            style = MaterialTheme.typography.bodySmall,
+            color = SelloTheme.colors.inkSoft,
+            modifier = Modifier.padding(top = 8.dp).testTag(EDITOR_SCOPE_TAG)
+        )
     }
+}
+
+/** What went wrong, or that nothing changed yet, between the limit and the button. */
+@Composable
+private fun Said(state: CategoryEditorState) {
     if (state.savedParts.isNotEmpty() && state.saveError != null) {
         val saved = state.savedParts.map { stringResource(it.text()) }.joinToString(", ")
         FieldMessageText(
@@ -381,42 +491,59 @@ private fun Form(state: CategoryEditorState, onAction: (CategoryEditorAction) ->
             Modifier.testTag(EDITOR_NO_CHANGES_TAG)
         )
     }
-    when (state.saveError) {
-        SaveError.Unknown -> SelloButton(
-            text = stringResource(R.string.category_editor_check_again),
-            onClick = { onAction(CategoryEditorAction.Retry) },
-            modifier = Modifier.fillMaxWidth().testTag(EDITOR_SUBMIT_TAG),
-            loading = state.busy
-        )
+}
 
-        // The person decides: what the category is now, or what they typed over it.
-        SaveError.Conflict -> {
-            SelloButton(
-                text = stringResource(R.string.category_edit_conflict_reload),
-                onClick = { onAction(CategoryEditorAction.ReloadDiscardingDraft) },
-                modifier = Modifier.fillMaxWidth().testTag(EDITOR_CONFLICT_RELOAD_TAG)
-            )
-            SelloButton(
-                text = stringResource(R.string.category_edit_conflict_keep),
-                onClick = { onAction(CategoryEditorAction.ReloadKeepingDraft) },
-                modifier = Modifier.fillMaxWidth().testTag(EDITOR_CONFLICT_KEEP_TAG),
-                kind = ButtonKind.Outlined
+/** What is missing, then the button: create or save, ask again, or settle a conflict. */
+@Composable
+private fun Action(state: CategoryEditorState, onAction: (CategoryEditorAction) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
+        if (state.name.isBlank() && state.editable && !state.editing) {
+            FieldMessageText(
+                FieldMessage(
+                    stringResource(R.string.category_editor_missing_name),
+                    isError = false
+                ),
+                Modifier.testTag(EDITOR_MISSING_TAG)
             )
         }
+        when (state.saveError) {
+            SaveError.Unknown -> SelloButton(
+                text = stringResource(R.string.category_editor_check_again),
+                onClick = { onAction(CategoryEditorAction.Retry) },
+                modifier = Modifier.fillMaxWidth().testTag(EDITOR_SUBMIT_TAG),
+                loading = state.busy
+            )
 
-        else -> SelloButton(
-            text = stringResource(
-                if (state.editing) {
-                    R.string.category_edit_submit
-                } else {
-                    R.string.category_editor_create
-                }
-            ),
-            onClick = { onAction(CategoryEditorAction.Submit) },
-            modifier = Modifier.fillMaxWidth().testTag(EDITOR_SUBMIT_TAG),
-            enabled = state.canSubmit,
-            loading = state.busy
-        )
+            // The person decides: what the category is now, or what they typed over it.
+            SaveError.Conflict -> {
+                SelloButton(
+                    text = stringResource(R.string.category_edit_conflict_reload),
+                    onClick = { onAction(CategoryEditorAction.ReloadDiscardingDraft) },
+                    modifier = Modifier.fillMaxWidth().testTag(EDITOR_CONFLICT_RELOAD_TAG)
+                )
+                SelloButton(
+                    text = stringResource(R.string.category_edit_conflict_keep),
+                    onClick = { onAction(CategoryEditorAction.ReloadKeepingDraft) },
+                    modifier = Modifier.fillMaxWidth().testTag(EDITOR_CONFLICT_KEEP_TAG),
+                    kind = ButtonKind.Outlined
+                )
+            }
+
+            else -> SelloButton(
+                text = stringResource(
+                    if (state.editing) {
+                        R.string.category_edit_submit
+                    } else {
+                        R.string.category_editor_create
+                    }
+                ),
+                onClick = { onAction(CategoryEditorAction.Submit) },
+                modifier = Modifier.fillMaxWidth().testTag(EDITOR_SUBMIT_TAG),
+                icon = if (state.editing) null else SelloIcon.Add,
+                enabled = state.canSubmit,
+                loading = state.busy
+            )
+        }
     }
 }
 
@@ -434,70 +561,9 @@ private fun limitScope(state: CategoryEditorState): String {
     )
 }
 
-/**
- * The amount, large, and the suggested limits. With "Sin límite" on, both stay where
- * they are, greyed out and unusable: what was typed is kept, comes back with the
- * switch, and is not sent.
- */
-@Composable
-private fun LimitFields(state: CategoryEditorState, onAction: (CategoryEditorAction) -> Unit) {
-    val colors = SelloTheme.colors
-    val label = stringResource(R.string.category_editor_limit_amount)
-    val message = state.limitError?.let { FieldMessage(stringResource(it.text())) }
-    val usable = state.editable && !state.unlimited
-    val figure = MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum")
-    Column {
-        BasicTextField(
-            value = state.limitText,
-            onValueChange = { onAction(CategoryEditorAction.LimitChanged(it)) },
-            enabled = usable,
-            singleLine = true,
-            textStyle = figure.copy(color = colors.ink),
-            cursorBrush = SolidColor(colors.brand),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            // Drawn 500.000 so its size can be read; limitText stays as typed.
-            visualTransformation = DigitGrouping(),
-            modifier = Modifier
-                .fillMaxWidth()
-                .alpha(if (state.unlimited) GREYED_OUT_ALPHA else 1f)
-                .testTag(EDITOR_LIMIT_TAG)
-                .semantics {
-                    contentDescription = label
-                    if (message != null) error(message.text)
-                },
-            decorationBox = { field ->
-                Box(
-                    contentAlignment = Alignment.CenterStart,
-                    modifier = Modifier.heightIn(min = SelloTheme.spacing.minTouchTarget)
-                ) {
-                    if (state.limitText.isEmpty()) {
-                        Text(LIMIT_PLACEHOLDER, style = figure, color = colors.rule)
-                    }
-                    field()
-                }
-            }
-        )
-        if (message != null) FieldMessageText(message)
-    }
-    ChipFlow {
-        state.suggestions.forEach { suggestion ->
-            SelloChip(
-                label = suggestion.label,
-                selected = !state.unlimited && state.limitText == suggestion.pesos.toString(),
-                onClick = { onAction(CategoryEditorAction.SuggestionPicked(suggestion.pesos)) },
-                modifier = Modifier.semantics { contentDescription = suggestion.spoken },
-                enabled = usable
-            )
-        }
-    }
-}
-
 /** What the month's total limit would be, or is, with the limit in the form. */
 @Composable
-private fun LimitTotalLine(total: LimitTotal) {
+private fun LimitTotalLine(total: LimitTotal, modifier: Modifier = Modifier) {
     val colors = SelloTheme.colors
     val lead = stringResource(
         if (total.changes) {
@@ -511,7 +577,7 @@ private fun LimitTotalLine(total: LimitTotal) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
+        modifier = modifier
             .testTag(EDITOR_TOTAL_TAG)
             .clearAndSetSemantics { contentDescription = "$lead ${total.amount.spoken}" }
     ) {
@@ -532,19 +598,8 @@ private fun LimitTotalLine(total: LimitTotal) {
     }
 }
 
-@Composable
-private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = SelloTheme.colors.inkSoft,
-        modifier = modifier.semantics { heading() }
-    )
-}
-
 /** As the design system greys out a switch that cannot be used. */
 private const val GREYED_OUT_ALPHA = 0.38f
-private const val LIMIT_PLACEHOLDER = "0"
 
 private fun NameError.text() = when (this) {
     NameError.Required -> R.string.category_editor_name_required
@@ -585,6 +640,10 @@ const val EDITOR_LOADING_TAG = "category-editor:loading"
 const val EDITOR_LOAD_FAILED_TAG = "category-editor:load-failed"
 const val EDITOR_PREREQUISITE_TAG = "category-editor:prerequisite"
 const val EDITOR_NAME_TAG = "category-editor:name"
+const val EDITOR_ICON_TAG = "category-editor:icon"
+const val EDITOR_ICONS_TAG = "category-editor:icons"
+const val EDITOR_PAD_TAG = "category-editor:pad"
+const val EDITOR_MISSING_TAG = "category-editor:missing"
 const val EDITOR_UNLIMITED_TAG = "category-editor:unlimited"
 const val EDITOR_LIMIT_TAG = "category-editor:limit"
 const val EDITOR_SAVE_ERROR_TAG = "category-editor:save-error"

@@ -110,8 +110,6 @@ class GoalCelebrationJourneyTest {
         openGoal()
         rule.onNodeWithTag(GOAL_EDIT_TAG).performClick()
         rule.awaitTag(GOAL_EDITOR_TAG)
-        rule.onNodeWithTag(GOAL_EDITOR_AMOUNT_TAG).performScrollTo().press()
-        rule.awaitText("Listo")
         repeat(7) {
             rule.onNode(
                 hasContentDescription("Borrar") and hasAnyAncestor(hasTestTag(GOAL_EDITOR_PAD_TAG))
@@ -120,7 +118,6 @@ class GoalCelebrationJourneyTest {
         listOf("2", "000", "000").forEach {
             rule.onNode(hasText(it) and hasAnyAncestor(hasTestTag(GOAL_EDITOR_PAD_TAG))).press()
         }
-        rule.onNodeWithText("Listo").press()
         rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).press()
 
         // 1.710.000 of 2.000.000 is 85 %.
