@@ -169,6 +169,11 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .gw-fill-main span{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .gw-fill-main b{margin-left:auto;font-size:1.1em;font-weight:900;color:var(--ink)}
 .gw-fill .gw-round{position:relative}
+/* At 100 % or more, waiting to be marked lograda (2026-10-26). */
+.gw-fill.reached::before{background:var(--gainsoft);border-right:0;width:100%}
+.gw-fill.reached .gw-fill-main{color:var(--ink)}
+.gw-fill.reached .gw-fill-main .icon{color:var(--gain)}
+.gw-fill.reached .gw-round{background:var(--gain);color:#fff}
 
 
 /* ---------- Entry: shared ---------- */

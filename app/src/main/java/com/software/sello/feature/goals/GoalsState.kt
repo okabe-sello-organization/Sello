@@ -233,7 +233,9 @@ data class ReciboGoalPill(
     val id: String,
     val name: String,
     val iconKey: String,
-    val percentage: Long
+    val percentage: Long,
+    /** At 100 % or more and not yet lograda: the pill offers Marcar como lograda, not +. */
+    val reached: Boolean = false
 )
 
 /** Another active goal at 100 %, offered to be marked lograda from Recibo. */

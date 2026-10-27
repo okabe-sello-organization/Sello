@@ -189,7 +189,11 @@ fun GoalPillExample() {
                 result =
                     strings.getString(R.string.catalog_demo_abrir_meta)
             },
-            { result = "Aportar" }
+            { result = "Aportar" },
+            // At 100 % it waits to be marked lograda: green, and a ✓ instead of +.
+            reached = true,
+            completeLabel = strings.getString(R.string.catalog_demo_marcar_como_lograda),
+            onComplete = { result = strings.getString(R.string.catalog_demo_marcar_como_lograda) }
         )
         ReachedRow(
             strings.getString(

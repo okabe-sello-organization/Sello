@@ -88,7 +88,10 @@ class ReciboGoalViewModel(
 
             is ReciboGoalAction.MarkComplete -> {
                 val read = (board.value as? GoalBoardState.Ready)?.board ?: return
-                if ((state.value as? ReciboGoalState.Shown)?.reached?.id == action.id) {
+                val shown = state.value as? ReciboGoalState.Shown
+                val waiting = shown?.reached?.id == action.id ||
+                    shown?.pill?.takeIf { it.reached }?.id == action.id
+                if (waiting) {
                     render.completionTarget(read, action.id)?.let(completer::complete)
                 }
             }
@@ -104,7 +107,10 @@ class ReciboGoalViewModel(
             goal.id.value,
             goal.name.value,
             goal.icon.value,
-            shown.progress.percentage
+            shown.progress.percentage,
+            // Reaching 100 % is announced, not completed: it waits to be marked lograda.
+            reached = goal.completedOn == null &&
+                shown.progress.state(GoalPlace.Meta) == PlaceState.Ready
         )
     }
 

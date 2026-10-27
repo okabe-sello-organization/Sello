@@ -1049,6 +1049,7 @@
     <!-- Recibo's goal (SELLO-093) -->
     <string name="recibo_goal_open">%1$s, %2$s por ciento. Ver meta</string>
     <string name="recibo_goal_contribute">Aportar a %s</string>
+    <string name="recibo_goal_mark_complete">Marcar %s como lograda</string>
     <string name="recibo_goal_reached" formatted="false">Llegó al 100 %</string>
     <string name="goal_done_ask_title">¿Ya la lograste?</string>
     <string name="goal_done_ask_body">Si llegaste a tu meta por fuera de Sello, márcala como lograda.</string>

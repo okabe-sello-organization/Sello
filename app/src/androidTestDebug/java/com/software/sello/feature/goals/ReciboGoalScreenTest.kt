@@ -11,6 +11,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -79,6 +80,37 @@ class ReciboGoalScreenTest {
 
         assertEquals(listOf<Any>("open:viaje", "contribute:viaje"), actions)
         rule.onNodeWithTag(RECIBO_GOAL_REACHED_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun theShownGoalAt100PercentOffersMarcarComoLogradaInsteadOfThePlus() {
+        show(ReciboGoalState.Shown(viaje.copy(percentage = 112, reached = true), null))
+
+        rule.onNodeWithContentDescription("Aportar a Viaje a la costa").assertDoesNotExist()
+        rule.onNodeWithContentDescription("Marcar Viaje a la costa como lograda")
+            .assertHasClickAction()
+            .performClick()
+        rule.onNodeWithContentDescription("Viaje a la costa, 112 por ciento. Ver meta")
+            .performClick()
+
+        assertEquals(
+            listOf<Any>(ReciboGoalAction.MarkComplete("viaje"), "open:viaje"),
+            actions
+        )
+    }
+
+    @Test
+    fun whileItIsBeingMarkedThePillsButtonWaits() {
+        show(
+            ReciboGoalState.Shown(
+                viaje.copy(percentage = 112, reached = true),
+                null,
+                CompletionState.Busy
+            )
+        )
+
+        rule.onNodeWithContentDescription("Marcar Viaje a la costa como lograda")
+            .assertIsNotEnabled()
     }
 
     @Test

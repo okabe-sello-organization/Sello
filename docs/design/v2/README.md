@@ -65,7 +65,9 @@ the same on every tab except Metas (see Metas).
 **Goal:** one pill, 56dp tall. The pill itself is the progress bar: it fills with
 `brandSoft` up to the goal's percentage. It shows the goal's icon, name and
 percentage, and ends with a round **+** button (Aportar). Tapping the pill opens
-the goal. Only shown when Metas ships.
+the goal. Only shown when Metas ships. At 100 % or more, not yet lograda, the pill turns
+green and the round button is a **✓** that marks it lograda and opens the big moment
+(owner, 2026-10-26); the percentage stays exact (112 %).
 
 **Another goal reached 100 %:** when a goal that is not on Recibo reaches 100 % (for
 example while the user was away), a green row appears under the pill: ✓ the goal's

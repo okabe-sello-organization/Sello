@@ -53,7 +53,11 @@ fun ReciboGoal(
                         R.string.recibo_goal_open,
                         pill.name,
                         pill.percentage.toString()
-                    )
+                    ),
+                    reached = pill.reached,
+                    completeLabel = stringResource(R.string.recibo_goal_mark_complete, pill.name),
+                    onComplete = { onAction(ReciboGoalAction.MarkComplete(pill.id)) },
+                    completing = state.completion == CompletionState.Busy
                 )
             }
             (state.completion as? CompletionState.Failed)?.let { failed ->
