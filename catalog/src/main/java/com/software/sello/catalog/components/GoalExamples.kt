@@ -645,5 +645,9 @@ fun GoalsBandExample() {
             stamp = null,
             ink = StampInk.Good
         )
+        // The same pill on paper, as Recibo's categories card header.
+        Slip(Modifier.fillMaxWidth(), pinked = false) {
+            BandChip(strings.getString(R.string.catalog_demo_nueva_categoria), {}, onPaper = true)
+        }
     }
 }

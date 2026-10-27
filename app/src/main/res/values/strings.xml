@@ -49,7 +49,7 @@
     <string name="recibo_first_run_title">Dale forma a tu mes</string>
     <string name="recibo_first_run_body">Crea una categoría para lo que importa: la casa, la comida, el ocio o tu ahorro.</string>
     <string name="recibo_create_category">Crear categoría</string>
-    <string name="recibo_add_category">Agregar categoría</string>
+    <string name="recibo_new_category">Nueva categoría</string>
     <string name="recibo_category_archived">Archivada</string>
     <string name="category_editor_title">Nueva categoría</string>
     <string name="category_editor_back">Volver</string>

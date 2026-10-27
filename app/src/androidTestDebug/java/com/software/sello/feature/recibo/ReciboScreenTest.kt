@@ -34,6 +34,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -493,7 +494,10 @@ class ReciboScreenTest {
     fun theCategoriesCardHeaderCarriesTheOnlyAddButton() {
         show(month(plain("937.200"), ReciboStamp.OnTrack, days = 9, perDay = "99.100"))
 
-        val add = rule.onNodeWithContentDescription("Agregar categoría")
+        // "+ Nueva categoría", as Metas' "+ Nueva meta": a labelled pill, not a bare +.
+        val add = rule.onNodeWithTag(RECIBO_ADD_CATEGORY_TAG)
+            .assert(hasText("Nueva categoría"))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
         val heading = rule.onNodeWithText("Tus categorías").getUnclippedBoundsInRoot()
         val firstCell = rule.onNodeWithTag(reciboCategoryTag("a")).getUnclippedBoundsInRoot()
         val button = add.getUnclippedBoundsInRoot()
@@ -506,12 +510,31 @@ class ReciboScreenTest {
                 node.touchBoundsInRoot.height.toDp()
             } >= 47.9.dp
         )
-        // No caption and no second add action under the grid.
+        // No caption, no bare + and no second add action under the grid.
         rule.onNodeWithText("queda en cada una").assertDoesNotExist()
-        rule.onAllNodesWithText("Agregar categoría").assertCountEquals(0)
+        rule.onAllNodesWithContentDescription("Agregar categoría").assertCountEquals(0)
+        rule.onAllNodesWithText("Nueva categoría").assertCountEquals(1)
         add.performClick()
 
         assertEquals(listOf<ReciboAction>(ReciboAction.CreateCategory), actions)
+    }
+
+    @Test
+    fun atLargeTextTheAddPillGoesUnderTheHeading() {
+        show(
+            month(plain("937.200"), ReciboStamp.OnTrack, days = 9, perDay = "99.100"),
+            fontScale = 2f
+        )
+
+        val heading = rule.onNodeWithText("Tus categorías").performScrollTo()
+            .getUnclippedBoundsInRoot()
+        val add = rule.onNodeWithTag(RECIBO_ADD_CATEGORY_TAG).performScrollTo().assertIsDisplayed()
+        val button = add.getUnclippedBoundsInRoot()
+        val firstCell = rule.onNodeWithTag(reciboCategoryTag("a")).getUnclippedBoundsInRoot()
+
+        assertTrue("$button under $heading", button.top >= heading.bottom)
+        assertTrue(button.bottom <= firstCell.top)
+        add.assert(hasText("Nueva categoría"))
     }
 
     @Test
