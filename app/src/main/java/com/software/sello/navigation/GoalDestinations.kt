@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
+import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.SelloDock
 import com.software.sello.designsystem.component.SelloNavigation
@@ -25,8 +26,8 @@ import com.software.sello.feature.goals.GoalDetailState
 import com.software.sello.feature.goals.GoalDetailViewModel
 import com.software.sello.feature.goals.GoalPin
 import com.software.sello.feature.goals.LogradaMoment
+import com.software.sello.feature.goals.METAS_CREATE_TAG
 import com.software.sello.feature.goals.MetasAction
-import com.software.sello.feature.goals.MetasBandTotal
 import com.software.sello.feature.goals.MetasScreen
 import com.software.sello.feature.goals.MetasState
 import com.software.sello.feature.goals.MetasViewModel
@@ -46,7 +47,6 @@ internal fun MetasDestination(
     viewModels: ViewModelProvider.Factory,
     onShell: (ShellAction) -> Unit,
     tabs: SelloNavigation,
-    onOpenSettings: () -> Unit,
     onOpenGoal: (String) -> Unit,
     onCreate: (() -> Unit)? = null,
     onContribute: (() -> Unit)? = null,
@@ -63,10 +63,15 @@ internal fun MetasDestination(
         navigation = tabs,
         titleOnly = stringResource(R.string.metas_title),
         notice = notice,
-        band = ready?.band?.let { band -> { MetasBandTotal(band, names, onCreate) } },
-        actions = {
-            IconButton(onClick = onOpenSettings, modifier = Modifier.testTag(SETTINGS_ACTION_TAG)) {
-                Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
+        // + Nueva meta beside the title once there are goals; with none, the dock creates one.
+        titleChip = onCreate?.takeIf { ready != null && !ready.empty }?.let { create ->
+            { compact ->
+                BandChip(
+                    stringResource(R.string.metas_create),
+                    create,
+                    Modifier.testTag(METAS_CREATE_TAG),
+                    compact = compact
+                )
             }
         },
         entryDock = false,

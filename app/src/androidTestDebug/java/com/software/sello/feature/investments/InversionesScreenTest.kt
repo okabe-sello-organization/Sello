@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -20,6 +21,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -62,8 +64,10 @@ import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.navigation.INVERSIONES_ADD_TAG
 import com.software.sello.navigation.InversionesDestination
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
+import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.navigation.ShellState
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
@@ -76,6 +80,7 @@ import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -256,7 +261,7 @@ class InversionesScreenTest {
     private val shell =
         ShellState(YearMonth.of(2026, 10), YearMonth.of(2026, 10), false, 2026, null)
 
-    private fun destination(state: InvestmentBoardState) {
+    private fun destination(state: InvestmentBoardState, onAdd: (() -> Unit)? = null) {
         val factory = viewModelFactory {
             initializer { InversionesViewModel(Reads(state), Order(), clock, money) }
         }
@@ -281,12 +286,31 @@ class InversionesScreenTest {
                                 ),
                                 "inversiones"
                             ) {},
-                            onOpenSettings = {}
+                            onAdd = onAdd
                         )
                     }
                 }
             }
         }
+    }
+
+    @Test
+    fun withInvestmentsNuevaInversionSitsBesideTheTitleAndThereIsNoGear() {
+        var added = 0
+        destination(InvestmentBoardState.Ready(page()), onAdd = { added++ })
+
+        // Settings is on Recibo only (owner, 2026-10-26).
+        rule.onNodeWithTag(SETTINGS_ACTION_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(INVERSIONES_ADD_TAG).assert(hasText("Nueva inversión")).performClick()
+        assertEquals(1, added)
+    }
+
+    @Test
+    fun withNoInvestmentsOnlyTheDockAddsOne() {
+        destination(InvestmentBoardState.Ready(board()), onAdd = {})
+
+        rule.onNodeWithTag(INVERSIONES_ADD_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Agregar inversión"))
     }
 
     @Test

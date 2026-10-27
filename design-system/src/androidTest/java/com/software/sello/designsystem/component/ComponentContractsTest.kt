@@ -8,6 +8,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,6 +20,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -531,97 +533,52 @@ class ComponentContractsTest {
     }
 
     @Test
-    fun goalsBandTotalSpeaksTheExactSavedAmount() {
-        rule.inEveryScheme(content = {
-            GoalsBandTotal(
-                "Guardado en metas",
-                MoneyTextValue(MoneySign.None, "", "2.460.000", "2.460.000 pesos"),
-                "350.000 en octubre"
-            )
+    fun aTitleBarChipKeepsItsLabelWhenTheTitleFitsBesideIt() {
+        var added = 0
+        // 320dp, the narrowest phone width, so the stage fits on any test device.
+        rule.inEveryScheme(width = 320.dp, content = {
+            TitleBar("Metas", chip = { compact ->
+                BandChip("Nueva meta", {
+                    added++
+                }, Modifier.testTag("chip"), compact = compact)
+            })
         }) {
-            rule.onNodeWithContentDescription("2.460.000 pesos").assertIsDisplayed()
-            rule.onNodeWithText("350.000 en octubre").assertIsDisplayed()
-        }
-    }
-
-    @Test
-    fun goalsBandTotalWithoutAportesThisMonthLeavesOutItsSecondLine() {
-        val saved = MoneyTextValue(MoneySign.None, "", "100.000", "100.000 pesos")
-        rule.inEveryScheme(content = {
-            Column {
-                GoalsBandTotal(
-                    "Guardado en metas",
-                    saved,
-                    "350.000 en octubre",
-                    Modifier.testTag("with")
-                )
-                GoalsBandTotal("Guardado en metas", saved, null, Modifier.testTag("without"))
-            }
-        }) {
-            val with = rule.onNodeWithTag("with").getUnclippedBoundsInRoot()
-            val without = rule.onNodeWithTag("without").getUnclippedBoundsInRoot()
-            assertTrue("$without is shorter than $with", without.height + 12.dp < with.height)
-            rule.onAllNodesWithContentDescription("100.000 pesos").assertCountEquals(2)
-        }
-    }
-
-    @Test
-    fun goalsBandTotalOffersItsActionBesideTheLabelAsAFullSizeButton() {
-        var created = 0
-        rule.inEveryScheme(content = {
-            GoalsBandTotal(
-                "Guardado en metas",
-                MoneyTextValue(MoneySign.None, "", "2.460.000", "2.460.000 pesos"),
-                "350.000 en octubre",
-                action = { BandChip("Nueva meta", { created++ }, Modifier.testTag("chip")) }
-            )
-        }) {
+            rule.onNodeWithText("Nueva meta", useUnmergedTree = true).assertIsDisplayed()
+            rule.onNode(isHeading()).assertTextContains("Metas")
             val chip = rule.onNodeWithTag("chip")
-            chip.assertIsDisplayed().assert(hasClickAction()).assertTextContains("Nueva meta")
-            assertEquals(
-                Role.Button,
-                chip.fetchSemanticsNode().config[SemanticsProperties.Role]
-            )
+            chip.assertIsDisplayed().performClick()
+            // The pill is 36dp; its touch target is the full 48dp.
             val node = chip.fetchSemanticsNode()
             assertTrue(
                 with(node.layoutInfo.density) { node.touchBoundsInRoot.height.toDp() } >= 47.9.dp
             )
-            val label = rule.onNodeWithText("Guardado en metas").getUnclippedBoundsInRoot()
-            val bounds = chip.getUnclippedBoundsInRoot()
-            assertTrue("$bounds beside $label", bounds.left >= label.right)
-            assertTrue("$bounds level with $label", bounds.top < label.bottom)
-            chip.performClick()
         }
-        assertEquals(4, created)
+        assertEquals(4, added)
     }
 
     @Test
-    fun atLargeTextTheBandActionGoesUnderTheTotalAndStaysWhole() {
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
-            GoalsBandTotal(
-                "Guardado en metas",
-                MoneyTextValue(MoneySign.None, "", "2.460.000", "2.460.000 pesos"),
-                "350.000 en octubre",
-                action = { BandChip("Nueva meta", {}, Modifier.testTag("chip")) }
-            )
-        }) {
-            val chip = rule.onNodeWithTag("chip").assertIsDisplayed()
-            val bounds = chip.getUnclippedBoundsInRoot()
-            val change = rule.onNodeWithText("350.000 en octubre").getUnclippedBoundsInRoot()
-            assertTrue("$bounds under $change", bounds.top >= change.bottom)
-            assertTrue("$bounds fits 320dp", bounds.right <= 320.dp)
-            val text = rule.onNodeWithText("Nueva meta", useUnmergedTree = true)
-                .fetchSemanticsNode()
-            val layout = mutableListOf<TextLayoutResult>()
-            text.config[SemanticsActions.GetTextLayoutResult].action?.invoke(layout)
-            // One line, whole: its natural width fits the width it was given.
-            val line = layout.single()
-            assertEquals(1, line.lineCount)
-            assertTrue(
-                "Nueva meta is not cut",
-                line.multiParagraph.intrinsics.maxIntrinsicWidth <= line.size.width + 0.5f
-            )
+    fun aTitleBarChipIsTheRoundPlusWhenItsLabelWouldPushTheTitleOffItsLine() {
+        var added = 0
+        val chip: @Composable (Boolean) -> Unit = { compact ->
+            BandChip("Nueva inversión", { added++ }, Modifier.testTag("chip"), compact = compact)
         }
+        // At double text on 320dp they do not fit side by side: the chip is the round +
+        // and still says its label, the title keeps its line, and the target is 48dp.
+        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+            TitleBar("Inversiones", chip = chip)
+        }) {
+            rule.onNodeWithText("Nueva inversión", useUnmergedTree = true).assertDoesNotExist()
+            val plus = rule.onNodeWithTag("chip").assertContentDescriptionEquals("Nueva inversión")
+            plus.assertIsDisplayed().performClick()
+            val node = plus.fetchSemanticsNode()
+            assertTrue(
+                with(node.layoutInfo.density) { node.touchBoundsInRoot.height.toDp() } >= 47.9.dp
+            )
+            val title = rule.onNode(isHeading()).getUnclippedBoundsInRoot()
+            val round = plus.getUnclippedBoundsInRoot()
+            assertTrue("title $title, chip $round", title.right <= round.left + 0.5.dp)
+        }
+        assertEquals(4, added)
     }
 
     @Test

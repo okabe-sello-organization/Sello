@@ -60,6 +60,7 @@ import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.navigation.MetasDestination
+import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.navigation.ShellState
 import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.date.dateLabels
@@ -210,7 +211,6 @@ class MetasScreenTest {
                                 ),
                                 "metas"
                             ) {},
-                            onOpenSettings = {},
                             onOpenGoal = {},
                             onCreate = onCreate,
                             onContribute = onContribute
@@ -235,14 +235,14 @@ class MetasScreenTest {
     }
 
     @Test
-    fun withGoalsNuevaMetaOnTheBandCreatesOneAndTheTopBarHasNoPlus() {
+    fun withGoalsNuevaMetaSitsBesideTheTitleTheTotalIsTheHeroAndThereIsNoGear() {
         var created = 0
         destination(board, onCreate = { created++ }, onContribute = {})
 
-        rule.onNode(
-            hasTestTag(METAS_CREATE_TAG) and
-                hasAnyAncestor(hasTestTag("metas.band"))
-        ).assert(hasText("Nueva meta")).performClick()
+        // Settings is on Recibo only (owner, 2026-10-26).
+        rule.onNodeWithTag(SETTINGS_ACTION_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(METAS_TOTAL_TAG).assertExists()
+        rule.onNodeWithTag(METAS_CREATE_TAG).assert(hasText("Nueva meta")).performClick()
         assertEquals(1, created)
         rule.onNodeWithContentDescription("Crear una meta").assertDoesNotExist()
         rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Aportar a una meta"))
@@ -256,7 +256,7 @@ class MetasScreenTest {
         rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Crear una meta")).performClick()
         assertEquals(1, created)
         rule.onNodeWithTag(METAS_CREATE_TAG).assertDoesNotExist()
-        rule.onNodeWithTag("metas.band").assertDoesNotExist()
+        rule.onNodeWithTag(METAS_TOTAL_TAG).assertDoesNotExist()
     }
 
     @Test
@@ -265,7 +265,7 @@ class MetasScreenTest {
 
         rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assertDoesNotExist()
         rule.onNodeWithTag(METAS_CREATE_TAG).assertDoesNotExist()
-        rule.onNodeWithTag("metas.band").assertExists()
+        rule.onNodeWithTag(METAS_TOTAL_TAG).assertExists()
     }
 
     private data class Look(
