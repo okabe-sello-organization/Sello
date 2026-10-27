@@ -6,6 +6,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.AccessibilityManager
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
@@ -81,7 +83,7 @@ class CatchUpNoticeScreenTest {
         )
         rule.setContent {
             SelloTheme(reducedMotion = true) {
-                Column { CatchUpNoticeBar(state) { viewed++ } }
+                Column { CatchUpNoticeBar(state, onTimeout = {}) { viewed++ } }
             }
         }
 
@@ -100,6 +102,67 @@ class CatchUpNoticeScreenTest {
         rule.onNodeWithTag(CATCH_UP_BAR_TAG).assertDoesNotExist()
         state = CatchUpNoticeState.Loading
         rule.onNodeWithTag(CATCH_UP_BAR_TAG).assertDoesNotExist()
+    }
+
+    private var timedOut = 0
+
+    /** The bar alone, with the test's clock held still until it is moved by hand. */
+    private fun bar(reduced: Boolean = false, recommendedMillis: Long? = null) {
+        rule.mainClock.autoAdvance = false
+        rule.setContent {
+            val longer = recommendedMillis?.let { millis ->
+                object : AccessibilityManager {
+                    override fun calculateRecommendedTimeoutMillis(
+                        originalTimeoutMillis: Long,
+                        containsIcons: Boolean,
+                        containsText: Boolean,
+                        containsControls: Boolean
+                    ) = millis
+                }
+            }
+            CompositionLocalProvider(LocalAccessibilityManager provides longer) {
+                SelloTheme(reducedMotion = reduced) {
+                    Column {
+                        CatchUpNoticeBar(ready(recorded), onTimeout = { timedOut++ }) { viewed++ }
+                    }
+                }
+            }
+        }
+        rule.mainClock.advanceTimeByFrame()
+    }
+
+    @Test
+    fun theBarGoesByItselfAfterFiveSecondsAndVerStillWorksMeanwhile() {
+        bar()
+
+        rule.mainClock.advanceTimeBy(4_800)
+        rule.onNodeWithText("Sello anotó 3 pagos e ingresos fijos").assertIsDisplayed()
+        rule.onNodeWithText("Ver").performClick()
+        assertEquals(1, viewed)
+        assertEquals(0, timedOut)
+
+        rule.mainClock.advanceTimeBy(400)
+        assertEquals(1, timedOut)
+    }
+
+    @Test
+    fun withReducedMotionItStillGoesAfterFiveSeconds() {
+        bar(reduced = true)
+
+        rule.mainClock.advanceTimeBy(4_800)
+        assertEquals(0, timedOut)
+        rule.mainClock.advanceTimeBy(400)
+        assertEquals(1, timedOut)
+    }
+
+    @Test
+    fun whenTalkBackAsksForMoreTimeTheBarStaysLonger() {
+        bar(recommendedMillis = 15_000)
+
+        rule.mainClock.advanceTimeBy(5_200)
+        assertEquals(0, timedOut)
+        rule.mainClock.advanceTimeBy(10_000)
+        assertEquals(1, timedOut)
     }
 
     @Test
