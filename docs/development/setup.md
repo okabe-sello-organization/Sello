@@ -222,9 +222,9 @@ Eligible documentation advancing no ticket uses G0 (Python/Git, board/tool tests
 and architecture), without Java, Gradle or SDK setup. Code PRs use G2 with affected
 modules and consumers; shared/build/tooling/unknown changes select full devices.
 Main code pushes retain G1 to populate trusted caches; eligible documentation
-pushes use G0. Scheduled/manual runs always use full G2. Merge queue entries
-(`merge_group`) are verified like pull requests from the group's base, on the real
-merge result.
+pushes use G0. Scheduled and manual runs use full G3 with CI's throwaway signing;
+the nightly skips every job when `main` has not moved since the last successful
+nightly.
 
 G1/G2 host checks run once and retain every existing task. Only required device
 groups start: app, or support with the selected data/design-system/catalog suites.
@@ -235,7 +235,7 @@ union those sets. No manual module/task selector can override the dependency gra
 
 The only required result is the final `quality` job. It runs even if an upstream
 job fails or is cancelled. It requires successful planning and host jobs, plus
-every selected device group/module for G2; G0/G1 require the device job to be skipped. The collector
+every selected device group/module for G2/G3; G0/G1 require the device job to be skipped. The collector
 checks every module's fresh XML, check commands, outcome, toolchain, commit, input
 fingerprint, base, event and workflow run/attempt. Missing or inconsistent parts
 fail the gate. Device skips fail too. A part cannot be retained as ticket evidence.
@@ -255,7 +255,9 @@ exact selected modules. Targeted verification is not reported as full G2; histor
 schema-v1 reports remain readable.
 
 To exercise full collection locally, choose a fresh output directory and two isolated
-API-30 emulators. The workflow_dispatch event below deliberately selects full G2.
+API-30 emulators. The workflow_dispatch event below deliberately selects full G3:
+the host part also runs the licence table check and the throwaway-key release
+check, which need `keytool` and the build-tools `apksigner`.
 For pull_request event probes, inspect `--ci-plan BASE --ci-event pull_request`
 (with QUALITY_EXECUTION_ID set) and execute only its selected groups. Keep inputs unchanged until collection finishes. For example:
 

@@ -18,7 +18,7 @@ import evidence
 import selection
 
 PARTS = ("host", *gates.DEVICE_GROUPS)
-EVENTS = ("pull_request", "merge_group", "push", "schedule", "workflow_dispatch")
+EVENTS = ("pull_request", "push", "schedule", "workflow_dispatch")
 PART_DIRECTORY = "build/reports/quality-parts"
 PART_SCHEMA = {
     "type": "object",
@@ -69,11 +69,12 @@ def context(root, base, event):
     candidate = runner.candidate_plan(root, base)
     if event == "push":
         gate = "G0" if candidate["gate"] == "G0" else "G1"
-    elif event in ("pull_request", "merge_group"):
-        # The merge queue checks out the real merge result; it needs the same candidate gate.
+    elif event == "pull_request":
         gate = candidate["gate"]
     else:
-        gate = "G2"
+        # A nightly or manual run verifies the whole of main: every device suite and the
+        # release checks, with CI's throwaway key (ADR 0009, amendment of 2026-10-26).
+        gate = "G3"
     scope = selection.coverage(resolved.stdout.strip(), candidate["coverage"]["changed_paths"], gate,
                                full=event in ("schedule", "workflow_dispatch"))
     selected = [runner.UNTICKETED] if event == "push" else runner.merge_candidate_tickets(root, base) or [runner.UNTICKETED]

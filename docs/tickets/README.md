@@ -81,9 +81,9 @@ the CI contract are in the [quality gates guide](../development/quality-gates.md
 
 **Update with `main` once, before the final gate.** Resolve conflicts there, run
 `--retain`, open the PR. After that leave the branch alone: evidence is bound to the
-PR's own change set, and the merge queue builds the real merge result and runs the
-gate on it before merging. Only a conflict GitHub reports needs a manual merge and
-`--affected origin/main --retain`.
+PR's own change set, and a green PR merges as it is; the push run and the nightly
+verify what landed on `main`. Only a conflict GitHub reports needs a manual merge
+and `--affected origin/main --retain`.
 
 ## Definition of done — every ticket
 

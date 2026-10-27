@@ -414,11 +414,12 @@ Integration references: [build variants/source sets][build-variants] and
   (ADR 0014, amended 2026-10-24).
   [ADR 0014](docs/decisions/0014-change-aware-quality-gates.md) permits Python/Git-only
   G0 for documentation advancing no ticket and explicit dependency-aware G2 device
-  scope. Shared/build/unknown inputs require full device coverage; nightly/manual
-  runs remain full. Reports must distinguish targeted execution from full G2.
-  Completion evidence is bound to the pull request's own change set, and the hosted
-  run on the merge result, for pull requests and merge queue entries alike, verifies
-  the combination (ADR 0014, amended 2026-10-24).
+  scope. Shared/build/unknown inputs require full device coverage; the nightly
+  verifies `main` whole at G3 once it moved (ADR 0009, amended 2026-10-26). Reports
+  must distinguish targeted execution from full coverage. Completion evidence is
+  bound to the pull request's own change set; the pull request's hosted run verifies
+  its merge with `main` as it stood, and the push run and the nightly verify what
+  landed (ADR 0014, amended 2026-10-24; ADR 0009, amended 2026-10-26).
   Release additionally requires release-composition checks, dependency review,
   accessibility/adaptive smoke tests, shrinking, and production signing validation.
   Assembly is not device execution; ephemeral CI signing is not customer-distribution signing.

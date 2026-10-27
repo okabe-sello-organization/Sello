@@ -72,7 +72,7 @@ For documentation-only work advancing no ticket, run
 structure, tool tests, architecture and links, Python/Git only); it cannot replace a
 ticket's G1/G2/G3.
 Hosted code pushes retain G1 to warm trusted main caches; documentation pushes use
-G0 and nightly/manual runs keep full G2.
+G0, and the nightly verifies `main` whole at G3 once it moved.
 
 Build/dependency/IDE caches, machine-local configuration and signing secrets are
 not tracked. No Git remote or hosted Jira project is configured by this setup.
