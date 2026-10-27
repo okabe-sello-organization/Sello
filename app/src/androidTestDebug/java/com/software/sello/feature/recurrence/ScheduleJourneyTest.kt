@@ -63,8 +63,8 @@ class ScheduleJourneyTest {
         openList()
         rule.onNodeWithText("Ingresos").performClick()
         rule.awaitTag("schedules.empty")
-        // On Ingresos the top bar's + adds an income that repeats (SELLO-122).
-        rule.onNodeWithTag("schedules.add").performClick()
+        // On Ingresos the empty receipt's stub adds an income that repeats (SELLO-125).
+        rule.onNodeWithTag("schedules.add").performScrollTo().performClick()
 
         // The entry opens with Se repite's sheet, each month on today's day.
         rule.awaitTag(REPEAT_SHEET_TAG)

@@ -29,6 +29,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -67,7 +68,8 @@ fun SlipStub(
 /**
  * One half of a [SlipStub]: an icon, a short [title] in the brand ink and, when known,
  * one [fact] under it, centred in the half. One button, said as [label] then the fact;
- * [label] should contain the [title] so a spoken command finds it.
+ * [label] should contain the [title] so a spoken command finds it. [minHeight] may be
+ * lowered for a compact stub, never below a 48dp target.
  */
 @Composable
 fun StubButton(
@@ -76,7 +78,8 @@ fun StubButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     fact: String? = null,
-    label: String = title
+    label: String = title,
+    minHeight: Dp = 56.dp
 ) {
     val colors = SelloTheme.colors
     Row(
@@ -84,7 +87,7 @@ fun StubButton(
         horizontalArrangement = Arrangement.Center,
         modifier = modifier
             .fillMaxWidth()
-            .heightIn(min = 56.dp)
+            .heightIn(min = minHeight)
             .clip(SelloTheme.shapes.control)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics {
