@@ -589,9 +589,13 @@ keeps everything on opening, with no notification or background work.
   schedule, and **Ver todos los pagos fijos ›**.
 - **The notice (owner):** after a catch-up that recorded something, a bar above Anotar on
   Recibo, "Sello anotó 4 pagos fijos" (or "ingresos fijos", or "pagos e ingresos fijos")
-  with **Ver**. It stays across openings until **Listo** on **Lo que Sello anotó**, which
-  lists each entry with its date and amount, opening its edit. One deleted leaves the
-  list; when none is left the bar goes away. Back keeps it.
+  with **Ver**. It only informs, since the person set these up already: it goes by itself
+  after five seconds (longer when a screen reader asks for it), and the time left drains
+  across the bar as a lighter band, in steps with reduced motion; then it counts as seen
+  (owner, 2026-10-26, replacing "stays until Listo"). **Ver** still opens **Lo que Sello
+  anotó** while it shows, which lists each entry with its date and amount, opening its
+  edit; **Listo** there also dismisses it. One deleted leaves the list; when none is left
+  the bar goes away. Back from the list keeps it, with its time started again.
 - **Revisar already over the limit (owner, RE29):** "Pasaste tu límite por 80.000 y tus
   pagos previstos suman 200.000."
 - Every screen has default, empty, loading, failed-read, large-text and dark frames.

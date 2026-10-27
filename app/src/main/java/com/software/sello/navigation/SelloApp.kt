@@ -905,7 +905,14 @@ private fun ReciboDestination(
             onAction = onShell,
             // A correction just made is said first; what catch-up recorded waits under it.
             notice = notice?.let { { StampNoticeBar(it, onUndo, lands) } }
-                ?: { CatchUpNoticeBar(catchUpState, onOpenRecorded) },
+                // It only informs; when its time is up it counts as seen, as Listo does.
+                ?: {
+                    CatchUpNoticeBar(
+                        catchUpState,
+                        onTimeout = catchUp::done,
+                        onView = onOpenRecorded
+                    )
+                },
             navigation = tabs,
             actions = {
                 IconButton(

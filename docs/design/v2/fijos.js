@@ -220,7 +220,7 @@ function render() {
 
   const recibo = `<section class="slip pinked"><div class="answer-head"><span class="label">Restante del presupuesto</span><span class="stamp">Al día</span></div><div class="hero">${money(390000)}</div><div class="tear"></div><p class="daily-big"><b>${money(48750)}</b><span>por día</span></p><span class="caption">8 días, incluido hoy</span></section>`;
   set("notice",
-    card("Recibo after opening", "A bar above Anotar says what Sello recorded since you last checked. It stays, across openings, until you press Listo on the list.", phone(o, appShell({ body: recibo, notice: "Sello anotó 4 pagos fijos" }))) +
+    card("Recibo after opening", "A bar above Anotar says what Sello recorded since you last checked. It goes by itself after five seconds, the time left draining across it; Ver opens the list meanwhile.", phone(o, appShell({ body: recibo, notice: "Sello anotó 4 pagos fijos" }))) +
     card("The list", "Each one opens its edit. Listo dismisses the bar; back keeps it.", sub(o, "Lo que Sello anotó", recordedBody(), { active: 0, dock: "Listo" })) +
     card("Payments and incomes", "", sub(o, "Lo que Sello anotó", recordedBody(null, [["Arriendo", "Hogar", "lun 5 oct", 950000], ["Freelance", "", "jue 15 oct", 250000, true], ["Gimnasio", "Gimnasio", "jue 15 oct", 99900]]), { active: 0, dock: "Listo" })) +
     card("One deleted from its edit", "It leaves the list; the others stay (RE39). When none is left the bar goes away.", sub(o, "Lo que Sello anotó", recordedBody(null, RECORDED.slice(0, 3)), { active: 0, dock: "Listo" })) +

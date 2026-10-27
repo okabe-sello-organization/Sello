@@ -33,6 +33,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
@@ -62,7 +65,9 @@ import kotlinx.coroutines.launch
  * message in place of the confirmation check, such as the repeat icon on what Sello
  * recorded by itself.
  *
- * It holds no time: whoever shows it decides how long, and takes it away.
+ * It holds no time: whoever shows it decides how long, and takes it away. With
+ * [remaining] (1 to 0) it shows that time as a lighter band over the bar that shrinks
+ * from the end, and a thin line along its foot.
  */
 @Composable
 fun SelloNotice(
@@ -73,7 +78,8 @@ fun SelloNotice(
     busy: Boolean = false,
     spoken: String = message,
     confirmation: Boolean = false,
-    icon: SelloIcon? = null
+    icon: SelloIcon? = null,
+    remaining: Float? = null
 ) {
     val colors = SelloTheme.colors
     Row(
@@ -84,6 +90,20 @@ fun SelloNotice(
             .fillMaxWidth()
             .clip(SelloTheme.shapes.control)
             .background(colors.ink)
+            .drawBehind {
+                val left = remaining?.coerceIn(0f, 1f) ?: return@drawBehind
+                val width = size.width * left
+                drawRect(
+                    colors.paper.copy(alpha = TIME_BAND_ALPHA),
+                    size = Size(width, size.height)
+                )
+                val line = TIME_LINE.toPx()
+                drawRect(
+                    colors.brandSoft,
+                    topLeft = Offset(0f, size.height - line),
+                    size = Size(width, line)
+                )
+            }
             .padding(start = SelloTheme.spacing.lg, end = SelloTheme.spacing.xs)
             .heightIn(min = SelloTheme.spacing.minTouchTarget)
     ) {
@@ -270,3 +290,7 @@ const val ACTION_LINE_MENU_TAG = "action-line:menu"
 
 /** The confirmation check of a [SelloNotice]; decorative, so it says nothing. */
 const val SELLO_NOTICE_CHECK_TAG = "sello-notice:check"
+
+/** How much the time left lightens the bar, and the line along its foot. */
+private const val TIME_BAND_ALPHA = 0.14f
+private val TIME_LINE = 3.dp

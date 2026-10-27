@@ -1,5 +1,8 @@
 package com.software.sello.feature.recurrence
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,7 +11,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalAccessibilityManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -47,6 +53,7 @@ import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -124,7 +131,10 @@ class CatchUpNoticeViewModel(
 
     fun retry() = attempts.update { it + 1 }
 
-    /** Listo: everything shown so far is seen. The notice stays if that cannot be kept. */
+    /**
+     * Listo, or the notice's time on Recibo running out: everything shown so far is seen.
+     * The notice stays if that cannot be kept.
+     */
     fun done() {
         viewModelScope.launch {
             if (preferences.markCatchUpNoticeSeen(audit.now()) == PreferenceWrite.Saved) {
@@ -181,11 +191,40 @@ class CatchUpNoticeViewModel(
     }
 }
 
-/** "Sello anotó 4 pagos fijos · Ver", above Anotar on Recibo while there is something to see. */
+/**
+ * "Sello anotó 4 pagos fijos · Ver", above Anotar on Recibo. It only informs: the person
+ * set these up already. It goes by itself after five seconds, longer when a screen reader
+ * asks for it, calling [onTimeout]; the time left drains across the bar (in steps with
+ * reduced motion). Ver still opens the list while it shows.
+ */
 @Composable
-fun CatchUpNoticeBar(state: CatchUpNoticeState, onView: () -> Unit) {
+fun CatchUpNoticeBar(state: CatchUpNoticeState, onTimeout: () -> Unit, onView: () -> Unit) {
     val ready = state as? CatchUpNoticeState.Ready ?: return
     if (ready.items.isEmpty()) return
+    val accessibility = LocalAccessibilityManager.current
+    val shownFor = remember(accessibility) {
+        accessibility?.calculateRecommendedTimeoutMillis(
+            CATCH_UP_NOTICE_MILLIS,
+            containsIcons = true,
+            containsText = true,
+            containsControls = true
+        ) ?: CATCH_UP_NOTICE_MILLIS
+    }
+    val reduced = SelloTheme.reducedMotion
+    val left = remember(ready.items) { Animatable(1f) }
+    val timeUp by rememberUpdatedState(onTimeout)
+    // A new recording starts the time again; leaving the screen pauses it with its frames.
+    LaunchedEffect(ready.items, shownFor) {
+        if (reduced) {
+            for (step in TIME_STEPS - 1 downTo 0) {
+                delay(shownFor / TIME_STEPS)
+                left.snapTo(step.toFloat() / TIME_STEPS)
+            }
+        } else {
+            left.animateTo(0f, tween(shownFor.toInt(), easing = LinearEasing))
+        }
+        timeUp()
+    }
     val count = ready.items.size
     val message = when {
         ready.incomes == 0 -> pluralStringResource(R.plurals.catch_up_payments, count, count)
@@ -197,9 +236,16 @@ fun CatchUpNoticeBar(state: CatchUpNoticeState, onView: () -> Unit) {
         modifier = Modifier.testTag(CATCH_UP_BAR_TAG),
         actionLabel = stringResource(R.string.catch_up_view),
         onAction = onView,
-        icon = SelloIcon.Autorenew
+        icon = SelloIcon.Autorenew,
+        remaining = left.value
     )
 }
+
+/** How long the notice shows before it goes by itself. */
+const val CATCH_UP_NOTICE_MILLIS = 5_000L
+
+/** With reduced motion the time left drains in this many steps, not continuously. */
+private const val TIME_STEPS = 5
 
 @Composable
 fun CatchUpRecordedRoot(
