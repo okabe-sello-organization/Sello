@@ -195,6 +195,8 @@ def run_check(check, root, directory, execute):
     marker.touch()
     started_mtime = marker.stat().st_mtime_ns
     record = {"name": check.name, "command": " ".join(check.argv), "log": f"{check.name}.log", "started_at": now()}
+    if check.shard:
+        record["shard"] = {"index": check.shard[0], "count": check.shard[1]}
     record["exit_code"] = execute(list(check.argv), root, directory / record["log"])
     record["finished_at"] = now()
     marker.unlink()

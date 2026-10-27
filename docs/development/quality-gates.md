@@ -120,8 +120,9 @@ Standing rules for the runner, validator and CI; a change to the tooling must ke
   requirement is G1 (ADR 0014, amendment of 2026-10-24). Code pushes to main keep
   G1 for trusted cache publication; documentation pushes get G0. The nightly
   verifies `main` at full G3 with CI's throwaway signing, and only when `main` moved
-  since the last successful nightly; a manual run does the same on its ref. There is
-  no path filter; the check always reports.
+  since the last successful nightly; a manual run does the same on its ref. The app
+  device suite runs as two shards on two runners (`app-1`, `app-2`); the other three
+  suites share one (`support`). There is no path filter; the check always reports.
 
 These tools prove that checks ran on a known snapshot. They do not judge whether
 acceptance is met; the designated review does. A committed report can be hand-edited,

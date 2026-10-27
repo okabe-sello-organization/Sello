@@ -87,14 +87,26 @@ def load(path):
         if problem:
             raise EvidenceError(f"invalid coverage: {problem}")
         if report["outcome"] == "passed" and report["gate"]["executed"] in ("G2", "G3"):
-            observed = {}
+            # A module's results come from one whole run, or from every shard of one split, once each.
+            observed, shards = {}, {}
             for check in report["checks"]:
+                shard = check.get("shard")
                 for module, counts in check.get("modules", {}).items():
-                    if module in observed or not isinstance(counts, dict) or type(counts.get("tests")) is not int or counts["tests"] <= 0:
+                    seen = shards.setdefault(module, {})
+                    duplicate = module in observed or (shard is None and seen) or (shard is not None and shard["index"] in seen)
+                    if duplicate or not isinstance(counts, dict) or type(counts.get("tests")) is not int or counts["tests"] <= 0:
                         raise EvidenceError("invalid coverage: missing or duplicate device results")
                     if any(counts.get(key) != 0 for key in ("failures", "errors", "skipped")) or check.get("fresh_results") is not True:
                         raise EvidenceError("invalid coverage: device results failed, skipped or lack freshness")
-                    observed[module] = counts
+                    if shard is None:
+                        observed[module] = counts
+                    else:
+                        seen[shard["index"]] = shard["count"]
+            for module, seen in shards.items():
+                if seen and (len(set(seen.values())) != 1 or sorted(seen) != list(range(next(iter(seen.values()))))):
+                    raise EvidenceError(f"invalid coverage: {module} is missing a shard of its device results")
+                if seen:
+                    observed[module] = True
             if set(observed) != set(report["coverage"]["device_modules"]):
                 raise EvidenceError("invalid coverage: executed modules differ from the selected device coverage")
     return report

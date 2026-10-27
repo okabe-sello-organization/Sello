@@ -227,9 +227,12 @@ the nightly skips every job when `main` has not moved since the last successful
 nightly.
 
 G1/G2 host checks run once and retain every existing task. Only required device
-groups start: app, or support with the selected data/design-system/catalog suites.
-Each creates a fresh, cold-booted API-30 emulator. Sibling groups continue after a
-failure for diagnostics. The selection map is app → app; catalog → catalog;
+groups start: the app suite as two shards (`app-1`, `app-2`, split by the
+instrumentation runner's `numShards`/`shardIndex`), or `support` with the selected
+data/design-system/catalog suites. Each creates a fresh, cold-booted API-30
+emulator. Sibling groups continue after a failure for diagnostics. A shard's part
+records its index and count; the collector and the evidence validator accept the
+app module's results only from every shard of one split, once each. The selection map is app → app; catalog → catalog;
 data/domain → data/app; design-system → design-system/app/catalog. Mixed changes
 union those sets. No manual module/task selector can override the dependency graph.
 
@@ -267,7 +270,9 @@ export QUALITY_PARTS_DIR=build/reports/quality-parts/local-device-split-001
 ./scripts/verify-ticket --merge-candidate HEAD --ci-event workflow_dispatch \
   --ci-part host --ci-output "$QUALITY_PARTS_DIR"
 ANDROID_SERIAL=emulator-5584 ./scripts/verify-ticket --merge-candidate HEAD \
-  --ci-event workflow_dispatch --ci-part app --ci-output "$QUALITY_PARTS_DIR"
+  --ci-event workflow_dispatch --ci-part app-1 --ci-output "$QUALITY_PARTS_DIR"
+ANDROID_SERIAL=emulator-5584 ./scripts/verify-ticket --merge-candidate HEAD \
+  --ci-event workflow_dispatch --ci-part app-2 --ci-output "$QUALITY_PARTS_DIR"
 ANDROID_SERIAL=emulator-5586 ./scripts/verify-ticket --merge-candidate HEAD \
   --ci-event workflow_dispatch --ci-part support --ci-output "$QUALITY_PARTS_DIR"
 ./scripts/verify-ticket --merge-candidate HEAD --ci-event workflow_dispatch \

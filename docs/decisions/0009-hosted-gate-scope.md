@@ -47,6 +47,13 @@ unknown paths select all four suites. The graph has an automated check against
 Gradle's modules/dependencies; new graph edges require review. Documentation-only
 ticket advancement selects full devices. Host tasks remain complete in every G1/G2.
 
+Since 2026-10-26 the app suite, by far the longest, runs as two shards on two runners
+(`app-1`, `app-2`, split by the instrumentation runner); data, design-system and
+catalog share the `support` runner. A shard's part records its index and count, and
+the app module's results count only when every shard of one split is present once
+(`gates.validate_device_groups`, `evidence.load`). Locally `--gate G2` and
+`--affected` still run each suite whole on one emulator.
+
 ## Local parity and evidence
 
 `verify-ticket <ticket>` runs the local requirement: the host gate G1, or G3 whole

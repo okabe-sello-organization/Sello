@@ -105,10 +105,11 @@ def checks_for(part, plan=None):
         return gates.plan("G0" if plan and plan["gate"] == "G0" else "G1")
     if part not in gates.DEVICE_GROUPS:
         raise runner.Refusal(f"Unknown CI part {part}")
-    tasks = gates.DEVICE_GROUPS[part]
+    group = gates.DEVICE_GROUPS[part]
+    tasks = group.tasks
     if plan:
         tasks = tuple(task for task in tasks if task.split(":")[1] in plan["coverage"]["device_modules"])
-    return [gates.device_check(f"gradle-device-{part}", tasks)]
+    return [gates.device_check(f"gradle-device-{part}", tasks, group.shard)]
 
 
 def raw_patterns(checks):
