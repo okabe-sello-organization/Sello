@@ -535,15 +535,16 @@ class ComponentContractsTest {
     @Test
     fun aTitleBarChipKeepsItsLabelWhenTheTitleFitsBesideIt() {
         var added = 0
-        rule.inEveryScheme(width = 400.dp, content = {
-            TitleBar("Inversiones", chip = { compact ->
-                BandChip("Nueva inversión", {
+        // 320dp, the narrowest phone width, so the stage fits on any test device.
+        rule.inEveryScheme(width = 320.dp, content = {
+            TitleBar("Metas", chip = { compact ->
+                BandChip("Nueva meta", {
                     added++
                 }, Modifier.testTag("chip"), compact = compact)
             })
         }) {
-            rule.onNodeWithText("Nueva inversión", useUnmergedTree = true).assertIsDisplayed()
-            rule.onNode(isHeading()).assertTextContains("Inversiones")
+            rule.onNodeWithText("Nueva meta", useUnmergedTree = true).assertIsDisplayed()
+            rule.onNode(isHeading()).assertTextContains("Metas")
             val chip = rule.onNodeWithTag("chip")
             chip.assertIsDisplayed().performClick()
             // The pill is 36dp; its touch target is the full 48dp.
