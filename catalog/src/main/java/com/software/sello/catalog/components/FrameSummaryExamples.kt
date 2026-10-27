@@ -89,6 +89,12 @@ fun EntryDockExample() {
         }, tone = ButtonTone.Gain, icon = SelloIcon.Flag)
         EntryDock(strings.getString(R.string.catalog_demo_elige_una_meta), {
         }, tone = ButtonTone.Gain, enabled = false)
+        EntryDock(
+            strings.getString(R.string.catalog_demo_archivada),
+            {},
+            icon = SelloIcon.Block,
+            enabled = false
+        )
         EntryDock(strings.getString(R.string.catalog_demo_guardando), {}, busy = true)
         ExampleCaption("Acciones: $taps")
     }
@@ -136,6 +142,19 @@ fun NavigationBarExample() {
             }),
             modifier = Modifier.height(340.dp),
             dock = SelloDock("Anotar", "Anotar", {})
+        )
+        SelloNavigationRail(
+            SelloNavigation(Tabs, selected, {
+                selected = it
+            }),
+            modifier = Modifier.height(340.dp),
+            dock = SelloDock(
+                strings.getString(R.string.catalog_demo_no_se_puede_anotar_archivada),
+                strings.getString(R.string.catalog_demo_archivada),
+                {},
+                icon = SelloIcon.Block,
+                enabled = false
+            )
         )
     }
 }

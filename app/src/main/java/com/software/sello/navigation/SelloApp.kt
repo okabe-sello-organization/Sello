@@ -428,11 +428,9 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 screenTitle = (detailState as? CategoryDetailState.Ready)?.category?.name
                     ?: stringResource(R.string.category_detail_title_fallback),
                 showMonthAsSubtitle = true,
-                dock = SelloDock(
-                    label = stringResource(R.string.dock_entry_label),
-                    actionLabel = stringResource(R.string.dock_entry_action),
-                    onClick = { navigation.navigate(ExpenseEntryRoute(id)) }
-                ),
+                dock = categoryDock(archived(detailOf(id, detailState))) {
+                    navigation.navigate(ExpenseEntryRoute(id))
+                },
                 actions = {
                     CategoryEditAction(detailState is CategoryDetailState.Ready) {
                         navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString()))
@@ -906,7 +904,7 @@ private fun ReciboDestination(
                 }
             },
             detail = shownId?.let { id ->
-                ShellDetail(title, actions = {
+                ShellDetail(title, archived = archived(shownDetail), actions = {
                     CategoryEditAction(shownDetail is CategoryDetailState.Ready) {
                         onEditCategory(id)
                     }
@@ -978,12 +976,40 @@ fun showsDetailBeside(width: Dp, height: Dp): Boolean =
 
 private val SideBySideWidth = 600.dp
 
-/** The detail of what the content lists: its [title] and how to draw it. */
+/**
+ * The detail of what the content lists: its [title] and how to draw it. An [archived]
+ * category takes no new expense, so its dock says so instead of starting one.
+ */
 class ShellDetail(
     val title: String,
+    val archived: Boolean = false,
     val actions: @Composable RowScope.() -> Unit = {},
     val content: @Composable (PaddingValues) -> Unit
 )
+
+private fun archived(detail: CategoryDetailState): Boolean =
+    (detail as? CategoryDetailState.Ready)?.category?.archived == true
+
+/**
+ * The dock of a category's own screen: it starts an expense in that category, or, for an
+ * archived one, stays in place disabled and reads "Archivada" beside a prohibited sign.
+ */
+@Composable
+private fun categoryDock(archived: Boolean, onClick: () -> Unit): SelloDock = if (archived) {
+    SelloDock(
+        label = stringResource(R.string.dock_entry_archived_label),
+        actionLabel = stringResource(R.string.recibo_category_archived),
+        onClick = {},
+        icon = SelloIcon.Block,
+        enabled = false
+    )
+} else {
+    SelloDock(
+        label = stringResource(R.string.dock_entry_label),
+        actionLabel = stringResource(R.string.dock_entry_action),
+        onClick = onClick
+    )
+}
 
 @Composable
 private fun CategoryEditAction(enabled: Boolean, onClick: () -> Unit) {
@@ -1095,11 +1121,9 @@ fun ShellScreen(
                     }
                 },
                 // From a category's own screen, an expense starts in that category.
-                dock = SelloDock(
-                    label = stringResource(R.string.dock_entry_label),
-                    actionLabel = stringResource(R.string.dock_entry_action),
-                    onClick = { onAction(ShellAction.StartEntryIn(openedId)) }
-                ),
+                dock = categoryDock(detail.archived) {
+                    onAction(ShellAction.StartEntryIn(openedId))
+                },
                 notice = notice,
                 ribbon = ribbon,
                 content = detail.content

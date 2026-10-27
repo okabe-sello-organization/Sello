@@ -392,6 +392,7 @@
     <string name="date_today">Hoy, %1$s</string>
     <string name="dock_entry_label">Anotar un gasto</string>
     <string name="dock_entry_action">Anotar</string>
+    <string name="dock_entry_archived_label">No se puede anotar: la categoría está archivada</string>
     <string name="expense_entry_title">Anotar</string>
     <string name="expense_entry_close">Cerrar</string>
     <string name="expense_entry_date">Fecha: %1$s</string>

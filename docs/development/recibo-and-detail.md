@@ -77,6 +77,7 @@ This is owner-authorized unticketed work; no ticket or status is created or chan
 
 The hero follows Recibo's financial rules, scoped to the category. Its label and
 stamp sit above the category circle and exact amount; spent/limit share a line.
+An archived category is stamped **Archivada** in place of its verdict.
 Below the tear line are the category daily allowance (current finite budget only)
 and a same-days comparison when a previous positive baseline is known.
 They use equal-width columns: **Para / 9 días**, **Al día / amount**, and
@@ -199,7 +200,8 @@ gasto para corregirlo. Para borrarlo, deslízalo o mantenlo presionado."
 the detail sits beside Recibo, the chosen category is marked as selected, and before
 any is chosen the first one is shown. Anywhere else an opened category takes the
 screen under its own title, Back returns to Recibo, and the dock records in that
-category. A window that is short and narrow, such as half a phone's screen, shows
+category. For an archived one the dock stays in place, disabled, and reads
+**Archivada** beside a prohibited sign; on a rail its "+" becomes that sign. A window that is short and narrow, such as half a phone's screen, shows
 one at a time even though the layout rules call it two-column.
 
 The title over a detail, and the detail under it, are always of the category that

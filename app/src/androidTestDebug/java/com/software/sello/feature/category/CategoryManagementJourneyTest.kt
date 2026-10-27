@@ -3,6 +3,8 @@ package com.software.sello.feature.category
 import android.content.Context
 import android.content.Intent
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -188,6 +190,10 @@ class CategoryManagementJourneyTest {
         )
         assertEquals(2L, TestData.count("expense"))
         rule.awaitText("De hoy")
+        // Its own screen no longer offers to record in it: the dock stays, disabled, and says why.
+        rule.awaitDescription(ARCHIVED_DOCK)
+        rule.onNodeWithContentDescription(ARCHIVED_DOCK).assertIsNotEnabled()
+        rule.onNodeWithContentDescription("Anotar un gasto").assertDoesNotExist()
 
         // No category can take an expense now, so Anotar explains and offers to create one.
         Espresso.pressBack()
@@ -208,9 +214,14 @@ class CategoryManagementJourneyTest {
         rule.onAllNodes(hasText("Desarchivar")).onLast().performClick()
         rule.awaitText("Categoría desarchivada")
         rule.await(saying("Te quedan aquí 90.000 pesos."))
+        rule.awaitDescription("Anotar un gasto")
+        rule.onNodeWithContentDescription("Anotar un gasto").assertIsEnabled()
+        rule.onNodeWithContentDescription(ARCHIVED_DOCK).assertDoesNotExist()
         assertEquals(
             listOf("$cafe|Café|0"),
             TestData.rows("SELECT id, name, archived FROM category")
         )
     }
 }
+
+private const val ARCHIVED_DOCK = "No se puede anotar: la categoría está archivada"

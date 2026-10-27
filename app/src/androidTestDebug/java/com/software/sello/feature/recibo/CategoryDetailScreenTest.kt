@@ -566,8 +566,7 @@ class CategoryDetailScreenTest {
             figure = BudgetFigure(ReciboHeadline.Spent, plain("80.000"), ReciboStamp.NoLimit),
             spent = plain("80.000"),
             limit = null,
-            fraction = null,
-            archived = true
+            fraction = null
         )
 
         show(ready(ExpenseListState.Rows(rows, more = false), category = art))
@@ -578,7 +577,19 @@ class CategoryDetailScreenTest {
             hasText("Sin límite") and hasAnyAncestor(hasTestTag(CATEGORY_DETAIL_LIMIT_TAG)),
             useUnmergedTree = true
         ).assertExists()
-        rule.onNodeWithText("Archivada").assertIsDisplayed()
+    }
+
+    @Test
+    fun anArchivedCategoryIsStampedArchivadaWhereItsVerdictWouldBe() {
+        val archived = food.copy(archived = true)
+
+        show(ready(ExpenseListState.Rows(rows, more = false), category = archived))
+
+        // The stamp replaces "Al día", in sight and in what is read aloud.
+        rule.onNodeWithTag(CATEGORY_DETAIL_ARCHIVED_TAG, useUnmergedTree = true)
+            .assertIsDisplayed()
+        rule.onNodeWithContentDescription("Te quedan aquí 287.600 pesos. Archivada.")
+            .assertIsDisplayed()
     }
 
     @Test
