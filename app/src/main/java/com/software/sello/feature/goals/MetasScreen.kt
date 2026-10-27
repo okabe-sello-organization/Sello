@@ -3,6 +3,7 @@ package com.software.sello.feature.goals
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -30,27 +31,29 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
-import com.software.sello.designsystem.component.BandChip
+import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.CompletedGoalRow
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.GoalCard
-import com.software.sello.designsystem.component.GoalsBandTotal
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MilestoneState
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
+import com.software.sello.presentation.month.monthNames
 
 /**
  * Metas: a stamp card per active goal, highest completion first, then the completed
@@ -111,7 +114,11 @@ fun MetasScreen(
                         )
                     }
                 }
-                if (state.empty) item { EmptyMetas() }
+                if (state.empty) {
+                    item { EmptyMetas() }
+                } else {
+                    state.band?.let { band -> item(key = METAS_TOTAL_TAG) { MetasTotal(band) } }
+                }
                 items(state.goals, key = { it.id }) { goal ->
                     Column {
                         GoalCard(
@@ -207,33 +214,51 @@ private fun EmptyMetas() {
 }
 
 /**
- * "Guardado en metas" on the band, the aportes of this month when there were any, and
- * **+ Nueva meta** once [onCreate] exists.
+ * The total as the tab's hero card, as Inversiones' and Recibo's: "Guardado en metas",
+ * what the active goals hold as the big number, and under it what came in this month,
+ * when anything did.
  */
 @Composable
-fun MetasBandTotal(band: MetasBand, months: MonthNames, onCreate: (() -> Unit)? = null) {
-    GoalsBandTotal(
+private fun MetasTotal(band: MetasBand) {
+    val months = monthNames()
+    val contributed = band.contributed?.let {
+        stringResource(R.string.metas_band_contributed, it.digits, months.inSentence(band.month))
+    }
+    AnswerSlip(
         label = stringResource(R.string.metas_band_label),
         amount = band.saved,
-        change = band.contributed?.let {
-            stringResource(
-                R.string.metas_band_contributed,
-                it.digits,
-                months.inSentence(band.month)
-            )
-        },
-        modifier = Modifier.testTag("metas.band"),
-        action = onCreate?.let {
-            {
-                BandChip(
-                    stringResource(R.string.metas_create),
-                    it,
-                    Modifier.testTag(METAS_CREATE_TAG)
+        stamp = null,
+        ink = StampInk.Good,
+        modifier = Modifier.testTag(METAS_TOTAL_TAG),
+        description = listOfNotNull(
+            stringResource(R.string.metas_band_label),
+            band.saved.spoken,
+            contributed
+        ).joinToString(". ")
+    ) {
+        if (contributed != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(top = 6.dp)
+            ) {
+                Icon(
+                    SelloIcon.Add.painter(),
+                    contentDescription = null,
+                    tint = SelloTheme.colors.semantic.gain,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    contributed,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.W700,
+                    color = SelloTheme.colors.semantic.gain
                 )
             }
         }
-    )
+    }
 }
 
 const val METAS_LIST_TAG = "metas.list"
+const val METAS_TOTAL_TAG = "metas.total"
 const val METAS_CREATE_TAG = "metas.create"

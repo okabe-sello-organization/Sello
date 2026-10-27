@@ -235,13 +235,16 @@ six-month income chart.
 
 The v1.1 Metas screen, kept close to the original on purpose, in its own tab.
 
-- **Top bar:** title **Metas** and settings. Goals are not tied to a month, so there is
-  no month bar.
-- **Band:** "Guardado en metas" with the total of active goals (never investments) and
-  "+ 350.000 en octubre" for this month's contributions. A white **+ Nueva meta** chip
-  at the end of the label's line creates a goal; at large text it moves under the total.
-  It replaced a bare **+** in the top bar that was easy to miss, and stays quieter than
-  the green dock (owner decision, 2026-10-26).
+- **Top bar:** title **Metas** and a white **+ Nueva meta** chip beside it, which creates
+  a goal; where the label would push the title off its line (large text, narrow
+  windows) it is the round **+** alone, still said "Nueva meta". No gear: settings is on
+  Recibo only. Goals are not tied to a month, so there is no month bar. (Owner, 2026-10-26:
+  the chip first replaced a bare **+** that was easy to miss, on the band; it then moved
+  beside the title, and the gear left every tab but Recibo.)
+- **Hero card (pinked, as Inversiones' and Recibo's):** "Guardado en metas" with the total
+  of active goals (never investments) as the big number and "+ 350.000 en octubre" for
+  this month's contributions. With no goals there is no hero card and no chip; the dock
+  is **Crear una meta**.
 - **One pinked stamp card per goal, highest completion first:** icon and name, the
   percentage, the saved amount large, "de 3.000.000" and 🏁 target date (or "Sin fecha"),
   a green progress bar and four stamp places (25 %, 50 %, 75 %, Meta). Reached places
@@ -407,7 +410,10 @@ decimal. Nothing is fetched or verified; every value shows when it was recorded.
 benchmark, value target or interest accrual. COP and USD with one rate the person types
 (ADR 0017; [Dólares y la tasa](#dólares-y-la-tasa)). Rules: [investment examples](../../testing/investment-examples.md).
 
-- **Top bar:** title **Inversiones**, **+** to add an investment, settings. No month bar.
+- **Top bar:** title **Inversiones** and **+ Nueva inversión** beside it, the same chip as
+  Metas' (round **+** where the label does not fit). No gear: settings is on Recibo only
+  (owner, 2026-10-26). With no investments the dock is **Agregar inversión** and there is
+  no chip. No month bar.
 - **Answer slip (pinked, as on Recibo):** "Tus inversiones valen" with a **Gana** /
   **Pierde** stamp, the value as the big number in ink, then the signed return in green or
   red with an arrow and pesos ("▲ +5,6 % · +2.066.000 de ganancia", "En total, desde mar

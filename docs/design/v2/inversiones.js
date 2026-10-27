@@ -42,7 +42,7 @@ const rowNoValue = h => `<button class="inv-row" aria-label="${h.name}, sin valo
 const listSlip = (list, extra = []) => `<section class="slip"><h2 class="q">Dónde está, de mayor a menor</h2>${distBar(list)}${list.map(row).join("")}${extra.map(rowNoValue).join("")}</section>`;
 const CRIPTO = { name: "Cripto", kind: "Criptomoneda", icon: "insights", contributed: 2000000 };
 
-const tab = (o, body, { tall = false, bandHtml = "", dock = "Anotar movimiento" } = {}) => `<div class="phone ${tall ? "tall" : ""}"><div class="app" data-ink="${o.ink}" data-theme="${o.theme}">${appShell({ title: "Inversiones", addLabel: "Agregar inversión", body, tabs: 4, active: 3, band: bandHtml, dock, dockClass: "inv" })}</div></div>`;
+const tab = (o, body, { tall = false, bandHtml = "", dock = "Anotar movimiento" } = {}) => `<div class="phone ${tall ? "tall" : ""}"><div class="app" data-ink="${o.ink}" data-theme="${o.theme}">${appShell({ title: "Inversiones", chip: dock === "Agregar inversión" ? null : "Nueva inversión", settings: false, body, tabs: 4, active: 3, band: bandHtml, dock, dockClass: "inv" })}</div></div>`;
 
 // Detail. Ecopetrol: aportes 2.000.000 (mar 2025) + 1.000.000 (jul 2025) = 3.000.000; dividends
 // 89.000 (mar 2026) + 89.000 (sep 2026) = 178.000; recorded values below; gain +228.000 (+7,6 %).
@@ -179,7 +179,7 @@ const settingsRows = `<section class="slip"><h2 class="q">Tus datos</h2><button 
 
 // Frames with large text (200 %) or a fixed theme, as the E18 page does.
 const phoneX = (o, inner, { large = false, theme, tall = false } = {}) => `<div class="phone ${tall ? "tall" : ""}"><div class="app ${large ? "large" : ""}" data-ink="${o.ink}" data-theme="${theme ?? o.theme}" style="--scale:${large ? 2 : 1}">${inner}</div></div>`;
-const tabX = (o, body, opts = {}) => phoneX(o, appShell({ title: "Inversiones", addLabel: "Agregar inversión", body, tabs: 4, active: 3, dock: opts.dock ?? "Anotar movimiento", dockClass: "inv" }), opts);
+const tabX = (o, body, opts = {}) => phoneX(o, appShell({ title: "Inversiones", chip: "Nueva inversión", settings: false, body, tabs: 4, active: 3, dock: opts.dock ?? "Anotar movimiento", dockClass: "inv" }), opts);
 
 // IN35: investments exist, none has a value: no number, stamp or bar; the rows say so.
 const noValues = () => `<section class="slip pinked"><div class="answer-head"><span class="label">Tus inversiones valen</span></div><p class="goal-fact" style="margin-top:8px">Todavía no hay valores anotados. Anota cuánto vale cada una para ver el total.</p></section><section class="slip"><h2 class="q">Tus inversiones</h2>${rowNoValue(CRIPTO)}${rowNoValue({ name: "Acciones EE. UU.", kind: "ETF · USD", icon: "trending_up", contributed: 0 }).replaceAll("aportaste 0 pesos", "aportaste 1.000 dólares").replaceAll("aportaste 0", "aportaste USD 1.000,00")}</section>`;

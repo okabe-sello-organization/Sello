@@ -5,7 +5,8 @@
 // Changed on purpose: its own tab (no Patrimonio switch), no dates under the stamps (no
 // projected months), no peso symbol, no Aportar on the cards, and a Metas dock:
 // "Aportar a una meta" in green replaces Anotar on this tab only (owner decision).
-// 2026-10-26 (owner decision): "+ Nueva meta" on the band replaces the top bar's bare +.
+// 2026-10-26 (owner decision): "+ Nueva meta" on the band replaces the top bar's bare +; later
+// that day it moved beside the title, the gear left this tab and the total became the hero card.
 
 // Highest completion first (owner decision).
 const GOALS = [
@@ -17,7 +18,7 @@ const DONE = [{ name: "Vacunas de Luna", icon: "pets", target: 400000, when: "30
 const SAVED = 2460000;      // active goals: 1.710.000 + 450.000 + 300.000
 const THIS_MONTH = 350000;  // contributions recorded in October (synthetic)
 
-const band = () => `<div class="goals-band"><span class="band-row"><span>Guardado en metas</span><button class="band-chip" aria-label="Nueva meta">${icon("add")}Nueva meta</button></span><b>${money(SAVED)}</b><small>${icon("add")}${fmt(THIS_MONTH)} en octubre</small></div>`;
+const hero = () => `<section class="slip pinked"><div class="answer-head"><span class="label">Guardado en metas</span></div><div class="hero">${money(SAVED)}</div><p class="perf gain" style="font-size:.95em">${icon("add")}<span>${fmt(THIS_MONTH)} en octubre</span></p></section>`;
 
 function goalCard(g) {
   const places = [25, 50, 75, 100].map(p => {
@@ -33,21 +34,21 @@ function body(o, { state } = {}) {
   if (state === "empty") return `<section class="slip pinked empty">${icon("flag")}<h2>Ponle nombre a algo que quieras</h2><p>Un viaje, un fondo para imprevistos, algo para ti. Tú decides la meta y cuánto aportar.</p><span class="v1-places" style="margin:0 0 6px">${["25 %", "50 %", "75 %", "Meta"].map(t => `<span class="v1-place">${t}</span>`).join("")}</span></section>`;
   if (state === "loading") return `<div role="status" aria-label="Cargando"><section class="slip"><div class="skel" style="width:50%"></div><div class="skel big"></div><div class="skel" style="width:70%"></div></section><section class="slip"><div class="skel" style="width:50%"></div><div class="skel"></div></section></div>`;
   if (state === "failed") return `<section class="slip empty">${icon("error")}<h2>No pudimos leer tus metas</h2><p>Tus registros siguen guardados. Vuelve a intentarlo.</p><button class="outline-btn">Reintentar</button></section>`;
-  return GOALS.map(goalCard).join("") + done();
+  return hero() + GOALS.map(goalCard).join("") + done();
 }
 
 // With no goals the dock creates one: there is nothing to contribute to yet.
-const frame = (o, html, { tall = false, withBand = true, dock = "Aportar a una meta" } = {}) => `<div class="phone ${tall ? "tall" : ""}"><div class="app" data-ink="${o.ink}" data-theme="${o.theme}">${appShell({ title: "Metas", body: html, tabs: 3, active: 2, band: withBand ? band() : "", dock, dockClass: "goal" })}</div></div>`;
+const frame = (o, html, { tall = false, withBand = true, dock = "Aportar a una meta" } = {}) => `<div class="phone ${tall ? "tall" : ""}"><div class="app" data-ink="${o.ink}" data-theme="${o.theme}">${appShell({ title: "Metas", body: html, tabs: 3, active: 2, chip: withBand ? "Nueva meta" : null, settings: false, dock, dockClass: "goal" })}</div></div>`;
 const card = (title, note, inner) => `<div class="frame-card"><h3>${title}</h3><p>${note}</p>${inner}</div>`;
 
 function render() {
   const o = reviewOptions(["ink", "theme"]);
   const set = (id, h) => document.getElementById(id).innerHTML = h;
   set("lists",
-    card("Metas tab", "Highest completion first. Tap a goal to open it. The dock is “Aportar a una meta” on this tab; “+ Nueva meta” on the band creates a goal.", frame(o, body(o))) +
+    card("Metas tab", "Highest completion first. Tap a goal to open it. The total is the hero card. The dock is “Aportar a una meta” on this tab; “+ Nueva meta” beside the title creates a goal. No gear: settings is on Recibo.", frame(o, body(o))) +
     card("Whole screen, scrolled", "Completed goals stay at the bottom as rows with their Lograda stamp.", frame(o, body(o), { tall: true })));
   set("states",
-    card("No goals yet", "v1.1’s empty state: the message and four empty stamp places. The dock becomes Crear una meta, the one main action; no button in the card and no band, so no Nueva meta.", frame(o, body(o, { state: "empty" }), { withBand: false, dock: "Crear una meta" })) +
+    card("No goals yet", "v1.1’s empty state: the message and four empty stamp places. The dock becomes Crear una meta, the one main action; no button in the card, no hero card and no Nueva meta.", frame(o, body(o, { state: "empty" }), { withBand: false, dock: "Crear una meta" })) +
     card("Loading", "Skeleton slips.", frame(o, body(o, { state: "loading" }), { withBand: false })) +
     card("Failed read", "Never shown as having no goals.", frame(o, body(o, { state: "failed" }), { withBand: false })));
 }

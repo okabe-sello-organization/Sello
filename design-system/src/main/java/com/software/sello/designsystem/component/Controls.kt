@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -209,16 +210,23 @@ fun MonthBar(
 
 /**
  * A tab's top bar on the band when it has a title instead of a month, as on Metas and
- * Inversiones: the [title] as a heading, and [actions] (add, settings) as round 48dp
- * icon buttons at the trailing edge.
+ * Inversiones: the [title] as a heading, then a [chip] such as **+ Nueva meta** (a
+ * [BandChip]), told to be compact when its label would push the title off its line, and
+ * any [actions] as round 48dp icon buttons at the trailing edge.
  */
 @Composable
 fun TitleBar(
     title: String,
     modifier: Modifier = Modifier,
+    chip: (@Composable (compact: Boolean) -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     val colors = SelloTheme.colors
+    val scale = LocalDensity.current.fontScale
+    val width = LocalWindowInfo.current.containerSize.width
+    // The chip keeps its label while the title fits on its line beside it; when it
+    // would not, as at large text or on a narrow window, it is the round + alone.
+    var compact by remember(title, scale, width) { mutableStateOf(false) }
     Row(
         modifier.fillMaxWidth().background(colors.band).heightIn(min = 56.dp)
             .padding(start = 16.dp, end = 6.dp),
@@ -228,86 +236,53 @@ fun TitleBar(
             title,
             Modifier.weight(1f).semantics { heading() },
             style = MaterialTheme.typography.headlineSmall.copy(
-                fontSize = if (LocalDensity.current.fontScale >= 1.3f) 19.sp else 24.sp,
+                fontSize = if (scale >= 1.3f) 19.sp else 24.sp,
                 fontWeight = FontWeight.W800,
                 letterSpacing = (-0.02).em
             ),
-            color = colors.onBand
+            color = colors.onBand,
+            maxLines = 1,
+            softWrap = false,
+            onTextLayout = { if (chip != null && it.hasVisualOverflow) compact = true }
         )
+        if (chip != null) {
+            Box(Modifier.padding(start = 8.dp, end = if (compact) 0.dp else 6.dp)) { chip(compact) }
+        }
         CompositionLocalProvider(LocalContentColor provides colors.onBand) { actions() }
     }
 }
 
 /**
- * The total that sits on the band under Metas' title: what is saved across active goals
- * and, under it, what came in this month after a small gain plus. Display only; the
- * caller formats [change] and supplies the exact [amount]. Without a [change], as in a
- * month with no aportes, the second line is left out. An [action], such as a
- * [BandChip], sits at the end of the label's line; at large text it goes under the total
- * so neither is squeezed. It is meant for the scaffold's ribbon, which already sets the
- * side margins and the gap under it.
+ * A secondary action on the band, as Metas' **+ Nueva meta** beside its title: a paper pill with a plus,
+ * the same paper on band as [PastMonthRibbon]'s return, so it stands out without
+ * competing with the dock. Its touch target is 48dp; the pill itself is 36dp. [compact]
+ * is the round + alone, for a [TitleBar] whose title would not fit beside the label.
  */
 @Composable
-fun GoalsBandTotal(
+fun BandChip(
     label: String,
-    amount: MoneyTextValue,
-    change: String?,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    action: (@Composable () -> Unit)? = null
+    compact: Boolean = false
 ) {
     val colors = SelloTheme.colors
-    val stacked = LocalDensity.current.fontScale >= 1.3f
-    Column(
-        modifier.fillMaxWidth().background(colors.band).padding(bottom = 6.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                label,
-                Modifier.weight(1f),
-                color = colors.onBand.copy(alpha = 0.85f),
-                style = MaterialTheme.typography.bodyMedium
-            )
-            if (action != null && !stacked) action()
-        }
-        FittedMoneyText(amount, color = colors.onBand, startSize = 42)
-        if (change != null) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Box(
-                    Modifier.size(18.dp).background(colors.semantic.gain, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        SelloIcon.Add.painter(),
-                        null,
-                        Modifier.size(14.dp),
-                        tint = colors.semantic.onGain
-                    )
-                }
-                Text(
-                    change,
-                    color = colors.onBand,
-                    fontWeight = FontWeight.W700,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-        if (action != null && stacked) action()
-    }
-}
-
-/**
- * A secondary action on the band, as Metas' **+ Nueva meta**: a paper pill with a plus,
- * the same paper on band as [PastMonthRibbon]'s return, so it stands out without
- * competing with the dock. Its touch target is 48dp; the pill itself is 36dp.
- */
-@Composable
-fun BandChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val colors = SelloTheme.colors
     val content = if (colors.isDark) colors.ink else colors.band
+    if (compact) {
+        // Where the label would not fit: the round + alone, still said with its label.
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = modifier
+                .minimumInteractiveComponentSize()
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(if (colors.isDark) colors.paper else Color.White)
+                .clickable(role = Role.Button, onClickLabel = label, onClick = onClick)
+                .semantics { contentDescription = label }
+        ) {
+            Icon(SelloIcon.Add.painter(), null, Modifier.size(22.dp), tint = content)
+        }
+        return
+    }
     Row(
         modifier
             .minimumInteractiveComponentSize()

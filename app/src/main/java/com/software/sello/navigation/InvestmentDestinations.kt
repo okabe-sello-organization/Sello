@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
+import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.SelloDock
 import com.software.sello.designsystem.component.SelloNavigation
@@ -44,7 +45,6 @@ internal fun InversionesDestination(
     viewModels: ViewModelProvider.Factory,
     onShell: (ShellAction) -> Unit,
     tabs: SelloNavigation,
-    onOpenSettings: () -> Unit,
     onOpen: ((String) -> Unit)? = null,
     onOpenRate: (() -> Unit)? = null,
     onAdd: (() -> Unit)? = null,
@@ -61,14 +61,16 @@ internal fun InversionesDestination(
         navigation = tabs,
         titleOnly = stringResource(R.string.inversiones_title),
         notice = notice,
-        actions = {
-            if (onAdd != null) {
-                IconButton(onClick = onAdd, modifier = Modifier.testTag(INVERSIONES_ADD_TAG)) {
-                    Icon(SelloIcon.Add.painter(), stringResource(R.string.inversiones_add))
-                }
-            }
-            IconButton(onClick = onOpenSettings, modifier = Modifier.testTag(SETTINGS_ACTION_TAG)) {
-                Icon(SelloIcon.Settings.painter(), stringResource(R.string.settings_open))
+        // + Nueva inversión beside the title once there are investments, as Metas' + Nueva
+        // meta; with none, the dock adds the first.
+        titleChip = onAdd?.takeIf { ready != null && !ready.empty }?.let { add ->
+            { compact ->
+                BandChip(
+                    stringResource(R.string.inversiones_new),
+                    add,
+                    Modifier.testTag(INVERSIONES_ADD_TAG),
+                    compact = compact
+                )
             }
         },
         entryDock = false,

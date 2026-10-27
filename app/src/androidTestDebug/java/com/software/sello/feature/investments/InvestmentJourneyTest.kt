@@ -21,7 +21,6 @@ import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.hideKeyboard
-import com.software.sello.navigation.INVERSIONES_ADD_TAG
 import com.software.sello.press
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -132,7 +131,8 @@ class InvestmentJourneyTest {
     @Test
     fun in33ADollarInvestmentAsksForTheRateFirstAndSavesBothTogether() {
         openInversiones()
-        rule.onNodeWithTag(INVERSIONES_ADD_TAG).performClick()
+        // With no investments yet, the dock adds the first.
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Agregar inversión")).performClick()
         rule.awaitTag(INVESTMENT_EDITOR_TAG)
 
         name("Acciones EE. UU.")

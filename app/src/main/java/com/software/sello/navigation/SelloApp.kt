@@ -262,7 +262,6 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 viewModels = viewModels,
                 onShell = shell::onAction,
                 tabs = tabs,
-                onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
                 onOpenGoal = { id ->
                     navigation.navigate(GoalRoute(id)) { launchSingleTop = true }
                 },
@@ -281,7 +280,6 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 viewModels = viewModels,
                 onShell = shell::onAction,
                 tabs = tabs,
-                onOpenSettings = { navigation.navigate(SettingsRoute) { launchSingleTop = true } },
                 onOpen = { id ->
                     navigation.navigate(InvestmentRoute(id)) { launchSingleTop = true }
                 },
@@ -1071,6 +1069,7 @@ fun ShellScreen(
     entryDock: Boolean = true,
     titleOnly: String? = null,
     band: (@Composable () -> Unit)? = null,
+    titleChip: (@Composable (compact: Boolean) -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val title = names.title(state.selectedMonth)
@@ -1124,7 +1123,7 @@ fun ShellScreen(
                 title = titleOnly ?: screenTitle ?: title,
                 subtitle = if (showMonthAsSubtitle && titleOnly == null) title else null,
                 topBar = if (tab && titleOnly != null) {
-                    { TitleBar(titleOnly, actions = actions) }
+                    { TitleBar(titleOnly, chip = titleChip, actions = actions) }
                 } else if (tab) {
                     {
                         MonthBar(
