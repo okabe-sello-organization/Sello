@@ -995,22 +995,21 @@ private fun archived(detail: CategoryDetailState): Boolean =
  * archived one, stays in place disabled and reads "Archivada" beside a prohibited sign.
  */
 @Composable
-private fun categoryDock(archived: Boolean, onClick: () -> Unit): SelloDock =
-    if (archived) {
-        SelloDock(
-            label = stringResource(R.string.dock_entry_archived_label),
-            actionLabel = stringResource(R.string.recibo_category_archived),
-            onClick = {},
-            icon = SelloIcon.Block,
-            enabled = false
-        )
-    } else {
-        SelloDock(
-            label = stringResource(R.string.dock_entry_label),
-            actionLabel = stringResource(R.string.dock_entry_action),
-            onClick = onClick
-        )
-    }
+private fun categoryDock(archived: Boolean, onClick: () -> Unit): SelloDock = if (archived) {
+    SelloDock(
+        label = stringResource(R.string.dock_entry_archived_label),
+        actionLabel = stringResource(R.string.recibo_category_archived),
+        onClick = {},
+        icon = SelloIcon.Block,
+        enabled = false
+    )
+} else {
+    SelloDock(
+        label = stringResource(R.string.dock_entry_label),
+        actionLabel = stringResource(R.string.dock_entry_action),
+        onClick = onClick
+    )
+}
 
 @Composable
 private fun CategoryEditAction(enabled: Boolean, onClick: () -> Unit) {
