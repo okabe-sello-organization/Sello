@@ -212,6 +212,23 @@
           },
           "modules": {
             "type": "object"
+          },
+          "shard": {
+            "type": "object",
+            "required": [
+              "index",
+              "count"
+            ],
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 2
+              }
+            }
           }
         }
       }

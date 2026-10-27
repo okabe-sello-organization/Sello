@@ -385,3 +385,21 @@ publish the cache outputs read-only PRs need. We did not eliminate code-merge G1
 introduce PR-cache promotion. Expect savings mainly on documentation/narrow module
 changes and runner usage, not a measured speedup on every app PR. Existing
 longitudinal measurements remain under ignored build/reports/ci-performance/.
+
+## Follow-up: the app suite in two shards (2026-10-26)
+
+Measured on the successful nightlies: device test time grew from 279 s (10-20) to
+806 s (10-26), app alone from 154 s to 602 s, while the median app test stayed at
+about 0.5 s. The app device job was the pull request's critical path at about 14
+minutes against 7 for the support group, of which roughly 4 minutes are fixed:
+emulator boot (32 s), Gradle building and installing the app and test APKs, and
+collecting results. Host unit tests are not a factor (1,294 tests in about 11 s).
+
+Two changes, each in its own pull request: the "every theme, size and window" sweep
+tests now render each scale × window once and each other theme once (locally the
+seven sweeps went from 54 s to 21 s on the same emulator), and the app suite runs as
+two shards (`app-1`, `app-2`) with the runner's `numShards`/`shardIndex`, each shard a
+part of its own. The shards balance by test count, not time, and each still pays the
+fixed minutes; building once and installing the APKs in every shard is the next step
+if those minutes matter after this measurement. The hosted `quality` check on the
+sharding pull request and the first nightly after it are the measurement.

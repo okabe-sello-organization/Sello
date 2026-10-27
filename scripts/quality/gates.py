@@ -29,12 +29,25 @@ DEVICE_TASKS = (
     ":data:connectedDebugAndroidTest", ":design-system:connectedDebugAndroidTest",
     ":app:connectedDebugAndroidTest", ":catalog:connectedDebugAndroidTest",
 )
+
+
+@dataclass(frozen=True)
+class Group:
+    """One hosted device job: its Gradle tasks, and which shard of their tests it runs, if split."""
+    tasks: tuple
+    shard: tuple = ()  # (index, count): the instrumentation runner keeps every count-th test
+
+
+# The app suite is the longest by far, so it runs as two shards side by side; the other
+# three suites share one runner. Each shard is a part on its own; only all of them
+# together are the app module's results (selection.GROUPS names the same split).
 DEVICE_GROUPS = {
-    "app": (":app:connectedDebugAndroidTest",),
-    "support": (
+    "app-1": Group((":app:connectedDebugAndroidTest",), shard=(0, 2)),
+    "app-2": Group((":app:connectedDebugAndroidTest",), shard=(1, 2)),
+    "support": Group((
         ":data:connectedDebugAndroidTest", ":design-system:connectedDebugAndroidTest",
         ":catalog:connectedDebugAndroidTest",
-    ),
+    )),
 }
 HOST_RESULTS = "*/build/test-results/**/TEST-*.xml"
 DEVICE_RESULTS = "*/build/outputs/androidTest-results/connected/**/TEST-*.xml"
@@ -54,20 +67,37 @@ class Check:
     fresh_results: bool = False
     lint: bool = False
     result_modules: tuple = ()
+    shard: tuple = ()
 
 
-def device_check(name="gradle-device", tasks=DEVICE_TASKS):
+def device_check(name="gradle-device", tasks=DEVICE_TASKS, shard=()):
+    split = ()
+    if shard:
+        index, count = shard
+        split = (f"-Pandroid.testInstrumentationRunnerArguments.numShards={count}",
+                 f"-Pandroid.testInstrumentationRunnerArguments.shardIndex={index}")
     return Check(
-        name, ("./gradlew", *tasks, "--continue"), needs_device=True,
+        name, ("./gradlew", *tasks, *split, "--continue"), needs_device=True,
         results=DEVICE_RESULTS, fresh_results=True,
-        result_modules=tuple(task.split(":")[1] for task in tasks),
+        result_modules=tuple(task.split(":")[1] for task in tasks), shard=shard,
     )
 
 
 def validate_device_groups():
-    grouped = [task for tasks in DEVICE_GROUPS.values() for task in tasks]
-    if sorted(grouped) != sorted(DEVICE_TASKS) or len(grouped) != len(set(grouped)):
-        raise Unavailable("device groups must cover every device task exactly once")
+    """Every device task runs whole in one group, or once in each shard of one split."""
+    covered = {}
+    for group in DEVICE_GROUPS.values():
+        for task in group.tasks:
+            covered.setdefault(task, []).append(group.shard or (0, 1))
+    if set(covered) != set(DEVICE_TASKS):
+        raise Unavailable("device groups must cover every device task")
+    for task, shards in covered.items():
+        counts = {count for _, count in shards}
+        if len(counts) != 1 or sorted(index for index, _ in shards) != list(range(counts.pop())):
+            raise Unavailable(f"{task}: its groups must be one whole run or every shard of one split exactly once")
+    modules = {name: {task.split(":")[1] for task in group.tasks} for name, group in DEVICE_GROUPS.items()}
+    if modules != {name: set(covered) for name, covered in selection.GROUPS.items()}:
+        raise Unavailable("device groups and the selection map must name the same split")
 
 
 def release_checks(ci=False):

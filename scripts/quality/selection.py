@@ -43,10 +43,13 @@ def coverage(base, paths=(), gate="G2", full=False):
     return dict(result, mode="affected", device_modules=[m for m in MODULES if m in impacted])
 
 
+# Hosted device groups and the modules each one runs (gates.DEVICE_GROUPS holds the tasks).
+GROUPS = {"app-1": ("app",), "app-2": ("app",), "support": ("data", "design-system", "catalog")}
+
+
 def groups(scope):
     modules = scope["device_modules"]
-    return [group for group in ("app", "support")
-            if ("app" in modules if group == "app" else any(m != "app" for m in modules))]
+    return [group for group, covered in GROUPS.items() if any(module in modules for module in covered)]
 
 
 def problem(scope, gate, ticket):

@@ -26,6 +26,16 @@ class SelectionTests(unittest.TestCase):
                 self.assertEqual('affected', scope['mode'])
                 self.assertEqual(modules, scope['device_modules'])
 
+    def test_selected_modules_start_only_their_groups_and_app_starts_both_shards(self):
+        def groups(*modules):
+            return selection.groups({'device_modules': list(modules)})
+        self.assertEqual(['app-1', 'app-2'], groups('app'))
+        self.assertEqual(['support'], groups('catalog'))
+        self.assertEqual(['support'], groups('data', 'design-system'))
+        self.assertEqual(['app-1', 'app-2', 'support'], groups('data', 'app'))
+        self.assertEqual([], groups())
+        self.assertEqual(set(selection.MODULES), {m for covered in selection.GROUPS.values() for m in covered})
+
     def test_shared_build_tooling_unknown_paths_require_every_device_module(self):
         for path in ('gradle.properties','gradle/libs.versions.toml','data/build.gradle.kts',
                      'app/gradle.lockfile','scripts/verify-ticket','.github/workflows/quality.yml',

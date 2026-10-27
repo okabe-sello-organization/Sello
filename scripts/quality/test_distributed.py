@@ -44,7 +44,7 @@ class DistributedGateTests(unittest.TestCase):
         )
 
     def all_parts(self):
-        for part in ('host', 'app', 'support'):
+        for part in ('host', 'app-1', 'app-2', 'support'):
             self.assertEqual(0, self.part(part)[0], self.stream.getvalue())
 
     def collect(self, event='workflow_dispatch', jobs=None):
@@ -62,10 +62,11 @@ class DistributedGateTests(unittest.TestCase):
     def test_app_only_candidate_does_not_require_unaffected_support_suites(self):
         write(self.root, 'app/src/Main.kt', 'fun main() = println(42)\n')
         self.assertEqual(0, self.part('host', event='pull_request')[0])
-        self.assertEqual(0, self.part('app', event='pull_request')[0])
+        self.assertEqual(0, self.part('app-1', event='pull_request')[0])
+        self.assertEqual(0, self.part('app-2', event='pull_request')[0])
         code, report = self.collect(event='pull_request', jobs={'plan':'success','host':'success','device':'success'})
         self.assertEqual(0, code, self.stream.getvalue())
-        self.assertEqual(['host','app'], [p['part'] for p in report['execution']['parts']])
+        self.assertEqual(['host','app-1','app-2'], [p['part'] for p in report['execution']['parts']])
         self.assertEqual('affected', report['coverage']['mode'])
         self.assertEqual(['app'], report['coverage']['device_modules'])
 
@@ -77,11 +78,11 @@ class DistributedGateTests(unittest.TestCase):
         self.assertEqual(0, code, self.stream.getvalue())
         self.assertEqual(['catalog'], report['coverage']['device_modules'])
         self.assertEqual({'catalog'}, set(report['checks'][-1]['modules']))
-        self.assertEqual(2, self.part('app', event='pull_request')[0])
+        self.assertEqual(2, self.part('app-1', event='pull_request')[0])
 
     def test_device_selected_by_scope_cannot_be_replaced_with_an_unselected_part(self):
         write(self.root, 'data/src/main/Store.kt', 'class Store\n')
-        self.part('host',event='pull_request'); self.part('app',event='pull_request')
+        self.part('host',event='pull_request'); self.part('app-1',event='pull_request'); self.part('app-2',event='pull_request')
         self.assertNotEqual(0,self.collect(event='pull_request')[0])
 
     def test_main_documentation_push_has_no_gradle_part_and_no_device(self):
@@ -99,15 +100,36 @@ class DistributedGateTests(unittest.TestCase):
         self.assertEqual('passed', report['outcome'])
         self.assertEqual('G3', report['gate']['executed'])
         self.assertIsNone(evidence.schema_problem(report, evidence.SCHEMA))
-        self.assertEqual(['host', 'app', 'support'], [p['part'] for p in report['execution']['parts']])
+        self.assertEqual(['host', 'app-1', 'app-2', 'support'], [p['part'] for p in report['execution']['parts']])
         self.assertEqual({'data', 'design-system', 'app', 'catalog'}, {
             name for record in report['checks'] for name in record.get('modules', {})
         })
-        self.assertEqual(4, sum(r['results']['tests'] for r in report['checks'] if r['name'].startswith('gradle-device')))
+        self.assertEqual(5, sum(r['results']['tests'] for r in report['checks'] if r['name'].startswith('gradle-device')))
         self.assertEqual(3, len(report['checks'][-1]['modules']))
+        shards = [(r['name'], r['shard']) for r in report['checks'] if 'shard' in r]
+        self.assertEqual([('gradle-device-app-1', {'index': 0, 'count': 2}), ('gradle-device-app-2', {'index': 1, 'count': 2})], shards)
+
+    def test_both_app_shards_are_needed_and_one_cannot_stand_in_for_the_other(self):
+        self.all_parts()
+        code, path = self.collect(jobs={'plan': 'success', 'host': 'success', 'device': 'success'})
+        self.assertEqual(0, code, self.stream.getvalue())
+        report = json.loads((self.root / 'build/reports/quality/UNTICKETED').glob('*/report.json').__next__().read_text())
+        evidence.load(next((self.root / 'build/reports/quality/UNTICKETED').glob('*/report.json')))
+        edited = self.root / 'build/edited-report.json'
+        for name, edit in (
+            ('one shard missing', lambda checks: [c for c in checks if c['name'] != 'gradle-device-app-2']),
+            ('same shard twice', lambda checks: [dict(c, shard={'index': 0, 'count': 2}) if c['name'] == 'gradle-device-app-2' else c for c in checks]),
+            ('a whole run beside a shard', lambda checks: [{k: v for k, v in c.items() if k != 'shard'} if c['name'] == 'gradle-device-app-2' else c for c in checks]),
+        ):
+            with self.subTest(name=name):
+                edited.write_text(json.dumps(dict(report, checks=edit(report['checks']))))
+                with self.assertRaises(evidence.EvidenceError):
+                    evidence.load(edited)
+        shutil.copy(self.parts / 'quality-part-local-app-1/part.json', self.parts / 'quality-part-local-app-2/part.json')
+        self.assertNotEqual(0, self.collect(jobs={'plan': 'success', 'host': 'success', 'device': 'success'})[0])
 
     def test_partial_report_cannot_be_used_as_completion_evidence(self):
-        code, path = self.part('app')
+        code, path = self.part('app-1')
         self.assertEqual(0, code)
         with self.assertRaises(evidence.EvidenceError):
             evidence.load(path)
@@ -115,17 +137,20 @@ class DistributedGateTests(unittest.TestCase):
 
     def test_part_commands_are_disjoint_and_cover_the_complete_device_gate(self):
         self.all_parts()
-        commands = [json.loads((self.parts / f'quality-part-local-{p}/part.json').read_text())['checks'][0]['command']
-                    for p in ('app', 'support')]
-        tasks = [word for command in commands for word in command.split() if word.endswith(':connectedDebugAndroidTest')]
-        self.assertEqual(sorted(gates.DEVICE_TASKS), sorted(tasks))
-        self.assertEqual(len(tasks), len(set(tasks)))
-        self.assertIn(':app:connectedDebugAndroidTest', commands[0])
-        self.assertNotIn(':data:connectedDebugAndroidTest', commands[0])
+        commands = {p: json.loads((self.parts / f'quality-part-local-{p}/part.json').read_text())['checks'][0]['command']
+                    for p in ('app-1', 'app-2', 'support')}
+        tasks = [word for command in commands.values() for word in command.split() if word.endswith(':connectedDebugAndroidTest')]
+        self.assertEqual(sorted(gates.DEVICE_TASKS), sorted(set(tasks)))
+        self.assertEqual([':app:connectedDebugAndroidTest'] * 2, [t for t in tasks if t.startswith(':app:')])
+        for index, part in enumerate(('app-1', 'app-2')):
+            self.assertIn(f'numShards=2 -Pandroid.testInstrumentationRunnerArguments.shardIndex={index}', commands[part])
+            self.assertNotIn(':data:connectedDebugAndroidTest', commands[part])
+        self.assertNotIn('numShards', commands['support'])
 
     def test_missing_group_fails_even_with_successful_job_status(self):
         self.part('host')
-        self.part('app')
+        self.part('app-1')
+        self.part('app-2')
         code, report = self.collect(jobs={'plan': 'success', 'host': 'success', 'device': 'success'})
         self.assertNotEqual(0, code)
         self.assertEqual('failed', report['outcome'])
@@ -143,7 +168,7 @@ class DistributedGateTests(unittest.TestCase):
 
     def test_stale_revision_or_inputs_are_rejected(self):
         self.all_parts()
-        self.edit_part('app', lambda r: r['snapshot'].update(head='0' * 40))
+        self.edit_part('app-1', lambda r: r['snapshot'].update(head='0' * 40))
         code, report = self.collect()
         self.assertNotEqual(0, code)
         self.assertTrue(any('stale commit' in f for f in report['failures']))
@@ -155,14 +180,14 @@ class DistributedGateTests(unittest.TestCase):
 
     def test_wrong_workflow_attempt_is_rejected(self):
         self.all_parts()
-        self.edit_part('app', lambda r: r['context']['session'].update(attempt='old'))
+        self.edit_part('app-1', lambda r: r['context']['session'].update(attempt='old'))
         code, report = self.collect()
         self.assertNotEqual(0, code)
         self.assertTrue(any('workflow run/attempt mismatch' in f for f in report['failures']))
 
     def test_relabelled_duplicate_part_is_rejected(self):
         self.all_parts()
-        source = self.parts / 'quality-part-local-app/part.json'
+        source = self.parts / 'quality-part-local-app-1/part.json'
         (self.parts / 'quality-part-local-support/part.json').write_bytes(source.read_bytes())
         self.assertNotEqual(0, self.collect()[0])
 
@@ -178,17 +203,17 @@ class DistributedGateTests(unittest.TestCase):
 
     def test_missing_device_freshness_validation_is_rejected(self):
         self.all_parts()
-        self.edit_part('app', lambda r: r['checks'][0].update(fresh_results=False))
+        self.edit_part('app-1', lambda r: r['checks'][0].update(fresh_results=False))
         self.assertNotEqual(0, self.collect()[0])
 
     def test_changed_commands_and_failed_checks_cannot_be_labelled_passed(self):
         self.all_parts()
-        self.edit_part('app', lambda r: r['checks'][0].update(exit_code=1))
+        self.edit_part('app-1', lambda r: r['checks'][0].update(exit_code=1))
         self.assertNotEqual(0, self.collect()[0])
 
     def test_skipped_device_tests_are_rejected(self):
         self.all_parts()
-        xml = self.parts / 'quality-part-local-app/raw/app/build/outputs/androidTest-results/connected/debug/TEST-d.xml'
+        xml = self.parts / 'quality-part-local-app-1/raw/app/build/outputs/androidTest-results/connected/debug/TEST-d.xml'
         xml.write_text('<testsuite tests="1" failures="0" errors="0" skipped="1"/>')
         self.assertNotEqual(0, self.collect()[0])
 
@@ -204,16 +229,16 @@ class DistributedGateTests(unittest.TestCase):
         write(self.root, 'app/build/outputs/androidTest-results/connected/debug/TEST-stale.xml',
                      '<testsuite tests="1" failures="0" errors="0" skipped="0"/>')
         os.utime(self.root / 'app/build/outputs/androidTest-results/connected/debug/TEST-stale.xml', (1, 1))
-        self.assertNotEqual(0, self.part('app')[0])
+        self.assertNotEqual(0, self.part('app-1')[0])
 
     def test_ambiguous_or_wrong_api_devices_are_refused(self):
-        self.assertEqual(2, self.part('app', devices=[DEVICE, dict(DEVICE, serial='other')])[0])
-        self.assertEqual(2, self.part('app', devices=[dict(DEVICE, api='36')])[0])
+        self.assertEqual(2, self.part('app-1', devices=[DEVICE, dict(DEVICE, serial='other')])[0])
+        self.assertEqual(2, self.part('app-1', devices=[dict(DEVICE, api='36')])[0])
         self.assertEqual([], self.harness.executed)
 
     def test_incomplete_partition_is_refused_before_execution(self):
-        with patch.dict(gates.DEVICE_GROUPS, {'support': (':data:connectedDebugAndroidTest',)}):
-            self.assertEqual(2, self.part('app')[0])
+        with patch.dict(gates.DEVICE_GROUPS, {'support': gates.Group((':data:connectedDebugAndroidTest',))}):
+            self.assertEqual(2, self.part('app-1')[0])
         self.assertEqual([], self.harness.executed)
 
     def test_document_only_pr_needs_only_the_host_part(self):
@@ -222,7 +247,7 @@ class DistributedGateTests(unittest.TestCase):
         code, report = self.collect(event='pull_request', jobs={'plan': 'success', 'host': 'success', 'device': 'skipped'})
         self.assertEqual(0, code)
         self.assertEqual('G0', report['gate']['executed'])
-        self.assertEqual(2, self.part('app', event='pull_request')[0])
+        self.assertEqual(2, self.part('app-1', event='pull_request')[0])
 
     def test_single_artifact_download_at_root_is_valid_only_for_g1_host(self):
         self.assertEqual(0, self.part('host', event='push')[0])
@@ -261,7 +286,7 @@ class DistributedGateTests(unittest.TestCase):
         self.edit_part('support', lambda r: r['environment'].pop('gradle'))
         self.assertNotEqual(0, self.collect()[0])
         self.edit_part('support', lambda r: r['environment'].update(gradle='9.5.0'))
-        self.edit_part('app', lambda r: r['devices'][0].pop('model'))
+        self.edit_part('app-1', lambda r: r['devices'][0].pop('model'))
         self.assertNotEqual(0, self.collect()[0])
 
     def test_existing_output_is_not_overwritten(self):
@@ -302,7 +327,7 @@ class DistributedGateTests(unittest.TestCase):
         host = [check.name for check in distributed.checks_for('host', plan)]
         self.assertEqual(['release-licenses', 'release-ephemeral'], host[-2:])
         self.assertNotIn('release-production', host)
-        for part in ('host', 'app', 'support'):
+        for part in ('host', 'app-1', 'app-2', 'support'):
             self.assertEqual(0, self.part(part, event='pull_request')[0], self.stream.getvalue())
         code, report = self.collect(event='pull_request', jobs={'plan': 'success', 'host': 'success', 'device': 'success'})
         self.assertEqual(0, code, self.stream.getvalue())
@@ -312,7 +337,7 @@ class DistributedGateTests(unittest.TestCase):
         for event in ('schedule', 'workflow_dispatch'):
             with self.subTest(event=event):
                 plan = distributed.context(self.root, self.base, event)
-                self.assertEqual(('G3', 'full', ['data', 'design-system', 'app', 'catalog'], ['app', 'support']),
+                self.assertEqual(('G3', 'full', ['data', 'design-system', 'app', 'catalog'], ['app-1', 'app-2', 'support']),
                                  (plan['gate'], plan['coverage']['mode'], plan['coverage']['device_modules'], plan['groups']))
                 self.assertEqual({runner.UNTICKETED: 'G1'}, plan['tickets'])
                 host = [check.name for check in distributed.checks_for('host', plan)]
@@ -343,7 +368,7 @@ class DistributedGateTests(unittest.TestCase):
         cli = Path(__file__).resolve().parents[1] / 'verify-ticket'
         for arguments in (
             ['--merge-candidate', 'HEAD', '--ci-part', 'host', '--gate', 'G1'],
-            ['--merge-candidate', 'HEAD', '--ci-part', 'app', '--retain'],
+            ['--merge-candidate', 'HEAD', '--ci-part', 'app-1', '--retain'],
             ['--merge-candidate', 'HEAD', '--ci-collect', 'build/parts', '--gate', 'G1'],
         ):
             with self.subTest(arguments=arguments):
