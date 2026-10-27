@@ -244,6 +244,8 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
                 monthNames(),
                 shell::onAction,
                 navigation = tabs,
+                // Resumen reads the month: no Anotar here (owner, 2026-10-26).
+                entryDock = false,
                 notice = notice?.let { { CorrectionNoticeBar(it, corrections::undo) } }
             ) { padding ->
                 ResumenRoot(viewModels, {

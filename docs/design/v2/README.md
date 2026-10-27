@@ -35,7 +35,8 @@ synthetic.
 
 **Order, top to bottom:** month bar → answer slip → review invitation (early month
 only) → goal → categories. Anotar is a full-width button on a dock above the tabs; it is
-the same on every tab except Metas (see Metas).
+the same on every tab except Metas (see Metas) and Resumen, which has none: it reads the
+month (owner, 2026-10-26).
 
 **Answer slip**
 
