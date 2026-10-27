@@ -122,12 +122,14 @@ fun NoticeExample() {
             message = "No se pudo deshacer porque tus datos cambiaron. El gasto quedó borrado."
         )
         // What Sello recorded on its own: the repeat icon leads, and Ver opens the list.
+        // It goes by itself; here frozen with 60 % of its time left.
         SelloNotice(
             message = strings.getString(R.string.catalog_demo_sello_anoto_4_pagos_fijos),
             actionLabel = strings.getString(R.string.catalog_demo_ver),
             onAction = { seen++ },
             icon = SelloIcon.Autorenew,
-            modifier = Modifier.testTag("notice:recorded")
+            modifier = Modifier.testTag("notice:recorded"),
+            remaining = 0.6f
         )
         Result(strings.getString(R.string.catalog_demo_vistos, seen), "notice:seen")
     }
