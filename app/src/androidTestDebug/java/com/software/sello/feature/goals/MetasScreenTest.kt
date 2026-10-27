@@ -29,6 +29,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
+import com.software.sello.Window
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.designsystem.component.SelloDestination
 import com.software.sello.designsystem.component.SelloNavigation
@@ -58,6 +60,7 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.looks
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.navigation.MetasDestination
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
@@ -268,14 +271,6 @@ class MetasScreenTest {
         rule.onNodeWithTag(METAS_TOTAL_TAG).assertExists()
     }
 
-    private data class Look(
-        val ink: SelloInk,
-        val dark: Boolean,
-        val fontScale: Float,
-        val width: Int,
-        val height: Int
-    )
-
     @Test
     fun metasAndTheDetailKeepEveryFigureWholeInEveryThemeSizeAndWindow() {
         val render = GoalsRenderModel(money)
@@ -285,12 +280,17 @@ class MetasScreenTest {
             board.goals[1].history.goal.id.value,
             today
         )
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, 320, 640))
+        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
         var showDetail by mutableStateOf(false)
         rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, look.fontScale)) {
+            CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
-                    Box(Modifier.requiredSize(look.width.dp, look.height.dp).testTag("window")) {
+                    Box(
+                        Modifier.requiredSize(
+                            look.window.width.dp,
+                            look.window.height.dp
+                        ).testTag("window")
+                    ) {
                         if (showDetail) {
                             GoalDetailScreen(detail, {
                             }, dateLabels(), monthNames(), PaddingValues(16.dp))
@@ -301,16 +301,7 @@ class MetasScreenTest {
                 }
             }
         }
-        val looks = SelloInk.entries.flatMap { ink ->
-            listOf(false, true).flatMap { dark ->
-                listOf(1f, 1.3f, 2f).flatMap { scale ->
-                    listOf(320 to 640, 600 to 900, 840 to 600).map { (w, h) ->
-                        Look(ink, dark, scale, w, h)
-                    }
-                }
-            }
-        }
-        for (each in looks) {
+        for (each in looks(listOf(Window(320, 640), Window(600, 900), Window(840, 600)))) {
             look = each
             showDetail = false
             rule.waitForIdle()

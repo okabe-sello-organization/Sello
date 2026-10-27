@@ -19,10 +19,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
+import com.software.sello.Window
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.looks
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -113,28 +116,24 @@ class GoalMovementScreenTest {
         rule.onNodeWithTag(GOAL_MOVEMENT_KIND_TAG).assertDoesNotExist()
     }
 
-    private data class Look(val ink: SelloInk, val dark: Boolean, val scale: Float, val width: Int)
-
     @Test
     fun theActionStaysWholeInEveryThemeSizeAndWindow() {
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, 320))
+        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
-                    Box(Modifier.requiredSize(look.width.dp, 640.dp).testTag("window")) {
+                    Box(
+                        Modifier.requiredSize(
+                            look.window.width.dp,
+                            look.window.height.dp
+                        ).testTag("window")
+                    ) {
                         GoalMovementScreen(aporte) { actions += it }
                     }
                 }
             }
         }
-        val looks = SelloInk.entries.flatMap { ink ->
-            listOf(false, true).flatMap { dark ->
-                listOf(1f, 1.3f, 2f).flatMap { scale ->
-                    listOf(320, 600).map { width -> Look(ink, dark, scale, width) }
-                }
-            }
-        }
-        for (each in looks) {
+        for (each in looks(listOf(Window(320, 640), Window(600, 640)))) {
             look = each
             rule.waitForIdle()
             val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()
