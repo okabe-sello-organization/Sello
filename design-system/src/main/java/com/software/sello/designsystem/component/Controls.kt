@@ -303,17 +303,34 @@ fun GoalsBandTotal(
  * A secondary action on the band, as Metas' **+ Nueva meta**: a paper pill with a plus,
  * the same paper on band as [PastMonthRibbon]'s return, so it stands out without
  * competing with the dock. Its touch target is 48dp; the pill itself is 36dp.
+ *
+ * With [onPaper] the same pill sits on a slip, as Recibo's **+ Nueva categoría**: the
+ * soft brand fill instead of paper, which would not show on paper.
  */
 @Composable
-fun BandChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun BandChip(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onPaper: Boolean = false
+) {
     val colors = SelloTheme.colors
-    val content = if (colors.isDark) colors.ink else colors.band
+    val content = when {
+        onPaper -> colors.onBrandSoft
+        colors.isDark -> colors.ink
+        else -> colors.band
+    }
+    val fill = when {
+        onPaper -> colors.brandSoft
+        colors.isDark -> colors.paper
+        else -> Color.White
+    }
     Row(
         modifier
             .minimumInteractiveComponentSize()
             .heightIn(min = 36.dp)
             .clip(CircleShape)
-            .background(if (colors.isDark) colors.paper else Color.White)
+            .background(fill)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(start = 8.dp, end = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -325,7 +342,8 @@ fun BandChip(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) 
             color = content,
             fontWeight = FontWeight.W800,
             style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1
+            // On a narrow slip at large text the label wraps rather than being cut.
+            maxLines = if (onPaper) 2 else 1
         )
     }
 }

@@ -35,6 +35,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -55,6 +56,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
+import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCell
 import com.software.sello.designsystem.component.CategoryGrid
@@ -404,24 +406,34 @@ private fun CategoriesSlip(
 ) {
     // Only the answer slip above keeps the pinked edge; this card is plain paper.
     Slip(modifier.testTag(RECIBO_CATEGORIES_TAG), pinked = false) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        val title: @Composable (Modifier) -> Unit = { titleModifier ->
             Text(
                 text = stringResource(R.string.recibo_categories_title),
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier
-                    .weight(1f)
+                modifier = titleModifier
                     .semantics { heading() }
                     .testTag(RECIBO_CATEGORIES_HEADING_TAG)
             )
-            IconButton(
+        }
+        // "+ Nueva categoría", as Metas' "+ Nueva meta" on its band.
+        val add: @Composable () -> Unit = {
+            BandChip(
+                label = stringResource(R.string.recibo_new_category),
                 onClick = { onAction(ReciboAction.CreateCategory) },
+                onPaper = true,
                 modifier = Modifier.testTag(RECIBO_ADD_CATEGORY_TAG)
-            ) {
-                Icon(
-                    painter = SelloIcon.Add.painter(),
-                    contentDescription = stringResource(R.string.recibo_add_category),
-                    tint = SelloTheme.colors.ink
-                )
+            )
+        }
+        // At large text the pill goes under the title, so neither is squeezed.
+        if (LocalDensity.current.fontScale >= LARGE_HEADER_SCALE) {
+            Column {
+                title(Modifier)
+                add()
+            }
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                title(Modifier.weight(1f))
+                add()
             }
         }
         val editLabel = stringResource(R.string.recibo_category_edit)
@@ -537,6 +549,9 @@ internal fun stampInk(stamp: ReciboStamp): StampInk = when (stamp) {
 }
 
 fun reciboCategoryTag(id: String) = "recibo:category:$id"
+
+/** From this font scale the categories card stacks its title and its add pill. */
+private const val LARGE_HEADER_SCALE = 1.3f
 
 const val RECIBO_SUMMARY_TAG = "recibo:summary"
 const val RECIBO_SHORTFALL_TAG = "recibo:shortfall"
