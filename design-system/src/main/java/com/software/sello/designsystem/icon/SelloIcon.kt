@@ -33,6 +33,7 @@ enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: In
     Autorenew(R.drawable.ic_sello_autorenew),
     Backspace(R.drawable.ic_sello_backspace),
     Backup(R.drawable.ic_sello_backup),
+    Block(R.drawable.ic_sello_block),
     Bolt(R.drawable.ic_sello_bolt),
     Check(R.drawable.ic_sello_check),
     Checkroom(R.drawable.ic_sello_checkroom),

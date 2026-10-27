@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasTestTag
@@ -48,7 +49,12 @@ class BottomControlsTest {
     private var docked = 0
     private val selections = mutableListOf<String>()
 
-    private fun show(width: Int = 360, height: Int = 700, fontScale: Float = 1f) {
+    private fun show(
+        width: Int = 360,
+        height: Int = 700,
+        fontScale: Float = 1f,
+        dock: SelloDock = SelloDock("Anotar un gasto", "Anotar", { docked++ })
+    ) {
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, fontScale)) {
                 SelloTheme(reducedMotion = true) {
@@ -62,7 +68,7 @@ class BottomControlsTest {
                                 ),
                                 "recibo"
                             ) { selections += it },
-                            dock = SelloDock("Anotar un gasto", "Anotar", { docked++ }),
+                            dock = dock,
                             windowInsets = WindowInsets(0, 0, 0, 0)
                         ) { padding ->
                             Box(Modifier.fillMaxSize().padding(padding).testTag("content")) {
@@ -96,6 +102,43 @@ class BottomControlsTest {
     }
 
     @Test
+    fun aDockThatCannotBeUsedStaysInPlaceAndSaysWhyInsteadOfOpeningAnything() {
+        show(dock = archivedDock)
+
+        val dock = rule.onNodeWithContentDescription(ARCHIVED_DOCK_LABEL)
+            .assert(hasText("Archivada"))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assertIsNotEnabled()
+        dock.performClick()
+        assertEquals(0, docked)
+        // Still the full-width dock, never a small target.
+        val shown = dock.fetchSemanticsNode().boundsInRoot
+        val window = bounds("window")
+        assertTrue("$shown spans $window", shown.width >= window.width - 24f - 1f)
+        assertTrue("$shown is at least 48dp", shown.height >= 48f)
+    }
+
+    @Test
+    fun onARailTheDockThatCannotBeUsedIsADisabledButtonThatSaysWhy() {
+        show(width = 900, height = 400, dock = archivedDock)
+
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assertDoesNotExist()
+        rule.onNodeWithContentDescription(ARCHIVED_DOCK_LABEL)
+            .assertIsNotEnabled()
+            .performClick()
+        assertEquals(0, docked)
+    }
+
+    private val archivedDock
+        get() = SelloDock(
+            ARCHIVED_DOCK_LABEL,
+            "Archivada",
+            { docked++ },
+            icon = SelloIcon.Block,
+            enabled = false
+        )
+
+    @Test
     fun theSelectedTabIsMarkedAndTheOtherIsNotAndTheyOnlyReportPresses() {
         show()
 
@@ -127,3 +170,5 @@ class BottomControlsTest {
         )
     }
 }
+
+private const val ARCHIVED_DOCK_LABEL = "No se puede anotar: la categoría está archivada"

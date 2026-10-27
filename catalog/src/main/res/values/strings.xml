@@ -128,6 +128,8 @@
     <string name="catalog_demo_nota_comida" formatted="false">Nota · Comida</string>
     <string name="catalog_demo_maximo_60_caracteres_tu_texto_sigue_aqui" formatted="false">Máximo 60 caracteres. Tu texto sigue aquí.</string>
     <string name="catalog_demo_elige_una_meta" formatted="false">Elige una meta</string>
+    <string name="catalog_demo_archivada" formatted="false">Archivada</string>
+    <string name="catalog_demo_no_se_puede_anotar_archivada" formatted="false">No se puede anotar: la categoría está archivada</string>
     <string name="catalog_demo_aportar_a_una_meta" formatted="false">Aportar a una meta</string>
     <string name="catalog_demo_anotar_movimiento" formatted="false">Anotar movimiento</string>
     <string name="catalog_demo_crear_una_meta" formatted="false">Crear una meta</string>

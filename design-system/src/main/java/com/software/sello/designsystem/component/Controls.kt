@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
@@ -60,6 +61,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -71,6 +73,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
@@ -82,7 +85,11 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
-/** A full-width tab action. Its purpose, enabled state and busy state belong to the caller. */
+/**
+ * A full-width tab action. Its purpose, enabled state and busy state belong to the caller.
+ * A disabled dock is not faded: it is outlined in the soft ink at full strength, so its
+ * [label] stays readable as the reason it cannot be used.
+ */
 @Composable
 fun EntryDock(
     label: String,
@@ -93,6 +100,10 @@ fun EntryDock(
     enabled: Boolean = true,
     busy: Boolean = false
 ) {
+    if (!enabled && !busy) {
+        UnavailableDock(label, icon, modifier)
+        return
+    }
     SelloButton(
         label,
         onClick,
@@ -102,6 +113,34 @@ fun EntryDock(
         loading = busy,
         tone = tone
     )
+}
+
+@Composable
+private fun UnavailableDock(label: String, icon: SelloIcon, modifier: Modifier) {
+    val colors = SelloTheme.colors
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .background(colors.paper, SelloTheme.shapes.button)
+            .border(1.5.dp, colors.outline, SelloTheme.shapes.button)
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                disabled()
+            }
+            .padding(horizontal = 24.dp)
+    ) {
+        Icon(icon.painter(), contentDescription = null, Modifier.size(20.dp), colors.inkSoft)
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = colors.inkSoft,
+            textAlign = TextAlign.Center
+        )
+    }
 }
 
 @Composable

@@ -48,6 +48,7 @@ import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
+import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -196,12 +197,15 @@ private fun HeaderSlip(
         }
         val headline = detailHeadline(category.figure.headline)
         val stamp = stampText(category.figure.stamp)
+        // An archived category is stamped as such: that, not its verdict, is what it is now.
+        val archived = stringResource(R.string.recibo_category_archived)
+            .takeIf { category.archived }
         val spoken =
             stringResource(
                 R.string.recibo_summary_description,
                 headline,
                 category.figure.amount.spoken,
-                stamp
+                archived ?: stamp
             )
         Column(Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = spoken }) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,9 +215,13 @@ private fun HeaderSlip(
                     color = SelloTheme.colors.inkSoft,
                     modifier = Modifier.weight(1f)
                 )
-                if (category.limit !=
-                    null
-                ) {
+                if (archived != null) {
+                    Stamp(
+                        archived,
+                        StampInk.Neutral,
+                        Modifier.padding(vertical = 6.dp).testTag(CATEGORY_DETAIL_ARCHIVED_TAG)
+                    )
+                } else if (category.limit != null) {
                     Stamp(
                         stamp,
                         stampInk(category.figure.stamp),
@@ -290,12 +298,6 @@ private fun HeaderSlip(
                 }
                     ?: Text(stamp, color = SelloTheme.colors.inkSoft)
             }
-        }
-        if (category.archived) {
-            Text(
-                stringResource(R.string.recibo_category_archived),
-                color = SelloTheme.colors.inkSoft
-            )
         }
         if (figures?.allowance != null || figures?.comparison != null) {
             TearLine()
@@ -503,6 +505,7 @@ const val CATEGORY_DETAIL_FAILED_TAG = "detail:failed"
 const val CATEGORY_DETAIL_GONE_TAG = "detail:gone"
 const val CATEGORY_DETAIL_STALE_TAG = "detail:stale"
 const val CATEGORY_DETAIL_HEADER_TAG = "detail:header"
+const val CATEGORY_DETAIL_ARCHIVED_TAG = "detail:archived"
 const val CATEGORY_DETAIL_SPENT_TAG = "detail:spent"
 const val CATEGORY_DETAIL_LIMIT_TAG = "detail:limit"
 const val CATEGORY_DETAIL_LIST_TAG = "detail:list"
