@@ -19,8 +19,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
+import com.software.sello.Window
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.looks
 import com.software.sello.presentation.date.dateLabels
 import java.time.LocalDate
 import org.junit.Assert.assertTrue
@@ -48,39 +51,30 @@ class UsdRateScreensTest {
         today = today
     )
 
-    private data class Look(
-        val ink: SelloInk,
-        val dark: Boolean,
-        val scale: Float,
-        val w: Int,
-        val h: Int
-    )
-
     @Test
     fun theRateStaysWholeInEveryThemeSizeAndWindow() {
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, 320, 640))
+        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
-                    Box(Modifier.requiredSize(look.w.dp, look.h.dp).testTag("window")) {
+                    Box(
+                        Modifier.requiredSize(
+                            look.window.width.dp,
+                            look.window.height.dp
+                        ).testTag("window")
+                    ) {
                         UsdRateScreen(ready, {}, dateLabels(), PaddingValues(16.dp))
                     }
                 }
             }
         }
-        for (ink in SelloInk.entries) {
-            for (dark in listOf(false, true)) {
-                for (scale in listOf(1f, 1.3f, 2f)) {
-                    for ((w, h) in listOf(320 to 640, 840 to 600)) {
-                        look = Look(ink, dark, scale, w, h)
-                        rule.waitForIdle()
-                        val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()
-                        val rate = rule.onNodeWithText("100.000,00", useUnmergedTree = true)
-                            .getUnclippedBoundsInRoot()
-                        assertTrue("$look: $rate", rate.right <= window.right + 0.5.dp)
-                    }
-                }
-            }
+        for (each in looks(listOf(Window(320, 640), Window(840, 600)))) {
+            look = each
+            rule.waitForIdle()
+            val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()
+            val rate = rule.onNodeWithText("100.000,00", useUnmergedTree = true)
+                .getUnclippedBoundsInRoot()
+            assertTrue("$each: $rate", rate.right <= window.right + 0.5.dp)
         }
         rule.onNodeWithContentDescription(
             "1 dólar vale 100.000,00 pesos, tasa del 20 oct",

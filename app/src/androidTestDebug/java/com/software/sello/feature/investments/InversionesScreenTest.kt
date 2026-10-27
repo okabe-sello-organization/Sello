@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
+import com.software.sello.Window
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.designsystem.component.SelloDestination
 import com.software.sello.designsystem.component.SelloNavigation
@@ -64,6 +66,7 @@ import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.looks
 import com.software.sello.navigation.INVERSIONES_ADD_TAG
 import com.software.sello.navigation.InversionesDestination
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
@@ -401,39 +404,27 @@ class InversionesScreenTest {
         rule.onNodeWithTag("inversiones.bar").assertDoesNotExist()
     }
 
-    private data class Look(
-        val ink: SelloInk,
-        val dark: Boolean,
-        val fontScale: Float,
-        val width: Int,
-        val height: Int
-    )
-
     @Test
     fun everyFigureStaysWholeInEveryThemeSizeAndWindow() {
         val shown = InvestmentsRenderModel(
             money
         ).overview(InvestmentBoardState.Ready(largest()), today)
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, 320, 640))
+        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
         rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, look.fontScale)) {
+            CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
-                    Box(Modifier.requiredSize(look.width.dp, look.height.dp).testTag("window")) {
+                    Box(
+                        Modifier.requiredSize(
+                            look.window.width.dp,
+                            look.window.height.dp
+                        ).testTag("window")
+                    ) {
                         InversionesScreen(shown, {}, dateLabels(), PaddingValues(16.dp))
                     }
                 }
             }
         }
-        val looks = SelloInk.entries.flatMap { ink ->
-            listOf(false, true).flatMap { dark ->
-                listOf(1f, 1.3f, 2f).flatMap { scale ->
-                    listOf(320 to 640, 600 to 900, 840 to 600).map { (w, h) ->
-                        Look(ink, dark, scale, w, h)
-                    }
-                }
-            }
-        }
-        for (each in looks) {
+        for (each in looks(listOf(Window(320, 640), Window(600, 900), Window(840, 600)))) {
             look = each
             rule.waitForIdle()
             val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()
