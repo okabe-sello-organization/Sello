@@ -39,7 +39,8 @@ for report freshness, retention and completion evidence.
 [ADR 0009](0009-hosted-gate-scope.md), amended by
 [ADR 0014](0014-change-aware-quality-gates.md), owns gate selection: G0 for
 eligible documentation, G2 with explicit affected device scope for PR code,
-G1 for code pushes to main, and full G2 nightly/on request. Since 2026-10-24 (ADR
+G1 for code pushes to main, and full G3 nightly once main moved, or on request.
+Since 2026-10-24 (ADR
 0014, second amendment) the required local run is the host gate G1 (G3 whole for a
 release ticket); the hosted check runs a ticket's device suites on the merge result.
 `--gate G2` or `--affected BASE` runs them locally too. The retained report proves

@@ -41,11 +41,48 @@ class HostedWorkflowTests(unittest.TestCase):
         self.assertNotRegex(self.code, r'\bbranches-ignore:')
         self.assertRegex(self.code, r'(?m)^  pull_request:\s*$')
 
-    def test_the_merge_queue_runs_the_same_gate_from_the_group_base(self):
-        self.assertRegex(self.code, r'(?m)^  merge_group:\s*$')
-        self.assertIn('BASE: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha || '
-                      'github.event.before || github.sha }}', self.code)
-        self.assertNotIn('merge_group', self.jobs['device'].split('Save Android system image')[1])
+    def test_main_lands_straight_from_a_green_pull_request_without_a_merge_queue(self):
+        self.assertNotIn('merge_group', self.code)
+        self.assertIn('BASE: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}', self.code)
+
+    def test_a_nightly_skips_every_job_when_main_has_not_moved_since_the_last_successful_nightly(self):
+        plan = steps(self.jobs['plan'])
+        names = list(plan)
+        skip = plan['Skip a nightly when main has not moved']
+        self.assertEqual(0, names.index('Skip a nightly when main has not moved'))
+        self.assertIn("if: github.event_name == 'schedule'", skip)
+        self.assertIn('id: nightly', skip)
+        self.assertIn('GH_TOKEN: ${{ github.token }}', skip)
+        self.assertIn('actions/workflows/quality.yml/runs?branch=main&event=schedule&status=success&per_page=1', skip)
+        self.assertIn('unchanged: ${{ steps.nightly.outputs.unchanged }}', self.jobs['plan'])
+        for name in ('actions/checkout', 'Decide what this run verifies'):
+            self.assertIn("if: steps.nightly.outputs.unchanged != 'true'", plan[name])
+        self.assertRegex(self.jobs['host'], r"(?m)^    if: needs\.plan\.outputs\.unchanged != 'true'$")
+        self.assertRegex(self.jobs['quality'], r"(?m)^    if: always\(\) && needs\.plan\.outputs\.unchanged != 'true'$")
+
+        script = textwrap.dedent(skip.split('run: |\n', 1)[1])
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory) / 'bin'
+            fake.mkdir()
+            (fake / 'gh').write_text('#!/bin/sh\ncat "$FAKE_GH_RESPONSE"\n', encoding='utf-8')
+            (fake / 'gh').chmod(0o755)
+            response = Path(directory) / 'response.json'
+            output = Path(directory) / 'output'
+            summary = Path(directory) / 'summary'
+
+            def decide(verified_sha, current_sha):
+                response.write_text(verified_sha + '\n', encoding='utf-8')
+                output.write_text('', encoding='utf-8')
+                summary.write_text('', encoding='utf-8')
+                environment = dict(os.environ, PATH=f"{fake}{os.pathsep}{os.environ['PATH']}", FAKE_GH_RESPONSE=str(response),
+                                   GITHUB_SHA=current_sha, GITHUB_REPOSITORY='okabe-sello-organization/Sello',
+                                   GITHUB_OUTPUT=str(output), GITHUB_STEP_SUMMARY=str(summary))
+                subprocess.run(['bash', '-eu', '-o', 'pipefail', '-c', script], env=environment, check=True, capture_output=True)
+                return output.read_text(encoding='utf-8').strip()
+
+            self.assertEqual('unchanged=true', decide('a' * 40, 'a' * 40))
+            self.assertEqual('unchanged=false', decide('a' * 40, 'b' * 40))
+            self.assertEqual('unchanged=false', decide('', 'b' * 40))
 
     def test_exactly_one_stable_quality_result_collects_every_job(self):
         self.assertEqual({'plan', 'host', 'device', 'quality'}, set(self.jobs))
@@ -77,7 +114,7 @@ class HostedWorkflowTests(unittest.TestCase):
     def test_every_event_runs_the_host_part_independently(self):
         host = self.jobs['host']
         self.assertIn('needs: plan', host)
-        self.assertNotRegex(host, r'(?m)^    if:')
+        self.assertEqual(["if: needs.plan.outputs.unchanged != 'true'"], re.findall(r'(?m)^    (if: .+)$', host))
         self.assertNotIn('needs: device', host)
         self.assertIn('--ci-part host --ci-event "$EVENT"', self.host['Verify host part'])
         self.assertNotIn('--gate', self.host['Verify host part'])
@@ -129,8 +166,9 @@ class HostedWorkflowTests(unittest.TestCase):
         names = list(self.collector)
         self.assertLess(names.index('Collect full gate evidence'), names.index('Validate completion evidence'))
 
-    def test_main_still_gets_the_device_gate_on_a_schedule(self):
+    def test_main_still_gets_the_whole_gate_on_a_schedule(self):
         self.assertRegex(self.code, r'schedule:\n    - cron: "\d+ \d+ \* \* \*"')
+        self.assertIn("if: needs.plan.outputs.gate == 'G2' || needs.plan.outputs.gate == 'G3'", self.jobs['device'])
 
     def test_gradle_cache_setup_is_pinned_read_only_for_prs_and_precedes_execution(self):
         for group, execute in ((self.host, 'Verify host part'), (self.device, 'Verify device part on API 30')):
@@ -207,6 +245,11 @@ class HostedWorkflowTests(unittest.TestCase):
         permissions = self.code.split('permissions:\n', 1)[1].split('\n\n', 1)[0]
         self.assertEqual('  contents: read', permissions)
         self.assertNotIn('pull_request_target:', self.code)
+        # Only the planning job may read past workflow runs, to skip an unchanged nightly.
+        self.assertIn('    permissions:\n      contents: read\n      actions: read\n', self.jobs['plan'])
+        for name in ('host', 'device', 'quality'):
+            self.assertNotIn('permissions:', self.jobs[name])
+        self.assertEqual(1, self.code.count('actions: read'))
 
 
 if __name__ == '__main__':

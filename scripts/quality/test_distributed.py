@@ -92,12 +92,12 @@ class DistributedGateTests(unittest.TestCase):
         self.assertEqual('G0',report['gate']['executed'])
         self.assertNotIn('gradle-host',self.harness.executed)
 
-    def test_complete_parts_produce_standard_g2_evidence_with_every_module(self):
+    def test_complete_parts_produce_standard_full_evidence_with_every_module(self):
         self.all_parts()
         code, report = self.collect(jobs={'plan': 'success', 'host': 'success', 'device': 'success'})
         self.assertEqual(0, code, self.stream.getvalue())
         self.assertEqual('passed', report['outcome'])
-        self.assertEqual('G2', report['gate']['executed'])
+        self.assertEqual('G3', report['gate']['executed'])
         self.assertIsNone(evidence.schema_problem(report, evidence.SCHEMA))
         self.assertEqual(['host', 'app', 'support'], [p['part'] for p in report['execution']['parts']])
         self.assertEqual({'data', 'design-system', 'app', 'catalog'}, {
@@ -240,16 +240,10 @@ class DistributedGateTests(unittest.TestCase):
         self.parts = flattened
         self.assertNotEqual(0, self.collect()[0])
 
-    def test_a_merge_group_is_verified_like_a_pull_request(self):
-        write(self.root, 'app/src/Main.kt', 'fun main() = println(1)\n')
-        plan = distributed.context(self.root, self.base, 'merge_group')
-        self.assertEqual(('G2', 'affected', ['app'], ['app']),
-                         (plan['gate'], plan['coverage']['mode'], plan['coverage']['device_modules'], plan['groups']))
-        self.assertEqual(0, self.part('host', event='merge_group')[0])
-        self.assertEqual(0, self.part('app', event='merge_group')[0])
-        code, report = self.collect(event='merge_group', jobs={'plan': 'success', 'host': 'success', 'device': 'success'})
-        self.assertEqual(0, code, self.stream.getvalue())
-        self.assertEqual('merge_group', report['execution']['context']['event'])
+    def test_an_event_the_workflow_never_sends_is_refused(self):
+        self.assertEqual(2, self.part('host', event='merge_group')[0])
+        self.assertIn("Unknown CI event 'merge_group'", self.stream.getvalue())
+        self.assertEqual([], self.harness.executed)
 
     def test_push_keeps_the_host_gate_even_for_a_code_change(self):
         write(self.root, 'app/src/Main.kt', 'fun main() = println(1)\n')
@@ -291,7 +285,7 @@ class DistributedGateTests(unittest.TestCase):
         self.assertEqual(['SELLO-004', 'SELLO-005'], [report['ticket'] for report in reports])
         self.assertEqual(1, self.harness.executed.count('gradle-host'))
         for report in reports:
-            self.assertEqual('G2', report['gate']['executed'])
+            self.assertEqual('G3', report['gate']['executed'])
             self.assertEqual(fingerprint.ticket_acceptance(self.root, report['ticket']), report['snapshot']['acceptance'])
 
     def release_ticket(self):
@@ -313,6 +307,19 @@ class DistributedGateTests(unittest.TestCase):
         code, report = self.collect(event='pull_request', jobs={'plan': 'success', 'host': 'success', 'device': 'success'})
         self.assertEqual(0, code, self.stream.getvalue())
         self.assertEqual({'required': 'G3', 'executed': 'G3'}, report['gate'])
+
+    def test_a_nightly_or_manual_run_verifies_the_whole_of_main_at_g3(self):
+        for event in ('schedule', 'workflow_dispatch'):
+            with self.subTest(event=event):
+                plan = distributed.context(self.root, self.base, event)
+                self.assertEqual(('G3', 'full', ['data', 'design-system', 'app', 'catalog'], ['app', 'support']),
+                                 (plan['gate'], plan['coverage']['mode'], plan['coverage']['device_modules'], plan['groups']))
+                self.assertEqual({runner.UNTICKETED: 'G1'}, plan['tickets'])
+                host = [check.name for check in distributed.checks_for('host', plan)]
+                self.assertEqual(['release-licenses', 'release-ephemeral'], host[-2:])
+                self.assertNotIn('release-production', host)
+        self.assertEqual(0, self.part('host', event='schedule')[0], self.stream.getvalue())
+        self.assertEqual(['release-licenses', 'release-ephemeral'], self.harness.executed[-2:])
 
     def test_a_release_gate_needs_its_device_jobs_on_ci(self):
         self.assertEqual(['device job was skipped, expected success'],

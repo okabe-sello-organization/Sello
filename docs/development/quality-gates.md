@@ -18,17 +18,17 @@ SELLO-004 on follows this flow; unticketed work still runs the gates.
    `ticket.md`, executes the local requirement and writes `quality-report.json`
    into the ticket folder. The local requirement is the host gate G1 for G1 and G2
    tickets, and G3 whole for a release ticket; a G2 ticket's device suites run
-   hosted, on the real merge result (step 5). `--gate G2` runs every device suite
+   hosted, on the pull request (step 5). `--gate G2` runs every device suite
    locally too; `--affected BASE` runs the dependency-aware subset. Nothing can be
    skipped or downgraded below the local requirement.
 4. Paste the printed `Quality run` line into `evidence.md`, write the other fields
    and `handoff.md`, set the status, run `python3 scripts/quality/tickets.py check`.
 5. Open the final pull request with the ticket already Done. Partial PRs keep it In
    Progress and describe the remaining work. The hosted `quality` check runs the
-   ticket's gate, G2 with dependency-aware device scope, on the pull request and
-   again in the merge queue on the real merge result. A red run there is the
-   ticket's own failure: fix it on the branch, run `--retain` again, update the
-   field, and ask for the merge again.
+   ticket's gate, G2 with dependency-aware device scope, on the pull request; it is
+   the only run before the merge. A red run there is the ticket's own failure: fix
+   it on the branch, run `--retain` again, update the field, and ask for the merge
+   again.
 
 ## Done is proposed, merging approves
 
@@ -42,20 +42,22 @@ reaches `main` without their go-ahead and passing required checks.
   happened.
 - **The retained report proves the host gate; the hosted check proves the device
   suites.** `quality-report.json` binds the ticket's change set and records the G1
-  run (G3 for a release). The `quality` check on the pull request and on the merge
-  commit is the record of the device suites, and it is what blocks the merge.
+  run (G3 for a release). The `quality` check on the pull request is the record of
+  the device suites, and it is what blocks the merge.
 - **The last ticket of an epic carries the epic too**, in the same commit.
 - **On the branch, Done means "proposed".** Do not start work that depends on the
   ticket from an unmerged branch.
 - **Changes requested** go to the same PR. If they change the ticket's own change
   set, run the gate again and update `Quality run`; the check rejects a stale report.
 - **`main` moving after the run costs nothing.** The report is bound to the PR's
-  own change set, and the merge queue builds the real merge result and runs the gate
-  on it (`merge_group`) right before merging; branches need not be up to date. Only
-  a conflict GitHub reports needs a manual merge and `--affected origin/main --retain`.
+  own change set, and a green PR merges as it is; branches need not be up to date.
+  What lands on `main` is then verified by the push run (host gate) and by the
+  nightly (G3) once `main` moved. Only a conflict GitHub reports needs a manual
+  merge and `--affected origin/main --retain`.
 - **Not approved or abandoned:** close the PR; `main` still shows the ticket as it was.
 - After merging, the executor may start the next ticket while the hosted run on
-  `main` finishes, and must fix a failure there before anything else merges.
+  `main` finishes, and must fix a failure there, on the push run or on the nightly,
+  before anything else merges.
 
 ## Runner and evidence contract
 
@@ -116,9 +118,10 @@ Standing rules for the runner, validator and CI; a change to the tooling must ke
   PRs get G2 with dependency-aware device scope; shared/unknown changes get full
   devices. This hosted G2 is where a ticket's device suites execute; the local
   requirement is G1 (ADR 0014, amendment of 2026-10-24). Code pushes to main keep
-  G1 for trusted cache publication; documentation pushes get G0. Nightly and manual runs execute full G2. Merge queue entries
-  (`merge_group`) are planned like pull requests from the group's base. There is no
-  path filter; the check always reports.
+  G1 for trusted cache publication; documentation pushes get G0. The nightly
+  verifies `main` at full G3 with CI's throwaway signing, and only when `main` moved
+  since the last successful nightly; a manual run does the same on its ref. There is
+  no path filter; the check always reports.
 
 These tools prove that checks ran on a known snapshot. They do not judge whether
 acceptance is met; the designated review does. A committed report can be hand-edited,
@@ -183,7 +186,8 @@ Recovering from failures:
 | --- | --- |
 | `REFUSED: Unknown ticket` / `prerequisite ... is not Done` | Nothing ran. Fix the ID or finish the prerequisite; do not verify out of order. |
 | `REFUSED: ... would be a downgrade` | The local requirement (G1, or G3 for a release ticket) is the minimum. Remove `--gate` or pass a higher one. |
-| Red `quality` check on the PR or in the merge queue | The device suites or the merge result failed where the local run did not look. Read the Actions log, fix on the branch, run `--retain` again, update `Quality run`, and ask for the merge again; the queue drops a red entry. To reproduce locally, boot the emulator and run `--affected origin/main`. |
+| Red `quality` check on the PR | The device suites failed where the local run did not look. Read the Actions log, fix on the branch, run `--retain` again, update `Quality run`, and ask for the merge again. To reproduce locally, boot the emulator and run `--affected origin/main`. |
+| Red push run or red nightly on `main` | What landed fails on its own or in combination. Nothing else merges until it is fixed: reproduce with `--merge-candidate origin/main` (add `--gate G2` on the emulator for a device failure), fix on a branch, merge, and rerun the workflow by hand from the Actions tab if the next night is too far. |
 | `REFUSED: No working java` / `Android SDK not found` | Export the setup environment in this shell. |
 | `REFUSED: ... no connected device` | Boot the isolated emulator from setup; test-APK assembly is not a substitute. |
 | `release-production` failed: no signed release APK | G3 needs the owner's `sello.signing.*` entries; see [release](../release/README.md). |
