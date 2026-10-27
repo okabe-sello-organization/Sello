@@ -1050,6 +1050,7 @@
     <!-- Recibo's goal (SELLO-093) -->
     <string name="recibo_goal_open">%1$s, %2$s por ciento. Ver meta</string>
     <string name="recibo_goal_contribute">Aportar a %s</string>
+    <string name="recibo_goal_mark_complete">Marcar %s como lograda</string>
     <string name="recibo_goal_reached" formatted="false">Llegó al 100 %</string>
     <string name="goal_done_ask_title">¿Ya la lograste?</string>
     <string name="goal_done_ask_body">Si llegaste a tu meta por fuera de Sello, márcala como lograda.</string>
@@ -1097,13 +1098,13 @@
     <string name="catch_up_failed">Lo anotado sigue guardado en tu mes. Vuelve a intentarlo.</string>
     <string name="schedules_payments">Pagos</string>
     <string name="schedules_incomes">Ingresos</string>
-    <string name="schedules_add_payment">Agregar pago fijo</string>
-    <string name="schedules_add_income">Agregar ingreso fijo</string>
+    <string name="schedules_new_payment">Nuevo pago fijo</string>
+    <string name="schedules_new_income">Nuevo ingreso fijo</string>
+    <string name="schedules_none_payments">Aún no tienes pagos fijos</string>
+    <string name="schedules_none_incomes">Aún no tienes ingresos fijos</string>
     <string name="schedules_failed_title">No pudimos leer tus pagos fijos</string>
     <string name="schedules_failed">Siguen guardados y Sello no anotó nada de más. Vuelve a intentarlo.</string>
-    <string name="schedules_empty_title">Nada se repite todavía</string>
-    <string name="schedules_empty_body">Cuando anotes el arriendo o el salario, toca Repetir y Sello lo anotará solo en su fecha.</string>
-    <string name="schedules_footnote">Se anotan solos, cada uno en su fecha, cuando abres Sello. Para agregar uno, toca Repetir al anotar.</string>
+    <string name="schedules_footnote">Se anotan solos, cada uno en su fecha, cuando abres Sello.</string>
     <string name="schedules_summary_payments">Tus pagos fijos de %1$s</string>
     <string name="schedules_summary_incomes">Tus ingresos fijos de %1$s</string>
     <string name="schedules_summary_recorded_payments">Ya se anotaron</string>
@@ -1280,7 +1281,7 @@
     <string name="investment_failed_title">No pudimos leer esta inversión</string>
     <string name="investment_stale">No pudimos leer esta inversión de nuevo. Te mostramos la de la última lectura.</string>
     <string name="investment_edit">Editar inversión</string>
-    <string name="inversiones_add">Agregar inversión</string>
+    <string name="inversiones_new">Nueva inversión</string>
     <string name="inversiones_dock_move">Anotar movimiento</string>
     <string name="inversiones_dock_add">Agregar inversión</string>
     <string name="tab_inversiones">Inversiones</string>

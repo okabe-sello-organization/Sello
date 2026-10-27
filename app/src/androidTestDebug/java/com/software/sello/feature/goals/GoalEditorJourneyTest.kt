@@ -173,8 +173,8 @@ class GoalEditorJourneyTest {
     fun aDraftSurvivesRecreationAndLeavingAsksBeforeDiscardingIt() {
         val viaje = TestCommands.createGoal("Viaje a la costa", 3_000_000)
         openMetas()
-        // With goals, Nueva meta on the band creates the next one.
-        rule.awaitTag("metas.band")
+        // With goals, Nueva meta beside the title creates the next one.
+        rule.awaitTag(METAS_TOTAL_TAG)
         rule.onNodeWithTag(METAS_CREATE_TAG).assert(hasText("Nueva meta")).performClick()
         rule.awaitTag(GOAL_EDITOR_TAG)
         name("Casa")

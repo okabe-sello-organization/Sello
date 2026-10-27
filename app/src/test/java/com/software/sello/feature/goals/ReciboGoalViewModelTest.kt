@@ -280,4 +280,36 @@ class ReciboGoalViewModelTest {
         model.onAction(ReciboGoalAction.CelebrationDone)
         assertEquals(CompletionState.Idle, shown(model).completion)
     }
+
+    @Test
+    fun theShownGoalAt100PercentOrMoreWaitsToBeMarkedInsteadOfAskingForMore() = runTest {
+        // 3.360.000 saved of 3.000.000: 112 %, still active.
+        val over = goal(viaje, "Viaje a la costa", 3_360_000, 3_000_000)
+        reads.board.value = GoalBoardState.Ready(board(over, b, featured = viaje))
+        val model = model()
+        watch(model)
+
+        assertEquals(
+            ReciboGoalPill(viaje, "Viaje a la costa", "flight", 112, reached = true),
+            shown(model).pill
+        )
+
+        // Under 100 % it still asks for more.
+        reads.board.value = GoalBoardState.Ready(board(a, b, featured = viaje))
+        assertEquals(false, shown(model).pill?.reached)
+    }
+
+    @Test
+    fun theShownWaitingGoalIsMarkedLogradaFromThePill() = runTest {
+        val over = goal(viaje, "Viaje a la costa", 3_360_000, 3_000_000)
+        reads.board.value = GoalBoardState.Ready(board(over, b, featured = viaje))
+        val model = model()
+        watch(model)
+
+        model.onAction(ReciboGoalAction.MarkComplete(viaje))
+        model.onAction(ReciboGoalAction.MarkComplete(viaje))
+
+        val sent = commands.sent.single() as CompleteGoal
+        assertEquals(GoalId.of(viaje).value() to 4L, sent.goalId to sent.expectedVersion)
+    }
 }

@@ -12,3 +12,7 @@ redesign mockup (kept in SELLO-122's `artifacts/`), which replaces the list part
 - The empty screen has no "Anotar algo que se repite" button. The + in the top bar stays.
 - No stamp on the summary, also not when every income arrived.
 - The title has no month: the screen is always about the current month.
+
+**Owner direction (2026-10-26, later):** the + in the top bar was too hidden. From six
+concepts the owner chose the tear-off stub on the month's receipt, with its empty state
+("El talón del recibo", in SELLO-125's `artifacts/`); SELLO-125 builds it.

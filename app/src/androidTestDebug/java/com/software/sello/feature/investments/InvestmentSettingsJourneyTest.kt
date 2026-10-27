@@ -1,8 +1,10 @@
 package com.software.sello.feature.investments
 
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -17,6 +19,7 @@ import com.software.sello.TestCommands
 import com.software.sello.TestData
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
+import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.port.InvestmentPreferences
@@ -27,7 +30,6 @@ import com.software.sello.feature.settings.SETTINGS_INVESTMENT_ORDER_ROW_TAG
 import com.software.sello.feature.settings.SETTINGS_INVESTMENT_ORDER_TAG
 import com.software.sello.feature.settings.SETTINGS_TAG
 import com.software.sello.hideKeyboard
-import com.software.sello.navigation.INVERSIONES_ADD_TAG
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -79,8 +81,13 @@ class InvestmentSettingsJourneyTest {
         rule.awaitTag(INVERSIONES_LIST_TAG)
     }
 
-    /** In Configuración, opens the slip behind [row] and chooses [option] in [slip]. */
+    /**
+     * In Configuración, opened from Recibo (the only tab with the gear), opens the slip
+     * behind [row] and chooses [option] in [slip], then comes back to Inversiones.
+     */
     private fun choose(row: String, slip: String, option: String) {
+        rule.onNode(hasText("Recibo") and hasClickAction()).performClick()
+        rule.awaitTag(SETTINGS_ACTION_TAG)
         rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
         rule.awaitTag(SETTINGS_TAG)
         rule.onNodeWithTag(row).performScrollTo().performClick()
@@ -93,6 +100,7 @@ class InvestmentSettingsJourneyTest {
         rule.onNode(hasText(option) and hasAnyAncestor(hasTestTag(slip))).assertIsSelected()
         Espresso.pressBack()
         Espresso.pressBack()
+        rule.onNode(hasText("Inversiones") and hasClickAction()).performClick()
         rule.awaitTag(INVERSIONES_LIST_TAG)
     }
 
@@ -129,7 +137,8 @@ class InvestmentSettingsJourneyTest {
             "Dólares (USD)"
         )
 
-        rule.onNodeWithTag(INVERSIONES_ADD_TAG).performClick()
+        // With no investments yet, the dock adds the first.
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Agregar inversión")).performClick()
         rule.awaitTag(INVESTMENT_EDITOR_TAG)
 
         rule.onNode(

@@ -2,6 +2,7 @@ package com.software.sello.feature.recurrence
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
@@ -50,6 +51,7 @@ class ScheduleScreensTest {
     private val today = LocalDate.of(2026, 10, 22)
     private val opened = mutableListOf<String>()
     private val listActions = mutableListOf<SchedulesAction>()
+    private val added = mutableListOf<ScheduleTab>()
     private val editorActions = mutableListOf<ScheduleEditorAction>()
 
     private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
@@ -122,7 +124,8 @@ class ScheduleScreensTest {
                         today,
                         { listActions += it },
                         { opened += it },
-                        PaddingValues(12.dp)
+                        PaddingValues(12.dp),
+                        { added += it }
                     )
                 }
             }
@@ -166,27 +169,112 @@ class ScheduleScreensTest {
         assertEquals(listOf("b"), opened)
     }
 
-    @Test
-    fun nothingRepeatingSaysHowToAddOneWithoutAnAnotarButton() {
-        list(SchedulesState.Ready(ScheduleTab.Incomes, null, emptyList(), emptyList()))
-        rule.onNodeWithText("Nada se repite todavía").assertIsDisplayed()
-        rule.onNodeWithText(
-            "Cuando anotes el arriendo o el salario, toca Repetir y Sello lo anotará solo en su " +
-                "fecha."
-        ).assertIsDisplayed()
+    // --- SELLO-125: the receipt's stub ---
 
-        // The owner asked for no Anotar button here (SELLO-122); the top bar's + adds one.
-        rule.onNodeWithText("Anotar algo que se repite").assertDoesNotExist()
-        rule.onAllNodes(hasClickAction() and hasAnyAncestor(hasTestTag("schedules.empty")))
-            .assertCountEquals(0)
+    private fun stub() =
+        rule.onNode(hasTestTag("schedules.add") and hasAnyAncestor(hasTestTag("schedules.plan")))
+
+    @Test
+    fun theReceiptEndsInAStubThatAddsOneForTheTabShown() {
+        list(ready)
+
+        stub().performScrollTo().assertContentDescriptionEquals("Nuevo pago fijo")
+            .performClick()
+        // Below the receipt's figures, above the list.
+        val receipt = rule.onNodeWithText("1.249.900").getUnclippedBoundsInRoot()
+        val add = rule.onNodeWithTag("schedules.add").getUnclippedBoundsInRoot()
+        val list = rule.onNodeWithTag("schedules.list").getUnclippedBoundsInRoot()
+        assertEquals(true, add.top > receipt.bottom && add.bottom <= list.top)
+        assertEquals(listOf(ScheduleTab.Payments), added)
+        // The footnote no longer tells how to add one: the stub does.
+        rule.onNodeWithText("Para agregar uno", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun onIngresosTheStubAddsAnIncome() {
+        list(ready.copy(tab = ScheduleTab.Incomes))
+
+        stub().performScrollTo().assertContentDescriptionEquals("Nuevo ingreso fijo")
+            .performClick()
+
+        assertEquals(listOf(ScheduleTab.Incomes), added)
+    }
+
+    @Test
+    fun nothingRepeatingShowsTheMonthAtZeroAndTheStub() {
+        val zero = ScheduleMonthPlan(
+            YearMonth.of(2026, 10),
+            pesos("0"),
+            0,
+            pesos("0"),
+            0,
+            pesos("0"),
+            0
+        )
+        list(SchedulesState.Ready(ScheduleTab.Payments, zero, emptyList(), emptyList()))
+
+        rule.onNodeWithText("Tus pagos fijos de octubre").assertIsDisplayed()
+        rule.onNodeWithText("Aún no tienes pagos fijos").assertIsDisplayed()
+        rule.onNodeWithTag("schedules.empty").assertExists()
+        // No extra line: the same stub as on a list (owner, 2026-10-26).
+        stub().assertContentDescriptionEquals("Nuevo pago fijo").performClick()
+        assertEquals(listOf(ScheduleTab.Payments), added)
+    }
+
+    @Test
+    fun anEmptyTabWithoutAPlanStillNamesTheMonthAndOffersTheStub() {
+        list(SchedulesState.Ready(ScheduleTab.Incomes, null, emptyList(), emptyList()))
+
+        rule.onNodeWithText("Tus ingresos fijos de octubre").assertIsDisplayed()
+        rule.onNodeWithText("Aún no tienes ingresos fijos").assertIsDisplayed()
+        stub().assertContentDescriptionEquals("Nuevo ingreso fijo")
+        // No invented figure when there is no plan to show.
+        rule.onNodeWithText("0").assertDoesNotExist()
+    }
+
+    @Test
+    fun theStubIsTheSameCompactSizeOnBothTabsEmptyOrNot() {
+        val zero = ScheduleMonthPlan(
+            YearMonth.of(2026, 10),
+            pesos("0"),
+            0,
+            pesos("0"),
+            0,
+            pesos("0"),
+            0
+        )
+        val shown = mutableStateOf<SchedulesState>(
+            SchedulesState.Ready(ScheduleTab.Payments, zero, emptyList(), emptyList())
+        )
+        rule.setContent {
+            SelloTheme(reducedMotion = true) {
+                SchedulesScreen(shown.value, today, {}, {}, PaddingValues(12.dp), {})
+            }
+        }
+        fun height() = stub().getUnclippedBoundsInRoot().let { it.bottom - it.top }
+        val empty = height()
+        rule.runOnIdle { shown.value = ready.copy(tab = ScheduleTab.Incomes) }
+        val heights = listOf(empty, height())
+        // Half the space around the words, never below a 48dp target (SELLO-125).
+        heights.forEach { assertEquals(48f, it.value, 0.5f) }
+    }
+
+    @Test
+    fun whenTheMonthsSumIsHiddenTheStubStillShows() {
+        list(ready.copy(plan = null))
+
+        rule.onNodeWithText("1.249.900").assertDoesNotExist()
+        stub().performScrollTo().assertIsDisplayed().performClick()
+        assertEquals(listOf(ScheduleTab.Payments), added)
     }
 
     @Test
     fun aFailedReadSaysSoAndCanBeReadAgain() {
         list(SchedulesState.Failed)
+        rule.onNodeWithTag("schedules.add").assertDoesNotExist()
 
         rule.onNodeWithText("No pudimos leer tus pagos fijos").assertIsDisplayed()
-        rule.onNodeWithText("Nada se repite todavía").assertDoesNotExist()
+        rule.onNodeWithText("Aún no tienes pagos fijos").assertDoesNotExist()
         rule.onNodeWithText("Reintentar").performClick()
 
         assertEquals(listOf<SchedulesAction>(SchedulesAction.Retry), listActions)
@@ -195,6 +283,8 @@ class ScheduleScreensTest {
     @Test
     fun atTwiceTheFontSizeEveryRowCanBeReached() {
         list(ready, fontScale = 2f)
+
+        stub().performScrollTo().assertIsDisplayed()
 
         rule.onNodeWithTag(SCHEDULES_TAG).performScrollToNode(hasTestTag("schedules.row.c"))
         rule.onNodeWithTag("schedules.row.c").assertIsDisplayed()

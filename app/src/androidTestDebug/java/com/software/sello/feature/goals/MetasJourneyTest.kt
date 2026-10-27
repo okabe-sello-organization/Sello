@@ -70,7 +70,7 @@ class MetasJourneyTest {
         rule.onNodeWithContentDescription("Anotar un gasto").assertDoesNotExist()
         // With nothing to contribute to yet, the dock creates a goal (SELLO-090).
         rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Crear una meta"))
-        rule.onNodeWithTag("metas.band").assertDoesNotExist()
+        rule.onNodeWithTag(METAS_TOTAL_TAG).assertDoesNotExist()
 
         Espresso.pressBack()
         rule.await(hasText("Recibo"))

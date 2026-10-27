@@ -386,7 +386,7 @@
     <string name="catalog_demo_sello_anoto_4_pagos_fijos">Sello anotó 4 pagos fijos</string>
     <string name="catalog_demo_ver">Ver</string>
     <string name="catalog_demo_vistos">Vistos: %1$d</string>
-    <string name="catalog_example_goals_band">Goals band total</string>
+    <string name="catalog_example_goals_band">Metas header: title chip and total</string>
     <string name="catalog_demo_guardado_en_metas">Guardado en metas</string>
     <string name="catalog_demo_mas_2_010_000_en_octubre">2.010.000 en octubre</string>
     <string name="catalog_demo_sin_aportes_este_mes">Un mes sin aportes: solo el total, sin segunda línea.</string>

@@ -22,6 +22,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.software.sello.catalog.R
 import com.software.sello.designsystem.component.AmountKeypad
+import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
@@ -35,7 +36,6 @@ import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.GoalCard
 import com.software.sello.designsystem.component.GoalPill
 import com.software.sello.designsystem.component.GoalPinPill
-import com.software.sello.designsystem.component.GoalsBandTotal
 import com.software.sello.designsystem.component.IconChoice
 import com.software.sello.designsystem.component.IconPickerCircle
 import com.software.sello.designsystem.component.InvestmentRow
@@ -54,6 +54,8 @@ import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
+import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.TitleBar
 import com.software.sello.designsystem.component.investmentShade
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
@@ -189,7 +191,11 @@ fun GoalPillExample() {
                 result =
                     strings.getString(R.string.catalog_demo_abrir_meta)
             },
-            { result = "Aportar" }
+            { result = "Aportar" },
+            // At 100 % it waits to be marked lograda: green, and a ✓ instead of +.
+            reached = true,
+            completeLabel = strings.getString(R.string.catalog_demo_marcar_como_lograda),
+            onComplete = { result = strings.getString(R.string.catalog_demo_marcar_como_lograda) }
         )
         ReachedRow(
             strings.getString(
@@ -620,26 +626,29 @@ fun GoalFormExample() {
 @Composable
 fun GoalsBandExample() {
     val strings = LocalResources.current
-    // The frame's ribbon gives the band its side margins; this strip stands in for it.
-    val ribbon = Modifier.fillMaxWidth().background(SelloTheme.colors.band)
-        .padding(horizontal = 16.dp, vertical = 8.dp)
     ExampleStack {
-        Column(ribbon) {
-            GoalsBandTotal(
-                strings.getString(R.string.catalog_demo_guardado_en_metas),
-                copFixture(2_760_000),
+        // Metas' header: + Nueva meta beside the title, then the total as the hero card.
+        TitleBar("Metas", chip = { compact ->
+            BandChip(strings.getString(R.string.catalog_demo_nueva_meta), {}, compact = compact)
+        })
+        AnswerSlip(
+            strings.getString(R.string.catalog_demo_guardado_en_metas),
+            copFixture(2_760_000),
+            stamp = null,
+            ink = StampInk.Good
+        ) {
+            Text(
                 strings.getString(R.string.catalog_demo_mas_2_010_000_en_octubre),
-                action = { BandChip(strings.getString(R.string.catalog_demo_nueva_meta), {}) }
+                color = SelloTheme.colors.semantic.gain
             )
         }
         ExampleCaption(strings.getString(R.string.catalog_demo_sin_aportes_este_mes))
-        Column(ribbon) {
-            GoalsBandTotal(
-                strings.getString(R.string.catalog_demo_guardado_en_metas),
-                copFixture(2_760_000),
-                null
-            )
-        }
+        AnswerSlip(
+            strings.getString(R.string.catalog_demo_guardado_en_metas),
+            copFixture(2_760_000),
+            stamp = null,
+            ink = StampInk.Good
+        )
         // The same pill on paper, as Recibo's categories card header.
         Slip(Modifier.fillMaxWidth(), pinked = false) {
             BandChip(strings.getString(R.string.catalog_demo_nueva_categoria), {}, onPaper = true)

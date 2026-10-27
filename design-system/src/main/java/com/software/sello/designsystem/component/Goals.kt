@@ -257,6 +257,10 @@ private const val LAND_STAGGER_MILLIS = 160L
  * edge where the fill ends. The main part opens the goal and, with [openDescription], is
  * said that way ("Viaje a la costa, 57 por ciento. Ver meta") with its exact progress;
  * the round **+** is Aportar, said as [contributeLabel].
+ *
+ * With [reached] (100 % or more, not yet lograda) the pill is green, as every place
+ * waiting at 100 %, and the round button is a ✓ that marks it lograda ([onComplete],
+ * said as [completeLabel]); [completing] while that is saved.
  */
 @Composable
 fun GoalPill(
@@ -268,16 +272,23 @@ fun GoalPill(
     onOpen: () -> Unit,
     onContribute: () -> Unit,
     modifier: Modifier = Modifier,
-    openDescription: String? = null
+    openDescription: String? = null,
+    reached: Boolean = false,
+    completeLabel: String = contributeLabel,
+    onComplete: () -> Unit = {},
+    completing: Boolean = false
 ) {
     val colors = SelloTheme.colors
-    val fill = progress.coerceIn(0f, 1f)
+    val fill = if (reached) 1f else progress.coerceIn(0f, 1f)
+    val soft = if (reached) colors.semantic.gainSoft else colors.brandSoft
+    val strong = if (reached) colors.semantic.gain else colors.brand
+    val onSoft = if (reached) colors.semantic.onGainSoft else colors.onBrandSoft
     Row(
         modifier.fillMaxWidth().heightIn(min = 56.dp).clip(CircleShape)
             .background(colors.paper).drawBehind {
                 val width = size.width * fill
-                drawRect(colors.brandSoft, size = Size(width, size.height))
-                if (fill > 0f) {
+                drawRect(soft, size = Size(width, size.height))
+                if (fill > 0f && !reached) {
                     val edge = 2.dp.toPx()
                     drawRect(
                         colors.brand,
@@ -299,12 +310,12 @@ fun GoalPill(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Icon(icon.painter(), null, Modifier.size(22.dp), tint = colors.onBrandSoft)
+            Icon(icon.painter(), null, Modifier.size(22.dp), tint = onSoft)
             Text(
                 name,
                 Modifier.weight(1f),
                 fontWeight = FontWeight.W800,
-                color = colors.onBrandSoft,
+                color = onSoft,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -316,11 +327,19 @@ fun GoalPill(
         }
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(48.dp).clip(CircleShape).background(colors.brand)
-                .clickable(role = Role.Button, onClick = onContribute)
-                .semantics { contentDescription = contributeLabel }
+            modifier = Modifier.size(48.dp).clip(CircleShape).background(strong)
+                .clickable(
+                    enabled = !completing,
+                    role = Role.Button,
+                    onClick = if (reached) onComplete else onContribute
+                )
+                .semantics { contentDescription = if (reached) completeLabel else contributeLabel }
         ) {
-            Icon(SelloIcon.Add.painter(), null, tint = colors.onBrand)
+            Icon(
+                if (reached) SelloIcon.Check.painter() else SelloIcon.Add.painter(),
+                null,
+                tint = if (reached) colors.semantic.onGain else colors.onBrand
+            )
         }
     }
 }
