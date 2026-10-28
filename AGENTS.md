@@ -38,7 +38,8 @@ even where its text says otherwise. MUST/SHOULD/COULD have the meanings defined 
   checks; newest does not mean compatible.
 - Delegation requires explicit user authorization. **MUST** assign disjoint write scopes;
   the coordinator owns integration, ticket status and Git operations. Never
-  delegate overlapping schema, composition or policy changes.
+  delegate overlapping schema, composition or policy changes. An orchestrated run
+  follows [Orchestrated delivery](#orchestrated-delivery) instead.
 
 ## Pull requests and merging
 
@@ -57,6 +58,78 @@ even where its text says otherwise. MUST/SHOULD/COULD have the meanings defined 
 - **MUST** report and resolve a failed check on `main`, from a push or from the
   nightly, before another PR merges. Work on the next ticket may proceed while the
   check runs.
+
+## Orchestrated delivery
+
+The owner may start an orchestrated run for an epic. That request authorizes, for
+that run only, the delegation, branches, PRs, comments and merges described here.
+Every other rule in this file still applies to every role.
+
+- **Orchestrator** (the owner's session): before any dispatch, asks the owner every
+  money, privacy, design or release decision the epic leaves open, and records the
+  answers in the ticket that owns them. Then it dispatches one implementer per ticket
+  in dependency order, starts a fresh reviewer for every review and re-review, posts
+  the findings, rules on disputes and reports to the owner. It writes no ticket code;
+  it owns the epic status and the run's order.
+- **Implementer** (a cheaper model, own worktree, branch from `origin/main`): delivers
+  one ticket under these rules, opens the PR, tells the orchestrator, then babysits
+  the PR: answers every finding and comment with a fix or a reason, fixes red checks,
+  and merges under [Merging in a run](#merging-in-a-run). It owns its branch and
+  ticket folder only, starts no subagents and never counts its own review as approval.
+- **Adversarial reviewer** (Claude Opus 5.5, medium effort, read-only): below.
+
+### Adversarial reviewer
+
+Its only inputs are the ticket's folder, the PR diff against its base, the changed
+files at the PR head, and the rules it judges by: this file, architecture and the
+decisions the ticket names. It never sees the PR description, the implementer's
+report, chat history or the orchestrator's view, so it judges what the change does,
+not what its author says. It edits nothing, runs no gate and posts nothing.
+
+Assume the change is wrong until the diff proves otherwise. Check, citing file:line:
+
+- each deliverable and acceptance criterion: met, partly met or missing;
+- money and recovery: exact types, widened arithmetic, rounding, typed failures,
+  operation IDs, versions, cancellation; no silent repair, clipping or failed read → zero;
+- tests: red fails for the intended defect, expected values are independent, the
+  required cases in [Tests and verification](#tests-and-verification) are present or
+  justified, and nothing was weakened, disabled or baselined;
+- boundaries, schema, portable format, privacy and release isolation;
+- scope: unrelated edits, dormant features, speculative abstractions;
+- claims: status, evidence, approvals or device runs the diff does not support.
+
+Report a verdict, `APPROVE` or `CHANGES REQUIRED`, then findings ranked Blocking,
+Important or Minor. Each has an ID (R1, R2…), file:line, the rule or criterion, a
+concrete failure scenario and the smallest fix. List what it cannot verify from the
+diff separately. No praise, no taste: style counts only where a rule names it. A
+re-review is a new reviewer with the earlier findings, the implementer's replies and
+the fix diff; it marks each finding resolved or open and flags new breakage in the
+fix diff only.
+
+The orchestrator posts each verdict as one PR comment. The implementer answers each
+ID in the PR and pushes; the orchestrator then starts the re-review. After three
+rounds, the orchestrator rules on each open finding in a PR comment, or asks the
+owner when the dispute is about money, privacy or destructive behavior. Evidence
+names the reviewer as an agent; it is never recorded as a human or owner approval.
+
+### Merging in a run
+
+In a run the owner delegates the merge, and with it the approval that merging
+means. The implementer squash-merges with `gh pr merge <n> --squash`, with no further
+owner approval, only when all of these hold on the current head:
+
+- the latest verdict is `APPROVE`, or every open finding is Minor or carries an
+  orchestrator ruling in a PR comment;
+- every PR comment and review thread is answered, and none from the owner is open;
+- every check is green, including the required `quality`; none was skipped by
+  changing a gate, test or workflow in the PR;
+- the last push run and nightly on `main` are green;
+- any approval the ticket requires from the owner (policy, design, release) is
+  recorded in the ticket from the owner's own answers; the reviewer cannot give it;
+- PRs stacked on its branch were retargeted to `main` first.
+
+Never `--admin`, bypass a ruleset or merge a release (G3) ticket without the owner's
+go for that release. If any condition fails, the implementer reports and waits.
 
 ## Implementation boundaries
 
