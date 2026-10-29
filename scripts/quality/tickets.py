@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Canonical tickets: one folder per ticket under docs/tickets/<epic>/<SELLO-0NN>/.
+"""Canonical tickets: one file per ticket, docs/tickets/<epic>/SELLO-0NN.md.
 
-ticket.md is the only file the tools parse for status, acceptance and dependencies;
-a Done ticket also needs its handoff.md. Proof that checks passed is the pull
-request's `quality` check (ADR 0021), so no evidence or report is read here.
-Nothing generated is committed: `tickets.py status` prints the board on demand.
+The ticket file holds status, acceptance and dependencies. Proof that checks passed
+is the pull request's `quality` check (ADR 0021), so no evidence or report is read
+here. Nothing generated is committed: `tickets.py status` prints the board on demand.
 """
 import argparse
 import re
@@ -14,14 +13,12 @@ from pathlib import Path
 
 TICKETS_DIR = "docs/tickets"
 TEMPLATE_DIR = "TEMPLATE"
+ATTACHMENTS = "attachments"
 STATUSES = ("Backlog", "Ready", "In Progress", "Review", "Blocked", "Done")
-REQUIRED_SECTIONS = (
-    "Outcome", "Deliverables", "Acceptance criteria", "Tests", "Working checkpoint",
-    "Context and starting points", "Implementation plan", "Concrete cases and pitfalls",
-    "Verification recipe",
-)
+REQUIRED_SECTIONS = ("Outcome", "Acceptance criteria")
 PRIORITIES = {"P0": "Highest", "P1": "High", "P2": "Medium"}
 TICKET_ID = re.compile(r"SELLO-\d{3}")
+TICKET_FILE = re.compile(r"SELLO-\d{3}\.md")
 EPIC_FOLDER = re.compile(r"E\d{2}-[a-z0-9-]+")
 
 
@@ -37,10 +34,6 @@ class Ticket:
     dependencies: tuple
     gate: str
     body: str
-
-    @property
-    def folder(self):
-        return self.source.parent
 
 
 @dataclass
@@ -98,10 +91,7 @@ def parse_ticket(source, text, epic_id):
     body = text[heading.end():].strip()
     fields = metadata(body.split("###", 1)[0])
     require_fields(fields, ("Type", "Priority", "Status", "Depends on", "Gate"), identifier)
-    content = sections(body)
-    if "Delivery evidence" in content:
-        raise ValueError(f"{identifier}: Delivery evidence belongs in evidence.md, not ticket.md")
-    require_fields(content, REQUIRED_SECTIONS, identifier)
+    require_fields(sections(body), REQUIRED_SECTIONS, identifier)
     raw = fields["Depends on"]
     dependencies = () if raw == "None" else tuple(dependency.strip() for dependency in raw.split(","))
     if len(set(dependencies)) != len(dependencies) or any(not TICKET_ID.fullmatch(d) for d in dependencies):
@@ -110,42 +100,34 @@ def parse_ticket(source, text, epic_id):
                   dependencies, fields["Gate"], body)
 
 
-def ticket_folders(root):
-    """Every ticket folder, sorted, as (epic folder, ticket folder)."""
-    base = Path(root) / TICKETS_DIR
-    found = []
-    for epic_dir in sorted(path for path in base.iterdir() if path.is_dir() and EPIC_FOLDER.fullmatch(path.name)):
-        for ticket_dir in sorted(path for path in epic_dir.iterdir() if path.is_dir() and TICKET_ID.fullmatch(path.name)):
-            found.append((epic_dir, ticket_dir))
-    return found
-
-
-def ticket_folder(root, identifier):
-    """The folder of one ticket, or None when no such ticket exists."""
-    for _, ticket_dir in ticket_folders(root):
-        if ticket_dir.name == identifier:
-            return ticket_dir
-    return None
-
-
 def load(root):
     """Parse every epic README and ticket file under docs/tickets; raise ValueError on structure errors."""
     base = Path(root) / TICKETS_DIR
     if not base.is_dir():
-        raise ValueError(f"No ticket folders under {TICKETS_DIR}")
+        raise ValueError(f"No tickets under {TICKETS_DIR}")
+    for entry in sorted(base.iterdir()):
+        if entry.name.startswith(".") or entry.name in ("README.md", TEMPLATE_DIR):
+            continue
+        if not (entry.is_dir() and EPIC_FOLDER.fullmatch(entry.name)):
+            raise ValueError(f"{entry.relative_to(root)}: not an epic folder (E0N-<slug>)")
     epics = []
     for epic_dir in sorted(path for path in base.iterdir() if path.is_dir() and EPIC_FOLDER.fullmatch(path.name)):
         readme = epic_dir / "README.md"
         if not readme.is_file():
             raise ValueError(f"{epic_dir.relative_to(root)}: missing README.md")
         epic = parse_epic_readme(readme, readme.read_text(encoding="utf-8"))
-        for ticket_dir in sorted(path for path in epic_dir.iterdir() if path.is_dir() and TICKET_ID.fullmatch(path.name)):
-            source = ticket_dir / "ticket.md"
-            if not source.is_file():
-                raise ValueError(f"{ticket_dir.relative_to(root)}: missing ticket.md")
+        folders = sorted(path.name for path in epic_dir.iterdir() if path.is_dir() and TICKET_ID.fullmatch(path.name))
+        if folders:
+            raise ValueError(f"{epic_dir.relative_to(root)}: ticket folders {', '.join(folders)}; a ticket is one file, SELLO-0NN.md")
+        for entry in sorted(epic_dir.iterdir()):
+            allowed = (entry.name == "README.md" or (entry.is_dir() and entry.name == ATTACHMENTS)
+                       or (entry.is_file() and TICKET_FILE.fullmatch(entry.name)))
+            if not (allowed or entry.name.startswith(".")):
+                raise ValueError(f"{entry.relative_to(root)}: an epic folder holds only README.md, SELLO-0NN.md files and {ATTACHMENTS}/")
+        for source in sorted(path for path in epic_dir.iterdir() if path.is_file() and TICKET_FILE.fullmatch(path.name)):
             ticket = parse_ticket(source, source.read_text(encoding="utf-8"), epic.identifier)
-            if ticket.identifier != ticket_dir.name:
-                raise ValueError(f"{ticket_dir.relative_to(root)}: folder {ticket_dir.name} holds {ticket.identifier}")
+            if ticket.identifier != source.stem:
+                raise ValueError(f"{source.relative_to(root)}: file {source.name} holds {ticket.identifier}")
             epic.tickets.append(ticket)
         if not epic.tickets:
             raise ValueError(f"{epic.identifier}: no tickets")
@@ -188,10 +170,6 @@ def validate(epics):
             tickets[dependency].status != "Done" for dependency in ticket.dependencies
         ):
             raise ValueError(f"{ticket.identifier}: unfinished dependencies for {ticket.status}")
-        if ticket.status == "Done":
-            handoff = ticket.folder / "handoff.md"
-            if not handoff.is_file() or not re.sub(r"^#.*$", "", handoff.read_text(encoding="utf-8"), flags=re.MULTILINE).strip():
-                raise ValueError(f"{ticket.identifier}: missing handoff.md")
     visited, active = set(), set()
 
     def visit(identifier):
@@ -227,7 +205,7 @@ def status_table(epics, epic_filter=None):
 
 
 def main(argv=None, root=None):
-    parser = argparse.ArgumentParser(description="Validate the ticket folders or print their status.")
+    parser = argparse.ArgumentParser(description="Validate the ticket files or print their status.")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("check", help="Validate structure, IDs, statuses and dependencies.")
     status = commands.add_parser("status", help="Print the status table on demand.")

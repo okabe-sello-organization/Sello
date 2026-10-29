@@ -3,7 +3,7 @@
 **Version:** 32 · **Updated:** 2026-10-08 · **Ticket:** SELLO-001
 **Status:** D01–D10 product policies/process and owner walkthrough approved;
 independent agent technical/example review passed for version 32; see the
-[review report](../tickets/E01-foundation/SELLO-001/artifacts/SELLO-001-independent-review.md). User owns physical-device
+[review report](../tickets/E01-foundation/attachments/SELLO-001-independent-review.md). User owns physical-device
 testing and release build/signing; actual evidence is still required. These are not passing app tests.
 Numbers use comma grouping here for readability; amounts are integer COP unless
 an exact intermediate is shown. UI grouping is es-CO (`1.234`).
@@ -429,11 +429,11 @@ required decisions, arithmetic review and its documentation/G0 checks are comple
 
 2026-10-08: product owner authorized independent review agent Singer
 (`01a11de6-b349-7b51-9d2d-300c3f9b2b39`) for SELLO-001. Its
-[full-corpus review](../tickets/E01-foundation/SELLO-001/artifacts/SELLO-001-independent-review.md) passed all 88 case
+[full-corpus review](../tickets/E01-foundation/attachments/SELLO-001-independent-review.md) passed all 88 case
 IDs, C01/C02 and unnumbered illustrations, including exact arithmetic and 17
 ordering comparisons, with no blocking findings. These are independently checked
 documentation expectations, not passing app tests or human technical review.
 SELLO-001 is Done with documentation/G0 evidence in the
-[canonical ticket](../tickets/E01-foundation/SELLO-001/evidence.md).
+[canonical ticket](../tickets/E01-foundation/SELLO-001.md).
 Policies, numerical expectations and corpus version 32 are unchanged. Older
 walkthrough/pending-review entries preserve chronology, not current blockers.

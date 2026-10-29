@@ -113,11 +113,11 @@ screen against the expected figures:
 | --- | --- |
 | Save an expense with the keypad and a note | 12.345 in Mercado; its overspend and the month's remainder moved by exactly 12.345 |
 | Edit it | 12.346; the category's total moved by 1 |
-| Delete it, then delete another and undo | The first gone; the second back after "Deshacer" ([screenshot 2](../tickets/E08-release/SELLO-035/artifacts/2-borrado-deshacer.png)) |
+| Delete it, then delete another and undo | The first gone; the second back after "Deshacer" ([screenshot 2](../tickets/E08-release/attachments/SELLO-035-2-borrado-deshacer.png)) |
 | Save an income | Resumen's recorded income rose from 7.540.000 to 7.540.125 |
 | Create a category with a limit | "Parqueadero", 200.000 of 200.000 left; the month's remainder rose by 200.000 |
 | Change the theme, force-stop, start | Still dark |
-| Draft an expense, kill the process, return | A new process shows the same 456 in Mercado ([screenshot 3](../tickets/E08-release/SELLO-035/artifacts/3-borrador-tras-proceso.png)) |
+| Draft an expense, kill the process, return | A new process shows the same 456 in Mercado ([screenshot 3](../tickets/E08-release/attachments/SELLO-035-3-borrador-tras-proceso.png)) |
 | Open September from the month picker | Its finished-month stamps and leftovers |
 | Back up and restore the large history | As timed above: 20 categories, 10,000 expenses, 2,000 incomes |
 | Erase all data, start again | "Borrado", then the first-run screen after a restart |

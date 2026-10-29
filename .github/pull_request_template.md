@@ -1,7 +1,7 @@
 <!-- Title: <Epic number> - <Task number> | <Ticket description>
      Example: E01 - SELLO-004 | Install CI, quality gates and architecture enforcement -->
 
-<!-- Link to the ticket's ticket.md under docs/tickets/<epic>/<ticket>/ -->
+<!-- Link to the ticket file, docs/tickets/<epic>/SELLO-0NN.md, or the issue it closes -->
 
 ## Description
 <!-- What this ticket is about, in plain language. Five lines at most. -->

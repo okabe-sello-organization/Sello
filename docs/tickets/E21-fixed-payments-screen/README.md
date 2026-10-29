@@ -5,6 +5,8 @@
 - **Goal:** Pagos e ingresos fijos answers at a glance what the month's fixed payments or incomes add up to, what already went through and what is still to come.
 - **Exit:** The screen leads with the month's total and how much of it was recorded, lists what is still due, what went through, what comes later and what is paused, reads well in both themes, and has no Anotar button.
 
+## Decisions
+
 **Owner direction (2026-10-26):** the owner reviewed the screen on the phone and approved a
 redesign mockup (kept in SELLO-122's `artifacts/`), which replaces the list part of the
 [v2 page](../../design/v2/fijos.html) locked by delegation in SELLO-114, with these changes:

@@ -101,5 +101,4 @@ permission requested is AndroidX's signature-protected one for private dynamic r
 | `LogPrivacyTest` (device) | Synthetic names, notes and amounts carried through backup, restore and reset never reach the log |
 | `ResetGenerationContractTest` (device) | Nothing erased survives in the database bytes or private folders |
 
-Inventories from the SELLO-032 run are kept in
-[evidence](../tickets/E07-recovery-privacy/SELLO-032/artifacts).
+Inventories from the SELLO-032 run were removed on 2026-10-29 with the ticket evidence; Git history before commit `02fe99b9` keeps them.

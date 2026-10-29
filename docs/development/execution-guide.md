@@ -146,8 +146,8 @@ need their own independent examples before the D03 ones they replace are retired
 ## Delivery record
 
 Verification commands, what CI runs and how to read a red check are in the
-[quality gates guide](quality-gates.md). The ticket folder and the definition of done are in the
-[tickets README](../tickets/README.md#definition-of-done--every-ticket). Do not
+[quality gates guide](quality-gates.md). The ticket file and how a ticket closes are in the
+[tickets README](../tickets/README.md#closing-a-ticket). Do not
 commit or publish unless the current user request authorizes it.
 
 ## Source library

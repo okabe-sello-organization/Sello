@@ -30,7 +30,7 @@ The walks ran on the isolated API 30 phone emulator `sello022_api30` (1080 × 23
 440 dpi, three-button navigation, `emulator-5584`) with a debug build of the code under
 test, driven through `adb` and `uiautomator`: P1 and P2 as the device is; M2 and E2 by
 overriding its display (`wm size` 1925 × 2475 at 440 dpi; 2160 × 1512 at 320 dpi).
-Each screenshot is in [evidence](../tickets/E08-release/SELLO-033/artifacts).
+The screenshots were removed on 2026-10-29 with the ticket evidence; Git history before commit `02fe99b9` keeps them.
 
 Every theme appears once in the sweep; colour contrast for all four is checked
 separately, token by token, by `SelloColorsTest` (WCAG AA: 4.5:1 for text, 3:1 for
