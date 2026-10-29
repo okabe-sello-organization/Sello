@@ -1,6 +1,8 @@
 package com.software.sello.presentation.submission
 
 import androidx.lifecycle.SavedStateHandle
+import com.software.sello.domain.policy.AmountDraft
+import java.time.LocalDate
 import kotlinx.serialization.Serializable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -23,6 +25,12 @@ class SavedDraftTest {
         val following: Boolean?,
         val tags: List<String>,
         val original: Original?
+    )
+
+    @Serializable
+    private data class Entry(
+        @Serializable(with = AmountDraftSerializer::class) val amount: AmountDraft,
+        @Serializable(with = LocalDateSerializer::class) val date: LocalDate
     )
 
     private val typed = Draft(
@@ -86,5 +94,33 @@ class SavedDraftTest {
 
         assertNull(draft.read())
         assertEquals(emptySet<String>(), saved.keys())
+    }
+
+    @Test
+    fun `an amount comes back as typed and a date as the same day`() {
+        val october = LocalDate.of(2026, 10, 29)
+        val typedAmounts = listOf(
+            AmountDraft.Digits("45000"),
+            AmountDraft.paste("12a"),
+            AmountDraft.Empty
+        )
+
+        for (amount in typedAmounts) {
+            val saved = SavedStateHandle()
+            SavedDraft(saved, "form.draft", Entry.serializer()).write(Entry(amount, october))
+
+            val restored = SavedDraft(restarted(saved), "form.draft", Entry.serializer()).read()
+
+            assertEquals(Entry(amount, october), restored)
+        }
+    }
+
+    @Test
+    fun `a saved date that is not a date is no draft`() {
+        val damaged = SavedStateHandle(
+            mapOf("form.draft" to arrayListOf<String?>("+", "45000", "2026-13-40"))
+        )
+
+        assertNull(SavedDraft(damaged, "form.draft", Entry.serializer()).read())
     }
 }
