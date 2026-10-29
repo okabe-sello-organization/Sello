@@ -7,7 +7,6 @@ import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Note
-import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
@@ -15,14 +14,13 @@ import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.AmountDraftError
-import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.ChangeSchedule
-import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommittedExpense
+import com.software.sello.domain.port.CommittedSchedule
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.EditExpense
-import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.ExpenseRejection
@@ -30,7 +28,6 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
-import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRejection
@@ -45,6 +42,11 @@ import com.software.sello.presentation.recurrence.FollowingSchedule
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatDraft
 import com.software.sello.presentation.recurrence.RepeatUi
+import com.software.sello.presentation.submission.AmountDraftSerializer
+import com.software.sello.presentation.submission.LocalDateSerializer
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,6 +61,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Records one expense through the real command. The draft, the identifier of a save
@@ -94,10 +97,11 @@ class ExpenseEntryViewModel(
     private val schedules: ScheduleCommands,
     private val scheduleReads: ScheduleReads
 ) : ViewModel() {
+    @Serializable
     private data class Draft(
-        val amount: AmountDraft,
+        @Serializable(with = AmountDraftSerializer::class) val amount: AmountDraft,
         val categoryId: String?,
-        val date: LocalDate,
+        @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
         val note: String
     )
 
@@ -123,11 +127,12 @@ class ExpenseEntryViewModel(
     )
 
     /** The recorded expense as the form first read it. Notes are compared as stored. */
+    @Serializable
     private data class Original(
         val version: Long,
         val digits: String,
         val categoryId: String,
-        val date: LocalDate,
+        @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
         val note: String?
     )
 
@@ -135,21 +140,31 @@ class ExpenseEntryViewModel(
         (saved.get<String>(KEY_EDITED_EXPENSE)?.let(ExpenseId::of) as? Outcome.Success)?.value
     private val editing = saved.get<String>(KEY_EDITED_EXPENSE) != null
 
+    private val drafts = SavedDraft(saved, KEY_DRAFT, Draft.serializer())
+    private val originals = SavedDraft(saved, KEY_ORIGINAL, Original.serializer())
+    private val submission = Submission(saved, KEY_OPERATION, ids)
+
     private val draft = MutableStateFlow(
-        Draft(
-            amount = saved.get<String>(KEY_AMOUNT)?.let(AmountDraft::paste) ?: prefilledAmount(),
-            categoryId = saved[KEY_CATEGORY],
-            date = savedDate() ?: clock.today.value.date,
-            note = saved[KEY_NOTE] ?: ""
+        drafts.read()?.let {
+            // An amount cleared before a restart is offered the caller's amount again.
+            it.copy(
+                amount = it.amount.takeUnless { amount -> amount == AmountDraft.Empty }
+                    ?: prefilledAmount()
+            )
+        } ?: Draft(
+            amount = prefilledAmount(),
+            categoryId = null,
+            date = clock.today.value.date,
+            note = ""
         )
     )
-    private val progress = MutableStateFlow(Progress(original = savedOriginal()))
+    private val progress = MutableStateFlow(Progress(original = originals.read()))
     private val repeat = RepeatDraft(saved, "expense")
 
     init {
         // "Today" is fixed when the form opens, so a draft restored tomorrow is still
         // dated the day it was started unless the person changes it.
-        if (saved.get<String>(KEY_DATE) == null) saved[KEY_DATE] = draft.value.date.toString()
+        if (drafts.read() == null) drafts.write(draft.value)
         // Opened from Pagos e ingresos fijos: Se repite's sheet opens once, on today.
         if (saved.get<Boolean>(KEY_PREFILL_REPEAT) == true &&
             saved.get<Boolean>(KEY_REPEAT_OFFERED) != true && !editing
@@ -205,31 +220,13 @@ class ExpenseEntryViewModel(
             when {
                 savedExpense != null -> announce(savedExpense)
                 saved.get<String>(KEY_SAVED_SCHEDULE) != null -> announceSchedule()
-                saved.get<String>(KEY_OPERATION) != null -> recover()
+                submission.pending -> recover()
             }
         }
         if (editing && progress.value.original == null) viewModelScope.launch { loadOriginal() }
         if (editing && saved.get<String>(KEY_ORIGIN_SCHEDULE) != null) {
             viewModelScope.launch { loadFollowing() }
         }
-    }
-
-    private fun savedOriginal(): Original? {
-        val version = saved.get<Long>(KEY_ORIGINAL_VERSION) ?: return null
-        val date =
-            (
-                saved.get<String>(
-                    KEY_ORIGINAL_DATE
-                )?.let(EffectiveDates::parseDate) as? Outcome.Success
-                )
-                ?.value ?: return null
-        return Original(
-            version = version,
-            digits = saved.get<String>(KEY_ORIGINAL_AMOUNT) ?: return null,
-            categoryId = saved.get<String>(KEY_ORIGINAL_CATEGORY) ?: return null,
-            date = date,
-            note = saved[KEY_ORIGINAL_NOTE]
-        )
     }
 
     /**
@@ -252,17 +249,16 @@ class ExpenseEntryViewModel(
                     date = expense.date,
                     note = expense.note?.value
                 )
-                saved[KEY_ORIGINAL_VERSION] = original.version
-                saved[KEY_ORIGINAL_AMOUNT] = original.digits
-                saved[KEY_ORIGINAL_CATEGORY] = original.categoryId
-                saved[KEY_ORIGINAL_DATE] = original.date.toString()
-                saved[KEY_ORIGINAL_NOTE] = original.note
+                originals.write(original)
                 saved[KEY_ORIGIN_SCHEDULE] = expense.origin?.schedule?.value
-                setAmount(AmountDraft.paste(original.digits))
-                setCategory(original.categoryId)
-                saved[KEY_DATE] = original.date.toString()
-                saved[KEY_NOTE] = original.note.orEmpty()
-                draft.update { it.copy(date = original.date, note = original.note.orEmpty()) }
+                edit {
+                    it.copy(
+                        amount = AmountDraft.paste(original.digits),
+                        categoryId = original.categoryId,
+                        date = original.date,
+                        note = original.note.orEmpty()
+                    )
+                }
                 progress.update { it.copy(original = original, originalUnreadable = false) }
                 if (expense.origin != null) loadFollowing()
             }
@@ -287,9 +283,6 @@ class ExpenseEntryViewModel(
         // person did not make.
         return AmountDraft.paste(text).takeIf { it is AmountDraft.Digits } ?: AmountDraft.Empty
     }
-
-    private fun savedDate(): LocalDate? =
-        (saved.get<String>(KEY_DATE)?.let(EffectiveDates::parseDate) as? Outcome.Success)?.value
 
     /**
      * The categories an expense can be put in. [keeping] is the category a recorded
@@ -317,19 +310,14 @@ class ExpenseEntryViewModel(
         if (choice != null && draft.value.categoryId == null) setCategory(choice)
     }
 
-    private fun setCategory(id: String?) {
-        saved[KEY_CATEGORY] = id
-        draft.update { it.copy(categoryId = id) }
+    private fun edit(change: (Draft) -> Draft) {
+        draft.update(change)
+        drafts.write(draft.value)
     }
 
-    private fun setAmount(amount: AmountDraft) {
-        saved[KEY_AMOUNT] = when (amount) {
-            AmountDraft.Empty -> null
-            is AmountDraft.Digits -> amount.digits
-            is AmountDraft.Rejected -> amount.original
-        }
-        draft.update { it.copy(amount = amount) }
-    }
+    private fun setCategory(id: String?) = edit { it.copy(categoryId = id) }
+
+    private fun setAmount(amount: AmountDraft) = edit { it.copy(amount = amount) }
 
     fun onAction(action: ExpenseEntryAction) {
         val now = state.value
@@ -378,16 +366,12 @@ class ExpenseEntryViewModel(
                 } else {
                     !action.date.isAfter(now.today)
                 }
-                if (fits) {
-                    saved[KEY_DATE] = action.date.toString()
-                    draft.update { it.copy(date = action.date) }
-                }
+                if (fits) edit { it.copy(date = action.date) }
                 progress.update { it.copy(datePickerOpen = false, error = null) }
             }
 
             is ExpenseEntryAction.NoteChanged -> if (now.editable) {
-                saved[KEY_NOTE] = action.text
-                draft.update { it.copy(note = action.text) }
+                edit { it.copy(note = action.text) }
             }
 
             ExpenseEntryAction.OpenNote -> if (now.editable) {
@@ -402,8 +386,7 @@ class ExpenseEntryViewModel(
             ExpenseEntryAction.NoteDone -> {
                 val written = saved.get<String>(KEY_NOTE_DRAFT)
                 if (written != null && now.editable && Note.of(written) is Outcome.Success) {
-                    saved[KEY_NOTE] = written
-                    draft.update { it.copy(note = written) }
+                    edit { it.copy(note = written) }
                     saved[KEY_NOTE_DRAFT] = null
                 }
             }
@@ -427,7 +410,7 @@ class ExpenseEntryViewModel(
             ExpenseEntryAction.Retry -> when {
                 now.busy -> Unit
 
-                saved.get<String>(KEY_OPERATION) != null -> viewModelScope.launch { recover() }
+                submission.pending -> viewModelScope.launch { recover() }
 
                 else -> {
                     if (progress.value.originalUnreadable) viewModelScope.launch { loadOriginal() }
@@ -472,8 +455,7 @@ class ExpenseEntryViewModel(
         val date = draft.value.date
         val on = repeat.choice != null
         if ((on && date.isBefore(today)) || (!on && date.isAfter(today))) {
-            saved[KEY_DATE] = today.toString()
-            draft.update { it.copy(date = today) }
+            edit { it.copy(date = today) }
         }
     }
 
@@ -558,34 +540,31 @@ class ExpenseEntryViewModel(
         val chosen = state.value.categoryId
         val category = (chosen?.let(CategoryId::of) as? Outcome.Success)?.value ?: return
         val note = (Note.of(draft.note) as? Outcome.Success ?: return).value
-        // The identifier is saved before the command leaves, so whatever happens next
-        // this attempt can be recognised and never recorded twice.
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[KEY_OPERATION] = operation.value
         progress.update { it.copy(busy = true, error = null) }
         val choice = repeat.choice
         if (choice != null && !editing) {
             val rule = choice.rule() ?: return progress.update { it.copy(busy = false) }
-            saved[KEY_OPERATION_SCHEDULE] = true
             viewModelScope.launch {
                 settleSchedule(
-                    schedules.submit(
-                        CreateSchedule(
-                            operation,
-                            snapshot.generation,
-                            ScheduledEntry.Payment(category, amount, note),
-                            rule,
-                            draft.date,
-                            choice.end
+                    submission.send(schedules::find, STEP_SCHEDULE) { operation ->
+                        schedules.submit(
+                            CreateSchedule(
+                                operation,
+                                snapshot.generation,
+                                ScheduledEntry.Payment(category, amount, note),
+                                rule,
+                                draft.date,
+                                choice.end
+                            )
                         )
-                    )
+                    }
                 )
             }
             return
         }
         val edited = editedExpense
         viewModelScope.launch {
-            settle(
+            val settled = submission.send(commands::find, STEP_EXPENSE) { operation ->
                 if (edited != null && original != null) {
                     commands.edit(
                         EditExpense(
@@ -611,23 +590,31 @@ class ExpenseEntryViewModel(
                         )
                     )
                 }
-            )
+            }
+            settle(settled)
         }
     }
 
-    private suspend fun settle(outcome: ExpenseCommandOutcome) {
-        when (outcome) {
-            is CommandOutcome.Committed -> saved(outcome.value.expenseId)
+    private suspend fun settle(settled: Settled<CommittedExpense, ExpenseRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
-            is CommandOutcome.OutcomeUnknown -> recover()
+            // Only a receipt counts as saved.
+            is Settled.Committed -> saved(settled.value.expenseId)
 
-            is CommandOutcome.Rejected -> {
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = EntryError.Unknown)
+            }
+
+            Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
+
+            is Settled.Rejected -> {
                 // Certain: nothing was written, so this attempt is over. The draft stays,
                 // and Solo este or Este y los siguientes is asked again unless the
                 // following payments already changed.
-                saved[KEY_OPERATION] = null
                 if (saved.get<Boolean>(KEY_FOLLOWING_SAVED) != true) saved[KEY_FOLLOWING] = null
-                val error = when (val reason = outcome.reason) {
+                val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> EntryError.DataChanged
 
                     is CommandRejection.VersionConflict -> EntryError.ExpenseChanged
@@ -668,61 +655,58 @@ class ExpenseEntryViewModel(
             ?: return
         val note = (Note.of(draft.note) as? Outcome.Success ?: return).value
         val recurrence = following.schedule.recurrence
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[KEY_OPERATION] = operation.value
-        saved[KEY_OPERATION_SCHEDULE] = true
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
-            when (
-                val outcome = schedules.submit(
-                    ChangeSchedule(
-                        operation,
-                        snapshot.generation,
-                        following.schedule.id,
-                        following.version,
-                        ScheduledEntry.Payment(category, amount, note),
-                        recurrence.rule,
-                        recurrence.start,
-                        recurrence.end
+            settleSchedule(
+                submission.send(schedules::find, STEP_SCHEDULE) { operation ->
+                    schedules.submit(
+                        ChangeSchedule(
+                            operation,
+                            snapshot.generation,
+                            following.schedule.id,
+                            following.version,
+                            ScheduledEntry.Payment(category, amount, note),
+                            recurrence.rule,
+                            recurrence.start,
+                            recurrence.end
+                        )
                     )
-                )
-            ) {
-                is CommandOutcome.Committed -> followingSaved()
-
-                is CommandOutcome.OutcomeUnknown -> recover()
-
-                is CommandOutcome.Rejected -> {
-                    saved[KEY_OPERATION] = null
-                    saved[KEY_OPERATION_SCHEDULE] = null
-                    saved[KEY_FOLLOWING] = null
-                    progress.update {
-                        it.copy(busy = false, error = EntryError.FollowingNotSaved)
-                    }
                 }
-            }
+            )
         }
     }
 
     /** The following payments took the new terms; now this expense is corrected. */
     private fun followingSaved() {
-        saved[KEY_OPERATION] = null
-        saved[KEY_OPERATION_SCHEDULE] = null
         saved[KEY_FOLLOWING_SAVED] = true
         progress.update { it.copy(busy = false) }
         submit()
     }
 
-    private suspend fun settleSchedule(outcome: ScheduleCommandOutcome) {
-        when (outcome) {
-            is CommandOutcome.Committed -> scheduleSaved(outcome.value.scheduleId)
+    /**
+     * A schedule command: a new schedule from Se repite, or, when correcting, the new
+     * terms for the following payments.
+     */
+    private suspend fun settleSchedule(settled: Settled<CommittedSchedule, ScheduleRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
-            is CommandOutcome.OutcomeUnknown -> recover()
+            is Settled.Committed ->
+                if (editing) followingSaved() else scheduleSaved(settled.value.scheduleId)
 
-            is CommandOutcome.Rejected -> {
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = EntryError.Unknown)
+            }
+
+            Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
+
+            is Settled.Rejected -> if (editing) {
+                saved[KEY_FOLLOWING] = null
+                progress.update { it.copy(busy = false, error = EntryError.FollowingNotSaved) }
+            } else {
                 // Certain: nothing was written. The draft and the choice stay.
-                saved[KEY_OPERATION] = null
-                saved[KEY_OPERATION_SCHEDULE] = null
-                val error = when (val reason = outcome.reason) {
+                val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> EntryError.DataChanged
 
                     CommandRejection.OperationConflict,
@@ -749,8 +733,6 @@ class ExpenseEntryViewModel(
 
     private suspend fun scheduleSaved(id: ScheduleId) {
         saved[KEY_SAVED_SCHEDULE] = id.value
-        saved[KEY_OPERATION] = null
-        saved[KEY_OPERATION_SCHEDULE] = null
         announceSchedule()
     }
 
@@ -782,46 +764,11 @@ class ExpenseEntryViewModel(
 
     /** Asks storage how the saved operation ended. Only a receipt counts as saved. */
     private suspend fun recover() {
-        val operation = (saved.get<String>(KEY_OPERATION)?.let(OperationId::of) as? Outcome.Success)
-            ?.value
-        if (operation == null) {
-            saved[KEY_OPERATION] = null
-            saved[KEY_OPERATION_SCHEDULE] = null
-            return progress.update { it.copy(busy = false) }
-        }
         progress.update { it.copy(busy = true, error = null) }
-        if (saved.get<Boolean>(KEY_OPERATION_SCHEDULE) == true) {
-            return when (val found = schedules.find(operation)) {
-                is Outcome.Failure -> progress.update {
-                    it.copy(busy = false, error = EntryError.Unknown)
-                }
-
-                is Outcome.Success -> {
-                    val committed = found.value
-                    if (committed != null) {
-                        if (editing) followingSaved() else scheduleSaved(committed.scheduleId)
-                    } else {
-                        saved[KEY_OPERATION] = null
-                        saved[KEY_OPERATION_SCHEDULE] = null
-                        progress.update { it.copy(busy = false, error = null) }
-                    }
-                }
-            }
-        }
-        when (val found = commands.find(operation)) {
-            is Outcome.Failure -> progress.update {
-                it.copy(busy = false, error = EntryError.Unknown)
-            }
-
-            is Outcome.Success -> {
-                val committed = found.value
-                if (committed != null) {
-                    saved(committed.expenseId)
-                } else {
-                    saved[KEY_OPERATION] = null
-                    progress.update { it.copy(busy = false, error = null) }
-                }
-            }
+        if (submission.step == STEP_SCHEDULE) {
+            settleSchedule(submission.recover(schedules::find))
+        } else {
+            settle(submission.recover(commands::find))
         }
     }
 
@@ -829,7 +776,6 @@ class ExpenseEntryViewModel(
         if (editing) {
             // A correction has no receipt of its own: the lists show the expense as it
             // is now, and the notice says the change was saved.
-            saved[KEY_OPERATION] = null
             if (saved.get<Boolean>(KEY_FOLLOWING_SAVED) == true) {
                 corrections.scheduleChanged(
                     CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = false)
@@ -840,7 +786,6 @@ class ExpenseEntryViewModel(
             return progress.update { it.copy(busy = false, error = null, closed = true) }
         }
         saved[KEY_SAVED_EXPENSE] = expenseId.value
-        saved[KEY_OPERATION] = null
         announce(expenseId.value)
     }
 
@@ -967,24 +912,18 @@ class ExpenseEntryViewModel(
         /** Route argument: the recorded expense to correct. Without it the form records a new one. */
         const val KEY_EDITED_EXPENSE = "expenseId"
 
-        private const val KEY_AMOUNT = "expense.amount"
-        private const val KEY_CATEGORY = "expense.category"
+        private const val KEY_DRAFT = "expense.draft"
+        private const val KEY_ORIGINAL = "expense.original"
         private const val KEY_CATEGORY_DEFAULTED = "expense.categoryDefaulted"
-        private const val KEY_DATE = "expense.date"
-        private const val KEY_NOTE = "expense.note"
         private const val KEY_NOTE_DRAFT = "expense.note.draft"
         private const val KEY_OPERATION = "expense.operation"
         private const val KEY_SAVED_EXPENSE = "expense.saved"
-        private const val KEY_OPERATION_SCHEDULE = "expense.operation.schedule"
         private const val KEY_SAVED_SCHEDULE = "expense.saved.schedule"
+        private const val STEP_EXPENSE = "expense"
+        private const val STEP_SCHEDULE = "schedule"
         private const val KEY_ORIGIN_SCHEDULE = "expense.origin.schedule"
         private const val KEY_REPEAT_OFFERED = "expense.repeat.offered"
         private const val KEY_FOLLOWING = "expense.following"
         private const val KEY_FOLLOWING_SAVED = "expense.following.saved"
-        private const val KEY_ORIGINAL_VERSION = "expense.original.version"
-        private const val KEY_ORIGINAL_AMOUNT = "expense.original.amount"
-        private const val KEY_ORIGINAL_CATEGORY = "expense.original.category"
-        private const val KEY_ORIGINAL_DATE = "expense.original.date"
-        private const val KEY_ORIGINAL_NOTE = "expense.original.note"
     }
 }
