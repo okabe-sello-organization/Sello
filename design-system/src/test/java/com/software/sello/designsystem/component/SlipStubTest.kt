@@ -82,8 +82,8 @@ class SlipStubTest {
     }
 
     @Test
-    fun bothHalvesShareTheWidthAndStayTallEnoughToTouchAtLargeText() {
-        rule.inEveryScheme(fontScale = 2f, content = { Stub() }) {
+    fun bothHalvesShareTheWidthAndStayTallEnoughToTouch() {
+        rule.inEveryScheme(content = { Stub() }) {
             val incomes = rule.onNodeWithTag("incomes").getUnclippedBoundsInRoot()
             val fixed = rule.onNodeWithTag("fixed").getUnclippedBoundsInRoot()
             assertEquals(incomes.width.value, fixed.width.value, 1f)

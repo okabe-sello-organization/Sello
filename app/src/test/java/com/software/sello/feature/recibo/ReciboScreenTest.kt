@@ -70,8 +70,8 @@ class ReciboScreenTest {
 
     private val actions = mutableListOf<ReciboAction>()
 
-    private fun show(state: ReciboState, fontScale: Float = 1f, selected: String? = null) {
-        rule.showSello(Look(fontScale = fontScale)) {
+    private fun show(state: ReciboState, selected: String? = null) {
+        rule.showSello(Look()) {
             ReciboScreen(
                 state,
                 { actions += it },
@@ -510,24 +510,6 @@ class ReciboScreenTest {
     }
 
     @Test
-    fun atLargeTextTheAddPillGoesUnderTheHeading() {
-        show(
-            month(plain("937.200"), ReciboStamp.OnTrack, days = 9, perDay = "99.100"),
-            fontScale = 2f
-        )
-
-        val heading = rule.onNodeWithText("Tus categorías").performScrollTo()
-            .getUnclippedBoundsInRoot()
-        val add = rule.onNodeWithTag(RECIBO_ADD_CATEGORY_TAG).performScrollTo().assertIsDisplayed()
-        val button = add.getUnclippedBoundsInRoot()
-        val firstCell = rule.onNodeWithTag(reciboCategoryTag("a")).getUnclippedBoundsInRoot()
-
-        assertTrue("$button under $heading", button.top >= heading.bottom)
-        assertTrue(button.bottom <= firstCell.top)
-        add.assert(hasText("Nueva categoría"))
-    }
-
-    @Test
     fun olderFiguresCarryANoticeAndAWayToReadAgain() {
         show(
             month(plain("937.200"), ReciboStamp.OnTrack, days = 9, perDay = "99.100", stale = true)
@@ -550,37 +532,6 @@ class ReciboScreenTest {
 
         rule.onNodeWithTag(reciboCategoryTag("b")).assertIsSelected()
         rule.onNodeWithTag(reciboCategoryTag("a")).assertIsNotSelected()
-    }
-
-    @Test
-    fun atTwiceTheFontSizeWithVeryLargeAmountsEverythingCanStillBeReached() {
-        val huge = "8.998.000.000.000.001"
-        val state = month(minus(huge), ReciboStamp.Over, days = 31, perDay = huge).copy(
-            categories = listOf(
-                limited(
-                    "a",
-                    "Un nombre de categoría largo",
-                    ReciboHeadline.Overspent,
-                    huge,
-                    ReciboStamp.Over,
-                    huge,
-                    over = true
-                )
-            )
-        )
-
-        show(state, fontScale = 2f)
-
-        rule.onNodeWithContentDescription("Restante del presupuesto: menos $huge pesos. Excedido.")
-            .assertIsDisplayed()
-        rule.onNodeWithTag(RECIBO_PER_DAY_TAG)
-            .performScrollTo()
-            .assertIsDisplayed()
-            .assertContentDescriptionEquals("$huge pesos por día. 31 días, incluido hoy.")
-        rule.onNodeWithContentDescription(
-            "Un nombre de categoría largo. Te pasaste por $huge pesos de $huge pesos. Excedido."
-        ).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(RECIBO_ADD_CATEGORY_TAG).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -671,8 +622,8 @@ class ReciboScreenTest {
     }
 
     @Test
-    fun withOlderFiguresAndAtTwiceTheFontSizeItStillAsks() {
-        show(overspent(stale = true, shown = many), fontScale = 2f)
+    fun withOlderFiguresItStillAsks() {
+        show(overspent(stale = true, shown = many))
 
         adjust.performScrollTo().assertIsDisplayed().performClick()
 

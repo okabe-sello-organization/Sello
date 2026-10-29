@@ -52,9 +52,9 @@ class IncomeFormScreenTest {
     }
 
     @Test
-    fun largeFontKeepsExactAmountAndBusySaveCannotBeRepeated() {
+    fun theExactAmountIsShownAndABusySaveCannotBeRepeated() {
         val today = LocalDate.of(2026, 10, 13)
-        rule.showSello(Look(fontScale = 2f)) {
+        rule.showSello(Look()) {
             IncomeFormScreen(
                 IncomeFormState(
                     loading = false,

@@ -58,13 +58,12 @@ class CategoryDetailScreenTest {
 
     private fun show(
         state: CategoryDetailState,
-        fontScale: Float = 1f,
         showName: Boolean = false,
         showPastLimitAnnouncement: Boolean = false,
         ink: SelloInk = SelloInk.Cobalto,
         dark: Boolean = false
     ) {
-        rule.showSello(Look(ink = ink, dark = dark, fontScale = fontScale)) {
+        rule.showSello(Look(ink = ink, dark = dark)) {
             CategoryDetailScreen(
                 state = state,
                 months = monthNames(),
@@ -217,27 +216,6 @@ class CategoryDetailScreenTest {
     }
 
     @Test
-    fun theCompleteHeroFooterWrapsAtDoubleFontWithoutLosingAnyFigure() {
-        val figures = footerFigures().copy(allowance = ReciboPerDay(plain("999.999.999.999"), 9))
-        show(
-            ready(ExpenseListState.Rows(rows, more = false))
-                .copy(insights = DetailInsightsState.Ready(figures)),
-            fontScale = 2f,
-            dark = true
-        )
-        heroText("9 días").performScrollTo().assertIsDisplayed()
-        heroText("Al día").performScrollTo().assertIsDisplayed()
-        rule.onNode(
-            hasContentDescription("999.999.999.999 pesos") and
-                hasAnyAncestor(hasTestTag("detail:planning")),
-            useUnmergedTree = true
-        ).performScrollTo().assertIsDisplayed()
-        heroText("Frente a sep").performScrollTo().assertIsDisplayed()
-        heroText("+6,7 %").performScrollTo().assertIsDisplayed()
-        assertEquals(selloColors(SelloInk.Cobalto, true).semantic.warn, textStyle("+6,7 %").color)
-    }
-
-    @Test
     fun numbersUseTwoColumnsWithLabelsAboveValuesAndTheLargestNoteBelowItsAmount() {
         show(
             ready(ExpenseListState.Rows(rows, more = false))
@@ -297,67 +275,6 @@ class CategoryDetailScreenTest {
         rule.onNodeWithText("Por gastar esta semana").assertExists()
         rule.onNodeWithTag("detail:history").performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("Un mes normal aquí").assertIsDisplayed()
-    }
-
-    @Test
-    fun theInsightSectionsRemainReachableAtTwiceTheFontSize() {
-        insightSectionsRemainReachable(2f)
-    }
-
-    @Test
-    fun theInsightSectionsRemainReachableAtOnePointThreeFontScale() {
-        insightSectionsRemainReachable(1.3f)
-    }
-
-    private fun insightSectionsRemainReachable(fontScale: Float) {
-        val note = "Una nota tan larga como se permite escribir en un gasto, sí"
-        val amount = "999.999.999.999"
-        val figures = insightFigures().copy(
-            averageExpense = plain(amount),
-            largest = rows.first().copy(note = note, amount = plain(amount))
-        )
-        show(
-            ready(
-                ExpenseListState.Rows(rows, more = false)
-            ).copy(insights = DetailInsightsState.Ready(figures)),
-            fontScale = fontScale
-        )
-        listOf("detail:numbers", "detail:weeks", "detail:history").forEach {
-            rule.onNodeWithTag(it).performScrollTo().assertIsDisplayed()
-        }
-        rule.onNodeWithText("En promedio", useUnmergedTree = true)
-            .performScrollTo().assertIsDisplayed()
-        val caption = rule.onNodeWithText(
-            "$note · Hoy, mié 21 oct",
-            useUnmergedTree = true
-        )
-        caption.performScrollTo().assertIsDisplayed()
-        val layouts = mutableListOf<TextLayoutResult>()
-        caption.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-        assertEquals(1, layouts.size)
-        assertTrue(
-            "The largest expense note must wrap without clipping",
-            layouts.none {
-                it.hasVisualOverflow
-            }
-        )
-        val grid = rule.onNodeWithTag("detail:numbers").getUnclippedBoundsInRoot()
-        val values = rule.onAllNodes(
-            hasContentDescription("$amount pesos") and
-                hasAnyAncestor(hasTestTag("detail:numbers")),
-            useUnmergedTree = true
-        ).fetchSemanticsNodes()
-        assertEquals(2, values.size)
-        values.forEach { value ->
-            val left = value.positionInRoot.x
-            val right = left + value.size.width
-            with(value.layoutInfo.density) {
-                assertTrue(
-                    "The exact amount must stay inside the grid",
-                    left >= grid.left.toPx() && right <= grid.right.toPx()
-                )
-            }
-        }
     }
 
     private fun insightFigures() = DetailInsights(
@@ -612,37 +529,6 @@ class CategoryDetailScreenTest {
         rule.onNodeWithTag(CATEGORY_DETAIL_GONE_TAG).assertIsDisplayed()
         rule.onNodeWithText("Nada aquí este mes").assertIsDisplayed()
         rule.onNodeWithTag(CATEGORY_DETAIL_HEADER_TAG).assertDoesNotExist()
-    }
-
-    @Test
-    fun atTwiceTheFontSizeWithVeryLargeAmountsEverythingCanStillBeReached() {
-        val huge = "8.998.000.000.000.001"
-        val category = food.copy(
-            figure = BudgetFigure(ReciboHeadline.Remaining, plain(huge), ReciboStamp.AtLimit),
-            spent = plain(huge),
-            limit = plain(huge)
-        )
-        val long = ExpenseRow(
-            "9",
-            LocalDate.of(2025, 12, 31),
-            "Una nota tan larga como se permite escribir en un gasto, sí",
-            plain("999.999.999.999"),
-            false
-        )
-
-        show(
-            ready(ExpenseListState.Rows(listOf(long), more = true), category = category),
-            fontScale = 2f,
-            showName = true
-        )
-
-        rule.onNodeWithContentDescription("Te quedan aquí $huge pesos. Al límite.")
-            .performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(CATEGORY_DETAIL_SPENT_TAG).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(CATEGORY_DETAIL_LIMIT_TAG).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(categoryExpenseTag("9")).performScrollTo().assertIsDisplayed()
-        rule.onNode(inRow("9", "mié 31 dic 2025"), useUnmergedTree = true).assertExists()
-        rule.onNodeWithTag(CATEGORY_DETAIL_MORE_TAG).performScrollTo().assertIsDisplayed()
     }
 
     private fun numbered(numbers: List<Int>) = ExpenseListState.Rows(

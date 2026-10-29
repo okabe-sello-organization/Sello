@@ -38,8 +38,8 @@ import org.robolectric.annotation.Config
 /**
  * Aportar and Retirar as they are drawn: the chips carry their percentage, a retiro above
  * what is saved says so in the label's place and waits, a correction a later retiro needs
- * says which one, and the action stays whole on a narrow phone and wider windows at 1.0,
- * 1.3 and 2.0 font scales in all four themes.
+ * says which one, and the action stays whole on a narrow phone and wider windows at font
+ * scales 1.0 and 1.3 in all four themes.
  */
 @RunWith(AndroidJUnit4::class)
 class GoalMovementScreenTest {

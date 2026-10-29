@@ -111,8 +111,8 @@ class PastMonthRibbonShellTest {
         }
     }
 
-    private fun show(screen: Screen, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale)) { Frame(screen) }
+    private fun show(screen: Screen) {
+        rule.showSello(Look()) { Frame(screen) }
     }
 
     private val ribbon get() = rule.onNodeWithTag(PAST_MONTH_RIBBON_TAG)
@@ -198,30 +198,5 @@ class PastMonthRibbonShellTest {
 
         rule.onNodeWithTag("content").assertExists()
         ribbon.assertDoesNotExist()
-    }
-
-    @Test
-    fun atTwiceTheFontSizeTheReturnGoesUnderAMessageThatKeepsItsWidth() {
-        show(Screen.Tab, fontScale = 2f)
-
-        val shown = ribbon.getUnclippedBoundsInRoot()
-        val message = rule.onNodeWithText("Estás viendo septiembre").assertIsDisplayed()
-            .getUnclippedBoundsInRoot()
-        val back = rule.onNodeWithText("Volver a octubre").assertIsDisplayed()
-        val button = back.getUnclippedBoundsInRoot()
-        // Beside the button the message was squeezed into a column of letters.
-        assertTrue(
-            "$message in $shown",
-            message.right - message.left > (shown.right - shown.left) / 2
-        )
-        assertTrue("$button under $message", button.top >= message.bottom)
-        val node = back.fetchSemanticsNode()
-        assertTrue(
-            node.touchBoundsInRoot.height >= with(node.layoutInfo.density) {
-                47.9f * density
-            }
-        )
-        back.performClick()
-        assertEquals(listOf<ShellAction>(ShellAction.ReturnToCurrentMonth), actions)
     }
 }

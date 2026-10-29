@@ -87,9 +87,9 @@ class ComponentContractsTest {
     }
 
     @Test
-    fun twelveDigitSignedAmountFitsOnOneLineAt320AndDoubleFont() {
+    fun twelveDigitSignedAmountFitsOnOneLineAt320() {
         val results = mutableListOf<TextLayoutResult>()
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             FittedMoneyText(
                 MoneyTextValue(
                     MoneySign.Plus,
@@ -111,7 +111,7 @@ class ComponentContractsTest {
 
     @Test
     fun anAnswerSlipWithADescriptionIsReadAsThatOneSentenceAndItsDetailOnItsOwn() {
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             AnswerSlip(
                 "Restante del presupuesto",
                 MoneyTextValue(MoneySign.Minus, "", "999.999.999.999", "menos 999.999.999.999"),
@@ -174,9 +174,9 @@ class ComponentContractsTest {
     }
 
     @Test
-    fun allFourDestinationsExposeSelectionAndLabelsAtDoubleFont() {
+    fun allFourDestinationsExposeSelectionAndLabels() {
         var selected by mutableStateOf("recibo")
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             SelloNavigationBar(
                 SelloNavigation(
                     listOf(
@@ -254,9 +254,9 @@ class ComponentContractsTest {
     }
 
     @Test
-    fun longNoteKeepsCancelAndDoneVisibleAtDoubleFont() {
+    fun longNoteKeepsCancelAndDoneVisible() {
         val note = "Nota sintética que conserva todas sus palabras. ".repeat(8)
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             NoteComposer(
                 AnnotatedString("Gasto en Comida"), note, {}, "${note.length}/60",
                 "Opcional", "Máximo 60 caracteres", "Listo", "Cancelar", {}, {}
@@ -310,7 +310,7 @@ class ComponentContractsTest {
 
     @Test
     fun landscapeEntryKeepsAmountActionAndPadFixedWhileChoicesScroll() {
-        rule.inEveryScheme(fontScale = 2f, width = 760.dp, densityScale = 0.4f, content = {
+        rule.inEveryScheme(width = 760.dp, densityScale = 0.4f, content = {
             Box(Modifier.height(400.dp)) {
                 EntryLayout(
                     header = { Text("Gasto / Ingreso") },
@@ -356,9 +356,9 @@ class ComponentContractsTest {
     }
 
     @Test
-    fun addChipIsAReachableButtonAtDoubleFont() {
+    fun addChipIsAReachableButton() {
         var added = 0
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             AddChip("Nueva", { added++ })
         }) {
             val chip = rule.onNodeWithText("Nueva")

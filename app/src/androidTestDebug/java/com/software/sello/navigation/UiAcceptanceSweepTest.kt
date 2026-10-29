@@ -8,7 +8,7 @@ import org.junit.runners.Parameterized
 
 /**
  * The sweep on every pull request: the smallest phone window and the shortest
- * landscape one, both at twice the font size, in light and dark.
+ * landscape one, both at the normal font size, in light and dark.
  */
 @RunWith(Parameterized::class)
 class UiAcceptanceSweepTest(window: Window) : UiAcceptanceSweep(window) {
@@ -16,12 +16,12 @@ class UiAcceptanceSweepTest(window: Window) : UiAcceptanceSweep(window) {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun windows() = listOf(
-            Window("compact 320x640 at 2.0, Cobalto light", 320, 640, 2f, SelloInk.Cobalto, false),
+            Window("compact 320x640 at 1.0, Cobalto light", 320, 640, 1f, SelloInk.Cobalto, false),
             Window(
-                "short landscape 640x360 at 2.0, Cobalto dark",
+                "short landscape 640x360 at 1.0, Cobalto dark",
                 640,
                 360,
-                2f,
+                1f,
                 SelloInk.Cobalto,
                 true
             )

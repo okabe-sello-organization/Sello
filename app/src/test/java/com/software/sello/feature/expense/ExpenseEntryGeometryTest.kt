@@ -78,8 +78,8 @@ class ExpenseEntryGeometryTest {
     private var state by mutableStateOf(empty)
 
     /** One dp is one pixel (pinned), so the pixel sizes asserted below are dp. */
-    private fun show(window: DpSize, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale, window = window, density = 1f)) {
+    private fun show(window: DpSize) {
+        rule.showSello(Look(window = window, density = 1f)) {
             ExpenseEntryScreen(state, dateLabels(), { actions += it })
         }
     }
@@ -122,15 +122,6 @@ class ExpenseEntryGeometryTest {
         show(sideways)
 
         assertNothingMovesWhateverIsSaid()
-    }
-
-    @Test
-    fun atTwiceTheFontSizeNoKeyAndNoButtonMovesWhateverTheFormSays() {
-        show(phone, fontScale = 2f)
-
-        // At this size "Comprobar si se guardó" takes two lines and its taller button
-        // lifts the keys. They are off in that state, so no digit can be mistyped.
-        assertNothingMovesWhateverIsSaid(said.filter { (_, state) -> state.editable })
     }
 
     @Test

@@ -95,7 +95,7 @@ import org.robolectric.annotation.Config
 /**
  * Metas and a goal as they are drawn: the tab's own green dock only once its screen
  * exists, never a month or Anotar, and every figure whole on a narrow phone, a tablet
- * and an expanded window, at 1.0, 1.3 and 2.0 font scales, in all four themes.
+ * and an expanded window, at font scales 1.0 and 1.3, in all four themes.
  */
 @RunWith(AndroidJUnit4::class)
 class MetasScreenTest {

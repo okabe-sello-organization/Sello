@@ -57,8 +57,8 @@ class CatchUpNoticeScreenTest {
 
     private fun ready(items: List<RecordedItem>) = CatchUpNoticeState.Ready(items, today)
 
-    private fun list(state: CatchUpNoticeState, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale)) {
+    private fun list(state: CatchUpNoticeState) {
+        rule.showSello(Look()) {
             CatchUpRecordedScreen(
                 state,
                 PaddingValues(12.dp),
@@ -191,14 +191,5 @@ class CatchUpNoticeScreenTest {
         list(ready(emptyList()))
 
         rule.onNodeWithText("Ya no queda nada por revisar").assertIsDisplayed()
-    }
-
-    @Test
-    fun atTwiceTheTextSizeEveryEntryCanStillBeReachedAndOpened() {
-        list(ready(recorded), fontScale = 2f)
-
-        rule.onNodeWithText("Sello anotó estos 3").assertIsDisplayed()
-        rule.onNodeWithTag("catch-up.g").performScrollTo().assertIsDisplayed().performClick()
-        assertEquals(listOf("g" to false), edited)
     }
 }

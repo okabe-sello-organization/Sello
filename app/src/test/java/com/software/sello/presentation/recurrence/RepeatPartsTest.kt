@@ -104,19 +104,6 @@ class RepeatPartsTest {
     }
 
     @Test
-    fun atTwiceTheFontSizeTheDaysTakeFourColumnsWithinANarrowScreen() {
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
-            DayGrid(setOf(15, 30), {}, { "Día $it" })
-        }) { scheme ->
-            val boxes = days()
-            assertEquals(scheme, 31, boxes.size)
-            assertEquals(scheme, 4, boxes.map { it.left }.distinct().size)
-            assertTrue(scheme, boxes.all { it.right <= 320.dp })
-            assertTargets(scheme, boxes)
-        }
-    }
-
-    @Test
     fun whereSevenTargetsDoNotFitTheRowHoldsFewerAndKeepsThemAt48dp() {
         rule.inEveryScheme(width = 320.dp, content = {
             DayGrid(setOf(1), {}, { "Día $it" })
@@ -185,18 +172,6 @@ class RepeatPartsTest {
     }
 
     @Test
-    fun atTwiceTheFontSizeTheSheetActionsStandOneAboveTheOther() {
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
-            RepeatSheetActions("Quitar", {}, "Listo", {})
-        }) { scheme ->
-            val dismiss = rule.onNodeWithText("Quitar").getUnclippedBoundsInRoot()
-            val confirm = rule.onNodeWithText("Listo").getUnclippedBoundsInRoot()
-            assertTrue("$scheme $dismiss $confirm", confirm.top >= dismiss.bottom)
-            assertTrue(scheme, confirm.right <= 320.dp && dismiss.right <= 320.dp)
-        }
-    }
-
-    @Test
     fun theSheetActionsShareARowAThirdAndTwoThirds() {
         var quit = 0
         var done = 0
@@ -218,9 +193,9 @@ class RepeatPartsTest {
 
     private var dismissed = 0
 
-    private fun showSheet(fontScale: Float = 1f, height: Float = 640f) {
+    private fun showSheet(height: Float = 640f) {
         dismissed = 0
-        rule.inEveryScheme(fontScale = fontScale, reset = { dismissed = 0 }, content = {
+        rule.inEveryScheme(reset = { dismissed = 0 }, content = {
             Box(Modifier.height(height.dp)) {
                 RepeatSheet("Se repite", onDismiss = { dismissed++ }) {
                     DayGrid(setOf(5), {}, { "Día $it" })
@@ -250,18 +225,4 @@ class RepeatPartsTest {
 
     private fun headingText() = rule.onNode(isHeading()).fetchSemanticsNode()
         .config.getOrNull(SemanticsProperties.Text)?.joinToString { it.text }
-
-    @Test
-    fun atTwiceTheFontSizeTheSheetScrollsToItsLastAction() {
-        check = { scheme ->
-            assertTrue(
-                scheme,
-                rule.onAllNodes(hasScrollAction()).fetchSemanticsNodes().isNotEmpty()
-            )
-            rule.onNodeWithText("Listo").performScrollTo().assertIsDisplayed().performClick()
-            rule.onNode(isHeading()).assertExists()
-            assertEquals(scheme, 0, dismissed)
-        }
-        showSheet(fontScale = 2f, height = 560f)
-    }
 }

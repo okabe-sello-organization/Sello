@@ -50,7 +50,7 @@ import org.robolectric.annotation.Config
 /**
  * Nueva meta as it is drawn: the plan says its assumption, the action waits, and the
  * largest amount, the longest name and every caption stay whole on a narrow phone and
- * wider windows, at 1.0, 1.3 and 2.0 font scales, in all four themes.
+ * wider windows, at font scales 1.0 and 1.3, in all four themes.
  */
 @RunWith(AndroidJUnit4::class)
 class GoalEditorScreenTest {

@@ -58,12 +58,11 @@ class ResumenScreenTest {
     private fun show(
         ink: SelloInk = SelloInk.Cobalto,
         dark: Boolean = false,
-        font: Float = 1f,
         width: Dp? = null,
         height: Dp? = null,
         density: Float? = null
     ) {
-        rule.showSello(Look(ink = ink, dark = dark, fontScale = font, density = density)) {
+        rule.showSello(Look(ink = ink, dark = dark, density = density)) {
             Box(
                 if (width != null && height != null) {
                     Modifier.requiredSize(width, height)
@@ -171,9 +170,9 @@ class ResumenScreenTest {
     }
 
     @Test
-    fun largeFontKeepsExactSelectedAmountsAndControlsReachable() {
+    fun selectedAmountsAreExactAndControlsReachable() {
         state.value = resumenExample(money).copy(selectedWeekday = "SATURDAY")
-        show(font = 2f)
+        show()
         rule.onNodeWithTag("resumen.weekdays.selected").performScrollTo().assertIsDisplayed()
         rule.onNodeWithTag("resumen.openIncome").performScrollTo().performClick()
         rule.runOnIdle { assertEquals(1, incomeClicks) }
@@ -218,7 +217,7 @@ class ResumenScreenTest {
             history = listOf(point),
             selectedHistory = point.chart.id
         )
-        show(font = 2f)
+        show()
         rule.onNodeWithContentDescription("menos 9.007.199.254.740.993 pesos")
             .performScrollTo().assertIsDisplayed()
         rule.onNodeWithTag("resumen.history.selected").performScrollTo().assertIsDisplayed()

@@ -54,7 +54,7 @@ import org.robolectric.annotation.Config
  * Nueva inversión and Editar inversión as they are drawn (v2 *Agregar / editar
  * inversión*, *Dólares y la tasa*): the currency only when creating, the rate slip only
  * for dollars with no rate, Crear waiting for it, deletion counting the movements, and
- * the longest name and largest amounts whole at 1.0, 1.3 and 2.0 on narrow and wider
+ * the longest name and largest amounts whole at 1.0 and 1.3 on narrow and wider
  * windows in all four themes.
  */
 @RunWith(AndroidJUnit4::class)

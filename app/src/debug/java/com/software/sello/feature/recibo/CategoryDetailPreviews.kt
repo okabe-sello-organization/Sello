@@ -95,7 +95,6 @@ private fun CategoryDetailPreview(ink: SelloInk = SelloInk.Cobalto, dark: Boolea
 
 @Preview(name = "Category detail · Cobalto light", locale = "es", heightDp = 1600)
 @Preview(name = "Category detail · font 1.3", locale = "es", fontScale = 1.3f)
-@Preview(name = "Category detail · font 2", locale = "es", fontScale = 2f)
 @Composable
 private fun CategoryCobaltoLight() = CategoryDetailPreview()
 

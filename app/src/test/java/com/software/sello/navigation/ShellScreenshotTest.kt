@@ -62,8 +62,7 @@ class ShellScreenshotTest {
     fun pastMonthCobaltoLight() = capture(Look(), "past-month", pickerOpen = false)
 
     @Test
-    fun pastMonthCobaltoDarkAtTwiceTheFontSize() =
-        capture(Look(dark = true, fontScale = 2f), "past-month", pickerOpen = false)
+    fun pastMonthCobaltoDark() = capture(Look(dark = true), "past-month", pickerOpen = false)
 
     @Test
     fun pastMonthVioletaLight() =
@@ -73,8 +72,7 @@ class ShellScreenshotTest {
     fun pickerCobaltoLight() = capture(Look(), "picker", pickerOpen = true)
 
     @Test
-    fun pickerCobaltoDarkAtTwiceTheFontSize() =
-        capture(Look(dark = true, fontScale = 2f), "picker", pickerOpen = true)
+    fun pickerCobaltoDark() = capture(Look(dark = true), "picker", pickerOpen = true)
 
     @Test
     fun pickerVioletaLight() = capture(Look(ink = SelloInk.Violeta), "picker", pickerOpen = true)

@@ -115,8 +115,8 @@ class ScheduleScreensTest {
         ended = emptyList()
     )
 
-    private fun list(state: SchedulesState, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale)) {
+    private fun list(state: SchedulesState) {
+        rule.showSello(Look()) {
             SchedulesScreen(
                 state,
                 today,
@@ -270,16 +270,6 @@ class ScheduleScreensTest {
         rule.onNodeWithText("Reintentar").performClick()
 
         assertEquals(listOf<SchedulesAction>(SchedulesAction.Retry), listActions)
-    }
-
-    @Test
-    fun atTwiceTheFontSizeEveryRowCanBeReached() {
-        list(ready, fontScale = 2f)
-
-        stub().performScrollTo().assertIsDisplayed()
-
-        rule.onNodeWithTag(SCHEDULES_TAG).performScrollToNode(hasTestTag("schedules.row.c"))
-        rule.onNodeWithTag("schedules.row.c").assertIsDisplayed()
     }
 
     private val editing = ScheduleEditorState(

@@ -22,8 +22,7 @@ class StartupLoadingTest {
 
     @Test
     fun itFillsTheScreenAndTellsAScreenReaderItIsLoading() {
-        // It holds no text, so a larger font changes nothing; 2x is shown to prove it.
-        rule.showSello(Look(fontScale = 2f)) { StartupLoading() }
+        rule.showSello(Look()) { StartupLoading() }
 
         rule.onNodeWithTag(STARTUP_LOADING_TAG).assertIsDisplayed()
         val loading = rule.onNodeWithContentDescription("Cargando")

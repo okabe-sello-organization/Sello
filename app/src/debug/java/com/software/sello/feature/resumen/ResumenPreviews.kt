@@ -118,7 +118,6 @@ private fun SummaryPreview(ink: SelloInk, dark: Boolean, stale: Boolean = false)
 }
 
 @Preview(name = "Cobalto claro", locale = "es", showBackground = true)
-@Preview(name = "Fuente 2", locale = "es", fontScale = 2f)
 @Composable
 private fun CobaltoLightResumen() = SummaryPreview(SelloInk.Cobalto, false)
 

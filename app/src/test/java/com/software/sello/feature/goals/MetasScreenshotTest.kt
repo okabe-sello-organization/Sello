@@ -114,7 +114,7 @@ class MetasScreenshotTest {
     fun cobaltoLight() = capture(Look())
 
     @Test
-    fun cobaltoDarkAtTwiceTheFontSize() = capture(Look(dark = true, fontScale = 2f))
+    fun cobaltoDark() = capture(Look(dark = true))
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))

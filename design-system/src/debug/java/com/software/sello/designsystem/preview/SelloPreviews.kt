@@ -42,19 +42,11 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
- * Light and dark at the normal font size and at twice it: the four looks a component has to
- * survive. The theme follows the preview's night mode. Debug only; nothing here ships.
+ * Light and dark: the two looks a component has to survive. The theme follows the
+ * preview's night mode. Debug only; nothing here ships.
  */
 @Preview(name = "Claro", locale = "es", widthDp = 360, showBackground = true)
 @Preview(name = "Oscuro", locale = "es", widthDp = 360, uiMode = UI_MODE_NIGHT_YES)
-@Preview(name = "Claro, fuente 2", locale = "es", widthDp = 360, fontScale = 2f)
-@Preview(
-    name = "Oscuro, fuente 2",
-    locale = "es",
-    widthDp = 360,
-    fontScale = 2f,
-    uiMode = UI_MODE_NIGHT_YES
-)
 annotation class SelloPreviews
 
 /** The desk the components sit on, in the theme the preview asks for. */

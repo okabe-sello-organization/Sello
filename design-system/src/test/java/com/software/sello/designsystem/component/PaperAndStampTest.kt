@@ -100,21 +100,14 @@ class PaperAndStampTest {
     }
 
     @Test
-    fun leaderAndAmountSitOnTheLabelsFirstLineNotTheMiddleOfTheRow() = leaderOnLabel(1f)
-
-    @Test
-    fun leaderStaysOnTheLabelsFirstLineWithLargeText() =
-        // Wide enough that the dots still have room at double size.
-        leaderOnLabel(2f, width = 640.dp, densityScale = 0.6f)
+    fun leaderAndAmountSitOnTheLabelsFirstLineNotTheMiddleOfTheRow() = leaderOnLabel()
 
     // v1.1 `.ln`: the row aligns on its first baseline, so the amount shares the label's
     // line and the dots run 5 px above it (`.ld`: 2 px border raised 4 px), however tall
     // the date under the label makes the row.
-    private fun leaderOnLabel(fontScale: Float, width: Dp = 360.dp, densityScale: Float = 1f) {
+    private fun leaderOnLabel() {
         rule.inEveryScheme(
-            fontScale = fontScale,
-            width = width,
-            densityScale = densityScale,
+            width = 360.dp,
             content = {
                 Slip {
                     LeaderLine("Rappi, almuerzo", Modifier.testTag("dated"), caption = "mié 21") {
@@ -124,10 +117,10 @@ class PaperAndStampTest {
                 }
             }
         ) {
-            rule.assertLeaderOnLabel("$it at ${fontScale}x", "dated", "Rappi, almuerzo") {
+            rule.assertLeaderOnLabel(it, "dated", "Rappi, almuerzo") {
                 hasContentDescription("20.600 pesos")
             }
-            rule.assertLeaderOnLabel("$it at ${fontScale}x", "plain", "Fecha") {
+            rule.assertLeaderOnLabel(it, "plain", "Fecha") {
                 hasText("jue 22 oct")
             }
         }

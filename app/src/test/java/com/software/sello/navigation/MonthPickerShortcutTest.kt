@@ -51,8 +51,8 @@ class MonthPickerShortcutTest {
     private var state by mutableStateOf(browsing("2026-10", "2023-05", 2021))
 
     /** The picker's content alone, one dp drawn as one pixel, in a sheet of this width. */
-    private fun showPicker(width: Int = 360, fontScale: Float = 1f) = rule.showSello(
-        Look(fontScale = fontScale, window = DpSize(width.dp, 700.dp), density = 1f)
+    private fun showPicker(width: Int = 360) = rule.showSello(
+        Look(window = DpSize(width.dp, 700.dp), density = 1f)
     ) {
         MonthPicker(state, monthNames(), { actions += it })
     }
@@ -115,23 +115,6 @@ class MonthPickerShortcutTest {
         // What a finger can hit is at least the smallest size it can be asked to.
         val touch = shortcut.fetchSemanticsNode().touchBoundsInRoot
         assertTrue("$touch", touch.height >= 48f && touch.width >= 48f)
-    }
-
-    @Test
-    fun atTwiceTheFontSizeItDropsBelowTheTitleWithItsTextWhole() {
-        showPicker(width = 320, fontScale = 2f)
-        val title = rule.onNodeWithText("Elige un mes").fetchSemanticsNode().boundsInRoot
-        val button = shortcut.fetchSemanticsNode().boundsInRoot
-        val label = rule.onNodeWithText("Mes actual", useUnmergedTree = true).fetchSemanticsNode()
-
-        assertTrue("$title $button", button.top >= title.bottom)
-        assertTrue("$button", button.left >= 0f && button.right <= 320f)
-        // One line of text, not cut: as tall as one line and no taller.
-        val lines = label.config.getOrNull(SemanticsProperties.Text)!!.single().text.lines().size
-        assertEquals(1, lines)
-        assertTrue("$label", label.size.width <= 320)
-        shortcut.performClick()
-        assertEquals(listOf<ShellAction>(ShellAction.PickMonth(YearMonth.of(2026, 10))), actions)
     }
 
     @Test

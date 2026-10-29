@@ -66,7 +66,6 @@ private fun AnswerPreview(answer: Answer, ink: SelloInk = SelloInk.Cobalto, dark
 }
 
 @Preview(name = "Hoy", locale = "es", showBackground = true)
-@Preview(name = "Hoy, fuente 2", locale = "es", fontScale = 2f, showBackground = true)
 @Composable
 private fun TodayRecibo() = AnswerPreview(Answer.Today)
 

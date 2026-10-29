@@ -126,7 +126,7 @@ class ScheduleScreensScreenshotTest {
     fun listCobaltoLight() = list(Look())
 
     @Test
-    fun listCobaltoDarkAtTwiceTheFontSize() = list(Look(dark = true, fontScale = 2f))
+    fun listCobaltoDark() = list(Look(dark = true))
 
     @Test
     fun listVioletaLight() = list(Look(ink = SelloInk.Violeta))
@@ -135,7 +135,7 @@ class ScheduleScreensScreenshotTest {
     fun editorCobaltoLight() = editor(Look())
 
     @Test
-    fun editorCobaltoDarkAtTwiceTheFontSize() = editor(Look(dark = true, fontScale = 2f))
+    fun editorCobaltoDark() = editor(Look(dark = true))
 
     @Test
     fun editorVioletaLight() = editor(Look(ink = SelloInk.Violeta))

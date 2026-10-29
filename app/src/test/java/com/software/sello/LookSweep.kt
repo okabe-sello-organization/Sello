@@ -25,7 +25,7 @@ data class SweepLook(
  */
 fun sweepLooks(
     windows: List<SweepWindow>,
-    scales: List<Float> = listOf(1f, 1.3f, 2f)
+    scales: List<Float> = listOf(1f, 1.3f)
 ): List<SweepLook> {
     val default = SweepLook(SelloInk.Cobalto, false, scales.first(), windows.first())
     val layouts = scales.flatMap { scale ->

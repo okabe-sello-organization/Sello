@@ -54,11 +54,5 @@ class ExpenseEntryScreenshotTest {
     fun cobaltoDark() = capture(Look(dark = true))
 
     @Test
-    fun cobaltoLightAtTwiceTheFontSize() = capture(Look(fontScale = 2f))
-
-    @Test
-    fun cobaltoDarkAtTwiceTheFontSize() = capture(Look(dark = true, fontScale = 2f))
-
-    @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
 }

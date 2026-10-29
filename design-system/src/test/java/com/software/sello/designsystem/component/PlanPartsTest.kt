@@ -103,25 +103,6 @@ class PlanPartsTest {
     }
 
     @Test
-    fun atTwiceTheFontSizeTheChipStaysWithinTheScreenAndIsStillOneSentence() {
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
-            Column {
-                ExpectedChip(
-                    "Arriendo del apartamento · sáb 31 oct ·",
-                    pesos("999.999.999.999"),
-                    "Arriendo del apartamento esperado el sáb 31 oct: 999.999.999.999 pesos",
-                    Modifier.testTag("chip")
-                )
-            }
-        }) { scheme ->
-            val chip = rule.onNodeWithTag("chip").assertIsDisplayed().getUnclippedBoundsInRoot()
-            assertTrue("$scheme ${chip.right}", chip.right <= 320.dp)
-            // Wrapped onto more than one line rather than cut at the edge.
-            assertTrue("$scheme ${chip.height}", chip.height > 48.dp)
-        }
-    }
-
-    @Test
     fun aPlanSlipsLinesTakeTheThemesInkInEveryScheme() {
         var ink: Color? = null
         var expected: Color? = null

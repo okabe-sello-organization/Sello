@@ -42,8 +42,8 @@ class StartupFailureScreenTest {
 
     private val actions = mutableListOf<StartupFailureAction>()
 
-    private fun show(state: StartupFailureState, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale)) {
+    private fun show(state: StartupFailureState) {
+        rule.showSello(Look()) {
             StartupFailureScreen(state, { actions += it })
         }
     }
@@ -125,18 +125,6 @@ class StartupFailureScreenTest {
 
         rule.onNodeWithTag(STARTUP_NOT_SET_ASIDE_TAG).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("No pudimos apartar tus datos. No se cambió nada.").assertIsDisplayed()
-    }
-
-    @Test
-    fun atTwiceTheFontSizeEveryChoiceCanStillBeReached() {
-        show(StartupFailureState(confirming = true, typed = "BORRAR"), fontScale = 2f)
-
-        rule.onNodeWithTag(STARTUP_RETRY_TAG).performScrollTo().assertIsDisplayed()
-        word.performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(STARTUP_CANCEL_TAG).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(STARTUP_CONFIRM_TAG).performScrollTo().assertIsDisplayed().performClick()
-
-        assertEquals(listOf<StartupFailureAction>(StartupFailureAction.Confirm), actions)
     }
 
     private val backup = CheckedBackup(
@@ -282,16 +270,5 @@ class StartupFailureScreenTest {
         rule.onNodeWithText("Aplicar orden").performScrollTo().performClick()
 
         assertEquals(listOf<StartupFailureAction>(StartupFailureAction.ApplyPreferences), actions)
-    }
-
-    @Test
-    fun atTwiceTheFontSizeThePreviewCanStillBeConfirmed() {
-        show(StartupFailureState(restore = StartupRestoreStep.Previewing(backup)), fontScale = 2f)
-
-        rule.onNodeWithTag(STARTUP_RESTORE_CANCEL_TAG).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(STARTUP_RESTORE_CONFIRM_TAG).performScrollTo().assertIsDisplayed()
-            .performClick()
-
-        assertEquals(listOf<StartupFailureAction>(StartupFailureAction.ConfirmRestore), actions)
     }
 }

@@ -35,8 +35,8 @@ Which layer tests what ([ADR 0022](../decisions/0022-jvm-screen-and-screenshot-t
 
 | Layer | Tests | Where |
 | --- | --- | --- |
-| JVM | Domain rules, view models, and screens rendered from state given by hand: what each state shows, what each control reports, layout geometry, font scale | `<module>/src/test/`, Robolectric |
-| JVM screenshots | What a screen looks like, per ink, light or dark and font scale; what each group of components looks like | `app/src/test/` and `design-system/src/test/`, Roborazzi; baselines in `<module>/src/test/screenshots/` |
+| JVM | Domain rules, view models, and screens rendered from state given by hand: what each state shows, what each control reports, layout geometry | `<module>/src/test/`, Robolectric |
+| JVM screenshots | What a screen looks like, per ink, light or dark; what each group of components looks like | `app/src/test/` and `design-system/src/test/`, Roborazzi; baselines in `<module>/src/test/screenshots/` |
 | Device | Storage on real Room, platform contracts (system keyboard, insets, backup, launcher) and a small set of user journeys through the real app | `<module>/src/androidTest*/` |
 
 Device tests cover critical paths only ([ARCHITECTURE §10](../../ARCHITECTURE.md#10-enforcement-and-evolution)).

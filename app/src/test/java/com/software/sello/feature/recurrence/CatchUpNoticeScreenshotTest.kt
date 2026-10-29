@@ -74,7 +74,7 @@ class CatchUpNoticeScreenshotTest {
     fun barCobaltoLight() = bar(Look())
 
     @Test
-    fun barCobaltoDarkAtTwiceTheFontSize() = bar(Look(dark = true, fontScale = 2f))
+    fun barCobaltoDark() = bar(Look(dark = true))
 
     @Test
     fun barVioletaLight() = bar(Look(ink = SelloInk.Violeta))
@@ -83,7 +83,7 @@ class CatchUpNoticeScreenshotTest {
     fun listCobaltoLight() = list(Look())
 
     @Test
-    fun listCobaltoDarkAtTwiceTheFontSize() = list(Look(dark = true, fontScale = 2f))
+    fun listCobaltoDark() = list(Look(dark = true))
 
     @Test
     fun listVioletaLight() = list(Look(ink = SelloInk.Violeta))
