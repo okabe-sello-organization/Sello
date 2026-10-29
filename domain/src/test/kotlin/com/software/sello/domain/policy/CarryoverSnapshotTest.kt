@@ -728,4 +728,55 @@ class CarryoverSnapshotTest {
         assertEquals(cop(70_000), (off.overall as OverallBudget.Limited).budget.remaining)
         assertNull(off.categories.single().budget!!.carry)
     }
+
+    @Test
+    fun r2TheSuggestionOffersAndRanksByTheBaseNotTheCapacity() {
+        // Both categories carry from dic and are over their capacity in dic and ene.
+        // X: base 100.000, C 70.000 in ene, C feb 95.000. Y: base 120.000, C feb 60.000.
+        val x = Carry.id(10)
+        val y = Carry.id(11)
+        val dic = m(2026, 12)
+        val expenses = listOf(
+            expense(x, "2026-12-10", 130_000),
+            expense(x, "2027-01-10", 75_000),
+            expense(y, "2026-12-10", 200_000),
+            expense(y, "2027-01-10", 100_000)
+        )
+        val categories = listOf(line(x, "X", 100_000), line(y, "Y", 120_000))
+        val inputs = listOf(x to 100_000L, y to 120_000L).map { (id, base) ->
+            CategoryCarryInput(
+                id,
+                listOf(chain(dic, of = id)),
+                listOf(monthly(dic, base, id)),
+                emptyList(),
+                Carry.history(id, dic, feb, "2027-02-22", *expenses.toTypedArray())
+            )
+        }
+
+        val resumen = ResumenPolicy.snapshot(
+            feb,
+            FinancialDay(LocalDate.parse("2027-02-22"), bogota),
+            3,
+            41,
+            ResumenPolicy.monthsEndingIn(feb).map {
+                ResumenMonthInput(it, categories, expenses, inputs)
+            },
+            emptyList()
+        ).valueOrFail()
+
+        // Hand-worked, not in the corpus. Y: dic C 120.000, S 200.000, R -80.000; ene K -80.000, C 40.000,
+        // S 100.000, R -60.000; feb K -60.000, C 60.000. average spent = (200.000 + 100.000) / 2 = 150.000.
+        // Over C twice (S 200.000 > C 120.000 and S 100.000 > C 40.000 for Y): Y; its limit is
+        // the base 120.000, not the capacity 60.000, and the base ranks it above X's 100.000.
+        assertEquals(
+            com.software.sello.domain.model.LimitAdjustment(
+                y,
+                Carry.category(y, "Y").name,
+                listOf(dic, ene),
+                cop(150_000),
+                cop(120_000)
+            ),
+            resumen.suggestion
+        )
+    }
 }

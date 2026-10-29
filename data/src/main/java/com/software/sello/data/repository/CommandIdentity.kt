@@ -18,6 +18,7 @@ import com.software.sello.domain.port.ChangeCategoryIcon
 import com.software.sello.domain.port.ChangeGoalTarget
 import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CompleteGoal
+import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateGoal
@@ -88,15 +89,16 @@ private fun digestWith(
     )
 }
 
-/** The confirmed balance and revision, each present or not, or null when neither is. */
-private fun confirmation(carryIn: Money?, revision: Long?): List<String>? {
-    if (carryIn == null && revision == null) return null
+/** The confirmed balance and correction, each present or not, or null when neither is. */
+private fun confirmation(carryIn: Money?, correction: CorrectionConfirmation?): List<String>? {
+    if (carryIn == null && correction == null) return null
     return listOf(
         if (carryIn == null) "0" else "1",
         carryIn?.minorUnits?.toString().orEmpty(),
         carryIn?.currency?.code.orEmpty(),
-        if (revision == null) "0" else "1",
-        revision?.toString().orEmpty()
+        if (correction == null) "0" else "1",
+        correction?.revision?.toString().orEmpty(),
+        correction?.change.orEmpty()
     )
 }
 
@@ -111,7 +113,7 @@ internal fun inputDigest(command: CreateExpense): String = digestWith(
         if (command.note == null) "0" else "1",
         command.note?.value.orEmpty()
     ),
-    confirmation(null, command.confirmedRevision)
+    confirmation(null, command.confirmation)
 )
 
 internal fun inputDigest(command: EditExpense): String = digestWith(
@@ -127,21 +129,21 @@ internal fun inputDigest(command: EditExpense): String = digestWith(
         if (command.note == null) "0" else "1",
         command.note?.value.orEmpty()
     ),
-    confirmation(null, command.confirmedRevision)
+    confirmation(null, command.confirmation)
 )
 
 internal fun inputDigest(command: DeleteExpense): String = digestWith(
     OperationKind.DeleteExpense,
     command.generation,
     listOf(command.expenseId.value, command.expectedVersion.toString()),
-    confirmation(null, command.confirmedRevision)
+    confirmation(null, command.confirmation)
 )
 
 internal fun inputDigest(command: RestoreExpense): String = digestWith(
     OperationKind.RestoreExpense,
     command.generation,
     listOf(command.deletionId.value),
-    confirmation(null, command.confirmedRevision)
+    confirmation(null, command.confirmation)
 )
 
 /** Zero or one name: the key says which, so "other" named "salary" is not salary. */
@@ -222,12 +224,12 @@ internal fun inputDigest(command: CategoryCommand): String {
 
         // A new kind: its confirmation is always part of it, present or not.
         is DisableCarry -> confirmation(command.confirmedCarryIn, null)
-            ?: listOf("0", "", "", "0", "")
+            ?: listOf("0", "", "", "0", "", "")
     }
     val confirmed = when (command) {
         is ArchiveCategory -> confirmation(command.confirmedCarryIn, null)
         is SetDefaultLimit -> confirmation(command.confirmedCarryIn, null)
-        is SetMonthLimit -> confirmation(command.confirmedCarryIn, command.confirmedRevision)
+        is SetMonthLimit -> confirmation(command.confirmedCarryIn, command.confirmation)
         else -> null
     }
     return digestWith(command.kind, command.generation, subject + change, confirmed)
@@ -446,3 +448,22 @@ private fun digest(vararg fields: String): String {
     }
     return sha256.digest().joinToString("") { "%02x".format(it) }
 }
+
+/**
+ * The identity of a correction without its confirmation (ADR 0020 CP20–CP22): what a
+ * [CorrectionConfirmation] names, so it confirms only the change whose list was shown.
+ */
+internal fun correctionIdentity(command: CreateExpense) =
+    inputDigest(command.copy(confirmation = null))
+
+internal fun correctionIdentity(command: EditExpense) =
+    inputDigest(command.copy(confirmation = null))
+
+internal fun correctionIdentity(command: DeleteExpense) =
+    inputDigest(command.copy(confirmation = null))
+
+internal fun correctionIdentity(command: RestoreExpense) =
+    inputDigest(command.copy(confirmation = null))
+
+internal fun correctionIdentity(command: SetMonthLimit) =
+    inputDigest(command.copy(confirmation = null))

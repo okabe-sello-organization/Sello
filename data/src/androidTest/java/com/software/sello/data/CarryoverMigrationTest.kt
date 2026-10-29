@@ -12,7 +12,6 @@ import com.software.sello.data.repository.RoomCategoryCommands
 import com.software.sello.data.repository.RoomExpenseCommands
 import com.software.sello.data.repository.RoomMonthlySnapshots
 import com.software.sello.data.repository.UndoWindow
-import com.software.sello.data.repository.inputDigest
 import com.software.sello.domain.model.BudgetStanding
 import com.software.sello.domain.model.LimitedBudget
 import com.software.sello.domain.model.Money
@@ -112,6 +111,10 @@ class CarryoverMigrationTest {
         note = Note.of(null).valueOrFail()
     )
 
+    /** Its identity as version 6 stored it, printed by the code on `main` at 792b247. */
+    private val recordedInEneDigest =
+        "f9637361ad0b0c1215ac58986b48c9bab890d99d43908a047449b35a0c270ae1"
+
     /** SC01's history as version 6 stored it, and one row of every other table. */
     private fun versionSixWithHistory(): Map<String, List<String>> =
         helper.createDatabase(name, 6).use { db ->
@@ -144,7 +147,7 @@ class CarryoverMigrationTest {
             )
             db.execSQL(
                 "INSERT INTO operation_receipt VALUES ('${uuid(9)}', 'expense.create', " +
-                    "'${inputDigest(recordedInEne)}', 4, 17, '${uuid(2)}', 50)"
+                    "'$recordedInEneDigest', 4, 17, '${uuid(2)}', 50)"
             )
             db.execSQL(
                 "INSERT INTO deleted_expense VALUES ('${uuid(10)}', 4, 50, '${uuid(6)}', " +

@@ -18,9 +18,9 @@ import kotlin.time.Duration
  * [generation] is the history the caller was looking at when it was prepared.
  * Everything except [operationId] is the input a replay is compared against.
  *
- * [confirmedRevision], on this and the other expense commands, is only for a correction
- * that changes later months of a carry chain (ADR 0020 CP20–CP22): the revision whose
- * list of changes the person saw and confirmed.
+ * [confirmation], on this and the other expense commands, is only for a correction that
+ * changes later months of a carry chain (ADR 0020 CP20–CP22): what came with the list of
+ * changes the person saw and confirmed for this very change.
  */
 data class CreateExpense(
     val operationId: OperationId,
@@ -29,7 +29,7 @@ data class CreateExpense(
     val amount: TransactionAmount,
     val date: LocalDate,
     val note: Note?,
-    val confirmedRevision: Long? = null
+    val confirmation: CorrectionConfirmation? = null
 )
 
 /**
@@ -47,7 +47,7 @@ data class EditExpense(
     val amount: TransactionAmount,
     val date: LocalDate,
     val note: Note?,
-    val confirmedRevision: Long? = null
+    val confirmation: CorrectionConfirmation? = null
 )
 
 /** A request to remove one recorded expense, as the caller read it at [expectedVersion]. */
@@ -56,7 +56,7 @@ data class DeleteExpense(
     val generation: Long,
     val expenseId: ExpenseId,
     val expectedVersion: Long,
-    val confirmedRevision: Long? = null
+    val confirmation: CorrectionConfirmation? = null
 )
 
 /**
@@ -67,7 +67,7 @@ data class RestoreExpense(
     val operationId: OperationId,
     val generation: Long,
     val deletionId: OperationId,
-    val confirmedRevision: Long? = null
+    val confirmation: CorrectionConfirmation? = null
 )
 
 /**
@@ -118,11 +118,13 @@ sealed interface ExpenseRejection {
 
     /**
      * The change reaches a closed month of a carry chain and changes later months, and it
-     * was not confirmed at the current [revision] (ADR 0020 CP20–CP22). [correction] is the
-     * list to show; confirming sends the same change with [revision].
+     * was not confirmed for this very change at the current revision (ADR 0020 CP20–CP22).
+     * [correction] is the list to show; confirming sends the same change with [confirmation].
      */
-    data class CorrectionUnconfirmed(val revision: Long, val correction: CarryCorrection) :
-        ExpenseRejection
+    data class CorrectionUnconfirmed(
+        val confirmation: CorrectionConfirmation,
+        val correction: CarryCorrection
+    ) : ExpenseRejection
 
     /** The category's carry could not be calculated before or after the change (CP8, CP23). */
     data class CarryUnavailable(val failure: CarryoverFailure) : ExpenseRejection

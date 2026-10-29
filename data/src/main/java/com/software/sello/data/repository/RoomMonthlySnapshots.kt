@@ -34,9 +34,9 @@ import kotlinx.coroutines.withContext
  * Nothing is calculated here or in SQL: the database returns rows and the policy
  * does every sum exactly, on [computation] and never on the caller's thread.
  *
- * Signed carryover is derived on every read too (ADR 0020 CP7): the rows of each category
- * with a chain reaching the month, read in the same transaction, go to the policy with
- * the rest. Nothing is cached, so no figure can be of an older revision than the others.
+ * Signed carryover is derived on every read too (ADR 0020 CP7): for each category with a
+ * chain covering the month, the rows of that chain alone, read in the same transaction,
+ * go to the policy with the rest. Nothing is cached, so no figure can be of an older revision than the others.
  */
 class RoomMonthlySnapshots(
     private val database: SelloDatabase,
@@ -109,7 +109,7 @@ class RoomMonthlySnapshots(
         }
         val carry = ArrayList<CarryRows>(chains.size)
         for ((category, of) in chains) {
-            when (val read = database.carryRows(category, of, month)) {
+            when (val read = database.carryInRows(category, of, month)) {
                 is Outcome.Success -> read.value?.let { carry += it }
                 is Outcome.Failure -> return read
             }

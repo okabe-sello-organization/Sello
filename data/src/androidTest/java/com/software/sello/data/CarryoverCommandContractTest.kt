@@ -8,6 +8,7 @@ import com.software.sello.domain.model.DropPreview
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.CarryCorrection
@@ -16,6 +17,7 @@ import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommandOutcome.Committed
 import com.software.sello.domain.port.CategoryCommandOutcome.Rejected
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.EditExpense
@@ -515,6 +517,7 @@ class CarryoverCommandContractTest {
             SetMonthLimit(ledger.operation(), 1, id, 3, month("2027-03"), finite(150_000))
         )
         val unchanged = state()
+        val correction = ((asked as Rejected).reason as CategoryRejection.CorrectionUnconfirmed)
         val confirmed = ledger.categories.submit(
             SetMonthLimit(
                 ledger.operation(),
@@ -523,13 +526,12 @@ class CarryoverCommandContractTest {
                 3,
                 month("2027-03"),
                 finite(150_000),
-                confirmedRevision = revision
+                confirmation = correction.confirmation
             )
         )
 
         assertEquals(Rejected(CategoryRejection.ChainMonthUnlimited(month("2027-03"))), unlimited)
-        val correction = ((asked as Rejected).reason as CategoryRejection.CorrectionUnconfirmed)
-        assertEquals(revision, correction.revision)
+        assertEquals(revision, correction.confirmation.revision)
         // mar's carry-in does not change, so no later month of the chain is listed; the
         // balance the chain settled in abr is.
         assertEquals(emptyList<String>(), correction.correction.listed())
@@ -604,11 +606,11 @@ class CarryoverCommandContractTest {
         )
     }
 
-    /** SC25 and SC34: the list is bound to the revision it was read at. */
+    /** SC25 and SC34: the list is bound to the change and the revision it was read at. */
     @Test
     fun aDeletionInAClosedChainMonthIsSavedOnlyAtTheRevisionItsListWasSeen() = runBlocking {
         histories.sc01()
-        val delete = { confirmed: Long? ->
+        val delete = { confirmed: CorrectionConfirmation? ->
             DeleteExpense(ledger.operation(1_900), 1, expenseIdOf(101), 1, confirmed)
         }
         val revision = ledger.revision()
@@ -619,20 +621,18 @@ class CarryoverCommandContractTest {
 
         val asked = ledger.expenses.delete(delete(null))
         ledger.categories.submit(ledger.createCategory("Transporte"))
-        val moved = ledger.expenses.delete(delete(revision))
+        val moved = ledger.expenses.delete(delete(asked.refusedCorrection().confirmation))
         val unchanged = expenses() to ledger.chainRows()
-        val saved = ledger.expenses.delete(delete(revision + 1))
+        val saved = ledger.expenses.delete(delete(moved.refusedCorrection().confirmation))
 
         val listed = listOf(
             "100|2027-02|C 180000→200000|R 110000→130000|WithinLimit→WithinLimit",
             "100|2027-03|C 210000→230000|R -40000→-20000|Over→Over",
             "100|2027-04|C 60000→80000|R 60000→80000|OnTrack→OnTrack"
         )
-        val first = (asked as ExpenseCommandOutcome.Rejected).reason
-            as ExpenseRejection.CorrectionUnconfirmed
-        val second = (moved as ExpenseCommandOutcome.Rejected).reason
-            as ExpenseRejection.CorrectionUnconfirmed
-        assertEquals(revision, first.revision)
+        val first = asked.refusedCorrection()
+        val second = moved.refusedCorrection()
+        assertEquals(revision, first.confirmation.revision)
         assertEquals(listed, first.correction.listed())
         assertEquals(
             mapOf(
@@ -643,7 +643,8 @@ class CarryoverCommandContractTest {
             first.correction.overallCapacityChange
         )
         // Another change landed: refused with nothing changed and the list read again.
-        assertEquals(revision + 1, second.revision)
+        assertEquals(revision + 1, second.confirmation.revision)
+        assertEquals(first.confirmation.change, second.confirmation.change)
         assertEquals(listed, second.correction.listed())
         assertEquals(before, unchanged)
         assertTrue("$saved", saved is ExpenseCommandOutcome.Committed)
@@ -696,7 +697,7 @@ class CarryoverCommandContractTest {
         val february = histories.spend(comida, "2027-02-10", 70_000)
         histories.spend(comida, "2027-03-10", 250_000)
         ledger.goTo("2027-04-05")
-        val edit = { confirmed: Long? ->
+        val edit = { confirmed: CorrectionConfirmation? ->
             EditExpense(
                 ledger.operation(1_900),
                 1,
@@ -709,10 +710,8 @@ class CarryoverCommandContractTest {
                 confirmed
             )
         }
-        val revision = ledger.revision()
-
         val asked = ledger.expenses.edit(edit(null))
-        val saved = ledger.expenses.edit(edit(revision))
+        val saved = ledger.expenses.edit(edit(asked.refusedCorrection().confirmation))
 
         val correction = asked.listedCorrection()
         assertEquals(
@@ -755,12 +754,12 @@ class CarryoverCommandContractTest {
             "limit_minor" to 9_223_372_036_854_725_807L,
             "currency" to "COP"
         )
-        val revision = ledger.revision()
         val before = state()
 
-        // Without ene's 300.000, feb's capacity would be 9.223.372.036.854.825.807.
+        // Without ene's 300.000, feb's capacity would be 9.223.372.036.854.825.807. Refused
+        // before any list: there is nothing a confirmation could accept.
         val deleted = ledger.expenses.delete(
-            DeleteExpense(ledger.operation(), 1, expenseIdOf(ene), 1, revision)
+            DeleteExpense(ledger.operation(), 1, expenseIdOf(ene), 1)
         )
         val corrected = ledger.categories.submit(
             SetMonthLimit(
@@ -769,8 +768,7 @@ class CarryoverCommandContractTest {
                 ledger.categoryId(comida),
                 2,
                 month("2027-02"),
-                finite(400_000),
-                confirmedRevision = revision
+                finite(400_000)
             )
         )
 
@@ -911,5 +909,141 @@ class CarryoverCommandContractTest {
         assertEquals(Outcome.Success(change), ledger.categories.find(command.operationId))
         assertEquals(Committed(change, replayed = true), ledger.categories.submit(command))
         assertEquals(4, ledger.revision())
+    }
+
+    /**
+     * Review round 1, R1: a chain broken by a damaged row (feb, inside SC01's chain, made
+     * unlimited, which no command can do) is repaired by correcting that row; nothing else
+     * that leaves it broken saves, and its balance cannot be dropped while nobody can show it.
+     */
+    @Test
+    fun aCorrectionThatRepairsABrokenChainSavesAndTheMonthReadsAgain() = runBlocking {
+        histories.sc01()
+        ledger.database.insertRaw(
+            "month_limit",
+            "category_id" to uuid(100),
+            "month" to "2027-02",
+            "kind" to "unlimited",
+            "limit_minor" to null,
+            "currency" to "COP"
+        )
+        val broken = CarryoverFailure.NoFiniteBase(month("2027-02"))
+        val before = state()
+        val brokenRead = ledger.snapshots.read(month("2027-03"))
+
+        val stillBroken = ledger.expenses.create(ledger.createExpense(100, "2027-03-15", 5_000))
+        val drop = ledger.categories.submit(disable(100, 2))
+        val unchanged = state()
+        val repaired = ledger.categories.submit(
+            SetMonthLimit(
+                ledger.operation(),
+                1,
+                ledger.categoryId(100),
+                2,
+                month("2027-02"),
+                finite(100_000)
+            )
+        )
+
+        assertEquals(
+            Outcome.Failure(
+                SnapshotFailure.Carryover(broken)
+            ),
+            brokenRead
+        )
+        assertEquals(
+            ExpenseCommandOutcome.Rejected(ExpenseRejection.CarryUnavailable(broken)),
+            stillBroken
+        )
+        assertEquals(Rejected(CategoryRejection.CarryUnavailable(broken)), drop)
+        assertEquals(before, unchanged)
+        assertTrue("$repaired", repaired is Committed)
+        // SC01 again: abr K −40.000, C 60.000.
+        val april = budget(100, "2027-04").budget!!
+        assertEquals(listOf(cop(60_000), cop(-40_000)), listOf(april.limit, april.carry?.carryIn))
+    }
+
+    /**
+     * R1: a chain whose stored state overflows (CP23; damage no command can make: ene's own
+     * limit 9.223.372.036.854.725.807, nothing spent, so feb's capacity does not fit) is
+     * repaired by the expense that brings it back in range; removing it again is refused.
+     */
+    @Test
+    fun anExpenseThatBringsAnOverflowingChainBackIntoRangeSaves() = runBlocking {
+        val comida = histories.category("Comida", 100_000, "2027-01-05")
+        histories.enable(comida, version = 1)
+        ledger.goTo("2027-04-05")
+        ledger.database.insertRaw(
+            "month_limit",
+            "category_id" to uuid(comida),
+            "month" to "2027-01",
+            "kind" to "finite",
+            "limit_minor" to 9_223_372_036_854_725_807L,
+            "currency" to "COP"
+        )
+        val brokenBefore = ledger.snapshots.read(month("2027-04"))
+
+        val repaired = ledger.expenses.create(ledger.createExpense(comida, "2027-01-10", 300_000))
+        val undone = ledger.expenses.delete(
+            DeleteExpense(ledger.operation(), 1, expenseIdOf(ledger.nextRecord - 1), 1)
+        )
+
+        assertEquals(
+            Outcome.Failure(
+                SnapshotFailure.Unrepresentable
+            ),
+            brokenBefore
+        )
+        assertTrue("$repaired", repaired is ExpenseCommandOutcome.Committed)
+        // ene R 9.223.372.036.854.425.807; feb C …525.807; mar …625.807; abr C …725.807.
+        assertEquals(cop(9_223_372_036_854_725_807), budget(comida, "2027-04").budget?.limit)
+        assertEquals(
+            ExpenseCommandOutcome.Rejected(
+                ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable)
+            ),
+            undone
+        )
+    }
+
+    /**
+     * Review round 1, R2: a confirmation is for the change whose list was shown. A deletion
+     * of feb's 70.000 cannot save on the confirmation of ene's 20.000 at the same revision.
+     */
+    @Test
+    fun aConfirmationSavesOnlyTheChangeWhoseListWasShown() = runBlocking {
+        histories.sc01()
+        val revision = ledger.revision()
+        val shown = ledger.expenses.delete(
+            DeleteExpense(ledger.operation(), 1, expenseIdOf(101), 1)
+        ).refusedCorrection()
+        val expenses = ledger.rows("expense", "id", "amount_minor")
+
+        val other = ledger.expenses.delete(
+            DeleteExpense(ledger.operation(), 1, expenseIdOf(102), 1, shown.confirmation)
+        )
+        val unchanged = ledger.rows("expense", "id", "amount_minor")
+        val ownList = ledger.expenses.delete(
+            DeleteExpense(
+                ledger.operation(),
+                1,
+                expenseIdOf(102),
+                1,
+                other.refusedCorrection().confirmation
+            )
+        )
+
+        // ene's list was shown; feb's is its own, the same as SC26 shows for Comida.
+        assertEquals(3, shown.correction.months.size)
+        assertEquals(revision, other.refusedCorrection().confirmation.revision)
+        assertEquals(
+            listOf(
+                "100|2027-03|C 210000→280000|R -40000→30000|Over→WithinLimit",
+                "100|2027-04|C 60000→130000|R 60000→130000|OnTrack→OnTrack"
+            ),
+            other.listedCorrection().months.map { it.text() }
+        )
+        assertEquals(expenses, unchanged)
+        assertTrue("$ownList", ownList is ExpenseCommandOutcome.Committed)
+        assertEquals(revision + 1, ledger.revision())
     }
 }

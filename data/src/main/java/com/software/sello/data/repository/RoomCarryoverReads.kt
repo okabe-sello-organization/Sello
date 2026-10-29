@@ -76,6 +76,7 @@ class RoomCarryoverReads(
                         categoryId,
                         read.profile.generation,
                         read.profile.revision,
+                        today,
                         read.chains,
                         replay.value
                     )
@@ -98,7 +99,10 @@ class RoomCarryoverReads(
             is Outcome.Success -> stored.value
             is Outcome.Failure -> return stored
         }
-        return when (val rows = database.carryRows(categoryId, chains, through)) {
+        // The replay lists every chain up to [through]: read from the earliest one's start.
+        val from = chains.filter { it.start <= through }.minOfOrNull { it.start }
+            ?: return Outcome.Success(HistoryRows(profile, chains, null))
+        return when (val rows = database.carryRows(categoryId, chains, from, through)) {
             is Outcome.Success -> Outcome.Success(HistoryRows(profile, chains, rows.value))
             is Outcome.Failure -> rows
         }
@@ -154,7 +158,9 @@ class RoomCarryoverReads(
                         return@withContext Outcome.Failure(CarryReadFailure.Carryover(change.error))
                 }
             }
-            Outcome.Success(CarryCatchUpNotice(profile.generation, profile.revision, categories))
+            Outcome.Success(
+                CarryCatchUpNotice(profile.generation, profile.revision, today, categories)
+            )
         }
     }
 
@@ -184,8 +190,14 @@ class RoomCarryoverReads(
                 is Outcome.Success -> stored.value
                 is Outcome.Failure -> return stored
             }
-            when (val rows = database.carryRows(categoryId, chains, month)) {
-                is Outcome.Success -> rows.value?.let { reached += Reached(it, of) }
+            // Only the chains a payment of an earlier month lands in change (CP18); the
+            // notice replays those, from the earliest one's start.
+            val landed = chains.filter { chain ->
+                of.any { YearMonth.from(it.date) < month && chain.covers(YearMonth.from(it.date)) }
+            }
+            val from = landed.minOfOrNull { it.start } ?: continue
+            when (val rows = database.carryRows(categoryId, landed, from, month)) {
+                is Outcome.Success -> reached += Reached(rows.value, of)
                 is Outcome.Failure -> return rows
             }
         }

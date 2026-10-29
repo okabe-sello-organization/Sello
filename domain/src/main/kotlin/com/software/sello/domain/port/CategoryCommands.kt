@@ -97,7 +97,7 @@ data class SetDefaultLimit(
  * The limit of exactly [month], current or past. No other month and no default changes.
  * Making the current month unlimited while it carries a balance needs [confirmedCarryIn].
  * A finite correction of a past month of a carry chain changes later months (ADR 0020
- * CP20–CP22): [confirmedRevision] is the revision whose list of changes the person saw.
+ * CP20–CP22): [confirmation] is what came with the list of changes the person saw.
  */
 data class SetMonthLimit(
     override val operationId: OperationId,
@@ -107,7 +107,7 @@ data class SetMonthLimit(
     val month: YearMonth,
     val limit: BudgetLimit,
     val confirmedCarryIn: Money? = null,
-    val confirmedRevision: Long? = null
+    val confirmation: CorrectionConfirmation? = null
 ) : CategoryEdit
 
 /**
@@ -180,12 +180,14 @@ sealed interface CategoryRejection {
     data class DropUnconfirmed(val preview: DropPreview) : CategoryRejection
 
     /**
-     * The correction changes later months of a carry chain and was not confirmed at the
-     * current [revision] (CP20–CP22). [correction] is the list to show; confirming sends
-     * the same change with [revision].
+     * The correction changes later months of a carry chain and was not confirmed for this
+     * very change at the current revision (CP20–CP22). [correction] is the list to show;
+     * confirming sends the same change with [confirmation].
      */
-    data class CorrectionUnconfirmed(val revision: Long, val correction: CarryCorrection) :
-        CategoryRejection
+    data class CorrectionUnconfirmed(
+        val confirmation: CorrectionConfirmation,
+        val correction: CarryCorrection
+    ) : CategoryRejection
 
     /** A past month inside a carry chain cannot become unlimited (CP13). */
     data class ChainMonthUnlimited(val month: YearMonth) : CategoryRejection

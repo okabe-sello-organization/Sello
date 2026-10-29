@@ -9,6 +9,17 @@ import androidx.test.platform.app.InstrumentationRegistry
  * that need a new installation, or that create records, start and end from here.
  */
 object TestData {
+    private var databaseName = "sello.db"
+
+    /** Reads and writes the database called [name], a test's own, until [useInstalledApp]. */
+    fun use(name: String) {
+        databaseName = name
+    }
+
+    fun useInstalledApp() {
+        databaseName = "sello.db"
+    }
+
     private val context: Context
         get() = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -27,12 +38,14 @@ object TestData {
         // Schedules point at categories, and pauses at schedules.
         "schedule_pause",
         "schedule",
+        // Carry chains point at categories.
+        "carry_chain",
         "category",
         "operation_receipt"
     )
 
     private fun <T> database(flags: Int, use: (SQLiteDatabase) -> T): T =
-        SQLiteDatabase.openDatabase(context.getDatabasePath("sello.db").path, null, flags)
+        SQLiteDatabase.openDatabase(context.getDatabasePath(databaseName).path, null, flags)
             .use(use)
 
     /** Back to what a new installation holds: a profile at revision 0 and nothing else. */

@@ -23,7 +23,8 @@ import java.time.YearMonth
 
 /**
  * Shared inputs for the signed carryover tests. Every figure asserted in those tests is
- * copied from docs/testing/signed-carryover-examples.md; nothing here calculates one.
+ * copied from docs/testing/signed-carryover-examples.md, except the review round 1 tests,
+ * whose hand-worked values carry their arithmetic in a comment; nothing here calculates one.
  */
 internal object Carry {
     private val recorded = Instant.parse("2027-01-09T15:04:05Z")

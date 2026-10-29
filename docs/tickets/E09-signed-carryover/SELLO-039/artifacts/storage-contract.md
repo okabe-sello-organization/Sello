@@ -22,10 +22,14 @@ carry on: nothing in `:app` submits the new commands or reads the new port.
 ## Derived on read, not cached
 
 Carry is replayed by `SignedCarryoverPolicy` on every read, from rows read in one
-transaction: the category's chains, its whole default history, its own month limits from
-its first chain's start, and its expenses in that range. There is no cache, so no stale
+transaction: the category's chains, its whole default history, and its own month limits
+and expenses over only the range the call needs (SELLO-038 consumer boundary, "history
+needed"). A snapshot reads the chain covering the month, from its start through the
+month before; a drop reads the chain covering this month through this month; a limit
+check or correction reads the chains holding the months it touches; the history and the
+catch-up notice read every chain they show. There is no cache, so no stale
 cache needs fencing: a read is of exactly one revision, and the next read reads again.
-Cost is one indexed range read per carrying category, linear in its months and expenses
+Cost is one indexed range read per carrying category, linear in the months and expenses of that range
 (a decade of 100 expenses a month is about 12.000 rows, paged by 500). Categories without a
 chain cost one primary-key lookup in a command and nothing in a snapshot. A cache can be
 added later if a measurement asks for it; it would need the profile revision as its key.
@@ -42,20 +46,32 @@ every refusal before the first write. A carry setting change raises the category
 | `DisableCarry(confirmedCarryIn)` | Ends the chain covering this month in it, or removes it if it started now (CP10) | `NotCarrying`; `DropUnconfirmed(DropPreview)` while `K ≠ 0` and not exactly confirmed (CP9) |
 | `ArchiveCategory(confirmedCarryIn)` | Same drop, with the existing archive (CP11) | `DropUnconfirmed` |
 | `SetDefaultLimit(limit, confirmedCarryIn)` | Unlimited: same drop. Finite: within the cap while a chain is open | `DropUnconfirmed`, `ChainBaseAboveLimit` (CP25) |
-| `SetMonthLimit(…, confirmedCarryIn, confirmedRevision)` | This month unlimited: same drop. A past chain month: finite only, a correction (CP20–CP22) | `ChainMonthUnlimited` (CP13), `ChainBaseAboveLimit`, `CorrectionUnconfirmed(revision, CarryCorrection)` |
-| Expense create, edit, delete, restore (`confirmedRevision`) | A change reaching a closed chain month that changes later months is a correction (CP21) | `CorrectionUnconfirmed(revision, CarryCorrection)` |
+| `SetMonthLimit(…, confirmedCarryIn, confirmation)` | This month unlimited: same drop. A past chain month: finite only, a correction (CP20–CP22) | `ChainMonthUnlimited` (CP13), `ChainBaseAboveLimit`, `CorrectionUnconfirmed(CorrectionConfirmation, CarryCorrection)` |
+| Expense create, edit, delete, restore (`confirmation`) | A change reaching a closed chain month that changes later months is a correction (CP21) | `CorrectionUnconfirmed(CorrectionConfirmation, CarryCorrection)` |
 
 - **The preview fence (SC34).** A correction is refused with the list of
-  `CarryoverCorrectionReplay.preview` and the revision it was read at. Saving sends the same
-  change with `confirmedRevision` equal to that revision; if anything committed meanwhile the
-  command is refused again with the new list. The list and the saved figures come from the
+  `CarryoverCorrectionReplay.preview` and a `CorrectionConfirmation(revision, change)`: the
+  revision the list was read at and `change`, the input digest of the command without its
+  confirmation. Saving sends the same command with that confirmation. It is accepted only by
+  the same change at the same revision: a different command reusing it, or anything
+  committed meanwhile, is refused again with its own list (review round 1, R2). The list and the saved figures come from the
   same calculation in the same transaction. This month's own changes, and changes dated
   before every chain, need no confirmation (SC31, SC33).
 - **Bounds (CP23).** A change after which any month up to now cannot be calculated is
-  refused with `CarryUnavailable(failure)`; nothing is clipped.
+  refused with `CarryUnavailable(failure)`; nothing is clipped. Only the state *after* the
+  change is judged (review round 1, R1, orchestrator ruling): when the stored chain itself
+  cannot be calculated (a damaged row, or catch-up recording into it), a correction that
+  makes it calculable again goes through without a list, since none can be shown, so the
+  category is never locked. Dropping a balance nobody can calculate stays refused with
+  `CarryUnavailable` (CP9); SELLO-041 shows that refusal with a pointer to the repair.
+  Accepted limit (review round 2, R5, orchestrator ruling): when only damaged data makes a
+  chain overflow at a later month, a repair dated earlier saves without a list of the months
+  in between; no command can reach this (CP25, CP13), and a partial list built from damaged
+  data could mislead.
 - **Unarchive** and a return from unlimited never turn carry on (CP11).
 - **Catch-up** records payments in earlier chain months without a preview (CP18) and is
-  unchanged. `CarryoverReads.catchUpNotice` derives the notice from the listed payments.
+  unchanged: it records due payments even when the chain can then not be calculated (ruling
+  on R1); the reads then fail typed (CP8) until a correction repairs it. `CarryoverReads.catchUpNotice` derives the notice from the listed payments.
 - **Restore and reset** delete every chain with the rest of the financial rows (CP26,
   SC45); the backup format does not carry chains yet, so a restore leaves every category off.
 
@@ -66,9 +82,10 @@ every refusal before the first write. A carry setting change raises the category
   chain the snapshot is exactly the no-carry one. Failures are typed (CP8):
   `SnapshotFailure.Carryover`, `Unrepresentable` or `Storage`, never base-only figures.
 - `CarryoverReads.history(category, through)` (`RoomCarryoverReads`): the chains and
-  `CarryReplay` with the generation and revision they were read at (CP27 provenance).
+  `CarryReplay` with the generation, revision and financial day (`asOf`) they were read at
+  (CP27 provenance).
 - `CarryoverReads.catchUpNotice(expenseIds)`: one `CarryCorrection` per category the
-  listed, still recorded payments reach (CP18, SC37, SC47).
+  listed, still recorded payments reach (CP18, SC37, SC47), with its revision and `asOf`.
 
 Not done here, for SELLO-041: Resumen and category-detail snapshots still read base limits
 only; `:app` maps the new rejections through its existing `else` branches; no composition

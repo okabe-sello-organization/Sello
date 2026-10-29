@@ -1,0 +1,112 @@
+{
+  "schema_version": 2,
+  "coverage": {
+    "mode": "full",
+    "base": "11878a9d4e3abfddffa2e0e7ee43d194a4329c12",
+    "changed_paths": [],
+    "device_modules": []
+  },
+  "run_id": "20261029T035901Z-c9ced46e",
+  "ticket": "SELLO-038",
+  "gate": {
+    "required": "G1",
+    "executed": "G1"
+  },
+  "outcome": "passed",
+  "failures": [],
+  "warnings": [
+    "gradle-host: 38 lint warnings"
+  ],
+  "snapshot": {
+    "head": "11878a9d4e3abfddffa2e0e7ee43d194a4329c12",
+    "dirty": false,
+    "dirty_files": [],
+    "fingerprint": {
+      "algorithm": "sha256",
+      "value": "e06af4c0cabd50e72d71be723c5e8732b5a37bfff2ecc4ada6e19995e2c5954b",
+      "files": 1239
+    },
+    "changes": {
+      "algorithm": "sha256",
+      "base": "61f70a0e15b59f6d924f29de89678cf406a8ea75",
+      "value": "0eafeeca52916d906d37d2493d88a6fee4af549d8ad529c22602b1850c8f272d",
+      "paths": 12
+    },
+    "acceptance": "e9bef4740709706688f78554bf7c7275cfb4c08944ee75e6e10e6a6768f780ef"
+  },
+  "environment": {
+    "os": "Linux x86_64",
+    "python": "3.14.8",
+    "java": "openjdk version \"25.0.4\" 2026-07-21",
+    "git": "git version 2.56.0",
+    "gradle": "9.5.0",
+    "agp": "9.3.3",
+    "kotlin": "2.4.20"
+  },
+  "devices": [],
+  "checks": [
+    {
+      "name": "tickets-check",
+      "command": "python3 scripts/quality/tickets.py check --skip-evidence",
+      "log": "tickets-check.log",
+      "started_at": "2026-10-29T03:59:02+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-29T03:59:02+00:00"
+    },
+    {
+      "name": "quality-tests",
+      "command": "python3 -m unittest discover -s scripts/quality -p test_*.py",
+      "log": "quality-tests.log",
+      "started_at": "2026-10-29T03:59:02+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-29T03:59:13+00:00"
+    },
+    {
+      "name": "performance-tests",
+      "command": "python3 -m unittest discover -s scripts/performance -p test_*.py",
+      "log": "performance-tests.log",
+      "started_at": "2026-10-29T03:59:13+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-29T03:59:13+00:00"
+    },
+    {
+      "name": "architecture",
+      "command": "python3 scripts/quality/architecture.py",
+      "log": "architecture.log",
+      "started_at": "2026-10-29T03:59:13+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-29T03:59:15+00:00"
+    },
+    {
+      "name": "links",
+      "command": "python3 scripts/quality/links.py",
+      "log": "links.log",
+      "started_at": "2026-10-29T03:59:15+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-29T03:59:15+00:00"
+    },
+    {
+      "name": "gradle-host",
+      "command": "./gradlew ktlintCheck :domain:test :data:testDebugUnitTest :design-system:testDebugUnitTest :app:testDebugUnitTest :catalog:testDebugUnitTest lintDebug :app:assembleDebug :app:assembleRelease :catalog:assembleDebug --continue",
+      "log": "gradle-host.log",
+      "started_at": "2026-10-29T03:59:15+00:00",
+      "exit_code": 0,
+      "finished_at": "2026-10-29T03:59:16+00:00",
+      "results": {
+        "suites": 117,
+        "tests": 1369,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "fresh_results": false,
+      "lint": {
+        "reports": 5,
+        "errors": 0,
+        "warnings": 38
+      }
+    }
+  ],
+  "started_at": "2026-10-29T03:59:01+00:00",
+  "finished_at": "2026-10-29T03:59:17+00:00"
+}
