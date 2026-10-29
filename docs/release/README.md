@@ -33,9 +33,9 @@ The digest is public; it identifies the key without revealing it.
 
 ## Release gate (G3)
 
-`./scripts/verify-ticket <G3 ticket> --retain` on the owner's machine, with the
-`sello.signing.*` entries and the API-30 emulator as `ANDROID_SERIAL`, runs all of G2 and
-then the release checks of ADR 0016: the licence list, the production signature and
+`scripts/check --release` on the owner's machine, with the `sello.signing.*` entries
+and the owner's API-30 emulator as `ANDROID_SERIAL`, runs the host gate and every device
+suite, then the release checks of ADR 0016: the licence list, the production signature and
 artifact checks, and installing and opening the signed APK on the emulator. A passed
 run leaves the release candidate in `build/release-candidate/`:
 
@@ -45,8 +45,8 @@ run leaves the release candidate in `build/release-candidate/`:
 - `sello-<version>-<code>.json`: package, versions, signature schemes, certificate,
   APK and mapping SHA-256.
 
-CI runs the same G3 with a throwaway key and leaves the production proof to the owner's
-retained report.
+CI runs the same G3 with a throwaway key, nightly and on request, and leaves the
+production proof to the owner's run, which the release pull request reports.
 
 ## Libraries
 

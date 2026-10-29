@@ -1,10 +1,11 @@
 name: Quality
 
-# Every candidate reports one required quality check. Parts are execution evidence,
-# not independently successful gates. Event/gate policy remains ADR 0009: a green
-# pull request lands as it is, the push to main keeps the host gate, and the nightly
-# verifies the whole of main at G3 only when main moved since the last successful
-# nightly (amendment of 2026-10-26).
+# The pull request's required `quality` check is the only proof that checks passed
+# (ADR 0021). The plan picks the gate from the changed paths; cheap checks run before
+# any Gradle or emulator work; `quality` judges each job's result against the plan, so
+# "Re-run failed jobs" works. A push to main keeps the host gate to publish trusted
+# caches; the nightly verifies the whole of main at G3 only when main moved since the
+# last successful nightly; a manual run does the same on its ref.
 on:
   pull_request:
   push:
@@ -17,8 +18,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: quality-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
+  # A newer push to a pull request replaces its run. Every other run gets its own group
+  # (one per commit), so no push, nightly or manual run is cancelled or superseded.
+  group: quality-${{ github.event_name == 'pull_request' && github.ref || github.sha }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   BASE: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
@@ -26,16 +29,20 @@ env:
 
 jobs:
   plan:
-    name: Select gate
+    name: Plan and fast checks
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
       actions: read
     outputs:
       unchanged: ${{ steps.nightly.outputs.unchanged }}
       gate: ${{ steps.plan.outputs.gate }}
+      host: ${{ steps.plan.outputs.host }}
+      release: ${{ steps.plan.outputs.release }}
+      device: ${{ steps.plan.outputs.device }}
       groups: ${{ steps.plan.outputs.groups }}
+      modules: ${{ steps.plan.outputs.modules }}
     steps:
       - name: Skip a nightly when main has not moved
         id: nightly
@@ -62,38 +69,31 @@ jobs:
       - name: Decide what this run verifies
         id: plan
         if: steps.nightly.outputs.unchanged != 'true'
-        run: |
-          ./scripts/verify-ticket --ci-plan "$BASE" --ci-event "$EVENT" > /tmp/quality-plan.json
-          python3 - <<'PYPLAN'
-          import json, os
-          plan = json.load(open('/tmp/quality-plan.json'))
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              print('gate=' + plan['gate'], file=output)
-              print('groups=' + json.dumps(plan['groups']), file=output)
-          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
-              print(json.dumps(plan, indent=2), file=summary)
-          PYPLAN
+        run: ./scripts/check --plan "$BASE" --event "$EVENT"
+
+      - name: Run the fast checks
+        if: steps.nightly.outputs.unchanged != 'true'
+        run: ./scripts/check --fast
 
   host:
     name: Host checks
     needs: plan
-    if: needs.plan.outputs.unchanged != 'true'
+    if: needs.plan.outputs.host == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      RELEASE: ${{ needs.plan.outputs.release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
 
-      - if: needs.plan.outputs.gate != 'G0'
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           distribution: temurin
           java-version: 25
 
       - name: Set up Gradle caching
-        if: needs.plan.outputs.gate != 'G0'
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
@@ -103,25 +103,32 @@ jobs:
           dependency-graph: disabled
 
       - name: Accept Android SDK licences
-        if: needs.plan.outputs.gate != 'G0'
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
-      - name: Verify host part
-        run: ./scripts/verify-ticket --merge-candidate "$BASE" --ci-part host --ci-event "$EVENT"
+      - name: Run the host gate
+        run: |
+          if [ "$RELEASE" = true ]; then
+            ./scripts/check --host --ci-release
+          else
+            ./scripts/check --host
+          fi
 
-      - name: Keep host part
-        if: always()
+      - name: Keep host reports of a failure
+        if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: quality-part-${{ github.run_attempt }}-host
-          retention-days: 90
-          if-no-files-found: error
-          path: build/reports/quality-parts/quality-part-${{ github.run_attempt }}-host/
+          name: host-reports-${{ github.run_attempt }}
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            */build/reports/tests/
+            */build/reports/lint-results-debug.html
+            */build/reports/ktlint/
 
   device:
     name: Device tests (${{ matrix.group }})
     needs: plan
-    if: needs.plan.outputs.gate == 'G2' || needs.plan.outputs.gate == 'G3'
+    if: needs.plan.outputs.device == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -130,10 +137,10 @@ jobs:
         group: ${{ fromJSON(needs.plan.outputs.groups) }}
     env:
       DEVICE_GROUP: ${{ matrix.group }}
+      DEVICE_MODULES: ${{ needs.plan.outputs.modules }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
@@ -150,6 +157,9 @@ jobs:
           add-job-summary-as-pr-comment: never
           build-scan-publish: false
           dependency-graph: disabled
+
+      - name: Check formatting and build the test APKs
+        run: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES" --build-only
 
       - name: Locate Android system image
         id: android-image
@@ -169,7 +179,7 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Verify device part on API 30
+      - name: Run device tests on API 30
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           api-level: 30
@@ -179,10 +189,7 @@ jobs:
           force-avd-creation: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: ./scripts/verify-ticket --merge-candidate "$BASE" --ci-part "$DEVICE_GROUP" --ci-event "$EVENT"
-
-      - name: Validate completion evidence before cache publication
-        run: python3 scripts/quality/tickets.py check --base "$BASE"
+          script: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES"
 
       - name: Identify installed Android system image
         if: matrix.group == 'support' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -198,53 +205,48 @@ jobs:
           path: ${{ steps.android-image.outputs.path }}
           key: ${{ steps.android-image-key.outputs.key }}
 
-      - name: Keep device part
-        if: always()
+      - name: Keep device reports of a failure
+        if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: quality-part-${{ github.run_attempt }}-${{ matrix.group }}
-          retention-days: 90
-          if-no-files-found: error
-          path: build/reports/quality-parts/quality-part-${{ github.run_attempt }}-${{ matrix.group }}/
+          name: device-reports-${{ github.run_attempt }}-${{ matrix.group }}
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            */build/reports/androidTests/
+            */build/outputs/androidTest-results/
 
   quality:
     name: quality
     needs: [plan, host, device]
     if: always() && needs.plan.outputs.unchanged != 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        id: checkout
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Download execution parts
-        id: parts
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: quality-part-${{ github.run_attempt }}-*
-          path: build/ci-parts
-          merge-multiple: false
-          digest-mismatch: error
-
-      - name: Collect full gate evidence
-        if: always() && steps.checkout.outcome == 'success' && steps.parts.outcome == 'success'
+      - name: Judge every job against the plan
         env:
-          QUALITY_PLAN_RESULT: ${{ needs.plan.result }}
-          QUALITY_HOST_RESULT: ${{ needs.host.result }}
-          QUALITY_DEVICE_RESULT: ${{ needs.device.result }}
-        run: ./scripts/verify-ticket --merge-candidate "$BASE" --ci-collect build/ci-parts --ci-event "$EVENT"
-
-      - name: Validate completion evidence
-        run: python3 scripts/quality/tickets.py check --base "$BASE"
-
-      - name: Keep full gate reports
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: quality-reports
-          retention-days: 90
-          if-no-files-found: error
-          path: build/reports/quality/
+          GATE: ${{ needs.plan.outputs.gate }}
+          DEVICE_GROUPS: ${{ needs.plan.outputs.groups }}
+          PLAN_RESULT: ${{ needs.plan.result }}
+          HOST_RESULT: ${{ needs.host.result }}
+          HOST_SELECTED: ${{ needs.plan.outputs.host }}
+          DEVICE_RESULT: ${{ needs.device.result }}
+          DEVICE_SELECTED: ${{ needs.plan.outputs.device }}
+        run: |
+          failed=0
+          report="### quality: ${GATE:-no plan}"$'\n\n'"| Job | Result | Expected |"$'\n'"| --- | --- | --- |"
+          judge() {
+            expected=skipped
+            if [ "$3" = true ]; then expected=success; fi
+            report+=$'\n'"| $1 | $2 | $expected |"
+            if [ "$2" != "$expected" ]; then failed=1; fi
+          }
+          judge "Plan and fast checks" "$PLAN_RESULT" true
+          judge "Host checks" "$HOST_RESULT" "$HOST_SELECTED"
+          judge "Device tests ${DEVICE_GROUPS:-[]}" "$DEVICE_RESULT" "$DEVICE_SELECTED"
+          echo "$report"
+          echo "$report" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$failed" = 1 ]; then
+            echo "A selected job did not succeed, or a job ran that the plan did not select. Open the failed job; its summary lists failing tests. Fix the cause, then re-run the failed jobs."
+            exit 1
+          fi

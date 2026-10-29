@@ -13,8 +13,7 @@ docs/tickets/
     README.md                 the epic: status, goal, exit, owner decisions
     SELLO-078/
       ticket.md               the canonical ticket, the only file the tools parse
-      evidence.md             delivery evidence fields and the Quality run line
-      quality-report.json     the retained gate report, written by --retain
+      evidence.md             delivery notes (older tickets; nothing reads it)
       handoff.md              what changed, where, what is still open
       artifacts/              screenshots, walk notes, reviews
 ```
@@ -25,7 +24,7 @@ conflicts:
 ```bash
 python3 scripts/quality/tickets.py status        # every epic
 python3 scripts/quality/tickets.py status E17    # one epic
-python3 scripts/quality/tickets.py check         # structure, dependencies, evidence
+python3 scripts/quality/tickets.py check         # structure, IDs, statuses, dependencies
 python3 scripts/quality/links.py                 # every relative Markdown link and anchor
 ```
 
@@ -36,13 +35,11 @@ python3 scripts/quality/links.py                 # every relative Markdown link 
   Outcome, Deliverables, Acceptance criteria, Tests, Working checkpoint, Context and
   starting points, Implementation plan, Concrete cases and pitfalls, Verification
   recipe. `### Execution progress` may follow. Everything except the status line and
-  Execution progress is the acceptance text; its hash is recorded in the retained
-  report, so rewriting acceptance after verification invalidates the evidence.
-  The folder name must equal the ticket ID.
-- **`evidence.md`** holds the delivery evidence as `- **Field:** text` lines (below).
-  It is bookkeeping: editing it never makes a report stale.
-- **`quality-report.json`** is copied there by `./scripts/verify-ticket <ticket> --retain`.
-  CI opens it for every Review/Done ticket; a hand-edited file fails the check.
+  Execution progress is the acceptance text. The folder name must equal the ticket ID.
+- **`evidence.md`** holds delivery notes as `- **Field:** text` lines (below). No tool
+  reads it; the pull request's `quality` check is the proof that checks passed
+  ([ADR 0021](../decisions/0021-ci-is-the-only-proof.md)). Older folders may also hold
+  a `quality-report.json`, kept as history.
 - **`handoff.md`**: three to six lines for the next person. Required for Done.
 - **`artifacts/`**: images, videos and notes the evidence refers to. Optional.
 - **The epic `README.md`** starts with `# SELLO-E0N — Title`, then `- **Status:**`,
@@ -74,15 +71,10 @@ is for work waiting on something other than its merge.
 Done with complete evidence from the moment it opens; the `Review` field says the
 merge is the approval. Until merged it is a request. Earlier PRs of the same ticket
 keep it In Progress and say what remains. Closing the last ticket of an epic marks
-the epic Done in the same commit. Changes requested go to the same PR; only when
-they change the ticket's own change set does the gate run again. The full rules and
-the CI contract are in the [quality gates guide](../development/quality-gates.md).
-
-**Update with `main` once, before the final gate.** Resolve conflicts there, run
-`--retain`, open the PR. After that leave the branch alone: evidence is bound to the
-PR's own change set, and a green PR merges as it is; the push run and the nightly
-verify what landed on `main`. Only a conflict GitHub reports needs a manual merge
-and `--affected origin/main --retain`.
+the epic Done in the same commit. Changes requested go to the same PR, and the
+`quality` check runs again on every push. What CI runs is in the
+[quality gates guide](../development/quality-gates.md). Update a branch from `main`
+only when GitHub reports a conflict.
 
 ## Definition of done — every ticket
 
@@ -90,10 +82,8 @@ and `--affected origin/main --retain`.
    architecture's boundaries, without activating deferred features.
 2. Behavior changes have a meaningful failing test first, then passing evidence;
    build or documentation tasks show negative/configuration/link checks instead.
-3. The ticket's tests and host gate pass on the integrated branch, run through
-   `./scripts/verify-ticket <ticket> --retain`, with the `Quality run` line recorded;
-   its device suites pass in the hosted `quality` check on the merge result.
-   A skipped gate is an outstanding requirement, not a pass.
+3. The pull request's `quality` check passes. A skipped gate is an outstanding
+   requirement, not a pass.
 4. Existing journeys still work: no successful stubs, inaccessible placeholders,
    destructive migrations, compile failures or failed read → zero.
 5. Catalog examples and sandbox scenarios grow with the change; accessibility,
@@ -103,69 +93,31 @@ and `--affected origin/main --retain`.
 
 ### Evidence fields
 
-`evidence.md` needs these fields with no placeholder values (no `TODO`, `TBD`,
-`Pending` or `<angle brackets>`):
+`evidence.md` carries these fields with no placeholder values (no `TODO`, `TBD`,
+`Pending` or `<angle brackets>`); reviewers read them, no tool checks them:
 
 ```text
 - **Revision:** actual HEAD plus dirty files tested, or exact integrated commit
 - **Requirement mapping:** acceptance item → implementation and independent test
 - **Red / Green:** exact commands, behavioral failure, passing rerun; docs-only rationale if applicable
-- **Gate results:** actual assigned gate command, counts, reports, warnings/failures
-- **Quality run:** the line printed by --retain: run ID, gate, snapshot, report path and sha256
+- **Gate results:** the pull request whose `quality` check passed, and anything it did not run
 - **Device / Artifact:** device/API/config/build and executed journey when one ran locally; otherwise name the hosted check that runs the device suites, or justify inapplicability
 - **Review:** self-review, and the pull request whose merge is the reviewer's approval
 ```
 
-`Quality run` is required from Review on, the rest for Done; SELLO-001–003 predate
-the runner and are exempt. Say why a red test or device gate is inapplicable for a
-pure documentation ticket; never waive a required G2/G3 test.
-
-One historical field exists: `- **Acceptance migrated:** <old sha256> → <new sha256> …`.
-When the tickets moved into these folders on 2026-10-24, link paths inside 17 Done
-tickets changed and nothing else; the field records the pair so the retained report,
-bound to the old hash, still completes the ticket while the text hashes to the new
-one. A later acceptance edit still fails the check. Do not add this field by hand.
+Say why a red test or device gate is inapplicable for a pure documentation ticket;
+never waive a required G2/G3 test. Older tickets also carry `Quality run` and
+`Acceptance migrated` fields from the retired report binding; they are history.
 
 ## Gate profiles
 
-Use the environment from [setup](../development/setup.md). The ticket's gate is what
-must pass before it merges. Locally, the runner executes the host gate G1 for G1 and
-G2 tickets and G3 whole for a release ticket; the hosted `quality` check executes a
-G2 ticket's device suites on the real merge result. Nothing can be downgraded below
-that or skipped ([quality gates guide](../development/quality-gates.md)).
-
-- **G0 — documentation:** ticket structure, quality-tool tests, architecture rules
-  and the Markdown link check, Python/Git only. Selected by `--merge-candidate BASE`
-  only when every changed path is documentation and no ticket advances. It cannot
-  complete a ticket.
-- **G1 — integrated host:** G0 plus the Gradle command below, run by
-  `./scripts/verify-ticket SELLO-0XX`; the local requirement of every G1 and G2
-  ticket. `scripts/quality/gates.py` owns the task list;
-  a test keeps this block identical to it.
-
-```bash
-./gradlew ktlintCheck :domain:test :data:testDebugUnitTest :design-system:testDebugUnitTest \
-  :app:testDebugUnitTest :catalog:testDebugUnitTest lintDebug \
-  :app:assembleDebug :app:assembleRelease :catalog:assembleDebug --continue
-```
-
-- **G2 — affected device boundaries:** G1 plus real-Room/Compose tests on a pinned
-  API-30 emulator or device: `:data:connectedDebugAndroidTest`,
-  `:design-system:connectedDebugAndroidTest`, `:app:connectedDebugAndroidTest` and
-  `:catalog:connectedDebugAndroidTest`. Hosted on every pull request and merge
-  queue entry; locally with `--gate G2` or `--affected BASE`, which refuse to start
-  without a connected device. `--affected BASE` selects impacted modules and their consumers:
-  app → app; catalog → catalog; data/domain → data/app; design-system →
-  design-system/app/catalog; mixed changes union, shared/build/tooling/unknown
-  changes require all four. `--gate G2` always forces all four. Every selected suite
-  must execute freshly without skips; a targeted run is not full G2
-  ([ADR 0014](../decisions/0014-change-aware-quality-gates.md)).
-- **G3 — release:** full G2, then the release checks: reviewed licences, the owner's
-  pinned signing certificate, artifact inspection, and install and launch on the
-  emulator. CI signs with a throwaway key; only the owner's run completes the ticket
-  ([ADR 0016](../decisions/0016-release-gate-signing-split.md)).
-
-Focused tests run first; the gate is the final integrated checkpoint.
+A ticket's `Gate` names what its work must pass: G0 documentation, G1 the host gate,
+G2 the host gate plus the device suites its changes affect, G3 the release gate with
+the owner's production signing. The pull request's `quality` check runs the gate its
+changed paths need; a release ticket also reports the owner's `scripts/check --release`
+run ([ADR 0016](../decisions/0016-release-gate-signing-split.md)). What each gate runs,
+how paths select device suites and the local commands are in the
+[quality gates guide](../development/quality-gates.md). Focused tests run first.
 
 ## Increments and history
 

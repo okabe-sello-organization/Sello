@@ -35,9 +35,6 @@ Reject incomplete outcomes and preserve existing financial history.
 ### Verification recipe
 Run focused tests and the assigned integrated gate.
 """
-EVIDENCE = "# SELLO-001 — Complete a working task\n\n" + "".join(
-    f"- **{name}:** verified evidence\n" for name in tickets.DELIVERY_FIELDS
-) + "- **Quality run:** run q001; retained report\n"
 
 
 def epic_readme(identifier="SELLO-E01", status="Backlog", increment=None):
@@ -146,32 +143,20 @@ class TicketFolderTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unfinished dependencies"):
             self.validate()
 
-    def test_downstream_task_requires_explicit_quality_dependency(self):
+    def test_no_ticket_needs_a_quality_dependency(self):
         self.epic(SELLO_005=ticket_text("SELLO-005"))
-        with self.assertRaisesRegex(ValueError, "must depend on SELLO-004"):
-            self.validate()
-
-    def test_review_requires_quality_run_in_evidence_file(self):
-        self.epic(SELLO_004=ticket_text("SELLO-004", status="Review"))
-        with self.assertRaisesRegex(ValueError, "missing Quality run"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-004/evidence.md", "# SELLO-004\n\n- **Quality run:** TODO\n")
-        with self.assertRaisesRegex(ValueError, "placeholder Delivery evidence in Quality run"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-004/evidence.md", "# SELLO-004\n\n- **Quality run:** run q004; retained report\n")
         self.validate()
 
-    def test_done_requires_complete_evidence_and_a_handoff(self):
+    def test_review_and_done_need_no_evidence_or_report(self):
+        self.epic(SELLO_004=ticket_text("SELLO-004", status="Review"), SELLO_005=ticket_text("SELLO-005", status="Done"))
+        self.write("docs/tickets/E01-foundation/SELLO-005/handoff.md", "# SELLO-005\n\nWhat changed.\n")
+        self.validate()
+        self.write("docs/tickets/E01-foundation/SELLO-005/evidence.md", "# SELLO-005\n\n- **Quality run:** TODO\n")
+        self.write("docs/tickets/E01-foundation/SELLO-005/quality-report.json", "not a report")
+        self.validate()
+
+    def test_done_still_requires_a_handoff(self):
         self.epic(SELLO_001=ticket_text(status="Done"))
-        with self.assertRaisesRegex(ValueError, "missing Delivery evidence"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-001/evidence.md", EVIDENCE.replace("- **Review:** verified evidence\n", ""))
-        with self.assertRaisesRegex(ValueError, "missing Review"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-001/evidence.md", EVIDENCE.replace("**Gate results:** verified evidence", "**Gate results:** TBD"))
-        with self.assertRaisesRegex(ValueError, "placeholder Delivery evidence"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-001/evidence.md", EVIDENCE)
         with self.assertRaisesRegex(ValueError, "missing handoff.md"):
             self.validate()
         self.write("docs/tickets/E01-foundation/SELLO-001/handoff.md", "# SELLO-001\n\nWhat changed.\n")
@@ -187,13 +172,6 @@ class TicketFolderTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unfinished children"):
             self.validate()
 
-    def test_verify_report_hook_receives_the_quality_run_field(self):
-        self.epic(SELLO_004=ticket_text("SELLO-004", status="Review"))
-        self.write("docs/tickets/E01-foundation/SELLO-004/evidence.md", "# SELLO-004\n\n- **Quality run:** run q004\n")
-        seen = []
-        tickets.validate(self.load(), lambda ticket, fields: seen.append((ticket.identifier, fields["Quality run"])))
-        self.assertEqual([("SELLO-004", "run q004")], seen)
-
     def test_status_table_is_printed_on_demand_not_committed(self):
         self.epic(SELLO_001=ticket_text(status="Done"), SELLO_002=ticket_text("SELLO-002", dependencies="SELLO-001"))
         table = tickets.status_table(self.load())
@@ -206,48 +184,15 @@ class TicketFolderTests(unittest.TestCase):
         self.epic(SELLO_001=ticket_text())
         out, err = io.StringIO(), io.StringIO()
         with redirect_stdout(out), redirect_stderr(err):
-            self.assertEqual(0, tickets.main(["check", "--skip-evidence"], root=self.root))
+            self.assertEqual(0, tickets.main(["check"], root=self.root))
             self.assertEqual(0, tickets.main(["status", "E01"], root=self.root))
         self.assertIn("PASS: 1 epics, 1 tickets", out.getvalue())
         self.assertIn("SELLO-001", out.getvalue())
         self.epic(SELLO_001=ticket_text(status="Ready", dependencies="SELLO-999"))
         with redirect_stdout(out), redirect_stderr(err):
-            self.assertEqual(1, tickets.main(["check", "--skip-evidence"], root=self.root))
+            self.assertEqual(1, tickets.main(["check"], root=self.root))
         self.assertIn("Unknown dependency", err.getvalue())
 
-
-class SplitEpicTests(unittest.TestCase):
-    """The one-time move from epic files keeps every ticket's acceptance text identical."""
-
-    EPIC = (
-        "# SELLO-E01 — Foundation\n\n- **Status:** Done\n- **Goal:** Build.\n- **Exit:** Works.\n\n"
-        "**Owner direction:** read [E02](E02-design.md) and [ADR](../../../decisions/0001-mvp-contract.md).\n\n"
-        "## SELLO-001 — Complete a working task\n\n- **Type:** Task\n- **Priority:** P0\n- **Status:** Done\n"
-        "- **Depends on:** None\n- **Gate:** G1\n\n" + SECTIONS +
-        "\n### Execution progress\n\n- Started.\n\n### Delivery evidence\n\n- **Review:** merged in #1\n"
-        "- **Quality run:** run q001; report docs/planning/mvp/quality-reports/SELLO-001.json sha256 abc\n\n"
-        "## SELLO-002 — Second task\n\n- **Type:** Task\n- **Priority:** P0\n- **Status:** Backlog\n"
-        "- **Depends on:** SELLO-001\n- **Gate:** G1\n\n" + SECTIONS
-    )
-
-    def test_split_separates_readme_tickets_and_evidence(self):
-        readme, parts = tickets.split_epic_text(self.EPIC)
-        self.assertTrue(readme.startswith("# SELLO-E01 — Foundation\n"))
-        self.assertIn("**Owner direction:**", readme)
-        self.assertEqual(["SELLO-001", "SELLO-002"], [identifier for identifier, _, _ in parts])
-        first, second = parts[0], parts[1]
-        self.assertTrue(first[1].startswith("# SELLO-001 — Complete a working task\n"))
-        self.assertIn("### Execution progress", first[1])
-        self.assertNotIn("Delivery evidence", first[1])
-        self.assertIn("- **Review:** merged in #1", first[2])
-        self.assertIsNone(second[2])
-
-    def test_split_keeps_the_acceptance_text_identical(self):
-        import fingerprint
-        _, parts = tickets.split_epic_text(self.EPIC)
-        for identifier, ticket_md, _ in parts:
-            section = fingerprint.ticket_section(self.EPIC, identifier)
-            self.assertEqual(fingerprint.acceptance_text(section), fingerprint.acceptance_text(ticket_md), identifier)
 
 
 if __name__ == "__main__":

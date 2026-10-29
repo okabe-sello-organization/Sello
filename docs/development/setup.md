@@ -1,7 +1,7 @@
 # Reproducible Sello setup
 
-Versions and their limits: [ADR 0005](../decisions/0005-toolchain.md). Gates and the
-quality runner: the [execution guide](quality-gates.md#quality-runner).
+Versions and their limits: [ADR 0005](../decisions/0005-toolchain.md). Gates and
+`scripts/check`: the [quality gates guide](quality-gates.md).
 
 ## Prerequisites
 
@@ -106,13 +106,12 @@ Inspect the graph and built identities:
 ## Build and focused inspection
 
 The host gate runs every module's tests, ktlint, lint and the assemblies; its exact
-task list is in the [board README](../tickets/README.md):
+task list and the rest of the local loop are in the
+[quality gates guide](quality-gates.md#the-local-loop):
 
 ```bash
-./scripts/verify-ticket SELLO-0XX             # the local requirement: host gate G1 (G3 whole for a release)
-./scripts/verify-ticket SELLO-0XX --gate G2   # add every device suite locally
-./scripts/verify-ticket SELLO-0XX --affected origin/main --retain  # add the affected device suites
-./scripts/verify-ticket --merge-candidate origin/main  # G0 for eligible docs, otherwise G1 locally
+scripts/check domain app        # ktlint and unit tests of some modules
+scripts/check --host            # the host gate G1, as CI runs it
 ```
 
 Inspect actual compiler versions independently of Gradle's embedded Kotlin:
@@ -127,7 +126,7 @@ Inspect actual compiler versions independently of Gradle's embedded Kotlin:
 
 Expected app compiler and Compose compiler plugin: **2.4.20**. `--version` reports
 embedded Kotlin **2.3.20**, which is not the app compiler. Java/Kotlin output remains
-JVM 11. Build warning counts and resolved artifacts belong in ticket evidence;
+JVM 11. Build warning counts and resolved artifacts belong in the pull request;
 do not upgrade or baseline them incidentally.
 
 For independent-output validation in a clean source checkout:
@@ -179,10 +178,10 @@ emulator snapshot, signing material or project output directory is added to the
 cache paths. Build Scan publication, dependency submission and PR comments stay off.
 
 Use the action's job summary for cache restore/save information and task outcomes,
-and the retained quality logs/XML for gate evidence. Distinguish executed tests
+and the job's own summary for failing tests. Distinguish executed tests
 from `FROM-CACHE` and `UP-TO-DATE` task results; cached host results describe prior
 execution for matching Gradle inputs. Device results must still be fresh for each
-G2 run. To investigate cache behavior, run a focused task with `--info`; use
+device run. To investigate cache behavior, run a focused task with `--info`; use
 `--no-build-cache --rerun-tasks` when fresh execution is needed.
 
 Hosted speedup is measured after cache restore/save is observed on GitHub, not
@@ -190,12 +189,12 @@ inferred from a local cache hit.
 
 ## Android system-image caching in CI
 
-G2 restores only `$ANDROID_HOME/system-images/android-30/google_apis/x86_64`
+Device jobs restore only `$ANDROID_HOME/system-images/android-30/google_apis/x86_64`
 through commit-pinned `actions/cache/restore` v5.1.0. The emulator action still runs
 `sdkmanager` to check/install current packages. A cache miss uses the normal SDK
 download path. G1 does not use this cache.
 
-After the support device group and evidence validation pass on trusted `main`,
+After the support device group passes on trusted `main`,
 that group alone uses `actions/cache/save` v5.1.0 to save a key containing the OS, host architecture,
 API/target/image architecture and SHA-256 of the installed `source.properties`.
 Restores use a prefix to find the latest saved image revision; saves compare the
@@ -209,78 +208,21 @@ ADB keys, app databases and test results are outside its path. Each device run
 still force-creates an AVD and cold-boots with `-no-snapshot`. Emulator cores stay
 at the action's existing default of two; RAM and Gradle worker settings are unchanged.
 
-Compare cache restore/upload time, SDK installation, boot time and the complete G2
-job before claiming a speedup. The first main G2 populates this cache; subsequent
+Compare cache restore/upload time, SDK installation, boot time and the complete device
+job before claiming a speedup. The first main device run populates this cache; subsequent
 PR/full runs can restore it. A compressed system image is large, so cache transfer
 time must be included in the comparison.
 
-## Parallel hosted G2
+## Hosted device groups
 
-The shared planner implements [ADR 0014](../decisions/0014-change-aware-quality-gates.md).
-Eligible documentation advancing no ticket uses G0 (Python/Git, board/tool tests
-and architecture), without Java, Gradle or SDK setup. Code PRs use G2 with affected
-modules and consumers; shared/build/tooling/unknown changes select full devices.
-Main code pushes retain G1 to populate trusted caches; eligible documentation
-pushes use G0. Scheduled and manual runs use full G3 with CI's throwaway signing;
-the nightly skips every job when `main` has not moved since the last successful
-nightly.
-
-G1/G2 host checks run once and retain every existing task. Only required device
-groups start: the app suite as two shards (`app-1`, `app-2`, split by the
-instrumentation runner's `numShards`/`shardIndex`), or `support` with the selected
-data/design-system/catalog suites. Each creates a fresh, cold-booted API-30
-emulator. Sibling groups continue after a failure for diagnostics. A shard's part
-records its index and count; the collector and the evidence validator accept the
-app module's results only from every shard of one split, once each. The selection map is app → app; catalog → catalog;
-data/domain → data/app; design-system → design-system/app/catalog. Mixed changes
-union those sets. No manual module/task selector can override the dependency graph.
-
-The only required result is the final `quality` job. It runs even if an upstream
-job fails or is cancelled. It requires successful planning and host jobs, plus
-every selected device group/module for G2/G3; G0/G1 require the device job to be skipped. The collector
-checks every module's fresh XML, check commands, outcome, toolchain, commit, input
-fingerprint, base, event and workflow run/attempt. Missing or inconsistent parts
-fail the gate. Device skips fail too. A part cannot be retained as ticket evidence.
-
-Parts and raw logs/results are retained as `quality-part-<attempt>-<part>` artifacts
-for 90 days. The collector downloads only the current attempt, verifies artifact
-digests, and writes standard full reports plus the source parts under
-`quality-reports`. The download action's flat single-artifact layout is accepted
-only when host is the sole selected part (G0/G1). Re-run the complete workflow for a fresh comparison; retrying
-only a failed group cannot reuse successful groups from a previous attempt.
-The pinned `actions/download-artifact` v8.0.2 reads the current run without new
-credentials or GitHub permissions. Normal local `verify-ticket` commands execute
-the host gate; the hosted run executes the device suites. Add `--affected BASE` to a
-ticket command for targeted device coverage locally; `--gate G2` forces every device suite.
-Reports use schema v2 with full/affected/documents scope, compared base/paths and
-exact selected modules. Targeted verification is not reported as full G2; historical
-schema-v1 reports remain readable.
-
-To exercise full collection locally, choose a fresh output directory and two isolated
-API-30 emulators. The workflow_dispatch event below deliberately selects full G3:
-the host part also runs the licence table check and the throwaway-key release
-check, which need `keytool` and the build-tools `apksigner`.
-For pull_request event probes, inspect `--ci-plan BASE --ci-event pull_request`
-(with QUALITY_EXECUTION_ID set) and execute only its selected groups. Keep inputs unchanged until collection finishes. For example:
+What each event runs, how changed paths select device groups and how the `quality`
+check judges the jobs are in the [quality gates guide](quality-gates.md#what-ci-runs).
+To reproduce one hosted group on your own emulator:
 
 ```bash
-export QUALITY_EXECUTION_ID=local-device-split-001
-export QUALITY_PARTS_DIR=build/reports/quality-parts/local-device-split-001
-./scripts/verify-ticket --merge-candidate HEAD --ci-event workflow_dispatch \
-  --ci-part host --ci-output "$QUALITY_PARTS_DIR"
-ANDROID_SERIAL=emulator-5584 ./scripts/verify-ticket --merge-candidate HEAD \
-  --ci-event workflow_dispatch --ci-part app-1 --ci-output "$QUALITY_PARTS_DIR"
-ANDROID_SERIAL=emulator-5584 ./scripts/verify-ticket --merge-candidate HEAD \
-  --ci-event workflow_dispatch --ci-part app-2 --ci-output "$QUALITY_PARTS_DIR"
-ANDROID_SERIAL=emulator-5586 ./scripts/verify-ticket --merge-candidate HEAD \
-  --ci-event workflow_dispatch --ci-part support --ci-output "$QUALITY_PARTS_DIR"
-./scripts/verify-ticket --merge-candidate HEAD --ci-event workflow_dispatch \
-  --ci-collect "$QUALITY_PARTS_DIR"
+ANDROID_SERIAL=emulator-5580 scripts/check --device app-1 --modules app
+ANDROID_SERIAL=emulator-5580 scripts/check --device support
 ```
-
-These local commands may run sequentially to avoid sharing a Gradle workspace;
-GitHub supplies separate runners/workspaces. Local passing collection proves full
-coverage and report integration, not hosted parallelism or a measured speedup.
 
 ## Device smoke
 
@@ -309,7 +251,7 @@ adb -s "$ANDROID_SERIAL" install -r catalog/build/outputs/apk/debug/catalog-debu
 adb -s "$ANDROID_SERIAL" shell am start -W \
   -n com.software.sello.debug/com.software.sello.MainActivity
 adb -s "$ANDROID_SERIAL" shell am start -W -n com.software.sello.catalog/.CatalogActivity
-./scripts/verify-ticket SELLO-0XX --gate G2   # the device gate
+scripts/check --device                       # every device suite
 ```
 
 Wait for boot completion `1` with a bounded condition check; device connectivity

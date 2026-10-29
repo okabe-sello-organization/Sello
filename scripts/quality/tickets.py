@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Canonical tickets: one folder per ticket under docs/tickets/<epic>/<SELLO-0NN>/.
 
-ticket.md is the only file the tools parse for status, acceptance and dependencies.
-evidence.md holds the delivery evidence fields, handoff.md the short handoff,
-quality-report.json the retained gate report and artifacts/ any screenshots. Nothing
-generated is committed: `tickets.py status` prints the board on demand.
+ticket.md is the only file the tools parse for status, acceptance and dependencies;
+a Done ticket also needs its handoff.md. Proof that checks passed is the pull
+request's `quality` check (ADR 0021), so no evidence or report is read here.
+Nothing generated is committed: `tickets.py status` prints the board on demand.
 """
 import argparse
 import re
@@ -21,10 +21,8 @@ REQUIRED_SECTIONS = (
     "Verification recipe",
 )
 PRIORITIES = {"P0": "Highest", "P1": "High", "P2": "Medium"}
-DELIVERY_FIELDS = ("Revision", "Requirement mapping", "Red / Green", "Gate results", "Device / Artifact", "Review")
 TICKET_ID = re.compile(r"SELLO-\d{3}")
 EPIC_FOLDER = re.compile(r"E\d{2}-[a-z0-9-]+")
-PLACEHOLDER = re.compile(r"\b(TODO|TBD|Pending)\b|<[^>]+>", re.IGNORECASE)
 
 
 @dataclass
@@ -157,12 +155,7 @@ def load(root):
     return epics
 
 
-def evidence_fields(ticket):
-    path = ticket.folder / "evidence.md"
-    return metadata(path.read_text(encoding="utf-8")) if path.is_file() else {}
-
-
-def validate(epics, verify_report=None):
+def validate(epics):
     if not epics:
         raise ValueError("No epic sources")
     epic_ids = [epic.identifier for epic in epics]
@@ -186,9 +179,6 @@ def validate(epics, verify_report=None):
             if ticket.issue_type not in ("Task", "Story") or ticket.gate not in ("G0", "G1", "G2", "G3"):
                 raise ValueError(f"{ticket.identifier}: invalid type/gate")
     for ticket in tickets.values():
-        number = int(ticket.identifier.removeprefix("SELLO-"))
-        if number > 4 and "SELLO-004" not in ticket.dependencies:
-            raise ValueError(f"{ticket.identifier}: must depend on SELLO-004")
         for dependency in ticket.dependencies:
             if dependency not in tickets:
                 raise ValueError(f"{ticket.identifier}: Unknown dependency {dependency}")
@@ -198,21 +188,7 @@ def validate(epics, verify_report=None):
             tickets[dependency].status != "Done" for dependency in ticket.dependencies
         ):
             raise ValueError(f"{ticket.identifier}: unfinished dependencies for {ticket.status}")
-        if number >= 4 and ticket.status in ("Review", "Done"):
-            fields = evidence_fields(ticket)
-            require_fields(fields, ("Quality run",), ticket.identifier)
-            if PLACEHOLDER.search(fields["Quality run"]):
-                raise ValueError(f"{ticket.identifier}: placeholder Delivery evidence in Quality run")
-            if verify_report:
-                verify_report(ticket, fields)
         if ticket.status == "Done":
-            fields = evidence_fields(ticket)
-            if not fields:
-                raise ValueError(f"{ticket.identifier}: missing Delivery evidence (evidence.md)")
-            require_fields(fields, DELIVERY_FIELDS, ticket.identifier)
-            for name in DELIVERY_FIELDS:
-                if PLACEHOLDER.search(fields[name]):
-                    raise ValueError(f"{ticket.identifier}: placeholder Delivery evidence in {name}")
             handoff = ticket.folder / "handoff.md"
             if not handoff.is_file() or not re.sub(r"^#.*$", "", handoff.read_text(encoding="utf-8"), flags=re.MULTILINE).strip():
                 raise ValueError(f"{ticket.identifier}: missing handoff.md")
@@ -250,54 +226,10 @@ def status_table(epics, epic_filter=None):
     return "\n".join(lines)
 
 
-def split_epic_text(text):
-    """Split one old epic file into (README text, [(ticket id, ticket.md, evidence.md or None)]).
-
-    The ticket text keeps every byte of the old section except the heading level and
-    the Delivery evidence block, so acceptance fingerprints stay identical.
-    """
-    matches = list(re.finditer(r"^## (SELLO-\d{3}) — .+$", text, re.MULTILINE))
-    if not matches:
-        raise ValueError("no tickets in epic text")
-    readme = text[: matches[0].start()].rstrip() + "\n"
-    parts = []
-    for index, match in enumerate(matches):
-        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
-        section = text[match.start(): end]
-        evidence = None
-        found = re.search(r"^### Delivery evidence\n[\s\S]*?(?=^###? |\Z)", section, re.MULTILINE)
-        if found:
-            evidence = found.group(0)
-            section = section[: found.start()] + section[found.end():]
-        ticket_md = "# " + section[len("## "):]
-        ticket_md = ticket_md.rstrip() + "\n"
-        parts.append((match.group(1), ticket_md, evidence))
-    return readme, parts
-
-
-def report_evidence(root, base):
-    """Validate retained quality reports for Review/Done tickets from SELLO-004 onward."""
-    def check(ticket, fields):
-        sys.path.insert(0, str(Path(__file__).resolve().parent))
-        import evidence
-        # A ticket already Done at the base revision keeps its historical tested snapshot.
-        fresh = ticket.status != "Done" or evidence.status_at(root, base, ticket.identifier) != "Done"
-        try:
-            evidence.check(root, ticket.identifier, ticket.gate, fields["Quality run"], fresh,
-                           base=None if base == "HEAD" else base, migrated=fields.get("Acceptance migrated"))
-        except evidence.EvidenceError as error:
-            raise ValueError(f"{ticket.identifier}: {error}") from None
-    return check
-
-
 def main(argv=None, root=None):
     parser = argparse.ArgumentParser(description="Validate the ticket folders or print their status.")
     commands = parser.add_subparsers(dest="command", required=True)
-    check = commands.add_parser("check", help="Validate structure, dependencies and completion evidence.")
-    check.add_argument("--skip-evidence", action="store_true",
-                       help="Structure only. Used inside a quality run; never completion validation.")
-    check.add_argument("--base", default="HEAD",
-                       help="Candidate base: tickets not Done there need a report bound to a change set between it and HEAD.")
+    commands.add_parser("check", help="Validate structure, IDs, statuses and dependencies.")
     status = commands.add_parser("status", help="Print the status table on demand.")
     status.add_argument("epic", nargs="?", help="Epic folder or ID filter, for example E17.")
     arguments = parser.parse_args(argv)
@@ -307,7 +239,7 @@ def main(argv=None, root=None):
         if arguments.command == "status":
             print(status_table(epics, arguments.epic))
             return 0
-        validate(epics, None if arguments.skip_evidence else report_evidence(root, arguments.base))
+        validate(epics)
     except (ValueError, OSError) as error:
         print(f"Ticket validation failed: {error}", file=sys.stderr)
         return 1
