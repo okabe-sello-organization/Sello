@@ -87,6 +87,10 @@ data class GoalEditorState(
     /** ¿Ya la lograste?: Marcar como lograda in progress, or its big moment on screen. */
     val completion: CompletionState = CompletionState.Idle
 ) {
+    /** Whether the form takes changes: it has loaded, is not saving and has not ended. */
+    val editable: Boolean
+        get() = !loading && !loadFailed && !busy && !completed && result == null
+
     /**
      * Crear meta waits for a name, an icon and an amount; Guardar cambios also for a
      * change. Once the form has ended, nothing more is sent.

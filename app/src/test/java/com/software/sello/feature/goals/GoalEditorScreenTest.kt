@@ -204,6 +204,13 @@ class GoalEditorScreenTest {
     }
 
     @Test
+    fun whileSavingTheNameCannotBeEdited() {
+        show(planned.copy(busy = true))
+
+        rule.onNodeWithContentDescription("Nombre").assertIsNotEnabled()
+    }
+
+    @Test
     fun aGoalBeingChangedDoesNotTakeFocus() {
         show(planned.copy(editing = true))
         rule.waitForIdle()

@@ -82,8 +82,7 @@ class GoalEditorViewModel(
 
     fun onAction(action: GoalEditorAction) {
         val now = state.value
-        val editable = !now.loading && !now.loadFailed && !now.busy && !now.completed &&
-            now.result == null
+        val editable = now.editable
         when (action) {
             is GoalEditorAction.NameChanged -> if (editable) set(KEY_NAME, action.text)
 

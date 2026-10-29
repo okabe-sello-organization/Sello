@@ -17,6 +17,11 @@ import androidx.compose.ui.text.input.TextFieldValue
  * from the caller replaces the field only when it is new and was not one of the texts the
  * field reported: those are echoes of typing and leave the cursor and the word in progress
  * alone. A new value goes in with the cursor after it.
+ *
+ * The contract for the caller: every text the field reports must be stored as it is,
+ * stored transformed (the transformed text then arrives as a new value and is adopted), or
+ * the field must be disabled. A caller that ignores a report leaves the field showing text
+ * its state does not hold, because the field only follows the state when the state changes.
  */
 @Stable
 internal class EditedText(initial: String) {

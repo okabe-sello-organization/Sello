@@ -393,6 +393,7 @@ private fun Identity(
                 onValueChange = { onAction(InvestmentEditorAction.NameChanged(it)) },
                 modifier = Modifier.weight(1f).focusRequester(nameFocus)
                     .testTag(INVESTMENT_EDITOR_NAME_TAG),
+                enabled = state.editable,
                 message = textMessage(
                     state.nameError,
                     stringResource(R.string.investment_editor_name_hint),
@@ -415,6 +416,7 @@ private fun Identity(
             onValueChange = { onAction(InvestmentEditorAction.DescriptionChanged(it)) },
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
                 .testTag(INVESTMENT_EDITOR_DESCRIPTION_TAG),
+            enabled = state.editable,
             message = textMessage(
                 state.descriptionError,
                 stringResource(R.string.investment_editor_description_hint),
