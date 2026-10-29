@@ -1,11 +1,9 @@
 package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
@@ -16,15 +14,14 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.CATEGORY_ARCHIVED_TAG
 import com.software.sello.designsystem.component.CATEGORY_UNLIMITED_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.press
+import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -122,20 +119,15 @@ class AdjustBudgetScreenTest {
     private var sheet by mutableStateOf(LimitSheetState(october))
 
     private fun show(state: AdjustBudgetState, fontScale: Float = 1f) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    AdjustBudgetScreen(
-                        state = state,
-                        sheet = sheet,
-                        onAction = { actions += it },
-                        onSheet = { sheetActions += it },
-                        onEditCategory = { edited += it },
-                        contentPadding = PaddingValues(12.dp)
-                    )
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale)) {
+            AdjustBudgetScreen(
+                state = state,
+                sheet = sheet,
+                onAction = { actions += it },
+                onSheet = { sheetActions += it },
+                onEditCategory = { edited += it },
+                contentPadding = PaddingValues(12.dp)
+            )
         }
     }
 

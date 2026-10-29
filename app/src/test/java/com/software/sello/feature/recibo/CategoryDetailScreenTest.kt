@@ -1,17 +1,11 @@
 package com.software.sello.feature.recibo
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
@@ -29,20 +23,18 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
+import com.software.sello.Look
 import com.software.sello.designsystem.component.ACTION_LINE_MENU_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.designsystem.theme.selloColors
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
-import java.io.File
+import com.software.sello.showSello
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
@@ -50,8 +42,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.GraphicsMode
 
 @RunWith(AndroidJUnit4::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CategoryDetailScreenTest {
     @get:Rule
     val rule = createComposeRule()
@@ -71,26 +65,21 @@ class CategoryDetailScreenTest {
         ink: SelloInk = SelloInk.Cobalto,
         dark: Boolean = false
     ) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(ink = ink, darkTheme = dark, reducedMotion = true) {
-                    CategoryDetailScreen(
-                        state = state,
-                        months = monthNames(),
-                        dates = dateLabels(),
-                        showName = showName,
-                        onAction = { actions += it },
-                        onRecordHere = { recordHere++ },
-                        contentPadding = PaddingValues(12.dp),
-                        onEditExpense = { edited += it },
-                        onEditCategory = { editCategory++ },
-                        onShowAllExpenses = { openedAll++ },
-                        showPastLimitAnnouncement = showPastLimitAnnouncement,
-                        onDismissPastLimitAnnouncement = { pastLimitAnnouncementDismissed++ }
-                    )
-                }
-            }
+        rule.showSello(Look(ink = ink, dark = dark, fontScale = fontScale)) {
+            CategoryDetailScreen(
+                state = state,
+                months = monthNames(),
+                dates = dateLabels(),
+                showName = showName,
+                onAction = { actions += it },
+                onRecordHere = { recordHere++ },
+                contentPadding = PaddingValues(12.dp),
+                onEditExpense = { edited += it },
+                onEditCategory = { editCategory++ },
+                onShowAllExpenses = { openedAll++ },
+                showPastLimitAnnouncement = showPastLimitAnnouncement,
+                onDismissPastLimitAnnouncement = { pastLimitAnnouncementDismissed++ }
+            )
         }
     }
 
@@ -185,11 +174,6 @@ class CategoryDetailScreenTest {
         listOf("9 días", "+6,7 %").forEach {
             assertEquals(16.sp, textStyle(it).fontSize)
             assertEquals(FontWeight.W800, textStyle(it).fontWeight)
-        }
-        val target = InstrumentationRegistry.getInstrumentation().targetContext.filesDir
-        File(target, "category-hero-footer.png").outputStream().use {
-            rule.onNodeWithTag(CATEGORY_DETAIL_HEADER_TAG).captureToImage()
-                .asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
         }
     }
 
@@ -460,11 +444,6 @@ class CategoryDetailScreenTest {
             "label ends at ${label.right}, amounts at ${amount.right}",
             (label.right - amount.right).value in -1f..1f
         )
-        val target = InstrumentationRegistry.getInstrumentation().targetContext.filesDir
-        File(target, "category-latest.png").outputStream().use {
-            rule.onNodeWithTag(CATEGORY_DETAIL_LIST_TAG).captureToImage()
-                .asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
-        }
     }
 
     @Test
@@ -687,18 +666,16 @@ class CategoryDetailScreenTest {
 
     private fun showChanging(first: ExpenseListState): (ExpenseListState) -> Unit {
         var state by mutableStateOf<CategoryDetailState>(ready(first))
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                CategoryDetailScreen(
-                    state = state,
-                    months = monthNames(),
-                    dates = dateLabels(),
-                    showName = false,
-                    onAction = { actions += it },
-                    onRecordHere = { recordHere++ },
-                    contentPadding = PaddingValues(12.dp)
-                )
-            }
+        rule.showSello {
+            CategoryDetailScreen(
+                state = state,
+                months = monthNames(),
+                dates = dateLabels(),
+                showName = false,
+                onAction = { actions += it },
+                onRecordHere = { recordHere++ },
+                contentPadding = PaddingValues(12.dp)
+            )
         }
         return { next ->
             state = ready(next)
@@ -824,20 +801,18 @@ class CategoryDetailScreenTest {
             DeleteProblem.Failed to "No se pudo borrar. El gasto sigue anotado."
         )
         var problem by mutableStateOf(DeleteProblem.Gone)
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                CategoryDetailScreen(
-                    state = ready(
-                        ExpenseListState.Rows(rows, more = false)
-                    ).copy(deleteProblem = problem),
-                    months = monthNames(),
-                    dates = dateLabels(),
-                    showName = false,
-                    onAction = { actions += it },
-                    onRecordHere = {},
-                    contentPadding = PaddingValues(12.dp)
-                )
-            }
+        rule.showSello {
+            CategoryDetailScreen(
+                state = ready(
+                    ExpenseListState.Rows(rows, more = false)
+                ).copy(deleteProblem = problem),
+                months = monthNames(),
+                dates = dateLabels(),
+                showName = false,
+                onAction = { actions += it },
+                onRecordHere = {},
+                contentPadding = PaddingValues(12.dp)
+            )
         }
 
         texts.forEach { (which, text) ->

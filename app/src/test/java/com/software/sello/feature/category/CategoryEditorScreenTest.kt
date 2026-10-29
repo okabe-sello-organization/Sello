@@ -1,10 +1,8 @@
 package com.software.sello.feature.category
 
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -35,13 +33,13 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.revealed
+import com.software.sello.showSello
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -66,13 +64,8 @@ class CategoryEditorScreenTest {
     )
 
     private fun show(state: CategoryEditorState, fontScale: Float = 1f) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    CategoryEditorScreen(state, { actions += it })
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale)) {
+            CategoryEditorScreen(state, { actions += it })
         }
     }
 
@@ -140,7 +133,7 @@ class CategoryEditorScreenTest {
     @Test
     fun theNameIsFocusedOnceTheNewFormIsReady() {
         var state by mutableStateOf(CategoryEditorState())
-        rule.setContent { SelloTheme(reducedMotion = true) { CategoryEditorScreen(state, {}) } }
+        rule.showSello { CategoryEditorScreen(state, {}) }
         state = ready
 
         rule.waitForIdle()
@@ -597,13 +590,11 @@ class CategoryEditorScreenTest {
     @Test
     fun beforeUnarchivingItSaysWhetherTheBudgetComesBack() {
         var question by mutableStateOf(ArchiveQuestion(true, 0, october, true, false))
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                CategoryEditorScreen(
-                    editing.copy(name = "Mercado", archived = true, archiveQuestion = question),
-                    { actions += it }
-                )
-            }
+        rule.showSello {
+            CategoryEditorScreen(
+                editing.copy(name = "Mercado", archived = true, archiveQuestion = question),
+                { actions += it }
+            )
         }
 
         rule.onNodeWithText("¿Desarchivar Mercado?").assertIsDisplayed()
