@@ -4,10 +4,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertContentDescriptionContains
@@ -26,18 +24,18 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.theme.SelloInk
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.showSello
 import java.time.LocalDate
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
@@ -71,31 +69,24 @@ class ResumenScreenTest {
         height: Dp? = null,
         density: Float? = null
     ) {
-        rule.setContent {
-            val deviceDensity = LocalDensity.current.density
-            CompositionLocalProvider(
-                LocalDensity provides Density(density ?: deviceDensity, font)
+        rule.showSello(Look(ink = ink, dark = dark, fontScale = font, density = density)) {
+            Box(
+                if (width != null && height != null) {
+                    Modifier.requiredSize(width, height)
+                } else {
+                    Modifier.fillMaxSize()
+                }.testTag("stage")
             ) {
-                SelloTheme(ink = ink, darkTheme = dark, reducedMotion = true) {
-                    Box(
-                        if (width != null && height != null) {
-                            Modifier.requiredSize(width, height)
-                        } else {
-                            Modifier.fillMaxSize()
-                        }.testTag("stage")
-                    ) {
-                        ResumenScreen(
-                            state.value,
-                            { actions += it },
-                            { incomeClicks++ },
-                            { category = it },
-                            { expenseClicks++ },
-                            PaddingValues(),
-                            { adjusted = it },
-                            { schedulesClicks++ }
-                        )
-                    }
-                }
+                ResumenScreen(
+                    state.value,
+                    { actions += it },
+                    { incomeClicks++ },
+                    { category = it },
+                    { expenseClicks++ },
+                    PaddingValues(),
+                    { adjusted = it },
+                    { schedulesClicks++ }
+                )
             }
         }
     }

@@ -13,7 +13,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
@@ -43,19 +42,19 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.CATEGORY_ARCHIVED_TAG
 import com.software.sello.designsystem.component.CATEGORY_UNLIMITED_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SCAFFOLD_SECONDARY_TAG
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.navigation.ShellDetail
 import com.software.sello.navigation.ShellScreen
 import com.software.sello.navigation.ShellState
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.showSello
 import java.time.YearMonth
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
@@ -72,18 +71,13 @@ class ReciboScreenTest {
     private val actions = mutableListOf<ReciboAction>()
 
     private fun show(state: ReciboState, fontScale: Float = 1f, selected: String? = null) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    ReciboScreen(
-                        state,
-                        { actions += it },
-                        PaddingValues(12.dp),
-                        selectedCategoryId = selected
-                    )
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale)) {
+            ReciboScreen(
+                state,
+                { actions += it },
+                PaddingValues(12.dp),
+                selectedCategoryId = selected
+            )
         }
     }
 
@@ -233,11 +227,9 @@ class ReciboScreenTest {
             override val fullyDrawnReporter = FullyDrawnReporter({ it.run() }) { reported++ }
         }
         var state by mutableStateOf<ReciboState>(ReciboState.Loading)
-        rule.setContent {
+        rule.showSello {
             CompositionLocalProvider(LocalFullyDrawnReporterOwner provides owner) {
-                SelloTheme(reducedMotion = true) {
-                    ReciboScreen(state, { actions += it }, PaddingValues(12.dp))
-                }
+                ReciboScreen(state, { actions += it }, PaddingValues(12.dp))
             }
         }
         rule.waitForIdle()
@@ -251,15 +243,13 @@ class ReciboScreenTest {
 
     @Test
     fun theFirstRunStillShowsTheGoalUnderItsCard() {
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                ReciboScreen(
-                    ReciboState.FirstRun,
-                    { actions += it },
-                    PaddingValues(12.dp),
-                    goal = { Text("Meta en Recibo", Modifier.testTag("goal")) }
-                )
-            }
+        rule.showSello {
+            ReciboScreen(
+                ReciboState.FirstRun,
+                { actions += it },
+                PaddingValues(12.dp),
+                goal = { Text("Meta en Recibo", Modifier.testTag("goal")) }
+            )
         }
 
         rule.onNodeWithText("Dale forma a tu mes").assertIsDisplayed()
@@ -660,9 +650,7 @@ class ReciboScreenTest {
             month(plain("80.000"), ReciboStamp.NoLimit, label = ReciboAnswerLabel.Spent)
         )
         var state by mutableStateOf<ReciboState>(others.first())
-        rule.setContent {
-            SelloTheme(reducedMotion = true) { ReciboScreen(state, {}, PaddingValues(12.dp)) }
-        }
+        rule.showSello { ReciboScreen(state, {}, PaddingValues(12.dp)) }
 
         others.forEach { other ->
             state = other
