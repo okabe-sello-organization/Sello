@@ -34,6 +34,7 @@ import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.InvestmentUndoOffer
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RestoreInvestmentMovement
@@ -189,7 +190,7 @@ class InvestmentMovementViewModelTest {
 
     private fun board(vararg investments: InvestmentSummary): InvestmentBoardState {
         val rate = rateEntry(415_025, "2026-10-20")
-        return InvestmentBoardState.Ready(
+        return ReadState.Ready(
             InvestmentBoard(
                 generation = 3,
                 revision = 9,
@@ -649,7 +650,7 @@ class InvestmentMovementViewModelTest {
 
     @Test
     fun aFailedReadIsNotNoInvestments() = runTest {
-        reads.board.value = InvestmentBoardState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val model = model()
 
         assertTrue(model.now.loadFailed)

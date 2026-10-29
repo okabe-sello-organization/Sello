@@ -9,6 +9,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
@@ -56,10 +57,10 @@ class ResumenViewModel(
     /** The stub's fact: the nearest fixed one still to come, on the financial day. */
     private val nextFixed = combine(schedules.observe(), clock.today) { read, today ->
         when (read) {
-            is ScheduleBookState.Ready -> {
+            is ReadState.Ready -> {
                 val date = today.date
                 val lines = ScheduleListPolicy.lines(
-                    read.book.schedules,
+                    read.value.schedules,
                     date,
                     YearMonth.from(date)
                 )
@@ -68,7 +69,7 @@ class ResumenViewModel(
             }
 
             // A failed read is never "none", even with an earlier book to hand.
-            ScheduleBookState.Loading, is ScheduleBookState.Failed -> ResumenNextFixed.Unknown
+            ReadState.Loading, is ReadState.Failed -> ResumenNextFixed.Unknown
         }
     }
 

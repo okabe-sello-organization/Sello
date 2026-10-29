@@ -12,6 +12,7 @@ import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.SnapshotState
@@ -111,7 +112,7 @@ class SchedulesViewModelTest {
     )
 
     private fun publish(vararg schedules: StoredSchedule) {
-        reads.state.value = ScheduleBookState.Ready(ScheduleBook(1, 1, schedules.toList()))
+        reads.state.value = ReadState.Ready(ScheduleBook(1, 1, schedules.toList()))
     }
 
     private fun categories() = snapshots.ready(
@@ -216,7 +217,7 @@ class SchedulesViewModelTest {
     fun aFailedReadIsFailedNeverAnEmptyListAndRetryReadsAgain() {
         val model = list()
         categories()
-        reads.state.value = ScheduleBookState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.state.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val schedulesFailed = model.state.value
         publish(rent)
         snapshots.of(october).value = SnapshotState.Failed(SnapshotFailure.Unrepresentable, null)

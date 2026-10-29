@@ -67,6 +67,7 @@ import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.navigation.INVERSIONES_ADD_TAG
 import com.software.sello.navigation.InversionesDestination
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
@@ -299,7 +300,7 @@ class InversionesScreenTest {
     @Test
     fun withInvestmentsNuevaInversionSitsBesideTheTitleAndThereIsNoGear() {
         var added = 0
-        destination(InvestmentBoardState.Ready(page()), onAdd = { added++ })
+        destination(ReadState.Ready(page()), onAdd = { added++ })
 
         // Settings is on Recibo only (owner, 2026-10-26).
         rule.onNodeWithTag(SETTINGS_ACTION_TAG).assertDoesNotExist()
@@ -309,7 +310,7 @@ class InversionesScreenTest {
 
     @Test
     fun withNoInvestmentsOnlyTheDockAddsOne() {
-        destination(InvestmentBoardState.Ready(board()), onAdd = {})
+        destination(ReadState.Ready(board()), onAdd = {})
 
         rule.onNodeWithTag(INVERSIONES_ADD_TAG).assertDoesNotExist()
         rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Agregar inversión"))
@@ -317,7 +318,7 @@ class InversionesScreenTest {
 
     @Test
     fun theTabIsTitledInversionesWithNoMonthNoAnotarAndNoDockYet() {
-        destination(InvestmentBoardState.Ready(page()))
+        destination(ReadState.Ready(page()))
 
         rule.onNode(hasText("Inversiones") and isHeading(), useUnmergedTree = true).assertExists()
         rule.onNodeWithTag(MONTH_SWITCHER_TAG).assertDoesNotExist()
@@ -327,7 +328,7 @@ class InversionesScreenTest {
 
     @Test
     fun theAnswerLeadsWithTheValueTheReturnTheDatesAndTheRate() {
-        destination(InvestmentBoardState.Ready(page()))
+        destination(ReadState.Ready(page()))
 
         // 19.000.000 + 5.242.000 + USD 1.050,50 at 4.150,25 (4.359.838); Cripto has no value.
         rule.onNodeWithContentDescription(
@@ -349,7 +350,7 @@ class InversionesScreenTest {
 
     @Test
     fun rowsShowDollarsInDollarsAndAMissingValuePlainlyButOpenNothingYet() {
-        destination(InvestmentBoardState.Ready(page()))
+        destination(ReadState.Ready(page()))
         val list = rule.onNodeWithTag(INVERSIONES_LIST_TAG)
         list.performScrollToNode(hasTestTag("inversiones.rows"))
 
@@ -378,7 +379,7 @@ class InversionesScreenTest {
 
         shown =
             render.overview(
-                InvestmentBoardState.Failed(StorageFailure.Unavailable("x"), null),
+                ReadState.Failed(StorageFailure.Unavailable("x"), null),
                 today
             )
         rule.onNodeWithText(
@@ -387,12 +388,12 @@ class InversionesScreenTest {
         ).assertExists()
         rule.onNodeWithTag("inversiones.empty").assertDoesNotExist()
 
-        shown = render.overview(InvestmentBoardState.Ready(board()), today)
+        shown = render.overview(ReadState.Ready(board()), today)
         rule.onNodeWithText("Anota lo que tienes invertido", useUnmergedTree = true).assertExists()
 
         val cripto =
             investment("Cripto", null, listOf(Triple(aporte, 2_000_000, "2026-08-01")))
-        shown = render.overview(InvestmentBoardState.Ready(board(cripto)), today)
+        shown = render.overview(ReadState.Ready(board(cripto)), today)
         rule.onNodeWithTag("inversiones.noTotal").assertExists()
         rule.onNodeWithText(
             "Todavía no hay valores anotados. Anota cuánto vale cada una para ver el total.",
@@ -407,7 +408,7 @@ class InversionesScreenTest {
     fun everyFigureStaysWholeInEveryThemeSizeAndWindow() {
         val shown = InvestmentsRenderModel(
             money
-        ).overview(InvestmentBoardState.Ready(largest()), today)
+        ).overview(ReadState.Ready(largest()), today)
         var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {

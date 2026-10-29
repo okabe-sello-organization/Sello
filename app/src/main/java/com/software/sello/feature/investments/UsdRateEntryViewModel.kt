@@ -17,6 +17,7 @@ import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SetUsdRate
 import com.software.sello.presentation.money.MoneyFormatter
@@ -58,7 +59,7 @@ class UsdRateEntryViewModel(
     )
     private val progress = MutableStateFlow(Progress())
     private val board = reads.observeBoard()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, InvestmentBoardState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     val state: StateFlow<UsdRateEntryState> =
         combine(draft, date, progress, board, clock.today) { draft, date, progress, board, today ->
@@ -142,9 +143,9 @@ class UsdRateEntryViewModel(
     }
 
     private fun readable(state: InvestmentBoardState): InvestmentBoard? = when (state) {
-        InvestmentBoardState.Loading -> null
-        is InvestmentBoardState.Ready -> state.board
-        is InvestmentBoardState.Failed -> state.lastGood
+        ReadState.Loading -> null
+        is ReadState.Ready -> state.value
+        is ReadState.Failed -> state.lastGood
     }
 
     /** The draft as the pad wrote it: "4.180,7". */
@@ -165,8 +166,8 @@ class UsdRateEntryViewModel(
         val read = readable(board)
         val hundredths = draft.hundredths()
         return UsdRateEntryState(
-            loading = board is InvestmentBoardState.Loading,
-            loadFailed = board is InvestmentBoardState.Failed && read == null,
+            loading = board is ReadState.Loading,
+            loadFailed = board is ReadState.Failed && read == null,
             rate = text(draft),
             problem = when {
                 hundredths == null -> null

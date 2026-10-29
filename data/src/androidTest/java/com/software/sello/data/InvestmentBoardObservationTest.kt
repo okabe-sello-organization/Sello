@@ -5,8 +5,10 @@ import com.software.sello.domain.model.InvestmentMovementKind.Valuation
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.ReadState
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
@@ -53,30 +55,34 @@ class InvestmentBoardObservationTest {
                 while (!matches(state)) state = states.receive()
                 state
             }
-        fun value(state: InvestmentBoardState) = (state as? InvestmentBoardState.Ready)
-            ?.board?.investments?.singleOrNull()?.figures?.value?.amount
+        fun value(state: InvestmentBoardState) = (state as? ReadState.Ready<InvestmentBoard>)
+            ?.value?.investments?.singleOrNull()?.figures?.value?.amount
         try {
-            assertEquals(InvestmentBoardState.Loading, states.receive())
-            val empty = next { it is InvestmentBoardState.Ready } as InvestmentBoardState.Ready
-            assertEquals(emptyList<Any>(), empty.board.investments)
-            assertEquals(null, empty.board.rates.current)
+            assertEquals(ReadState.Loading, states.receive())
+            val empty = next { it is ReadState.Ready } as ReadState.Ready<InvestmentBoard>
+            assertEquals(emptyList<Any>(), empty.value.investments)
+            assertEquals(null, empty.value.rates.current)
 
             create()
             next { value(it) == Money.cop(10_000_000) }
             ledger.recorded(cdt, Valuation, pesosValue(10_746_000), "2026-10-01")
-            val good = next { value(it) == Money.cop(10_746_000) } as InvestmentBoardState.Ready
+            val good = next {
+                value(it) == Money.cop(10_746_000)
+            } as ReadState.Ready<InvestmentBoard>
             // A new rate is a committed change too.
             assertTrue(ledger.setRate(415_025, "2026-10-09") is CommandOutcome.Committed)
             val withRate = next {
-                (it as? InvestmentBoardState.Ready)?.board?.rates?.current != null
-            } as InvestmentBoardState.Ready
-            assertEquals(good.board.investments, withRate.board.investments)
+                (it as? ReadState.Ready<InvestmentBoard>)?.value?.rates?.current != null
+            } as ReadState.Ready<InvestmentBoard>
+            assertEquals(good.value.investments, withRate.value.investments)
 
             damageTheFirstAporte()
             // Any committed change reads the board again; this one touches no investment.
             ledger.categories.submit(ledger.createCategory("Mercado"))
-            val failed = next { it is InvestmentBoardState.Failed } as InvestmentBoardState.Failed
-            assertEquals(withRate.board, failed.lastGood)
+            val failed = next {
+                it is ReadState.Failed
+            } as ReadState.Failed<InvestmentBoard, StorageFailure>
+            assertEquals(withRate.value, failed.lastGood)
             assertEquals(
                 StorageFailure.Integrity("investment_movement", uuid(101), "amount_minor"),
                 failed.failure
@@ -96,8 +102,8 @@ class InvestmentBoardObservationTest {
 
         assertEquals(
             listOf(
-                InvestmentBoardState.Loading,
-                InvestmentBoardState.Failed(
+                ReadState.Loading,
+                ReadState.Failed(
                     StorageFailure.Integrity("investment_movement", uuid(101), "amount_minor"),
                     null
                 )
@@ -118,6 +124,6 @@ class InvestmentBoardObservationTest {
         } catch (cancelled: CancellationException) {
             assertTrue(cancelled !is TimeoutCancellationException)
         }
-        assertEquals(listOf<InvestmentBoardState>(InvestmentBoardState.Loading), states)
+        assertEquals(listOf<InvestmentBoardState>(ReadState.Loading), states)
     }
 }

@@ -14,6 +14,7 @@ import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeMonth
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBookState
@@ -189,9 +190,9 @@ class IncomeHistoryViewModel(
         book: ScheduleBookState
     ): IncomePlanState? {
         val schedules = when (book) {
-            ScheduleBookState.Loading -> return null
-            is ScheduleBookState.Failed -> return IncomePlanState.Failed
-            is ScheduleBookState.Ready -> book.book
+            ReadState.Loading -> return null
+            is ReadState.Failed -> return IncomePlanState.Failed
+            is ReadState.Ready -> book.value
         }
         val expected = IncomePlanPolicy.expected(schedules.schedules, month)
         if (expected.isEmpty()) return IncomePlanState.None
@@ -247,14 +248,14 @@ class IncomeHistoryViewModel(
                         shown.value = loaded.copy(busy = true, pageFailed = false)
                     }
                     when (state) {
-                        IncomeMonthState.Loading -> Unit
+                        ReadState.Loading -> Unit
 
-                        is IncomeMonthState.Failed -> shown.value = IncomeHistoryState.Failed
+                        is ReadState.Failed -> shown.value = IncomeHistoryState.Failed
 
-                        is IncomeMonthState.Ready -> {
-                            snapshot = state.month
+                        is ReadState.Ready -> {
+                            snapshot = state.value
                             val restore = loaded?.lines?.size ?: 0
-                            page(state.month, first = true, epoch, restore)
+                            page(state.value, first = true, epoch, restore)
                         }
                     }
                 }

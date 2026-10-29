@@ -47,6 +47,7 @@ import com.software.sello.domain.port.IncomePage
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.IncomeUndoOffer
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
 import com.software.sello.domain.port.SnapshotState
@@ -356,12 +357,12 @@ class HandIncomeReads : IncomeReads {
     val observed = mutableListOf<YearMonth>()
     private val months = mutableMapOf<YearMonth, MutableStateFlow<IncomeMonthState>>()
 
-    fun of(month: YearMonth) = months.getOrPut(month) { MutableStateFlow(IncomeMonthState.Loading) }
+    fun of(month: YearMonth) = months.getOrPut(month) { MutableStateFlow(ReadState.Loading) }
 
     /** Publishes [month] as storage would after a change: the exact total of what is stored. */
     fun publish(month: YearMonth, generation: Long = 1, revision: Long = 1) {
         val incomes = stored.values.filter { YearMonth.from(it.date) == month }
-        of(month).value = IncomeMonthState.Ready(
+        of(month).value = ReadState.Ready(
             IncomeMonth(
                 month,
                 generation,
@@ -396,7 +397,7 @@ class HandIncomeReads : IncomeReads {
 
     override suspend fun month(month: YearMonth): Outcome<IncomeMonth, StorageFailure> =
         when (val state = of(month).value) {
-            is IncomeMonthState.Ready -> Outcome.Success(state.month)
+            is ReadState.Ready -> Outcome.Success(state.value)
             else -> Outcome.Failure(StorageFailure.Unavailable("unread"))
         }
 

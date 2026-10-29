@@ -17,6 +17,7 @@ import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomePage
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBook
@@ -75,7 +76,7 @@ class IncomeHistoryViewModelTest {
     }
 
     /** The schedules, as the history observes them. */
-    private val book = MutableStateFlow<ScheduleBookState>(ScheduleBookState.Loading)
+    private val book = MutableStateFlow<ScheduleBookState>(ReadState.Loading)
 
     private val schedules = object : ScheduleReads {
         override suspend fun book() = error("The history observes")
@@ -199,7 +200,7 @@ class IncomeHistoryViewModelTest {
         val model = history()
         reads.publish(october)
         assertEquals(1, (model.state.value as IncomeHistoryState.Ready).lines.size)
-        reads.of(october).value = IncomeMonthState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.of(october).value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         assertEquals(IncomeHistoryState.Failed, model.state.value)
         val september = YearMonth.of(2026, 9)
         session.select(september)
@@ -293,7 +294,7 @@ class IncomeHistoryViewModelTest {
     )
 
     private fun book(revision: Long, vararg stored: StoredSchedule) =
-        ScheduleBookState.Ready(ScheduleBook(1, revision, stored.toList()))
+        ReadState.Ready(ScheduleBook(1, revision, stored.toList()))
 
     /** The month's summary at [revision]: [income] came in, budgets take [allocated]. */
     private fun summary(revision: Long, income: Long, allocated: Long = 2_800_000) =
@@ -394,7 +395,7 @@ class IncomeHistoryViewModelTest {
     fun aFailedReadIsAFailedPlanNeverNoneAndRetryReadsAgain() {
         val model = history()
         summary(october).value = summary(revision = 7, income = 2_000_000)
-        book.value = ScheduleBookState.Failed(StorageFailure.Unavailable("x"), null)
+        book.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val schedulesFailed = model.plan.value
 
         book.value = book(7, salary())

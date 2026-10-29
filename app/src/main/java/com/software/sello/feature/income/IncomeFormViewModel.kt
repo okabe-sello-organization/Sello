@@ -30,6 +30,7 @@ import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.IncomeRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleCommands
@@ -138,7 +139,7 @@ class IncomeFormViewModel(
         draft.map { YearMonth.from(it.date) }.distinctUntilChanged(),
         progress.map { it.attempt }.distinctUntilChanged()
     ) { month, _ -> month }.flatMapLatest(reads::observeMonth)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, IncomeMonthState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     /** What the composer is writing and its text; kept in [saved] so a restart reopens it. */
     private val composer: StateFlow<Pair<IncomeComposer, String>?> = combine(
@@ -186,11 +187,11 @@ class IncomeFormViewModel(
         }
         viewModelScope.launch {
             month.collect { state ->
-                if (state is IncomeMonthState.Ready) {
+                if (state is ReadState.Ready) {
                     val generation = saved.get<Long>(GENERATION)
                     if (generation == null) {
-                        saved[GENERATION] = state.month.generation
-                    } else if (generation != state.month.generation) {
+                        saved[GENERATION] = state.value.generation
+                    } else if (generation != state.value.generation) {
                         progress.update {
                             it.copy(error = IncomeFormError.DataChanged, generationChanged = true)
                         }
@@ -801,10 +802,10 @@ class IncomeFormViewModel(
         return IncomeFormState(
             loading =
                 progress.recorded == null && !progress.loadFailed &&
-                    (month is IncomeMonthState.Loading || waiting),
+                    (month is ReadState.Loading || waiting),
             loadFailed =
                 progress.recorded == null &&
-                    (month is IncomeMonthState.Failed || progress.loadFailed),
+                    (month is ReadState.Failed || progress.loadFailed),
             amount = amount?.let { money.format(it.money) },
             amountText = (draft.amount as? AmountDraft.Rejected)?.original,
             amountProblem = if (draft.amount is AmountDraft.Rejected) {

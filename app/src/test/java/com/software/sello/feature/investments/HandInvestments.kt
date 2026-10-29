@@ -39,6 +39,7 @@ import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.InvestmentUndoOffer
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
@@ -78,14 +79,13 @@ fun ratesBoard(vararg rates: UsdRateEntry) = InvestmentBoard(
 )
 
 /** The board as a test sets it. */
-class HandInvestmentReads(
-    initial: InvestmentBoardState = InvestmentBoardState.Ready(ratesBoard())
-) : InvestmentReads {
+class HandInvestmentReads(initial: InvestmentBoardState = ReadState.Ready(ratesBoard())) :
+    InvestmentReads {
     val board = MutableStateFlow(initial)
 
     override suspend fun board(): Outcome<InvestmentBoard, StorageFailure> =
         when (val state = board.value) {
-            is InvestmentBoardState.Ready -> Outcome.Success(state.board)
+            is ReadState.Ready -> Outcome.Success(state.value)
             else -> Outcome.Failure(StorageFailure.Unavailable("hand"))
         }
 

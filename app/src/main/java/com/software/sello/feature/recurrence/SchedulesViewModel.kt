@@ -12,6 +12,7 @@ import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.policy.ScheduleStatus
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SnapshotState
@@ -151,9 +152,9 @@ class SchedulesViewModel(
         tab: ScheduleTab
     ): SchedulesState {
         val stored = when (book) {
-            ScheduleBookState.Loading -> return SchedulesState.Loading
-            is ScheduleBookState.Failed -> return SchedulesState.Failed
-            is ScheduleBookState.Ready -> book.book.schedules
+            ReadState.Loading -> return SchedulesState.Loading
+            is ReadState.Failed -> return SchedulesState.Failed
+            is ReadState.Ready -> book.value.schedules
         }
         val snapshot = when (month) {
             SnapshotState.Loading -> return SchedulesState.Loading

@@ -28,6 +28,7 @@ import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleCommandOutcome
@@ -278,7 +279,7 @@ class IncomeFormViewModelTest {
     fun whenTheMonthCannotBeReadItSaysSoAndCanBeRetried() {
         val form = form()
         reads.of(october).value =
-            IncomeMonthState.Failed(StorageFailure.Unavailable("x"), lastGood = null)
+            ReadState.Failed(StorageFailure.Unavailable("x"), lastGood = null)
         val failed = form.now
 
         form.onAction(IncomeFormAction.Retry)

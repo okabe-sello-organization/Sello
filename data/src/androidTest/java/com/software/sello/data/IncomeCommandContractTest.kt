@@ -28,6 +28,7 @@ import com.software.sello.domain.port.IncomeMonth
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.IncomeUndoOffer
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
 import java.time.Instant
@@ -670,11 +671,11 @@ class IncomeCommandContractTest {
             ledger.incomeReads.observeMonth(october).collect { states.send(it) }
         }
         suspend fun totalAt(revision: Long): Money = withTimeout(15_000) {
-            var ready = states.receive() as? IncomeMonthState.Ready
-            while (ready?.month?.revision != revision) {
-                ready = states.receive() as? IncomeMonthState.Ready
+            var ready = states.receive() as? ReadState.Ready
+            while (ready?.value?.revision != revision) {
+                ready = states.receive() as? ReadState.Ready
             }
-            ready.month.total
+            ready.value.total
         }
         val atFirst = totalAt(0)
 

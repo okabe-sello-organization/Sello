@@ -5,6 +5,7 @@ import com.software.sello.domain.model.InvestmentMovementKind.Valuation
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.ReadState
 import com.software.sello.navigation.HandFinancialClock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,7 +50,7 @@ class InversionesViewModelTest {
 
     // The overview worked out as the board works it out.
     private val reads = HandInvestmentReads(
-        InvestmentBoardState.Ready(
+        ReadState.Ready(
             investmentsBoard(investments).copy(
                 overview = InvestmentPolicy.overview(
                     investments.map { it.history to it.figures },

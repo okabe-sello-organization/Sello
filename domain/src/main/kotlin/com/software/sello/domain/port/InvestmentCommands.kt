@@ -224,14 +224,7 @@ data class InvestmentBoard(
 )
 
 /** The board as [InvestmentReads.observeBoard] sees it. A failed read keeps the last good board. */
-sealed interface InvestmentBoardState {
-    data object Loading : InvestmentBoardState
-
-    data class Ready(val board: InvestmentBoard) : InvestmentBoardState
-
-    data class Failed(val failure: StorageFailure, val lastGood: InvestmentBoard?) :
-        InvestmentBoardState
-}
+typealias InvestmentBoardState = ReadState<InvestmentBoard, StorageFailure>
 
 interface InvestmentReads {
     /** One damaged investment or rate fails the read: it is never left out. */

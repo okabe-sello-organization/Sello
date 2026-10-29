@@ -18,6 +18,7 @@ import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentSummary
+import com.software.sello.domain.port.ReadState
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
@@ -66,32 +67,7 @@ class RoomInvestmentReads(private val database: SelloDatabase) : InvestmentReads
         }
     }
 
-    override fun observeBoard(): Flow<InvestmentBoardState> = flow {
-        emit(InvestmentBoardState.Loading)
-        var lastGood: InvestmentBoard? = null
-        try {
-            // Every command moves the profile's revision in its transaction.
-            database.profileDao().changes().conflate().collect {
-                when (val read = board()) {
-                    is Outcome.Success -> {
-                        lastGood = read.value
-                        emit(InvestmentBoardState.Ready(read.value))
-                    }
-
-                    is Outcome.Failure -> emit(InvestmentBoardState.Failed(read.error, lastGood))
-                }
-            }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (failure: SQLException) {
-            emit(InvestmentBoardState.Failed(unavailable(failure), lastGood))
-        } catch (failure: IllegalStateException) {
-            emit(InvestmentBoardState.Failed(unavailable(failure), lastGood))
-        }
-    }
-
-    private fun unavailable(failure: Exception) =
-        StorageFailure.Unavailable(failure.javaClass.simpleName)
+    override fun observeBoard(): Flow<InvestmentBoardState> = database.observeOnRevision { board() }
 
     override suspend fun investment(id: InvestmentId): Outcome<InvestmentSummary?, StorageFailure> =
         reading {

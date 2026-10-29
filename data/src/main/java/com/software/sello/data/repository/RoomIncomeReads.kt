@@ -18,6 +18,7 @@ import com.software.sello.domain.port.IncomeMonth
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomePage
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.ReadState
 import java.time.YearMonth
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -94,29 +95,6 @@ class RoomIncomeReads(private val database: SelloDatabase) : IncomeReads {
      * Every command advances the revision in the profile row, so watching that row is
      * watching every committed change. Bursts are conflated.
      */
-    override fun observeMonth(month: YearMonth): Flow<IncomeMonthState> = flow {
-        emit(IncomeMonthState.Loading)
-        var lastGood: IncomeMonth? = null
-        try {
-            database.profileDao().changes().conflate().collect {
-                when (val read = month(month)) {
-                    is Outcome.Success -> {
-                        lastGood = read.value
-                        emit(IncomeMonthState.Ready(read.value))
-                    }
-
-                    is Outcome.Failure -> emit(IncomeMonthState.Failed(read.error, lastGood))
-                }
-            }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (failure: SQLiteException) {
-            emit(IncomeMonthState.Failed(unavailable(failure), lastGood))
-        } catch (failure: IllegalStateException) {
-            emit(IncomeMonthState.Failed(unavailable(failure), lastGood))
-        }
-    }
-
-    private fun unavailable(failure: Exception) =
-        StorageFailure.Unavailable(failure.javaClass.simpleName)
+    override fun observeMonth(month: YearMonth): Flow<IncomeMonthState> =
+        database.observeOnRevision { month(month) }
 }

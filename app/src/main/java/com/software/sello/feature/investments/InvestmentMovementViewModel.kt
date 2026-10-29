@@ -33,6 +33,7 @@ import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -133,7 +134,7 @@ class InvestmentMovementViewModel(
     )
     private val progress = MutableStateFlow(Progress())
     private val board = reads.observeBoard()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, InvestmentBoardState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
     private val composer = combine(
         saved.getStateFlow(COMPOSER, false),
         saved.getStateFlow(COMPOSER_TEXT, "")
@@ -398,9 +399,9 @@ class InvestmentMovementViewModel(
 
     /** The board to work from: the last one read, also after a failed refresh. */
     private fun readable(state: InvestmentBoardState): InvestmentBoard? = when (state) {
-        InvestmentBoardState.Loading -> null
-        is InvestmentBoardState.Ready -> state.board
-        is InvestmentBoardState.Failed -> state.lastGood
+        ReadState.Loading -> null
+        is ReadState.Ready -> state.value
+        is ReadState.Failed -> state.lastGood
     }
 
     private fun summary(board: InvestmentBoard?, id: String?): InvestmentSummary? =
@@ -582,10 +583,10 @@ class InvestmentMovementViewModel(
             summary?.let { retiroOf(it.history, id, available) }
         }
         return InvestmentMovementState(
-            loading = board is InvestmentBoardState.Loading || (
+            loading = board is ReadState.Loading || (
                 editing && read != null && original == null && saved.get<Boolean>(DRAFTED) != true
                 ),
-            loadFailed = board is InvestmentBoardState.Failed && read == null,
+            loadFailed = board is ReadState.Failed && read == null,
             editing = editing,
             kind = draft.kind,
             amount = shown(draft, currency, amount),

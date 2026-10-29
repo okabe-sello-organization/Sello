@@ -30,13 +30,7 @@ data class ScheduleBook(
 )
 
 /** The book as [ScheduleReads.observe] sees it. A failed read keeps the last good book. */
-sealed interface ScheduleBookState {
-    data object Loading : ScheduleBookState
-
-    data class Ready(val book: ScheduleBook) : ScheduleBookState
-
-    data class Failed(val failure: StorageFailure, val lastGood: ScheduleBook?) : ScheduleBookState
-}
+typealias ScheduleBookState = ReadState<ScheduleBook, StorageFailure>
 
 interface ScheduleReads {
     /** One damaged schedule fails the read: it is never left out, and a failure is never "none". */

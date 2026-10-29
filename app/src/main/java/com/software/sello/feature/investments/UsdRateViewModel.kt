@@ -7,6 +7,7 @@ import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentReads
+import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,11 +29,11 @@ class UsdRateViewModel(reads: InvestmentReads, clock: FinancialClock, money: Mon
     val state: StateFlow<UsdRateState> =
         combine(attempts.flatMapLatest { reads.observeBoard() }, clock.today) { board, today ->
             when (board) {
-                InvestmentBoardState.Loading -> UsdRateState.Loading
+                ReadState.Loading -> UsdRateState.Loading
 
-                is InvestmentBoardState.Ready -> ready(board.board.rates, today.date, false)
+                is ReadState.Ready -> ready(board.value.rates, today.date, false)
 
-                is InvestmentBoardState.Failed -> board.lastGood?.let {
+                is ReadState.Failed -> board.lastGood?.let {
                     ready(it.rates, today.date, true)
                 } ?: UsdRateState.Failed
             }

@@ -13,6 +13,7 @@ import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SetUsdRate
 import com.software.sello.navigation.HandFinancialClock
@@ -74,7 +75,7 @@ class UsdRateViewModelTest {
 
     @Test
     fun dolarShowsTheCurrentRateThenTheEarlierOnesNewestFirst() = runTest {
-        reads.board.value = InvestmentBoardState.Ready(
+        reads.board.value = ReadState.Ready(
             ratesBoard(
                 rateEntry(396_050, "2026-09-15", 1),
                 rateEntry(415_025, "2026-10-20", 3),
@@ -103,14 +104,14 @@ class UsdRateViewModelTest {
         runCurrent()
         assertNull((model.state.value as UsdRateState.Ready).current)
 
-        reads.board.value = InvestmentBoardState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         runCurrent()
         assertEquals(UsdRateState.Failed, model.state.value)
     }
 
     @Test
     fun aTypedRateIsSentWithItsDateAndTheScreenCloses() = runTest {
-        reads.board.value = InvestmentBoardState.Ready(ratesBoard(rateEntry(415_025, "2026-10-20")))
+        reads.board.value = ReadState.Ready(ratesBoard(rateEntry(415_025, "2026-10-20")))
         commands.answers += committed()
         val model = entry()
         model.type("4180,7")

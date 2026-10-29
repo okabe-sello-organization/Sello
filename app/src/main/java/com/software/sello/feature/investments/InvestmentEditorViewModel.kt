@@ -34,6 +34,7 @@ import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
@@ -81,7 +82,7 @@ class InvestmentEditorViewModel(
         Progress(result = saved.get<String>(KEY_RESULT)?.let(::result))
     )
     private val board = reads.observeBoard()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, InvestmentBoardState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     /**
      * The currency a new investment starts in, chosen in Configuración, until another is
@@ -231,9 +232,9 @@ class InvestmentEditorViewModel(
 
     private fun readable(state: InvestmentBoardState = board.value): InvestmentBoard? =
         when (state) {
-            InvestmentBoardState.Loading -> null
-            is InvestmentBoardState.Ready -> state.board
-            is InvestmentBoardState.Failed -> state.lastGood
+            ReadState.Loading -> null
+            is ReadState.Ready -> state.value
+            is ReadState.Failed -> state.lastGood
         }
 
     private fun stored(read: InvestmentBoard? = readable()): InvestmentSummary? =
@@ -490,9 +491,9 @@ class InvestmentEditorViewModel(
             read.rates.current == null
         val sameValue = saved[KEY_SAME] ?: true
         return InvestmentEditorState(
-            loading = (read == null && board !is InvestmentBoardState.Failed) ||
+            loading = (read == null && board !is ReadState.Failed) ||
                 (editing && read != null && saved.get<Boolean>(KEY_DRAFTED) != true),
-            loadFailed = board is InvestmentBoardState.Failed && read == null,
+            loadFailed = board is ReadState.Failed && read == null,
             editing = editing,
             name = text,
             nameLength = length(text),

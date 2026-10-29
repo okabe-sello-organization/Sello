@@ -20,6 +20,7 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBook
@@ -200,7 +201,7 @@ class ResumenViewModelTest {
         assertEquals(ResumenNextFixed.Unknown, shown(model))
 
         // The 5th went through on 5 Oct, so 5 Nov; the 28th is still to come; the 15th is paused.
-        schedules.state.value = ScheduleBookState.Ready(
+        schedules.state.value = ReadState.Ready(
             ScheduleBook(
                 1,
                 1,
@@ -221,10 +222,10 @@ class ResumenViewModelTest {
             shown(model)
         )
 
-        schedules.state.value = ScheduleBookState.Ready(ScheduleBook(1, 2, emptyList()))
+        schedules.state.value = ReadState.Ready(ScheduleBook(1, 2, emptyList()))
         assertEquals(ResumenNextFixed.None, shown(model))
 
-        schedules.state.value = ScheduleBookState.Failed(
+        schedules.state.value = ReadState.Failed(
             StorageFailure.Unavailable("hand"),
             ScheduleBook(1, 2, emptyList())
         )
