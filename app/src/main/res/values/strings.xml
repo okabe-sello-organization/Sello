@@ -767,6 +767,7 @@
     <string name="restore_rejected_newer">Lo hizo una versión más nueva de Sello. Actualiza Sello e inténtalo de nuevo. Tus datos no cambiaron.</string>
     <string name="restore_rejected_damaged">El archivo está incompleto o dañado. Tus datos no cambiaron.</string>
     <string name="restore_rejected_content">Tiene datos que Sello no acepta, como un monto fuera de rango. Tus datos no cambiaron.</string>
+    <string name="restore_rejected_carry">Usa el arrastre de saldo entre meses, que esta versión de Sello todavía no puede mostrar. Tus datos no cambiaron.</string>
     <string name="restore_choose_other">Elegir otro archivo</string>
     <string name="restore_preview_title">¿Reemplazar tus datos?</string>
     <string name="restore_preview_date">Respaldo del %1$s</string>

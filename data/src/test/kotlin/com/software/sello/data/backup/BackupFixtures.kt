@@ -160,19 +160,21 @@ fun g01() = BackupContents(
         featuredGoal = null,
         schedules = emptyList(),
         investments = emptyList(),
-        usdRates = emptyList()
+        usdRates = emptyList(),
+        carryChains = emptyList()
     ),
     preferences = darkVioletaAlphabetical
 )
 
 /**
- * A version 3 file as Sello now writes the same data: version 5, with no investments and
- * no rates after the schedules, the default investment settings, and nothing else changed.
+ * A version 3 file as Sello now writes the same data: version 6, with no investments and
+ * no rates after the schedules, the default investment settings, no carry chains, and
+ * nothing else changed.
  */
-fun writtenAsVersion5(version3: String): String {
+fun writtenAsVersion6(version3: String): String {
     val closing = "\n  },\n  \"preferences\""
     check(version3.split(closing).size == 2 && version3.contains("\"version\": 3,"))
-    return version4AsVersion5(
+    return version4AsVersion6(
         version3.replace("\"version\": 3,", "\"version\": 4,").replace(
             closing,
             ",\n    \"investments\": [],\n    \"usdRates\": []$closing"
@@ -181,20 +183,31 @@ fun writtenAsVersion5(version3: String): String {
 }
 
 /**
- * A version 4 file as Sello now writes the same data: version 5, its investments starting
- * in pesos, largest value first, when it has preferences at all, and nothing else changed.
+ * A version 4 file as Sello now writes the same data: version 6, its investments starting
+ * in pesos, largest value first, when it has preferences at all, no carry chains, and
+ * nothing else changed.
  */
-fun version4AsVersion5(version4: String): String {
+fun version4AsVersion6(version4: String): String {
     check(version4.contains("\"version\": 4,"))
     val newer = version4.replace("\"version\": 4,", "\"version\": 5,")
     // A file made without preferences has none to add to.
-    if (newer.endsWith("\"preferences\": null\n}\n")) return newer
+    if (newer.endsWith("\"preferences\": null\n}\n")) return version5AsVersion6(newer)
     val last = Regex("(\"categoryDirection\": \"[a-z]+\")\n  }\n}")
     check(last.findAll(newer).count() == 1)
-    return newer.replace(last) {
-        "${it.groupValues[1]},\n    \"investmentCurrency\": \"COP\"," +
-            "\n    \"investmentOrder\": \"largest_value\"\n  }\n}"
-    }
+    return version5AsVersion6(
+        newer.replace(last) {
+            "${it.groupValues[1]},\n    \"investmentCurrency\": \"COP\"," +
+                "\n    \"investmentOrder\": \"largest_value\"\n  }\n}"
+        }
+    )
+}
+
+/** A version 5 file as Sello now writes the same data: version 6 with no carry chains. */
+fun version5AsVersion6(version5: String): String {
+    val closing = "\n  },\n  \"preferences\""
+    check(version5.split(closing).size == 2 && version5.contains("\"version\": 5,"))
+    return version5.replace("\"version\": 5,", "\"version\": 6,")
+        .replace(closing, ",\n    \"carryChains\": []$closing")
 }
 
 fun resource(name: String): ByteArray =

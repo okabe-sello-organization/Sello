@@ -1,0 +1,81 @@
+{
+  "format": "sello-backup",
+  "version": 6,
+  "exportedAt": "2027-04-05T15:00:00Z",
+  "financial": {
+    "sourceRevision": 5,
+    "zone": "America/Bogota",
+    "categories": [
+      {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "name": "Comida",
+        "icon": "shopping_cart",
+        "archived": false,
+        "createdAt": "2027-01-05T12:00:00Z",
+        "updatedAt": "2027-01-05T12:00:00Z"
+      }
+    ],
+    "defaultLimits": [
+      {
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "from": "2027-01",
+        "kind": "finite",
+        "amount": 100000,
+        "currency": "COP"
+      }
+    ],
+    "monthLimits": [],
+    "expenses": [
+      {
+        "id": "00000000-0000-4000-8000-000000000101",
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "date": "2027-01-10",
+        "sequence": 1,
+        "amount": 20000,
+        "currency": "COP",
+        "note": null,
+        "createdAt": "2027-01-10T13:00:00Z",
+        "updatedAt": "2027-01-10T13:00:00Z",
+        "origin": null
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000102",
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "date": "2027-02-10",
+        "sequence": 2,
+        "amount": 70000,
+        "currency": "COP",
+        "note": null,
+        "createdAt": "2027-02-10T13:00:00Z",
+        "updatedAt": "2027-02-10T13:00:00Z",
+        "origin": null
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000103",
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "date": "2027-03-10",
+        "sequence": 3,
+        "amount": 250000,
+        "currency": "COP",
+        "note": null,
+        "createdAt": "2027-03-10T13:00:00Z",
+        "updatedAt": "2027-03-10T13:00:00Z",
+        "origin": null
+      }
+    ],
+    "incomes": [],
+    "goals": [],
+    "featuredGoal": null,
+    "schedules": [],
+    "investments": [],
+    "usdRates": [],
+    "carryChains": [
+      {
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "start": "2027-01",
+        "end": null
+      }
+    ]
+  },
+  "preferences": null
+}

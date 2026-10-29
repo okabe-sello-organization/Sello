@@ -1,6 +1,7 @@
 package com.software.sello.data
 
 import android.content.Context
+import com.software.sello.data.backup.BackupCodec
 import com.software.sello.data.backup.BackupExport
 import com.software.sello.data.backup.RoomBackupSnapshots
 import com.software.sello.data.backup.RoomRestores
@@ -173,7 +174,11 @@ class FinancialStorage internal constructor(
         computation: CoroutineContext
     ): CategoryInsightsSnapshots = RoomCategoryInsightsSnapshots(database, clock, computation)
 
-    /** Restores into this storage, staged in its own private folder. */
+    /**
+     * Restores into this storage, staged in its own private folder. The default [codec]
+     * refuses a backup in which categories carry their balance, as the customer app does
+     * until SELLO-041; a test or developer path passes one that accepts it.
+     */
     fun restores(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
@@ -181,7 +186,8 @@ class FinancialStorage internal constructor(
         notice: CatchUpNoticePreferences,
         ids: RecordIdSource,
         audit: AuditClock,
-        dispatchers: DispatcherProvider
+        dispatchers: DispatcherProvider,
+        codec: BackupCodec = BackupCodec()
     ): Restores = RoomRestores(
         database,
         restoreFolder,
@@ -191,7 +197,8 @@ class FinancialStorage internal constructor(
         notice,
         ids,
         audit,
-        dispatchers
+        dispatchers,
+        codec
     )
 
     /**
@@ -215,20 +222,26 @@ class FinancialStorage internal constructor(
         dispatchers
     )
 
-    /** Backup files of this storage, with the portable preferences beside it. */
+    /**
+     * Backup files of this storage, with the portable preferences beside it. A [codec]
+     * that refuses carry, the default, makes no file for a history in which a category
+     * carries its balance, as it could not restore it either.
+     */
     fun backupExports(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
         investments: InvestmentPreferences,
         audit: AuditClock,
-        dispatchers: DispatcherProvider
+        dispatchers: DispatcherProvider,
+        codec: BackupCodec = BackupCodec()
     ): BackupExports = BackupExport(
         RoomBackupSnapshots(database),
         appearance,
         ordering,
         investments,
         audit,
-        dispatchers
+        dispatchers,
+        codec
     )
 
     /** CSV and JSON exports of this storage, read from one revision (SELLO-121). */

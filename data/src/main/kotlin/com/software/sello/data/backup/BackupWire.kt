@@ -8,10 +8,11 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 to 5, documented in docs/data/backup-format.md.
+ * The wire shapes of versions 1 to 6, documented in docs/data/backup-format.md.
  * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
  * is version 2 plus `financial.schedules` and each expense's and income's `origin`;
- * version 4 is version 3 plus `financial.investments` and `financial.usdRates`. These classes
+ * version 4 is version 3 plus `financial.investments` and `financial.usdRates`; version 5 adds
+ * two investment settings to `preferences`; version 6 adds `financial.carryChains`. These classes
  * are the file and nothing else: they never become Room entities or domain values
  * without going through BackupValidation. Every property is required, including the
  * nullable ones, and the JSON configuration refuses unknown keys. Numbers and flags
@@ -447,6 +448,67 @@ internal fun BackupFileV4.asVersion5() = BackupFileV5(
             investmentOrder = WireNames.investmentOrders.getValue(InvestmentOrder.LargestValue)
         )
     }
+)
+
+/**
+ * Version 6: version 5 plus the carry chains of ADR 0020 CP26. Versions 1 to 5 read as
+ * having none, so no category starts with a carried balance nobody turned on.
+ */
+@Serializable
+internal data class BackupFileV6(
+    val format: String,
+    val version: JsonElement,
+    val exportedAt: String,
+    val financial: FinancialV6,
+    val preferences: PreferencesV5?
+)
+
+@Serializable
+internal data class FinancialV6(
+    val sourceRevision: JsonElement,
+    val zone: String,
+    val categories: List<CategoryV1>,
+    val defaultLimits: List<DefaultLimitV1>,
+    val monthLimits: List<MonthLimitV1>,
+    val expenses: List<ExpenseV3>,
+    val incomes: List<IncomeV3>,
+    val goals: List<GoalV2>,
+    val featuredGoal: String?,
+    val schedules: List<ScheduleV3>,
+    val investments: List<InvestmentV4>,
+    val usdRates: List<UsdRateV4>,
+    val carryChains: List<CarryChainV6>
+)
+
+/**
+ * One run of months in which a category carries its balance: the months from `start` up
+ * to, not including, `end`, or every month from `start` while `end` is null. Months only:
+ * carry, capacity and remaining are worked out again from the records and base history.
+ */
+@Serializable
+internal data class CarryChainV6(val categoryId: String, val start: String, val end: String?)
+
+/** A version 5 file read as version 6: no category carries. */
+internal fun BackupFileV5.asVersion6() = BackupFileV6(
+    format = format,
+    version = version,
+    exportedAt = exportedAt,
+    financial = FinancialV6(
+        sourceRevision = financial.sourceRevision,
+        zone = financial.zone,
+        categories = financial.categories,
+        defaultLimits = financial.defaultLimits,
+        monthLimits = financial.monthLimits,
+        expenses = financial.expenses,
+        incomes = financial.incomes,
+        goals = financial.goals,
+        featuredGoal = financial.featuredGoal,
+        schedules = financial.schedules,
+        investments = financial.investments,
+        usdRates = financial.usdRates,
+        carryChains = emptyList()
+    ),
+    preferences = preferences
 )
 
 private val plainWhole = Regex("0|[1-9][0-9]*")

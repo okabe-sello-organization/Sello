@@ -116,7 +116,8 @@ class RestoreAfterSetAsideTest {
                 featuredGoal = null,
                 schedules = emptyList(),
                 investments = emptyList(),
-                usdRates = emptyList()
+                usdRates = emptyList(),
+                carryChains = emptyList()
             ),
             preferences = PortablePreferences(
                 AppearancePreference(ThemePreference.Dark, InkPreference.Violeta),

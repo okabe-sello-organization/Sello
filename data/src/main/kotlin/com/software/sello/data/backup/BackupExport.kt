@@ -2,6 +2,7 @@ package com.software.sello.data.backup
 
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
+import com.software.sello.data.local.entity.CarryChainEntity
 import com.software.sello.data.local.entity.CategoryEntity
 import com.software.sello.data.local.entity.DefaultLimitEntity
 import com.software.sello.data.local.entity.ExpenseEntity
@@ -84,6 +85,9 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
     val investments = investmentDao().all()
         .decodeAll { it.toHistory(movements[it.id].orEmpty()) }
     val rates = investmentDao().rates().decodeAll { it.toDomain() }
+    val chains = pages<CarryChainEntity> {
+        carryChainDao().all(it?.categoryId.orEmpty(), it?.startMonth.orEmpty(), PAGE)
+    }.decodeAll { it.toDomain() }
     return Outcome.Success(
         FinancialSnapshot(
             zone = profile.zone,
@@ -97,7 +101,8 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
             featuredGoal = featured,
             schedules = schedules.orReturn { return it },
             investments = investments.orReturn { return it },
-            usdRates = rates.orReturn { return it }
+            usdRates = rates.orReturn { return it },
+            carryChains = chains.orReturn { return it }
         )
     )
 }

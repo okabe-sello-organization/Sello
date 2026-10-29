@@ -4,6 +4,7 @@ import com.software.sello.data.repository.MAX_DEFAULT_HISTORY
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.AutomaticBudget
 import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.CarryChain
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
@@ -42,6 +43,7 @@ import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.InvestmentName
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
+import com.software.sello.domain.model.MAX_CHAIN_BASE
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.Note
@@ -61,15 +63,18 @@ import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.model.UsdRateId
+import com.software.sello.domain.policy.CategoryBudgetPolicy
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.port.StoredSchedule
 import java.time.DateTimeException
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeParseException
+import java.util.TreeSet
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
@@ -156,16 +161,16 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 5 included; the
+ * Checks a decoded file completely, older versions read as version 6 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV5): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV6): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV5): BackupContents {
+private fun contentsOf(file: BackupFileV6): BackupContents {
     val financial = file.financial
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
     val zone = try {
@@ -185,21 +190,24 @@ private fun contentsOf(file: BackupFileV5): BackupContents {
     }
     val schedules = schedules(financial.schedules, categories)
     val handled = schedules.associate { it.schedule.id to it.handled }
+    val defaultLimits = defaultLimits(financial.defaultLimits, known)
+    val monthLimits = monthLimits(financial.monthLimits, known)
     return BackupContents(
         exportedAt = instant(file.exportedAt, "exportedAt"),
         financial = FinancialSnapshot(
             zone = zone,
             revision = revision,
             categories = categories,
-            defaultLimits = defaultLimits(financial.defaultLimits, known),
-            monthLimits = monthLimits(financial.monthLimits, known),
+            defaultLimits = defaultLimits,
+            monthLimits = monthLimits,
             expenses = expenses(financial.expenses, known, handled),
             incomes = incomes(financial.incomes, handled),
             goals = goals,
             featuredGoal = featured,
             schedules = schedules,
             investments = investments(financial.investments),
-            usdRates = usdRates(financial.usdRates)
+            usdRates = usdRates(financial.usdRates),
+            carryChains = carryChains(financial.carryChains, known, defaultLimits, monthLimits)
         ),
         preferences = file.preferences?.let(::preferences)
     )
@@ -826,6 +834,83 @@ private fun usdRates(wire: List<UsdRateV4>): List<UsdRateEntry> {
             createdAt = instant(row.createdAt, "$path.createdAt")
         )
     }
+}
+
+/**
+ * The carry chains of a file (ADR 0020 CP26), checked for what they are and for what
+ * they would need: every month a chain carries into has a finite base of at most
+ * [MAX_CHAIN_BASE] (CP25), so no restored chain reaches a month the calculation cannot
+ * answer. A month is checked where its base can change: the chain's first month, each
+ * default's first month, each month with a limit of its own and the month after it. An
+ * open chain reaches every later month, so the default in force after the last one, its
+ * latest, is checked too (CP3). A file holds no carry, so none is validated here; the
+ * figures are worked out again from the records. They fit a signed `Long` whatever the
+ * file says: the base is capped, and no more than 100,000 records of at most
+ * 999.999.999.999 each are spent against it.
+ */
+private fun carryChains(
+    wire: List<CarryChainV6>,
+    known: Set<CategoryId>,
+    defaults: List<DefaultLimit>,
+    overrides: List<MonthLimit>
+): List<CarryChain> {
+    val starts = HashSet<Pair<CategoryId, YearMonth>>()
+    val paths = HashMap<CarryChain, String>()
+    val chains = wire.mapIndexed { index, row ->
+        val path = "financial.carryChains[$index]"
+        val category = reference(row.categoryId, known, "$path.categoryId")
+        val start = month(row.start, "$path.start")
+        val end = row.end?.let { month(it, "$path.end") }
+        if (!starts.add(category to start)) reject(BackupRejection.DuplicateEntry("$path.start"))
+        // A chain that ends in or before its start never existed: it is removed, not stored.
+        CarryChain.of(category, start, end).or("$path.end").also { paths[it] = path }
+    }
+    val defaultsOf = defaults.groupBy { it.categoryId }
+    val overridesOf = overrides.groupBy { it.categoryId }
+    for ((category, own) in chains.groupBy { it.categoryId }) {
+        val sorted = own.sortedBy { it.start }
+        sorted.zipWithNext().firstOrNull { (earlier, later) ->
+            earlier.end == null || later.start < earlier.end
+        }?.let { (_, later) ->
+            reject(BackupRejection.InvalidChain(paths.getValue(later), ChainFault.Overlap))
+        }
+        val ownDefaults = defaultsOf[category].orEmpty()
+        val ownOverrides = overridesOf[category].orEmpty().associateBy { it.month }
+        val changes = TreeSet<YearMonth>().apply {
+            ownDefaults.mapTo(this) { it.effectiveMonth }
+            ownOverrides.keys.forEach {
+                add(it)
+                add(it.plusMonths(1))
+            }
+        }
+        for (chain in sorted) {
+            val months = if (chain.end == null) {
+                changes.tailSet(chain.start, true)
+            } else {
+                changes.subSet(chain.start, true, chain.end, false)
+            }
+            for (month in listOf(chain.start) + months) {
+                val limit = (
+                    CategoryBudgetPolicy.stateFor(month, ownDefaults, ownOverrides[month])
+                        as? MonthBudgetState.Limited
+                    )?.limit as? BudgetLimit.Finite
+                if (limit == null) {
+                    reject(
+                        BackupRejection.InvalidChain(paths.getValue(chain), ChainFault.NoFiniteBase)
+                    )
+                }
+                if (limit.amount.minorUnits > MAX_CHAIN_BASE) {
+                    reject(
+                        BackupRejection.InvalidChain(
+                            paths.getValue(chain),
+                            ChainFault.BaseAboveLimit
+                        )
+                    )
+                }
+            }
+        }
+    }
+    return chains
 }
 
 private fun <T> Map<T, String>.decode(text: String, path: String): T =

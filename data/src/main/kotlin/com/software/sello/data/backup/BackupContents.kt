@@ -1,6 +1,7 @@
 package com.software.sello.data.backup
 
 import com.software.sello.domain.model.AppearancePreference
+import com.software.sello.domain.model.CarryChain
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.DefaultLimit
@@ -41,7 +42,12 @@ data class FinancialSnapshot(
      */
     val investments: List<InvestmentHistory>,
     /** Every entered USD rate, as entered; never changed by a restore. */
-    val usdRates: List<UsdRateEntry>
+    val usdRates: List<UsdRateEntry>,
+    /**
+     * Each category's carry chains, months only (ADR 0020 CP26): carry, capacity and
+     * remaining are derived again from the records and base history after a restore.
+     */
+    val carryChains: List<CarryChain>
 ) {
     val counts: BackupCounts
         get() = BackupCounts(
@@ -56,7 +62,8 @@ data class FinancialSnapshot(
             schedules = schedules.size,
             investments = investments.size,
             investmentMovements = investments.sumOf { it.movements.size },
-            usdRates = usdRates.size
+            usdRates = usdRates.size,
+            carryChains = carryChains.size
         )
 }
 
@@ -90,7 +97,8 @@ data class BackupCounts(
     val schedules: Int,
     val investments: Int,
     val investmentMovements: Int,
-    val usdRates: Int
+    val usdRates: Int,
+    val carryChains: Int
 )
 
 /**
@@ -156,4 +164,34 @@ sealed interface BackupRejection {
 
     /** More default-limit history for one category than the app can hold. */
     data class HistoryTooLong(val path: String) : BackupRejection
+
+    /** A carry chain that breaks a rule of ADR 0020 CP26, named by [fault]. */
+    data class InvalidChain(val path: String, val fault: ChainFault) : BackupRejection
+
+    /**
+     * A valid backup in which a category carries its balance. This version of Sello
+     * cannot show carry yet, so it refuses the file whole, before anything changes.
+     */
+    data object CarryNotSupported : BackupRejection
+}
+
+/** What is wrong with a carry chain in a file; the chain itself is named by the path. */
+enum class ChainFault {
+    /** It shares a month with another chain of the same category. */
+    Overlap,
+
+    /** A month it carries into has no finite base: unlimited, paused or never set. */
+    NoFiniteBase,
+
+    /** A month it carries into has a base above 999.999.999.999 (CP25). */
+    BaseAboveLimit
+}
+
+/** Whether a codec accepts a backup in which categories carry their balance (CP26). */
+enum class CarryChainSupport {
+    /** The customer app until SELLO-041: such a file is refused before any change. */
+    Refused,
+
+    /** Test and developer paths: chains are read, written and restored. */
+    Accepted
 }

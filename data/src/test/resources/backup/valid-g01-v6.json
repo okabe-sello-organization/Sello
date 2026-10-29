@@ -1,0 +1,126 @@
+{
+  "format": "sello-backup",
+  "version": 6,
+  "exportedAt": "2026-10-22T14:30:00Z",
+  "financial": {
+    "sourceRevision": 9,
+    "zone": "America/Bogota",
+    "categories": [
+      {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "name": "Mercado",
+        "icon": "shopping_cart",
+        "archived": false,
+        "createdAt": "2026-09-01T12:00:00Z",
+        "updatedAt": "2026-10-01T12:00:00Z"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "name": "Café",
+        "icon": "local_cafe",
+        "archived": true,
+        "createdAt": "2026-09-02T08:15:30.250Z",
+        "updatedAt": "2026-10-05T09:00:00Z"
+      }
+    ],
+    "defaultLimits": [
+      {
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "from": "2026-10",
+        "kind": "finite",
+        "amount": 100000,
+        "currency": "COP"
+      },
+      {
+        "categoryId": "00000000-0000-4000-8000-000000000002",
+        "from": "2026-09",
+        "kind": "unlimited",
+        "amount": null,
+        "currency": null
+      },
+      {
+        "categoryId": "00000000-0000-4000-8000-000000000002",
+        "from": "2026-11",
+        "kind": "paused",
+        "amount": null,
+        "currency": null
+      }
+    ],
+    "monthLimits": [
+      {
+        "categoryId": "00000000-0000-4000-8000-000000000002",
+        "month": "2026-09",
+        "kind": "finite",
+        "amount": 40000,
+        "currency": "COP"
+      }
+    ],
+    "expenses": [
+      {
+        "id": "00000000-0000-4000-8000-000000000101",
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "date": "2026-10-01",
+        "sequence": 1,
+        "amount": 10000,
+        "currency": "COP",
+        "note": null,
+        "createdAt": "2026-10-01T13:00:00Z",
+        "updatedAt": "2026-10-01T13:00:00Z",
+        "origin": null
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000102",
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "date": "2026-10-02",
+        "sequence": 2,
+        "amount": 15000,
+        "currency": "COP",
+        "note": "Plaza de mercado",
+        "createdAt": "2026-10-02T13:00:00Z",
+        "updatedAt": "2026-10-04T18:45:10.500Z",
+        "origin": null
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000103",
+        "categoryId": "00000000-0000-4000-8000-000000000001",
+        "date": "2026-10-03",
+        "sequence": 3,
+        "amount": 5000,
+        "currency": "COP",
+        "note": null,
+        "createdAt": "2026-10-03T13:00:00Z",
+        "updatedAt": "2026-10-03T13:00:00Z",
+        "origin": null
+      }
+    ],
+    "incomes": [
+      {
+        "id": "00000000-0000-4000-8000-000000000201",
+        "date": "2026-10-01",
+        "sequence": 1,
+        "amount": 200000,
+        "currency": "COP",
+        "source": "salary",
+        "sourceName": null,
+        "note": null,
+        "createdAt": "2026-10-01T12:30:00Z",
+        "updatedAt": "2026-10-01T12:30:00Z",
+        "origin": null
+      }
+    ],
+    "goals": [],
+    "featuredGoal": null,
+    "schedules": [],
+    "investments": [],
+    "usdRates": [],
+    "carryChains": []
+  },
+  "preferences": {
+    "theme": "dark",
+    "ink": "violeta",
+    "categoryOrder": "alphabetical",
+    "categoryDirection": "ascending",
+    "investmentCurrency": "USD",
+    "investmentOrder": "latest_update"
+  }
+}

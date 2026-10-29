@@ -207,7 +207,9 @@ class LegacyTranslator(
                     featuredGoal = null,
                     schedules = schedules.map { it.stored },
                     investments = investments,
-                    usdRates = usdRates
+                    usdRates = usdRates,
+                    // A FinanceTracker backup has no carry, so every category is off.
+                    carryChains = emptyList()
                 ),
                 preferences = preferences()
             )

@@ -1,4 +1,4 @@
-# Backup file format, version 5
+# Backup file format, version 6
 
 Rules: [architecture](../../ARCHITECTURE.md) §7, [D05, D08 and D09](../decisions/0001-mvp-contract.md#d08--privacy-and-portable-files),
 [ADR 0003](../decisions/0003-mvp-transaction-amount-range.md). Code: `data/.../backup`.
@@ -14,21 +14,23 @@ its financial zone (`BackupFormat.fileName`). MIME type: `application/json`.
 
 ## Shape
 
-Sello writes version 5 (SELLO-120) and reads versions 1 to 5. Version 2 is version 1
+Sello writes version 6 (SELLO-040) and reads versions 1 to 6. Version 2 is version 1
 plus `financial.goals` and `financial.featuredGoal` (SELLO-088); version 3 is version 2
 plus `financial.schedules` and each expense's and income's `origin` (SELLO-099);
 version 4 is version 3 plus `financial.investments` and `financial.usdRates` (SELLO-108);
 version 5 is version 4 plus `preferences.investmentCurrency` and
-`preferences.investmentOrder`. A version 1 file reads as having no goals, versions 1
-and 2 as having no schedules and no origins, versions 1 to 3 as having no investments
-and no rates, and versions 1 to 4 as starting investments in `COP`, largest value
-first. A backup with none of them is still version 5, so an app that reads only
-version 4 cannot read it.
+`preferences.investmentOrder` (SELLO-120); version 6 is version 5 plus `financial.carryChains`
+(SELLO-040, [ADR 0020](../decisions/0020-signed-carryover-policy.md) CP26). A version 1 file
+reads as having no goals, versions 1 and 2 as having no schedules and no origins, versions
+1 to 3 as having no investments and no rates, versions 1 to 4 as starting investments in
+`COP`, largest value first, and versions 1 to 5 as having no carry chains: **every category
+is off and no starting deficit or surplus is guessed**. A backup with none of them is still
+version 6, so an app that reads only version 5 cannot read it.
 
 ```json
 {
   "format": "sello-backup",
-  "version": 5,
+  "version": 6,
   "exportedAt": "2026-10-22T14:30:00Z",
   "financial": {
     "sourceRevision": 9,
@@ -42,7 +44,8 @@ version 4 cannot read it.
     "featuredGoal": "…" | null,
     "schedules": [ … ],
     "investments": [ … ],
-    "usdRates": [ … ]
+    "usdRates": [ … ],
+    "carryChains": [ … ]
   },
   "preferences": { … } | null
 }
@@ -54,8 +57,10 @@ category. [`valid-g01-v2.json`](../../data/src/test/resources/backup/valid-g01-v
 [`valid-g01-v3.json`](../../data/src/test/resources/backup/valid-g01-v3.json) and
 [`valid-g01-v4.json`](../../data/src/test/resources/backup/valid-g01-v4.json) are the
 same data in versions 2 to 4, and
-[`valid-g01-v5.json`](../../data/src/test/resources/backup/valid-g01-v5.json) is the
-same data as Sello writes it now, with its investments starting in dollars;
+[`valid-g01-v5.json`](../../data/src/test/resources/backup/valid-g01-v5.json) and
+[`valid-g01-v6.json`](../../data/src/test/resources/backup/valid-g01-v6.json) are the
+same data in versions 5 and 6, the latter as Sello writes it now, with its investments
+starting in dollars and no carry chains;
 [`valid-goals-v2.json`](../../data/src/test/resources/backup/valid-goals-v2.json) adds one
 goal (approved example MT07), and
 [`valid-schedules-v3.json`](../../data/src/test/resources/backup/valid-schedules-v3.json)
@@ -63,12 +68,16 @@ holds recurring payments and incomes with the entries they recorded (recurrence
 examples RE05 and RE10), and
 [`valid-investments-v4.json`](../../data/src/test/resources/backup/valid-investments-v4.json)
 holds three investments and two USD rates (investment examples IN04, IN05 and IN27, the
-rates 4.000,00 and 4.150,25). The `invalid-*.json` files beside them each break one rule.
+rates 4.000,00 and 4.150,25), and
+[`valid-carry-sc01-v6.json`](../../data/src/test/resources/backup/valid-carry-sc01-v6.json)
+and [`valid-carry-sc22-v6.json`](../../data/src/test/resources/backup/valid-carry-sc22-v6.json)
+hold SC01's Comida with its chain open from ene 2027 and ended in abr (carryover examples
+SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 
 | Key | Value |
 | --- | --- |
 | `format` | Always `"sello-backup"`. |
-| `version` | `1` to `4`. Any other number is refused as a version this app cannot read. |
+| `version` | `1` to `6`. Any other number is refused as a version this app cannot read. |
 | `exportedAt` | When the backup was made, UTC. |
 | `financial.sourceRevision` | The revision all financial rows were read at: one transaction, one revision. Informative; a restore does not reuse it. |
 | `financial.zone` | The financial zone, an IANA identifier such as `America/Bogota`. |
@@ -93,6 +102,7 @@ rates 4.000,00 and 4.150,25). The `invalid-*.json` files beside them each break 
 | `investments` (v4) | `id`, `name`, `description`, `icon`, `currency`, `createdAt`, `updatedAt`, `movements` |
 | `movements` (each investment) | `id`, `sequence`, `kind`, `amount`, `currency`, `date`, `note`, `createdAt`, `updatedAt` |
 | `usdRates` (v4) | `id`, `rateHundredths`, `date`, `sequence`, `createdAt` |
+| `carryChains` (v6) | `categoryId`, `start` (month), `end` (month or `null`) |
 
 `preferences` has `theme` (`system`, `light`, `dark`), `ink` (`cobalto`, `violeta`),
 `categoryOrder` (`most_used`, `alphabetical`, `amount_spent`, `limit`,
@@ -164,11 +174,28 @@ Every key is required, even when its value is `null`, and no other key is allowe
   once among incomes. When its schedule is in the file, it is at or before that
   schedule's `handled`, so a restore never records it again; one whose schedule was
   deleted since stays as it is.
+- **Carry chains** ([carryover rules](../testing/signed-carryover-examples.md), CP4, CP25,
+  CP26): a chain is the run of months in which a category carries its balance, from
+  `start` up to, not including, `end`, or every month from `start` while `end` is `null`.
+  `categoryId` is a category in the file. `end` is after `start`: a chain turned off in its
+  first month never existed and is not written. A category's chains share no month (one
+  may end in the month the next starts) and only its last may be open; the same
+  `categoryId` and `start` twice is refused. Every month a chain carries into has a
+  finite base, an unlimited, paused or unconfigured month is refused, and a base of at
+  most 999.999.999.999: a month's own limit counts where it exists, otherwise the default
+  in force. An open chain reaches every later month, so the default in force after the
+  last entry must be finite and within the same bound. **The file holds no carry,
+  capacity or remaining, and a key for one is refused:** they are worked out again from
+  the records and the base history after a restore, so a deficit is never taken on
+  trust, and carried money is never an expense or an income in the file. Those figures
+  fit a signed 64-bit integer whatever the file says: each base is capped, and at most
+  100,000 records of at most 999.999.999.999 are spent against it.
 - **Order:** `sequence` is kept as written, so history keeps its order. Files are
   written categories by creation then ID, limits by category then month, records
   by date then sequence, goals by creation then ID with each history by sequence,
   schedules by `sequence` with each schedule's pauses by first day, investments by
-  creation then ID with each history by sequence, rates by `sequence`; the same data
+  creation then ID with each history by sequence, rates by `sequence`, carry chains by
+  category ID then start month; the same data
   always makes the same bytes.
 
 ## Not in a backup
@@ -176,7 +203,8 @@ Every key is required, even when its value is `null`, and no other key is allowe
 Record, category, goal and investment versions, a goal's or investment's next recording
 position, the profile generation, operation receipts, the copies kept for undo
 (`deleted_expense`, `deleted_income`, `deleted_goal_event`, `deleted_investment_movement`),
-a goal's stamps and percentage, an investment's value, gain and return, a schedule's
+a goal's stamps and percentage, an investment's value, gain and return, a category's
+carry, capacity and remaining (only the chains that produce them are in the file), a schedule's
 occurrences (worked out from its terms) and catch-up receipts, jobs, sandbox or debug
 state, one-time notice dismissals, permissions, URIs, paths and credentials.
 
@@ -200,8 +228,15 @@ problem, rejecting the whole file with a `BackupRejection` that names where it i
 5. **Values and links:** every rule above, then duplicate IDs, category names,
    sequences and category/month entries; every `categoryId` must be a category in
    the file; at most 1,200 default-limit entries per category; every investment's
-   history worked out with the investment rules. Investments, movements and rates count
+   history worked out with the investment rules; every carry chain against its category's
+   base history (see Carry chains above). Investments, movements, rates and chains count
    toward the 100,000 array elements like any other record.
+6. **Carry gate:** a file that passed every check above and holds a chain is refused with
+   `CarryNotSupported` by a codec made with `CarryChainSupport.Refused`, the default and
+   the only one the customer app builds, until SELLO-041 can show carry. Only files that
+   are otherwise valid get this answer; one broken in another way says so. Chains of any
+   kind are refused, open or ended: an ended chain still changes the figures of its
+   months. Test and developer paths make a codec with `CarryChainSupport.Accepted`.
 
 The result is a `BackupPlan`: the validated contents and their counts, with every
 record and goal at version 1. Restoring it is SELLO-030.
@@ -210,7 +245,9 @@ record and goal at version 1. Restoring it is SELLO-030.
 
 `BackupExport.create` reads every financial row in one Room transaction, then the
 preferences, encodes, and reads its own output back with the same rules, so the app
-never hands out a file it would refuse. It returns the name, bytes and counts. A
+never hands out a file it would refuse: with the customer codec, a history in which a
+category carries is not exported at all, as it could not be restored. It returns the name,
+bytes and counts. A
 refusal for size (bytes, records or default-limit entries) tells the person their data
 is more than a backup holds; any other refusal is a fault in Sello and says so.
 
@@ -237,9 +274,15 @@ backup holds is recorded again and what came due since is. Investments and rates
 replaced too: each movement keeps its recording position, the investment's next position
 follows its last movement (at least 2), and no deleted movement can be put back. The
 restore preview and the erase confirmation count investments when there are any.
-Inside one transaction a receipt for the same operation means it already
-happened, so asking again after an unknown outcome or a crash replays instead of
-replacing twice. Afterwards the backup's appearance and order are applied; a group
+Carry chains are replaced with the rest, inserted after the categories they refer to
+and before the generation advances: a restore of a file with no chains, or of a file of
+versions 1 to 5, leaves every category off, and the figures of a restored chain are worked
+out again from the restored records and base history, so they match the history the
+backup was made from (SC43). The customer app stages and restores with the default codec,
+so a file with a chain is refused as `RestoreRejection.CarryNotSupported` before anything
+is kept or changed, on the same path as the start-up check. Inside one transaction a
+receipt for the same operation means it already happened, so asking again after an unknown
+outcome or a crash replays instead of replacing twice. Afterwards the backup's appearance and order are applied; a group
 that fails stays pending, with the file, and is retried at start-up and on request.
 
 From the start-up failure screen there is no store to stage into, so the file is
@@ -249,6 +292,6 @@ there as above.
 
 ## Changing the format
 
-Any change to keys, meanings or rules is a new `version`. Versions 1 to 5 stay
+Any change to keys, meanings or rules is a new `version`. Versions 1 to 6 stay
 readable for as long as the app supports restoring them; nothing translates older Sello
 databases or other apps' files.
