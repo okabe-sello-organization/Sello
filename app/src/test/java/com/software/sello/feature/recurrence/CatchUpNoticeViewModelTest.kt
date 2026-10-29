@@ -22,8 +22,10 @@ import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -54,6 +56,9 @@ private class HandCatchUpPreferences : CatchUpNoticePreferences {
 private class HandRecords : ScheduleRecordReads {
     val entries = MutableStateFlow<List<ScheduleRecord>>(emptyList())
     var failure: StorageFailure? = null
+
+    /** The read after a Listo has not landed yet: it says nothing, as a slow query would. */
+    var slowAfterListo = false
     val asked = mutableListOf<Instant?>()
 
     private fun created(record: ScheduleRecord) = when (record) {
@@ -66,6 +71,7 @@ private class HandRecords : ScheduleRecordReads {
 
     override fun observeRecordedAfter(since: Instant?): Flow<ScheduleRecordsState> {
         asked += since
+        if (slowAfterListo && since != null) return flow { awaitCancellation() }
         return entries.map { all ->
             failure?.let { ScheduleRecordsState.Failed(it) }
                 ?: ScheduleRecordsState.Ready(
@@ -179,6 +185,28 @@ class CatchUpNoticeViewModelTest {
             (reopened.state.value as CatchUpNoticeState.Ready).items.map { it.date }
         )
         assertFalse(reopened.closed.value)
+    }
+
+    /**
+     * Issue #205: Recibo and the list each have their own model. Once the list's Listo is
+     * kept, Recibo's must not show the bar it had while its own re-read is still on its way.
+     */
+    @Test
+    fun reciboHasNoBarFromTheMomentListoIsKeptEvenBeforeItsReReadLands() {
+        records.entries.value = listOf(rent("2026-10-22T14:00:00Z"))
+        val recibo = model()
+        val list = model()
+        assertEquals(1, (recibo.state.value as CatchUpNoticeState.Ready).items.size)
+        records.slowAfterListo = true
+
+        list.done()
+
+        assertTrue(list.closed.value)
+        val shown = recibo.state.value
+        assertFalse(
+            "Recibo still shows the dismissed bar: $shown",
+            shown is CatchUpNoticeState.Ready && shown.items.isNotEmpty()
+        )
     }
 
     /** RE38: 2 recorded at opening, not dismissed; the day changes and 1 more: 3 listed. */

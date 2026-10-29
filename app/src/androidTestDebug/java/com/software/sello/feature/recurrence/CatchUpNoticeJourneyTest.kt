@@ -87,15 +87,11 @@ class CatchUpNoticeJourneyTest {
 
     /**
      * Listo closes the list only once what it showed is kept as seen, so Recibo is back
-     * only after that. Recibo then reads the notice again off the main thread, and until
-     * that read lands it still has the bar it had: wait for it to go rather than look the
-     * moment Recibo is back. What was kept is checked against storage at the end.
-     * The wait exists only because of issue #205 (Recibo briefly shows the dismissed bar
-     * until its re-read lands); once #205 is fixed this check should be immediate again.
+     * only after that, and Recibo must not show the dismissed bar even for a frame: look
+     * the moment it is back. What was kept is checked against storage at the end.
      */
-    private fun barGone() = rule.waitUntil(15_000) {
-        rule.onAllNodes(hasTestTag(CATCH_UP_BAR_TAG), true).fetchSemanticsNodes().isEmpty()
-    }
+    private fun barGone() =
+        rule.onNodeWithTag(CATCH_UP_BAR_TAG, useUnmergedTree = true).assertDoesNotExist()
 
     private fun inBar(text: String) =
         rule.onNode(hasText(text) and hasAnyAncestor(hasTestTag(CATCH_UP_BAR_TAG)), true)
