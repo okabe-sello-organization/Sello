@@ -44,6 +44,17 @@ could never turn it green, and a red test was hard to find in the logs.
   (push, nightly, manual) get one concurrency group per commit, so none is cancelled
   or superseded by a newer one; a newer push to a pull request replaces its run.
 
+**Amendment, 2026-10-29: the host gate runs in parallel parts.** With the screen
+tests on the JVM ([ADR 0022](0022-jvm-screen-and-screenshot-tests.md)) the single
+host job took 12–13 minutes on a 4-core runner, more than the device jobs, and kept
+all four cores busy. It now runs as one job per part of `gates.HOST_PARTS`: `tests`
+(unit tests and screenshot verification), `lint` (ktlint, then Android lint) and
+`assemble` (debug and release, then the G3 release checks). Every host task is in
+exactly one part and no check was dropped; `quality` judges the parts as one result
+that must succeed, and `scripts/check --host` still runs them all locally. ktlint now
+runs first in the `lint` part rather than before the tests: a formatting failure
+cannot change a test result, and repeating it would put it on every part's path.
+
 ## Consequences
 
 - A ticket's pull request needs no local gate; contributors run focused checks and

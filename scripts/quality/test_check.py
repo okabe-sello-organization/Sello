@@ -86,7 +86,8 @@ class CheckTests(unittest.TestCase):
         for argv in ((), ("app", "--host"), ("--host", "--fast"), ("--tests", "X"), ("--lint", "--host"),
                      ("--ci-release",), ("app", "--ci-release"), ("--modules", "app", "--host"), ("--build-only", "--fast"),
                      ("--event", "push", "--host"), ("--device", "app-3"), ("--plan",),
-                     ("--fast", "--scope", "nightly"), ("--device", "--scope", "everything")):
+                     ("--fast", "--scope", "nightly"), ("--device", "--scope", "everything"),
+                     ("--host", "build"), ("--host", "tests", "--ci-release"), ("--host", "lint", "--ci-release")):
             with self.subTest(argv=argv):
                 self.usage_error(*argv)
 
@@ -127,6 +128,52 @@ class CheckTests(unittest.TestCase):
         self.assertTrue(names[7].startswith(":domain:test :data:testDebugUnitTest"))
         self.assertEqual(8, len(names))
         self.assertIn("### Host tests: 2 passed, 0 failed, 0 skipped", self.summary.read_text(encoding="utf-8"))
+
+    def test_the_host_parts_together_run_the_whole_host_gate_once_and_ktlint_once(self):
+        fast = ["tickets.py", "scripts/quality", "scripts/performance", "architecture.py", "links.py", "licenses.py"]
+        self.assertEqual(0, self.check("--host"))
+        whole = self.fake.names()[7].split()
+        gradle, ktlint = [], 0
+        for part in ("tests", "lint", "assemble"):
+            with self.subTest(part=part):
+                self.fake.ran.clear()
+                self.assertEqual(0, self.check("--host", part))
+                names = self.fake.names()
+                self.assertEqual(fast, names[:6])  # each part's job repeats the cheap checks first
+                ktlint += names.count("ktlintCheck")
+                if part == "lint":
+                    self.assertEqual("ktlintCheck", names[6])  # formatting first, before slower work
+                gradle += names[-1].split()
+        self.assertEqual(1, ktlint)
+        self.assertEqual(whole, gradle)
+
+    def test_the_tests_part_fails_without_results_or_with_failing_tests(self):
+        self.fake.host_tests = 0
+        self.assertEqual(1, self.check("--host", "tests"))
+        self.assertIn("produced no test results", self.out.getvalue())
+        self.fake.host_tests, self.fake.host_failures = 2, 1
+        self.assertEqual(1, self.check("--host", "tests"))
+        self.assertIn("1 host tests failed", self.out.getvalue())
+        self.fake.host_failures = 0
+        self.assertEqual(0, self.check("--host", "tests"))
+        self.assertIn("### Host tests: 2 passed, 0 failed, 0 skipped", self.summary.read_text(encoding="utf-8"))
+
+    def test_the_lint_and_assemble_parts_fail_on_a_failed_task_and_ktlint_stops_lint(self):
+        for part, failing, ran in (("lint", "lintDebug", 8), ("assemble", ":app:assembleRelease", 7), ("lint", "ktlintCheck", 7)):
+            with self.subTest(part=part, failing=failing):
+                self.fake.ran.clear()
+                self.fake.exit_codes = {failing: 1}
+                self.assertEqual(1, self.check("--host", part))
+                self.assertEqual(ran, len(self.fake.ran))
+
+    def test_ci_release_runs_after_the_assemble_part_only(self):
+        self.assertEqual(0, self.check("--host", "assemble", "--ci-release"))
+        self.assertEqual(["licenses.py", "release.py"], self.fake.names()[-2:])
+        self.assertEqual("ephemeral", self.fake.ran[-1][-1])
+        self.fake.ran.clear()
+        self.fake.exit_codes = {":app:assembleRelease": 1}
+        self.assertEqual(1, self.check("--host", "assemble", "--ci-release"))
+        self.assertNotIn("release.py", self.fake.names()[-1])
 
     def test_a_failed_cheap_stage_stops_before_gradle(self):
         for failing, ran in (("links.py", 6), ("ktlintCheck", 7)):

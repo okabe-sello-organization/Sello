@@ -2,7 +2,7 @@
 
     scripts/check MODULE... [--tests PATTERN] [--lint]   ktlint and unit tests of some modules
     scripts/check --fast                                 G0: the Python/Git checks
-    scripts/check --host                                 G1: --fast, ktlint, then the Gradle host gate
+    scripts/check --host [PART]                          G1: --fast, ktlint, then the Gradle host gate (or one CI part)
     scripts/check --device [GROUP...] [--scope SCOPE]    device suites on the emulator in ANDROID_SERIAL
     scripts/check --release                              G3 with the owner's production signing
     scripts/check --plan BASE [--event EVENT]            what a hosted run would verify (JSON)
@@ -136,11 +136,15 @@ class Check:
             self.summarize("### Fast checks failed: " + ", ".join(f"`{name}`" for name in failed))
         return not failed
 
-    def host_gradle(self):
-        if not self.run("ktlint", gates.gradle(*gates.FORMAT_TASKS)):
+    def host_gradle(self, part=None):
+        """The whole host gate, or one of the parts CI runs in parallel jobs."""
+        if part in (None, gates.FORMAT_PART) and not self.run("ktlint", gates.gradle(*gates.FORMAT_TASKS)):
             self.summarize("### ktlint failed: run `./gradlew ktlintFormat`, then review the diff")
             return False
-        ran = self.run("gradle-host", gates.gradle(*gates.HOST_TASKS))
+        ran = self.run(f"gradle-host-{part}" if part else "gradle-host",
+                       gates.gradle(*(gates.HOST_PARTS[part] if part else gates.HOST_TASKS)))
+        if part not in (None, gates.TESTS_PART):
+            return ran
         results = self.results("Host tests", junit.glob(self.root, gates.HOST_RESULTS))
         if results.tests == 0:
             return self.fail("the host gate produced no test results")
@@ -232,7 +236,9 @@ def parser():
     parser.add_argument("--lint", action="store_true", help="With modules: Android lint too")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--fast", action="store_true", help="G0: tickets, tool tests, architecture, links")
-    mode.add_argument("--host", action="store_true", help="G1: --fast, ktlint, then the Gradle host gate, as CI runs it")
+    mode.add_argument("--host", nargs="?", const="all", choices=["all", *gates.HOST_PARTS], metavar="PART",
+                      help="G1: --fast, ktlint, then the Gradle host gate; CI runs one part per job: "
+                           f"{', '.join(gates.HOST_PARTS)}")
     mode.add_argument("--device", nargs="*", metavar="GROUP", choices=list(gates.DEVICE_GROUPS),
                       help="Device suites on ANDROID_SERIAL: hosted groups, or every suite whole when none is given")
     mode.add_argument("--release", action="store_true",
@@ -240,7 +246,8 @@ def parser():
     mode.add_argument("--plan", metavar="BASE", help="Print what a hosted run would verify against BASE")
     parser.add_argument("--event", choices=selection.EVENTS, default="pull_request", help="With --plan")
     parser.add_argument("--ci-release", action="store_true",
-                        help="With --host: CI's G3 release checks (licences, throwaway signing)")
+                        help=f"With --host or --host {gates.RELEASE_PART}: CI's G3 release checks "
+                             "(licences, throwaway signing)")
     parser.add_argument("--modules", metavar="M,M", help="With --device: only these modules (the plan's selection)")
     parser.add_argument("--build-only", action="store_true",
                         help="With --device: ktlint and the test APKs only, before an emulator exists")
@@ -255,7 +262,7 @@ def main(argv=None, root=ROOT, execute=default_execute, out=sys.stdout, environ=
     arguments = parser().parse_args(argv)
     environ = dict(os.environ if environ is None else environ)
     usage = parser().error
-    modes = [arguments.fast, arguments.host, arguments.device is not None, arguments.release,
+    modes = [arguments.fast, arguments.host is not None, arguments.device is not None, arguments.release,
              arguments.plan is not None]
     if any(modes) and arguments.module:
         usage("give modules or one mode, not both")
@@ -263,8 +270,8 @@ def main(argv=None, root=ROOT, execute=default_execute, out=sys.stdout, environ=
         usage("give modules, or one of --fast, --host, --device, --release, --plan")
     if (arguments.tests or arguments.lint) and not arguments.module:
         usage("--tests and --lint go with modules")
-    if arguments.ci_release and not arguments.host:
-        usage("--ci-release goes with --host")
+    if arguments.ci_release and arguments.host not in ("all", gates.RELEASE_PART):
+        usage(f"--ci-release goes with --host or --host {gates.RELEASE_PART}, which makes the release APK")
     if (arguments.modules or arguments.build_only or arguments.scope) and arguments.device is None:
         usage("--modules, --build-only and --scope go with --device")
     if arguments.event != "pull_request" and arguments.plan is None:
@@ -281,8 +288,10 @@ def main(argv=None, root=ROOT, execute=default_execute, out=sys.stdout, environ=
             passed = check.modules(arguments.module, arguments.tests, arguments.lint)
         elif arguments.fast:
             passed = check.fast()
-        elif arguments.host:
-            passed = check.fast() and check.host_gradle() and (not arguments.ci_release or check.release_checks(ci=True))
+        elif arguments.host is not None:
+            part = None if arguments.host == "all" else arguments.host
+            passed = (check.fast() and check.host_gradle(part)
+                      and (not arguments.ci_release or check.release_checks(ci=True)))
         elif arguments.device is not None:
             modules = [module for module in (arguments.modules or "").split(",") if module]
             if any(module not in selection.MODULES for module in modules):
