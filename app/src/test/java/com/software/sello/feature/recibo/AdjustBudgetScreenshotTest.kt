@@ -2,11 +2,10 @@ package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.github.takahirom.roborazzi.captureRoboImage
 import com.software.sello.Look
+import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
@@ -100,7 +99,7 @@ class AdjustBudgetScreenshotTest {
                 contentPadding = PaddingValues(12.dp)
             )
         }
-        rule.onRoot().captureRoboImage("src/test/screenshots/adjust-budget-${look.label}.png")
+        rule.captureStill("src/test/screenshots/adjust-budget-${look.label}.png")
     }
 
     @Test

@@ -2,11 +2,10 @@ package com.software.sello.feature.investments
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.github.takahirom.roborazzi.captureRoboImage
 import com.software.sello.Look
+import com.software.sello.captureStill
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.showSello
@@ -14,7 +13,6 @@ import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
@@ -23,7 +21,6 @@ import org.robolectric.annotation.GraphicsMode
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "+xhdpi")
 class UsdRateScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
@@ -41,7 +38,7 @@ class UsdRateScreenshotTest {
         rule.showSello(look) {
             UsdRateScreen(ready, {}, dateLabels(), PaddingValues(16.dp))
         }
-        rule.onRoot().captureRoboImage("src/test/screenshots/usd-rate-${look.label}.png")
+        rule.captureStill("src/test/screenshots/usd-rate-${look.label}.png")
     }
 
     @Test

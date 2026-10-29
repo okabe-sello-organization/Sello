@@ -1,10 +1,9 @@
 package com.software.sello.feature.category
 
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.github.takahirom.roborazzi.captureRoboImage
 import com.software.sello.Look
+import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
@@ -49,7 +48,7 @@ class CategoryEditorScreenshotTest {
         rule.showSello(look) {
             CategoryEditorScreen(editing, {})
         }
-        rule.onRoot().captureRoboImage("src/test/screenshots/category-editor-${look.label}.png")
+        rule.captureStill("src/test/screenshots/category-editor-${look.label}.png")
     }
 
     @Test

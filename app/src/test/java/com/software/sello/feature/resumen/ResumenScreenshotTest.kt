@@ -2,10 +2,9 @@ package com.software.sello.feature.resumen
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.github.takahirom.roborazzi.captureRoboImage
 import com.software.sello.Look
+import com.software.sello.captureStill
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.domain.model.Currency
 import com.software.sello.presentation.money.MoneyFormatter
@@ -38,7 +37,7 @@ class ResumenScreenshotTest {
         rule.showSello(look) {
             ResumenScreen(state, {}, {}, {}, {}, PaddingValues(), {}, {})
         }
-        rule.onRoot().captureRoboImage("src/test/screenshots/resumen-${look.label}.png")
+        rule.captureStill("src/test/screenshots/resumen-${look.label}.png")
     }
 
     @Test

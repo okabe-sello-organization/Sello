@@ -15,7 +15,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.github.takahirom.roborazzi.captureRoboImage
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import org.junit.Rule
@@ -66,7 +65,7 @@ class ComponentScreenshotTest {
         }
         rule.onNodeWithTag(
             "stage"
-        ).drawnBitmap().captureRoboImage("src/test/screenshots/components-$name.png")
+        ).drawnBitmap().captureBaseline("src/test/screenshots/components-$name.png")
     }
 
     @Test
@@ -226,6 +225,6 @@ class ComponentScreenshotTest {
         }
         rule.onNodeWithTag(
             "stage"
-        ).drawnBitmap().captureRoboImage("src/test/screenshots/components-frame.png")
+        ).drawnBitmap().captureBaseline("src/test/screenshots/components-frame.png")
     }
 }

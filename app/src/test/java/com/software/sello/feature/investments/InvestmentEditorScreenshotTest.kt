@@ -1,10 +1,9 @@
 package com.software.sello.feature.investments
 
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.github.takahirom.roborazzi.captureRoboImage
 import com.software.sello.Look
+import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
@@ -13,7 +12,6 @@ import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
@@ -22,7 +20,6 @@ import org.robolectric.annotation.GraphicsMode
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "+xhdpi")
 class InvestmentEditorScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
@@ -48,7 +45,7 @@ class InvestmentEditorScreenshotTest {
         rule.showSello(look) {
             InvestmentEditorScreen(creating) {}
         }
-        rule.onRoot().captureRoboImage("src/test/screenshots/investment-editor-${look.label}.png")
+        rule.captureStill("src/test/screenshots/investment-editor-${look.label}.png")
     }
 
     @Test

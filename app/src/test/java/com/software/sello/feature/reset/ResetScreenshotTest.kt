@@ -17,13 +17,11 @@ import com.software.sello.showSello
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /** What the reset screen looks like at its first confirmation, kept as committed images (ADR 0022). */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "+xhdpi")
 class ResetScreenshotTest {
     @get:Rule
     val rule = createComposeRule()

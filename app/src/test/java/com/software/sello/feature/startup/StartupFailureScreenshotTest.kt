@@ -9,13 +9,11 @@ import com.software.sello.showSello
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /** What the start-up failure screen looks like, kept as committed images (ADR 0022). */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "+xhdpi")
 class StartupFailureScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
