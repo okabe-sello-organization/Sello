@@ -123,6 +123,18 @@ class ResetScreenTest {
     }
 
     @Test
+    fun carryChainsAreCountedAfterInvestmentsAndOnlyWhenThereAreAny() {
+        val current = BackupSummary(2, 10, 1, 3, 2, investments = 1, carryChains = 2)
+        show(ResetState(ResetStep.Ready(preview.copy(current = current))))
+
+        rule.onNodeWithText(
+            "Se borran 2 categorías, 10 gastos, 1 ingreso, 3 metas, 2 pagos e ingresos fijos, " +
+                "1 inversión y 2 arrastres entre meses, con sus límites y notas.",
+            substring = true
+        ).assertIsDisplayed()
+    }
+
+    @Test
     fun newCountsSayTheDataChanged() {
         show(ResetState(ResetStep.Ready(preview, refreshed = true)))
 

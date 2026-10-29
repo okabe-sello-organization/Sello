@@ -138,7 +138,13 @@ enum class RestoreRejection {
     Damaged,
 
     /** Well formed, but a value, amount, currency or reference breaks Sello's rules. */
-    InvalidContent
+    InvalidContent,
+
+    /**
+     * A valid backup whose categories carry their balance from month to month (ADR 0020
+     * CP26), which this version of Sello cannot show: it is refused before anything changes.
+     */
+    CarryNotSupported
 }
 
 sealed interface StageFailure {

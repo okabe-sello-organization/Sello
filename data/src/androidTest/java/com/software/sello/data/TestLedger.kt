@@ -80,7 +80,7 @@ class TestLedger(
     /** The real time the next write is stamped with. A test moves it to tell writes apart. */
     var audit: Instant = Instant.parse("2026-10-09T15:04:05.678912Z")
     private val today = MutableStateFlow(FinancialDay(LocalDate.of(2026, 10, 9), zone))
-    private val clock = object : FinancialClock {
+    val clock = object : FinancialClock {
         override val today = this@TestLedger.today
     }
 

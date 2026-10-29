@@ -2,6 +2,7 @@ package com.software.sello.data.backup
 
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
+import com.software.sello.data.local.entity.CarryChainEntity
 import com.software.sello.data.local.entity.CategoryEntity
 import com.software.sello.data.local.entity.DefaultLimitEntity
 import com.software.sello.data.local.entity.ExpenseEntity
@@ -25,9 +26,11 @@ import com.software.sello.domain.port.BackupPreparationFailure
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreparedBackup
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.first
@@ -84,6 +87,9 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
     val investments = investmentDao().all()
         .decodeAll { it.toHistory(movements[it.id].orEmpty()) }
     val rates = investmentDao().rates().decodeAll { it.toDomain() }
+    val chains = pages<CarryChainEntity> {
+        carryChainDao().all(it?.categoryId.orEmpty(), it?.startMonth.orEmpty(), PAGE)
+    }.decodeAll { it.toDomain() }
     return Outcome.Success(
         FinancialSnapshot(
             zone = profile.zone,
@@ -97,7 +103,8 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
             featuredGoal = featured,
             schedules = schedules.orReturn { return it },
             investments = investments.orReturn { return it },
-            usdRates = rates.orReturn { return it }
+            usdRates = rates.orReturn { return it },
+            carryChains = chains.orReturn { return it }
         )
     )
 }
@@ -135,6 +142,7 @@ class BackupExport(
     private val ordering: CategoryOrderingPreferences,
     private val investments: InvestmentPreferences,
     private val auditClock: AuditClock,
+    private val financialClock: FinancialClock,
     private val dispatchers: DispatcherProvider,
     private val codec: BackupCodec = BackupCodec()
 ) : BackupExports {
@@ -155,7 +163,8 @@ class BackupExport(
                         incomes = file.value.counts.incomes,
                         goals = file.value.counts.goals,
                         schedules = file.value.counts.schedules,
-                        investments = file.value.counts.investments
+                        investments = file.value.counts.investments,
+                        carryChains = file.value.counts.carryChains
                     )
                 )
             )
@@ -175,8 +184,14 @@ class BackupExport(
         }
         val preferences = portablePreferences()
         // The format keeps milliseconds; newer Android clocks give finer time.
-        val contents =
-            BackupContents(auditClock.now().truncatedTo(ChronoUnit.MILLIS), financial, preferences)
+        val contents = BackupContents(
+            exportedAt = auditClock.now().truncatedTo(ChronoUnit.MILLIS),
+            // The financial clock's month, not the audit clock's: a moved or sandbox clock
+            // differs from the real one, and chains are judged against the former.
+            financialMonth = YearMonth.from(financialClock.today.value.date),
+            financial = financial,
+            preferences = preferences
+        )
         return withContext(dispatchers.default) {
             when (val encoded = codec.encode(contents)) {
                 is Outcome.Success -> Outcome.Success(

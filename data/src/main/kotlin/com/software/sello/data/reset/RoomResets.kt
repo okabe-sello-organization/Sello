@@ -68,7 +68,8 @@ class RoomResets(
                             incomes = database.incomeDao().count(),
                             goals = database.goalDao().count(),
                             schedules = database.scheduleDao().count(),
-                            investments = database.investmentDao().count()
+                            investments = database.investmentDao().count(),
+                            carryChains = database.carryChainDao().count()
                         ),
                         profile.value.generation,
                         profile.value.revision

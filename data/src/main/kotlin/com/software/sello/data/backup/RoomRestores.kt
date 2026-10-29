@@ -306,8 +306,8 @@ class RoomRestores(
     /**
      * Inside one transaction: a receipt for this operation means it already happened;
      * otherwise the history must still be where it was previewed. Then every financial
-     * row and every kept undo copy goes, the backup's rows come in as they were, and
-     * the profile takes the backup's zone and a new generation.
+     * row and every kept undo copy goes, the backup's rows come in as they were, carry
+     * chains included, and the profile takes the backup's zone and a new generation.
      */
     private suspend fun write(
         staged: StagedRestore,
@@ -365,6 +365,8 @@ class RoomRestores(
             }
             for (history in financial.investments) insertInvestment(history)
             for (rate in financial.usdRates) investmentDao().insertRate(rate.toEntity())
+            // Months only: carry is worked out again from what was just inserted (CP26).
+            carryChainDao().insertAll(financial.carryChains.map { it.toEntity() })
         }
         val generation = nextCounter(profile.generation, ProfileEntity.TABLE, null, "generation")
         val revision = nextCounter(profile.revision, ProfileEntity.TABLE, null, "revision")
@@ -456,7 +458,8 @@ class RoomRestores(
                             incomes = database.incomeDao().count(),
                             goals = database.goalDao().count(),
                             schedules = database.scheduleDao().count(),
-                            investments = database.investmentDao().count()
+                            investments = database.investmentDao().count(),
+                            carryChains = database.carryChainDao().count()
                         )
                     )
                 )
@@ -618,7 +621,8 @@ internal fun FinancialSnapshot.summary() = BackupSummary(
     incomes = incomes.size,
     goals = goals.size,
     schedules = schedules.size,
-    investments = investments.size
+    investments = investments.size,
+    carryChains = carryChains.size
 )
 
 /** How a person is told why a file cannot be restored; the detail stays in the rejection. */
@@ -642,6 +646,8 @@ internal fun BackupRejection.reason(): RestoreRejection = when (this) {
     is BackupRejection.InvalidValue, is BackupRejection.UnsupportedCurrency,
     is BackupRejection.AmountOutOfRange, is BackupRejection.DuplicateId,
     is BackupRejection.DuplicateCategoryName, is BackupRejection.DuplicateEntry,
-    is BackupRejection.DanglingReference, is BackupRejection.HistoryTooLong ->
-        RestoreRejection.InvalidContent
+    is BackupRejection.DanglingReference, is BackupRejection.HistoryTooLong,
+    is BackupRejection.InvalidChain -> RestoreRejection.InvalidContent
+
+    BackupRejection.CarryNotSupported -> RestoreRejection.CarryNotSupported
 }

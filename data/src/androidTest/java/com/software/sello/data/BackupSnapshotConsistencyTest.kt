@@ -99,6 +99,7 @@ class BackupSnapshotConsistencyTest {
         preferences,
         HandInvestmentPreferences(),
         { now },
+        ledger.clock,
         dispatchers
     )
 
@@ -161,7 +162,8 @@ class BackupSnapshotConsistencyTest {
                 schedules = 0,
                 investments = 0,
                 investmentMovements = 0,
-                usdRates = 0
+                usdRates = 0,
+                carryChains = 0
             ),
             snapshot.counts
         )

@@ -19,11 +19,13 @@ import com.software.sello.TestData
 import com.software.sello.awaitTag
 import com.software.sello.data.backup.BackupCodec
 import com.software.sello.data.backup.BackupContents
+import com.software.sello.data.backup.CarryChainSupport
 import com.software.sello.data.backup.FinancialSnapshot
 import com.software.sello.data.backup.PortablePreferences
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.AutomaticBudget
 import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.CarryChain
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
@@ -131,7 +133,7 @@ class RestoreJourneyTest {
     private fun amount(pesos: Long) = TransactionAmount.of(Money.cop(pesos)).value()
 
     /** G01 in the stored zone, dark violet and alphabetical; written by the real encoder. */
-    private fun backup(): ByteArray {
+    private fun backup(withCarry: Boolean = false): ByteArray {
         val day = TestCommands.today
         val at = Instant.parse("2026-10-22T14:30:00Z")
         val comida = CategoryId.of(id(1)).value()
@@ -139,9 +141,15 @@ class RestoreJourneyTest {
             ExpenseId.of(id(number)).value(), comida, day.minusDays(daysAgo), number.toLong(),
             amount(pesos), null, 1, at, at
         )
-        return BackupCodec().encode(
+        val chains = if (withCarry) {
+            listOf(CarryChain.of(comida, YearMonth.from(day)).value())
+        } else {
+            emptyList()
+        }
+        return BackupCodec(carryChains = CarryChainSupport.Accepted).encode(
             BackupContents(
                 exportedAt = at,
+                financialMonth = YearMonth.from(day),
                 financial = FinancialSnapshot(
                     zone = java.time.ZoneId.of(zone),
                     revision = 9,
@@ -181,7 +189,8 @@ class RestoreJourneyTest {
                     featuredGoal = null,
                     schedules = emptyList(),
                     investments = emptyList(),
-                    usdRates = emptyList()
+                    usdRates = emptyList(),
+                    carryChains = chains
                 ),
                 preferences = PortablePreferences(
                     AppearancePreference(ThemePreference.Dark, InkPreference.Violeta),
@@ -282,6 +291,24 @@ class RestoreJourneyTest {
         rule.onNodeWithText("No es un respaldo de Sello ni de FinanceTracker.", substring = true)
             .assertExists()
         assertEquals(before, financialRows())
+        assertEquals(0, restarts)
+    }
+
+    /** CP26: until carry can be shown, a backup that uses it is refused before anything changes. */
+    @Test
+    fun aBackupWithCarryIsRefusedInPlainWordsAndChangesNothing() {
+        answerWith(backup(withCarry = true))
+        val before = financialRows()
+        openRespaldoAndChoose()
+        rule.awaitTag(RESTORE_REJECTED_TAG)
+
+        rule.onNodeWithText(
+            "Usa el arrastre entre meses, que esta versión de Sello todavía no puede mostrar. " +
+                "Tus datos no cambiaron.",
+            substring = true
+        ).assertExists()
+        assertEquals(before, financialRows())
+        assertEquals(0, TestData.rows("SELECT COUNT(*) FROM carry_chain").single().toInt())
         assertEquals(0, restarts)
     }
 

@@ -191,6 +191,8 @@ class LegacyTranslator(
                 ?.let(YearMonth::from) ?: YearMonth.from(exportDay)
             val contents = BackupContents(
                 exportedAt = exportedAt,
+                // No carry in a FinanceTracker file, so the month only has to be a real one.
+                financialMonth = YearMonth.from(exportedAt.atZone(zone)),
                 financial = FinancialSnapshot(
                     zone = zone,
                     revision = 0,
@@ -207,7 +209,9 @@ class LegacyTranslator(
                     featuredGoal = null,
                     schedules = schedules.map { it.stored },
                     investments = investments,
-                    usdRates = usdRates
+                    usdRates = usdRates,
+                    // A FinanceTracker backup has no carry, so every category is off.
+                    carryChains = emptyList()
                 ),
                 preferences = preferences()
             )
