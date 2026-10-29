@@ -5,6 +5,7 @@
   "financial": {
     "sourceRevision": 5,
     "zone": "America/Bogota",
+    "financialMonth": "2027-04",
     "categories": [
       {
         "id": "00000000-0000-4000-8000-000000000001",

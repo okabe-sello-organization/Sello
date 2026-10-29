@@ -161,6 +161,7 @@ class InvestmentBackupRestoreTest {
         preferences,
         investments,
         { ledger.audit },
+        ledger.clock,
         dispatchers
     )
 

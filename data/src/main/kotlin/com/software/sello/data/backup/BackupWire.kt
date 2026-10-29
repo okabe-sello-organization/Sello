@@ -467,6 +467,8 @@ internal data class BackupFileV6(
 internal data class FinancialV6(
     val sourceRevision: JsonElement,
     val zone: String,
+    /** `yyyy-MM`: the financial month it was made in; null only in a file read from an older version. */
+    val financialMonth: String?,
     val categories: List<CategoryV1>,
     val defaultLimits: List<DefaultLimitV1>,
     val monthLimits: List<MonthLimitV1>,
@@ -488,7 +490,7 @@ internal data class FinancialV6(
 @Serializable
 internal data class CarryChainV6(val categoryId: String, val start: String, val end: String?)
 
-/** A version 5 file read as version 6: no category carries. */
+/** A version 5 file read as version 6: no category carries, and no financial month is said. */
 internal fun BackupFileV5.asVersion6() = BackupFileV6(
     format = format,
     version = version,
@@ -496,6 +498,7 @@ internal fun BackupFileV5.asVersion6() = BackupFileV6(
     financial = FinancialV6(
         sourceRevision = financial.sourceRevision,
         zone = financial.zone,
+        financialMonth = null,
         categories = financial.categories,
         defaultLimits = financial.defaultLimits,
         monthLimits = financial.monthLimits,

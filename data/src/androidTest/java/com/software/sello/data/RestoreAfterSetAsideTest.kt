@@ -26,6 +26,7 @@ import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.RestoreOutcome
 import java.io.File
 import java.time.Instant
+import java.time.YearMonth
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -100,6 +101,7 @@ class RestoreAfterSetAsideTest {
     private val g01 = BackupCodec().encode(
         BackupContents(
             exportedAt = Instant.parse("2026-10-22T14:30:00Z"),
+            financialMonth = YearMonth.of(2026, 10),
             financial = FinancialSnapshot(
                 zone = ZoneId.of("America/Lima"),
                 revision = 9,

@@ -118,6 +118,11 @@ class CarryBackupRestoreTest {
     private val accepting = BackupCodec(carryChains = CarryChainSupport.Accepted)
     private var nextId = 5_000
 
+    /** A version 6 file as Sello wrote it before: no chains and no financial month. */
+    private fun String.asVersion5() = replace("\"version\": 6,", "\"version\": 5,")
+        .replace(Regex(",\\s+\"carryChains\": \\[[^]]*]"), "")
+        .replace(Regex("\\s+\"financialMonth\": \"[0-9-]+\","), "")
+
     private fun month(text: String) = YearMonth.parse(text)
 
     private fun cop(pesos: Long) = Money.cop(pesos)
@@ -128,15 +133,17 @@ class CarryBackupRestoreTest {
         preferences,
         investments,
         { source.audit },
+        source.clock,
         dispatchers,
         codec
     )
 
-    /** Made on the financial day of the history, 5 abr 2027, as a person's would be. */
-    private suspend fun backup(source: TestLedger = ledger): ByteArray {
-        source.audit = Instant.parse("2027-04-05T15:00:00Z")
-        return export(source).create().valueOrFail().bytes
-    }
+    /**
+     * The audit clock stays at its 2026-10-09 while the financial day of these histories
+     * is in 2027: the file says the financial month, so the two clocks never meet.
+     */
+    private suspend fun backup(source: TestLedger = ledger): ByteArray =
+        export(source).create().valueOrFail().bytes
 
     private fun restoresInto(
         target: TestLedger,
@@ -251,6 +258,79 @@ class CarryBackupRestoreTest {
         )
     }
 
+    // R1, R2 of the review: the financial month, not the audit clock, dates a chain.
+
+    @Test
+    fun aSandboxHistoryAheadOfTheAuditClockBacksUpAndRestoresWithItsChain() = runBlocking {
+        // Financial clock jun 2027, audit clock oct 2026: carry is turned on in jun 2027.
+        val comida = CarryHistories(ledger).category("Comida", 100_000, "2027-06-05")
+        CarryHistories(ledger).enable(comida, version = 1)
+        assertEquals(Instant.parse("2026-10-09T15:04:05.678912Z"), ledger.audit)
+        other.goTo("2027-06-05")
+
+        val bytes = backup()
+        val restores = restoresInto(other, fresh)
+        val outcome = restores.replace(restores.stage(bytes).valueOrFail())
+
+        assertTrue(String(bytes).contains("\"financialMonth\": \"2027-06\""))
+        assertTrue(String(bytes).contains("\"exportedAt\": \"2026-10-09T15:04:05.678Z\""))
+        assertTrue("$outcome", outcome is RestoreOutcome.Restored)
+        assertEquals(listOf("${uuid(100)}|2027-06|null"), other.chainRows())
+    }
+
+    @Test
+    fun aClockMovedBackAfterCarryWasOnStillBacksUpAndRestores() = runBlocking {
+        CarryHistories(ledger).sc01()
+        // The device clock goes back to jan 2027, before abr when the history stands.
+        ledger.goTo("2027-01-20")
+        val bytes = backup()
+        other.goTo("2027-04-05")
+
+        val restores = restoresInto(other, fresh)
+        val outcome = restores.replace(restores.stage(bytes).valueOrFail())
+
+        // The file says jan 2027 as the clock did, and the chain began in jan: it passes.
+        assertTrue(String(bytes).contains("\"financialMonth\": \"2027-01\""))
+        assertTrue("$outcome", outcome is RestoreOutcome.Restored)
+        assertEquals(listOf("${uuid(100)}|2027-01|null"), other.chainRows())
+    }
+
+    // R5: the counts a person is shown before a restore, an erase or in the saved summary.
+
+    @Test
+    fun theRestorePreviewTheEraseAndTheBackupSummaryCountChains() = runBlocking {
+        CarryHistories(ledger).sc01()
+        val summary = export(ledger).prepare().valueOrFail().summary
+        val bytes = backup()
+        CarryHistories(other).sc01()
+        val restores = restoresInto(other, fresh)
+
+        val staged = restores.stage(bytes).valueOrFail()
+        val resets = RoomResets(
+            other.database,
+            fresh.resetFolder,
+            fresh.restoreFolder,
+            emptyList(),
+            PreferenceReset { PreferenceWrite.Saved },
+            { other.zone },
+            { other.audit },
+            dispatchers
+        )
+        val counted = resets.preview().valueOrFail().current
+
+        assertEquals(1, summary.carryChains)
+        assertEquals(1, staged.current.carryChains)
+        assertEquals(1, staged.replacement.carryChains)
+        assertEquals(1, counted.carryChains)
+        // A history without a chain counts none.
+        val fileWithout = String(bytes).asVersion5()
+        assertEquals(
+            0,
+            restoresInto(other, fresh).stage(fileWithout.toByteArray()).valueOrFail()
+                .replacement.carryChains
+        )
+    }
+
     // SC42, SC45: older files restore as no-carry; a restore replaces the chains.
 
     @Test
@@ -258,8 +338,7 @@ class CarryBackupRestoreTest {
         CarryHistories(ledger).sc01()
         endedInApril(ledger)
         // The same history written as version 5: no chains, as Sello wrote it before.
-        val version5 = String(backup()).replace("\"version\": 6,", "\"version\": 5,")
-            .replace(Regex(",\\s+\"carryChains\": \\[[^]]*]"), "")
+        val version5 = String(backup()).asVersion5()
         check(!version5.contains("carryChains"))
         CarryHistories(other).sc01()
         assertEquals(listOf("${uuid(100)}|2027-01|null"), other.chainRows())
@@ -354,8 +433,7 @@ class CarryBackupRestoreTest {
     @Test
     fun theCustomerPathStillRestoresAFileWithNoChain() = runBlocking {
         CarryHistories(ledger).sc01()
-        val withoutChains = String(backup()).replace("\"version\": 6,", "\"version\": 5,")
-            .replace(Regex(",\\s+\"carryChains\": \\[[^]]*]"), "")
+        val withoutChains = String(backup()).asVersion5()
         other.goTo("2027-04-05")
 
         val restores = restoresInto(other, fresh, BackupCodec())
@@ -369,8 +447,6 @@ class CarryBackupRestoreTest {
     @Test
     fun theCustomerPathMakesNoBackupOfAHistoryItCouldNotRestore() = runBlocking {
         CarryHistories(ledger).sc01()
-
-        ledger.audit = Instant.parse("2027-04-05T15:00:00Z")
 
         val created = export(ledger, BackupCodec()).create()
         val prepared = export(ledger, BackupCodec()).prepare()

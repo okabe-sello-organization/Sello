@@ -251,6 +251,7 @@ class BackupRoundTripTest {
             setOf(
                 "sourceRevision",
                 "zone",
+                "financialMonth",
                 "categories",
                 "defaultLimits",
                 "monthLimits",

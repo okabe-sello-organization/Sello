@@ -104,6 +104,7 @@ class BackupSnapshotConsistencyTest {
         preferences,
         HandInvestmentPreferences(),
         { now },
+        ledger.clock,
         dispatchers
     )
 

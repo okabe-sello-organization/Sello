@@ -223,7 +223,8 @@ class FinancialStorage internal constructor(
     )
 
     /**
-     * Backup files of this storage, with the portable preferences beside it. A [codec]
+     * Backup files of this storage, with the portable preferences beside it. [clock] is the
+     * financial clock whose month the file says it was made in. A [codec]
      * that refuses carry, the default, makes no file for a history in which a category
      * carries its balance, as it could not restore it either.
      */
@@ -232,6 +233,7 @@ class FinancialStorage internal constructor(
         ordering: CategoryOrderingPreferences,
         investments: InvestmentPreferences,
         audit: AuditClock,
+        clock: FinancialClock,
         dispatchers: DispatcherProvider,
         codec: BackupCodec = BackupCodec()
     ): BackupExports = BackupExport(
@@ -240,6 +242,7 @@ class FinancialStorage internal constructor(
         ordering,
         investments,
         audit,
+        clock,
         dispatchers,
         codec
     )

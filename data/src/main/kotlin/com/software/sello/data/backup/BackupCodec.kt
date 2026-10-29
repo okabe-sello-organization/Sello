@@ -211,6 +211,16 @@ internal fun BackupContents.toWire(): BackupFileV6 = BackupFileV6(
     financial = FinancialV6(
         sourceRevision = JsonPrimitive(financial.revision),
         zone = financial.zone.id,
+        financialMonth = EffectiveDates.storedText(
+            // A chain never reaches past the month the file says it was made in, whatever
+            // the clock read: a clock moved back after a chain began still writes a file
+            // Sello reads back.
+            (
+                listOf(financialMonth) +
+                    financial.carryChains.flatMap { listOfNotNull(it.start, it.end) }
+                )
+                .max()
+        ),
         categories = financial.categories
             .sortedWith(compareBy({ it.createdAt }, { it.id.value }))
             .map {

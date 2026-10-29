@@ -16,7 +16,12 @@ data class BackupSummary(
      * Investments, which version 4 backups carry, each with its movements; 0 where they
      * are not counted, such as a backup remembered before investments existed.
      */
-    val investments: Int = 0
+    val investments: Int = 0,
+    /**
+     * Carry chains, which version 6 backups carry (ADR 0020 CP26); 0 where they are not
+     * counted, such as a backup remembered before carry existed.
+     */
+    val carryChains: Int = 0
 )
 
 /** A backup file ready to be written to a place the person chose. Nothing has been written yet. */

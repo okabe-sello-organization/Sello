@@ -20,7 +20,7 @@ plus `financial.schedules` and each expense's and income's `origin` (SELLO-099);
 version 4 is version 3 plus `financial.investments` and `financial.usdRates` (SELLO-108);
 version 5 is version 4 plus `preferences.investmentCurrency` and
 `preferences.investmentOrder` (SELLO-120); version 6 is version 5 plus `financial.carryChains`
-(SELLO-040, [ADR 0020](../decisions/0020-signed-carryover-policy.md) CP26). A version 1 file
+(SELLO-040, [ADR 0020](../decisions/0020-signed-carryover-policy.md) CP26) and `financial.financialMonth`. A version 1 file
 reads as having no goals, versions 1 and 2 as having no schedules and no origins, versions
 1 to 3 as having no investments and no rates, versions 1 to 4 as starting investments in
 `COP`, largest value first, and versions 1 to 5 as having no carry chains: **every category
@@ -35,6 +35,7 @@ version 6, so an app that reads only version 5 cannot read it.
   "financial": {
     "sourceRevision": 9,
     "zone": "America/Bogota",
+    "financialMonth": "2026-10",
     "categories": [ … ],
     "defaultLimits": [ … ],
     "monthLimits": [ … ],
@@ -81,6 +82,7 @@ SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 | `exportedAt` | When the backup was made, UTC. |
 | `financial.sourceRevision` | The revision all financial rows were read at: one transaction, one revision. Informative; a restore does not reuse it. |
 | `financial.zone` | The financial zone, an IANA identifier such as `America/Bogota`. |
+| `financial.financialMonth` | Version 6: `yyyy-MM`, the **financial** month the backup was made in, by the financial clock, not by the audit clock that `exportedAt` comes from. It is required and must be a real month: a file without it, or with `null` or another spelling, is refused. A file Sello writes says the later of its financial clock's month and the latest month any chain starts or ends in, so a sandbox or a clock moved back still writes a file Sello reads. Versions 1 to 5 have none and read as the month of `exportedAt` in `zone`; they have no chains for it to judge. |
 | `financial.featuredGoal` | Version 2: the `id` of the goal chosen for Recibo, one of `goals`, or `null`. |
 | `preferences` | Read separately from the financial rows, after them; they never shared a transaction. `null` when they could not be read: the money is backed up regardless. |
 
@@ -180,9 +182,12 @@ Every key is required, even when its value is `null`, and no other key is allowe
   `categoryId` is a category in the file. `end` is after `start`: a chain turned off in its
   first month never existed and is not written. A category's chains share no month (one
   may end in the month the next starts) and only its last may be open; the same
-  `categoryId` and `start` twice is refused. Carry starts in the current month and archiving ends a chain, so a chain
-  that starts after the month the backup was made in (`exportedAt` in `financial.zone`) and an
-  open chain on an archived category are refused too: Sello could not have written them. Every month a chain carries into has a
+  `categoryId` and `start` twice is refused. Carry starts in the current month (CP3), a
+  chain ends only by a command that drops its balance in the month it is given (CP9, CP10)
+  and archiving ends the chain (CP11), so a chain whose `start` **or** `end` is after
+  `financial.financialMonth`, and an open chain on an archived category, are refused too:
+  Sello could not have written them, and an `end` ahead of time would drop a deficit with
+  no confirmation. Every month a chain carries into has a
   finite base, an unlimited, paused or unconfigured month is refused, and a base of at
   most 999.999.999.999: a month's own limit counts where it exists, otherwise the default
   in force. An open chain reaches every later month, so the default in force after the
@@ -190,8 +195,11 @@ Every key is required, even when its value is `null`, and no other key is allowe
   capacity or remaining, and a key for one is refused:** they are worked out again from
   the records and the base history after a restore, so a deficit is never taken on
   trust, and carried money is never an expense or an income in the file. Those figures
-  fit a signed 64-bit integer whatever the file says: each base is capped, and at most
-  100,000 records of at most 999.999.999.999 are spent against it.
+  fit a signed 64-bit integer whatever the file says: a month's base is at most
+  999.999.999.999, months run from `0000-01` to `9999-12` (120,000 of them), and at most
+  100,000 records of at most 999.999.999.999 are spent against them. Carry in any month
+  is therefore at most 120,000 × 999.999.999.999 + 100,000 × 999.999.999.999, about
+  2.2 × 10^17, far below 9.2 × 10^18.
 - **Order:** `sequence` is kept as written, so history keeps its order. Files are
   written categories by creation then ID, limits by category then month, records
   by date then sequence, goals by creation then ID with each history by sequence,
@@ -275,7 +283,7 @@ entries keep their `origin`; catch-up then goes on from each checkpoint, so noth
 backup holds is recorded again and what came due since is. Investments and rates are
 replaced too: each movement keeps its recording position, the investment's next position
 follows its last movement (at least 2), and no deleted movement can be put back. The
-restore preview and the erase confirmation count investments when there are any.
+restore preview and the erase confirmation count investments and carry chains when there are any.
 Carry chains are replaced with the rest, inserted after the categories they refer to
 and before the generation advances: a restore of a file with no chains, or of a file of
 versions 1 to 5, leaves every category off, and the figures of a restored chain are worked

@@ -26,9 +26,11 @@ import com.software.sello.domain.port.BackupPreparationFailure
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreparedBackup
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.first
@@ -140,6 +142,7 @@ class BackupExport(
     private val ordering: CategoryOrderingPreferences,
     private val investments: InvestmentPreferences,
     private val auditClock: AuditClock,
+    private val financialClock: FinancialClock,
     private val dispatchers: DispatcherProvider,
     private val codec: BackupCodec = BackupCodec()
 ) : BackupExports {
@@ -160,7 +163,8 @@ class BackupExport(
                         incomes = file.value.counts.incomes,
                         goals = file.value.counts.goals,
                         schedules = file.value.counts.schedules,
-                        investments = file.value.counts.investments
+                        investments = file.value.counts.investments,
+                        carryChains = file.value.counts.carryChains
                     )
                 )
             )
@@ -180,8 +184,14 @@ class BackupExport(
         }
         val preferences = portablePreferences()
         // The format keeps milliseconds; newer Android clocks give finer time.
-        val contents =
-            BackupContents(auditClock.now().truncatedTo(ChronoUnit.MILLIS), financial, preferences)
+        val contents = BackupContents(
+            exportedAt = auditClock.now().truncatedTo(ChronoUnit.MILLIS),
+            // The financial clock's month, not the audit clock's: a moved or sandbox clock
+            // differs from the real one, and chains are judged against the former.
+            financialMonth = YearMonth.from(financialClock.today.value.date),
+            financial = financial,
+            preferences = preferences
+        )
         return withContext(dispatchers.default) {
             when (val encoded = codec.encode(contents)) {
                 is Outcome.Success -> Outcome.Success(

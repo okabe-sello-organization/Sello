@@ -458,7 +458,8 @@ class RoomRestores(
                             incomes = database.incomeDao().count(),
                             goals = database.goalDao().count(),
                             schedules = database.scheduleDao().count(),
-                            investments = database.investmentDao().count()
+                            investments = database.investmentDao().count(),
+                            carryChains = database.carryChainDao().count()
                         )
                     )
                 )
@@ -620,7 +621,8 @@ internal fun FinancialSnapshot.summary() = BackupSummary(
     incomes = incomes.size,
     goals = goals.size,
     schedules = schedules.size,
-    investments = investments.size
+    investments = investments.size,
+    carryChains = carryChains.size
 )
 
 /** How a person is told why a file cannot be restored; the detail stays in the rejection. */

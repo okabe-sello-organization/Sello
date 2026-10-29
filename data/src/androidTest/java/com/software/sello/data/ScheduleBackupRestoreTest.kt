@@ -168,6 +168,7 @@ class ScheduleBackupRestoreTest {
         preferences,
         investments,
         { ledger.audit },
+        ledger.clock,
         dispatchers
     )
         .create().valueOrFail().bytes

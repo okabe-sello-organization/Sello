@@ -191,10 +191,21 @@ private fun contentsOf(file: BackupFileV6): BackupContents {
     val schedules = schedules(financial.schedules, categories)
     val handled = schedules.associate { it.schedule.id to it.handled }
     val exportedAt = instant(file.exportedAt, "exportedAt")
+    val financialMonth = when (val said = financial.financialMonth) {
+        // Only a file read from an older version leaves it out, and it has no chains.
+        null -> if (file.version.wholeNumberOrNull() == BackupFormat.VERSION) {
+            invalid("financial.financialMonth")
+        } else {
+            YearMonth.from(exportedAt.atZone(zone))
+        }
+
+        else -> month(said, "financial.financialMonth")
+    }
     val defaultLimits = defaultLimits(financial.defaultLimits, known)
     val monthLimits = monthLimits(financial.monthLimits, known)
     return BackupContents(
         exportedAt = exportedAt,
+        financialMonth = financialMonth,
         financial = FinancialSnapshot(
             zone = zone,
             revision = revision,
@@ -213,7 +224,7 @@ private fun contentsOf(file: BackupFileV6): BackupContents {
                 categories,
                 defaultLimits,
                 monthLimits,
-                YearMonth.from(exportedAt.atZone(zone))
+                financialMonth
             )
         ),
         preferences = file.preferences?.let(::preferences)
@@ -850,19 +861,21 @@ private fun usdRates(wire: List<UsdRateV4>): List<UsdRateEntry> {
  * answer. A month is checked where its base can change: the chain's first month, each
  * default's first month, each month with a limit of its own and the month after it. An
  * open chain reaches every later month, so the default in force after the last one, its
- * latest, is checked too (CP3). A chain Sello could not have written is
- * refused as well: one starting after the month the backup was made in (CP3), and an open one on
- * an archived category (CP9, CP11). A file holds no carry, so none is validated here; the
- * figures are worked out again from the records. They fit a signed `Long` whatever the
- * file says: the base is capped, and no more than 100,000 records of at most
- * 999.999.999.999 each are spent against it.
+ * latest, is checked too (CP3). A chain Sello could not have written is refused as well:
+ * one starting or ending after the financial month the file says it was made in (CP3,
+ * CP10), and an open one on an archived category (CP9, CP11). A file holds no carry, so
+ * none is validated here; the figures are worked out again from the records. They fit a
+ * signed `Long` whatever the file says: a month's base is at most 999.999.999.999, the
+ * months run from 0000-01 to 9999-12 (120,000), so the bases add up to at most
+ * 120,000 × 999.999.999.999, and at most 100,000 records of at most 999.999.999.999 each
+ * are spent against them: about 2.2 × 10^17, far below 9.2 × 10^18.
  */
 private fun carryChains(
     wire: List<CarryChainV6>,
     categories: List<Category>,
     defaults: List<DefaultLimit>,
     overrides: List<MonthLimit>,
-    exportMonth: YearMonth
+    financialMonth: YearMonth
 ): List<CarryChain> {
     val known = categories.mapTo(HashSet()) { it.id }
     val archived = categories.filter { it.archived }.mapTo(HashSet()) { it.id }
@@ -876,10 +889,12 @@ private fun carryChains(
         if (!starts.add(category to start)) reject(BackupRejection.DuplicateEntry("$path.start"))
         // A chain that ends in or before its start never existed: it is removed, not stored.
         val chain = CarryChain.of(category, start, end).or("$path.end")
-        // Sello writes neither: carry starts in the current month (CP3), and archiving
-        // ends the chain (CP9, CP11), so no file of Sello's can hold these.
-        if (start > exportMonth) {
-            reject(BackupRejection.InvalidChain(path, ChainFault.StartsAfterExport))
+        // Sello writes none of these: carry starts in the current month (CP3), a chain
+        // ends only by a command that drops its balance in the month it is given (CP9,
+        // CP10), and archiving ends the chain (CP11). The month the file was made in is
+        // the financial one, so neither the audit clock nor a moved clock misjudges it.
+        if (start > financialMonth || (end != null && end > financialMonth)) {
+            reject(BackupRejection.InvalidChain(path, ChainFault.AfterFinancialMonth))
         }
         if (end == null && category in archived) {
             reject(BackupRejection.InvalidChain(path, ChainFault.OpenOnArchivedCategory))

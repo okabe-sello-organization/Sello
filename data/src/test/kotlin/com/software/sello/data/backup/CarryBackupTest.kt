@@ -37,6 +37,7 @@ class CarryBackupTest {
     /** SC01's history as the app holds it after reading the file with the chain open. */
     private fun sc01(chains: List<CarryChain>) = BackupContents(
         exportedAt = at("2027-04-05T15:00:00Z"),
+        financialMonth = month("2027-04"),
         financial = g01().financial.copy(
             revision = 5,
             categories = listOf(
@@ -518,25 +519,96 @@ class CarryBackupTest {
     }
 
     @Test
-    fun `a chain that starts after the month the backup was made in is rejected`() {
-        val exported = "\"exportedAt\": \"2027-04-05T15:00:00Z\""
-        // Carry starts in the current month only, so the export month is the latest start.
+    fun `a chain that starts or ends after the financial month of the file is rejected`() {
+        // Carry starts in the current month only, and a chain ends by a command, not ahead.
         accepted(variant("\"start\": \"2027-01\"", "\"start\": \"2027-04\""))
         val later = variant("\"start\": \"2027-01\"", "\"start\": \"2027-05\"")
         for (file in listOf(later, later.replace("\"end\": null", "\"end\": \"2027-06\""))) {
-            assertEquals(invalid(chainPath, ChainFault.StartsAfterExport), rejection(file))
+            assertEquals(invalid(chainPath, ChainFault.AfterFinancialMonth), rejection(file))
         }
-        // 3 h UTC on 1 may is still 30 abr in the financial zone, America/Bogota.
-        val lateApril = variant(exported, "\"exportedAt\": \"2027-05-01T03:00:00Z\"")
-        accepted(lateApril)
+        // R1: a chain ended in sep 2027 in a file made in abr 2027 would drop its balance
+        // by itself, with no confirmation: it is refused. Ending in the month is allowed.
         assertEquals(
-            invalid(chainPath, ChainFault.StartsAfterExport),
-            rejection(lateApril.replace("\"start\": \"2027-01\"", "\"start\": \"2027-05\""))
+            invalid(chainPath, ChainFault.AfterFinancialMonth),
+            rejection(variant("\"end\": \"2027-04\"", "\"end\": \"2027-09\"", ended))
         )
-        accepted(
-            variant(exported, "\"exportedAt\": \"2027-05-01T05:00:00Z\"")
-                .replace("\"start\": \"2027-01\"", "\"start\": \"2027-05\"")
+        assertEquals(
+            invalid(chainPath, ChainFault.AfterFinancialMonth),
+            rejection(variant("\"end\": null", "\"end\": \"2027-05\""))
         )
+        accepted(ended)
+    }
+
+    @Test
+    fun `the financial month decides, not the audit time the file was made at`() {
+        val audit = "\"exportedAt\": \"2027-04-05T15:00:00Z\""
+        // Made at 2026-10 by the audit clock, in the financial month 2027-04: accepted.
+        accepted(variant(audit, "\"exportedAt\": \"2026-10-09T15:04:05.678Z\""))
+        // The same chain with a financial month before it: refused whatever the audit says.
+        val earlier = variant("\"financialMonth\": \"2027-04\"", "\"financialMonth\": \"2026-12\"")
+        assertEquals(invalid(chainPath, ChainFault.AfterFinancialMonth), rejection(earlier))
+        // A file made late in the evening of 30 abr in Bogota, already 1 may in UTC, is abr.
+        accepted(variant(audit, "\"exportedAt\": \"2027-05-01T03:00:00Z\""))
+    }
+
+    @Test
+    fun `a sandbox history with the financial clock ahead of the audit clock round-trips`() {
+        // Financial clock jun 2027, audit clock oct 2026: a chain starts in jun 2027.
+        val contents = sc01(listOf(chain("2027-06"))).copy(
+            exportedAt = at("2026-10-09T15:04:05.678Z"),
+            financialMonth = month("2027-06")
+        )
+
+        val written = String(accepting.encode(contents).value())
+
+        assertTrue(written.contains("\"financialMonth\": \"2027-06\""))
+        assertTrue(written.contains("\"exportedAt\": \"2026-10-09T15:04:05.678Z\""))
+        assertEquals(contents, accepted(written).contents)
+    }
+
+    @Test
+    fun `a clock moved back still writes a month no chain passes`() {
+        // The clock reads mar 2027 but a chain began in apr and one ended in may: the file
+        // says may, the latest month any chain names, so Sello reads back what it wrote.
+        val contents = sc01(listOf(chain("2027-04", "2027-05"))).copy(
+            financialMonth = month("2027-03")
+        )
+
+        val written = String(accepting.encode(contents).value())
+
+        assertTrue(written.contains("\"financialMonth\": \"2027-05\""))
+        assertEquals(
+            contents.copy(financialMonth = month("2027-05")),
+            accepted(written).contents
+        )
+    }
+
+    @Test
+    fun `a version 6 file must say a valid financial month`() {
+        val said = "    \"financialMonth\": \"2027-04\",\n"
+        val without = variant(said, "")
+        assertTrue(rejection(without) is BackupRejection.Malformed)
+        for (text in listOf("\"2027-13\"", "\"2027-4\"", "\"2027-04-01\"", "\"\"", "null")) {
+            assertEquals(
+                text,
+                BackupRejection.InvalidValue("financial.financialMonth"),
+                rejection(variant("\"financialMonth\": \"2027-04\"", "\"financialMonth\": $text"))
+            )
+        }
+        assertTrue(
+            rejection(variant("\"financialMonth\": \"2027-04\"", "\"financialMonth\": 202704"))
+                is BackupRejection.Malformed
+        )
+    }
+
+    @Test
+    fun `an older file has no financial month, and one written into it is malformed`() {
+        val older = variant("\"version\": 6,", "\"version\": 5,")
+
+        assertTrue(rejection(older) is BackupRejection.Malformed)
+        // Read from its own version, the month is that of its export in its zone.
+        val plan = accepting.read(resource("valid-g01-v5.json")).value()
+        assertEquals(month("2026-10"), plan.contents.financialMonth)
     }
 
     @Test

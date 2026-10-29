@@ -15,6 +15,7 @@ import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.port.StoredSchedule
 import java.time.Instant
+import java.time.YearMonth
 import java.time.ZoneId
 
 /**
@@ -80,7 +81,14 @@ data class PortablePreferences(
  * up: the money is what matters, so the file is still made, and says so.
  */
 data class BackupContents(
+    /** When the backup was made, by the audit clock: informative, never a financial month. */
     val exportedAt: Instant,
+    /**
+     * The financial month the backup was made in, by the financial clock (ADR 0020 CP24),
+     * never later than which a chain starts or ends. Version 6 files say it; an older file
+     * has no chains and reads as the month of [exportedAt] in its zone.
+     */
+    val financialMonth: YearMonth,
     val financial: FinancialSnapshot,
     val preferences: PortablePreferences?
 )
@@ -189,8 +197,11 @@ enum class ChainFault {
     /** An open chain on an archived category: archiving ends a chain (CP11). */
     OpenOnArchivedCategory,
 
-    /** It starts after the month the backup was made in: carry starts in the current month (CP3). */
-    StartsAfterExport
+    /**
+     * It starts or ends after the financial month the file says it was made in: carry
+     * starts in the current month (CP3) and a chain ends by a command, never ahead of time.
+     */
+    AfterFinancialMonth
 }
 
 /** Whether a codec accepts a backup in which categories carry their balance (CP26). */

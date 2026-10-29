@@ -137,6 +137,7 @@ class RestoreCommandContractTest {
     private fun g01(preferences: PortablePreferences? = wanted) = BackupCodec().encode(
         BackupContents(
             exportedAt = Instant.parse("2026-10-22T14:30:00Z"),
+            financialMonth = YearMonth.of(2026, 10),
             financial = FinancialSnapshot(
                 zone = lima,
                 revision = 9,

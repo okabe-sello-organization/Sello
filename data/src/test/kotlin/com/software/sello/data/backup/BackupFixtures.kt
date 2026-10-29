@@ -114,6 +114,7 @@ val darkVioletaAlphabetical = PortablePreferences(
 /** G01: 10,000 + 15,000 + 5,000 spent against 100,000, and 200,000 of income. */
 fun g01() = BackupContents(
     exportedAt = at("2026-10-22T14:30:00Z"),
+    financialMonth = YearMonth.of(2026, 10),
     financial = FinancialSnapshot(
         zone = ZoneId.of("America/Bogota"),
         revision = 9,
@@ -206,7 +207,12 @@ fun version4AsVersion6(version4: String): String {
 fun version5AsVersion6(version5: String): String {
     val closing = "\n  },\n  \"preferences\""
     check(version5.split(closing).size == 2 && version5.contains("\"version\": 5,"))
+    // An older file says no financial month: it reads as the month of its export in its zone.
+    val exported = Regex("\"exportedAt\": \"([^\"]+)\"").find(version5)!!.groupValues[1]
+    val zone = Regex("    \"zone\": \"([^\"]+)\",\n").find(version5)!!
+    val month = YearMonth.from(Instant.parse(exported).atZone(ZoneId.of(zone.groupValues[1])))
     return version5.replace("\"version\": 5,", "\"version\": 6,")
+        .replace(zone.value, "${zone.value}    \"financialMonth\": \"$month\",\n")
         .replace(closing, ",\n    \"carryChains\": []$closing")
 }
 
