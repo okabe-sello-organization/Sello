@@ -24,6 +24,7 @@ import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.SnapshotState
@@ -400,7 +401,7 @@ class LimitSheetViewModelTest {
         val sheet = opened()
         sheet.type(150_000)
 
-        snapshots.of(october).value = SnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
 
         val state = sheet.state.value
         assertEquals(emptyList<LimitChip>(), state.chips)

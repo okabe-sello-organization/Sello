@@ -5,6 +5,7 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import java.time.YearMonth
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -120,7 +121,7 @@ class MonthlySnapshotPlacementTest {
         computation.release()
         withTimeout(10_000) { watching.join() }
 
-        assertEquals(listOf<SnapshotState>(SnapshotState.Loading), seen.toList())
+        assertEquals(listOf<SnapshotState>(ReadState.Loading), seen.toList())
         assertTrue(computation.staysIdle())
     }
 }

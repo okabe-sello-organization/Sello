@@ -11,6 +11,7 @@ import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.DeleteResult
@@ -131,11 +132,11 @@ class CategoryExpensesViewModel(
 
     private fun load(request: Request, snapshot: SnapshotState, count: Int) = flow {
         val id = (request.id?.let(CategoryId::of) as? Outcome.Success)?.value
-        val budget = (snapshot as? SnapshotState.Ready)?.snapshot
+        val budget = (snapshot as? ReadState.Ready)?.value
         if (id == null || budget == null) {
             versions = emptyMap()
             emit(
-                if (snapshot is SnapshotState.Failed ||
+                if (snapshot is ReadState.Failed ||
                     id == null
                 ) {
                     CategoryExpensesState.Failed

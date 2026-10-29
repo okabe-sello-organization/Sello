@@ -17,6 +17,7 @@ import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.SnapshotState
@@ -172,7 +173,7 @@ class ExpenseFormViewModelTest {
     fun whenTheCategoriesCannotBeReadItSaysSoAndCanBeRetried() {
         val form = form()
         val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
-        snapshots.of(october).value = SnapshotState.Failed(failure, lastGood = null)
+        snapshots.of(october).value = ReadState.Failed(failure, lastGood = null)
         val failed = form.now
 
         form.onAction(ExpenseEntryAction.Retry)

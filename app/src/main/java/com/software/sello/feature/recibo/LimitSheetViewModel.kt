@@ -20,6 +20,7 @@ import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
@@ -183,7 +184,7 @@ class LimitSheetViewModel(
         watching?.cancel()
         watching = viewModelScope.launch {
             snapshots.observe(month).collect { observed ->
-                snapshot = (observed as? SnapshotState.Ready)?.snapshot
+                snapshot = (observed as? ReadState.Ready)?.value
                 render()
             }
         }

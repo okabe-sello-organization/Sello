@@ -43,6 +43,7 @@ import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
@@ -153,9 +154,9 @@ class TimeControlsJourneyTest {
         assertEquals(LocalDate.of(2026, 11, 1), graph.koin.get<FinancialClock>().today.value.date)
         assertEquals(YearMonth.of(2026, 11), withTimeout(5_000) { session.currentMonth.first() })
         val november = withTimeout(5_000) {
-            snapshots.observe(YearMonth.of(2026, 11)).first { it is SnapshotState.Ready }
-        } as SnapshotState.Ready
-        assertEquals(LocalDate.of(2026, 11, 1), november.snapshot.asOf)
+            snapshots.observe(YearMonth.of(2026, 11)).first { it is ReadState.Ready }
+        } as ReadState.Ready
+        assertEquals(LocalDate.of(2026, 11, 1), november.value.asOf)
         assertEquals(LocalDate.of(2026, 11, 1), store.session.date)
     }
 

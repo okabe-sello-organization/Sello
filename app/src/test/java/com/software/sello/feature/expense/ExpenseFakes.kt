@@ -129,16 +129,16 @@ class HandSnapshots : MonthlySnapshots {
     val observed = mutableListOf<YearMonth>()
     private val states = mutableMapOf<YearMonth, MutableStateFlow<SnapshotState>>()
 
-    fun of(month: YearMonth) = states.getOrPut(month) { MutableStateFlow(SnapshotState.Loading) }
+    fun of(month: YearMonth) = states.getOrPut(month) { MutableStateFlow(ReadState.Loading) }
 
     fun ready(snapshot: MonthlySnapshot) {
-        of(snapshot.month).value = SnapshotState.Ready(snapshot)
+        of(snapshot.month).value = ReadState.Ready(snapshot)
     }
 
     /** One read: the month as it was last published, or a failure when it never was. */
     override suspend fun read(month: YearMonth): Outcome<MonthlySnapshot, SnapshotFailure> =
         when (val state = of(month).value) {
-            is SnapshotState.Ready -> Outcome.Success(state.snapshot)
+            is ReadState.Ready -> Outcome.Success(state.value)
             else -> Outcome.Failure(SnapshotFailure.Storage(StorageFailure.Unavailable("unread")))
         }
 

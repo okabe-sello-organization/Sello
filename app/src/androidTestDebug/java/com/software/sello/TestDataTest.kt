@@ -2,11 +2,12 @@ package com.software.sello
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.domain.model.CorrectionAnnouncementPreference
+import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.port.CorrectionAnnouncementPreferences
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
-import com.software.sello.domain.port.SnapshotState
+import com.software.sello.domain.port.ReadState
 import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -95,19 +96,19 @@ class TestDataTest {
         TestData.reset()
         TestCommands.createCategory("Hogar", 900_000)
         // One observer the whole time, as a screen keeps it: it hears changes or nothing.
-        val shown = MutableStateFlow<SnapshotState.Ready?>(null)
+        val shown = MutableStateFlow<ReadState.Ready<MonthlySnapshot>?>(null)
         val watching = launch(Dispatchers.Default) {
             TestCommands.koin.get<MonthlySnapshots>()
                 .observe(YearMonth.from(TestCommands.today))
-                .filterIsInstance<SnapshotState.Ready>()
+                .filterIsInstance<ReadState.Ready<MonthlySnapshot>>()
                 .collect { shown.value = it }
         }
-        withTimeout(PATIENCE) { shown.first { it?.snapshot?.categories?.size == 1 } }
+        withTimeout(PATIENCE) { shown.first { it?.value?.categories?.size == 1 } }
 
         TestData.reset()
 
         // Written behind Room's back, the month would keep showing Hogar.
-        withTimeout(PATIENCE) { shown.first { it?.snapshot?.categories?.isEmpty() == true } }
+        withTimeout(PATIENCE) { shown.first { it?.value?.categories?.isEmpty() == true } }
         watching.cancel()
     }
 

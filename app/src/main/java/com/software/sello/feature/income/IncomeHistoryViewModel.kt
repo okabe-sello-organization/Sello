@@ -133,7 +133,7 @@ class IncomeHistoryViewModel(
     /** Null while it is read, or when it could not be: never shown as zero. */
     val split: StateFlow<IncomeSplit?> = session.selectedMonth
         .flatMapLatest(snapshots::observe)
-        .map { read -> (read as? ResumenSnapshotState.Ready)?.snapshot?.let(::split) }
+        .map { read -> (read as? ReadState.Ready)?.value?.let(::split) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private fun split(summary: ResumenSnapshot): IncomeSplit {
@@ -197,9 +197,9 @@ class IncomeHistoryViewModel(
         val expected = IncomePlanPolicy.expected(schedules.schedules, month)
         if (expected.isEmpty()) return IncomePlanState.None
         val read = when (summary) {
-            ResumenSnapshotState.Loading -> return null
-            is ResumenSnapshotState.Failed -> return IncomePlanState.Failed
-            is ResumenSnapshotState.Ready -> summary.snapshot
+            ReadState.Loading -> return null
+            is ReadState.Failed -> return IncomePlanState.Failed
+            is ReadState.Ready -> summary.value
         }
         if (read.budget.generation != schedules.generation ||
             read.budget.revision != schedules.revision

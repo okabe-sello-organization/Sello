@@ -24,6 +24,7 @@ import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PauseSchedule
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ResumeSchedule
 import com.software.sello.domain.port.ScheduleCommand
@@ -111,7 +112,7 @@ class ScheduleEditorViewModel(
         clock.today.map { YearMonth.from(it.date) }.distinctUntilChanged(),
         progress.map { it.attempt }.distinctUntilChanged()
     ) { month, _ -> month }.flatMapLatest(snapshots::observe)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, SnapshotState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     val state: StateFlow<ScheduleEditorState> =
         combine(progress, month, clock.today, draft, writing) { progress, month, today, _, _ ->
@@ -385,7 +386,7 @@ class ScheduleEditorViewModel(
 
     private fun change(now: ScheduleEditorState) {
         val stored = progress.value.stored ?: return
-        val snapshot = (month.value as? SnapshotState.Ready)?.snapshot ?: return
+        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         val entry = entry(stored) ?: return
         val rule = repeat.choice?.rule() ?: return
         val start = start(stored, now.today)
@@ -406,7 +407,7 @@ class ScheduleEditorViewModel(
 
     private fun send(change: ScheduleChange) {
         val stored = progress.value.stored ?: return
-        val snapshot = (month.value as? SnapshotState.Ready)?.snapshot ?: return
+        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         val operation = newOperation(change)
         val id = stored.schedule.id
         val generation = snapshot.generation
@@ -515,7 +516,7 @@ class ScheduleEditorViewModel(
         today: LocalDate
     ): ScheduleEditorState {
         val stored = progress.stored
-        val snapshot = (month as? SnapshotState.Ready)?.snapshot
+        val snapshot = (month as? ReadState.Ready)?.value
         val payment = stored?.schedule?.entry as? ScheduledEntry.Payment
         val categories = snapshot?.categories.orEmpty()
             .map { it.category }
@@ -544,8 +545,8 @@ class ScheduleEditorViewModel(
         val repeatUi = repeat.ui(maxOf(start ?: today, today))
         return ScheduleEditorState(
             loading = !progress.loadFailed && progress.error == null &&
-                (stored == null || month is SnapshotState.Loading),
-            loadFailed = progress.loadFailed || month is SnapshotState.Failed,
+                (stored == null || month is ReadState.Loading),
+            loadFailed = progress.loadFailed || month is ReadState.Failed,
             income = stored?.schedule?.entry is ScheduledEntry.Income,
             amount = valid?.let { money.format(it.money) },
             amountText = (amount as? AmountDraft.Rejected)?.original,

@@ -14,14 +14,8 @@ sealed interface ScheduleRecord {
     data class Earning(val income: Income) : ScheduleRecord
 }
 
-sealed interface ScheduleRecordsState {
-    data object Loading : ScheduleRecordsState
-
-    data class Ready(val records: List<ScheduleRecord>) : ScheduleRecordsState
-
-    /** Never shown as nothing recorded. */
-    data class Failed(val failure: StorageFailure) : ScheduleRecordsState
-}
+/** Never shown as nothing recorded. */
+typealias ScheduleRecordsState = ReadState<List<ScheduleRecord>, StorageFailure>
 
 /**
  * What catch-up recorded since the notice was last dismissed (recurrence-examples rule

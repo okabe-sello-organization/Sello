@@ -157,9 +157,9 @@ class SchedulesViewModel(
             is ReadState.Ready -> book.value.schedules
         }
         val snapshot = when (month) {
-            SnapshotState.Loading -> return SchedulesState.Loading
-            is SnapshotState.Failed -> return SchedulesState.Failed
-            is SnapshotState.Ready -> month.snapshot
+            ReadState.Loading -> return SchedulesState.Loading
+            is ReadState.Failed -> return SchedulesState.Failed
+            is ReadState.Ready -> month.value
         }
         val categories = snapshot.categories.associateBy { it.category.id }
         val current = YearMonth.from(today)

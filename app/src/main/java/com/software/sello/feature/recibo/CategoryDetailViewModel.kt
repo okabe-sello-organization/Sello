@@ -13,6 +13,7 @@ import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpensePage
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.DeleteResult
@@ -172,9 +173,9 @@ class CategoryDetailViewModel(
         insights: CategoryInsightsState
     ): Flow<CategoryDetailState> {
         val (snapshot, stale) = when (state) {
-            SnapshotState.Loading -> return flowOf(CategoryDetailState.Loading)
-            is SnapshotState.Ready -> state.snapshot to false
-            is SnapshotState.Failed -> (state.lastGood ?: return flowOf(Failed)) to true
+            ReadState.Loading -> return flowOf(CategoryDetailState.Loading)
+            is ReadState.Ready -> state.value to false
+            is ReadState.Failed -> (state.lastGood ?: return flowOf(Failed)) to true
         }
         val line = render.categories(snapshot).firstOrNull { it.id == shown.categoryId }
             ?: return flowOf(CategoryDetailState.Gone)
@@ -185,20 +186,20 @@ class CategoryDetailViewModel(
             stale = stale,
             canRecord = !line.archived && snapshot.month == YearMonth.from(snapshot.asOf),
             insights = when (insights) {
-                CategoryInsightsState.Loading -> DetailInsightsState.Loading
+                ReadState.Loading -> DetailInsightsState.Loading
 
-                is CategoryInsightsState.Failed -> DetailInsightsState.Failed
+                is ReadState.Failed -> DetailInsightsState.Failed
 
-                is CategoryInsightsState.Ready -> {
-                    val other = insights.snapshot.budget
-                    if (insights.snapshot.categoryId == id &&
+                is ReadState.Ready -> {
+                    val other = insights.value.budget
+                    if (insights.value.categoryId == id &&
                         other.generation == snapshot.generation &&
                         other.revision == snapshot.revision &&
                         other.asOf == snapshot.asOf && other.zone == snapshot.zone &&
                         other.month == snapshot.month
                     ) {
                         DetailInsightsState.Ready(
-                            CategoryInsightsRenderModel(money).render(insights.snapshot)
+                            CategoryInsightsRenderModel(money).render(insights.value)
                         )
                     } else {
                         DetailInsightsState.Loading

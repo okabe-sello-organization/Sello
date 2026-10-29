@@ -220,7 +220,7 @@ class SchedulesViewModelTest {
         reads.state.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val schedulesFailed = model.state.value
         publish(rent)
-        snapshots.of(october).value = SnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
         val categoriesFailed = model.state.value
         categories()
         model.onAction(SchedulesAction.Retry)

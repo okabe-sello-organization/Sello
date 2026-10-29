@@ -22,6 +22,7 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
@@ -62,7 +63,7 @@ class ReciboViewModelTest {
         val states = mutableMapOf<YearMonth, MutableStateFlow<SnapshotState>>()
 
         fun of(month: YearMonth) = states.getOrPut(month) {
-            MutableStateFlow(SnapshotState.Loading)
+            MutableStateFlow(ReadState.Loading)
         }
 
         override suspend fun read(month: YearMonth): Outcome<MonthlySnapshot, SnapshotFailure> =
@@ -139,7 +140,7 @@ class ReciboViewModelTest {
     fun aMonthWithNoCategoriesIsTheFirstRunNotZeroSpending() = runTest {
         val (viewModel) = started()
 
-        snapshots.of(october).value = SnapshotState.Ready(snapshot(october, 0, categories = 0))
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 0))
 
         assertEquals(ReciboState.FirstRun, viewModel.state.value)
     }
@@ -147,7 +148,7 @@ class ReciboViewModelTest {
     @Test
     fun aMonthIsShownThroughTheSharedRenderModelWithItsExactTotal() = runTest {
         val (viewModel) = started()
-        val read = SnapshotState.Ready(snapshot(october, 3_000_001_199_997, categories = 2))
+        val read = ReadState.Ready(snapshot(october, 3_000_001_199_997, categories = 2))
 
         snapshots.of(october).value = read
 
@@ -169,9 +170,9 @@ class ReciboViewModelTest {
         val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
 
         snapshots.of(october).value =
-            SnapshotState.Failed(failure, lastGood = snapshot(october, 5_000, categories = 1))
+            ReadState.Failed(failure, lastGood = snapshot(october, 5_000, categories = 1))
         val withOlder = viewModel.state.value
-        snapshots.of(october).value = SnapshotState.Failed(failure, lastGood = null)
+        snapshots.of(october).value = ReadState.Failed(failure, lastGood = null)
 
         assertEquals(true, (withOlder as ReciboState.Month).stale)
         assertEquals(ReciboState.Failed, viewModel.state.value)
@@ -181,10 +182,10 @@ class ReciboViewModelTest {
     fun retryObservesTheSameMonthAgain() = runTest {
         val (viewModel) = started()
         val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
-        snapshots.of(october).value = SnapshotState.Failed(failure, lastGood = null)
+        snapshots.of(october).value = ReadState.Failed(failure, lastGood = null)
 
         viewModel.onAction(ReciboAction.Retry)
-        snapshots.of(october).value = SnapshotState.Ready(snapshot(october, 0, categories = 0))
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 0, categories = 0))
 
         assertEquals(listOf(october, october), snapshots.observed)
         assertEquals(ReciboState.FirstRun, viewModel.state.value)
@@ -193,8 +194,8 @@ class ReciboViewModelTest {
     @Test
     fun selectingAnotherMonthShowsThatMonth() = runTest {
         val (viewModel) = started()
-        snapshots.of(october).value = SnapshotState.Ready(snapshot(october, 9_000, categories = 1))
-        snapshots.of(august).value = SnapshotState.Ready(snapshot(august, 0, categories = 0))
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 9_000, categories = 1))
+        snapshots.of(august).value = ReadState.Ready(snapshot(august, 0, categories = 0))
 
         session.select(august)
 
@@ -206,7 +207,7 @@ class ReciboViewModelTest {
     fun theMonthChangeMovesRecibotoTheNewMonth() = runTest {
         val (viewModel) = started()
         val november = YearMonth.of(2026, 11)
-        snapshots.of(november).value = SnapshotState.Ready(snapshot(november, 1, categories = 1))
+        snapshots.of(november).value = ReadState.Ready(snapshot(november, 1, categories = 1))
 
         clock.goTo("2026-11-01")
 
@@ -227,7 +228,7 @@ class ReciboViewModelTest {
                 base.categories[1].copy(expenseCount = 2)
             )
         )
-        snapshots.of(october).value = SnapshotState.Ready(ordered)
+        snapshots.of(october).value = ReadState.Ready(ordered)
 
         assertEquals(
             listOf("00000000-0000-4000-8000-000000000001", "00000000-0000-4000-8000-000000000000"),

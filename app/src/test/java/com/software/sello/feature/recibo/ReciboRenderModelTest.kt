@@ -14,6 +14,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.policy.MonthlyBudgetPolicy
 import com.software.sello.domain.port.FinancialDay
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
@@ -74,7 +75,7 @@ class ReciboRenderModelTest {
 
     @Test
     fun theMonthInProgressSaysWhatIsLeftWithItsVerdictDaysAndDailyAmount() {
-        val state = shown(SnapshotState.Ready(monthOf("2026-10-23", everything, october())))
+        val state = shown(ReadState.Ready(monthOf("2026-10-23", everything, october())))
 
         // Limits 900.000 + 300.000 + 200.000 + 100.000 = 1.500.000. Spent 612.400 +
         // 100.000 + 145.000 + 121.500 + 40.000 = 1.018.900. Left 481.100; over nine
@@ -93,7 +94,7 @@ class ReciboRenderModelTest {
 
     @Test
     fun categoriesComeMostUsedFirstWithUnlimitedLastAndEachOwnExactFigures() {
-        val state = shown(SnapshotState.Ready(monthOf("2026-10-23", everything, october())))
+        val state = shown(ReadState.Ready(monthOf("2026-10-23", everything, october())))
 
         assertEquals(
             listOf("Café", "Alimentación", "Entretenimiento", "Transporte", "Arte"),
@@ -154,7 +155,7 @@ class ReciboRenderModelTest {
         val untouched = categoryIn(7, "Sin tocar", 50_000)
         val rows = october() + spent(6, "2026-10", 1_000)
         val state = shown(
-            SnapshotState.Ready(monthOf("2026-10-23", everything + nothing + untouched, rows))
+            ReadState.Ready(monthOf("2026-10-23", everything + nothing + untouched, rows))
         )
         val fill = state.categories.associate { it.name to it.fraction }
 
@@ -170,12 +171,12 @@ class ReciboRenderModelTest {
     fun aFinishedMonthShowsWhatWasLeftSignedAndWhatItSpentOfItsLimitButNothingPerDay() {
         val september = YearMonth.of(2026, 9)
         val within = shown(
-            SnapshotState.Ready(
+            ReadState.Ready(
                 monthOf("2026-10-23", listOf(food, coffee), spent(1, "2026-09", 700_000), september)
             )
         )
         val over = shown(
-            SnapshotState.Ready(
+            ReadState.Ready(
                 monthOf(
                     "2026-10-23",
                     listOf(food, coffee),
@@ -216,7 +217,7 @@ class ReciboRenderModelTest {
     @Test
     fun spendingExactlyTheLimitLeavesZeroAndIsNotOver() {
         val state = shown(
-            SnapshotState.Ready(
+            ReadState.Ready(
                 monthOf(
                     "2026-10-23",
                     listOf(coffee),
@@ -242,7 +243,7 @@ class ReciboRenderModelTest {
     @Test
     fun spendingExactlyTheLimitThisMonthIsAlLimiteWithNothingLeftPerDay() {
         val state = shown(
-            SnapshotState.Ready(monthOf("2026-10-23", listOf(coffee), spent(2, "2026-10", 300_000)))
+            ReadState.Ready(monthOf("2026-10-23", listOf(coffee), spent(2, "2026-10", 300_000)))
         )
 
         assertEquals(
@@ -276,7 +277,7 @@ class ReciboRenderModelTest {
     @Test
     fun anOverspentMonthInProgressShowsAMinusAndStillSaysZeroForItsLastDay() {
         val state = shown(
-            SnapshotState.Ready(
+            ReadState.Ready(
                 monthOf("2026-10-31", listOf(coffee), spent(2, "2026-10", 300_001))
             )
         )
@@ -296,7 +297,7 @@ class ReciboRenderModelTest {
     @Test
     fun withNoLimitAnywhereItSaysWhatWasSpentAndJudgesNothing() {
         val state = shown(
-            SnapshotState.Ready(monthOf("2026-10-23", listOf(art), spent(5, "2026-10", 80_000)))
+            ReadState.Ready(monthOf("2026-10-23", listOf(art), spent(5, "2026-10", 80_000)))
         )
 
         assertEquals(
@@ -311,7 +312,7 @@ class ReciboRenderModelTest {
             .copy(state = MonthBudgetState.Paused)
         val unset = categoryIn(9, "Nueva", null).copy(state = MonthBudgetState.Unconfigured)
         val state = shown(
-            SnapshotState.Ready(
+            ReadState.Ready(
                 monthOf("2026-10-23", listOf(paused, unset), spent(8, "2026-10", 7_000))
             )
         )
@@ -330,7 +331,7 @@ class ReciboRenderModelTest {
     fun amountsTooLargeForAnyScreenAreStillWholeAndExact() {
         val huge = categoryIn(1, "Grande", 9_000_000_000_000_000)
         val state = shown(
-            SnapshotState.Ready(
+            ReadState.Ready(
                 monthOf(
                     "2026-10-31",
                     listOf(huge),
@@ -346,10 +347,10 @@ class ReciboRenderModelTest {
 
     @Test
     fun nothingReadYetIsLoadingAndAMonthWithoutCategoriesIsTheFirstRun() {
-        assertEquals(ReciboState.Loading, render.recibo(SnapshotState.Loading))
+        assertEquals(ReciboState.Loading, render.recibo(ReadState.Loading))
         assertEquals(
             ReciboState.FirstRun,
-            render.recibo(SnapshotState.Ready(monthOf("2026-10-23", emptyList())))
+            render.recibo(ReadState.Ready(monthOf("2026-10-23", emptyList())))
         )
     }
 
@@ -358,11 +359,11 @@ class ReciboRenderModelTest {
         val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
         val earlier = monthOf("2026-10-23", everything, october())
 
-        val first = render.recibo(SnapshotState.Failed(failure, lastGood = null))
-        val later = render.recibo(SnapshotState.Failed(failure, lastGood = earlier))
+        val first = render.recibo(ReadState.Failed(failure, lastGood = null))
+        val later = render.recibo(ReadState.Failed(failure, lastGood = earlier))
 
         assertEquals(ReciboState.Failed, first)
-        assertEquals(shown(SnapshotState.Ready(earlier)).copy(stale = true), later)
+        assertEquals(shown(ReadState.Ready(earlier)).copy(stale = true), later)
         assertEquals(true, (later as ReciboState.Month).stale)
     }
 
@@ -370,7 +371,7 @@ class ReciboRenderModelTest {
     fun onlyAMonthInProgressThatIsExcedidoOffersToAdjustTheBudget() {
         val september = YearMonth.of(2026, 9)
         fun adjustable(today: String, rows: List<Expense>, month: YearMonth? = null) = shown(
-            SnapshotState.Ready(
+            ReadState.Ready(
                 if (month == null) {
                     monthOf(today, listOf(coffee, art), rows)
                 } else {
@@ -397,7 +398,7 @@ class ReciboRenderModelTest {
         // Café keeps 50.000 of its 300.000, but 300.000 more went to Arte, which has no
         // limit: 550.000 against 300.000 overall. No single category is over.
         val state = shown(
-            SnapshotState.Ready(
+            ReadState.Ready(
                 monthOf(
                     "2026-10-23",
                     listOf(coffee, art),
@@ -413,7 +414,7 @@ class ReciboRenderModelTest {
     @Test
     fun withNoLimitThereIsNothingToAdjust() {
         val state = shown(
-            SnapshotState.Ready(monthOf("2026-10-23", listOf(art), spent(5, "2026-10", 80_000)))
+            ReadState.Ready(monthOf("2026-10-23", listOf(art), spent(5, "2026-10", 80_000)))
         )
 
         assertEquals(false, state.summary.adjustable)
@@ -443,7 +444,7 @@ class ReciboRenderModelTest {
                 reserved
             ) as Outcome.Success
             ).value
-        return shown(SnapshotState.Ready(snapshot)).summary
+        return shown(ReadState.Ready(snapshot)).summary
     }
 
     @Test

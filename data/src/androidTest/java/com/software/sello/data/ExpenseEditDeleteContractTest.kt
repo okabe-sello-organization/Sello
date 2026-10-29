@@ -19,6 +19,7 @@ import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.domain.port.UndoOffer
@@ -570,11 +571,11 @@ class ExpenseEditDeleteContractTest {
             ledger.snapshots.observe(october).collect { states.send(it) }
         }
         suspend fun spentAt(revision: Long): Money = withTimeout(15_000) {
-            var ready = states.receive() as? SnapshotState.Ready
-            while (ready?.snapshot?.revision != revision) {
-                ready = states.receive() as? SnapshotState.Ready
+            var ready = states.receive() as? ReadState.Ready
+            while (ready?.value?.revision != revision) {
+                ready = states.receive() as? ReadState.Ready
             }
-            ready.snapshot.spent
+            ready.value.spent
         }
         val recordedTotal = spentAt(2)
 
