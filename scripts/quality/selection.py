@@ -10,17 +10,16 @@ import re
 import subprocess
 
 # Modules with a device suite, in run order.
-MODULES = ("data", "design-system", "app", "catalog")
+MODULES = ("data", "design-system", "app")
 # A module's main sources reach the device suites of every module that consumes it.
 DEPENDENTS = {
     "domain": ("data", "app"),
     "data": ("data", "app"),
-    "design-system": ("design-system", "app", "catalog"),
+    "design-system": ("design-system", "app"),
     "app": ("app",),
-    "catalog": ("catalog",),
 }
 # Hosted device groups and the modules each runs; gates.DEVICE_GROUPS holds the shards.
-GROUPS = {"app-1": ("app",), "app-2": ("app",), "support": ("data", "design-system", "catalog")}
+GROUPS = {"app-1": ("app",), "app-2": ("app",), "support": ("data", "design-system")}
 DOCUMENT_SUFFIXES = (".md", ".txt", ".html", ".css", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".csv", ".json")
 # The scripts a device job executes: a change to them is tested on the device jobs too.
 DEVICE_SCRIPTS = (

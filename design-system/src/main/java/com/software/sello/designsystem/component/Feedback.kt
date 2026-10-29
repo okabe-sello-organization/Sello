@@ -198,8 +198,7 @@ fun ChoiceSlip(
     Dialog(onDismissRequest = { if (!busy) onBack() }) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
-        // The dialog's own window would take the system's text size; keep the caller's,
-        // as the catalog's font control sets it.
+        // The dialog's own window would take the system's text size; keep the caller's.
         CompositionLocalProvider(LocalDensity provides density) {
             Slip(
                 pinked = false,

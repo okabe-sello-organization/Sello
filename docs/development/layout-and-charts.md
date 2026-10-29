@@ -59,8 +59,8 @@ Resumen, Metas, Inversiones) with the Anotar dock above them; its
 - A `ChartPoint` carries an `id`, a `value` used only for geometry, and `spoken`, the
   mark in words with its exact amount. A selection reports the `id`; the app looks the
   amount up and shows it with `MoneyText`; screens place it in their own heading, and
-  `SlipHeading` (a small question over a large answer) is available for that but only
-  the catalog uses it today. Nothing is read back from
+  `SlipHeading` (a small question over a large answer) is available for that.
+  Nothing is read back from
   a pixel or a height, so two amounts that draw identically stay distinct.
 - Every mark is a selectable item with its `spoken` text, and the chart has a `summary`,
   so charts work with a screen reader, keyboard and Switch Access.

@@ -71,19 +71,12 @@ committed to the project.
 | `:data` | Android library + KSP, `com.software.sello.data` | `:domain` | `:data:testDebugUnitTest` | `:data:connectedDebugAndroidTest` |
 | `:design-system` | Android library + Compose, `com.software.sello.designsystem` | none | `:design-system:testDebugUnitTest` | `:design-system:connectedDebugAndroidTest` |
 | `:app` | Android application, `com.software.sello` | `:domain`, `:design-system`, `:data` | `:app:testDebugUnitTest` | `:app:connectedDebugAndroidTest` |
-| `:catalog` | Android application, `com.software.sello.catalog` | `:design-system` | `:catalog:testDebugUnitTest` | `:catalog:connectedDebugAndroidTest` |
-| `:prototype` | Android application, `com.software.sello.prototype` | `:design-system` | — | — |
 
 | Artifact | Application ID | Launcher label |
 | --- | --- | --- |
 | `:app` release (customer) | `com.software.sello` | Sello |
 | `:app` debug | `com.software.sello.debug` | Sello Debug |
-| `:catalog` debug | `com.software.sello.catalog` | Sello Catalog |
-| `:prototype` debug | `com.software.sello.prototype` | Sello Prototipo |
 
-- `:prototype` is the owner's debugging app: v1.1 sample screens with no storage. It
-  is never shipped and has no tests; the gate's ktlint and lint still cover it. See its
-  [README](../../prototype/README.md).
 - `:app`'s Gradle edge to `:data` exists for the composition root only. Gradle
   cannot enforce that package rule; `scripts/quality/architecture.py` does.
 - `:data` applies KSP with Room and exports schemas to `data/schemas/`.
@@ -98,7 +91,7 @@ Inspect the graph and built identities:
 ```bash
 ./gradlew projects
 ./gradlew :app:dependencies --configuration releaseRuntimeClasspath | grep 'project :'
-./gradlew :catalog:dependencies --configuration debugRuntimeClasspath | grep 'project :'
+./gradlew :design-system:dependencies --configuration debugRuntimeClasspath | grep 'project :'
 ./gradlew :domain:dependencies --configuration runtimeClasspath
 "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging app/build/outputs/apk/debug/app-debug.apk
 ```
@@ -247,16 +240,14 @@ timeout 90 adb -s "$ANDROID_SERIAL" wait-for-device
 adb -s "$ANDROID_SERIAL" shell getprop sys.boot_completed
 adb -s "$ANDROID_SERIAL" shell getprop ro.build.version.sdk
 adb -s "$ANDROID_SERIAL" install -r app/build/outputs/apk/debug/app-debug.apk
-adb -s "$ANDROID_SERIAL" install -r catalog/build/outputs/apk/debug/catalog-debug.apk
 adb -s "$ANDROID_SERIAL" shell am start -W \
   -n com.software.sello.debug/com.software.sello.MainActivity
-adb -s "$ANDROID_SERIAL" shell am start -W -n com.software.sello.catalog/.CatalogActivity
 scripts/check --device                       # every device suite
 ```
 
 Wait for boot completion `1` with a bounded condition check; device connectivity
-alone is not readiness. Confirm API `30`, that the debug app opens on Recibo and that
-the catalog opens, not just successful installs. The unsigned release APK cannot be
+alone is not readiness. Confirm API `30` and that the debug app opens on Recibo, not
+just successful installs. The unsigned release APK cannot be
 installed, so customer/debug coexistence on a device needs the owner's signed build.
 Shut down only the emulator you created: `adb -s "$ANDROID_SERIAL" emu kill`.
 
@@ -269,7 +260,7 @@ Shut down only the emulator you created: `adb -s "$ANDROID_SERIAL" emu kill`.
 | Different daemon JDK than expected | Inspect daemon criteria and buildEnvironment; don't assume changing JAVA_HOME overrides them. |
 | Missing SDK license/platform or repository access | Resolve actual install/license/network failure; don't bypass checks or silently change SDK/versions. |
 | KSP adds forbidden kotlin.sourceSets | Use the pinned KSP2 version. Don't disable built-in Kotlin validation. |
-| Child Kotlin JVM plugin has an unknown classpath version | Declare the catalog's versioned JVM plugin at root with apply false before AGP/Compose, then apply it in the child. |
+| Child Kotlin JVM plugin has an unknown classpath version | Declare the version catalog's JVM plugin at root with apply false before AGP/Compose, then apply it in the child. |
 | No device or boot not completed | APK assembly is not launch/instrumentation evidence; provide an isolated emulator or record the missing gate. |
 
 Debug/test builds use a local development keystore outside source. `assembleRelease`

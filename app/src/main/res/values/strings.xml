@@ -69,7 +69,6 @@
     <string name="icon_picker_spoken">Ícono: %1$s. Cambiar</string>
     <string name="category_editor_limit">Límite mensual</string>
     <string name="category_editor_unlimited">Sin límite</string>
-    <string name="category_editor_limit_amount">Límite en pesos</string>
     <string name="category_editor_limit_required">Escribe el límite o activa Sin límite.</string>
     <string name="category_editor_limit_invalid">Escribe solo el número, por ejemplo 300000 o 300.000.</string>
     <string name="category_editor_limit_total_changes">Tu límite total de %1$s pasaría a</string>

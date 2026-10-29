@@ -8,7 +8,7 @@ from pathlib import Path
 
 import selection
 
-ALL = ["data", "design-system", "app", "catalog"]
+ALL = ["data", "design-system", "app"]
 
 
 def pr(*paths):
@@ -20,7 +20,7 @@ class PullRequestPlanTests(unittest.TestCase):
         for paths in (("docs/tickets/E09-carryover/SELLO-040.md",),
                       ("docs/tickets/E09-carryover/SELLO-040.md", "docs/tickets/E09-carryover/README.md",
                        "docs/tickets/E09-carryover/attachments/SELLO-040-after.png"),
-                      ("README.md", "AGENTS.md", ".github/pull_request_template.md", "prototype/README.md"),
+                      ("README.md", "AGENTS.md", ".github/pull_request_template.md"),
                       ("docs/release/dependencies.md", "docs/design/v2/screens.html"), ()):
             with self.subTest(paths=paths):
                 plan = pr(*paths)
@@ -53,7 +53,7 @@ class PullRequestPlanTests(unittest.TestCase):
     def test_markdown_inside_a_source_directory_is_code(self):
         expected = {
             "app/src/main/assets/x.md": ("G2", ["app"]),
-            "design-system/src/main/res/raw/notes.md": ("G2", ["design-system", "app", "catalog"]),
+            "design-system/src/main/res/raw/notes.md": ("G2", ["design-system", "app"]),
             "domain/src/test/resources/cases.md": ("G1", []),
             "app/README.md": ("G0", []),
             "docs/examples/src/a.md": ("G0", []),
@@ -81,10 +81,9 @@ class PullRequestPlanTests(unittest.TestCase):
     def test_each_module_selects_the_suites_of_its_consumers(self):
         expected = {
             "app/src/main/java/A.kt": (["app"], ["app-1", "app-2"]),
-            "catalog/src/main/java/A.kt": (["catalog"], ["support"]),
             "data/src/main/java/A.kt": (["data", "app"], ["app-1", "app-2", "support"]),
             "domain/src/main/kotlin/A.kt": (["data", "app"], ["app-1", "app-2", "support"]),
-            "design-system/src/main/java/A.kt": (["design-system", "app", "catalog"], ["app-1", "app-2", "support"]),
+            "design-system/src/main/java/A.kt": (["design-system", "app"], ["app-1", "app-2", "support"]),
             "data/schemas/com.software.sello.data.local.SelloDatabase/9.json": (["data", "app"], ["app-1", "app-2", "support"]),
             "app/src/debug/java/Sandbox.kt": (["app"], ["app-1", "app-2"]),
             "app/src/androidTestDebug/java/AppTest.kt": (["app"], ["app-1", "app-2"]),
@@ -101,13 +100,13 @@ class PullRequestPlanTests(unittest.TestCase):
         self.assertEqual(("G1", []), (plan["gate"], plan["modules"]))
 
     def test_mixed_changes_union_their_suites(self):
-        self.assertEqual(["data", "app", "catalog"], pr("data/src/main/A.kt", "catalog/src/main/B.kt", "docs/x.md")["modules"])
+        self.assertEqual(["data", "design-system", "app"], pr("data/src/main/A.kt", "design-system/src/main/B.kt", "docs/x.md")["modules"])
 
     def test_build_files_workflows_lockfiles_gradle_and_unknown_paths_select_everything(self):
         for path in ("build.gradle.kts", "settings.gradle.kts", "gradle.properties", "gradle/libs.versions.toml",
                      "gradle/wrapper/gradle-wrapper.properties", "app/build.gradle.kts", "data/gradle.lockfile",
                      "settings-gradle.lockfile", "app/proguard-rules.pro", ".github/workflows/quality.yml",
-                     ".editorconfig", "gradlew", "prototype/src/main/A.kt", "new-module/src/main/A.kt",
+                     ".editorconfig", "gradlew", "new-module/src/main/A.kt",
                      "docs/check.sh", "app/lint.xml"):
             with self.subTest(path=path):
                 plan = pr(path)
@@ -195,8 +194,7 @@ class ModuleGraphTests(unittest.TestCase):
     def test_module_partition_changes_cannot_silently_outgrow_the_selection_graph(self):
         root = Path(__file__).resolve().parents[2]
         expected = {"domain": set(), "data": {"domain"}, "design-system": set(),
-                    "app": {"domain", "data", "design-system"}, "catalog": {"design-system"},
-                    "prototype": {"design-system"}}
+                    "app": {"domain", "data", "design-system"}}
         settings = (root / "settings.gradle.kts").read_text()
         included = set(re.findall(r'"\:([\w-]+)"', "\n".join(re.findall(r"include\((.*?)\)", settings, re.S))))
         self.assertEqual(set(expected), included)

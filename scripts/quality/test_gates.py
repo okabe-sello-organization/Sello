@@ -21,8 +21,7 @@ class GateTests(unittest.TestCase):
 
     def test_host_gate_covers_every_module_lint_and_both_builds(self):
         for task in (":domain:test", ":data:testDebugUnitTest", ":design-system:testDebugUnitTest",
-                     ":app:testDebugUnitTest", ":catalog:testDebugUnitTest", "lintDebug",
-                     ":app:assembleRelease", ":app:assembleDebug", ":catalog:assembleDebug"):
+                     ":app:testDebugUnitTest", "lintDebug", ":app:assembleRelease", ":app:assembleDebug"):
             self.assertIn(task, gates.HOST_TASKS)
         self.assertEqual(("ktlintCheck",), gates.FORMAT_TASKS)
         self.assertEqual(["tickets", "quality-tests", "performance-tests", "architecture", "links", "licences"],
@@ -41,7 +40,7 @@ class GateTests(unittest.TestCase):
                           "-Pandroid.testInstrumentationRunnerArguments.numShards=2",
                           "-Pandroid.testInstrumentationRunnerArguments.shardIndex=1", "--continue"),
                          gates.device_tests(("app",), gates.DEVICE_GROUPS["app-2"].shard))
-        self.assertNotIn("numShards", " ".join(gates.device_tests(("data", "catalog"))))
+        self.assertNotIn("numShards", " ".join(gates.device_tests(("data", "design-system"))))
         self.assertEqual(("./gradlew", "ktlintCheck", ":data:assembleDebugAndroidTest", "--continue"),
                          gates.device_build(("data",)))
 
@@ -53,7 +52,7 @@ class GateTests(unittest.TestCase):
             ("different counts", {"app-1": gates.Group(("app",), (0, 2)), "app-2": gates.Group(("app",), (1, 3)), "support": support}),
             ("whole run and a shard", {"app-1": gates.Group(("app",)), "app-2": gates.Group(("app",), (1, 2)), "support": support}),
             ("selection map disagrees", {"app-1": gates.Group(("app",), (0, 2)), "app-2": gates.Group(("app",), (1, 2)),
-                                         "support": gates.Group(("data", "design-system"))}),
+                                         "data": gates.Group(("data",)), "design-system": gates.Group(("design-system",))}),
         ):
             with self.subTest(name=name), patch.dict(gates.DEVICE_GROUPS, groups, clear=True):
                 with self.assertRaises(ValueError):

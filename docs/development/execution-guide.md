@@ -33,7 +33,6 @@ Do not execute all tickets at once or copy a proposed API blindly over completed
 | App wiring/platform | `app/src/main/java/com/software/sello/{composition,navigation,platform,presentation}/`; composition is the only app package importing data implementations |
 | Feature UI | `app/src/main/java/com/software/sello/feature/{backup,category,expense,goals,income,investments,recibo,recurrence,reset,resumen,settings,startup}/` (recurrence holds the schedules); each owns State/Action/ViewModel/ScreenRoot/Screen as needed (no Event types; results stay in State) |
 | Sandbox | `app/src/debug/java/com/software/sello/devtools/`, `app/src/debug/res/` and debug-only bindings; release has no reverse dependency |
-| Catalog | `catalog/src/main/java/com/software/sello/catalog/{components,foundations}/`; synthetic render examples only, no domain/data/app dependency |
 | Decisions, tickets and runbooks | `docs/decisions/`, `docs/tickets/<epic>/<ticket>/`, `docs/testing/`, `docs/release/` |
 
 Port/type names in tickets are contract suggestions. Agree signatures at the owning
@@ -51,7 +50,7 @@ Focused **host** examples:
 ```bash
 ./gradlew :domain:test --tests '*MoneyPolicyTest'
 ./gradlew :app:testDebugUnitTest --tests '*ExpenseFormViewModelTest'
-./gradlew :catalog:assembleDebug
+./gradlew :app:assembleDebug
 ```
 
 The test names specified by tickets are **tests to create**; if compatible predecessor
@@ -76,7 +75,6 @@ adb devices
 ./gradlew :app:assembleDebugAndroidTest :data:assembleDebugAndroidTest
 ./gradlew :data:connectedDebugAndroidTest
 ./gradlew :app:connectedDebugAndroidTest
-./gradlew :catalog:connectedDebugAndroidTest
 ```
 
 For an instrumented class selector use the actual configured test package:

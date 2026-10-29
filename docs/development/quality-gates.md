@@ -19,7 +19,7 @@ The Gradle part of G1, kept identical to `scripts/quality/gates.py` by a test:
 ```bash
 ./gradlew ktlintCheck --continue
 ./gradlew :domain:test :data:testDebugUnitTest :design-system:testDebugUnitTest :app:testDebugUnitTest \
-  :catalog:testDebugUnitTest lintDebug :app:assembleDebug :app:assembleRelease :catalog:assembleDebug --continue
+  lintDebug :app:assembleDebug :app:assembleRelease --continue
 ```
 
 A ticket's `Gate` field is advisory: what the ticket expects to need. Nothing enforces
@@ -61,9 +61,8 @@ How paths select device suites, in `scripts/quality/selection.py`:
 | `scripts/**`, except the scripts the device jobs run | none (host checks) |
 | `<module>/src/test*/` | none (host checks) |
 | `domain` or `data` sources, `data/schemas/` | data, app |
-| `design-system` sources | design-system, app, catalog |
+| `design-system` sources | design-system, app |
 | `app` sources | app |
-| `catalog` sources | catalog |
 | `<module>/src/androidTest*/` | that module's suite only |
 | Build files, lockfiles, `gradle/`, workflows, `scripts/check` and the modules it imports, unknown paths | all |
 

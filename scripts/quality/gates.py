@@ -22,8 +22,7 @@ FAST_CHECKS = (
 FORMAT_TASKS = ("ktlintCheck",)
 HOST_TASKS = (
     ":domain:test", ":data:testDebugUnitTest", ":design-system:testDebugUnitTest",
-    ":app:testDebugUnitTest", ":catalog:testDebugUnitTest", "lintDebug",
-    ":app:assembleDebug", ":app:assembleRelease", ":catalog:assembleDebug",
+    ":app:testDebugUnitTest", "lintDebug", ":app:assembleDebug", ":app:assembleRelease",
 )
 HOST_RESULTS = "*/build/test-results/**/TEST-*.xml"
 DEVICE_RESULTS = "{module}/build/outputs/androidTest-results/connected/**/TEST-*.xml"
@@ -41,7 +40,7 @@ class Group:
 DEVICE_GROUPS = {
     "app-1": Group(("app",), shard=(0, 2)),
     "app-2": Group(("app",), shard=(1, 2)),
-    "support": Group(("data", "design-system", "catalog")),
+    "support": Group(("data", "design-system")),
 }
 
 

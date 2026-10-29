@@ -14,7 +14,7 @@ All reads below succeed unless explicitly stated. MVP recurringDue = 0.
 
 | ID | Action/boundary | Expected policy outcome |
 | --- | --- | --- |
-| Iden01 | Install customer, debug and catalog builds together | IDs `com.software.sello`, `.debug`, `.catalog`; labels Sello / Sello Debug / Sello Catalog; each has isolated private data; catalog/debug are separate developer artifacts |
+| Iden01 | Install customer and debug builds together | IDs `com.software.sello`, `.debug`; labels Sello / Sello Debug; each has isolated private data; debug is a separate developer artifact |
 | Iden02 | Verify supported release candidate | SDK 30 floor is compatibility-verified in SELLO-002; customer deliverable is a production-signed private APK, not an AAB/store upload or debug-key substitute; actual distribution needs separate authorization |
 
 These are SELLO-002/003/035/036 acceptance expectations, not executed installation,

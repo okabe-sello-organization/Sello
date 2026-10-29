@@ -70,8 +70,7 @@ This summary is refreshed when an epic closes and adds no verification claims.
   libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md). The
   only provider that grants access is the export one, limited to `cache/exports/`.
 
-The modules are `:app`, `:domain`, `:data`, `:design-system` and the separate
-`:catalog`. The extra `:prototype` app renders v1.1 sample screens with no storage.
+The modules are `:app`, `:domain`, `:data` and `:design-system`.
 [Sello v2](../design/v2/README.md) is the approved design. Category detail retains
 the v1.1 presentation with the owner's section order and the calculations in
 [ADR 0015](../decisions/0015-category-detail-insights.md). Recibo's status is factual
