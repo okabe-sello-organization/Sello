@@ -6,7 +6,7 @@ G3 fails when this list no longer matches the locked libraries. Do not edit by h
 
 | Licence | Libraries |
 | --- | --- |
-| Apache-2.0 | 142 |
+| Apache-2.0 | 147 |
 | BSD-3-Clause | 1 |
 
 | Library | Version | Licence |
@@ -115,11 +115,11 @@ G3 fails when this list no longer matches the locked libraries. Do not edit by h
 | `androidx.room:room-common-jvm` | 2.8.4 | Apache-2.0 |
 | `androidx.room:room-runtime` | 2.8.4 | Apache-2.0 |
 | `androidx.room:room-runtime-android` | 2.8.4 | Apache-2.0 |
-| `androidx.savedstate:savedstate` | 1.3.2 | Apache-2.0 |
-| `androidx.savedstate:savedstate-android` | 1.3.2 | Apache-2.0 |
-| `androidx.savedstate:savedstate-compose` | 1.3.2 | Apache-2.0 |
-| `androidx.savedstate:savedstate-compose-android` | 1.3.2 | Apache-2.0 |
-| `androidx.savedstate:savedstate-ktx` | 1.3.2 | Apache-2.0 |
+| `androidx.savedstate:savedstate` | 1.3.3 | Apache-2.0 |
+| `androidx.savedstate:savedstate-android` | 1.3.3 | Apache-2.0 |
+| `androidx.savedstate:savedstate-compose` | 1.3.3 | Apache-2.0 |
+| `androidx.savedstate:savedstate-compose-android` | 1.3.3 | Apache-2.0 |
+| `androidx.savedstate:savedstate-ktx` | 1.3.3 | Apache-2.0 |
 | `androidx.sqlite:sqlite` | 2.6.2 | Apache-2.0 |
 | `androidx.sqlite:sqlite-android` | 2.6.2 | Apache-2.0 |
 | `androidx.sqlite:sqlite-framework` | 2.6.2 | Apache-2.0 |
@@ -142,7 +142,12 @@ G3 fails when this list no longer matches the locked libraries. Do not edit by h
 | `com.squareup.okio:okio-jvm` | 3.9.1 | Apache-2.0 |
 | `io.insert-koin:koin-core` | 4.2.2 | Apache-2.0 |
 | `io.insert-koin:koin-core-jvm` | 4.2.2 | Apache-2.0 |
+| `io.insert-koin:koin-core-viewmodel` | 4.2.2 | Apache-2.0 |
+| `io.insert-koin:koin-core-viewmodel-android` | 4.2.2 | Apache-2.0 |
 | `org.jetbrains:annotations` | 23.0.0 | Apache-2.0 |
+| `org.jetbrains.androidx.lifecycle:lifecycle-viewmodel` | 2.9.6 | Apache-2.0 |
+| `org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-savedstate` | 2.9.6 | Apache-2.0 |
+| `org.jetbrains.androidx.savedstate:savedstate` | 1.3.6 | Apache-2.0 |
 | `org.jetbrains.kotlin:kotlin-stdlib` | 2.4.20 | Apache-2.0 |
 | `org.jetbrains.kotlinx:kotlinx-coroutines-android` | 1.11.0 | Apache-2.0 |
 | `org.jetbrains.kotlinx:kotlinx-coroutines-bom` | 1.11.0 | Apache-2.0 |

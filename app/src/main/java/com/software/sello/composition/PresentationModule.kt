@@ -1,8 +1,11 @@
 package com.software.sello.composition
 
 import android.content.Context
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
+import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.software.sello.data.backup.BackupBounds
@@ -56,10 +59,14 @@ import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.CorrectionsViewModel
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.ResourceMoneyLabels
+import kotlin.reflect.KClass
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.Koin
+import org.koin.core.annotation.KoinInternalApi
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
+import org.koin.viewmodel.factory.KoinViewModelFactory
 
 /** What screens share: the one month session and the money formatter. */
 fun presentationModule(): Module = module {
@@ -85,266 +92,61 @@ fun presentationModule(): Module = module {
     single { CatchUpSchedules(get(), get()) }
     single(createdAtStart = true) { CatchUpRunner(get(), get(), get(), get<CoroutineScope>()) }
     single<CatchUpNow> { get<CatchUpRunner>() }
+    viewModels()
 }
 
 /**
  * How every view model is built. Screens ask for a view model by type and never see
- * the graph; each initializer names its collaborators here, so a missing one fails
- * when the screen opens instead of silently defaulting.
+ * the graph; each definition names its collaborators by constructor, so a missing one
+ * fails when the screen opens instead of silently defaulting. A [SavedStateHandle]
+ * parameter is the one of the entry that asked.
  */
-fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
-    initializer { AppearanceViewModel(koin.get()) }
-    initializer {
-        SettingsViewModel(
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer { ExportViewModel(createSavedStateHandle(), koin.get()) }
-    initializer {
-        BackupViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
-    }
-    initializer {
-        RestoreViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
-    }
-    initializer { ResetViewModel(createSavedStateHandle(), koin.get(), koin.get()) }
-    initializer {
-        ResumenViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        IncomeHistoryViewModel(
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        IncomeFormViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer { ShellViewModel(createSavedStateHandle(), koin.get(), koin.get()) }
-    initializer { CorrectionsViewModel(koin.get()) }
-    initializer { CorrectionAnnouncementsViewModel(koin.get()) }
-    initializer {
-        CategoryManagementViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer { ReciboViewModel(koin.get(), koin.get(), koin.get(), koin.get()) }
-    initializer {
-        ReciboGoalViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer { InversionesViewModel(koin.get(), koin.get(), koin.get(), koin.get()) }
-    initializer { UsdRateViewModel(koin.get(), koin.get(), koin.get()) }
-    initializer {
-        InvestmentDetailViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
-    }
-    initializer {
-        InvestmentEditorViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        InvestmentMovementViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        UsdRateEntryViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        MetasViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        GoalEditorViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        GoalMovementViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        GoalDetailViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        CategoryDetailViewModel(
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        CategoryExpensesViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        ExpenseEntryViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        CategoryEditorViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer { UpcomingPaymentsViewModel(koin.get(), koin.get(), koin.get()) }
-    initializer {
-        AdjustBudgetViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
-    }
-    initializer {
-        LimitSheetViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        CatchUpNoticeViewModel(
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
-    initializer {
-        SchedulesViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get(), koin.get())
-    }
-    initializer {
-        ScheduleEditorViewModel(
-            createSavedStateHandle(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get(),
-            koin.get()
-        )
-    }
+private fun Module.viewModels() {
+    viewModelOf(::AppearanceViewModel)
+    viewModelOf(::SettingsViewModel)
+    viewModelOf(::ExportViewModel)
+    viewModelOf(::BackupViewModel)
+    viewModelOf(::RestoreViewModel)
+    viewModelOf(::ResetViewModel)
+    viewModelOf(::ResumenViewModel)
+    viewModelOf(::IncomeHistoryViewModel)
+    viewModelOf(::IncomeFormViewModel)
+    viewModelOf(::ShellViewModel)
+    viewModelOf(::CorrectionsViewModel)
+    viewModelOf(::CorrectionAnnouncementsViewModel)
+    viewModelOf(::CategoryManagementViewModel)
+    viewModelOf(::ReciboViewModel)
+    viewModelOf(::ReciboGoalViewModel)
+    viewModelOf(::InversionesViewModel)
+    viewModelOf(::UsdRateViewModel)
+    viewModelOf(::InvestmentDetailViewModel)
+    viewModelOf(::InvestmentEditorViewModel)
+    viewModelOf(::InvestmentMovementViewModel)
+    viewModelOf(::UsdRateEntryViewModel)
+    viewModelOf(::MetasViewModel)
+    viewModelOf(::GoalEditorViewModel)
+    viewModelOf(::GoalMovementViewModel)
+    viewModelOf(::GoalDetailViewModel)
+    viewModelOf(::CategoryDetailViewModel)
+    viewModelOf(::CategoryExpensesViewModel)
+    viewModelOf(::ExpenseEntryViewModel)
+    viewModelOf(::CategoryEditorViewModel)
+    viewModelOf(::UpcomingPaymentsViewModel)
+    viewModelOf(::AdjustBudgetViewModel)
+    viewModelOf(::LimitSheetViewModel)
+    viewModelOf(::CatchUpNoticeViewModel)
+    viewModelOf(::SchedulesViewModel)
+    viewModelOf(::ScheduleEditorViewModel)
+}
+
+/**
+ * A factory for a screen's owner that builds whichever view model it asks for from
+ * [koin]. Koin offers no public way to reach the root scope the definitions live in.
+ */
+@OptIn(KoinInternalApi::class)
+fun viewModels(koin: Koin): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T =
+        KoinViewModelFactory(modelClass, koin.scopeRegistry.rootScope).create(modelClass, extras)
 }
 
 /**
