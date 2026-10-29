@@ -2,7 +2,6 @@ package com.software.sello
 
 import android.app.Activity
 import android.view.WindowInsets
-import androidx.activity.ComponentActivity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -14,6 +13,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
@@ -73,22 +73,31 @@ fun ActivityScenario<out Activity>.hideKeyboard() {
 }
 
 /**
- * Back, as the app receives it, on a screen whose form opens with the system keyboard
- * up. A Back key goes to the keyboard first while it is up, and a form that asks for it
- * on opening can have it come up again just after a test closed it (CI saw it reappear
- * about 70 ms later), so "close the keyboard, then press Back" sometimes only closed the
- * keyboard. Here Back goes straight to the screen's own Back handling, which is where
- * the system sends it once no keyboard is in the way, whatever the keyboard is doing.
+ * Back twice, as a person leaves a form that opened with the system keyboard up: the
+ * first Back puts the keyboard away, the second leaves the form. Each Back is the real
+ * system key. Closing the keyboard and pressing Back at once raced with the form still
+ * bringing the keyboard up (CI saw it come back about 70 ms after closing), so Back
+ * only closed it. Here each step waits for the keyboard to be really up, then really down.
  */
 fun ComposeTestRule.pressBackPastTheKeyboard() {
+    waitUntil(PATIENCE_MILLIS) { keyboardShown() }
+    Espresso.pressBack()
+    waitUntil(PATIENCE_MILLIS) { !keyboardShown() }
     waitForIdle()
+    Espresso.pressBack()
+}
+
+/** Whether the resumed activity's window reports the system keyboard as shown. */
+private fun keyboardShown(): Boolean {
+    var shown = false
     InstrumentationRegistry.getInstrumentation().runOnMainSync {
         val resumed = ActivityLifecycleMonitorRegistry.getInstance()
             .getActivitiesInStage(Stage.RESUMED)
-            .single() as ComponentActivity
-        resumed.onBackPressedDispatcher.onBackPressed()
+            .single()
+        shown = resumed.window.decorView.rootWindowInsets
+            ?.isVisible(WindowInsets.Type.ime()) == true
     }
-    waitForIdle()
+    return shown
 }
 
 /** The installed app's own view models. A test run starts on data that opened. */

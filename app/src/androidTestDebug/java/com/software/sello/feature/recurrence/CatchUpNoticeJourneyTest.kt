@@ -16,6 +16,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.software.sello.await
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.composition.viewModels
@@ -89,6 +90,8 @@ class CatchUpNoticeJourneyTest {
      * only after that. Recibo then reads the notice again off the main thread, and until
      * that read lands it still has the bar it had: wait for it to go rather than look the
      * moment Recibo is back. What was kept is checked against storage at the end.
+     * The wait exists only because of issue #205 (Recibo briefly shows the dismissed bar
+     * until its re-read lands); once #205 is fixed this check should be immediate again.
      */
     private fun barGone() = rule.waitUntil(15_000) {
         rule.onAllNodes(hasTestTag(CATCH_UP_BAR_TAG), true).fetchSemanticsNodes().isEmpty()
@@ -111,7 +114,9 @@ class CatchUpNoticeJourneyTest {
         inBar("Ver").performClick()
         // The list opens on its placeholder while it reads what was recorded, so the
         // list's own tag says nothing yet: wait for the heading the read brings.
-        rule.awaitText("Sello anotó estos 2")
+        rule.await(
+            hasText("Sello anotó estos 2") and hasAnyAncestor(hasTestTag(CATCH_UP_LIST_TAG))
+        )
         rule.onNode(hasText("Listo") and hasAnyAncestor(hasTestTag(SCAFFOLD_DOCK_TAG)), true)
             .assertExists()
         rule.onNodeWithContentDescription(LISTO).press()

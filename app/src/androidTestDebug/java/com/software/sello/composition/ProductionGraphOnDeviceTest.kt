@@ -73,7 +73,7 @@ class ProductionGraphOnDeviceTest {
     }
 
     @Test
-    fun applicationStartsTheProductionGraph() {
+    fun theAppIsSelloApplicationAndAReleaseGraphRunsOnRealFinancialTime() {
         assertTrue(context.applicationContext is SelloApplication)
         assertTrue(releaseGraph().get<FinancialClock>() is SystemFinancialClock)
     }
