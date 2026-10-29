@@ -50,8 +50,9 @@ object CategoryOrderPolicy {
 
             CategoryOrder.AmountSpent -> left.spent.minorUnits.compareTo(right.spent.minorUnits)
 
-            CategoryOrder.Limit -> (left.budget?.limit?.minorUnits ?: 0L)
-                .compareTo(right.budget?.limit?.minorUnits ?: 0L)
+            // The base, not the capacity with carry (ADR 0020 CP19): ordering must not move with spending.
+            CategoryOrder.Limit -> (left.budget?.base?.minorUnits ?: 0L)
+                .compareTo(right.budget?.base?.minorUnits ?: 0L)
 
             CategoryOrder.LatestExpenseAdded -> compareValues(
                 left.newestExpenseAddition,

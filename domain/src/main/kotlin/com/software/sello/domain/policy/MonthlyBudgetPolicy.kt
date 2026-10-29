@@ -2,7 +2,11 @@ package com.software.sello.domain.policy
 
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.BudgetStanding
+import com.software.sello.domain.model.CarryBreakdown
+import com.software.sello.domain.model.CarryEntry
+import com.software.sello.domain.model.CarryoverFailure
 import com.software.sello.domain.model.Category
+import com.software.sello.domain.model.CategoryCarryInput
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryMonth
 import com.software.sello.domain.model.Currency
@@ -88,6 +92,11 @@ object MonthlyBudgetPolicy {
      * expense dated in [month], all read at the same [revision]. A category is listed
      * when it is not archived, or has a limit or spending that month, so an archived
      * one stays wherever it explains a figure and nowhere else.
+     *
+     * A category with a [carryover] input that has a chain covering [month] is judged on its
+     * capacity `C = B + K` instead of its base (ADR 0020 CP14–CP19); the overall budget is
+     * then `Σ B + Σ K`. A figure the carry needs and cannot get fails the snapshot. With no
+     * input, or no chain over [month], the answer is exactly the one without carryover.
      */
     fun snapshot(
         month: YearMonth,
@@ -96,7 +105,8 @@ object MonthlyBudgetPolicy {
         revision: Long,
         categories: List<CategoryInMonth>,
         expenses: List<Expense>,
-        reserved: List<ReservedPayment> = emptyList()
+        reserved: List<ReservedPayment> = emptyList(),
+        carryover: List<CategoryCarryInput> = emptyList()
     ): Outcome<MonthlySnapshot, SnapshotFailure> {
         val currentMonth = YearMonth.from(today.date)
         if (month > currentMonth) return Outcome.Failure(SnapshotFailure.FutureMonth(currentMonth))
@@ -107,6 +117,7 @@ object MonthlyBudgetPolicy {
 
         val lines = ArrayList<CategoryMonth>(categories.size)
         var limits: ExactTotal? = null
+        var carries: ExactTotal? = null
         for (line in categories) {
             val of = byCategory[line.category.id].orEmpty()
             val spent = when (val total = total(of.map { it.amount.money })) {
@@ -115,16 +126,24 @@ object MonthlyBudgetPolicy {
             }
             val limit =
                 ((line.state as? MonthBudgetState.Limited)?.limit as? BudgetLimit.Finite)?.amount
-            val budget = when (
-                val assessed = limit?.let {
-                    budget(it, spent, month, today, isCurrent)
-                }
+            val entry = when (
+                val found = carryEntry(carryover, line.category.id, month, currentMonth, limit)
             ) {
-                null -> null
-                is Outcome.Success -> assessed.value
-                is Outcome.Failure -> return assessed
+                is Outcome.Success -> found.value
+                is Outcome.Failure -> return found
+            }
+            val carried = when (val worked = carried(limit, entry)) {
+                is Outcome.Success -> worked.value
+                is Outcome.Failure -> return worked
+            }
+            val budget = (carried?.capacity ?: limit)?.let { capacity ->
+                when (val assessed = budget(capacity, spent, month, today, isCurrent)) {
+                    is Outcome.Success -> assessed.value.copy(carry = carried)
+                    is Outcome.Failure -> return assessed
+                }
             }
             if (limit != null) limits = (limits ?: ExactTotal.zero(Currency.COP)) + limit
+            if (entry != null) carries = (carries ?: ExactTotal.zero(Currency.COP)) + entry.carryIn
             val shown = !line.category.archived ||
                 line.state is MonthBudgetState.Limited ||
                 of.isNotEmpty()
@@ -144,16 +163,26 @@ object MonthlyBudgetPolicy {
             is Outcome.Success -> total.value
             is Outcome.Failure -> return total
         }
-        val overall = when (val limit = limits?.toMoney()) {
+        val overall = when (val base = limits?.toMoney()) {
             null -> OverallBudget.NoLimit
 
             is Outcome.Failure -> return Outcome.Failure(SnapshotFailure.Unrepresentable)
 
             is Outcome.Success -> {
+                val breakdown = when (val worked = overallCarry(base.value, carries)) {
+                    is Outcome.Success -> worked.value
+                    is Outcome.Failure -> return worked
+                }
                 val budget = when (
-                    val assessed = budget(limit.value, spent, month, today, isCurrent)
+                    val assessed = budget(
+                        breakdown?.capacity ?: base.value,
+                        spent,
+                        month,
+                        today,
+                        isCurrent
+                    )
                 ) {
-                    is Outcome.Success -> assessed.value
+                    is Outcome.Success -> assessed.value.copy(carry = breakdown)
                     is Outcome.Failure -> return assessed
                 }
                 val availableDays = month.lengthOfMonth() - today.date.dayOfMonth + 1
@@ -209,6 +238,62 @@ object MonthlyBudgetPolicy {
         val finite = others + listOfNotNull(limit as? BudgetLimit.Finite)
         if (finite.isEmpty()) return Outcome.Success(null)
         return total(finite.map { it.amount })
+    }
+
+    /** [categoryId]'s carry into [month], or null when it is not carrying then. */
+    private fun carryEntry(
+        carryover: List<CategoryCarryInput>,
+        categoryId: CategoryId,
+        month: YearMonth,
+        currentMonth: YearMonth,
+        base: Money?
+    ): Outcome<CarryEntry?, SnapshotFailure> {
+        val input = carryover.firstOrNull { it.categoryId == categoryId }
+            ?: return Outcome.Success(null)
+        val entry = when (val found = SignedCarryoverPolicy.carryIn(input, month, currentMonth)) {
+            is Outcome.Success -> found.value
+            is Outcome.Failure -> return Outcome.Failure(found.error.toSnapshot())
+        }
+        if (entry != null && base == null) {
+            return Outcome.Failure(SnapshotFailure.Carryover(CarryoverFailure.NoFiniteBase(month)))
+        }
+        return Outcome.Success(entry)
+    }
+
+    /** [base] split from [entry]'s carry into `C = B + K`, or null when the category is not carrying. */
+    private fun carried(
+        base: Money?,
+        entry: CarryEntry?
+    ): Outcome<CarryBreakdown?, SnapshotFailure> {
+        if (base == null || entry == null) return Outcome.Success(null)
+        return when (val sum = base + entry.carryIn) {
+            is Outcome.Success ->
+                Outcome.Success(CarryBreakdown(base, entry.carryIn, sum.value, entry.chainStart))
+
+            is Outcome.Failure -> Outcome.Failure(SnapshotFailure.Unrepresentable)
+        }
+    }
+
+    /** The overall `Σ B`, `Σ K` and `C`, or null when no category carries. */
+    private fun overallCarry(
+        base: Money,
+        carries: ExactTotal?
+    ): Outcome<CarryBreakdown?, SnapshotFailure> {
+        if (carries == null) return Outcome.Success(null)
+        val carry = when (val sum = carries.toMoney()) {
+            is Outcome.Success -> sum.value
+            is Outcome.Failure -> return Outcome.Failure(SnapshotFailure.Unrepresentable)
+        }
+        val capacity = when (val sum = base + carry) {
+            is Outcome.Success -> sum.value
+            is Outcome.Failure -> return Outcome.Failure(SnapshotFailure.Unrepresentable)
+        }
+        return Outcome.Success(CarryBreakdown(base, carry, capacity, chainStart = null))
+    }
+
+    private fun CarryoverFailure.toSnapshot(): SnapshotFailure = when (this) {
+        CarryoverFailure.Unrepresentable -> SnapshotFailure.Unrepresentable
+        else -> SnapshotFailure.Carryover(this)
     }
 
     private fun total(amounts: List<Money>): Outcome<Money, SnapshotFailure> =

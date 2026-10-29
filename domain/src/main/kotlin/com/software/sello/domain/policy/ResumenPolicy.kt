@@ -1,6 +1,7 @@
 package com.software.sello.domain.policy
 
 import com.software.sello.domain.model.BudgetStanding
+import com.software.sello.domain.model.CategoryCarryInput
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DailySpending
 import com.software.sello.domain.model.ExactTotal
@@ -30,7 +31,8 @@ import java.time.temporal.ChronoUnit
 data class ResumenMonthInput(
     val month: YearMonth,
     val categories: List<CategoryInMonth>,
-    val expenses: List<Expense>
+    val expenses: List<Expense>,
+    val carryover: List<CategoryCarryInput> = emptyList()
 )
 
 object ResumenPolicy {
@@ -57,7 +59,8 @@ object ResumenPolicy {
                     generation,
                     revision,
                     input.categories,
-                    input.expenses
+                    input.expenses,
+                    carryover = input.carryover
                 )
             ) {
                 is Outcome.Failure -> return snapshot
@@ -73,7 +76,8 @@ object ResumenPolicy {
             is Outcome.Success -> sum.value
         }
         val limited = budget.overall as? OverallBudget.Limited
-        val allocated = limited?.budget?.limit ?: Money.cop(0)
+        // Por asignar is income minus the base limits: carry is never income (ADR 0020 CP17).
+        val allocated = limited?.budget?.base ?: Money.cop(0)
         val netFlow = when (val difference = income - budget.spent) {
             is Outcome.Failure -> return Outcome.Failure(SnapshotFailure.Unrepresentable)
             is Outcome.Success -> difference.value

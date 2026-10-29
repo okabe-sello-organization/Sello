@@ -43,13 +43,22 @@ sealed interface BudgetStanding {
     data class Past(val verdict: PastVerdict) : BudgetStanding
 }
 
-/** A finite limit against spending. [remaining] is negative when overspent; it is never clamped. */
+/**
+ * A finite limit against spending. [remaining] is negative when overspent; it is never clamped.
+ * With signed carryover ([carry] present, ADR 0020) [limit] is the capacity `C = B + K` that
+ * the verdict, remaining and allowance are judged on; [base] is the configured limit, which
+ * ordering and Por asignar still use (CP17, CP19). Without carry the two are the same.
+ */
 data class LimitedBudget(
     val limit: Money,
     val spent: Money,
     val remaining: Money,
-    val standing: BudgetStanding
-)
+    val standing: BudgetStanding,
+    val carry: CarryBreakdown? = null
+) {
+    /** The configured limit, without any carry. */
+    val base: Money get() = carry?.base ?: limit
+}
 
 /**
  * What can be spent per day from today to the end of the month, today included.
@@ -155,4 +164,10 @@ sealed interface SnapshotFailure {
 
     /** Months after the current financial month cannot be viewed. */
     data class FutureMonth(val currentMonth: YearMonth) : SnapshotFailure
+
+    /**
+     * A carry figure the month needs could not be calculated (ADR 0020 CP8): missing history,
+     * a chain month without a finite base, damaged chains. Never shown as zero carry.
+     */
+    data class Carryover(val failure: CarryoverFailure) : SnapshotFailure
 }

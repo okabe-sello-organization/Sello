@@ -1,5 +1,7 @@
 package com.software.sello.domain.policy
 
+import com.software.sello.domain.model.CarryChain
+import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.ExactTotal
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MoneyError
@@ -20,30 +22,46 @@ object ReservationPolicy {
      * The payment occurrences in [month] not yet handled, from schedules active on their
      * date, by date, then creation order, then slot. One due today or earlier that
      * catch-up has not recorded yet is reserved too, so the headline never rises and
-     * falls back while catch-up runs; one from an earlier month is not.
+     * falls back while catch-up runs; one from an earlier month is not, unless that month
+     * and [month] are both in a carry chain of the payment's category ([chains], ADR 0020
+     * CP18): recording it will lower this month's carry-in by the same amount.
      */
-    fun reserved(schedules: List<StoredSchedule>, month: YearMonth): List<ReservedPayment> =
-        schedules
-            .flatMap { stored ->
-                val entry =
-                    stored.schedule.entry as? ScheduledEntry.Payment ?: return@flatMap emptyList()
-                SchedulePolicy.due(stored.schedule.recurrence, stored.handled, month.atEndOfMonth())
-                    .filter { YearMonth.from(it.date) == month }
-                    .map { occurrence ->
-                        stored.sequence to ReservedPayment(
-                            stored.schedule.id,
-                            entry.categoryId,
-                            entry.note,
-                            occurrence,
-                            entry.amount
-                        )
-                    }
-            }
-            .sortedWith(
-                compareBy<Pair<Long, ReservedPayment>>({ it.second.occurrence.date }, { it.first })
-                    .thenBy { it.second.occurrence.slot }
-            )
-            .map { it.second }
+    fun reserved(
+        schedules: List<StoredSchedule>,
+        month: YearMonth,
+        chains: List<CarryChain> = emptyList()
+    ): List<ReservedPayment> = schedules
+        .flatMap { stored ->
+            val entry =
+                stored.schedule.entry as? ScheduledEntry.Payment ?: return@flatMap emptyList()
+            SchedulePolicy.due(stored.schedule.recurrence, stored.handled, month.atEndOfMonth())
+                .filter {
+                    YearMonth.from(it.date) == month ||
+                        carried(chains, entry.categoryId, YearMonth.from(it.date), month)
+                }
+                .map { occurrence ->
+                    stored.sequence to ReservedPayment(
+                        stored.schedule.id,
+                        entry.categoryId,
+                        entry.note,
+                        occurrence,
+                        entry.amount
+                    )
+                }
+        }
+        .sortedWith(
+            compareBy<Pair<Long, ReservedPayment>>({ it.second.occurrence.date }, { it.first })
+                .thenBy { it.second.occurrence.slot }
+        )
+        .map { it.second }
+
+    private fun carried(
+        chains: List<CarryChain>,
+        category: CategoryId,
+        occurrence: YearMonth,
+        month: YearMonth
+    ) = occurrence < month &&
+        chains.any { it.categoryId == category && it.covers(occurrence) && it.covers(month) }
 
     /**
      * [payments] against what is [remaining] `R`, or null when none is reserved: `Q`

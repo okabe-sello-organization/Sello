@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** In Progress
 - **Depends on:** SELLO-037, SELLO-014, SELLO-004
 - **Gate:** G1
 
