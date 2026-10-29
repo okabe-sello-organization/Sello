@@ -26,7 +26,6 @@ import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ChartReference
 import com.software.sello.designsystem.component.ColumnsChart
 import com.software.sello.designsystem.component.ErrorSlip
-import com.software.sello.designsystem.component.KeyValue
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.Slip

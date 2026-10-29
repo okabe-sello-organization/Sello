@@ -37,9 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonTone
-import com.software.sello.designsystem.component.CompletedGoalRow
 import com.software.sello.designsystem.component.ErrorSlip
-import com.software.sello.designsystem.component.GoalCard
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MilestoneState

@@ -98,7 +98,7 @@ fun ConfirmSlip(
                 SelloButton(
                     text = confirmLabel,
                     onClick = onConfirm,
-                    kind = if (destructive) ButtonKind.Destructive else ButtonKind.Filled,
+                    tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
                     loading = busy,
                     modifier = Modifier.weight(1f)
                 )
@@ -162,7 +162,7 @@ fun ConfirmSlip(
                         SelloButton(
                             text = confirmLabel,
                             onClick = onConfirm,
-                            kind = if (destructive) ButtonKind.Destructive else ButtonKind.Filled,
+                            tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
                             loading = busy
                         )
                     }

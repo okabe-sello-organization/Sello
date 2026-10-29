@@ -1,4 +1,4 @@
-package com.software.sello.designsystem.component
+package com.software.sello.feature.goals
 
 import android.os.Build
 import android.view.View
@@ -68,6 +68,10 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
+import com.software.sello.designsystem.component.MilestonePlace
+import com.software.sello.designsystem.component.MilestoneSpec
+import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -82,27 +86,47 @@ import kotlin.math.hypot
  * clock so the beats combine as they do in the reference.
  */
 private val LandAt = listOf(300, 650, 1000, 1400)
+
 private const val LAND_MS = 420
+
 private const val FLOOD_AT = 1750
+
 private const val FLOOD_MS = 600
+
 private const val INK_AT = 1900
+
 private const val INK_MS = 300
+
 private const val RISE_AT = 2050
+
 private const val RISE_MS = 550
+
 private const val TITLE_AT = 2400
+
 private const val TITLE_MS = 350
+
 private const val PLATE_AT = 2750
+
 private const val PLATE_MS = 360
+
 private const val ACTIONS_AT = 3100
+
 private const val ACTIONS_MS = 300
+
 private const val END_MS = 7200
 
 private val LandEasing = CubicBezierEasing(0.3f, 1.5f, 0.5f, 1f)
+
 private val FloodEasing = CubicBezierEasing(0.5f, 0f, 0.3f, 1f)
+
 private val RiseEasing = CubicBezierEasing(0.4f, 0f, 0.2f, 1f)
+
 private val EaseOut = CubicBezierEasing(0f, 0f, 0.58f, 1f)
+
 private val Ease = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
+
 private val PlateEasing = CubicBezierEasing(0.3f, 1.4f, 0.5f, 1f)
+
 private val ChadEasing = CubicBezierEasing(0.25f, 0.55f, 0.45f, 1f)
 
 /** Linear progress through a beat that starts [at] and lasts [ms], clamped to 0..1. */
@@ -151,7 +175,7 @@ private val Chads: List<Chad> = run {
  * screen, without chads.
  */
 @Composable
-fun CelebrationOverlay(
+internal fun CelebrationOverlay(
     title: String,
     plateTitle: String,
     name: String,

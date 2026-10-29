@@ -35,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalClipboard
@@ -48,7 +47,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -460,48 +458,6 @@ fun Footnote(
             color = SelloTheme.colors.inkSoft
         )
         Icon(SelloIcon.ChevronRight.painter(), null, tint = SelloTheme.colors.outline)
-    }
-}
-
-@Composable
-fun SuggestionNote(
-    title: String,
-    evidence: String,
-    advice: String,
-    actionLabel: String,
-    dismissLabel: String,
-    onAction: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colors = SelloTheme.colors
-    Column(
-        modifier.fillMaxWidth().background(
-            colors.brandSoft,
-            SelloTheme.shapes.control
-        ).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                SelloIcon.Insights.painter(),
-                null,
-                Modifier.padding(end = 8.dp),
-                colors.onBrandSoft
-            )
-            Text(
-                title,
-                Modifier.weight(1f),
-                color = colors.onBrandSoft,
-                fontWeight = FontWeight.W800
-            )
-            androidx.compose.material3.IconButton(onClick = onDismiss) {
-                Icon(SelloIcon.Close.painter(), dismissLabel, tint = colors.onBrandSoft)
-            }
-        }
-        Text(evidence, color = colors.onBrandSoft)
-        Text(advice, color = colors.onBrandSoft, fontWeight = FontWeight.W800)
-        SelloButton(actionLabel, onAction, kind = ButtonKind.Text)
     }
 }
 

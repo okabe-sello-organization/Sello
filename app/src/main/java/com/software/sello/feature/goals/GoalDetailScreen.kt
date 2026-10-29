@@ -44,7 +44,6 @@ import com.software.sello.designsystem.component.DangerSlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FittedMoneyText
-import com.software.sello.designsystem.component.GoalPinPill
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MoneyText

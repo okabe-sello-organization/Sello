@@ -33,15 +33,12 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
-import com.software.sello.designsystem.component.ActionLine
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FittedMoneyText
-import com.software.sello.designsystem.component.KeyValue
 import com.software.sello.designsystem.component.LeaderLine
-import com.software.sello.designsystem.component.LineAction
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloNotice

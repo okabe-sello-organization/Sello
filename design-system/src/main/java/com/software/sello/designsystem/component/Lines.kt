@@ -2,7 +2,6 @@ package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -247,70 +246,8 @@ private fun LeaderLayout(
 internal const val LEADER_DOTS_TAG = "sello:leader-dots"
 
 private val LeaderGap = 6.dp
+
 private val LeaderMinWidth = 12.dp
 
 /** Centre of the dots above the baseline: v1.1's 2 px border raised 4 px. */
 private val LeaderRise = 5.dp
-
-/** A small label with a larger value under it, used in twos and threes under a tear line. */
-@Composable
-fun KeyValue(
-    label: String,
-    modifier: Modifier = Modifier,
-    icon: SelloIcon? = null,
-    caption: String? = null,
-    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
-    value: @Composable () -> Unit
-) {
-    Column(
-        modifier = modifier.semantics(mergeDescendants = true) {},
-        horizontalAlignment = horizontalAlignment
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            if (icon != null) {
-                Icon(
-                    painter = icon.painter(),
-                    contentDescription = null,
-                    tint = SelloTheme.colors.brand,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-            Text(
-                label,
-                style = MaterialTheme.typography.labelMedium,
-                color = SelloTheme.colors.inkSoft
-            )
-        }
-        value()
-        if (caption != null) {
-            Text(
-                caption,
-                style = MaterialTheme.typography.labelMedium,
-                color = SelloTheme.colors.inkSoft,
-                maxLines = 2
-            )
-        }
-    }
-}
-
-/** A [KeyValue] whose value is plain text. */
-@Composable
-fun KeyValue(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    icon: SelloIcon? = null,
-    caption: String? = null,
-    valueColor: Color = Color.Unspecified
-) {
-    KeyValue(label, modifier, icon, caption) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleLarge,
-            color = valueColor.takeOrElse { SelloTheme.colors.ink }
-        )
-    }
-}

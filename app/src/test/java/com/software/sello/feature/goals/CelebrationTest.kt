@@ -1,4 +1,4 @@
-package com.software.sello.designsystem.component
+package com.software.sello.feature.goals
 
 import android.os.Build
 import android.view.View
@@ -15,6 +15,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.component.MilestoneSpec
+import com.software.sello.designsystem.component.MilestoneState
+import com.software.sello.designsystem.component.MoneySign
+import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import org.junit.Assert.assertFalse

@@ -1,4 +1,4 @@
-package com.software.sello.designsystem.component
+package com.software.sello.feature.investments
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,8 +22,17 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.captureToImage
+import com.software.sello.designsystem.component.AmountKeypad
+import com.software.sello.designsystem.component.AnswerSlip
+import com.software.sello.designsystem.component.MoneySign
+import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.SplitBar
+import com.software.sello.designsystem.component.SplitSegment
+import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.inEveryScheme
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
