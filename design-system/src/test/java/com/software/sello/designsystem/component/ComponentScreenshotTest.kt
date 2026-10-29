@@ -38,13 +38,6 @@ class ComponentScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
 
-    private fun pesos(digits: String, minus: Boolean = false) = MoneyTextValue(
-        if (minus) MoneySign.Minus else MoneySign.None,
-        "",
-        digits,
-        "$digits pesos"
-    )
-
     /** [content] on the desk, 320 dp wide and as tall as it needs, captured as [name]. */
     private fun capture(name: String, content: @Composable () -> Unit) {
         rule.setContent {

@@ -40,22 +40,10 @@ import com.software.sello.domain.port.InvestmentUndoOffer
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-
-/** Words around figures as the tests read them. */
-fun testMoney() = MoneyFormatter(object : MoneyLabels {
-    override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-        if (currency == Currency.COP) "$digits pesos" else "$digits dólares"
-
-    override fun negative(amount: String) = "menos $amount"
-
-    override fun positive(amount: String) = "más $amount"
-})
 
 /** A rate entered on [date] in [sequence] order, [hundredths] pesos per dollar. */
 fun rateEntry(hundredths: Long, date: String, sequence: Long = 1) = UsdRateEntry(

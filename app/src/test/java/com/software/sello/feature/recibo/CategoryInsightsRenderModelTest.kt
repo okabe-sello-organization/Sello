@@ -3,13 +3,11 @@ package com.software.sello.feature.recibo
 import com.software.sello.domain.model.CategoryComparison
 import com.software.sello.domain.model.CategoryHistoryMonth
 import com.software.sello.domain.model.CategoryInsights
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Money
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.testMoney
 import java.math.BigInteger
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
@@ -17,12 +15,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class CategoryInsightsRenderModelTest {
-    private val labels = object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    }
-    private val render = CategoryInsightsRenderModel(MoneyFormatter(labels))
+    private val render = CategoryInsightsRenderModel(testMoney())
     private val food = categoryIn(1, "Alimentación", 900_000)
 
     private fun shown(tenths: String?) = render.render(

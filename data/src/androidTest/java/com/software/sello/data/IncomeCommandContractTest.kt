@@ -10,7 +10,6 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
@@ -79,8 +78,6 @@ class IncomeCommandContractTest {
 
     private fun keptIncome() = ledger.rows("deleted_income", "sequence", "deletion_id", "income_id")
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private fun source(key: String, name: String? = null) = IncomeSource.of(key, name).valueOrFail()
 
     private fun incomeId(number: Int) = IncomeId.of(uuid(number)).valueOrFail()
@@ -96,7 +93,7 @@ class IncomeCommandContractTest {
     ) = CreateIncome(
         operation,
         generation,
-        pesos(pesos),
+        transactionPesos(pesos),
         source(key, name),
         LocalDate.parse(date),
         Note.of(note).valueOrFail()
@@ -117,7 +114,7 @@ class IncomeCommandContractTest {
         generation,
         incomeId(income),
         version,
-        pesos(pesos),
+        transactionPesos(pesos),
         source(key, name),
         LocalDate.parse(date),
         Note.of(note).valueOrFail()

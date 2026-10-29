@@ -2,27 +2,25 @@ package com.software.sello.feature.recibo
 
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.CategoryId
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseSearchPage
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.Corrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.testMoney
 import java.time.YearMonth
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CompletableDeferred
@@ -83,11 +81,6 @@ class CategoryExpensesViewModelTest {
             )
         }
     }
-    private val labels = object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    }
 
     @Before fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -115,7 +108,7 @@ class CategoryExpensesViewModelTest {
                 MonthSession(HandFinancialClock("2026-10-22"), HandMonotonicClock()),
                 snapshots,
                 search,
-                MoneyFormatter(labels),
+                testMoney(),
                 corrections
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }

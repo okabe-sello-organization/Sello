@@ -16,7 +16,6 @@ import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryOrderingPreferences
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
@@ -55,11 +54,7 @@ class RecoveryRetentionTest {
     private val old = StorageNames("retention-old.db", "retention-old")
     private val new = StorageNames("retention-new.db", "retention-new")
     private val opened = mutableListOf<FinancialStorage>()
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
     private val at = Instant.parse("2026-10-22T14:30:00Z")
     private var nextOperation = 9_000
 

@@ -3,13 +3,11 @@ package com.software.sello.data
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.data.repository.RoomScheduleCatchUp
 import com.software.sello.domain.model.IncomeSource
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateSchedule
@@ -49,8 +47,6 @@ class ScheduleCatchUpContractTest {
 
     private fun d(text: String) = LocalDate.parse(text)
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private fun store() = RoomScheduleCatchUp(ledger.database, {
         ledger.audit
     }, { uuid(ledger.nextRecord++) })
@@ -77,7 +73,7 @@ class ScheduleCatchUpContractTest {
 
     private fun payment(category: Int, amount: Long, note: String? = null) = ScheduledEntry.Payment(
         ledger.categoryId(category),
-        pesos(amount),
+        transactionPesos(amount),
         Note.of(note).valueOrFail()
     )
 
@@ -264,7 +260,7 @@ class ScheduleCatchUpContractTest {
         val salary = schedule(
             "2026-10-01",
             RepeatRule.Monthly.of(15).valueOrFail(),
-            ScheduledEntry.Income(IncomeSource.Salary, pesos(1_000_000), null)
+            ScheduledEntry.Income(IncomeSource.Salary, transactionPesos(1_000_000), null)
         )
         val recorded = (batch("2026-10-15") as CatchUpBatch.Recorded).occurrences.single()
         ledger.goTo("2026-10-16")
@@ -346,7 +342,7 @@ class ScheduleCatchUpContractTest {
         schedule(
             "2026-10-30",
             RepeatRule.Monthly.of(30).valueOrFail(),
-            ScheduledEntry.Income(IncomeSource.Salary, pesos(1_000_000), null)
+            ScheduledEntry.Income(IncomeSource.Salary, transactionPesos(1_000_000), null)
         )
 
         val recorded = batch("2026-10-30") as CatchUpBatch.Recorded

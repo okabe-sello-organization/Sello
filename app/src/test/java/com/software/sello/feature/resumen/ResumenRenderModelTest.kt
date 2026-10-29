@@ -3,7 +3,6 @@ package com.software.sello.feature.resumen
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DailySpending
 import com.software.sello.domain.model.LimitAdjustment
 import com.software.sello.domain.model.Money
@@ -24,8 +23,7 @@ import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.testMoney
 import java.math.BigInteger
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -37,11 +35,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-internal fun resumenMoney() = MoneyFormatter(object : MoneyLabels {
-    override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-    override fun negative(amount: String) = "menos $amount"
-    override fun positive(amount: String) = "más $amount"
-})
+internal fun resumenMoney() = testMoney()
 
 internal fun resumenSnapshot(spent: Long = 30_000, income: Long = 150_000): ResumenSnapshot {
     val month = YearMonth.of(2026, 10)

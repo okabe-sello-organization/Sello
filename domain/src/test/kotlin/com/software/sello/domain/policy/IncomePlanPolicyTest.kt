@@ -14,7 +14,7 @@ import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
-import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.pesos
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.domain.valueOrFail
 import java.time.Instant
@@ -33,8 +33,6 @@ class IncomePlanPolicyTest {
     private val created = Instant.parse("2026-10-01T08:00:00Z")
 
     private fun d(text: String) = LocalDate.parse(text)
-
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
 
     private fun id(number: Int) =
         ScheduleId.of("00000000-0000-4000-8000-%012d".format(number)).valueOrFail()

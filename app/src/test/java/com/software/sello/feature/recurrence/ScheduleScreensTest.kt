@@ -24,8 +24,6 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
-import com.software.sello.designsystem.component.MoneySign
-import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.presentation.date.dateLabels
@@ -33,6 +31,7 @@ import com.software.sello.presentation.recurrence.REPEAT_ROW_TAG
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatUi
 import com.software.sello.showSello
+import com.software.sello.testing.pesos
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
@@ -57,8 +56,6 @@ class ScheduleScreensTest {
     private val listActions = mutableListOf<SchedulesAction>()
     private val added = mutableListOf<ScheduleTab>()
     private val editorActions = mutableListOf<ScheduleEditorAction>()
-
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     private fun monthly(day: Int) = (RepeatRule.Monthly.of(day) as Outcome.Success).value
 

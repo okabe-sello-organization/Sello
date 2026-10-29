@@ -33,11 +33,11 @@ import com.software.sello.domain.port.RestoreInvestmentMovement
 import com.software.sello.domain.port.UndoGoalCompletion
 import com.software.sello.domain.port.UndoOffer
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.feature.expense.expenseId
-import com.software.sello.feature.expense.incomeId
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
+import com.software.sello.feature.income.incomeId
 import com.software.sello.feature.investments.HandInvestmentCommands
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours

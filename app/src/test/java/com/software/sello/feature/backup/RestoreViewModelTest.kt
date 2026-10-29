@@ -12,7 +12,6 @@ import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
-import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.StageFailure
 import com.software.sello.domain.port.StagedRestore
 import com.software.sello.navigation.HandFinancialClock
@@ -53,45 +52,6 @@ class RestoreViewModelTest {
         BackupSummary(2, 3, 1, 0, 0),
         PendingPreferences(null, null)
     )
-
-    /** Restores that answer as told and count what they were asked. */
-    private class HandRestores : Restores {
-        var stageAnswer: Outcome<StagedRestore, StageFailure> =
-            Outcome.Failure(StageFailure.Storage)
-        var replaceAnswer: RestoreOutcome = RestoreOutcome.Failed
-        var stagedAnswer: StagedRestore? = null
-        var pendingAnswer: RestoreOutcome.Restored? = null
-        var applyAnswer: RestoreOutcome.Restored? = null
-        var replaceGate: CompletableDeferred<Unit>? = null
-        val staged = mutableListOf<Int>()
-        var replaced = 0
-        var discarded = 0
-        var applied = 0
-
-        override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
-            staged += bytes.size
-            return stageAnswer
-        }
-
-        override suspend fun staged(): StagedRestore? = stagedAnswer
-
-        override suspend fun discard() {
-            discarded++
-        }
-
-        override suspend fun replace(staged: StagedRestore): RestoreOutcome {
-            replaceGate?.await()
-            replaced++
-            return replaceAnswer
-        }
-
-        override suspend fun pending(): RestoreOutcome.Restored? = pendingAnswer
-
-        override suspend fun applyPending(): RestoreOutcome.Restored? {
-            applied++
-            return applyAnswer
-        }
-    }
 
     private val restores = HandRestores()
     private var document: DocumentRead = DocumentRead.Read(ByteArray(2_297))

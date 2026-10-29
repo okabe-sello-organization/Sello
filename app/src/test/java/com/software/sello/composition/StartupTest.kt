@@ -10,9 +10,9 @@ import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
-import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.StageFailure
 import com.software.sello.domain.port.StagedRestore
+import com.software.sello.feature.backup.HandRestores
 import com.software.sello.feature.startup.StartupRestore
 import java.time.Instant
 import java.time.ZoneId
@@ -96,34 +96,6 @@ class StartupTest {
                 read
             }
         )
-    }
-
-    /** Restores that answer as told and log what they were asked. */
-    private class HandRestores(private val events: MutableList<String>) : Restores {
-        var stageAnswer: Outcome<StagedRestore, StageFailure>? = null
-        var replaceAnswer: RestoreOutcome? = null
-        var applyAnswer: RestoreOutcome.Restored? = null
-
-        override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
-            events += "stage ${bytes.toList()}"
-            return stageAnswer!!
-        }
-
-        override suspend fun staged(): StagedRestore? = null
-
-        override suspend fun discard() = Unit
-
-        override suspend fun replace(staged: StagedRestore): RestoreOutcome {
-            events += "replace ${staged.operationId.value}"
-            return replaceAnswer!!
-        }
-
-        override suspend fun pending(): RestoreOutcome.Restored? = null
-
-        override suspend fun applyPending(): RestoreOutcome.Restored? {
-            events += "apply"
-            return applyAnswer
-        }
     }
 
     private fun staged() = StagedRestore(

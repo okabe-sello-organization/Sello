@@ -3,7 +3,6 @@ package com.software.sello.feature.recibo
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.StampInk
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
@@ -19,11 +18,10 @@ import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
-import com.software.sello.feature.expense.pesos
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -36,14 +34,7 @@ import org.junit.Test
  * was worked out by hand from those rows and is typed, not computed.
  */
 class ReciboRenderModelTest {
-    private val labels = object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-
-        override fun negative(amount: String) = "menos $amount"
-
-        override fun positive(amount: String) = "más $amount"
-    }
-    private val render = ReciboRenderModel(MoneyFormatter(labels))
+    private val render = ReciboRenderModel(testMoney())
 
     private fun plain(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 

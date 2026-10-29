@@ -1,7 +1,6 @@
 package com.software.sello.feature.goals
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalEvent
@@ -20,7 +19,6 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection.Specific
@@ -38,15 +36,15 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.presentation.movement.MovementNoteProblem
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
@@ -73,11 +71,7 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class GoalMovementViewModelTest {
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
     private val clock = HandFinancialClock("2026-10-23")
     private val today = LocalDate.of(2026, 10, 23)
     private val reads = HandGoalReads()
@@ -142,8 +136,6 @@ class GoalMovementViewModelTest {
     fun reset() = Dispatchers.resetMain()
 
     private fun <T> Outcome<T, *>.value(): T = (this as Outcome.Success).value
-
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).value()
 
     private fun movementId(number: Int) =
         GoalMovementId.of("00000000-0000-4000-8000-%012d".format(number)).value()

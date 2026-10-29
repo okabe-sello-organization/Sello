@@ -18,10 +18,9 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
-import com.software.sello.designsystem.component.MoneySign
-import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.showSello
+import com.software.sello.testing.pesos
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -38,8 +37,6 @@ class CatchUpNoticeScreenTest {
     private val edited = mutableListOf<Pair<String, Boolean>>()
     private var viewed = 0
     private var retried = 0
-
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     private fun payment(id: String, note: String?, category: String, day: Int, amount: String) =
         RecordedItem(

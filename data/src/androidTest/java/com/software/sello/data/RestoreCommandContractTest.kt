@@ -28,7 +28,6 @@ import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteExpense
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
@@ -71,11 +70,7 @@ class RestoreCommandContractTest {
     val files = DatabaseFiles()
 
     private val ledger by lazy { TestLedger(files).also { it.start() } }
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
 
     /** Preferences that record what was applied and can be told to fail. */
     private class Preferences :

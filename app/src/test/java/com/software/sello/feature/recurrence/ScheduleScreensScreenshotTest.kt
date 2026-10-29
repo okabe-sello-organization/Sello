@@ -10,8 +10,6 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
-import com.software.sello.designsystem.component.MoneySign
-import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Outcome
@@ -20,6 +18,7 @@ import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatUi
 import com.software.sello.showSello
+import com.software.sello.testing.pesos
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Rule
@@ -37,8 +36,6 @@ class ScheduleScreensScreenshotTest {
     val rule = createComposeRule()
 
     private val today = LocalDate.of(2026, 10, 22)
-
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     private fun monthly(day: Int) = (RepeatRule.Monthly.of(day) as Outcome.Success).value
 

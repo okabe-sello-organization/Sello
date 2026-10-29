@@ -4,13 +4,11 @@ import android.content.Context
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.DocumentDestination
 import com.software.sello.domain.port.DocumentRead
 import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.DocumentWrite
 import java.io.File
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -28,11 +26,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class FileBoundaryTest {
     private val context: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Main
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = SystemDispatcherProvider()
     private val reader by lazy { AndroidDocumentReader(context.contentResolver, dispatchers) }
     private val writer by lazy { AndroidDocumentWriter(context.contentResolver, dispatchers) }
     private val canary = "MARCADOR-PRIVADO-4721".toByteArray()

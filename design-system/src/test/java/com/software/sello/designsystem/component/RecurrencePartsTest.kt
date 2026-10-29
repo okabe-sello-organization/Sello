@@ -49,8 +49,6 @@ class RecurrencePartsTest {
 
     private val isButton = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
 
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
-
     private val busSpoken = "Bus, 20.000 pesos, cada semana, los sábados, en pausa desde lun 12 oct"
 
     @Test

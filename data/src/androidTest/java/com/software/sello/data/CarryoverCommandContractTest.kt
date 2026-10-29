@@ -10,7 +10,6 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommandOutcome
@@ -106,8 +105,6 @@ class CarryoverCommandContractTest {
             .single { it.category.id == ledger.categoryId(category) }
 
     private fun CarryCorrection.listed() = months.map { it.text() }
-
-    private fun pesos(amount: Long) = TransactionAmount.of(cop(amount)).valueOrFail()
 
     @Test
     fun turningCarryOnStoresOneOpenChainItsReceiptAndOneRevision() = runBlocking {
@@ -728,7 +725,7 @@ class CarryoverCommandContractTest {
                 expenseIdOf(february),
                 1,
                 ledger.categoryId(transporte),
-                pesos(70_000),
+                transactionPesos(70_000),
                 LocalDate.parse("2027-02-10"),
                 null,
                 confirmed

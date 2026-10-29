@@ -15,7 +15,6 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DisableCarry
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
@@ -52,11 +51,7 @@ class ResetGenerationContractTest {
     val files = DatabaseFiles()
 
     private val ledger by lazy { TestLedger(files).also { it.start() } }
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
     private val lima = ZoneId.of("America/Lima")
     private val setAside: List<File> by lazy {
         val kept = files.context.getDatabasePath(

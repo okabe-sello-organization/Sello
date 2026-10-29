@@ -8,7 +8,6 @@ import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.GoalBoard
@@ -44,8 +43,6 @@ class GoalBoardObservationTest {
     private val ledger by lazy { TestLedger(files).also { it.start() } }
     private val viaje = GoalId.of(uuid(100)).valueOrFail()
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private suspend fun create() = assertTrue(
         ledger.goals.submit(
             CreateGoal(
@@ -53,7 +50,7 @@ class GoalBoardObservationTest {
                 1,
                 GoalName.of("Viaje a la costa").valueOrFail(),
                 IconKey.of("flight").valueOrFail(),
-                pesos(3_000_000),
+                transactionPesos(3_000_000),
                 null
             )
         ) is CommandOutcome.Committed
@@ -69,7 +66,7 @@ class GoalBoardObservationTest {
                     viaje,
                     version,
                     GoalMovementKind.Contribution,
-                    pesos(pesos),
+                    transactionPesos(pesos),
                     LocalDate.of(2026, 10, 9),
                     null
                 )

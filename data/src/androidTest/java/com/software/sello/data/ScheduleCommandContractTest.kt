@@ -3,7 +3,6 @@ package com.software.sello.data
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.data.repository.RoomScheduleCatchUp
 import com.software.sello.domain.model.IncomeSource
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
@@ -11,7 +10,6 @@ import com.software.sello.domain.model.RecurrenceError
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryRejection
@@ -53,10 +51,8 @@ class ScheduleCommandContractTest {
 
     private fun d(text: String) = LocalDate.parse(text)
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private fun payment(pesos: Long = 950_000, note: String? = "Arriendo") =
-        ScheduledEntry.Payment(hogar, pesos(pesos), Note.of(note).valueOrFail())
+        ScheduledEntry.Payment(hogar, transactionPesos(pesos), Note.of(note).valueOrFail())
 
     private fun monthly(day: Int) = RepeatRule.Monthly.of(day).valueOrFail()
 
@@ -159,7 +155,7 @@ class ScheduleCommandContractTest {
                 create(
                     "2026-10-15",
                     RepeatRule.TwiceMonthly.of(15, 30).valueOrFail(),
-                    ScheduledEntry.Income(IncomeSource.Salary, pesos(800_000), null)
+                    ScheduledEntry.Income(IncomeSource.Salary, transactionPesos(800_000), null)
                 )
             )
         )
@@ -220,7 +216,11 @@ class ScheduleCommandContractTest {
                 submit(
                     create(
                         "2026-10-22",
-                        entry = ScheduledEntry.Payment(ledger.categoryId(999), pesos(1), null)
+                        entry = ScheduledEntry.Payment(
+                            ledger.categoryId(999),
+                            transactionPesos(1),
+                            null
+                        )
                     )
                 )
             )
@@ -291,7 +291,11 @@ class ScheduleCommandContractTest {
                 change(
                     1,
                     "2026-10-01",
-                    entry = ScheduledEntry.Income(IncomeSource.Salary, pesos(950_000), null)
+                    entry = ScheduledEntry.Income(
+                        IncomeSource.Salary,
+                        transactionPesos(950_000),
+                        null
+                    )
                 )
             )
         )

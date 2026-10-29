@@ -7,6 +7,7 @@ import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.ReadState
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.testing.testMoney
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch

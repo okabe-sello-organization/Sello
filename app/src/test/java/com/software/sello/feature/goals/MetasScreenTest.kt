@@ -39,7 +39,6 @@ import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
@@ -64,7 +63,7 @@ import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.navigation.MetasDestination
@@ -72,11 +71,10 @@ import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.navigation.ShellState
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.date.dateLabels
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import com.software.sello.sweepLooks
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -105,11 +103,7 @@ class MetasScreenTest {
     val rule = createComposeRule()
 
     private val today = LocalDate.of(2026, 10, 23)
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
 
     private fun <T> Outcome<T, *>.value(): T = (this as Outcome.Success).value
 

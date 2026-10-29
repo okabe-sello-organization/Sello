@@ -2,9 +2,8 @@ package com.software.sello.navigation
 
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.CategoryId
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
-import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.testing.pesos
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -23,9 +22,6 @@ class DeepLinkDraftTest {
 
     /** One category exists, so an entry has somewhere to go and nothing else is asked for. */
     private val existing = HandCategoryReads().apply { categories = listOf(category(1, "Mercado")) }
-
-    private fun pesos(amount: Long) =
-        (TransactionAmount.of(Money.cop(amount)) as Outcome.Success).value
 
     @Before
     fun mainDispatcher() = Dispatchers.setMain(UnconfinedTestDispatcher())

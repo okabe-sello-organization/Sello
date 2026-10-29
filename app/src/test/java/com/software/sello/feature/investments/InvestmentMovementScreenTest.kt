@@ -34,6 +34,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.showSello
 import com.software.sello.sweepLooks
+import com.software.sello.testing.pesos
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -55,8 +56,6 @@ class InvestmentMovementScreenTest {
 
     private val actions = mutableListOf<InvestmentMovementAction>()
     private val today = LocalDate.of(2026, 10, 25)
-
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     private fun dollars(digits: String) =
         MoneyTextValue(MoneySign.None, "USD", digits, "$digits dólares")

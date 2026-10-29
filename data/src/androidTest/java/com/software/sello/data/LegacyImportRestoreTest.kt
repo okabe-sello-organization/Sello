@@ -12,7 +12,6 @@ import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryOrderingPreferences
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.LegacyImportLine
 import com.software.sello.domain.port.LegacyImportReport
 import com.software.sello.domain.port.LegacyReason
@@ -23,7 +22,6 @@ import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StageFailure
 import java.time.Instant
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
@@ -45,11 +43,7 @@ class LegacyImportRestoreTest {
     val files = DatabaseFiles()
 
     private val ledger by lazy { TestLedger(files).also { it.start() } }
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
 
     private class Preferences :
         AppearancePreferences,

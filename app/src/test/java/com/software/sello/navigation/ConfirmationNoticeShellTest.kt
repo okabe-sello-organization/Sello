@@ -38,6 +38,7 @@ import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
+import com.software.sello.testing.pesos
 import java.time.YearMonth
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -213,8 +214,6 @@ class ConfirmationNoticeShellTest {
 
         says(notice, "Ingreso anotado", "Ingreso anotado")
     }
-
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     private val seventyFive = GoalCelebration(
         goalId = "00000000-0000-4000-9000-000000000001",

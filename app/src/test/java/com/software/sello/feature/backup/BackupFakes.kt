@@ -14,6 +14,10 @@ import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.PreparedBackup
+import com.software.sello.domain.port.RestoreOutcome
+import com.software.sello.domain.port.Restores
+import com.software.sello.domain.port.StageFailure
+import com.software.sello.domain.port.StagedRestore
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,5 +78,50 @@ class HandBackupRecords(initial: BackupRecord = BackupRecord()) : BackupRecords 
         stored.value = record
         if (!unreadable) reads.value = PreferenceRead.Ready(record)
         return PreferenceWrite.Saved
+    }
+}
+
+/**
+ * Restores that answer as told and count what they were asked; given [events], they also log
+ * each call there, in order.
+ */
+class HandRestores(private val events: MutableList<String>? = null) : Restores {
+    var stageAnswer: Outcome<StagedRestore, StageFailure> =
+        Outcome.Failure(StageFailure.Storage)
+    var replaceAnswer: RestoreOutcome = RestoreOutcome.Failed
+    var stagedAnswer: StagedRestore? = null
+    var pendingAnswer: RestoreOutcome.Restored? = null
+    var applyAnswer: RestoreOutcome.Restored? = null
+    var replaceGate: CompletableDeferred<Unit>? = null
+    val staged = mutableListOf<Int>()
+    var replaced = 0
+    var discarded = 0
+    var applied = 0
+
+    override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
+        events?.add("stage ${bytes.toList()}")
+        staged += bytes.size
+        return stageAnswer
+    }
+
+    override suspend fun staged(): StagedRestore? = stagedAnswer
+
+    override suspend fun discard() {
+        discarded++
+    }
+
+    override suspend fun replace(staged: StagedRestore): RestoreOutcome {
+        events?.add("replace ${staged.operationId.value}")
+        replaceGate?.await()
+        replaced++
+        return replaceAnswer
+    }
+
+    override suspend fun pending(): RestoreOutcome.Restored? = pendingAnswer
+
+    override suspend fun applyPending(): RestoreOutcome.Restored? {
+        events?.add("apply")
+        applied++
+        return applyAnswer
     }
 }

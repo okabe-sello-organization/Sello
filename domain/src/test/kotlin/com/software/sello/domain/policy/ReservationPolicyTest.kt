@@ -20,8 +20,8 @@ import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.model.Verdict
+import com.software.sello.domain.pesos
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.domain.valueOrFail
@@ -44,8 +44,6 @@ class ReservationPolicyTest {
     private val home = CategoryId.of("00000000-0000-4000-8000-000000000100").valueOrFail()
 
     private fun d(text: String) = LocalDate.parse(text)
-
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
 
     private val category = CategoryInMonth(
         Category(

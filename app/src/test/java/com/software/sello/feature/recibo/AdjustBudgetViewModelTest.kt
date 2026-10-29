@@ -1,11 +1,8 @@
 package com.software.sello.feature.recibo
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.port.ReadState
-import com.software.sello.domain.port.SnapshotState
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
@@ -13,8 +10,8 @@ import com.software.sello.feature.expense.uuid
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.testMoney
 import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,11 +35,7 @@ class AdjustBudgetViewModelTest {
     private val snapshots = HandSnapshots()
     private val clock = HandFinancialClock("2026-10-22")
     private val session = MonthSession(clock, HandMonotonicClock())
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
 
     private val month = monthOf(
         "2026-10-22",
