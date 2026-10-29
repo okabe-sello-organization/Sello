@@ -30,7 +30,7 @@ import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
@@ -74,7 +74,7 @@ class ExpenseEditViewModelTest {
             override fun positive(amount: String) = "más $amount"
         }
     )
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     private val food = categoryIn(1, "Alimentación", 900_000, icon = "restaurant")
     private val coffee = categoryIn(2, "Café", 50_000, icon = "local_cafe")
@@ -87,7 +87,7 @@ class ExpenseEditViewModelTest {
     @Before
     fun mainDispatcher() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             commands,
             HandIncomeCommands(),
             HandGoalCommands(),

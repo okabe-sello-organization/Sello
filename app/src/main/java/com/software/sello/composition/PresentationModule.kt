@@ -52,8 +52,8 @@ import com.software.sello.feature.startup.StartupRecovery
 import com.software.sello.navigation.MonthSession
 import com.software.sello.navigation.ShellViewModel
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.CorrectionsViewModel
-import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.ResourceMoneyLabels
 import kotlinx.coroutines.CoroutineScope
@@ -70,7 +70,7 @@ fun presentationModule(): Module = module {
         val scope = CoroutineScope(
             get<CoroutineScope>().coroutineContext + get<DispatcherProvider>().main
         )
-        ExpenseCorrections(get(), get(), get(), get(), get(), get(), scope)
+        Corrections(get(), get(), get(), get(), get(), get(), scope)
     }
     // A save runs for as long as the process, not the screen that started it.
     single { BackupSession(get(), get(), get(), get(), get<CoroutineScope>()) }

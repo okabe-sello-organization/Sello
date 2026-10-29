@@ -24,7 +24,7 @@ import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.presentation.recurrence.RepeatAction
@@ -91,7 +91,7 @@ class ExpenseFormViewModelTest {
 
     /** What the frame is told: one for the whole test, as in the app. */
     private val corrections by lazy {
-        ExpenseCorrections(
+        Corrections(
             commands,
             HandIncomeCommands(),
             HandGoalCommands(),

@@ -42,7 +42,7 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
@@ -134,7 +134,7 @@ class CategoryManagementViewModelTest {
             override fun positive(amount: String) = amount
         }
     )
-    private lateinit var notices: ExpenseCorrections
+    private lateinit var notices: Corrections
 
     private fun finite(pesos: Long) =
         (BudgetLimit.finite(Money.cop(pesos)) as Outcome.Success).value
@@ -167,7 +167,7 @@ class CategoryManagementViewModelTest {
     @Before
     fun mainDispatcher() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        notices = ExpenseCorrections(
+        notices = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             HandGoalCommands(),

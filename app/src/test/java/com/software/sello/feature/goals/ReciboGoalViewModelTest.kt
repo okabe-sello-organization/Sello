@@ -28,7 +28,7 @@ import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
@@ -73,7 +73,7 @@ class ReciboGoalViewModelTest {
     private var nextId = 1
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
     private val scheduler = TestCoroutineScheduler()
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     private val viaje = "00000000-0000-4000-9000-000000000001"
     private val celular = "00000000-0000-4000-9000-000000000002"
@@ -82,7 +82,7 @@ class ReciboGoalViewModelTest {
     @Before
     fun main() {
         Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             commands,

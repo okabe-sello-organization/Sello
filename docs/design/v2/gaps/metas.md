@@ -89,7 +89,7 @@ Missing = nothing exists.
 | Back above a kept stamp lights it again | Partial | `Kept` → `Earned` changes colour; no relight motion |
 | 100 % waits: dashed green Meta, **Marcar como lograda** | Present | `MilestoneState.Ready`, `ReachedRow` |
 | The big moment, reduced motion, long names | Present | `CelebrationOverlay`; `CelebrationTest` (timeline, reduced motion, status bar) |
-| Deshacer for about 10 s, longer with TalkBack | Partial | Corrections' undo notice exists with its own window (`ExpenseCorrections`); 10 s and the TalkBack extension are new |
+| Deshacer for about 10 s, longer with TalkBack | Partial | Corrections' undo notice exists with its own window (`Corrections`); 10 s and the TalkBack extension are new |
 
 ## Recibo
 

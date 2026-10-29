@@ -37,7 +37,7 @@ import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
@@ -83,12 +83,12 @@ class GoalsViewModelTest {
 
     /** The test's virtual time, which the notices' clock follows so they end when they should. */
     private val scheduler = TestCoroutineScheduler()
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     @Before
     fun main() {
         Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             commands,

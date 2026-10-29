@@ -34,8 +34,8 @@ import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.presentation.corrections.CorrectionNotice
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.DeleteResult
-import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.recurrence.FollowingSchedule
@@ -87,7 +87,7 @@ class ExpenseEntryViewModel(
     private val clock: FinancialClock,
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
-    private val corrections: ExpenseCorrections,
+    private val corrections: Corrections,
     private val schedules: ScheduleCommands,
     private val scheduleReads: ScheduleReads
 ) : ViewModel() {

@@ -31,7 +31,7 @@ import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.platform.ScreenReader
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.YearMonth
@@ -58,7 +58,7 @@ class GoalEditorViewModel(
     private val clock: FinancialClock,
     private val money: MoneyFormatter,
     private val ids: RecordIdSource,
-    private val corrections: ExpenseCorrections,
+    private val corrections: Corrections,
     screenReader: ScreenReader
 ) : ViewModel() {
     private val goalId: String? = saved[KEY_GOAL]
