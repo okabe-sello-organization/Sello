@@ -46,6 +46,7 @@ import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.movement.MovementNoteProblem
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
@@ -410,7 +411,7 @@ class GoalMovementViewModelTest {
         model.onAction(GoalMovementAction.ComposerDone)
 
         assertTrue(model.state.value.composerOpen)
-        assertEquals(GoalNoteProblem.TooLong, model.state.value.composerProblem)
+        assertEquals(MovementNoteProblem.TooLong, model.state.value.composerProblem)
 
         model.onAction(GoalMovementAction.ComposerChanged("Arreglo del carro"))
         model.onAction(GoalMovementAction.ComposerDone)

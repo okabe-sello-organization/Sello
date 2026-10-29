@@ -16,7 +16,6 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
-import com.software.sello.domain.model.TextError
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
@@ -37,6 +36,7 @@ import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.movement.SavedNoteComposer
 import com.software.sello.presentation.submission.LocalDateSerializer
 import com.software.sello.presentation.submission.SavedDraft
 import com.software.sello.presentation.submission.Settled
@@ -149,22 +149,10 @@ class InvestmentMovementViewModel(
     private val progress = MutableStateFlow(Progress())
     private val board = reads.observeBoard()
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
-    private val composer = combine(
-        saved.getStateFlow(COMPOSER, false),
-        saved.getStateFlow(COMPOSER_TEXT, "")
-    ) { open, text -> text.takeIf { open } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, composerNow())
-
-    private fun composerNow(): String? = if (saved.get<Boolean>(COMPOSER) ==
-        true
-    ) {
-        saved.get<String>(COMPOSER_TEXT).orEmpty()
-    } else {
-        null
-    }
+    private val composer = SavedNoteComposer(saved, PREFIX, viewModelScope)
 
     val state: StateFlow<InvestmentMovementState> =
-        combine(draft, progress, board, clock.today, composer) {
+        combine(draft, progress, board, clock.today, composer.text) {
                 draft,
                 progress,
                 board,
@@ -175,7 +163,7 @@ class InvestmentMovementViewModel(
         }.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
-            render(draft.value, progress.value, board.value, clock.today.value.date, composerNow())
+            render(draft.value, progress.value, board.value, clock.today.value.date, composer.now())
         )
 
     init {
@@ -287,23 +275,19 @@ class InvestmentMovementViewModel(
                 progress.update { it.copy(datePickerOpen = false) }
             }
 
-            InvestmentMovementAction.OpenComposer -> if (editable) {
-                saved[COMPOSER_TEXT] = draft.value.note
-                saved[COMPOSER] = true
-            }
+            InvestmentMovementAction.OpenComposer -> if (editable) composer.open(draft.value.note)
 
-            is InvestmentMovementAction.ComposerChanged ->
-                if (saved.get<Boolean>(COMPOSER) == true) saved[COMPOSER_TEXT] = action.text
+            is InvestmentMovementAction.ComposerChanged -> composer.write(action.text)
 
             // Over the limit nothing is taken: the composer stays open with the text in it.
-            InvestmentMovementAction.ComposerDone -> composer.value?.let { text ->
-                if (editable && noteProblem(text) == null) {
+            InvestmentMovementAction.ComposerDone -> composer.text.value?.let { text ->
+                if (editable && SavedNoteComposer.problem(text) == null) {
                     change(draft.value.copy(note = text))
-                    closeComposer()
+                    composer.close()
                 }
             }
 
-            InvestmentMovementAction.ComposerCancelled -> closeComposer()
+            InvestmentMovementAction.ComposerCancelled -> composer.close()
 
             InvestmentMovementAction.Submit -> if (now.canSubmit) submit()
 
@@ -391,18 +375,6 @@ class InvestmentMovementViewModel(
     private fun pulse() = progress.update {
         it.copy(limitPulse = it.limitPulse + 1, atLimit = true)
     }
-
-    private fun closeComposer() {
-        saved[COMPOSER] = false
-        saved[COMPOSER_TEXT] = null
-    }
-
-    private fun noteProblem(text: String): InvestmentNoteProblem? =
-        when ((Note.of(text) as? Outcome.Failure)?.error) {
-            null, TextError.Required -> null
-            is TextError.TooLong -> InvestmentNoteProblem.TooLong
-            TextError.ControlCharacter -> InvestmentNoteProblem.NotAllowed
-        }
 
     private fun typed(state: InvestmentMovementState): Boolean = if (editing) {
         state.changed
@@ -628,8 +600,8 @@ class InvestmentMovementViewModel(
             note = draft.note,
             composerOpen = writing != null && !progress.closed,
             composerDraft = writing.orEmpty(),
-            composerProblem = writing?.let(::noteProblem),
-            composerLength = writing?.trim()?.let { it.codePointCount(0, it.length) } ?: 0,
+            composerProblem = writing?.let(SavedNoteComposer::problem),
+            composerLength = SavedNoteComposer.length(writing),
             changed = original != null && (
                 amount != original.amount || draft.date != original.date || note != original.note
                 ),
@@ -883,8 +855,7 @@ class InvestmentMovementViewModel(
 
         private const val DRAFT = "investment.movement.draft"
         private const val DRAFTED = "investment.movement.drafted"
-        private const val COMPOSER = "investment.movement.composer"
-        private const val COMPOSER_TEXT = "investment.movement.composer.text"
+        private const val PREFIX = "investment.movement"
         private const val OPERATION = "investment.movement.operation"
         private const val STEP_EDIT = "edit"
         private const val STEP_DELETE = "delete"

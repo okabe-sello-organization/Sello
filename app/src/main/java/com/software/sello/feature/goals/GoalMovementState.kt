@@ -2,6 +2,7 @@ package com.software.sello.feature.goals
 
 import androidx.compose.runtime.Immutable
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.presentation.movement.MovementNoteProblem
 import java.time.LocalDate
 
 /** A goal offered to contribute to or withdraw from, in Metas' order, with its percentage. */
@@ -40,9 +41,6 @@ enum class GoalMovementError {
     NotDeleted
 }
 
-/** Why the text being written for the note cannot be kept. */
-enum class GoalNoteProblem { TooLong, NotAllowed }
-
 /**
  * Aportar or Retirar. [amount] is present only for a valid amount; [amountText] is what
  * was pasted when it could not be used. [overSaved] is what the chosen goal can give when
@@ -68,7 +66,7 @@ data class GoalMovementState(
     val note: String = "",
     val composerOpen: Boolean = false,
     val composerDraft: String = "",
-    val composerProblem: GoalNoteProblem? = null,
+    val composerProblem: MovementNoteProblem? = null,
     val composerLength: Int = 0,
     /** Editing: something differs from what is stored. */
     val changed: Boolean = false,

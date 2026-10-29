@@ -3,21 +3,10 @@ package com.software.sello.feature.investments
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,7 +19,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,10 +27,8 @@ import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
-import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
-import com.software.sello.designsystem.component.EntryLine
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
@@ -50,19 +36,20 @@ import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.component.NoteComposer
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.InvestmentMovementKind
-import com.software.sello.domain.model.Note
 import com.software.sello.presentation.date.dateLabels
-import java.time.Instant
-import java.time.ZoneOffset
+import com.software.sello.presentation.movement.MovementCloseButton
+import com.software.sello.presentation.movement.MovementDatePicker
+import com.software.sello.presentation.movement.MovementDiscardSlip
+import com.software.sello.presentation.movement.MovementNoteComposer
+import com.software.sello.presentation.movement.MovementNoteLine
+import com.software.sello.presentation.movement.MovementPane
 
 @Composable
 fun InvestmentMovementRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit) {
@@ -113,12 +100,10 @@ fun InvestmentMovementScreen(
     SelloScaffold(
         title = stringResource(R.string.investment_movement_title),
         navigationIcon = {
-            IconButton(
-                onClick = { onAction(InvestmentMovementAction.Back) },
-                modifier = Modifier.testTag(INVESTMENT_MOVEMENT_CLOSE_TAG)
-            ) {
-                Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
-            }
+            MovementCloseButton(
+                { onAction(InvestmentMovementAction.Back) },
+                Modifier.testTag(INVESTMENT_MOVEMENT_CLOSE_TAG)
+            )
         },
         actions = {
             if (state.editing) {
@@ -134,11 +119,11 @@ fun InvestmentMovementScreen(
         }
     ) { padding ->
         when {
-            state.loading -> Pane(padding) {
+            state.loading -> MovementPane(padding) {
                 SlipSkeleton(Modifier.testTag(INVESTMENT_MOVEMENT_LOADING_TAG))
             }
 
-            state.loadFailed -> Pane(padding) {
+            state.loadFailed -> MovementPane(padding) {
                 ErrorSlip(
                     stringResource(R.string.inversiones_failed_body),
                     { onAction(InvestmentMovementAction.Retry) },
@@ -173,25 +158,21 @@ fun InvestmentMovementScreen(
         }
     }
     if (state.confirmDiscard) {
-        ConfirmSlip(
-            title = stringResource(R.string.investment_movement_discard_title),
-            message = AnnotatedString(stringResource(R.string.expense_entry_discard_message)),
-            confirmLabel = stringResource(R.string.expense_entry_discard_confirm),
-            onConfirm = { onAction(InvestmentMovementAction.DiscardConfirmed) },
-            onDismiss = { onAction(InvestmentMovementAction.KeepEditing) }
+        MovementDiscardSlip(
+            stringResource(R.string.investment_movement_discard_title),
+            { onAction(InvestmentMovementAction.DiscardConfirmed) },
+            { onAction(InvestmentMovementAction.KeepEditing) }
         )
     }
-    if (state.datePickerOpen) MovementDatePicker(state, onAction)
+    if (state.datePickerOpen) {
+        MovementDatePicker(
+            state.date,
+            state.today,
+            { onAction(InvestmentMovementAction.DatePicked(it)) },
+            { onAction(InvestmentMovementAction.CloseDatePicker) }
+        )
+    }
     if (state.composerOpen) Composer(state, onAction)
-}
-
-@Composable
-private fun Pane(padding: PaddingValues, content: @Composable () -> Unit) {
-    Column(
-        Modifier.fillMaxSize().padding(padding)
-            .verticalScroll(rememberScrollState()).padding(SelloTheme.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
-    ) { content() }
 }
 
 /** "Aporte en pesos" or "Retiro en dólares", the signed amount and the investment's icon. */
@@ -277,14 +258,11 @@ private fun Choices(state: InvestmentMovementState, onAction: (InvestmentMovemen
         }
     }
     state.fact?.let { Fact(it, state, onAction) }
-    EntryLine(
-        text = state.note.ifBlank { stringResource(R.string.expense_entry_add_note) },
-        icon = SelloIcon.EditNote,
-        onClick = { onAction(InvestmentMovementAction.OpenComposer) },
-        modifier = Modifier.testTag(INVESTMENT_MOVEMENT_NOTE_TAG),
-        action = stringResource(R.string.expense_entry_edit_note),
-        placeholder = state.note.isBlank(),
-        enabled = state.editable
+    MovementNoteLine(
+        state.note,
+        state.editable,
+        { onAction(InvestmentMovementAction.OpenComposer) },
+        Modifier.testTag(INVESTMENT_MOVEMENT_NOTE_TAG)
     )
 }
 
@@ -488,82 +466,25 @@ private fun Action(state: InvestmentMovementState, onAction: (InvestmentMovement
 
 @Composable
 private fun Composer(state: InvestmentMovementState, onAction: (InvestmentMovementAction) -> Unit) {
-    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)
-    val kind = stringResource(state.kind.label())
     val sign = when (state.kind.sign()) {
         MoneySign.Plus -> "+"
         MoneySign.Minus -> "−"
         MoneySign.None -> ""
     }
-    NoteComposer(
-        context = buildAnnotatedString {
-            append(kind)
-            state.amount?.let {
-                append(" · ")
-                withStyle(facts) { append(sign + it.written) }
-            }
-        },
-        value = state.composerDraft,
-        onValueChange = { onAction(InvestmentMovementAction.ComposerChanged(it)) },
-        counter = stringResource(
-            R.string.expense_entry_note_counter,
-            state.composerLength,
-            Note.MAX_CODE_POINTS
-        ),
-        hint = stringResource(R.string.expense_entry_note_optional),
-        error = when (state.composerProblem) {
-            InvestmentNoteProblem.TooLong ->
-                stringResource(R.string.expense_entry_note_composer_too_long)
-
-            InvestmentNoteProblem.NotAllowed -> stringResource(R.string.income_text_not_allowed)
-
-            null -> null
-        },
-        doneLabel = stringResource(R.string.expense_entry_note_done),
-        cancelLabel = stringResource(R.string.expense_entry_note_cancel),
-        onDone = { onAction(InvestmentMovementAction.ComposerDone) },
-        onCancel = { onAction(InvestmentMovementAction.ComposerCancelled) },
-        contextIcon = state.investment?.let { InvestmentIcons.iconFor(it.iconKey) }
+    MovementNoteComposer(
+        kind = stringResource(state.kind.label()),
+        figure = state.amount?.let { sign + it.written },
+        draft = state.composerDraft,
+        length = state.composerLength,
+        problem = state.composerProblem,
+        icon = state.investment?.let { InvestmentIcons.iconFor(it.iconKey) }
             ?: SelloIcon.TrendingUp,
-        contextDescription = listOfNotNull(
-            stringResource(R.string.investment_movement_note_spoken),
-            state.amount?.spoken
-        ).joinToString(", ")
+        spoken = stringResource(R.string.investment_movement_note_spoken),
+        amountSpoken = state.amount?.spoken,
+        onChange = { onAction(InvestmentMovementAction.ComposerChanged(it)) },
+        onDone = { onAction(InvestmentMovementAction.ComposerDone) },
+        onCancel = { onAction(InvestmentMovementAction.ComposerCancelled) }
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MovementDatePicker(
-    state: InvestmentMovementState,
-    onAction: (InvestmentMovementAction) -> Unit
-) {
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis = state.date.atStartOfDay(
-            ZoneOffset.UTC
-        ).toInstant().toEpochMilli(),
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) =
-                !Instant.ofEpochMilli(utcTimeMillis)
-                    .atZone(ZoneOffset.UTC).toLocalDate().isAfter(state.today)
-
-            override fun isSelectableYear(year: Int) = year <= state.today.year
-        }
-    )
-    DatePickerDialog(
-        onDismissRequest = { onAction(InvestmentMovementAction.CloseDatePicker) },
-        confirmButton = {
-            SelloButton(stringResource(R.string.expense_entry_date_confirm), {
-                picker.selectedDateMillis?.let {
-                    onAction(
-                        InvestmentMovementAction.DatePicked(
-                            Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
-                        )
-                    )
-                } ?: onAction(InvestmentMovementAction.CloseDatePicker)
-            })
-        }
-    ) { DatePicker(picker) }
 }
 
 const val INVESTMENT_MOVEMENT_CLOSE_TAG = "investment.movement.close"
