@@ -70,12 +70,18 @@ Every other rule in this file still applies to every role.
   answers in the ticket that owns them. Then it dispatches one implementer per ticket
   in dependency order, starts a fresh reviewer for every review and re-review, posts
   the findings, rules on disputes and reports to the owner. It writes no ticket code;
-  it owns the epic status and the run's order.
-- **Implementer** (a cheaper model, own worktree, branch from `origin/main`): delivers
+  it owns the epic status and the run's order. When a required check fails because of
+  a defect already on `main`, it opens an issue and dispatches a fix PR under these
+  rules, then tells the owner. It may start a successor ticket early on its
+  predecessor's branch, for code and focused tests only; that ticket's gate and PR
+  wait until the predecessor merges.
+- **Implementer** (the model the owner picks for the ticket, own worktree, branch
+  from `origin/main` unless stacked as above): delivers
   one ticket under these rules, opens the PR, tells the orchestrator, then babysits
   the PR: answers every finding and comment with a fix or a reason, fixes red checks,
   and merges under [Merging in a run](#merging-in-a-run). It owns its branch and
   ticket folder only, starts no subagents and never counts its own review as approval.
+  Screenshots for the PR go in the ticket's `artifacts/` folder.
 - **Adversarial reviewer** (Claude Opus 5.5, medium effort, read-only): below.
 
 ### Adversarial reviewer
@@ -107,7 +113,9 @@ the fix diff; it marks each finding resolved or open and flags new breakage in t
 fix diff only.
 
 The orchestrator posts each verdict as one PR comment. The implementer answers each
-ID in the PR and pushes; the orchestrator then starts the re-review. After three
+ID in the PR and pushes; the orchestrator then starts the re-review. When the latest
+verdict is `APPROVE` and only Minor findings were fixed, the orchestrator may check
+that fix diff itself and say so in a PR comment instead of a re-review. After three
 rounds, the orchestrator rules on each open finding in a PR comment, or asks the
 owner when the dispute is about money, privacy or destructive behavior. Evidence
 names the reviewer as an agent; it is never recorded as a human or owner approval.
