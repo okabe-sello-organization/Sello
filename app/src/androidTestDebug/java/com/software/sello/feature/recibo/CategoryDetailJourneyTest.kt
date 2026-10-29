@@ -56,8 +56,17 @@ class CategoryDetailJourneyTest {
             // Each step persists its checkpoint before the next one is requested.
         }
         assertTrue(runner.state.value.finished)
+        // ADR 0015 by hand: October 40.000 + 30.000 + 15.000 + 10.000 + 5.000; September,
+        // a month with a limit, nothing.
+        assertEquals(listOf("100000"), graph.spentIn("2026-10"))
+        assertEquals(listOf("0"), graph.spentIn("2026-09"))
         return graph
     }
+
+    private fun SandboxGraph.spentIn(month: String) = rows(
+        "SELECT IFNULL(SUM(amount_minor), 0) FROM expense " +
+            "WHERE effective_date BETWEEN '$month-01' AND '$month-31'"
+    )
 
     @Test
     fun realCategoryInsightsAndTheSearchableExpenseBrowserSurviveReopening() = runBlocking {
