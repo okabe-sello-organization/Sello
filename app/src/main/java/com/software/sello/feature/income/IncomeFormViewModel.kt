@@ -7,7 +7,6 @@ import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.IncomeSourceError
 import com.software.sello.domain.model.Note
-import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
@@ -17,22 +16,21 @@ import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.AmountDraftError
 import com.software.sello.domain.port.ChangeSchedule
-import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
+import com.software.sello.domain.port.CommittedIncome
+import com.software.sello.domain.port.CommittedSchedule
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.FinancialClock
-import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
-import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRejection
@@ -45,6 +43,11 @@ import com.software.sello.presentation.recurrence.FollowingSchedule
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatDraft
 import com.software.sello.presentation.recurrence.RepeatUi
+import com.software.sello.presentation.submission.AmountDraftSerializer
+import com.software.sello.presentation.submission.LocalDateSerializer
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -58,6 +61,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Records one income, or corrects a recorded one, through the real commands. With Se
@@ -76,14 +80,16 @@ class IncomeFormViewModel(
     private val schedules: ScheduleCommands,
     private val scheduleReads: ScheduleReads
 ) : ViewModel() {
+    @Serializable
     private data class Draft(
-        val amount: AmountDraft,
+        @Serializable(with = AmountDraftSerializer::class) val amount: AmountDraft,
         val source: String,
         val other: String,
-        val date: LocalDate,
+        @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
         val note: String
     )
 
+    @Serializable
     private data class Original(val version: Long, val draft: Draft)
 
     private data class Progress(
@@ -110,31 +116,13 @@ class IncomeFormViewModel(
     private val edited = saved.get<String>(KEY_EDITED_INCOME)?.let {
         (IncomeId.of(it) as? Outcome.Success)?.value
     }
+    private val drafts = SavedDraft(saved, DRAFT, Draft.serializer())
+    private val originals = SavedDraft(saved, ORIGINAL, Original.serializer())
+    private val submission = Submission(saved, OPERATION, ids)
     private val draft = MutableStateFlow(
-        Draft(
-            saved.get<String>(AMOUNT)?.let(AmountDraft::paste) ?: AmountDraft.Empty,
-            saved[SOURCE] ?: "salary",
-            saved[OTHER] ?: "",
-            saved.get<String>(DATE)?.let(LocalDate::parse) ?: clock.today.value.date,
-            saved[NOTE] ?: ""
-        )
+        drafts.read() ?: Draft(AmountDraft.Empty, "salary", "", clock.today.value.date, "")
     )
-    private val progress = MutableStateFlow(
-        Progress(
-            original = saved.get<Long>(VERSION)?.let {
-                Original(
-                    it,
-                    Draft(
-                        AmountDraft.paste(requireNotNull(saved[ORIGINAL_AMOUNT])),
-                        requireNotNull(saved[ORIGINAL_SOURCE]),
-                        saved[ORIGINAL_OTHER] ?: "",
-                        LocalDate.parse(requireNotNull(saved[ORIGINAL_DATE])),
-                        saved[ORIGINAL_NOTE] ?: ""
-                    )
-                )
-            }
-        )
-    )
+    private val progress = MutableStateFlow(Progress(original = originals.read()))
     private val month = combine(
         draft.map { YearMonth.from(it.date) }.distinctUntilChanged(),
         progress.map { it.attempt }.distinctUntilChanged()
@@ -177,7 +165,7 @@ class IncomeFormViewModel(
         )
 
     init {
-        saved[DATE] = draft.value.date.toString()
+        drafts.write(draft.value)
         // Opened from Pagos e ingresos fijos: Se repite's sheet opens once, on today.
         if (saved.get<Boolean>(KEY_PREFILL_REPEAT) == true &&
             saved.get<Boolean>(REPEAT_OFFERED) != true && !editing
@@ -203,7 +191,7 @@ class IncomeFormViewModel(
             when {
                 saved.get<String>(SAVED) != null -> announce(requireNotNull(saved[SAVED]))
                 saved.get<String>(SAVED_SCHEDULE) != null -> announceSchedule()
-                saved.get<String>(OPERATION) != null -> recover()
+                submission.pending -> recover()
                 editing && progress.value.original == null -> loadOriginal()
             }
             if (editing && saved.get<String>(ORIGIN_SCHEDULE) != null) loadFollowing()
@@ -213,15 +201,7 @@ class IncomeFormViewModel(
     private fun change(next: Draft) {
         // Any key that changes the amount takes "Máximo 12 dígitos" away.
         if (next.amount != draft.value.amount) progress.update { it.copy(atLimit = false) }
-        saved[AMOUNT] = when (val amount = next.amount) {
-            AmountDraft.Empty -> null
-            is AmountDraft.Digits -> amount.digits
-            is AmountDraft.Rejected -> amount.original
-        }
-        saved[SOURCE] = next.source
-        saved[OTHER] = next.other
-        saved[DATE] = next.date.toString()
-        saved[NOTE] = next.note
+        drafts.write(next)
         draft.value = next
     }
 
@@ -295,7 +275,7 @@ class IncomeFormViewModel(
 
             IncomeFormAction.Retry -> if (!now.busy) {
                 viewModelScope.launch {
-                    if (saved.get<String>(OPERATION) != null) {
+                    if (submission.pending) {
                         recover()
                     } else {
                         if (progress.value.loadFailed) loadOriginal()
@@ -305,7 +285,7 @@ class IncomeFormViewModel(
             }
 
             IncomeFormAction.Back -> when {
-                now.busy || saved.get<String>(OPERATION) != null -> Unit
+                now.busy || submission.pending -> Unit
                 now.recorded != null -> progress.update { it.copy(closed = true) }
                 typed() -> progress.update { it.copy(confirmDiscard = true) }
                 else -> progress.update { it.copy(closed = true) }
@@ -313,9 +293,7 @@ class IncomeFormViewModel(
 
             IncomeFormAction.KeepEditing -> progress.update { it.copy(confirmDiscard = false) }
 
-            IncomeFormAction.DiscardConfirmed -> if (!now.busy &&
-                saved.get<String>(OPERATION) == null
-            ) {
+            IncomeFormAction.DiscardConfirmed -> if (!now.busy && !submission.pending) {
                 progress.update {
                     it.copy(confirmDiscard = false, closed = true)
                 }
@@ -409,12 +387,7 @@ class IncomeFormViewModel(
                     income.date,
                     income.note?.value.orEmpty()
                 )
-                saved[VERSION] = income.version
-                saved[ORIGINAL_AMOUNT] = income.amount.money.minorUnits.toString()
-                saved[ORIGINAL_SOURCE] = original.source
-                saved[ORIGINAL_OTHER] = original.other
-                saved[ORIGINAL_DATE] = original.date.toString()
-                saved[ORIGINAL_NOTE] = original.note
+                originals.write(Original(income.version, original))
                 saved[ORIGIN_SCHEDULE] = income.origin?.schedule?.value
                 change(original)
                 progress.update {
@@ -461,32 +434,30 @@ class IncomeFormViewModel(
         val amount = (current.amount.toTransactionAmount() as? Outcome.Success)?.value ?: return
         val source = (source(current) as? Outcome.Success)?.value ?: return
         val note = (Note.of(current.note) as? Outcome.Success ?: return).value
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[OPERATION] = operation.value
-        saved[DELETING] = false
         progress.update { it.copy(busy = true, error = null) }
         val choice = repeat.choice
         if (choice != null && !editing) {
             val rule = choice.rule() ?: return progress.update { it.copy(busy = false) }
-            saved[OPERATION_SCHEDULE] = true
             viewModelScope.launch {
                 settleSchedule(
-                    schedules.submit(
-                        CreateSchedule(
-                            operation,
-                            generation,
-                            ScheduledEntry.Income(source, amount, note),
-                            rule,
-                            current.date,
-                            choice.end
+                    submission.send(schedules::find, STEP_SCHEDULE) { operation ->
+                        schedules.submit(
+                            CreateSchedule(
+                                operation,
+                                generation,
+                                ScheduledEntry.Income(source, amount, note),
+                                rule,
+                                current.date,
+                                choice.end
+                            )
                         )
-                    )
+                    }
                 )
             }
             return
         }
         viewModelScope.launch {
-            settle(
+            val settled = submission.send(commands::find, STEP_INCOME) { operation ->
                 if (editing && original != null && edited != null) {
                     commands.edit(
                         EditIncome(
@@ -505,21 +476,29 @@ class IncomeFormViewModel(
                         CreateIncome(operation, generation, amount, source, current.date, note)
                     )
                 }
-            )
+            }
+            settle(settled)
         }
     }
 
-    private suspend fun settle(outcome: IncomeCommandOutcome) {
-        when (outcome) {
-            is CommandOutcome.Committed -> committed(outcome.value.incomeId)
+    private suspend fun settle(settled: Settled<CommittedIncome, IncomeRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
-            is CommandOutcome.OutcomeUnknown -> recover()
+            // Only a receipt counts as saved.
+            is Settled.Committed -> committed(settled.value.incomeId)
 
-            is CommandOutcome.Rejected -> {
-                saved[OPERATION] = null
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = IncomeFormError.Unknown)
+            }
+
+            Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
+
+            is Settled.Rejected -> {
                 // Asked again unless the following incomes already changed.
                 if (saved.get<Boolean>(FOLLOWING_SAVED) != true) saved[FOLLOWING] = null
-                val error = when (val reason = outcome.reason) {
+                val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
 
                     is CommandRejection.VersionConflict -> IncomeFormError.IncomeChanged
@@ -551,60 +530,57 @@ class IncomeFormViewModel(
         val source = (source(current) as? Outcome.Success)?.value ?: return
         val note = (Note.of(current.note) as? Outcome.Success ?: return).value
         val recurrence = following.schedule.recurrence
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[OPERATION] = operation.value
-        saved[OPERATION_SCHEDULE] = true
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
-            when (
-                val outcome = schedules.submit(
-                    ChangeSchedule(
-                        operation,
-                        generation,
-                        following.schedule.id,
-                        following.version,
-                        ScheduledEntry.Income(source, amount, note),
-                        recurrence.rule,
-                        recurrence.start,
-                        recurrence.end
+            settleSchedule(
+                submission.send(schedules::find, STEP_SCHEDULE) { operation ->
+                    schedules.submit(
+                        ChangeSchedule(
+                            operation,
+                            generation,
+                            following.schedule.id,
+                            following.version,
+                            ScheduledEntry.Income(source, amount, note),
+                            recurrence.rule,
+                            recurrence.start,
+                            recurrence.end
+                        )
                     )
-                )
-            ) {
-                is CommandOutcome.Committed -> followingSaved()
-
-                is CommandOutcome.OutcomeUnknown -> recover()
-
-                is CommandOutcome.Rejected -> {
-                    saved[OPERATION] = null
-                    saved[OPERATION_SCHEDULE] = null
-                    saved[FOLLOWING] = null
-                    progress.update {
-                        it.copy(busy = false, error = IncomeFormError.FollowingNotSaved)
-                    }
                 }
-            }
+            )
         }
     }
 
     /** The following incomes took the new terms; now this income is corrected. */
     private fun followingSaved() {
-        saved[OPERATION] = null
-        saved[OPERATION_SCHEDULE] = null
         saved[FOLLOWING_SAVED] = true
         progress.update { it.copy(busy = false) }
         submit()
     }
 
-    private suspend fun settleSchedule(outcome: ScheduleCommandOutcome) {
-        when (outcome) {
-            is CommandOutcome.Committed -> scheduleSaved(outcome.value.scheduleId)
+    /**
+     * A schedule command: a new schedule from Se repite, or, when correcting, the new
+     * terms for the following incomes.
+     */
+    private suspend fun settleSchedule(settled: Settled<CommittedSchedule, ScheduleRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
-            is CommandOutcome.OutcomeUnknown -> recover()
+            is Settled.Committed ->
+                if (editing) followingSaved() else scheduleSaved(settled.value.scheduleId)
 
-            is CommandOutcome.Rejected -> {
-                saved[OPERATION] = null
-                saved[OPERATION_SCHEDULE] = null
-                val error = when (val reason = outcome.reason) {
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = IncomeFormError.Unknown)
+            }
+
+            Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
+
+            is Settled.Rejected -> if (editing) {
+                saved[FOLLOWING] = null
+                progress.update { it.copy(busy = false, error = IncomeFormError.FollowingNotSaved) }
+            } else {
+                val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
 
                     CommandRejection.OperationConflict,
@@ -624,8 +600,6 @@ class IncomeFormViewModel(
 
     private suspend fun scheduleSaved(id: ScheduleId) {
         saved[SAVED_SCHEDULE] = id.value
-        saved[OPERATION] = null
-        saved[OPERATION_SCHEDULE] = null
         announceSchedule()
     }
 
@@ -649,53 +623,18 @@ class IncomeFormViewModel(
         progress.update { it.copy(busy = false, closed = true) }
     }
 
+    /** Asks storage how the saved operation ended, with its own identifier. */
     private suspend fun recover() {
-        val operation =
-            (saved.get<String>(OPERATION)?.let(OperationId::of) as? Outcome.Success)?.value
-                ?: return
         progress.update { it.copy(busy = true, error = null) }
-        if (saved.get<Boolean>(OPERATION_SCHEDULE) == true) {
-            return when (val found = schedules.find(operation)) {
-                is Outcome.Failure -> progress.update {
-                    it.copy(busy = false, error = IncomeFormError.Unknown)
-                }
-
-                is Outcome.Success -> {
-                    val committed = found.value
-                    if (committed != null) {
-                        if (editing) followingSaved() else scheduleSaved(committed.scheduleId)
-                    } else {
-                        saved[OPERATION] = null
-                        saved[OPERATION_SCHEDULE] = null
-                        progress.update { it.copy(busy = false, error = null) }
-                    }
-                }
-            }
-        }
-        when (val result = commands.find(operation)) {
-            is Outcome.Failure -> progress.update {
-                it.copy(busy = false, error = IncomeFormError.Unknown)
-            }
-
-            is Outcome.Success -> if (result.value != null) {
-                val committed = requireNotNull(result.value)
-                if (saved.get<Boolean>(DELETING) == true) {
-                    corrections.incomeDeleted(committed.receipt)
-                    saved[OPERATION] = null
-                    progress.update { it.copy(busy = false, error = null, closed = true) }
-                } else {
-                    committed(committed.incomeId)
-                }
-            } else {
-                saved[OPERATION] = null
-                progress.update { it.copy(busy = false, error = null) }
-            }
+        when (submission.step) {
+            STEP_SCHEDULE -> settleSchedule(submission.recover(schedules::find))
+            STEP_DELETE -> settleDelete(submission.recover(commands::find))
+            else -> settle(submission.recover(commands::find))
         }
     }
 
     private suspend fun committed(id: IncomeId) {
         if (editing) {
-            saved[OPERATION] = null
             if (saved.get<Boolean>(FOLLOWING_SAVED) == true) {
                 corrections.scheduleChanged(
                     CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = true)
@@ -706,7 +645,6 @@ class IncomeFormViewModel(
             progress.update { it.copy(busy = false, error = null, closed = true) }
         } else {
             saved[SAVED] = id.value
-            saved[OPERATION] = null
             announce(id.value)
         }
     }
@@ -730,33 +668,44 @@ class IncomeFormViewModel(
         val id = edited ?: return
         val original = progress.value.original ?: return
         val generation = saved.get<Long>(GENERATION) ?: return
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[OPERATION] = operation.value
-        saved[DELETING] = true
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
-            when (
-                val result = corrections.deleteIncome(
-                    DeleteIncome(operation, generation, id, original.version)
-                )
-            ) {
-                is CommandOutcome.Committed -> {
-                    saved[OPERATION] = null
-                    progress.update { it.copy(busy = false, closed = true) }
+            settleDelete(
+                submission.send(commands::find, STEP_DELETE) { operation ->
+                    corrections.deleteIncome(
+                        DeleteIncome(operation, generation, id, original.version)
+                    )
                 }
+            )
+        }
+    }
 
-                is CommandOutcome.OutcomeUnknown -> recover()
+    private fun settleDelete(settled: Settled<CommittedIncome, IncomeRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
-                is CommandOutcome.Rejected -> {
-                    saved[OPERATION] = null
-                    val error = when (result.reason) {
-                        Specific(IncomeRejection.IncomeMissing) -> IncomeFormError.IncomeGone
-                        is CommandRejection.VersionConflict -> IncomeFormError.IncomeChanged
-                        is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
-                        else -> IncomeFormError.NotDeleted
-                    }
-                    progress.update { it.copy(busy = false, error = error) }
+            // A deletion sent from here was offered to undo by [corrections]; one found
+            // after an unknown outcome is offered now.
+            is Settled.Committed -> {
+                if (settled.found) corrections.incomeDeleted(settled.value.receipt)
+                progress.update { it.copy(busy = false, error = null, closed = true) }
+            }
+
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = IncomeFormError.Unknown)
+            }
+
+            Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
+
+            is Settled.Rejected -> {
+                val error = when (settled.reason) {
+                    Specific(IncomeRejection.IncomeMissing) -> IncomeFormError.IncomeGone
+                    is CommandRejection.VersionConflict -> IncomeFormError.IncomeChanged
+                    is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
+                    else -> IncomeFormError.NotDeleted
                 }
+                progress.update { it.copy(busy = false, error = error) }
             }
         }
     }
@@ -885,28 +834,20 @@ class IncomeFormViewModel(
 
         /** Route argument: open with Se repite's sheet. */
         const val KEY_PREFILL_REPEAT = "repeat"
-        private const val AMOUNT = "income.amount"
-        private const val SOURCE = "income.source"
-        private const val OTHER = "income.other"
-        private const val DATE = "income.date"
-        private const val NOTE = "income.note"
+        private const val DRAFT = "income.draft"
+        private const val ORIGINAL = "income.original"
         private const val COMPOSER = "income.composer"
         private const val COMPOSER_TEXT = "income.composer.text"
         private const val OPERATION = "income.operation"
-        private const val DELETING = "income.deleting"
         private const val GENERATION = "income.generation"
         private const val SAVED = "income.saved"
-        private const val OPERATION_SCHEDULE = "income.operation.schedule"
         private const val SAVED_SCHEDULE = "income.saved.schedule"
+        private const val STEP_INCOME = "income"
+        private const val STEP_SCHEDULE = "schedule"
+        private const val STEP_DELETE = "delete"
         private const val ORIGIN_SCHEDULE = "income.origin.schedule"
         private const val REPEAT_OFFERED = "income.repeat.offered"
         private const val FOLLOWING = "income.following"
         private const val FOLLOWING_SAVED = "income.following.saved"
-        private const val VERSION = "income.original.version"
-        private const val ORIGINAL_AMOUNT = "income.original.amount"
-        private const val ORIGINAL_SOURCE = "income.original.source"
-        private const val ORIGINAL_OTHER = "income.original.other"
-        private const val ORIGINAL_DATE = "income.original.date"
-        private const val ORIGINAL_NOTE = "income.original.note"
     }
 }
