@@ -41,7 +41,8 @@ could never turn it green, and a red test was hard to find in the logs.
   CI checks it: the owner merges releases (AGENTS.md, "Who merges"), and that merge
   is the acceptance.
 - A ticket's `Gate` field is advisory; CI selects by changed paths. Runs on `main`
-  are never cancelled by a newer run; pull request runs are.
+  (push, nightly, manual) get one concurrency group per commit, so none is cancelled
+  or superseded by a newer one; a newer push to a pull request replaces its run.
 
 ## Consequences
 

@@ -18,8 +18,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: quality-${{ github.ref }}-${{ github.event_name }}
-  # A newer push to a pull request replaces its run; runs on main always finish.
+  # A newer push to a pull request replaces its run. Every other run gets its own group
+  # (one per commit), so no push, nightly or manual run is cancelled or superseded.
+  group: quality-${{ github.event_name == 'pull_request' && github.ref || github.sha }}-${{ github.event_name }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:

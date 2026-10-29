@@ -53,7 +53,7 @@ class HostedWorkflowTests(unittest.TestCase):
 
     def test_only_pull_request_runs_are_cancelled_by_a_newer_run(self):
         concurrency = self.code.split('concurrency:\n', 1)[1].split('\n\n', 1)[0]
-        self.assertIn('group: quality-${{ github.ref }}-${{ github.event_name }}', concurrency)
+        self.assertIn("group: quality-${{ github.event_name == 'pull_request' && github.ref || github.sha }}-${{ github.event_name }}", concurrency)
         self.assertIn("cancel-in-progress: ${{ github.event_name == 'pull_request' }}", concurrency)
 
     def test_exactly_one_required_quality_result_depends_on_every_job(self):
