@@ -232,9 +232,9 @@ class CategoryEditorScreenTest {
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().performClick()
         rule.onNodeWithContentDescription("Volver").performClick()
 
-        // The form is given the same state again, so the field goes back to "Mer" and
-        // says so; what matters is that the typed text was reported first, as typed,
-        // after the name already there.
+        // The form is given the same state again, which is not a change, so the field
+        // keeps what was typed; what matters is that the typed text was reported first,
+        // as typed, after the name already there.
         assertEquals(CategoryEditorAction.NameChanged("Merc"), actions.first())
         assertEquals(
             listOf(
@@ -249,7 +249,7 @@ class CategoryEditorScreenTest {
             ),
             actions.filterNot { it is CategoryEditorAction.NameChanged }
         )
-        name.assertTextContains("Mer")
+        name.assertTextContains("Merc")
     }
 
     @Test

@@ -196,7 +196,7 @@ class CategoryExpensesViewModelTest {
         }
 
     @Test
-    fun restoredFiltersAreAppliedToStorageAndOverlongInputIsRejectedWhole() = runTest {
+    fun restoredFiltersAreApplied() = runTest {
         val saved = SavedStateHandle(
             mapOf(
                 "expenseSearch" to "Compra 44",
@@ -206,9 +206,32 @@ class CategoryExpensesViewModelTest {
         val model = started(saved)
         assertEquals(Triple(ExpenseOrder.Name, "Compra 44", 20), requests.last())
         assertEquals(1, model.ready.rows.size)
-        model.onAction(CategoryExpensesAction.Search("x".repeat(61)))
+    }
+
+    @Test
+    fun anOverlongSearchIsCutToItsFirstSixtyCharacters() = runTest {
+        val model = started()
+        val pasted = "abcdefghij".repeat(7)
+
+        model.onAction(CategoryExpensesAction.Search(pasted))
         runCurrent()
-        assertEquals("Compra 44", model.query.value)
+
+        assertEquals(pasted.take(60), model.query.value)
+        assertEquals(60, model.query.value.length)
+        assertEquals(pasted.take(60), requests.last().second)
+    }
+
+    @Test
+    fun theCutNeverSplitsACharacterThatTakesTwoUnits() = runTest {
+        val model = started()
+        // An emoji (two UTF-16 units) sits across the limit: positions 60 and 61.
+        val pasted = "a".repeat(59) + "\uD83D\uDE00" + "bbb"
+
+        model.onAction(CategoryExpensesAction.Search(pasted))
+        runCurrent()
+
+        assertEquals("a".repeat(59), model.query.value)
+        assertEquals("a".repeat(59), requests.last().second)
     }
 
     @Test

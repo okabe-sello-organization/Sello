@@ -359,6 +359,7 @@ private fun Identity(
                 onValueChange = { onAction(GoalEditorAction.NameChanged(it)) },
                 modifier = Modifier.weight(1f).focusRequester(nameFocus)
                     .testTag(GOAL_EDITOR_NAME_TAG),
+                enabled = state.editable,
                 message = when (state.nameError) {
                     GoalNameError.TooLong ->
                         FieldMessage(stringResource(R.string.goal_editor_name_too_long))

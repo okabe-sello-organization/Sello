@@ -135,6 +135,15 @@ class InvestmentEditorScreenTest {
     }
 
     @Test
+    fun whileSavingTheNameAndDescriptionCannotBeEdited() {
+        show(creating.copy(busy = true))
+
+        rule.onNodeWithContentDescription("Nombre").assertIsNotEnabled()
+        rule.onNodeWithContentDescription("Descripción (opcional)").performScrollTo()
+            .assertIsNotEnabled()
+    }
+
+    @Test
     fun dollarsSayTheyStayInDollars() {
         show(dollarsNoRate)
         rule.onNodeWithText(
