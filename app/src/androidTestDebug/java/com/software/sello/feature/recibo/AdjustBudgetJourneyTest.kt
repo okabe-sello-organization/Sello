@@ -16,6 +16,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.software.sello.awaitDescription
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.composition.viewModels
@@ -70,8 +71,10 @@ class AdjustBudgetJourneyTest {
         rule.awaitTag(RECIBO_ADJUST_TAG)
         rule.onNodeWithTag(RECIBO_ADJUST_TAG).performScrollTo().press()
         rule.awaitTag(ADJUST_TAG)
-        rule.onNodeWithContentDescription("Restante del presupuesto: menos 80.000 pesos. Excedido.")
-            .assertIsDisplayed()
+        // The screen shows while the month is still being read off the main thread, which
+        // the test framework does not wait for: wait for the answer itself.
+        rule.awaitDescription(OVER)
+        rule.onNodeWithContentDescription(OVER).assertIsDisplayed()
         capture("screen")
         rule.onNode(
             hasText("Café") and hasAnyAncestor(hasTestTag(ADJUST_TAG)),
@@ -87,8 +90,9 @@ class AdjustBudgetJourneyTest {
         rule.onNodeWithText("Guardar solo octubre").performScrollTo().press()
 
         rule.awaitText("Límite de Café para octubre: 150.000")
-        rule.onNodeWithContentDescription("Restante del presupuesto: 20.000 pesos. Al día.")
-            .assertIsDisplayed()
+        // The month's answer is read again after the save, apart from the category's line.
+        rule.awaitDescription(ON_TRACK)
+        rule.onNodeWithContentDescription(ON_TRACK).assertIsDisplayed()
         capture("saved")
         assertEquals(
             listOf("2026-10|150000"),
@@ -112,3 +116,6 @@ class AdjustBudgetJourneyTest {
         }
     }
 }
+
+private const val OVER = "Restante del presupuesto: menos 80.000 pesos. Excedido."
+private const val ON_TRACK = "Restante del presupuesto: 20.000 pesos. Al día."
