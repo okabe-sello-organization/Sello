@@ -181,6 +181,8 @@ jobs:
 
       - name: Run device tests on API 30
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        # A hang fails the job in minutes instead of holding the runner for an hour.
+        timeout-minutes: 25
         with:
           api-level: 30
           target: google_apis
@@ -189,7 +191,10 @@ jobs:
           force-avd-creation: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
-          script: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES"
+          # The action runs each script line on its own, so one line keeps the exit status.
+          # The emulator's crashpad_handler can outlive "emu kill" and keep the action
+          # waiting until the job times out (seen 2026-10-29 after every test passed).
+          script: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES"; status=$?; killall -INT crashpad_handler || true; exit $status
 
       - name: Identify installed Android system image
         if: matrix.group == 'support' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
