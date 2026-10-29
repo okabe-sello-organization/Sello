@@ -30,12 +30,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 /**
  * Where the keys and the button are. Typing changes the amount, never the place a
  * finger has to go: whatever the form says, a key stays where it was. On the JVM (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
+// A screen larger than every window below, so each window is laid out whole.
+@Config(qualifiers = "w800dp-h800dp-mdpi")
 class ExpenseEntryGeometryTest {
     @get:Rule
     val rule = createComposeRule()
@@ -74,9 +77,9 @@ class ExpenseEntryGeometryTest {
 
     private var state by mutableStateOf(empty)
 
-    /** One dp is one pixel on the JVM screen, so a window of any size can be laid out. */
+    /** One dp is one pixel (pinned), so the pixel sizes asserted below are dp. */
     private fun show(window: DpSize, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale, window = window)) {
+        rule.showSello(Look(fontScale = fontScale, window = window, density = 1f)) {
             ExpenseEntryScreen(state, dateLabels(), { actions += it })
         }
     }

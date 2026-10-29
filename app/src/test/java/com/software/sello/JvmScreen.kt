@@ -28,7 +28,9 @@ data class Look(
     val dark: Boolean = false,
     val fontScale: Float = 1f,
     /** A window of this size inside the screen; null for the whole screen. */
-    val window: DpSize? = null
+    val window: DpSize? = null,
+    /** Pixels per dp; null keeps the screen's. Pin it when a test asserts pixel sizes. */
+    val density: Float? = null
 ) {
     /** A short name for a screenshot file, such as `cobalto-dark-font2.0`. */
     val label get() = "${ink.name.lowercase()}-${if (dark) "dark" else "light"}-font$fontScale"
@@ -37,7 +39,7 @@ data class Look(
 /** Shows [content] in Sello's theme as [look] says, with motion reduced so nothing is mid-animation. */
 fun ComposeContentTestRule.showSello(look: Look = Look(), content: @Composable () -> Unit) {
     setContent {
-        val density = LocalDensity.current.density
+        val density = look.density ?: LocalDensity.current.density
         CompositionLocalProvider(LocalDensity provides Density(density, look.fontScale)) {
             SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
                 val window = look.window
