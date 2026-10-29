@@ -143,9 +143,12 @@ scripts/check --host                      # G1 exactly as CI runs it
 ANDROID_SERIAL=emulator-5580 scripts/check --device           # every device suite, as a pull request runs it
 ANDROID_SERIAL=emulator-5580 scripts/check --device app --scope nightly  # one hosted group, nightly tests too
 scripts/check --plan origin/main          # what the PR will run, from the merge base
+export ANDROID_SERIAL="$(scripts/emulator start)"   # your own CI-identical emulator
+scripts/emulator stop "$ANDROID_SERIAL"   # shut it down and delete its AVD
 ```
 
-Run the device tests you wrote or changed on your own emulator ([setup](setup.md#device-smoke));
+Run the device tests you wrote or changed on your own emulator, made with
+`scripts/emulator` so it matches CI's ([setup](setup.md#device-smoke));
 the pull request runs the rest. A device run asks only the device in `ANDROID_SERIAL`
 and refuses to start without it. Output stays under `build/`; nothing is committed.
 
@@ -168,8 +171,9 @@ result of each job, so the jobs that passed are not repeated.
 
 | Message | Meaning and action |
 | --- | --- |
-| `REFUSED: name your own emulator with ANDROID_SERIAL` | Start your own emulator and export its serial; assembling test APKs is not a device run. |
-| `REFUSED: ... is not an API-30 device, or did not answer` | Use the pinned API-30 image with the default 320x640 profile. |
+| `REFUSED: name your own emulator with ANDROID_SERIAL` | Start your own with `export ANDROID_SERIAL="$(scripts/emulator start)"`; assembling test APKs is not a device run. |
+| `REFUSED: ... is not an API-30 device, or did not answer` | Use an emulator from `scripts/emulator start`. |
+| A journey passes on CI but fails on your emulator | Your AVD differs from CI's, often a phone profile's navigation bar (#224). Stop it and use `scripts/emulator start`. |
 | `FAILED: ktlint exited 1` | Run `./gradlew ktlintFormat` and review the diff. |
 | `ExpenseEntryScreenshotTest > ... FAILED` (any `*ScreenshotTest`) | A capture no longer matches its baseline. Open the diff in the host artifact; if the change is intended, run `./gradlew :app:recordRoborazziDebug --no-build-cache --rerun-tasks` (or `:design-system:`) and commit the new images. |
 | `AssertionError: ... is blank: N distinct colours` | The screen drew nothing when captured; nothing was recorded or compared. Check the test shows its content and waits for it, rather than re-recording. |
@@ -177,7 +181,7 @@ result of each job, so the jobs that passed are not repeated.
 | `FAILED: ... skipped N device tests` | A device test is ignored or assumed away. Fix it; skips are not passes. |
 | `FAILED: the host gate produced no test results` | Gradle failed before any test ran; read the first error in the log. |
 | `Dependency Locking` / `does not have lock state` | A dependency changed without its lock. If intended, run `./scripts/update-dependency-locks` and review the diff. |
-| `Semantic Node has no parent layout with a Scroll SemanticsAction` | The emulator screen is larger than the default profile. Use the default 320x640 AVD. |
+| `Semantic Node has no parent layout with a Scroll SemanticsAction` | The emulator screen is larger than CI's. Use an emulator from `scripts/emulator start`. |
 | `release-production` failed: no signed release APK | The owner's `sello.signing.*` entries are missing; see [release](../release/README.md). |
 | `BROKEN: <file>:<line>: missing target` | A document moved or a heading changed. Fix the link. |
 | Red push run or nightly on `main` | Nothing else merges until it is fixed: reproduce with `scripts/check --host` or a device run, fix on a branch, merge, then re-run the workflow from the Actions tab. |
