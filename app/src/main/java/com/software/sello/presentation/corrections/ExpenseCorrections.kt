@@ -514,7 +514,7 @@ class ExpenseCorrections(
      */
     suspend fun deleteGoalMovement(command: DeleteGoalMovement): GoalCommandOutcome = scope.async {
         val outcome = goals.submit(command)
-        if (outcome is GoalCommandOutcome.Committed) goalMovementDeleted(outcome.goal.receipt)
+        if (outcome is CommandOutcome.Committed) goalMovementDeleted(outcome.value.receipt)
         outcome
     }.await()
 
@@ -529,16 +529,20 @@ class ExpenseCorrections(
         val command =
             RestoreGoalMovement(offered.undoOperation, offered.generation, offered.deletionId)
         return when (val outcome = goals.submit(command)) {
-            is GoalCommandOutcome.Committed -> Undone.Restored
+            is CommandOutcome.Committed -> Undone.Restored
 
-            is GoalCommandOutcome.OutcomeUnknown -> {
+            is CommandOutcome.OutcomeUnknown -> {
                 val found = (goals.find(offered.undoOperation) as? Outcome.Success)?.value
                 if (found != null) Undone.Restored else Undone.Retry
             }
 
-            is GoalCommandOutcome.Rejected -> when (outcome.reason) {
-                GoalRejection.UndoExpired -> Undone.TooLate
-                GoalRejection.UndoConflict, is GoalRejection.StaleGeneration -> Undone.Blocked
+            is CommandOutcome.Rejected -> when (outcome.reason) {
+                Specific(GoalRejection.UndoExpired) -> Undone.TooLate
+
+                Specific(
+                    GoalRejection.UndoConflict
+                ), is CommandRejection.StaleGeneration -> Undone.Blocked
+
                 else -> Undone.Retry
             }
         }
@@ -601,8 +605,8 @@ class ExpenseCorrections(
     suspend fun completeGoal(command: CompleteGoal, goalName: String): GoalCommandOutcome =
         scope.async {
             val outcome = goals.submit(command)
-            if (outcome is GoalCommandOutcome.Committed) {
-                goalCompleted(outcome.goal.receipt, goalName)
+            if (outcome is CommandOutcome.Committed) {
+                goalCompleted(outcome.value.receipt, goalName)
             }
             outcome
         }.await()
@@ -618,16 +622,20 @@ class ExpenseCorrections(
         val command =
             UndoGoalCompletion(offered.undoOperation, offered.generation, offered.deletionId)
         return when (val outcome = goals.submit(command)) {
-            is GoalCommandOutcome.Committed -> Undone.Restored
+            is CommandOutcome.Committed -> Undone.Restored
 
-            is GoalCommandOutcome.OutcomeUnknown -> {
+            is CommandOutcome.OutcomeUnknown -> {
                 val found = (goals.find(offered.undoOperation) as? Outcome.Success)?.value
                 if (found != null) Undone.Restored else Undone.Retry
             }
 
-            is GoalCommandOutcome.Rejected -> when (outcome.reason) {
-                GoalRejection.UndoExpired -> Undone.TooLate
-                GoalRejection.UndoConflict, is GoalRejection.StaleGeneration -> Undone.Blocked
+            is CommandOutcome.Rejected -> when (outcome.reason) {
+                Specific(GoalRejection.UndoExpired) -> Undone.TooLate
+
+                Specific(
+                    GoalRejection.UndoConflict
+                ), is CommandRejection.StaleGeneration -> Undone.Blocked
+
                 else -> Undone.Retry
             }
         }

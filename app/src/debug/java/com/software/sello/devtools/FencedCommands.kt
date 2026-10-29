@@ -88,7 +88,7 @@ class FencedGoalCommands(
 ) : GoalCommands by commands {
     override suspend fun submit(command: GoalCommand): GoalCommandOutcome = fence.write {
         commands.submit(command)
-    }.also { if (it is GoalCommandOutcome.Committed && !it.replayed) saved() }
+    }.also { if (it is CommandOutcome.Committed && !it.replayed) saved() }
 }
 
 class FencedInvestmentCommands(

@@ -16,6 +16,8 @@ import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.EditGoalMovement
 import com.software.sello.domain.port.FinancialClock
@@ -471,47 +473,52 @@ class GoalMovementViewModel(
     private suspend fun settle(step: String, outcome: GoalCommandOutcome) {
         when (outcome) {
             // A deletion was already offered to undo by [corrections].
-            is GoalCommandOutcome.Committed -> committed(
+            is CommandOutcome.Committed -> committed(
                 step,
-                outcome.goal.receipt,
+                outcome.value.receipt,
                 announced = true,
-                change = outcome.goal.change
+                change = outcome.value.change
             )
 
-            is GoalCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is GoalCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written, so this attempt is over.
                 saved[OPERATION] = null
                 val reason = outcome.reason
-                if (reason is GoalRejection.AboveSaved) {
+                val specific = (reason as? CommandRejection.Specific)?.reason
+                if (specific is GoalRejection.AboveSaved) {
                     progress.update {
                         it.copy(
                             busy = false,
-                            deleteBlockedBy = reason.withdrawal.takeIf { step == STEP_DELETE },
+                            deleteBlockedBy = specific.withdrawal.takeIf { step == STEP_DELETE },
                             error = GoalMovementError.Changed.takeIf { step != STEP_DELETE }
                         )
                     }
                     return
                 }
                 val error = when (reason) {
-                    is GoalRejection.FutureDate, GoalRejection.InvalidDate ->
-                        GoalMovementError.FutureDate
+                    is CommandRejection.StaleGeneration -> GoalMovementError.DataChanged
 
-                    is GoalRejection.StaleGeneration -> GoalMovementError.DataChanged
+                    is CommandRejection.VersionConflict -> GoalMovementError.Changed
 
-                    GoalRejection.GoalMissing, GoalRejection.MovementMissing ->
-                        GoalMovementError.Gone
+                    CommandRejection.OperationConflict, is CommandRejection.StorageFailed -> null
 
-                    is GoalRejection.VersionConflict -> GoalMovementError.Changed
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        is GoalRejection.FutureDate, GoalRejection.InvalidDate ->
+                            GoalMovementError.FutureDate
 
-                    GoalRejection.Completed -> GoalMovementError.Completed
+                        GoalRejection.GoalMissing, GoalRejection.MovementMissing ->
+                            GoalMovementError.Gone
 
-                    else -> if (step == STEP_DELETE) {
-                        GoalMovementError.NotDeleted
-                    } else {
-                        GoalMovementError.NotSaved
+                        GoalRejection.Completed -> GoalMovementError.Completed
+
+                        else -> null
                     }
+                } ?: if (step == STEP_DELETE) {
+                    GoalMovementError.NotDeleted
+                } else {
+                    GoalMovementError.NotSaved
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }

@@ -494,9 +494,9 @@ class ScenarioRunner(
     }
 
     private fun goal(outcome: GoalCommandOutcome): String? = when (outcome) {
-        is GoalCommandOutcome.Committed -> null
-        is GoalCommandOutcome.Rejected -> rejected(outcome.reason)
-        is GoalCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.Committed -> null
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private suspend fun goalCommand(

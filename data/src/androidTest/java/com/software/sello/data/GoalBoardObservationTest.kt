@@ -9,6 +9,7 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommandOutcome
@@ -53,7 +54,7 @@ class GoalBoardObservationTest {
                 pesos(3_000_000),
                 null
             )
-        ) is GoalCommandOutcome.Committed
+        ) is CommandOutcome.Committed
     )
 
     private suspend fun aporte(pesos: Long) {
@@ -70,7 +71,7 @@ class GoalBoardObservationTest {
                     LocalDate.of(2026, 10, 9),
                     null
                 )
-            ) is GoalCommandOutcome.Committed
+            ) is CommandOutcome.Committed
         )
     }
 

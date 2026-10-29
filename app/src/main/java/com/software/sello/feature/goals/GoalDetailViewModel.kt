@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.FinancialClock
@@ -149,9 +150,9 @@ class GoalDetailViewModel(
         ui.value = Ui(busy = true)
         viewModelScope.launch {
             when (val outcome = commands.submit(command(operation))) {
-                is GoalCommandOutcome.Committed -> committed(step)
-                is GoalCommandOutcome.Rejected -> notSaved()
-                is GoalCommandOutcome.OutcomeUnknown -> recover()
+                is CommandOutcome.Committed -> committed(step)
+                is CommandOutcome.Rejected -> notSaved()
+                is CommandOutcome.OutcomeUnknown -> recover()
             }
         }
     }

@@ -19,6 +19,9 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.ChangeGoalTarget
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.EditGoal
@@ -401,12 +404,12 @@ class GoalEditorViewModel(
         operation: OperationId,
         outcome: GoalCommandOutcome
     ): Boolean = when (outcome) {
-        is GoalCommandOutcome.Committed -> {
-            committed(step, outcome.goal.goalId, outcome.goal.change)
+        is CommandOutcome.Committed -> {
+            committed(step, outcome.value.goalId, outcome.value.change)
             true
         }
 
-        is GoalCommandOutcome.OutcomeUnknown -> when (val found = commands.find(operation)) {
+        is CommandOutcome.OutcomeUnknown -> when (val found = commands.find(operation)) {
             is Outcome.Failure -> {
                 mutable.update { it.copy(busy = false, saveError = GoalSaveError.Unknown) }
                 false
@@ -418,11 +421,11 @@ class GoalEditorViewModel(
             } ?: notSaved(GoalSaveError.NotSaved)
         }
 
-        is GoalCommandOutcome.Rejected -> when (outcome.reason) {
-            is GoalRejection.StaleGeneration,
-            is GoalRejection.VersionConflict,
-            GoalRejection.GoalMissing,
-            GoalRejection.Completed -> {
+        is CommandOutcome.Rejected -> when (outcome.reason) {
+            is CommandRejection.StaleGeneration,
+            is CommandRejection.VersionConflict,
+            Specific(GoalRejection.GoalMissing),
+            Specific(GoalRejection.Completed) -> {
                 notSaved(GoalSaveError.Changed)
                 read()
                 false

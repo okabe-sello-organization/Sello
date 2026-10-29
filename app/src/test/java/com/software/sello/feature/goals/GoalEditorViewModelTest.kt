@@ -22,6 +22,8 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.ChangeGoalTarget
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateGoal
@@ -167,7 +169,7 @@ class GoalEditorViewModelTest {
         type("2", "0", "000", "000")
     }
 
-    private fun created(id: String = viajeId) = GoalCommandOutcome.Committed(
+    private fun created(id: String = viajeId) = CommandOutcome.Committed(
         CommittedGoal(
             OperationReceipt(
                 OperationId.of(ids.next()).value(),
@@ -320,7 +322,7 @@ class GoalEditorViewModelTest {
 
     /** What storage answers for a target change that did [change] to the stamps. */
     private fun targetChanged(change: GoalChange?, replayed: Boolean = false) =
-        GoalCommandOutcome.Committed(
+        CommandOutcome.Committed(
             CommittedGoal(
                 OperationReceipt(
                     OperationId.of(ids.next()).value(),
@@ -429,7 +431,7 @@ class GoalEditorViewModelTest {
     fun anUnknownCreateIsAskedAboutAndNothingNewIsSentUntilKnown() = runTest {
         val model = model()
         model.casaPropia()
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
 
         model.onAction(GoalEditorAction.Submit)
@@ -438,7 +440,7 @@ class GoalEditorViewModelTest {
         model.onAction(GoalEditorAction.Submit)
         assertEquals(1, commands.sent.size)
 
-        commands.found = Outcome.Success(created().goal)
+        commands.found = Outcome.Success(created().value)
         model.onAction(GoalEditorAction.Retry)
 
         assertEquals(listOf(operation, operation), commands.asked)
@@ -451,11 +453,11 @@ class GoalEditorViewModelTest {
         val first = model(saved)
         first.casaPropia()
         first.onAction(GoalEditorAction.PickMonth(YearMonth.of(2028, 12)))
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         first.onAction(GoalEditorAction.Submit)
 
-        commands.found = Outcome.Success(created().goal)
+        commands.found = Outcome.Success(created().value)
         val restored = model(saved)
 
         assertEquals("Casa propia", restored.state.value.name)
@@ -514,7 +516,7 @@ class GoalEditorViewModelTest {
     fun aGoalChangedMeanwhileIsReadAgainNotOverwritten() = runTest {
         val model = model(editing(goal(3_000_000, 1_710_000)))
         model.onAction(GoalEditorAction.NameChanged("Viaje a Cartagena"))
-        commands.next = GoalCommandOutcome.Rejected(GoalRejection.VersionConflict(5))
+        commands.next = CommandOutcome.Rejected(CommandRejection.VersionConflict(5))
         val before = reads.reads
 
         model.onAction(GoalEditorAction.Submit)

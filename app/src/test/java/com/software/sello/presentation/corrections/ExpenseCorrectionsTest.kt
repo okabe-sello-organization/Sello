@@ -689,7 +689,7 @@ class ExpenseCorrectionsTest {
     fun deletingAGoalMovementOffersUndoInItsOwnWords() = test {
         val outcome = deleteMovement()
 
-        assertEquals(true, outcome is GoalCommandOutcome.Committed)
+        assertEquals(true, outcome is CommandOutcome.Committed)
         assertEquals(listOf<Any>(movementDeletion()), goals.sent)
         assertEquals(CorrectionNotice.GoalMovementDeleted(canUndo = true), notice)
         assertEquals(emptyList<Any>(), commands.deleted)
@@ -723,12 +723,12 @@ class ExpenseCorrectionsTest {
         runCurrent()
         val after = notice
         deleteMovement()
-        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.UndoExpired)
+        goals.queue += CommandOutcome.Rejected(Specific(GoalRejection.UndoExpired))
         corrections.undo()
         runCurrent()
         val late = notice
         deleteMovement()
-        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.UndoConflict)
+        goals.queue += CommandOutcome.Rejected(Specific(GoalRejection.UndoConflict))
         corrections.undo()
         runCurrent()
 
@@ -754,13 +754,13 @@ class ExpenseCorrectionsTest {
 
     @Test
     fun aRefusedMovementDeletionOffersNothingAndASavedMovementIsSaidForAMoment() = test {
-        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.MovementMissing)
+        goals.queue += CommandOutcome.Rejected(Specific(GoalRejection.MovementMissing))
 
         val outcome = deleteMovement()
         val afterRefusal = notice
         corrections.goalMovementUpdated()
 
-        assertEquals(true, outcome is GoalCommandOutcome.Rejected)
+        assertEquals(true, outcome is CommandOutcome.Rejected)
         assertNull(afterRefusal)
         assertEquals(CorrectionNotice.GoalMovementUpdated, notice)
     }
@@ -819,7 +819,7 @@ class ExpenseCorrectionsTest {
     fun aCompletedGoalOffersDeshacerInItsNameForTheTimeAsked() = test {
         val outcome = complete(undoFor = 14.seconds)
 
-        assertEquals(true, outcome is GoalCommandOutcome.Committed)
+        assertEquals(true, outcome is CommandOutcome.Committed)
         assertEquals(listOf<Any>(completion(14.seconds)), goals.sent)
         assertEquals(CorrectionNotice.GoalCompleted("Celular nuevo", canUndo = true), notice)
         advanceTimeBy(13_999)
@@ -849,7 +849,7 @@ class ExpenseCorrectionsTest {
     @Test
     fun mt25ADeshacerTooLateLeavesTheGoalFinal() = test {
         complete()
-        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.UndoExpired)
+        goals.queue += CommandOutcome.Rejected(Specific(GoalRejection.UndoExpired))
 
         corrections.undo()
         runCurrent()

@@ -22,6 +22,8 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.EditGoalMovement
@@ -291,7 +293,7 @@ class GoalMovementViewModelTest {
     fun anUnknownOutcomeIsAskedAboutAndNothingElseIsSentUntilItIsKnown() = runTest {
         val model = model(goal = viaje)
         model.keys("5", "000")
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
 
         model.onAction(GoalMovementAction.Submit)
@@ -354,8 +356,8 @@ class GoalMovementViewModelTest {
     @Test
     fun mt15AnAporteALaterRetiroUsesCannotBeDeletedAndTheFormSaysWhy() = runTest {
         val model = model(goal = fondo, movement = movementId(41).value)
-        commands.queue += GoalCommandOutcome.Rejected(
-            GoalRejection.AboveSaved(movementId(42), Money.cop(0))
+        commands.queue += CommandOutcome.Rejected(
+            Specific(GoalRejection.AboveSaved(movementId(42), Money.cop(0)))
         )
 
         model.onAction(GoalMovementAction.Delete)
@@ -431,7 +433,7 @@ class GoalMovementViewModelTest {
     }
 
     private fun committedWith(change: GoalChange?, replayed: Boolean = false) =
-        GoalCommandOutcome.Committed(
+        CommandOutcome.Committed(
             CommittedGoal(
                 OperationReceipt(
                     OperationId.of(ids.next()).value(),
@@ -482,9 +484,9 @@ class GoalMovementViewModelTest {
     fun aSaveFoundAfterAnUnknownOutcomeIsNotCelebrated() = runTest {
         val model = model(goal = celular)
         model.keys("3", "0", "0", "000")
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Success(
-            committedWith(GoalChange(listOf(GoalPlace.Half), emptyList(), false)).goal
+            committedWith(GoalChange(listOf(GoalPlace.Half), emptyList(), false)).value
         )
 
         model.onAction(GoalMovementAction.Submit)

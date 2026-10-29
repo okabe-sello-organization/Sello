@@ -174,8 +174,8 @@ object TestCommands {
                 targetMonth
             )
         )
-        assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
-        (outcome as GoalCommandOutcome.Committed).goal.goalId.value
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
+        (outcome as CommandOutcome.Committed).value.goalId.value
     }
 
     /** An aporte, or with [withdrawal] a retiro, of [pesos] dated [date]. */
@@ -197,7 +197,7 @@ object TestCommands {
                 null
             )
         )
-        assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     /** Marcar como lograda, through the real command. */
@@ -211,7 +211,7 @@ object TestCommands {
                 1.seconds
             )
         )
-        assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     /** Chooses [goal] for Recibo, as "Mostrar en Recibo" does, through the real command. */
@@ -219,7 +219,7 @@ object TestCommands {
         val outcome = koin.get<GoalCommands>().submit(
             FeatureGoal(operation(), generation(), GoalId.of(goal).value())
         )
-        assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     private fun generation(): Long = TestData.long("SELECT generation FROM profile")
