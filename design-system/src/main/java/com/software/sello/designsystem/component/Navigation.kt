@@ -88,7 +88,7 @@ fun SelloNavigationRail(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
-        // As wide as its longest label needs, so large text never shortens a tab's name.
+        // As wide as its longest label needs, so a tab's name is never shortened.
         modifier = modifier
             .fillMaxHeight()
             .width(IntrinsicSize.Max)

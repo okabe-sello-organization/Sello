@@ -482,8 +482,8 @@ private fun StepButton(sign: String, label: String, enabled: Boolean, onClick: (
 
 /**
  * The last row of a [RepeatSheet]: [dismissLabel] outlined in a third of the width and
- * [confirmLabel] filled in the rest. When a label would not fit beside the other, as at
- * large text, the two go one above the other.
+ * [confirmLabel] filled in the rest. When a label would not fit beside the other, the
+ * two go one above the other.
  */
 @Composable
 internal fun RepeatSheetActions(

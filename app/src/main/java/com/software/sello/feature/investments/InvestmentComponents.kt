@@ -46,7 +46,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 /**
  * A signed return on one line: the arrow, the [percentage] large and the [amount] in
  * words smaller, all in gain or loss ink. With [even] (neither gain nor loss) there is
- * no arrow and the ink is neutral. The amount wraps on its own at large text.
+ * no arrow and the ink is neutral. A long amount wraps on its own.
  */
 @Composable
 internal fun PerformanceLine(

@@ -150,7 +150,7 @@ internal fun GoalPill(
 /**
  * Another goal at 100 %, on Recibo: a green pill with [name], [message] ("Llegó al
  * 100 %") and a filled [actionLabel] that marks it lograda; [busy] while that is saved.
- * Where the three do not fit on one line (a narrow screen, a long name, large text) the
+ * Where the three do not fit on one line (a narrow screen, a long name) the
  * action moves under the name and the row becomes a card, so nothing is cut.
  */
 @Composable
