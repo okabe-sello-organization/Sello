@@ -255,7 +255,8 @@ object ResumenPolicy {
         val before = snapshots.subList(snapshots.size - 3, snapshots.size - 1)
         return now.categories.mapNotNull { line ->
             if (line.category.archived) return@mapNotNull null
-            val limit = line.budget?.limit ?: return@mapNotNull null
+            // The base: it is the limit the person can change (ADR 0020), not the capacity with carry.
+            val limit = line.budget?.base ?: return@mapNotNull null
             val over = before.map { month ->
                 month.categories.firstOrNull { it.category.id == line.category.id }
                     ?.takeIf {

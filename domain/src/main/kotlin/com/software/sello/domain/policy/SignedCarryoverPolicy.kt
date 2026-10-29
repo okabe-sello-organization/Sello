@@ -58,22 +58,15 @@ object SignedCarryoverPolicy {
         val settled = ArrayList<SettledBalance>()
         for (chain in chains) {
             if (chain.start > through) break
-            val last = chain.end?.minusMonths(1)?.coerceAtMost(through) ?: through
-            var carry = ZERO
-            var month = chain.start
-            while (month <= last) {
-                val figures = when (
-                    val worked = figures(input, chain.start, month, carry, currentMonth)
-                ) {
-                    is Outcome.Success -> worked.value
-                    is Outcome.Failure -> return worked
-                }
-                months += figures
-                carry = figures.remaining
-                month = month.plusMonths(1)
+            val run = when (val worked = run(input, chain, currentMonth, through)) {
+                is Outcome.Success -> worked.value
+                is Outcome.Failure -> return worked
             }
+            months += run
             val end = chain.end
-            if (end != null && end <= through) settled += SettledBalance(chain.start, end, carry)
+            if (end != null && end <= through) {
+                settled += SettledBalance(chain.start, end, run.last().remaining)
+            }
         }
         return Outcome.Success(CarryReplay(months, settled))
     }
@@ -97,11 +90,13 @@ object SignedCarryoverPolicy {
         }
         val chain = chains.firstOrNull { it.covers(month) } ?: return Outcome.Success(null)
         if (month == chain.start) return Outcome.Success(CarryEntry(ZERO, chain.start))
-        val replayed = when (val read = replay(input, currentMonth, month.minusMonths(1))) {
-            is Outcome.Success -> read.value
-            is Outcome.Failure -> return read
+        // Only this chain: it starts at 0, so the months of earlier chains are not needed.
+        val before = when (
+            val worked = run(input, chain, currentMonth, month.minusMonths(1))
+        ) {
+            is Outcome.Success -> worked.value.last()
+            is Outcome.Failure -> return worked
         }
-        val before = replayed.months.last { it.month == month.minusMonths(1) }
         return Outcome.Success(CarryEntry(before.remaining, chain.start))
     }
 
@@ -120,10 +115,11 @@ object SignedCarryoverPolicy {
         overrides: List<MonthLimit>
     ): Outcome<List<CarryChain>, CarryEnableRefusal> {
         if (chains.any { it.covers(month) }) return Outcome.Failure(CarryEnableRefusal.AlreadyOn)
+        val own = defaults.filter { it.categoryId == categoryId }
         if (archived) return Outcome.Failure(CarryEnableRefusal.Archived)
         val state = CategoryBudgetPolicy.stateFor(
             month,
-            defaults,
+            own,
             overrides.firstOrNull { it.categoryId == categoryId && it.month == month }
         )
         val base = when (state) {
@@ -139,7 +135,7 @@ object SignedCarryoverPolicy {
         }
         // Every later month takes its base from the default in force after this month.
         val after = (
-            CategoryBudgetPolicy.inForce(month.plusMonths(1), defaults)?.budget
+            CategoryBudgetPolicy.inForce(month.plusMonths(1), own)?.budget
                 as? AutomaticBudget.Limit
             )?.limit as? BudgetLimit.Finite
             ?: return Outcome.Failure(CarryEnableRefusal.DefaultAfterNotFinite)
@@ -167,11 +163,10 @@ object SignedCarryoverPolicy {
         }
         val chain = chains.firstOrNull { it.covers(currentMonth) }
             ?: return Outcome.Success(DropDecision.NotCarrying)
-        val replayed = when (val read = replay(input, currentMonth, currentMonth)) {
-            is Outcome.Success -> read.value
-            is Outcome.Failure -> return read
+        val now = when (val worked = run(input, chain, currentMonth, currentMonth)) {
+            is Outcome.Success -> worked.value.last()
+            is Outcome.Failure -> return worked
         }
-        val now = replayed.months.last { it.month == currentMonth }
         val ended = if (chain.start == currentMonth) {
             chains - chain
         } else {
@@ -200,6 +195,40 @@ object SignedCarryoverPolicy {
     }
 
     private val ZERO = Money.cop(0)
+
+    /**
+     * The months of one [chain] from its start up to [through] or its last month, never empty:
+     * [through] is not before the start. Reads the history of those months only.
+     */
+    private fun run(
+        input: CategoryCarryInput,
+        chain: CarryChain,
+        currentMonth: YearMonth,
+        through: YearMonth
+    ): Outcome<List<CarryMonth>, CarryoverFailure> {
+        val last = chain.end?.minusMonths(1)?.coerceAtMost(through) ?: through
+        val months = ArrayList<CarryMonth>()
+        var carry = ZERO
+        var month = chain.start
+        while (month <= last) {
+            val figures = when (
+                val worked = figures(
+                    input,
+                    chain.start,
+                    month,
+                    carry,
+                    currentMonth
+                )
+            ) {
+                is Outcome.Success -> worked.value
+                is Outcome.Failure -> return worked
+            }
+            months += figures
+            carry = figures.remaining
+            month = month.plusMonths(1)
+        }
+        return Outcome.Success(months)
+    }
 
     /** The chains of [input] in month order, or why they are damaged. */
     private fun ordered(input: CategoryCarryInput): Outcome<List<CarryChain>, CarryoverFailure> {

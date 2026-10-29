@@ -777,4 +777,106 @@ class SignedCarryoverPolicyTest {
             }
         )
     }
+
+    // --- Review round 1: R1 (a later chain needs only its own history) and R4 (own defaults) ---
+
+    /** SC19 shape: ene–feb ended, then abr on; spending was read from abr only. */
+    private fun laterChainOnly() = comidaInput(
+        listOf(chain(ene, feb), chain(abr)),
+        abr,
+        m(2027, 5),
+        "2027-05-10",
+        listOf("2027-04-10" to 30_000L)
+    )
+
+    @Test
+    fun r1AMonthOfALaterChainNeedsOnlyThatChainsHistory() {
+        val may = m(2027, 5)
+
+        val entry = SignedCarryoverPolicy.carryIn(laterChainOnly(), may, may).valueOrFail()!!
+        val start = SignedCarryoverPolicy.carryIn(laterChainOnly(), abr, may).valueOrFail()!!
+
+        assertEquals(cop(70_000), entry.carryIn)
+        assertEquals(abr, entry.chainStart)
+        assertEquals(cop(0), start.carryIn)
+    }
+
+    @Test
+    fun r1DroppingInALaterChainNeedsOnlyThatChainsHistory() {
+        val may = m(2027, 5)
+
+        val unconfirmed = SignedCarryoverPolicy.drop(laterChainOnly(), may, null).valueOrFail()
+        val confirmed = SignedCarryoverPolicy.drop(laterChainOnly(), may, cop(70_000)).valueOrFail()
+
+        assertEquals(
+            DropDecision.ConfirmationRequired(
+                DropPreview(
+                    may,
+                    cop(70_000),
+                    cop(100_000),
+                    cop(170_000),
+                    cop(100_000),
+                    cop(170_000),
+                    cop(100_000)
+                )
+            ),
+            unconfirmed
+        )
+        assertEquals(
+            DropDecision.Dropped(listOf(chain(ene, feb), chain(abr, may)), cop(70_000)),
+            confirmed
+        )
+    }
+
+    @Test
+    fun r1AFullReplayStillNeedsEveryChainsHistoryAndTheCoveringChainStillFailsOnAGap() {
+        val may = m(2027, 5)
+        val gap =
+            comidaInput(listOf(chain(ene, feb), chain(abr)), mar, mar, "2027-05-10", emptyList())
+
+        assertEquals(
+            CarryoverFailure.MissingHistory(ene),
+            SignedCarryoverPolicy.replay(laterChainOnly(), may, may).errorOrFail()
+        )
+        // The covering chain begins in abr, but the history ends in mar: its first month is unread.
+        assertEquals(
+            CarryoverFailure.MissingHistory(abr),
+            SignedCarryoverPolicy.carryIn(gap, may, may).errorOrFail()
+        )
+    }
+
+    @Test
+    fun r4AnotherCategorysDefaultNeverDecidesWhetherCarryCanBeTurnedOn() {
+        val otherUnlimited = Carry.unlimitedFrom(ene, Carry.transporte)
+        val otherLater = Carry.unlimitedFrom(feb, Carry.transporte)
+        val otherPaused = Carry.pausedFrom(ene, Carry.transporte)
+
+        // Comida's own default is finite; the other category's unlimited one is not Comida's.
+        assertEquals(
+            listOf(chain(feb)),
+            enable(defaults = listOf(monthly(ene, 100_000), otherUnlimited)).valueOrFail()
+        )
+        assertEquals(
+            listOf(chain(feb)),
+            enable(defaults = listOf(monthly(ene, 100_000), otherLater, otherPaused)).valueOrFail()
+        )
+        // And the other way: Comida's unlimited default is refused whatever another category has.
+        assertEquals(
+            CarryEnableRefusal.UnlimitedThisMonth,
+            enable(
+                defaults = listOf(Carry.unlimitedFrom(ene), monthly(ene, 100_000, Carry.transporte))
+            ).errorOrFail()
+        )
+        // Comida's default after this month is judged on Comida's entries only.
+        assertEquals(
+            CarryEnableRefusal.DefaultAfterNotFinite,
+            enable(
+                defaults = listOf(
+                    monthly(ene, 100_000),
+                    Carry.unlimitedFrom(mar),
+                    monthly(mar, 100_000, Carry.transporte)
+                )
+            ).errorOrFail()
+        )
+    }
 }
