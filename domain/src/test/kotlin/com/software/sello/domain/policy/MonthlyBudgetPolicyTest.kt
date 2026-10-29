@@ -408,6 +408,51 @@ class MonthlyBudgetPolicyTest {
     }
 
     @Test
+    fun h05AnUnchangedDefaultRenewsTheWholeLimitWithoutWhatWasLeft() {
+        // H05: September 20.000 spent of 100.000; the default unchanged through October.
+        val categories = listOf(limited(1, 100_000))
+        val expenses = listOf(expense(1, "2026-09-12", 20_000))
+
+        val september =
+            snapshot("2026-10-09", categories, expenses, YearMonth.of(2026, 9)).valueOrFail()
+        val october = snapshot("2026-10-09", categories, expenses).valueOrFail()
+
+        assertEquals(Money.cop(80_000), september.limited().budget.remaining)
+        assertEquals(Money.cop(100_000), october.limited().budget.limit)
+        assertEquals(Money.cop(100_000), october.limited().budget.remaining)
+        assertEquals(Money.cop(0), october.spent)
+    }
+
+    @Test
+    fun eachExpenseCountsInTheMonthOfItsDateAcrossMonthYearAndLeapDayEnds() {
+        // Worked out by hand: 31 Oct and 1 Nov, 31 Dec and 1 Jan, 28 Feb, 29 Feb and 1 Mar.
+        val expenses = listOf(
+            expense(1, "2026-10-31", 85_000),
+            expense(1, "2026-11-01", 40_000),
+            expense(1, "2026-12-31", 38_000),
+            expense(1, "2027-01-01", 42_000),
+            expense(1, "2028-02-28", 10_000),
+            expense(1, "2028-02-29", 20_000),
+            expense(1, "2028-03-01", 5_000)
+        )
+        fun month(month: String) = snapshot(
+            "2028-03-01",
+            listOf(limited(1, 100_000)),
+            expenses,
+            YearMonth.parse(month)
+        ).valueOrFail()
+
+        assertEquals(Money.cop(85_000), month("2026-10").spent)
+        assertEquals(Money.cop(40_000), month("2026-11").spent)
+        assertEquals(Money.cop(38_000), month("2026-12").spent)
+        assertEquals(Money.cop(42_000), month("2027-01").spent)
+        assertEquals(Money.cop(30_000), month("2028-02").spent)
+        assertEquals(Money.cop(70_000), month("2028-02").limited().budget.remaining)
+        assertEquals(Money.cop(5_000), month("2028-03").spent)
+        assertEquals(Money.cop(95_000), month("2028-03").limited().budget.remaining)
+    }
+
+    @Test
     fun aPastMonthIsOverOnlyWhenMoreThanTheLimitWasSpent() {
         assertEquals(
             PastVerdict.WithinLimit,

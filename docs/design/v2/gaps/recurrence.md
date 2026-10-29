@@ -84,7 +84,7 @@ Missing = nothing exists.
 - v1.1 stamps a category **Pagado**; v2 shows no reservation inside categories.
 - v1.1 lets a goal repeat its contribution; v2 says automatic contributions wait for
   recurrence and ADR 0017 does not include them, so E18 does not either.
-- The [scenario corpus](../../../testing/sandbox-scenarios.md#recurrence)
+- The [scenario corpus](../../../testing/sandbox-scenarios.md)
   asks for WorkManager worker tests when recurrence ships; with no background work,
   SELLO-104 covers the catch-up that runs on opening instead.
 

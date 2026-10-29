@@ -20,10 +20,8 @@ import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.composition.viewModels
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.devtools.JourneySetups
 import com.software.sello.devtools.SandboxGraph
-import com.software.sello.devtools.SandboxSession
-import com.software.sello.devtools.ScenarioStep
-import com.software.sello.devtools.Scenarios
 import com.software.sello.navigation.SelloAppRoot
 import com.software.sello.press
 import java.io.File
@@ -47,23 +45,14 @@ class AdjustBudgetJourneyTest {
         sandbox?.erase()
     }
 
-    /** The scenario up to its first check: four categories and October's expenses. */
+    /** Four categories and October's expenses, 80.000 over. */
     private suspend fun overspentOctober(): SandboxGraph {
-        val scenario = Scenarios.AdjustBudget
-        val graph = SandboxGraph(
-            SandboxSession(
-                active = true,
-                date = scenario.start,
-                zone = scenario.zone,
-                scenario = scenario.key
-            )
-        )
+        val graph = JourneySetups.graph(JourneySetups.OverspentOctober)
         sandbox = graph
         graph.erase()
         graph.open()
         val runner = checkNotNull(graph.tools?.scenarios)
-        val firstCheck = scenario.steps.indexOfFirst { it is ScenarioStep.Verify }
-        repeat(firstCheck + 1) { runner.step() }
+        while (runner.step()) Unit
         return graph
     }
 

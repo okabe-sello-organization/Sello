@@ -14,9 +14,11 @@ import java.time.ZoneId
  *   longer move back without a reset.
  * - [wipe]: the sandbox's data is erased at the next start, before anything opens it.
  * - [zone]: the financial zone a new sandbox is created in; the device's when absent.
- * - [scenario]: the loaded scenario as `id@version`, and [nextStep] the first of its
+ * - [scenario]: the loaded history as `id@version`, and [nextStep] the first of its
  *   steps not yet confirmed. A step at [nextStep] may already have committed; running
  *   it again uses the same operation and returns that result.
+ * - [loading]: the history was asked to load and is not all confirmed yet; the next
+ *   process carries on from [nextStep].
  */
 data class SandboxSession(
     val active: Boolean = false,
@@ -25,7 +27,8 @@ data class SandboxSession(
     val wipe: Boolean = false,
     val zone: ZoneId? = null,
     val scenario: String? = null,
-    val nextStep: Int = 0
+    val nextStep: Int = 0,
+    val loading: Boolean = false
 )
 
 /** Where [SandboxSession] is kept. Writes finish before they return. */
@@ -47,7 +50,8 @@ class SharedPreferencesSessionStore(context: Context) : SandboxSessionStore {
         wipe = preferences.getBoolean(WIPE, false),
         zone = preferences.getString(ZONE, null)?.let(ZoneId::of),
         scenario = preferences.getString(SCENARIO, null),
-        nextStep = preferences.getInt(NEXT_STEP, 0)
+        nextStep = preferences.getInt(NEXT_STEP, 0),
+        loading = preferences.getBoolean(LOADING, false)
     )
 
     override fun write(session: SandboxSession) {
@@ -60,6 +64,7 @@ class SharedPreferencesSessionStore(context: Context) : SandboxSessionStore {
             putString(ZONE, session.zone?.id)
             putString(SCENARIO, session.scenario)
             putInt(NEXT_STEP, session.nextStep)
+            putBoolean(LOADING, session.loading)
         }
     }
 
@@ -72,5 +77,6 @@ class SharedPreferencesSessionStore(context: Context) : SandboxSessionStore {
         const val ZONE = "zone"
         const val SCENARIO = "scenario"
         const val NEXT_STEP = "next_step"
+        const val LOADING = "loading"
     }
 }

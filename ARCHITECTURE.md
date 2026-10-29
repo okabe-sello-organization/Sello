@@ -373,15 +373,17 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   jump to a date, and bounded step/play/pause. Trigger the same rollover/snapshot
   recomputation as normal use. Do not change device time or accelerate monotonic
   timers, UI animation, undo expiry, network timeouts, or real audit timestamps.
-- **MUST**, when recurrence ships, expose explicit “run due work” and bounded
-  catch-up using the production use case, uniqueness, and checkpoints. Show
-  created/skipped/failed/pending results. Virtual time does not advance Android's
-  WorkManager scheduler; scheduler integration needs separate worker/device tests.
-- **SHOULD** persist sandbox time/zone/scenario/checkpoint for restart tests and
-  rewind mutated history only by resetting/replaying an isolated scenario. Expose
-  active date/zone, scenario/seed, operation receipts and revisions without
-  sensitive logs. Simulation metadata stays out of portable user backups; reset is
-  sandbox-scoped, cancels/fences its work, and restores a known baseline.
+- **MUST**, when recurrence ships, run due work in the sandbox through the production
+  catch-up, uniqueness, and checkpoints, as a changed financial day does; a scenario's
+  catch-up step waits for it and stops on a failed or unknown batch. Virtual time does
+  not advance Android's WorkManager scheduler; scheduler integration needs separate
+  worker/device tests.
+- **SHOULD** persist sandbox time/zone/scenario/checkpoint so an interrupted load
+  carries on, and rewind mutated history only by resetting/reloading an isolated
+  scenario. Expose active date/zone and the loaded scenario's progress, never as
+  complete before it is, without sensitive logs. Simulation metadata stays out of
+  portable user backups; reset is sandbox-scoped, cancels/fences its work, and
+  restores a known baseline.
 
 Integration references: [build variants/source sets][build-variants] and
 [WorkManager testing][work-testing].

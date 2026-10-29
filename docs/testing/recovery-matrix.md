@@ -36,14 +36,11 @@ applied), erased there (nothing financial left, the device's zone, generation 3)
 restored again from the same file (generation 4). The first installation is only
 read throughout.
 
-`TemporalScenarioCorpusTest.everyScenarioRestoredFromItsBackupKeepsItsRowsAndLastFigures`
-(nightly):
-each of the nine sandbox scenarios is played to the end, backed up, and restored into
-a new installation at the same simulated day. The restored rows equal the originals
-for all nine; for the seven whose last check follows their last saved change, that
-check runs again on the restored rows and every figure matches (24 figures).
-`seis-meses` has no check and `bordes` saves changes after its last one; both are
-compared row for row.
+`HistoryLoadTest.everyHistorySavedAsABackupAndRestoredKeepsItsRows` (JVM, real Room):
+each of the five sandbox histories, with categories, limits, expenses, incomes,
+schedules and their pauses, goals and investments in pesos and dollars, is loaded to
+its day, backed up, and restored into a new installation at the same simulated day.
+The restored rows equal the originals for all five.
 
 ## Restore
 
@@ -83,8 +80,8 @@ is refused, even when restored record identifiers match earlier ones.
 | --- | --- | --- |
 | Draft saved after a restore or reset | `StaleGeneration` | `oldDraftsAndUndoCannotCrossTheReplacement`, `oldDraftsAndUndoCannotCrossTheErase` |
 | Undo of a deletion from before | `StaleGeneration`; the kept copy is gone | the same tests |
-| Sandbox scenario mid-run when a reset happens | Its next step is refused | `ScenarioReplayTest.aResetBetweenStepsKeepsTheRunnerOutOfTheNewHistory` (nightly) |
-| The same scenario in a new process after the reset | Finds no receipts, does not advance, writes nothing back | `ScenarioReplayTest.afterAResetANewProcessBringsBackNoneOfTheScenarioItErased` (nightly) |
+| Sandbox history mid-load when a reset happens | Its next step carries the old generation and is refused | `aCommandPreparedAgainstAReplacedHistoryIsRejected` in the `:data` command contract tests |
+| The same history in a new process after the reset | Finds its first step's receipt gone, does not carry on, writes nothing | `ScenarioRunnerTest.aLoadIsNotCarriedOnIntoAHistoryTheAppsOwnResetErased` |
 
 ## Corrupt or unavailable storage
 

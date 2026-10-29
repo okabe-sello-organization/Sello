@@ -2,6 +2,8 @@
     <string name="app_name">Sello Debug</string>
     <string name="tools_name">Sello Herramientas</string>
     <string name="sandbox_badge">SANDBOX · %1$s · %2$s</string>
+    <string name="sandbox_badge_unfinished">· cargando historia</string>
+    <string name="sandbox_badge_unfinished_spoken">La historia aún no está cargada entera.</string>
     <string name="sandbox_badge_spoken">Sandbox activo, %1$s, zona %2$s. Abrir herramientas</string>
     <string name="tools_title">Herramientas</string>
     <string name="tools_profile_heading">Datos en uso</string>
@@ -34,22 +36,13 @@
     <string name="tools_reset">Reiniciar sandbox</string>
     <string name="tools_reset_confirm">Sí, borrar el sandbox</string>
     <string name="tools_reset_cancel">Cancelar</string>
-    <string name="tools_faults_heading">Fallos</string>
-    <string name="tools_faults_note">Cada toque arma el fallo una vez más. Solo cambian lo que se le dice a la pantalla o si se intenta escribir; nunca una cifra ni un comprobante. Un fallo antes de guardar no prueba nada sobre cómo se deshace una transacción. Se borran al reiniciar la app.</string>
-    <string name="tools_faults_clear">Quitar fallos</string>
-    <string name="tools_operations_heading">Operaciones</string>
-    <string name="tools_operations_none">Aún no hay operaciones en esta sesión.</string>
-    <string name="tools_operations_check">Comprobar en almacenamiento</string>
-    <string name="tools_export">Exportar diagnóstico</string>
-    <string name="tools_scenarios_heading">Escenarios</string>
-    <string name="tools_scenarios_note">Historias sintéticas que se anotan paso a paso por los mismos caminos que usa la app. Cargar uno borra el sandbox y empieza en su fecha y zona.</string>
+    <string name="tools_scenarios_heading">Historias</string>
+    <string name="tools_scenarios_note">Historias sintéticas que se anotan por los mismos caminos que usa la app. Cargar una borra el sandbox y la anota entera, hasta su último día.</string>
+    <string name="tools_scenario_ends">Termina el %1$s.</string>
     <string name="tools_scenario_load">Cargar</string>
     <string name="tools_scenario_load_confirm">Sí, borrar el sandbox y cargar</string>
-    <string name="tools_scenario_progress">Paso %1$d de %2$d</string>
-    <plurals name="tools_scenario_finished">
-        <item quantity="one">Terminado: %d paso</item>
-        <item quantity="other">Terminado: %d pasos</item>
-    </plurals>
-    <string name="tools_scenario_step">Paso</string>
-    <string name="tools_scenario_play">Reproducir (un paso cada 2 s)</string>
+    <string name="tools_scenario_progress">Cargando: paso %1$d de %2$d. Aún no está completa.</string>
+    <string name="tools_scenario_stopped">Carga incompleta: se detuvo en el paso %1$d de %2$d.</string>
+    <string name="tools_scenario_loaded">Cargada. Hoy es el %1$s.</string>
+    <string name="tools_scenario_retry">Seguir cargando</string>
 </resources>

@@ -1,6 +1,5 @@
 package com.software.sello.devtools
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,8 +45,9 @@ import java.time.format.DateTimeParseException
 import kotlinx.coroutines.launch
 
 /**
- * The debug build's tools: which data is in use, the sandbox's financial date and its
- * reset. It has its own launcher and is absent from release builds.
+ * The debug build's tools: which data is in use, the sandbox's financial date, the
+ * histories it can load and its reset. It has its own launcher and is absent from
+ * release builds.
  */
 class ToolsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,22 +56,14 @@ class ToolsActivity : ComponentActivity() {
         val tools = SandboxRegistry.tools
         setContent {
             SelloTheme {
-                if (tools != null) ToolsScreen(tools, onShare = ::share)
+                if (tools != null) ToolsScreen(tools)
             }
         }
-    }
-
-    /** The diagnostic leaves only through the share sheet the developer opens. */
-    private fun share(text: String) {
-        val send = Intent(Intent.ACTION_SEND)
-            .setType("text/plain")
-            .putExtra(Intent.EXTRA_TEXT, text)
-        startActivity(Intent.createChooser(send, getString(R.string.tools_export)))
     }
 }
 
 @Composable
-fun ToolsScreen(tools: SandboxTools, onShare: (String) -> Unit = {}) {
+fun ToolsScreen(tools: SandboxTools) {
     val scope = rememberCoroutineScope()
     var moving by remember { mutableStateOf(false) }
     fun move(action: suspend SandboxProfiles.() -> Unit) {
@@ -92,10 +84,6 @@ fun ToolsScreen(tools: SandboxTools, onShare: (String) -> Unit = {}) {
             }, onLeave = { move { leave() } })
             tools.time?.let { TimeSlip(it) }
             ScenarioSlip(tools.scenarios, enabled = !moving, onLoad = { move { load(it) } })
-            tools.diagnostics?.let {
-                FaultSlip(it.faults)
-                OperationsSlip(it, onShare)
-            }
             if (tools.profiles.inSandbox) {
                 ResetSlip(enabled = !moving, onReset = {
                     move { reset() }
@@ -235,7 +223,8 @@ private fun ScenarioSlip(runner: ScenarioRunner?, enabled: Boolean, onLoad: (Sce
         Scenarios.all.forEach { scenario ->
             Text(scenario.title, style = MaterialTheme.typography.titleSmall)
             Note(
-                "${scenario.summary} ${scenario.steps.size} pasos · ${scenario.key} · semilla ${scenario.seed}"
+                scenario.summary + " " +
+                    stringResource(R.string.tools_scenario_ends, spokenDate(scenario.today))
             )
             if (loading == scenario.key) {
                 SelloButton(
@@ -264,17 +253,21 @@ private fun ScenarioSlip(runner: ScenarioRunner?, enabled: Boolean, onLoad: (Sce
     }
 }
 
+/** The loaded history: loading, loaded up to its day, or stopped with why and a retry. */
 @Composable
 private fun ScenarioProgress(runner: ScenarioRunner) {
     val state by runner.state.collectAsState()
     val scenario = state.scenario ?: return
-    val scope = rememberCoroutineScope()
     Text(scenario.title, style = MaterialTheme.typography.titleSmall)
     Text(
-        if (state.finished) {
-            pluralStringResource(R.plurals.tools_scenario_finished, state.total, state.total)
-        } else {
-            stringResource(R.string.tools_scenario_progress, state.next + 1, state.total)
+        when {
+            state.finished ->
+                stringResource(R.string.tools_scenario_loaded, spokenDate(scenario.today))
+
+            state.problem != null ->
+                stringResource(R.string.tools_scenario_stopped, state.next + 1, state.total)
+
+            else -> stringResource(R.string.tools_scenario_progress, state.next + 1, state.total)
         },
         modifier = Modifier
             .testTag(TOOLS_SCENARIO_PROGRESS_TAG)
@@ -287,116 +280,17 @@ private fun ScenarioProgress(runner: ScenarioRunner) {
             modifier = Modifier.testTag(TOOLS_SCENARIO_PROBLEM_TAG)
         )
     }
-    state.log.takeLast(LOG_LINES).forEach { record ->
-        Note(
-            "${record.index + 1}. ${record.action} · ${record.result}" +
-                (record.revision?.let { " · rev $it" } ?: "") +
-                (record.operation?.let { " · $it" } ?: "")
+    if (!state.finished && !state.loading) {
+        SelloButton(
+            stringResource(R.string.tools_scenario_retry),
+            { runner.load() },
+            Modifier.fillMaxWidth().testTag(TOOLS_SCENARIO_RETRY_TAG),
+            kind = ButtonKind.Outlined
         )
     }
-    if (!state.finished) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
-            SelloButton(
-                stringResource(R.string.tools_scenario_step),
-                { scope.launch { runner.step() } },
-                Modifier.testTag(TOOLS_SCENARIO_STEP_TAG),
-                kind = ButtonKind.Outlined,
-                enabled = !state.playing && !state.running
-            )
-            SelloButton(
-                stringResource(
-                    if (state.playing) R.string.tools_pause else R.string.tools_scenario_play
-                ),
-                { if (state.playing) runner.pause() else runner.play() },
-                Modifier.testTag(TOOLS_SCENARIO_PLAY_TAG)
-            )
-        }
-    }
 }
-
-private const val LOG_LINES = 6
 
 fun scenarioTag(scenario: Scenario, action: String) = "tools:scenario:${scenario.id}:$action"
-
-@Composable
-private fun FaultSlip(faults: DebugFaults) {
-    val armed by faults.state.collectAsState()
-    Slip(Modifier.fillMaxWidth()) {
-        Heading(stringResource(R.string.tools_faults_heading))
-        Note(stringResource(R.string.tools_faults_note))
-        Fault.entries.forEach { fault ->
-            val left = armed[fault] ?: 0
-            SelloButton(
-                if (left > 0) "${fault.label} · $left" else fault.label,
-                { faults.arm(fault) },
-                Modifier.fillMaxWidth().testTag(faultTag(fault)),
-                kind = ButtonKind.Outlined
-            )
-        }
-        SelloButton(
-            stringResource(R.string.tools_faults_clear),
-            faults::clear,
-            Modifier.fillMaxWidth().testTag(TOOLS_FAULTS_CLEAR_TAG),
-            kind = ButtonKind.Text,
-            enabled = armed.isNotEmpty()
-        )
-    }
-}
-
-@Composable
-private fun OperationsSlip(diagnostics: SandboxDiagnostics, onShare: (String) -> Unit) {
-    val logged by diagnostics.log.state.collectAsState()
-    val scope = rememberCoroutineScope()
-    var stored by remember { mutableStateOf<Map<LoggedOperation, StoredOutcome>>(emptyMap()) }
-    suspend fun check() = logged.associateWith { diagnostics.inspector.stored(it) }
-    Slip(Modifier.fillMaxWidth()) {
-        Heading(stringResource(R.string.tools_operations_heading))
-        if (logged.isEmpty()) Note(stringResource(R.string.tools_operations_none))
-        logged.takeLast(LOG_LINES).forEach { entry ->
-            val inStorage = when (val found = stored[entry]) {
-                null -> "sin comprobar"
-                is StoredOutcome.Saved -> "guardado, rev ${found.revision}"
-                StoredOutcome.Nothing -> "nada escrito"
-                StoredOutcome.Unreadable -> "no se pudo leer"
-            }
-            Note(
-                "${entry.kind} · se le dijo: ${entry.told}" +
-                    (entry.fault?.let { " (simulado: ${it.label})" } ?: "") +
-                    " · almacenamiento: $inStorage · ${entry.operation.value}",
-                Modifier.testTag(TOOLS_OPERATION_TAG)
-            )
-        }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
-            SelloButton(
-                stringResource(R.string.tools_operations_check),
-                { scope.launch { stored = check() } },
-                Modifier.testTag(TOOLS_OPERATIONS_CHECK_TAG),
-                kind = ButtonKind.Outlined,
-                enabled = logged.isNotEmpty()
-            )
-            SelloButton(
-                stringResource(R.string.tools_export),
-                {
-                    scope.launch {
-                        val checked = check()
-                        stored = checked
-                        onShare(
-                            diagnosticText(
-                                diagnostics.session(),
-                                diagnostics.faults.state.value,
-                                logged.map { it to checked.getValue(it) }
-                            )
-                        )
-                    }
-                },
-                Modifier.testTag(TOOLS_EXPORT_TAG),
-                kind = ButtonKind.Outlined
-            )
-        }
-    }
-}
-
-fun faultTag(fault: Fault) = "tools:fault:${fault.name}"
 
 @Composable
 private fun ResetSlip(enabled: Boolean, onReset: () -> Unit) {
@@ -442,9 +336,4 @@ const val TOOLS_RESET_TAG = "tools:reset"
 const val TOOLS_RESET_CONFIRM_TAG = "tools:reset-confirm"
 const val TOOLS_SCENARIO_PROGRESS_TAG = "tools:scenario-progress"
 const val TOOLS_SCENARIO_PROBLEM_TAG = "tools:scenario-problem"
-const val TOOLS_SCENARIO_STEP_TAG = "tools:scenario-step"
-const val TOOLS_SCENARIO_PLAY_TAG = "tools:scenario-play"
-const val TOOLS_FAULTS_CLEAR_TAG = "tools:faults-clear"
-const val TOOLS_OPERATION_TAG = "tools:operation"
-const val TOOLS_OPERATIONS_CHECK_TAG = "tools:operations-check"
-const val TOOLS_EXPORT_TAG = "tools:export"
+const val TOOLS_SCENARIO_RETRY_TAG = "tools:scenario-retry"

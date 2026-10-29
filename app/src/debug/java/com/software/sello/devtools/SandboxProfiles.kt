@@ -37,8 +37,8 @@ class SandboxProfiles(
 
     /**
      * Erases the sandbox like [reset] and opens it again at [scenario]'s start, in its
-     * zone, ready to replay its first step. Loading the same scenario again replays it
-     * from the beginning onto a new sandbox.
+     * zone, where the new process loads the whole history up to its last day. Loading
+     * the same history again loads it from the beginning onto a new sandbox.
      */
     suspend fun load(scenario: Scenario) = move {
         SandboxSession(
@@ -46,7 +46,8 @@ class SandboxProfiles(
             wipe = true,
             date = scenario.start,
             zone = scenario.zone,
-            scenario = scenario.key
+            scenario = scenario.key,
+            loading = true
         )
     }
 
