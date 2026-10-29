@@ -4,6 +4,7 @@ Read this with the assigned ticket, [agent rules](../../AGENTS.md),
 [architecture](../../ARCHITECTURE.md), and [tickets and gates](../tickets/README.md).
 It supplies shared tools and conventions; the ticket supplies the actual work.
 Do not execute all tickets at once or copy a proposed API blindly over completed code.
+For the shape of a new feature and its tests, read the [feature guide](feature-guide.md).
 
 ## Starting from a new checkout
 
