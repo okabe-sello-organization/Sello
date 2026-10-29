@@ -104,6 +104,7 @@ fun CategoryDetailScreen(
             CategoryDetailState.Gone -> EmptySlip(
                 title = stringResource(R.string.category_detail_gone_title),
                 body = stringResource(R.string.category_detail_gone_body),
+                icon = SelloIcon.Block,
                 modifier = Modifier.testTag(CATEGORY_DETAIL_GONE_TAG)
             )
 
@@ -377,6 +378,7 @@ private fun Expenses(
                 months.inSentence(state.month)
             ),
             body = stringResource(R.string.category_detail_empty_body),
+            icon = SelloIcon.ReceiptLong,
             modifier = Modifier.testTag(CATEGORY_DETAIL_EMPTY_TAG),
             actionLabel = stringResource(R.string.category_detail_record_here)
                 .takeIf { state.canRecord },

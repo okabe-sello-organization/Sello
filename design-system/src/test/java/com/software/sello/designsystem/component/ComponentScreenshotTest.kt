@@ -145,7 +145,11 @@ class ComponentScreenshotTest {
                         windowInsets = WindowInsets(0, 0, 0, 0)
                     ) { padding ->
                         Box(Modifier.fillMaxSize().padding(padding)) {
-                            EmptySlip("Aún no hay gastos", "Anota el primero.")
+                            EmptySlip(
+                                "Aún no hay gastos",
+                                "Anota el primero.",
+                                SelloIcon.ReceiptLong
+                            )
                         }
                     }
                 }

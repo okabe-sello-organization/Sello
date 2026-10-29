@@ -26,6 +26,7 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.presentation.count.countText
@@ -105,7 +106,8 @@ fun CategoryExpensesScreen(
                     item {
                         EmptySlip(
                             stringResource(R.string.category_expenses_empty),
-                            stringResource(R.string.category_expenses_empty_body)
+                            stringResource(R.string.category_expenses_empty_body),
+                            SelloIcon.ReceiptLong
                         )
                     }
                 }
