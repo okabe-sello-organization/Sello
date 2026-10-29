@@ -517,7 +517,14 @@ private fun fiveWeekPoints(): List<ChartPoint> {
             "Semana $number: gastado $spoken pesos",
             shortAxisLabel = number
         )
-    } + ChartPoint("5", "esta", 30_000, "Semana actual: gastado 30.000 pesos", ChartPeriod.Current)
+    } + ChartPoint(
+        "5",
+        "esta",
+        30_000,
+        "Semana actual: gastado 30.000 pesos",
+        ChartPeriod.Current,
+        shortAxisLabel = "5"
+    )
 }
 
 @Composable

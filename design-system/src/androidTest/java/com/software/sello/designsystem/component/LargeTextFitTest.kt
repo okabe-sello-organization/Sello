@@ -169,7 +169,7 @@ class LargeTextFitTest {
         100_000L * number,
         "Semana $number: ${number}00.000 pesos anotados",
         if (current) ChartPeriod.Current else ChartPeriod.Past,
-        shortAxisLabel = number.toString().takeUnless { current }
+        shortAxisLabel = number.toString()
     )
 
     private var labelSmallSize = 0.sp
@@ -192,6 +192,15 @@ class LargeTextFitTest {
         return results.single()
     }
 
+    /** A line ends inside a word: the column is narrower than the word it holds. */
+    private fun TextLayoutResult.breaksAWord(): Boolean {
+        val text = layoutInput.text.text
+        return (0 until lineCount - 1).any {
+            val end = getLineEnd(it)
+            text[end - 1] != ' ' && text[end] != ' '
+        }
+    }
+
     private fun assertAxisShows(
         shown: List<String>,
         hidden: List<String>,
@@ -203,6 +212,7 @@ class LargeTextFitTest {
             assertEquals("\"$text\"", labelSmallSize, layout.layoutInput.style.fontSize)
             if (wholeOnly) {
                 assertFalse("\"$text\" is cut off", layout.multiParagraph.didExceedMaxLines)
+                assertFalse("\"$text\" breaks a word", layout.breaksAWord())
             }
         }
         hidden.forEach {
@@ -218,8 +228,8 @@ class LargeTextFitTest {
         showChart(fiveWeeks, 195, 2f)
 
         assertAxisShows(
-            shown = listOf("1", "2", "3", "4", "esta"),
-            hidden = listOf("sem 1", "sem 2", "sem 3", "sem 4")
+            shown = listOf("1", "2", "3", "4", "5"),
+            hidden = listOf("sem 1", "sem 2", "sem 3", "sem 4", "esta")
         )
     }
 
@@ -233,8 +243,10 @@ class LargeTextFitTest {
         )
     }
 
+    // Guards: these hold on the chart as it was, and must keep holding.
+
     @Test
-    fun theShortenedAxisChangesNothingTheChartSays() {
+    fun guardTheShortenedAxisChangesNothingTheChartSays() {
         showChart(fiveWeeks, 195, 2f)
 
         fiveWeeks.forEach { point ->
@@ -243,8 +255,6 @@ class LargeTextFitTest {
             )
         }
     }
-
-    // Guards: these hold on the chart as it was, and must keep holding.
 
     @Test
     fun guardWeekLabelsKeepTheirWordsAndSizeWhereTheyFit() {
@@ -261,7 +271,7 @@ class LargeTextFitTest {
 
         assertAxisShows(
             shown = listOf("sem 1", "sem 2", "sem 3", "sem 4", "esta"),
-            hidden = listOf("1", "2", "3", "4")
+            hidden = listOf("1", "2", "3", "4", "5")
         )
         fiveWeeks.forEach {
             val layout = axisLayout(it.axisLabel)
@@ -276,7 +286,7 @@ class LargeTextFitTest {
 
         assertAxisShows(
             shown = listOf("sem 1", "sem 2", "sem 3", "sem 4", "esta"),
-            hidden = listOf("1", "2", "3", "4"),
+            hidden = listOf("1", "2", "3", "4", "5"),
             // As before, a label with no shorter form is cut when it cannot fit.
             wholeOnly = false
         )

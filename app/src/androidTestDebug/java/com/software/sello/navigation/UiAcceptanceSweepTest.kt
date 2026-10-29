@@ -307,6 +307,19 @@ class UiAcceptanceSweepTest(private val window: Window) {
             }
         }
 
+        // A week label broken in the middle of its word is not "cut off" by line count.
+        unmerged.filter { node ->
+            generateSequence(node) { it.parent }.any {
+                it.config.getOrNull(SemanticsProperties.TestTag) == "detail:weeks"
+            }
+        }.forEach { node ->
+            val results = mutableListOf<TextLayoutResult>()
+            node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+            results.firstOrNull()?.takeIf { it.breaksAWord() }?.let {
+                problems += "$screen: word broken across lines: ${node.label()}"
+            }
+        }
+
         merged.forEach { node ->
             val shown = node.config.getOrNull(SemanticsProperties.Text)
                 ?.joinToString(" ") { it.text }.orEmpty()
@@ -348,6 +361,14 @@ class UiAcceptanceSweepTest(private val window: Window) {
      */
     private fun TextLayoutResult.isCutOff() = multiParagraph.didExceedMaxLines ||
         (0 until lineCount).any { isLineEllipsized(it) }
+
+    private fun TextLayoutResult.breaksAWord(): Boolean {
+        val text = layoutInput.text.text
+        return (0 until lineCount - 1).any {
+            val end = getLineEnd(it)
+            text[end - 1] != ' ' && text[end] != ' '
+        }
+    }
 
     private fun SemanticsNode.label(): String {
         val text = config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }
