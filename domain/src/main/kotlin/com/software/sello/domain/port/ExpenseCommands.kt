@@ -1,5 +1,6 @@
 package com.software.sello.domain.port
 
+import com.software.sello.domain.model.CarryoverFailure
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.Note
@@ -8,6 +9,7 @@ import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.policy.CarryCorrection
 import java.time.LocalDate
 import kotlin.time.Duration
 
@@ -15,6 +17,10 @@ import kotlin.time.Duration
  * A request to record one new expense. [operationId] names this attempt and
  * [generation] is the history the caller was looking at when it was prepared.
  * Everything except [operationId] is the input a replay is compared against.
+ *
+ * [confirmedRevision], on this and the other expense commands, is only for a correction
+ * that changes later months of a carry chain (ADR 0020 CP20–CP22): the revision whose
+ * list of changes the person saw and confirmed.
  */
 data class CreateExpense(
     val operationId: OperationId,
@@ -22,7 +28,8 @@ data class CreateExpense(
     val categoryId: CategoryId,
     val amount: TransactionAmount,
     val date: LocalDate,
-    val note: Note?
+    val note: Note?,
+    val confirmedRevision: Long? = null
 )
 
 /**
@@ -39,7 +46,8 @@ data class EditExpense(
     val categoryId: CategoryId,
     val amount: TransactionAmount,
     val date: LocalDate,
-    val note: Note?
+    val note: Note?,
+    val confirmedRevision: Long? = null
 )
 
 /** A request to remove one recorded expense, as the caller read it at [expectedVersion]. */
@@ -47,7 +55,8 @@ data class DeleteExpense(
     val operationId: OperationId,
     val generation: Long,
     val expenseId: ExpenseId,
-    val expectedVersion: Long
+    val expectedVersion: Long,
+    val confirmedRevision: Long? = null
 )
 
 /**
@@ -57,7 +66,8 @@ data class DeleteExpense(
 data class RestoreExpense(
     val operationId: OperationId,
     val generation: Long,
-    val deletionId: OperationId
+    val deletionId: OperationId,
+    val confirmedRevision: Long? = null
 )
 
 /**
@@ -105,6 +115,17 @@ sealed interface ExpenseRejection {
      * history was replaced, or its place has been taken. Nothing was restored.
      */
     data object UndoConflict : ExpenseRejection
+
+    /**
+     * The change reaches a closed month of a carry chain and changes later months, and it
+     * was not confirmed at the current [revision] (ADR 0020 CP20–CP22). [correction] is the
+     * list to show; confirming sends the same change with [revision].
+     */
+    data class CorrectionUnconfirmed(val revision: Long, val correction: CarryCorrection) :
+        ExpenseRejection
+
+    /** The category's carry could not be calculated before or after the change (CP8, CP23). */
+    data class CarryUnavailable(val failure: CarryoverFailure) : ExpenseRejection
 
     /** Storage failed and the write was rolled back. */
     data class StorageFailed(val failure: StorageFailure) : ExpenseRejection

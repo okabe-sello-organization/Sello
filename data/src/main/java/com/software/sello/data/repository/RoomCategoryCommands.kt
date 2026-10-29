@@ -10,9 +10,12 @@ import com.software.sello.data.mapper.toDomain
 import com.software.sello.data.mapper.toEntity
 import com.software.sello.data.mapper.toStored
 import com.software.sello.domain.model.AutomaticBudget
+import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.CarryChain
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.DefaultLimit
+import com.software.sello.domain.model.FinancialProfile
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
@@ -34,6 +37,8 @@ import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeCategoryIcon
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
+import com.software.sello.domain.port.DisableCarry
+import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RenameCategory
@@ -48,6 +53,10 @@ import java.time.YearMonth
  * A category and its limits are one record for versioning: every committed change
  * raises the category's version by one, and an edit made against an older version is
  * refused. [clock] says which financial month "now" is; [audit] stamps real time.
+ *
+ * Its carry chains are part of the same record (ADR 0020 CP28): turning carry on or off,
+ * and every change that drops a balance or corrects a chain month, is checked by
+ * [CategoryCarry] before the first write and stored with the rest.
  */
 class RoomCategoryCommands(
     private val database: SelloDatabase,
@@ -89,7 +98,7 @@ class RoomCategoryCommands(
         val now = audit.now()
         val categoryId = when (command) {
             is CreateCategory -> create(command, month, now)
-            is CategoryEdit -> edit(command, month, now)
+            is CategoryEdit -> edit(command, profile, month, now)
         }.let { written ->
             when (written) {
                 is Written.Done -> written.categoryId
@@ -114,6 +123,15 @@ class RoomCategoryCommands(
     }
 
     private fun refused(reason: CategoryRejection) = Written.Refused(Rejected(reason))
+
+    /** The chains [this] decided, null when they stay as they are; [refuse] otherwise. */
+    private inline fun CarryDecision.chainsOr(
+        refuse: (Written.Refused) -> Nothing
+    ): List<CarryChain>? = when (this) {
+        CarryDecision.Unchanged -> null
+        is CarryDecision.Chains -> chains
+        is CarryDecision.Refused -> refuse(refused(reason))
+    }
 
     /**
      * Archiving pauses every recurring payment in the category from today (rule 9), so
@@ -168,7 +186,12 @@ class RoomCategoryCommands(
         return Written.Done(id)
     }
 
-    private suspend fun edit(command: CategoryEdit, month: YearMonth, now: Instant): Written {
+    private suspend fun edit(
+        command: CategoryEdit,
+        profile: FinancialProfile,
+        month: YearMonth,
+        now: Instant
+    ): Written {
         val id = command.categoryId
         val row = database.categoryDao().byId(id.value)
             ?: return refused(CategoryRejection.CategoryMissing)
@@ -184,6 +207,7 @@ class RoomCategoryCommands(
             updatedAt = now
         )
         val limits = database.limitDao()
+        val carry = CategoryCarry(database, id, month, clock.today.value.date)
         val changed = when (command) {
             is RenameCategory -> {
                 val holder = database.categoryDao().byNameKey(command.name.uniquenessKey)
@@ -197,15 +221,19 @@ class RoomCategoryCommands(
 
             is ArchiveCategory -> {
                 if (category.archived) return refused(CategoryRejection.AlreadyArchived)
+                // CP11: archiving drops the balance carried into this month.
+                val dropped = carry.drop(command.confirmedCarryIn).chainsOr { return it }
                 pauseSchedules(id.value, now)?.let { return it }
                 val from = CategoryBudgetPolicy.pausedFrom(month)
                 limits.insert(DefaultLimit(id, from, AutomaticBudget.Paused).toEntity())
+                dropped?.let { carry.write(it) }
                 next.copy(archived = true)
             }
 
+            // CP11: never turns carry back on; the person turns it on again.
             is UnarchiveCategory -> {
                 if (!category.archived) return refused(CategoryRejection.NotArchived)
-                val history = when (val stored = history(id)) {
+                val history = when (val stored = database.defaultHistory(id.value)) {
                     is Outcome.Success -> stored.value
                     is Outcome.Failure -> return Written.Refused(failed(stored.error))
                 }
@@ -217,9 +245,16 @@ class RoomCategoryCommands(
 
             is SetDefaultLimit -> {
                 if (category.archived) return refused(CategoryRejection.CategoryArchived)
+                val dropped = when (val limit = command.limit) {
+                    // CP11: an unlimited default drops the balance carried into this month.
+                    BudgetLimit.Unlimited -> carry.drop(command.confirmedCarryIn)
+
+                    is BudgetLimit.Finite -> carry.finiteDefault(limit)
+                }.chainsOr { return it }
                 limits.put(DefaultLimit(id, month, AutomaticBudget.Limit(command.limit)).toEntity())
                 // A new default sets this month too (D04), so its own limit gives way.
                 limits.removeMonth(id.value, month.toString())
+                dropped?.let { carry.write(it) }
                 next
             }
 
@@ -229,23 +264,42 @@ class RoomCategoryCommands(
                 if (!EffectiveDates.isStorable(command.month)) {
                     return refused(CategoryRejection.InvalidMonth)
                 }
+                val unlimitedNow = command.month == month && command.limit == BudgetLimit.Unlimited
+                val dropped = if (unlimitedNow) {
+                    // CP11: this month made unlimited drops the balance carried into it.
+                    carry.drop(command.confirmedCarryIn)
+                } else {
+                    carry.monthLimit(
+                        command.month,
+                        command.limit,
+                        profile.revision,
+                        command.confirmedRevision
+                    )
+                }.chainsOr { return it }
                 limits.put(MonthLimit(id, command.month, command.limit).toEntity())
+                dropped?.let { carry.write(it) }
+                next
+            }
+
+            is EnableCarry -> {
+                val chains = when (val decided = carry.enable(category.archived)) {
+                    is CarryDecision.Chains -> decided.chains
+                    is CarryDecision.Refused -> return refused(decided.reason)
+                    CarryDecision.Unchanged -> error("Turning carry on always decides the chains")
+                }
+                carry.write(chains)
+                next
+            }
+
+            is DisableCarry -> {
+                val chains = carry.drop(command.confirmedCarryIn).chainsOr { return it }
+                    ?: return refused(CategoryRejection.NotCarrying)
+                carry.write(chains)
                 next
             }
         }
         check(database.categoryDao().update(changed.toEntity()) == 1)
         return Written.Done(id)
-    }
-
-    /** One category's whole default history. It grows by at most one entry per month. */
-    private suspend fun history(id: CategoryId): Outcome<List<DefaultLimit>, StorageFailure> {
-        val rows = database.limitDao().defaults(id.value, MAX_DEFAULT_HISTORY + 1)
-        if (rows.size > MAX_DEFAULT_HISTORY) {
-            return Outcome.Failure(
-                StorageFailure.Integrity(DefaultLimitEntity.TABLE, id.value, "effective_month")
-            )
-        }
-        return rows.decodeAll { it.toDomain() }
     }
 
     override suspend fun find(

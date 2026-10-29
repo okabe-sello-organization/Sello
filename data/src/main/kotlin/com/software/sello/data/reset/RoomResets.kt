@@ -193,6 +193,7 @@ class RoomResets(
             incomeDao().deleteAll()
             limitDao().deleteAllMonthLimits()
             limitDao().deleteAllDefaults()
+            carryChainDao().deleteAll()
             categoryDao().deleteAll()
             operationReceiptDao().deleteAll()
         }

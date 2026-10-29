@@ -33,6 +33,7 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.UndoOffer
 import java.time.LocalDate
+import java.time.YearMonth
 
 /**
  * Records, changes, removes and puts back expenses in one short transaction each:
@@ -43,6 +44,10 @@ import java.time.LocalDate
  * day it is, to refuse a future date; simulated financial time never reaches a timestamp.
  *
  * The offer to undo is [undo]'s, shared with every other workflow that can delete.
+ *
+ * A change that reaches a closed month of a carry chain is a correction (ADR 0020 CP21):
+ * [carryRejection] lets it through only when the list of later months it changes was seen
+ * at the current revision, and never when a month could no longer be calculated.
  */
 class RoomExpenseCommands internal constructor(
     private val database: SelloDatabase,
@@ -135,6 +140,27 @@ class RoomExpenseCommands internal constructor(
         }
     }
 
+    /**
+     * Why replacing [removed] with [added] cannot commit for carry, or null when it can
+     * (CP20–CP23). Asked before the first write, inside the transaction.
+     */
+    private suspend fun carryRejection(
+        profile: FinancialProfile,
+        removed: ExpenseEntity?,
+        added: ExpenseEntity?,
+        confirmedRevision: Long?
+    ): ExpenseCommandOutcome? {
+        val today = clock.today.value.date
+        return database.expenseCarry(
+            removed,
+            added,
+            YearMonth.from(today),
+            today,
+            profile.revision,
+            confirmedRevision
+        )?.let { Rejected(it) }
+    }
+
     /** Runs inside the transaction. Every rejection returns before the first write. */
     private suspend fun decide(command: CreateExpense): ExpenseCommandOutcome {
         val kind = OperationKind.CreateExpense
@@ -148,14 +174,6 @@ class RoomExpenseCommands internal constructor(
                 is Outcome.Success -> id.value
                 is Outcome.Failure -> error("The identifier source returned a malformed identifier")
             }
-            val receipt = database.commitCommand(
-                profile,
-                command.operationId,
-                kind,
-                digest,
-                expenseId.value,
-                now
-            )
             // A deleted expense that can still come back keeps its place in the order.
             val highest = maxOf(
                 database.expenseDao().highestSequence() ?: 0,
@@ -171,8 +189,17 @@ class RoomExpenseCommands internal constructor(
                 version = 1,
                 createdAt = now,
                 updatedAt = now
+            ).toEntity()
+            carryRejection(profile, null, expense, command.confirmedRevision)?.let { return it }
+            val receipt = database.commitCommand(
+                profile,
+                command.operationId,
+                kind,
+                digest,
+                expenseId.value,
+                now
             )
-            database.expenseDao().insert(expense.toEntity())
+            database.expenseDao().insert(expense)
             Committed(receipt.committedExpense(), replayed = false)
         }
     }
@@ -209,6 +236,13 @@ class RoomExpenseCommands internal constructor(
             if (command.date != current.date) {
                 dateRejection(command.date)?.let { return Rejected(it) }
             }
+            val edited = current.copy(
+                categoryId = command.categoryId,
+                amount = command.amount,
+                date = command.date,
+                note = command.note
+            ).toEntity()
+            carryRejection(profile, row, edited, command.confirmedRevision)?.let { return it }
 
             val now = audit.now()
             val changed = database.expenseDao().update(
@@ -243,6 +277,7 @@ class RoomExpenseCommands internal constructor(
             if (row.version != command.expectedVersion) {
                 return Rejected(ExpenseRejection.VersionConflict(row.version))
             }
+            carryRejection(profile, row, null, command.confirmedRevision)?.let { return it }
 
             val now = audit.now()
             database.discardKeptCopies()
@@ -295,23 +330,24 @@ class RoomExpenseCommands internal constructor(
                 kept.originTaken()
             if (taken) return Rejected(ExpenseRejection.UndoConflict)
 
-            database.expenseDao().insert(
-                ExpenseEntity(
-                    id = kept.expenseId,
-                    categoryId = kept.categoryId,
-                    effectiveDate = kept.effectiveDate,
-                    sequence = kept.sequence,
-                    amountMinor = kept.amountMinor,
-                    currency = kept.currency,
-                    note = kept.note,
-                    version = kept.version,
-                    createdAt = kept.createdAt,
-                    updatedAt = kept.updatedAt,
-                    originScheduleId = kept.originScheduleId,
-                    originDate = kept.originDate,
-                    originSlot = kept.originSlot
-                )
+            val restored = ExpenseEntity(
+                id = kept.expenseId,
+                categoryId = kept.categoryId,
+                effectiveDate = kept.effectiveDate,
+                sequence = kept.sequence,
+                amountMinor = kept.amountMinor,
+                currency = kept.currency,
+                note = kept.note,
+                version = kept.version,
+                createdAt = kept.createdAt,
+                updatedAt = kept.updatedAt,
+                originScheduleId = kept.originScheduleId,
+                originDate = kept.originDate,
+                originSlot = kept.originSlot
             )
+            // Undoing a deletion in a closed chain month is a correction too (CP21).
+            carryRejection(profile, null, restored, command.confirmedRevision)?.let { return it }
+            database.expenseDao().insert(restored)
             val removed = database.deletedExpenseDao().remove(kept.deletionId)
             check(removed == 1) { "The kept copy changed inside the transaction that read it" }
             val receipt = database.commitCommand(

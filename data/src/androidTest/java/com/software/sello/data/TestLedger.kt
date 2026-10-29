@@ -1,6 +1,7 @@
 package com.software.sello.data
 
 import com.software.sello.data.local.SelloDatabase
+import com.software.sello.data.repository.RoomCarryoverReads
 import com.software.sello.data.repository.RoomCategoryCommands
 import com.software.sello.data.repository.RoomCategoryExpenseSearch
 import com.software.sello.data.repository.RoomCategoryInsightsSnapshots
@@ -30,6 +31,7 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.AuditClock
+import com.software.sello.domain.port.CarryoverReads
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.CategoryInsightsSnapshots
@@ -117,11 +119,12 @@ class TestLedger(
     lateinit var schedules: ScheduleCommands
     lateinit var investments: InvestmentCommands
     lateinit var investmentReads: InvestmentReads
+    lateinit var carry: CarryoverReads
 
     /** A fresh handle on the same file, as after a process restart. */
     fun open() {
         database = files.open()
-        categories = RoomCategoryCommands(database, { audit }, clock, ids)
+        categories = RoomCategoryCommands(database, auditClock, clock, ids)
         // One offer to undo for everything opened on this handle, as storage has.
         val undo = UndoWindow { elapsed }
         expenses = RoomExpenseCommands(database, auditClock, clock, ids, undo)
@@ -139,6 +142,7 @@ class TestLedger(
         expenseReads = RoomExpenseReads(database)
         categoryInsights = RoomCategoryInsightsSnapshots(database, clock, computation)
         categoryExpenseSearch = RoomCategoryExpenseSearch(database)
+        carry = RoomCarryoverReads(database, clock, computation)
     }
 
     /** The storage as the app's composition gets it, on the same file. */

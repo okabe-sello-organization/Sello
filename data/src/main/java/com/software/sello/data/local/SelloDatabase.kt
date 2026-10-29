@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.software.sello.data.local.dao.CarryChainDao
 import com.software.sello.data.local.dao.CategoryDao
 import com.software.sello.data.local.dao.DeletedExpenseDao
 import com.software.sello.data.local.dao.DeletedGoalEventDao
@@ -17,6 +18,7 @@ import com.software.sello.data.local.dao.LimitDao
 import com.software.sello.data.local.dao.OperationReceiptDao
 import com.software.sello.data.local.dao.ProfileDao
 import com.software.sello.data.local.dao.ScheduleDao
+import com.software.sello.data.local.entity.CarryChainEntity
 import com.software.sello.data.local.entity.CategoryEntity
 import com.software.sello.data.local.entity.DefaultLimitEntity
 import com.software.sello.data.local.entity.DeletedExpenseEntity
@@ -45,7 +47,7 @@ import kotlin.coroutines.CoroutineContext
  * goals: `goal`, `goal_event`, `deleted_goal_event` and `featured_goal`; version 5
  * added `schedule`, `schedule_pause` and the origin of a recorded entry; version 6 added
  * investments: `investment`, `investment_movement`, `deleted_investment_movement` and
- * `usd_rate`.
+ * `usd_rate`; version 7 added `carry_chain`.
  */
 @Database(
     entities = [
@@ -67,9 +69,10 @@ import kotlin.coroutines.CoroutineContext
         InvestmentEntity::class,
         InvestmentMovementEntity::class,
         DeletedInvestmentMovementEntity::class,
-        UsdRateEntity::class
+        UsdRateEntity::class,
+        CarryChainEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class SelloDatabase : RoomDatabase() {
@@ -99,6 +102,8 @@ abstract class SelloDatabase : RoomDatabase() {
 
     abstract fun deletedInvestmentMovementDao(): DeletedInvestmentMovementDao
 
+    abstract fun carryChainDao(): CarryChainDao
+
     companion object {
         const val FILE_NAME = "sello.db"
     }
@@ -116,6 +121,13 @@ internal fun openSelloDatabase(
 ): SelloDatabase =
     Room.databaseBuilder(context.applicationContext, SelloDatabase::class.java, fileName)
         .openHelperFactory(NonDestructiveOpenHelperFactory())
-        .addMigrations(Migration1To2, Migration2To3, Migration3To4, Migration4To5, Migration5To6)
+        .addMigrations(
+            Migration1To2,
+            Migration2To3,
+            Migration3To4,
+            Migration4To5,
+            Migration5To6,
+            Migration6To7
+        )
         .setQueryCoroutineContext(queries)
         .build()

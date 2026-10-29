@@ -5,6 +5,7 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InvestmentAmount
+import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.RepeatRule
@@ -30,12 +31,14 @@ import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.DeleteInvestment
 import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.DeleteSchedule
+import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.EditGoal
 import com.software.sello.domain.port.EditGoalMovement
 import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.EditInvestment
 import com.software.sello.domain.port.EditInvestmentMovement
+import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalEdit
@@ -65,47 +68,80 @@ import java.security.MessageDigest
  * a colon and its bytes, so no two different inputs can produce the same sequence.
  * Every identity starts with the kind, a format version that changes if that kind's
  * field list ever does, and the generation. The operation identifier is not part of it.
+ *
+ * A carry confirmation (ADR 0020) is added only when the command has one, under format 2,
+ * so the identity of every command without one, and every receipt stored before carry
+ * existed, stays what it was.
  */
 
-internal fun inputDigest(command: CreateExpense): String = digest(
-    OperationKind.CreateExpense.key,
-    "1",
-    command.generation.toString(),
-    command.categoryId.value,
-    command.amount.money.minorUnits.toString(),
-    command.amount.money.currency.code,
-    command.date.toString(),
-    if (command.note == null) "0" else "1",
-    command.note?.value.orEmpty()
+/** Format 1 without [confirmation]; format 2 with it appended. */
+private fun digestWith(
+    kind: OperationKind,
+    generation: Long,
+    fields: List<String>,
+    confirmation: List<String>?
+): String {
+    val format = if (confirmation == null) "1" else "2"
+    return digest(
+        *(listOf(kind.key, format, generation.toString()) + fields + confirmation.orEmpty())
+            .toTypedArray()
+    )
+}
+
+/** The confirmed balance and revision, each present or not, or null when neither is. */
+private fun confirmation(carryIn: Money?, revision: Long?): List<String>? {
+    if (carryIn == null && revision == null) return null
+    return listOf(
+        if (carryIn == null) "0" else "1",
+        carryIn?.minorUnits?.toString().orEmpty(),
+        carryIn?.currency?.code.orEmpty(),
+        if (revision == null) "0" else "1",
+        revision?.toString().orEmpty()
+    )
+}
+
+internal fun inputDigest(command: CreateExpense): String = digestWith(
+    OperationKind.CreateExpense,
+    command.generation,
+    listOf(
+        command.categoryId.value,
+        command.amount.money.minorUnits.toString(),
+        command.amount.money.currency.code,
+        command.date.toString(),
+        if (command.note == null) "0" else "1",
+        command.note?.value.orEmpty()
+    ),
+    confirmation(null, command.confirmedRevision)
 )
 
-internal fun inputDigest(command: EditExpense): String = digest(
-    OperationKind.EditExpense.key,
-    "1",
-    command.generation.toString(),
-    command.expenseId.value,
-    command.expectedVersion.toString(),
-    command.categoryId.value,
-    command.amount.money.minorUnits.toString(),
-    command.amount.money.currency.code,
-    command.date.toString(),
-    if (command.note == null) "0" else "1",
-    command.note?.value.orEmpty()
+internal fun inputDigest(command: EditExpense): String = digestWith(
+    OperationKind.EditExpense,
+    command.generation,
+    listOf(
+        command.expenseId.value,
+        command.expectedVersion.toString(),
+        command.categoryId.value,
+        command.amount.money.minorUnits.toString(),
+        command.amount.money.currency.code,
+        command.date.toString(),
+        if (command.note == null) "0" else "1",
+        command.note?.value.orEmpty()
+    ),
+    confirmation(null, command.confirmedRevision)
 )
 
-internal fun inputDigest(command: DeleteExpense): String = digest(
-    OperationKind.DeleteExpense.key,
-    "1",
-    command.generation.toString(),
-    command.expenseId.value,
-    command.expectedVersion.toString()
+internal fun inputDigest(command: DeleteExpense): String = digestWith(
+    OperationKind.DeleteExpense,
+    command.generation,
+    listOf(command.expenseId.value, command.expectedVersion.toString()),
+    confirmation(null, command.confirmedRevision)
 )
 
-internal fun inputDigest(command: RestoreExpense): String = digest(
-    OperationKind.RestoreExpense.key,
-    "1",
-    command.generation.toString(),
-    command.deletionId.value
+internal fun inputDigest(command: RestoreExpense): String = digestWith(
+    OperationKind.RestoreExpense,
+    command.generation,
+    listOf(command.deletionId.value),
+    confirmation(null, command.confirmedRevision)
 )
 
 /** Zero or one name: the key says which, so "other" named "salary" is not salary. */
@@ -162,6 +198,8 @@ internal val CategoryCommand.kind: OperationKind
         is UnarchiveCategory -> OperationKind.UnarchiveCategory
         is SetDefaultLimit -> OperationKind.SetDefaultLimit
         is SetMonthLimit -> OperationKind.SetMonthLimit
+        is EnableCarry -> OperationKind.EnableCarry
+        is DisableCarry -> OperationKind.DisableCarry
     }
 
 internal fun inputDigest(command: CategoryCommand): String {
@@ -171,14 +209,28 @@ internal fun inputDigest(command: CategoryCommand): String {
     }
     val change = when (command) {
         is CreateCategory -> listOf(command.name.value, command.icon.value) + command.limit.fields
+
         is RenameCategory -> listOf(command.name.value)
+
         is ChangeCategoryIcon -> listOf(command.icon.value)
-        is ArchiveCategory, is UnarchiveCategory -> emptyList()
+
+        is ArchiveCategory, is UnarchiveCategory, is EnableCarry -> emptyList()
+
         is SetDefaultLimit -> command.limit.fields
+
         is SetMonthLimit -> listOf(command.month.toString()) + command.limit.fields
+
+        // A new kind: its confirmation is always part of it, present or not.
+        is DisableCarry -> confirmation(command.confirmedCarryIn, null)
+            ?: listOf("0", "", "", "0", "")
     }
-    val head = listOf(command.kind.key, "1", command.generation.toString())
-    return digest(*(head + subject + change).toTypedArray())
+    val confirmed = when (command) {
+        is ArchiveCategory -> confirmation(command.confirmedCarryIn, null)
+        is SetDefaultLimit -> confirmation(command.confirmedCarryIn, null)
+        is SetMonthLimit -> confirmation(command.confirmedCarryIn, command.confirmedRevision)
+        else -> null
+    }
+    return digestWith(command.kind, command.generation, subject + change, confirmed)
 }
 
 /** Zero and unlimited must not collide, so the kind is a field of its own. */

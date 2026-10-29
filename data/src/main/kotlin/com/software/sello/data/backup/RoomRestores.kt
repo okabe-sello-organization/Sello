@@ -344,6 +344,7 @@ class RoomRestores(
             incomeDao().deleteAll()
             limitDao().deleteAllMonthLimits()
             limitDao().deleteAllDefaults()
+            carryChainDao().deleteAll()
             categoryDao().deleteAll()
             categoryDao().insertAll(financial.categories.map { it.toEntity() })
             limitDao().insertDefaults(financial.defaultLimits.map { it.toEntity() })

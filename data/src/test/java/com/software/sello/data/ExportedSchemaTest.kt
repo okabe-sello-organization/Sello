@@ -14,7 +14,8 @@ class ExportedSchemaTest {
     private val versionThree = File(schemas, "3.json").readText()
     private val versionFour = File(schemas, "4.json").readText()
     private val versionFive = File(schemas, "5.json").readText()
-    private val current = File(schemas, "6.json").readText()
+    private val versionSix = File(schemas, "6.json").readText()
+    private val current = File(schemas, "7.json").readText()
 
     private fun values(schema: String, key: String) =
         Regex("\"$key\"\\s*:\\s*\"?([\\w]+)\"?").findAll(schema).map { it.groupValues[1] }
@@ -36,7 +37,7 @@ class ExportedSchemaTest {
     @Test
     fun everyVersionThatShippedIsStillExported() {
         assertEquals(
-            listOf("1.json", "2.json", "3.json", "4.json", "5.json", "6.json"),
+            listOf("1.json", "2.json", "3.json", "4.json", "5.json", "6.json", "7.json"),
             schemas.list()!!.sorted()
         )
         assertEquals(listOf("1"), values(versionOne, "version").toList())
@@ -44,7 +45,8 @@ class ExportedSchemaTest {
         assertEquals(listOf("3"), values(versionThree, "version").toList())
         assertEquals(listOf("4"), values(versionFour, "version").toList())
         assertEquals(listOf("5"), values(versionFive, "version").toList())
-        assertEquals(listOf("6"), values(current, "version").toList())
+        assertEquals(listOf("6"), values(versionSix, "version").toList())
+        assertEquals(listOf("7"), values(current, "version").toList())
     }
 
     @Test
@@ -87,18 +89,38 @@ class ExportedSchemaTest {
         assertTrue("index_income_origin_schedule_id_origin_date_origin_slot" in versionFive)
     }
 
+    private val investmentTables =
+        setOf("investment", "investment_movement", "deleted_investment_movement", "usd_rate")
+
     @Test
     fun versionSixAddsOnlyTheInvestmentTablesWithTheRateAsWholeHundredths() {
         assertEquals(
             mvpTables + "deleted_expense" + "deleted_income" + goalTables + scheduleTables +
-                "investment" + "investment_movement" + "deleted_investment_movement" + "usd_rate",
-            values(current, "tableName").toSet()
+                investmentTables,
+            values(versionSix, "tableName").toSet()
         )
         // No floating point anywhere: the rate is an INTEGER count of hundredths.
+        assertFalse("REAL" in values(versionSix, "affinity").toSet())
+        assertTrue("`rate_hundredths` INTEGER NOT NULL" in versionSix)
+        assertTrue("index_investment_movement_investment_id_sequence" in versionSix)
+        assertTrue("index_usd_rate_sequence" in versionSix)
+    }
+
+    @Test
+    fun versionSevenAddsOnlyTheCarryChainsAsMonthsWithNoAmount() {
+        assertEquals(
+            mvpTables + "deleted_expense" + "deleted_income" + goalTables + scheduleTables +
+                investmentTables + "carry_chain",
+            values(current, "tableName").toSet()
+        )
+        // A chain is its months; carry, capacity and remaining are derived, never stored.
+        val chain = current.substringAfter("\"tableName\": \"carry_chain\"")
+            .substringBefore("\"tableName\"")
+        assertEquals(
+            listOf("category_id", "start_month", "end_month"),
+            values(chain, "columnName").toList()
+        )
         assertFalse("REAL" in values(current, "affinity").toSet())
-        assertTrue("`rate_hundredths` INTEGER NOT NULL" in current)
-        assertTrue("index_investment_movement_investment_id_sequence" in current)
-        assertTrue("index_usd_rate_sequence" in current)
     }
 
     @Test
@@ -109,7 +131,8 @@ class ExportedSchemaTest {
             versionThree to 3,
             versionFour to 5,
             versionFive to 7,
-            current to 8
+            versionSix to 8,
+            current to 9
         )) {
             val actions = (values(schema, "onDelete") + values(schema, "onUpdate")).toList()
 
