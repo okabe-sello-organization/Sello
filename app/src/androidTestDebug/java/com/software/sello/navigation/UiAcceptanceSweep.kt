@@ -64,7 +64,7 @@ import org.junit.Test
  * screen: what is checked is what exists and where it is laid out, not what is
  * visible. Each screen is checked for:
  * - controls at least 48 by 48 dp to touch;
- * - text that is not cut off;
+ * - text that is not cut off, except a category tile's name, which its tile says in full;
  * - amounts spoken in full, in pesos;
  * - its main action reachable inside the window.
  * Every problem on every screen is collected, then reported together. Pull requests
@@ -264,8 +264,15 @@ abstract class UiAcceptanceSweep(private val window: Window) {
         unmerged.forEach { node ->
             val results = mutableListOf<TextLayoutResult>()
             node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
-            results.firstOrNull()?.takeIf { it.isCutOff() }?.let {
-                problems += "$screen: text cut off: ${node.label()}"
+            results.firstOrNull()?.takeIf { it.isCutOff() }?.let { layout ->
+                // The v2 design shortens a category tile's name to one line; its tile
+                // must still say the whole name to a screen reader.
+                val tile = node.categoryTile()
+                if (tile == null) {
+                    problems += "$screen: text cut off: ${node.label()}"
+                } else if (!tile.spoken().contains(layout.layoutInput.text.text)) {
+                    problems += "$screen: cut-off name not spoken in full: ${node.label()}"
+                }
             }
         }
 
@@ -331,6 +338,15 @@ abstract class UiAcceptanceSweep(private val window: Window) {
             text[end - 1] != ' ' && text[end] != ' '
         }
     }
+
+    private fun SemanticsNode.categoryTile(): SemanticsNode? = generateSequence(this) { it.parent }
+        .firstOrNull {
+            it.config.getOrNull(SemanticsProperties.TestTag)
+                ?.startsWith(reciboCategoryTag("")) == true
+        }
+
+    private fun SemanticsNode.spoken(): String =
+        config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(" ").orEmpty()
 
     private fun SemanticsNode.label(): String {
         val text = config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }

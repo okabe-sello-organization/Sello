@@ -56,7 +56,7 @@ On each screen the sweep records, then reports together:
 | Check | Rule |
 | --- | --- |
 | Touch targets | Every control answers a touch at least 48 × 48 dp (Compose's widened touch area included). A control a list has scrolled out of view is measured where it is whole. |
-| Text not cut short | No text is shortened with an ellipsis or stopped at its line limit. |
+| Text not cut short | No text is shortened with an ellipsis or stopped at its line limit. The one exception is a category tile's name, which the v2 design keeps to one line with an ellipsis; the tile must then say the whole name to a screen reader (owner decision, 2026-10-29). |
 | Amounts spoken in full | Every amount shown is read with its currency, such as "48.700 pesos". |
 | Main action reachable | Save, delete, Respaldar, Continuar and the Configuración rows scroll into the window. |
 
