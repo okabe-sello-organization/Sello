@@ -61,6 +61,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -123,8 +124,11 @@ class CatchUpNoticeViewModel(
             when (seen) {
                 is PreferenceRead.Failed -> flowOf(CatchUpNoticeState.Failed)
 
+                // What was shown belongs to the old "seen": until the read for the new one
+                // lands, say nothing rather than keep the bar Listo has just dismissed.
                 is PreferenceRead.Ready -> records.observeRecordedAfter(seen.value)
                     .map { read -> render(read, clock.today.value.date) }
+                    .onStart { emit(CatchUpNoticeState.Loading) }
             }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, CatchUpNoticeState.Loading)
