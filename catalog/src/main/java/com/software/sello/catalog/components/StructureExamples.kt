@@ -452,6 +452,13 @@ fun ColumnsChartExample() {
                 summary = "La parte sólida es gasto anotado y la rayada es lo que queda por gastar"
             )
         }
+        Slip {
+            SlipHeading("Cinco semanas en un mes") { Text("Desde el 29") }
+            ColumnsChart(
+                points = fiveWeekPoints(),
+                summary = "Gasto por semana. En una columna angosta, la semana es solo su número."
+            )
+        }
         SelectableChart(
             question = "Tu día más caro",
             points = weekdayPoints(),
@@ -492,6 +499,25 @@ fun ColumnsChartExample() {
             )
         }
     }
+}
+
+/** A month's fifth week starts on its 29th: at a large text size "sem 2" no longer fits. */
+private fun fiveWeekPoints(): List<ChartPoint> {
+    val weeks = listOf(
+        Triple("1", 120_000L, "120.000"),
+        Triple("2", 80_000L, "80.000"),
+        Triple("3", 150_000L, "150.000"),
+        Triple("4", 60_000L, "60.000")
+    )
+    return weeks.map { (number, value, spoken) ->
+        ChartPoint(
+            number,
+            "sem $number",
+            value,
+            "Semana $number: gastado $spoken pesos",
+            shortAxisLabel = number
+        )
+    } + ChartPoint("5", "esta", 30_000, "Semana actual: gastado 30.000 pesos", ChartPeriod.Current)
 }
 
 @Composable

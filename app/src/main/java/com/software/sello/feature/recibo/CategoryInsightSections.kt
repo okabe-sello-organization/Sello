@@ -185,7 +185,9 @@ private fun CategoryWeeks(categoryId: String, figures: DetailInsights) {
                 week.ceiling,
                 spoken,
                 if (week.current) ChartPeriod.Current else ChartPeriod.Past,
-                stripedFromValue = week.value.takeIf { week.allowance != null }
+                stripedFromValue = week.value.takeIf { week.allowance != null },
+                // At a large text size the week number alone; "esta" is already short.
+                shortAxisLabel = week.number.toString().takeUnless { week.current }
             )
         }
         ColumnsChart(

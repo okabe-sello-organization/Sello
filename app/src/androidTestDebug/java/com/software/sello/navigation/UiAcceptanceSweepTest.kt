@@ -13,6 +13,8 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
@@ -30,9 +32,12 @@ import androidx.test.espresso.Espresso
 import com.software.sello.TestCommands
 import com.software.sello.TestData
 import com.software.sello.await
-import com.software.sello.composition.SelloApplication
+import com.software.sello.composition.SandboxNames
+import com.software.sello.composition.viewModels
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.devtools.SandboxGraph
+import com.software.sello.devtools.SandboxSession
 import com.software.sello.feature.backup.BACKUP_CARD_CONTENTS_TAG
 import com.software.sello.feature.backup.BACKUP_CARD_RESET_TAG
 import com.software.sello.feature.backup.BACKUP_CREATE_TAG
@@ -46,8 +51,9 @@ import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
 import com.software.sello.feature.recibo.categoryExpenseTag
 import com.software.sello.feature.recibo.reciboCategoryTag
 import com.software.sello.feature.reset.RESET_CONTINUE_TAG
-import com.software.sello.readyViewModels
+import java.time.LocalDate
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -116,6 +122,9 @@ class UiAcceptanceSweepTest(private val window: Window) {
         private val money = Regex("""(?<![\d.])\d{1,3}(\.\d{3})+(?![\d.])""")
         private const val MIN_TARGET = 48f
         private const val WINDOW_TAG = "sweep:window"
+
+        /** A 30th: the month has run into its fifth week, so the weekly chart has five columns. */
+        private val FIVE_WEEK_DAY = LocalDate.of(2026, 10, 30)
     }
 
     @get:Rule
@@ -123,9 +132,18 @@ class UiAcceptanceSweepTest(private val window: Window) {
 
     private val problems = mutableListOf<String>()
 
+    private val sandbox = SandboxGraph(SandboxSession(active = true, date = FIVE_WEEK_DAY))
+
     @Before
     fun history() {
-        TestData.reset()
+        // The app's own graph on the sandbox's data with its financial clock on a fixed day,
+        // one of the 30th of a month: the weekly chart always has its five columns, the
+        // widest it can be, whatever the real date. Audit and elapsed time stay real.
+        sandbox.erase()
+        sandbox.open()
+        TestCommands.use(sandbox.koin)
+        TestData.use(SandboxNames.database)
+        assertEquals(FIVE_WEEK_DAY, TestCommands.today)
         TestCommands.showCurrentMonth()
         TestCommands.createCategory("Mercado", 300_000)
         TestCommands.createCategory("Transporte público", 50_000)
@@ -137,13 +155,14 @@ class UiAcceptanceSweepTest(private val window: Window) {
 
     @After
     fun leaveNothingBehind() {
-        TestData.reset()
-        TestCommands.showCurrentMonth()
+        TestCommands.useInstalledApp()
+        TestData.useInstalledApp()
+        sandbox.erase()
     }
 
     @Test
     fun everyDailyUseScreenFitsItsWindowAndIsFullyOperable() {
-        val viewModels = (rule.activity.application as SelloApplication).readyViewModels()
+        val viewModels = viewModels(sandbox.koin)
         rule.setContent {
             val density = Density(1f, window.fontScale)
             CompositionLocalProvider(LocalDensity provides density) {
@@ -164,6 +183,11 @@ class UiAcceptanceSweepTest(private val window: Window) {
         open(hasTestTag(reciboCategoryTag(transport)))
         awaitOrDescribe(hasTestTag(CATEGORY_DETAIL_HEADER_TAG))
         check("Category detail")
+        // The pinned day is what makes this the widest weekly chart, not luck of the calendar.
+        rule.onAllNodes(
+            hasAnyAncestor(hasTestTag("detail:weeks")) and
+                hasContentDescription(": gastado", substring = true)
+        ).assertCountEquals(5)
 
         val expense = TestData.rows("SELECT id FROM expense WHERE note = 'Tarjeta'").single()
         open(hasTestTag(categoryExpenseTag(expense)))

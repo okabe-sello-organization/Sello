@@ -44,7 +44,9 @@ combinations.
 ## Screens and checks
 
 Each window opens every screen below through the app's own buttons, from a history
-with two categories (one over its limit), two expenses and an income:
+with two categories (one over its limit), two expenses and an income. The history
+is the app's own graph on the sandbox's data with its financial clock fixed at 30
+October 2026, so the weekly chart always has five columns, whatever the real date:
 
 Recibo · category detail · expense edit · category edit · expense entry · new
 category · Resumen · Resumen's category · income history · income entry ·
@@ -69,6 +71,7 @@ On each screen the sweep records, then reports together:
 | Chip label "Último gasto agregado" cut short | C1 | Chips take a second line before an ellipsis, as the v1.1 spec's "chips wrap" says | `LargeTextFitTest.aChipsLabelTakesASecondLineInsteadOfBeingShortened` |
 | Limit suggestions read "200.000" without pesos | all | Each suggestion is read as "200.000 pesos" | `CategoryEditorViewModelTest`, `CategoryManagementViewModelTest`, `CategoryEditorScreenTest` |
 | Resumen's limit line read "Límite 350.000" | all | The chart's reference line is read as "Límite 350.000 pesos" | `ChartExactSelectionTest`, `ResumenScreenTest` |
+| Weekly chart labels "sem 2", "sem 3", "sem 4" cut short from the 29th of a month, when the chart has five columns (39dp each) | L2 | The chart's axis shows the week number alone ("2") when a column cannot hold "sem 2" in two lines at the label's own size; "esta" and the spoken text stay as they are | `LargeTextFitTest.aChartsFiveWeekLabelsShowTheNumberAloneWhereTheWordsDoNotFit`, `aPastMonthsFiveWeekLabelsShowTheNumberAlone`, sweep (pinned to 30 Oct 2026) |
 | The note composer ran under the navigation bar on the right: **Listo** sat behind it and had no bounds for accessibility | P2 | The composer's content keeps clear of the side system bars; its paper still reaches the edge | `ComponentContractsTest.aNavigationBarAtTheSideCoversNeitherCancelNorDone`; screenshots 2 before and after |
 
 No touch target under 48dp and no main action outside its window was found.
