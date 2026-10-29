@@ -32,19 +32,19 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
-import com.software.sello.Window
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Currency
-import com.software.sello.looks
+import com.software.sello.showSello
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 /**
  * Nueva inversión and Editar inversión as they are drawn (v2 *Agregar / editar
@@ -104,20 +104,16 @@ class InvestmentEditorScreenTest {
     )
 
     private fun show(state: InvestmentEditorState) {
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                InvestmentEditorScreen(state) { actions += it }
-            }
+        rule.showSello {
+            InvestmentEditorScreen(state) { actions += it }
         }
     }
 
     @Test
     fun theCurrencyIsChosenOnlyWhenCreating() {
         var state by mutableStateOf(creating)
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                InvestmentEditorScreen(state) { actions += it }
-            }
+        rule.showSello {
+            InvestmentEditorScreen(state) { actions += it }
         }
         rule.onNodeWithText("Nueva inversión").assertExists()
         rule.onNodeWithText("Pesos").performScrollTo()
@@ -205,10 +201,8 @@ class InvestmentEditorScreenTest {
     @Test
     fun deletingCountsTheMovementsAndAsksOnceMore() {
         var state by mutableStateOf(ecopetrol)
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                InvestmentEditorScreen(state) { actions += it }
-            }
+        rule.showSello {
+            InvestmentEditorScreen(state) { actions += it }
         }
         val consequences = "Se borran la inversión y sus 9 movimientos. Esto no se puede deshacer."
         rule.onNodeWithText("Borrar esta inversión").performScrollTo()
@@ -227,13 +221,9 @@ class InvestmentEditorScreenTest {
     @Test
     fun theFieldBeingTypedStaysAboveThePadOnASmallWindow() {
         var state by mutableStateOf(dollarsNoRate)
-        rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, 1.3f)) {
-                SelloTheme(reducedMotion = true) {
-                    Box(Modifier.requiredSize(320.dp, 640.dp)) {
-                        InvestmentEditorScreen(state) { actions += it }
-                    }
-                }
+        rule.showSello(Look(fontScale = 1.3f, density = 1f)) {
+            Box(Modifier.requiredSize(320.dp, 640.dp)) {
+                InvestmentEditorScreen(state) { actions += it }
             }
         }
         for (field in listOf(InvestmentField.First, InvestmentField.Rate)) {
@@ -303,8 +293,10 @@ class InvestmentEditorScreenTest {
     }
 
     @Test
+    // A screen larger than every window below, so each window is laid out whole.
+    @Config(qualifiers = "w900dp-h900dp-mdpi")
     fun theFormStaysWholeAndTheActionReachableInEveryThemeSizeAndWindow() {
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
         var state by mutableStateOf(creating)
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
@@ -320,7 +312,7 @@ class InvestmentEditorScreenTest {
                 }
             }
         }
-        for (each in looks(listOf(Window(320, 640), Window(600, 640)))) {
+        for (each in sweepLooks(listOf(SweepWindow(320, 640), SweepWindow(600, 640)))) {
             look = each
             for (shown in listOf(
                 creating,

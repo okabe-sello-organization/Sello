@@ -19,19 +19,18 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.software.sello.Look
-import com.software.sello.Window
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.looks
+import com.software.sello.showSello
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 /**
  * Aportar and Retirar as they are drawn: the chips carry their percentage, a retiro above
@@ -64,9 +63,7 @@ class GoalMovementScreenTest {
     )
 
     private fun show(state: GoalMovementState) {
-        rule.setContent {
-            SelloTheme(reducedMotion = true) { GoalMovementScreen(state) { actions += it } }
-        }
+        rule.showSello { GoalMovementScreen(state) { actions += it } }
     }
 
     @Test
@@ -117,8 +114,10 @@ class GoalMovementScreenTest {
     }
 
     @Test
+    // A screen larger than every window below, so each window is laid out whole.
+    @Config(qualifiers = "w900dp-h900dp-mdpi")
     fun theActionStaysWholeInEveryThemeSizeAndWindow() {
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
@@ -133,7 +132,7 @@ class GoalMovementScreenTest {
                 }
             }
         }
-        for (each in looks(listOf(Window(320, 640), Window(600, 640)))) {
+        for (each in sweepLooks(listOf(SweepWindow(320, 640), SweepWindow(600, 640)))) {
             look = each
             rule.waitForIdle()
             val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()

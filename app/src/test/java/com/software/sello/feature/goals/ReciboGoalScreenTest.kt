@@ -2,9 +2,7 @@ package com.software.sello.feature.goals
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -21,10 +19,10 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.Look
+import com.software.sello.showSello
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -46,19 +44,14 @@ class ReciboGoalScreenTest {
     private val actions = mutableListOf<Any>()
 
     private fun show(state: ReciboGoalState, fontScale: Float = 1f) {
-        rule.setContent {
-            val density = LocalDensity.current
-            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale)) {
-                SelloTheme {
-                    Box(Modifier.width(320.dp).testTag("area")) {
-                        ReciboGoal(
-                            state,
-                            { actions += it },
-                            { actions += "open:$it" },
-                            { actions += "contribute:$it" }
-                        )
-                    }
-                }
+        rule.showSello(Look(fontScale = fontScale)) {
+            Box(Modifier.width(320.dp).testTag("area")) {
+                ReciboGoal(
+                    state,
+                    { actions += it },
+                    { actions += "open:$it" },
+                    { actions += "contribute:$it" }
+                )
             }
         }
     }

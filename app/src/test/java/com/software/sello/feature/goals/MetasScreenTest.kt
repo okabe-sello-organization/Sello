@@ -12,7 +12,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
@@ -30,7 +29,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
-import com.software.sello.Window
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.designsystem.component.SelloDestination
 import com.software.sello.designsystem.component.SelloNavigation
@@ -60,7 +58,9 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordIdSource
-import com.software.sello.looks
+import com.software.sello.feature.expense.HandExpenseCommands
+import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.navigation.MetasDestination
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
@@ -70,10 +70,14 @@ import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.showSello
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
+import kotlin.time.Duration
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -82,7 +86,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.koin.core.context.GlobalContext
+import org.robolectric.annotation.Config
 
 /**
  * Metas and a goal as they are drawn: the tab's own green dock only once its screen
@@ -185,41 +189,46 @@ class MetasScreenTest {
     ) {
         val factory = viewModelFactory {
             initializer {
-                // The running app's own commands and notices: nothing here sends one.
-                val koin = GlobalContext.get()
+                // Commands and notices that do nothing: nothing here sends one.
+                val ids = RecordIdSource { "00000000-0000-4000-a000-000000000001" }
+                val commands = HandGoalCommands()
                 MetasViewModel(
                     SavedStateHandle(),
                     Reads(GoalBoardState.Ready(board)),
-                    koin.get<GoalCommands>(),
+                    commands,
                     clock,
                     money,
-                    koin.get<RecordIdSource>(),
-                    koin.get<ExpenseCorrections>()
+                    ids,
+                    ExpenseCorrections(
+                        HandExpenseCommands(),
+                        HandIncomeCommands(),
+                        commands,
+                        HandInvestmentCommands(),
+                        { Duration.ZERO },
+                        ids,
+                        CoroutineScope(Dispatchers.Main)
+                    )
                 ) { false }
             }
         }
-        rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
-                SelloTheme(reducedMotion = true) {
-                    Box(Modifier.requiredSize(320.dp, 640.dp)) {
-                        MetasDestination(
-                            state = shell,
-                            viewModels = factory,
-                            onShell = {},
-                            tabs = SelloNavigation(
-                                listOf(
-                                    SelloDestination("recibo", "Recibo", SelloIcon.ReceiptLong),
-                                    SelloDestination("resumen", "Resumen", SelloIcon.Insights),
-                                    SelloDestination("metas", "Metas", SelloIcon.Flag)
-                                ),
-                                "metas"
-                            ) {},
-                            onOpenGoal = {},
-                            onCreate = onCreate,
-                            onContribute = onContribute
-                        )
-                    }
-                }
+        rule.showSello(Look(density = 1f)) {
+            Box(Modifier.requiredSize(320.dp, 640.dp)) {
+                MetasDestination(
+                    state = shell,
+                    viewModels = factory,
+                    onShell = {},
+                    tabs = SelloNavigation(
+                        listOf(
+                            SelloDestination("recibo", "Recibo", SelloIcon.ReceiptLong),
+                            SelloDestination("resumen", "Resumen", SelloIcon.Insights),
+                            SelloDestination("metas", "Metas", SelloIcon.Flag)
+                        ),
+                        "metas"
+                    ) {},
+                    onOpenGoal = {},
+                    onCreate = onCreate,
+                    onContribute = onContribute
+                )
             }
         }
     }
@@ -272,6 +281,8 @@ class MetasScreenTest {
     }
 
     @Test
+    // A screen larger than every window below, so each window is laid out whole.
+    @Config(qualifiers = "w900dp-h900dp-mdpi")
     fun metasAndTheDetailKeepEveryFigureWholeInEveryThemeSizeAndWindow() {
         val render = GoalsRenderModel(money)
         val metas = render.metas(GoalBoardState.Ready(board), today)
@@ -280,7 +291,7 @@ class MetasScreenTest {
             board.goals[1].history.goal.id.value,
             today
         )
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
         var showDetail by mutableStateOf(false)
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
@@ -301,7 +312,8 @@ class MetasScreenTest {
                 }
             }
         }
-        for (each in looks(listOf(Window(320, 640), Window(600, 900), Window(840, 600)))) {
+        val windows = listOf(SweepWindow(320, 640), SweepWindow(600, 900), SweepWindow(840, 600))
+        for (each in sweepLooks(windows)) {
             look = each
             showDetail = false
             rule.waitForIdle()

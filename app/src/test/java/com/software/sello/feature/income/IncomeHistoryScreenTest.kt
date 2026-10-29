@@ -1,8 +1,6 @@
 package com.software.sello.feature.income
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -16,12 +14,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.showSello
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
@@ -83,22 +81,17 @@ class IncomeHistoryScreenTest {
         fontScale: Float = 1f,
         plan: IncomePlanState = IncomePlanState.None
     ) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    IncomeHistoryScreen(
-                        state,
-                        split,
-                        plan,
-                        today,
-                        { actions += it },
-                        { created++ },
-                        { edited += it },
-                        PaddingValues(12.dp)
-                    )
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale)) {
+            IncomeHistoryScreen(
+                state,
+                split,
+                plan,
+                today,
+                { actions += it },
+                { created++ },
+                { edited += it },
+                PaddingValues(12.dp)
+            )
         }
     }
 

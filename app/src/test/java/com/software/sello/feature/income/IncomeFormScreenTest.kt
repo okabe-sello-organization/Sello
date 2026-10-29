@@ -1,7 +1,5 @@
 package com.software.sello.feature.income
 
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -13,16 +11,19 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.unit.Density
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.recurrence.REPEAT_ROW_TAG
+import com.software.sello.showSello
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class IncomeFormScreenTest {
     @get:Rule
     val rule = createComposeRule()
@@ -30,21 +31,19 @@ class IncomeFormScreenTest {
     @Test
     fun aRecordedSaveDrawsNoReceipt() {
         val today = LocalDate.of(2026, 10, 13)
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                IncomeFormScreen(
-                    IncomeFormState(
-                        loading = false,
-                        amount = MoneyTextValue(MoneySign.None, "", "5.000", "5.000 pesos"),
-                        date = today,
-                        today = today,
-                        missing = null,
-                        busy = true,
-                        recorded = "synthetic"
-                    ),
-                    {}
-                )
-            }
+        rule.showSello {
+            IncomeFormScreen(
+                IncomeFormState(
+                    loading = false,
+                    amount = MoneyTextValue(MoneySign.None, "", "5.000", "5.000 pesos"),
+                    date = today,
+                    today = today,
+                    missing = null,
+                    busy = true,
+                    recorded = "synthetic"
+                ),
+                {}
+            )
         }
 
         rule.onNodeWithTag("income.receipt").assertDoesNotExist()
@@ -55,31 +54,25 @@ class IncomeFormScreenTest {
     @Test
     fun largeFontKeepsExactAmountAndBusySaveCannotBeRepeated() {
         val today = LocalDate.of(2026, 10, 13)
-        rule.setContent {
-            CompositionLocalProvider(
-                LocalDensity provides Density(LocalDensity.current.density, 2f)
-            ) {
-                SelloTheme(reducedMotion = true) {
-                    IncomeFormScreen(
-                        IncomeFormState(
-                            loading = false,
-                            date = today,
-                            today = today,
-                            amount = MoneyTextValue(
-                                MoneySign.None,
-                                "",
-                                "999.999.999.999",
-                                "999.999.999.999 pesos"
-                            ),
-                            sourceKeys = listOf("salary", "other"),
-                            sourceKey = "salary",
-                            missing = null,
-                            busy = true
-                        ),
-                        {}
-                    )
-                }
-            }
+        rule.showSello(Look(fontScale = 2f)) {
+            IncomeFormScreen(
+                IncomeFormState(
+                    loading = false,
+                    date = today,
+                    today = today,
+                    amount = MoneyTextValue(
+                        MoneySign.None,
+                        "",
+                        "999.999.999.999",
+                        "999.999.999.999 pesos"
+                    ),
+                    sourceKeys = listOf("salary", "other"),
+                    sourceKey = "salary",
+                    missing = null,
+                    busy = true
+                ),
+                {}
+            )
         }
         rule.onNodeWithContentDescription("999.999.999.999 pesos").assertIsDisplayed()
         rule.onNodeWithTag("income.submit").assertIsNotEnabled()
@@ -88,9 +81,7 @@ class IncomeFormScreenTest {
     private val today = LocalDate.of(2026, 10, 13)
 
     private fun showForm(state: IncomeFormState, actions: MutableList<IncomeFormAction>) =
-        rule.setContent {
-            SelloTheme(reducedMotion = true) { IncomeFormScreen(state, { actions += it }) }
-        }
+        rule.showSello { IncomeFormScreen(state, { actions += it }) }
 
     private val ready = IncomeFormState(
         loading = false,

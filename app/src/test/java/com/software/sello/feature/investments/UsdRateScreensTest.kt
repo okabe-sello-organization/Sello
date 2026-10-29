@@ -20,10 +20,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
-import com.software.sello.Window
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.looks
 import com.software.sello.presentation.date.dateLabels
 import java.time.LocalDate
 import org.junit.Assert.assertTrue
@@ -53,7 +51,7 @@ class UsdRateScreensTest {
 
     @Test
     fun theRateStaysWholeInEveryThemeSizeAndWindow() {
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
@@ -68,7 +66,7 @@ class UsdRateScreensTest {
                 }
             }
         }
-        for (each in looks(listOf(Window(320, 640), Window(840, 600)))) {
+        for (each in sweepLooks(listOf(SweepWindow(320, 640), SweepWindow(840, 600)))) {
             look = each
             rule.waitForIdle()
             val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()
