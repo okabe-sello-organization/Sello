@@ -1,7 +1,8 @@
 # 0002 — Preserve surplus and overspending across periods
 
 **Owner:** project owner (user) · **Updated:** 2026-10-16
-**Status:** approved post-MVP direction; detailed policy still needs approval.
+**Status:** approved post-MVP direction; the detailed policy is
+[ADR 0020](0020-signed-carryover-policy.md), approved by merging the SELLO-037 pull request.
 
 Carryover preserves both unused budget and overspending across months. Neither
 may disappear silently. MVP renews configured monthly budgets without carryover;
@@ -21,19 +22,24 @@ transfers, and carryover enabled:
 | C01 | 20,000 | +80,000 | 180,000 |
 | C02 | 120,000 | −20,000 | 80,000 |
 
-These examples approve no multi-month formula. Preserve earlier deficits, even
+These two rows are one month each; the multi-month formula and its worked examples are
+in [ADR 0020](0020-signed-carryover-policy.md). Preserve earlier deficits, even
 when allowance is zero; never silently clip, expire or forgive them.
 
-## Open policy decisions
+## Policy decisions
 
-SELLO-037 must settle these with reviewed multi-month and correction examples:
+SELLO-037 settled what this ADR left open, in [ADR 0020](0020-signed-carryover-policy.md)
+with [worked examples](../testing/signed-carryover-examples.md):
 
-- Period, start date, opt-in scope, and enabling/disabling behavior. Carryover for
-  every category is not approved; cross-category effects remain undecided.
-- Caps, zero/negative capacity, missing history, and archive/unlimited transitions.
-- How correcting an older expense changes later carry. Base-limit changes must
-  preserve prior configured limits; explain any changes to later derived capacity.
-- Which capacity budget verdicts compare against, and income-allocation treatment.
+- Scope and start: per category, opt-in, off by default, starting at 0 in the month it is
+  turned on (CP1–CP4); the continuous signed formula with no cap (CP5–CP8).
+- Dropping a balance only with an exact, confirmed settlement when turning carry off,
+  archiving or making a category unlimited; zero and negative capacity, missing history and
+  overflow (CP9–CP13, CP23–CP25).
+- Verdicts, remaining and allowance against base + carry; income allocation on base limits
+  only (CP14–CP19).
+- Correcting an older expense: a preview of every later month that changes, then one
+  recalculation; base limits never change (CP20–CP22).
 
 ## Implementation and verification
 
