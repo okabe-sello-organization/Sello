@@ -84,6 +84,16 @@ class CatchUpNoticeJourneyTest {
         }
     }
 
+    /**
+     * Listo closes the list only once what it showed is kept as seen, so Recibo is back
+     * only after that. Recibo then reads the notice again off the main thread, and until
+     * that read lands it still has the bar it had: wait for it to go rather than look the
+     * moment Recibo is back. What was kept is checked against storage at the end.
+     */
+    private fun barGone() = rule.waitUntil(15_000) {
+        rule.onAllNodes(hasTestTag(CATCH_UP_BAR_TAG), true).fetchSemanticsNodes().isEmpty()
+    }
+
     private fun inBar(text: String) =
         rule.onNode(hasText(text) and hasAnyAncestor(hasTestTag(CATCH_UP_BAR_TAG)), true)
 
@@ -99,14 +109,14 @@ class CatchUpNoticeJourneyTest {
         rule.awaitTag(CATCH_UP_BAR_TAG)
         inBar("Sello anotó 2 pagos fijos").assertExists()
         inBar("Ver").performClick()
-        rule.awaitTag(CATCH_UP_LIST_TAG)
-        rule.onNodeWithText("Sello anotó estos 2").assertExists()
+        // The list opens on its placeholder while it reads what was recorded, so the
+        // list's own tag says nothing yet: wait for the heading the read brings.
+        rule.awaitText("Sello anotó estos 2")
         rule.onNode(hasText("Listo") and hasAnyAncestor(hasTestTag(SCAFFOLD_DOCK_TAG)), true)
             .assertExists()
         rule.onNodeWithContentDescription(LISTO).press()
         rule.awaitTag(RECIBO_SUMMARY_TAG)
-        rule.waitForIdle()
-        rule.onNodeWithTag(CATCH_UP_BAR_TAG).assertDoesNotExist()
+        barGone()
 
         // A week away: on 24 oct catch-up records rent and three rides.
         runBlocking { while (runner.step()) Unit }
@@ -135,8 +145,7 @@ class CatchUpNoticeJourneyTest {
         rule.awaitTag(CATCH_UP_LIST_TAG)
         rule.onNodeWithContentDescription(LISTO).press()
         rule.awaitTag(RECIBO_SUMMARY_TAG)
-        rule.waitForIdle()
-        rule.onNodeWithTag(CATCH_UP_BAR_TAG).assertDoesNotExist()
+        barGone()
 
         // Listo was kept: nothing is left to show the next time Sello opens.
         runBlocking {
