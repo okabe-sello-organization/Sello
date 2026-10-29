@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -228,7 +227,7 @@ private fun HeaderSlip(
                 }
             }
             BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val stacked = LocalDensity.current.fontScale > 1.3f || maxWidth < 240.dp
+                val stacked = maxWidth < 240.dp
                 val circle: @Composable () -> Unit = {
                     CategoryCircle(
                         CategoryIcons.iconFor(category.iconKey),

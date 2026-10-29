@@ -62,16 +62,11 @@ class LayoutRulesTest {
     }
 
     @Test
-    fun categoryCellsUseTwoColumnsThreeWhenWideAndOneAtLargeType() {
-        assertEquals(2, categoryColumns(336.dp, 1.0f))
-        assertEquals(2, categoryColumns(336.dp, 1.29f))
-        assertEquals(1, categoryColumns(336.dp, 1.3f))
-        assertEquals(1, categoryColumns(336.dp, 2.0f))
-        assertEquals(3, categoryColumns(560.dp, 1.0f))
-        assertEquals(3, categoryColumns(600.dp, 1.0f))
-        assertEquals(2, categoryColumns(559.dp, 1.0f))
-        // Large type wins over width: names need the room.
-        assertEquals(1, categoryColumns(600.dp, 1.3f))
+    fun categoryCellsUseTwoColumnsAndThreeWhenWide() {
+        assertEquals(2, categoryColumns(336.dp))
+        assertEquals(3, categoryColumns(560.dp))
+        assertEquals(3, categoryColumns(600.dp))
+        assertEquals(2, categoryColumns(559.dp))
     }
 
     @Test

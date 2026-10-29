@@ -34,7 +34,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -117,8 +116,7 @@ fun RepeatSheet(
  * [income] is in gain ink. [recorded], for one whose month already went through, shows a
  * check instead of its icon and softens a payment's amount. [dimmed], for one paused or
  * ended, softens it while every text keeps its contrast. The whole row is one button read
- * as [spoken]. From font scale 1.6 the amount goes under the name. A rule separates it
- * from the next row unless it is the [last].
+ * as [spoken]. A rule separates it from the next row unless it is the [last].
  */
 @Composable
 fun ScheduleRow(
@@ -138,7 +136,6 @@ fun ScheduleRow(
     recorded: Boolean = false
 ) {
     val colors = SelloTheme.colors
-    val large = LocalDensity.current.fontScale >= LARGE_TYPE_SCALE
     val amountInk = when {
         dimmed || soon -> colors.inkSoft
         income -> colors.semantic.gain
@@ -146,7 +143,7 @@ fun ScheduleRow(
         else -> colors.ink
     }
     val figure: @Composable () -> Unit = {
-        Column(horizontalAlignment = if (large) Alignment.Start else Alignment.End) {
+        Column(horizontalAlignment = Alignment.End) {
             MoneyText(
                 amount,
                 color = amountInk,
@@ -214,9 +211,8 @@ fun ScheduleRow(
             Text(caption, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)
             // Under the caption, so a paused row's caption keeps the row's width.
             stamp()
-            if (large) figure()
         }
-        if (!large) figure()
+        figure()
     }
 }
 
@@ -279,8 +275,6 @@ fun ButtonPair(
         }
     }
 }
-
-private const val LARGE_TYPE_SCALE = 1.6f
 
 private val SheetTopGap = 24.dp
 

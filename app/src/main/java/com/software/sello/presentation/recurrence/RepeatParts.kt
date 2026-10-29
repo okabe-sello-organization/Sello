@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -371,10 +370,8 @@ internal fun DayGrid(
     enabled: Boolean = true
 ) {
     val colors = SelloTheme.colors
-    val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val wanted = if (fontScale >= LARGE_TYPE_SCALE) 4 else 7
-        val columns = minOf(wanted, (maxWidth / DayTarget).toInt().coerceAtLeast(1))
+        val columns = minOf(DAYS_PER_ROW, (maxWidth / DayTarget).toInt().coerceAtLeast(1))
         Column {
             (1..DAYS).chunked(columns).forEach { row ->
                 Row {
@@ -539,4 +536,4 @@ private val DayTarget = 48.dp
 
 private val StepShape = RoundedCornerShape(12.dp)
 
-private const val LARGE_TYPE_SCALE = 1.6f
+private const val DAYS_PER_ROW = 7

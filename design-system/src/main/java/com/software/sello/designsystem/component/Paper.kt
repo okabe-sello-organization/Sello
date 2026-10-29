@@ -401,12 +401,8 @@ fun AnswerSlip(
             Modifier.clearAndSetSemantics { contentDescription = description }
         }
         Column(answer.fillMaxWidth()) {
-            // Stacked at large text so the rotated stamp never steals the label's width.
             if (stamp == null) {
                 Text(label, color = SelloTheme.colors.inkSoft)
-            } else if (LocalDensity.current.fontScale >= 1.3f) {
-                Text(label, color = SelloTheme.colors.inkSoft)
-                Stamp(stamp, ink, Modifier.padding(vertical = 8.dp), angle = -5f)
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(label, modifier = Modifier.weight(1f), color = SelloTheme.colors.inkSoft)
