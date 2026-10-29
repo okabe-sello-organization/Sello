@@ -32,7 +32,7 @@ For the shape of a new feature and its tests, read the [feature guide](feature-g
 | Room/transactions/codecs | `data/src/main/java/com/software/sello/data/{local,mapper,repository}/` and `data/src/main/kotlin/.../data/{backup,export,preferences,reset}/` (backup codecs, CSV/JSON export, DataStore preferences, reset); host tests in `data/src/test/`, real Room in `data/src/androidTest/`; exported schemas in `data/schemas/` |
 | Reusable UI | `design-system/src/main/java/com/software/sello/designsystem/{component,icon,theme}/`; previews and host/device tests alongside that module |
 | App wiring/platform | `app/src/main/java/com/software/sello/{composition,navigation,platform,presentation}/`; composition is the only app package importing data implementations |
-| Feature UI | `app/src/main/java/com/software/sello/feature/{backup,category,expense,goals,income,investments,recibo,recurrence,reset,resumen,settings,startup}/` (recurrence holds the schedules); each owns State/Action/ViewModel/ScreenRoot/Screen as needed (no Event types; results stay in State) |
+| Feature UI | `app/src/main/java/com/software/sello/feature/{backup,category,expense,goals,income,investments,recibo,recurrence,reset,resumen,settings,startup}/` (recurrence holds the schedules); each owns State/Action/ViewModel/`<Name>Root`/`<Name>Screen` as needed (no Event types; results stay in State) |
 | Sandbox | `app/src/debug/java/com/software/sello/devtools/`, `app/src/debug/res/` and debug-only bindings; release has no reverse dependency |
 | Decisions, tickets and runbooks | `docs/decisions/`, `docs/tickets/<epic>/<ticket>/`, `docs/testing/`, `docs/release/` |
 
