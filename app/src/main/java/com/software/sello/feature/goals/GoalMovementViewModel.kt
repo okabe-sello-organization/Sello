@@ -29,7 +29,7 @@ import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.Instant
@@ -57,7 +57,7 @@ class GoalMovementViewModel(
     private val clock: FinancialClock,
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
-    private val corrections: ExpenseCorrections
+    private val corrections: Corrections
 ) : ViewModel() {
     private data class Draft(
         val amount: AmountDraft,

@@ -32,7 +32,7 @@ import com.software.sello.domain.usecase.CatchUpNow
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.YearMonth
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,7 +64,7 @@ class CategoryManagementViewModel(
     private val session: MonthSession,
     private val ids: RecordIdSource,
     money: MoneyFormatter,
-    private val notices: ExpenseCorrections,
+    private val notices: Corrections,
     private val catchUp: CatchUpNow
 ) : ViewModel() {
     /** The limit a month has, or that it has none of its own to show. */

@@ -58,7 +58,7 @@ import org.junit.Test
  * unless a test moves it apart to stand for a device that slept.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class ExpenseCorrectionsTest {
+class CorrectionsTest {
     private val scope = TestScope()
     private val commands = HandExpenseCommands()
     private val incomes = HandIncomeCommands()
@@ -69,7 +69,7 @@ class ExpenseCorrectionsTest {
         MonotonicClock { 5.hours + scope.testScheduler.currentTime.milliseconds + slept }
     private var nextId = 500
     private val corrections =
-        ExpenseCorrections(
+        Corrections(
             commands,
             incomes,
             goals,

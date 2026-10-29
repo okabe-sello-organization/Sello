@@ -44,7 +44,7 @@ import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.feature.resumen.resumenSnapshot
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
@@ -95,7 +95,7 @@ class IncomeFormViewModelTest {
             override fun positive(amount: String) = "más $amount"
         }
     )
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     private val design = IncomeSource.Other((SourceName.of("Diseño") as Outcome.Success).value)
     private val logo = storedIncome(100, "2026-10-05", 850_000, design, "Logo").copy(version = 3)
@@ -103,7 +103,7 @@ class IncomeFormViewModelTest {
     @Before
     fun mainDispatcher() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             commands,
             HandGoalCommands(),

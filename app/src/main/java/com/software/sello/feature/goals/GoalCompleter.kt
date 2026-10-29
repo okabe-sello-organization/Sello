@@ -12,7 +12,7 @@ import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.platform.ScreenReader
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
@@ -65,7 +65,7 @@ sealed interface CompletionState {
 class GoalCompleter(
     private val saved: SavedStateHandle,
     private val commands: GoalCommands,
-    private val corrections: ExpenseCorrections,
+    private val corrections: Corrections,
     private val ids: RecordIdSource,
     private val clock: FinancialClock,
     private val screenReader: ScreenReader,

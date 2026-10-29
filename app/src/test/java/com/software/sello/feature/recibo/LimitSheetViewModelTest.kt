@@ -38,7 +38,7 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
@@ -78,7 +78,7 @@ class LimitSheetViewModelTest {
         override fun negative(amount: String) = "menos $amount"
         override fun positive(amount: String) = "más $amount"
     })
-    private lateinit var notices: ExpenseCorrections
+    private lateinit var notices: Corrections
 
     /** Commands a test scripts. Unless told otherwise every command commits. */
     private inner class HandCommands : CategoryCommands {
@@ -141,7 +141,7 @@ class LimitSheetViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        notices = ExpenseCorrections(
+        notices = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             HandGoalCommands(),
