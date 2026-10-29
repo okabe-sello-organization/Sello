@@ -16,10 +16,11 @@ typealias Lookup<C> = suspend (OperationId) -> Outcome<C?, StorageFailure>
  *
  * The operation ID is made once per send and kept in [saved] under [key] before the
  * command leaves, with the [step] it was for, so a restart can tell this attempt apart
- * from a new one. A send while another is in flight sends nothing. An unknown outcome is
- * asked about with the same ID; only a found change counts as saved, and until the
- * question has an answer the operation stays saved: [pending] is true, and the form asks
- * again ([recover]) instead of sending anything new. Cancellation is rethrown and leaves
+ * from a new one. A send while another is in flight, or while an operation is still
+ * [pending], sends nothing. An unknown outcome is asked about with the same ID; only a
+ * found change counts as saved, and until the question has an answer the operation stays
+ * saved: [pending] is true, and the form asks again ([recover]) instead of sending
+ * anything new. Cancellation is rethrown and leaves
  * the operation saved, since it does not prove anything was rolled back.
  */
 class Submission(
@@ -38,14 +39,15 @@ class Submission(
 
     /**
      * Sends [command] with a new operation ID saved first; null when another send or
-     * lookup is still in flight, and nothing was sent.
+     * lookup is still in flight or an earlier operation is unresolved, and nothing was sent.
      */
     suspend fun <C, F> send(
         find: Lookup<C>,
         step: String? = null,
         command: suspend (OperationId) -> CommandOutcome<C, F>
     ): Settled<C, F>? {
-        if (inFlight) return null
+        // An unresolved operation is asked about, never replaced by a new one.
+        if (inFlight || pending) return null
         inFlight = true
         try {
             val operation = (OperationId.of(ids.next()) as Outcome.Success).value
@@ -108,7 +110,7 @@ class Submission(
 sealed interface Settled<out C, out F> {
     /**
      * Saved. [found] is true when it was learned by asking after an unknown outcome or a
-     * restart: the change itself was not seen, so it is never celebrated.
+     * restart: the change itself was not seen, so it never earns a celebration.
      */
     data class Committed<out C>(val value: C, val found: Boolean) : Recovered<C>
 

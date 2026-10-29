@@ -239,4 +239,40 @@ class SubmissionTest {
         assertTrue(submission.pending)
         assertEquals(first, saved.get<String>("form.operation"))
     }
+
+    @Test
+    fun `a send while an operation is unresolved sends nothing and keeps its ID`() = runTest {
+        val saved = SavedStateHandle(
+            mapOf(
+                "form.operation" to first,
+                "form.operation.step" to "create"
+            )
+        )
+        val submission = submission(saved, second)
+        val store = Store()
+
+        val settled = submission.send(store.find, "create") { operation ->
+            store.sent += operation
+            CommandOutcome.Committed("gasto", replayed = false)
+        }
+
+        assertNull(settled)
+        assertTrue(store.sent.isEmpty())
+        assertTrue(store.asked.isEmpty())
+        assertEquals(first, saved.get<String>("form.operation"))
+        assertEquals("create", submission.step)
+    }
+
+    @Test
+    fun `an unreadable saved ID is cleared without asking storage`() = runTest {
+        val saved = SavedStateHandle(mapOf("form.operation" to "not-an-id"))
+        val submission = submission(saved)
+        val store = Store()
+
+        assertNull(submission.recover(store.find))
+
+        assertTrue(store.asked.isEmpty())
+        assertFalse(submission.pending)
+        assertNull(saved.get<String>("form.operation"))
+    }
 }
