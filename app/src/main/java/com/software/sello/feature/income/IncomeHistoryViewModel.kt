@@ -3,6 +3,7 @@ package com.software.sello.feature.income
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomePlan
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Outcome
@@ -236,7 +237,15 @@ class IncomeHistoryViewModel(
                     val epoch = ++epoch
                     cursor = null
                     snapshot = null
-                    shown.value = IncomeHistoryState.Loading
+                    // Only the first load of a month shows Loading: a change after that
+                    // updates the list in place and reads the loaded pages again.
+                    val loaded = (shown.value as? IncomeHistoryState.Ready)
+                        ?.takeIf { it.month == session.selectedMonthNow }
+                    if (loaded == null) {
+                        shown.value = IncomeHistoryState.Loading
+                    } else {
+                        shown.value = loaded.copy(busy = true, pageFailed = false)
+                    }
                     when (state) {
                         IncomeMonthState.Loading -> Unit
 
@@ -244,7 +253,8 @@ class IncomeHistoryViewModel(
 
                         is IncomeMonthState.Ready -> {
                             snapshot = state.month
-                            page(state.month, first = true, epoch)
+                            val restore = loaded?.lines?.size ?: 0
+                            page(state.month, first = true, epoch, restore)
                         }
                     }
                 }
@@ -266,15 +276,31 @@ class IncomeHistoryViewModel(
         }
     }
 
-    private suspend fun page(expected: IncomeMonth, first: Boolean, epoch: Int) {
-        val page = reads.inMonth(expected.month, if (first) null else cursor, PAGE_SIZE)
+    /**
+     * Reads a page of [expected]'s month. The first page of a refresh keeps reading until
+     * [restore] lines are back, so the pages loaded with Más survive a change.
+     */
+    private suspend fun page(expected: IncomeMonth, first: Boolean, epoch: Int, restore: Int = 0) {
+        val incomes = mutableListOf<Income>()
+        var next = if (first) null else cursor
+        var failed = false
+        do {
+            when (val page = reads.inMonth(expected.month, next, PAGE_SIZE)) {
+                is Outcome.Failure -> failed = true
+
+                is Outcome.Success -> {
+                    incomes += page.value.incomes
+                    next = page.value.next
+                }
+            }
+        } while (!failed && first && next != null && incomes.size < restore)
         val checked = reads.month(expected.month)
         if (this.epoch != epoch || snapshot != expected ||
             session.selectedMonthNow != expected.month
         ) {
             return
         }
-        if (checked is Outcome.Failure || page is Outcome.Failure) {
+        if (checked is Outcome.Failure || failed) {
             val previous = shown.value as? IncomeHistoryState.Ready
             shown.value = if (first || previous == null) {
                 IncomeHistoryState.Failed
@@ -288,17 +314,16 @@ class IncomeHistoryViewModel(
             attempts.update { it + 1 }
             return
         }
-        val result = (page as Outcome.Success).value
         val previous = if (first) {
             emptyList()
         } else {
             (shown.value as? IncomeHistoryState.Ready)?.lines.orEmpty()
         }
-        cursor = result.next
+        cursor = next
         shown.value = IncomeHistoryState.Ready(
             expected.month,
             money.format(expected.total),
-            previous + result.incomes.map {
+            previous + incomes.map {
                 IncomeLine(
                     it.id.value,
                     money.format(it.amount.money),
@@ -308,7 +333,7 @@ class IncomeHistoryViewModel(
                     it.note?.value
                 )
             },
-            more = result.next != null
+            more = next != null
         )
     }
 
