@@ -65,4 +65,41 @@ class MoneySemanticsTest {
             rule.onNodeWithTag("usd").assertTextEquals("USD\u00A02.340,00")
         }
     }
+
+    @Test
+    fun theLargestAmountWrapsInsideANarrowSlip() {
+        val max = cop(
+            MoneySign.Minus,
+            "9.223.372.036.854.775.808",
+            "menos 9.223.372.036.854.775.808 pesos"
+        )
+        rule.inEveryScheme(
+            width = 320.dp,
+            content = {
+                Slip {
+                    MoneyText(
+                        cop(MoneySign.None, "1", "1 peso"),
+                        Modifier.testTag("short"),
+                        MoneyStyle.Hero
+                    )
+                    MoneyText(max, Modifier.testTag("hero"), MoneyStyle.Hero)
+                    MoneyText(max, Modifier.testTag("line"))
+                }
+            }
+        ) {
+            // The slip leaves 320 - 2 x 16 for content.
+            val oneLine = rule.onNodeWithTag("short").getUnclippedBoundsInRoot().height
+            for (tag in listOf("hero", "line")) {
+                val bounds = rule.onNodeWithTag(tag).getUnclippedBoundsInRoot()
+                assertTrue("$it $tag is ${bounds.width} wide", bounds.width <= 288.dp)
+                rule.onNodeWithTag(tag).assertContentDescriptionEquals(max.spoken)
+                rule.onNodeWithTag(tag).assertTextEquals("−9.223.372.036.854.775.808")
+            }
+            val hero = rule.onNodeWithTag("hero").getUnclippedBoundsInRoot().height
+            assertTrue(
+                "$it hero should take several lines: $hero vs $oneLine",
+                hero > oneLine * 1.5f
+            )
+        }
+    }
 }
