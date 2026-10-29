@@ -532,29 +532,3 @@ fun DangerSlip(
         )
     }
 }
-
-@Composable
-fun ReviewInvitation(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val color = SelloTheme.colors.brand
-    Row(
-        modifier.fillMaxWidth().heightIn(
-            min = 48.dp
-        ).clickable(role = Role.Button, onClick = onClick)
-            .drawBehind {
-                drawRoundRect(
-                    color,
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        1.5.dp.toPx(),
-                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
-                            floatArrayOf(5.dp.toPx(), 4.dp.toPx())
-                        )
-                    )
-                )
-            }.padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, Modifier.weight(1f), color = color)
-        Icon(SelloIcon.ChevronRight.painter(), null, tint = color)
-    }
-}

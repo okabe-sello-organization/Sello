@@ -10,7 +10,6 @@ import androidx.compose.ui.unit.dp
 /** Corner tokens. The slip's pinked bottom edge belongs to the slip component. */
 @Immutable
 data class SelloShapes(
-    val slip: CornerBasedShape = RoundedCornerShape(topStart = 11.dp, topEnd = 11.dp),
     val control: CornerBasedShape = RoundedCornerShape(10.dp),
     val button: CornerBasedShape = RoundedCornerShape(13.dp),
     val bar: CornerBasedShape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp),
@@ -27,13 +26,6 @@ data class SelloSpacing(
     val sm: Dp = 8.dp,
     val md: Dp = 12.dp,
     val lg: Dp = 16.dp,
-    val xl: Dp = 24.dp,
-    val deskMargin: Dp = 12.dp,
-    val slipPadding: Dp = 16.dp,
-    val slipPaddingTop: Dp = 15.dp,
-    val slipPaddingBottom: Dp = 20.dp,
-    val slipGap: Dp = 14.dp,
-    val chipGap: Dp = 8.dp,
     val minTouchTarget: Dp = 48.dp
 )
 

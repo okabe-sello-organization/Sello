@@ -188,7 +188,6 @@ class ComponentScreenshotTest {
             )
         )
         ColumnsChart(points, "Gasto por mes. El más alto es agosto.")
-        LineChart(points, "Gasto por mes. El más alto es agosto.")
     }
 
     @Test

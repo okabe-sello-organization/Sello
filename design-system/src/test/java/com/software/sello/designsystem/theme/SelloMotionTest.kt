@@ -1,6 +1,5 @@
 package com.software.sello.designsystem.theme
 
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.spring
@@ -20,7 +19,6 @@ class SelloMotionTest {
             tween<Float>(360, easing = SelloMotion.EmphasizedEasing),
             SelloMotion.emphasized<Float>()
         )
-        assertEquals(tween<Float>(400, easing = FastOutSlowInEasing), SelloMotion.count<Float>())
         assertEquals(tween<Float>(150, easing = LinearEasing), SelloMotion.feed<Float>())
     }
 

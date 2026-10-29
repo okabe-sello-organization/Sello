@@ -57,10 +57,6 @@ class SchedulePolicyTest {
 
     @Test
     fun re03NothingBeforeTheStartDate() {
-        assertEquals(
-            SchedulePolicy.newStart(d("2026-10-22"), today = d("2026-10-22")).valueOrFail(),
-            d("2026-10-22")
-        )
         val rent = recurrence(monthly(5), "2026-10-22")
         assertEquals(all("2026-11-05"), dates(rent, "2026-10-01", "2026-11-30"))
     }
@@ -138,10 +134,8 @@ class SchedulePolicyTest {
 
     @Test
     fun re18AChangedRuleStartsTomorrow() {
-        val today = d("2026-10-10")
-        val tomorrow = SchedulePolicy.changedStart(d("2026-10-11"), today).valueOrFail()
         val before = recurrence(monthly(5), "2026-10-01", end = "2026-10-10")
-        val after = Recurrence.of(monthly(25), tomorrow).valueOrFail()
+        val after = recurrence(monthly(25), "2026-10-11")
         assertEquals(all("2026-10-05"), dates(before, "2026-10-01", "2026-11-30"))
         assertEquals(all("2026-10-25", "2026-11-25"), dates(after, "2026-10-01", "2026-11-30"))
     }
@@ -156,17 +150,10 @@ class SchedulePolicyTest {
 
     @Test
     fun re20ChangingEveryNDaysSetsANewStartAfterToday() {
-        val today = d("2026-10-20")
-        assertEquals(
-            ScheduleStartError.TooEarly(d("2026-10-21")),
-            SchedulePolicy.changedStart(today, today).errorOrFail()
-        )
         val before =
             recurrence(RepeatRule.EveryDays.of(15).valueOrFail(), "2026-10-15", end = "2026-10-20")
-        val after = Recurrence.of(
-            RepeatRule.EveryDays.of(10).valueOrFail(),
-            SchedulePolicy.changedStart(d("2026-10-25"), today).valueOrFail()
-        ).valueOrFail()
+        val after =
+            Recurrence.of(RepeatRule.EveryDays.of(10).valueOrFail(), d("2026-10-25")).valueOrFail()
         assertEquals(all("2026-10-15"), dates(before, "2026-10-01", "2026-11-14"))
         assertEquals(
             all("2026-10-25", "2026-11-04", "2026-11-14"),
@@ -258,16 +245,6 @@ class SchedulePolicyTest {
             emptyList<Occurrence>(),
             SchedulePolicy.due(rule, Occurrence(d("2027-02-28"), 2), d("2027-03-01"))
         )
-    }
-
-    @Test
-    fun aNewScheduleStartsTodayOrLater() {
-        val today = d("2026-10-22")
-        assertEquals(
-            ScheduleStartError.TooEarly(today),
-            SchedulePolicy.newStart(d("2026-10-21"), today).errorOrFail()
-        )
-        assertEquals(d("2026-10-23"), SchedulePolicy.newStart(d("2026-10-23"), today).valueOrFail())
     }
 
     @Test

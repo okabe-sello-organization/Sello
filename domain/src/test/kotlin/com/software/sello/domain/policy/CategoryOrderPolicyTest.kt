@@ -74,7 +74,7 @@ class CategoryOrderPolicyTest {
         month: YearMonth,
         expenses: List<Expense>,
         categories: List<CategoryInMonth> = all
-    ) = CategoryOrderPolicy.mostUsed(
+    ) = CategoryOrderPolicy.order(
         MonthlyBudgetPolicy.snapshot(
             month,
             FinancialDay(LocalDate.of(2026, 10, 31), ZoneId.of("America/Bogota")),
@@ -82,7 +82,9 @@ class CategoryOrderPolicyTest {
             revision = 1,
             categories = categories,
             expenses = expenses
-        ).valueOrFail().categories
+        ).valueOrFail().categories,
+        CategoryOrder.MostUsed,
+        CategoryOrderDirection.Descending
     ).map { it.category.name.value }
 
     private fun orderBy(

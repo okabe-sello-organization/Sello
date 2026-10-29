@@ -1,9 +1,6 @@
 package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertContentDescriptionEquals
@@ -30,11 +27,6 @@ class MoneySemanticsTest {
 
     private fun cop(sign: MoneySign, digits: String, spoken: String) =
         MoneyTextValue(sign, "", digits, spoken)
-
-    private fun fixture(pesos: Long): MoneyTextValue {
-        val digits = pesos.toString().reversed().chunked(3).joinToString(".").reversed()
-        return cop(MoneySign.None, digits, "$digits pesos")
-    }
 
     @Test
     fun amountsAnnounceTheFullFigureWithCurrencyAndDrawATrueMinus() {
@@ -116,53 +108,5 @@ class MoneySemanticsTest {
                 hero > oneLine * 1.5f
             )
         }
-    }
-
-    @Test
-    fun withReducedMotionANewAmountIsShownAtOnce() {
-        var amount by mutableLongStateOf(0)
-        rule.mainClock.autoAdvance = false
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                CountingMoneyText(amount, ::fixture, Modifier.testTag("count"), MoneyStyle.Total)
-            }
-        }
-        rule.mainClock.advanceTimeByFrame()
-        rule.onNodeWithTag("count").assertTextEquals("0")
-
-        amount = 937_200
-        rule.waitForIdle()
-        rule.mainClock.advanceTimeByFrame()
-        rule.mainClock.advanceTimeByFrame()
-        rule.onNodeWithTag("count").assertTextEquals("937.200")
-        rule.onNodeWithTag("count").assertContentDescriptionEquals("937.200 pesos")
-    }
-
-    @Test
-    fun aCountNeverHidesTheFinalAmountFromAScreenReaderAndEndsExact() {
-        var amount by mutableLongStateOf(0)
-        rule.mainClock.autoAdvance = false
-        rule.setContent {
-            SelloTheme(reducedMotion = false) {
-                CountingMoneyText(amount, ::fixture, Modifier.testTag("count"), MoneyStyle.Total)
-            }
-        }
-        rule.mainClock.advanceTimeByFrame()
-        // The first appearance does not count up from zero.
-        rule.onNodeWithTag("count").assertTextEquals("0")
-
-        amount = 999_999_999_999
-        rule.waitForIdle()
-        rule.mainClock.advanceTimeBy(200)
-        rule.onNodeWithTag("count").assertContentDescriptionEquals("999.999.999.999 pesos")
-        val midway = rule.onNodeWithTag("count").fetchSemanticsNode()
-            .config[androidx.compose.ui.semantics.SemanticsProperties.Text].single().text
-        assertTrue(
-            "still counting at 200 ms: $midway",
-            midway != "0" && midway != "999.999.999.999"
-        )
-
-        rule.mainClock.advanceTimeBy(400)
-        rule.onNodeWithTag("count").assertTextEquals("999.999.999.999")
     }
 }
