@@ -23,8 +23,8 @@ FAST_CHECKS = (
 FORMAT_TASKS = ("ktlintCheck",)
 HOST_TASKS = (
     ":domain:test", ":data:testDebugUnitTest", ":design-system:testDebugUnitTest",
-    ":app:testDebugUnitTest", ":app:verifyRoborazziDebug", "lintDebug", ":app:assembleDebug",
-    ":app:assembleRelease",
+    ":app:testDebugUnitTest", ":app:verifyRoborazziDebug", ":design-system:verifyRoborazziDebug",
+    "lintDebug", ":app:assembleDebug", ":app:assembleRelease",
 )
 HOST_RESULTS = "*/build/test-results/**/TEST-*.xml"
 DEVICE_RESULTS = "{module}/build/outputs/androidTest-results/connected/**/TEST-*.xml"
