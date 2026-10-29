@@ -118,16 +118,16 @@ class LedgerCategories(private val ledger: Ledger) : CategoryCommands {
             OperationKind.CreateCategory,
             null
         )?.let { (receipt, id, replayed) ->
-            CategoryCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedCategoryChange(receipt, CategoryId.of(id).value()),
                 replayed
             )
         }
-            ?: CategoryCommandOutcome.Rejected(
-                com.software.sello.domain.port.CategoryRejection.NameTaken
+            ?: CommandOutcome.Rejected(
+                Specific(com.software.sello.domain.port.CategoryRejection.NameTaken)
             )
     } catch (_: Ledger.Unknown) {
-        CategoryCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(

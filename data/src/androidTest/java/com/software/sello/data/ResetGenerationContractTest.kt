@@ -10,6 +10,8 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DisableCarry
@@ -308,7 +310,7 @@ class ResetGenerationContractTest {
         val enabled = ledger.categories.submit(
             EnableCarry(ledger.operation(), 1, ledger.categoryId(100), 1)
         )
-        assertTrue("$enabled", enabled is CategoryCommandOutcome.Committed)
+        assertTrue("$enabled", enabled is CommandOutcome.Committed)
         assertEquals(listOf("${uuid(100)}|2026-10|null"), ledger.chainRows())
 
         resets().reset(preview(), ledger.operation())
@@ -318,7 +320,7 @@ class ResetGenerationContractTest {
 
         assertEquals(emptyList<String>(), ledger.chainRows())
         assertEquals(
-            CategoryCommandOutcome.Rejected(CategoryRejection.StaleGeneration(2)),
+            CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)),
             prepared
         )
     }

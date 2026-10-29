@@ -16,6 +16,7 @@ import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
@@ -410,7 +411,7 @@ class ScheduleCommandContractTest {
 
         val archived = ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, hogar, 1))
 
-        assertTrue("$archived", archived is CategoryCommandOutcome.Committed)
+        assertTrue("$archived", archived is CommandOutcome.Committed)
         assertEquals(listOf("$rent|2026-10-12|null"), pauses())
         assertEquals("2", ledger.rows("schedule", "version").single())
     }
@@ -441,7 +442,10 @@ class ScheduleCommandContractTest {
 
         val archived = ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, hogar, 1))
 
-        assertEquals(CategoryCommandOutcome.Rejected(CategoryRejection.SchedulesPending), archived)
+        assertEquals(
+            CommandOutcome.Rejected(Specific(CategoryRejection.SchedulesPending)),
+            archived
+        )
         assertEquals(emptyList<String>(), pauses())
         assertEquals("0", ledger.rows("category", "archived").single())
     }
@@ -462,7 +466,7 @@ class ScheduleCommandContractTest {
             .recordDue(LocalDate.parse("2026-10-12"), 50)
         val archived = ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, hogar, 1))
 
-        assertTrue("$archived", archived is CategoryCommandOutcome.Committed)
+        assertTrue("$archived", archived is CommandOutcome.Committed)
         assertEquals(
             listOf("2026-10-10|950000"),
             ledger.rows("expense", "effective_date", "amount_minor")

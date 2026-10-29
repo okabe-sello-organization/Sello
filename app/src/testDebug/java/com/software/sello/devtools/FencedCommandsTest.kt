@@ -12,6 +12,8 @@ import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
 import java.time.Instant
@@ -38,7 +40,7 @@ class FencedCommandsTest {
         BudgetLimit.Unlimited
     )
 
-    private fun committed(replayed: Boolean) = CategoryCommandOutcome.Committed(
+    private fun committed(replayed: Boolean) = CommandOutcome.Committed(
         CommittedCategoryChange(
             OperationReceipt(operation, OperationKind.CreateCategory, 1, 1, Instant.EPOCH),
             CategoryId.of("00000000-0000-4000-8000-000000000002").value()
@@ -77,9 +79,9 @@ class FencedCommandsTest {
         val commands = FencedCategoryCommands(inner, fence) { saved++ }
 
         commands.submit(command)
-        inner.answer = CategoryCommandOutcome.Rejected(CategoryRejection.NameTaken)
+        inner.answer = CommandOutcome.Rejected(Specific(CategoryRejection.NameTaken))
         commands.submit(command)
-        inner.answer = CategoryCommandOutcome.OutcomeUnknown(operation)
+        inner.answer = CommandOutcome.OutcomeUnknown(operation)
         commands.submit(command)
 
         assertEquals(0, saved)

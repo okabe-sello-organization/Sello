@@ -82,7 +82,7 @@ class CatchUpOnOpeningTest {
             )
         )
         val transporte: CategoryId =
-            (category as CategoryCommandOutcome.Committed).change.categoryId
+            (category as CommandOutcome.Committed).value.categoryId
         val created = sandbox.koin.get<ScheduleCommands>().submit(
             CreateSchedule(
                 operation(),

@@ -10,6 +10,7 @@ import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.policy.CarryMonthChange
 import com.software.sello.domain.policy.SettledBalanceChange
 import com.software.sello.domain.port.CategoryCommandOutcome
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
@@ -62,7 +63,7 @@ class CarryHistories(private val ledger: TestLedger) {
         ledger.goTo(date)
         val number = ledger.nextRecord
         val outcome = ledger.categories.submit(ledger.createCategory(name, finite(pesos)))
-        check(outcome is CategoryCommandOutcome.Committed) { "$name: $outcome" }
+        check(outcome is CommandOutcome.Committed) { "$name: $outcome" }
         return number
     }
 
@@ -71,7 +72,7 @@ class CarryHistories(private val ledger: TestLedger) {
         val outcome = ledger.categories.submit(
             EnableCarry(ledger.operation(), 1, ledger.categoryId(category), version)
         )
-        check(outcome is CategoryCommandOutcome.Committed) { "enable $category: $outcome" }
+        check(outcome is CommandOutcome.Committed) { "enable $category: $outcome" }
     }
 
     /** Records [pesos] in [category] on [date], which becomes the financial day; returns its number. */

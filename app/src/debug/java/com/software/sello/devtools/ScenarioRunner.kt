@@ -473,9 +473,9 @@ class ScenarioRunner(
         outcome: CategoryCommandOutcome,
         made: (CategoryId) -> Unit = {}
     ): String? = when (outcome) {
-        is CategoryCommandOutcome.Committed -> null.also { made(outcome.change.categoryId) }
-        is CategoryCommandOutcome.Rejected -> rejected(outcome.reason)
-        is CategoryCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.Committed -> null.also { made(outcome.value.categoryId) }
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private suspend fun categoryChange(

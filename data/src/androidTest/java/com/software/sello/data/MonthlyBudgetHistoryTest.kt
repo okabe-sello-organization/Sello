@@ -10,7 +10,7 @@ import com.software.sello.domain.policy.MonthBudgetState.Limited
 import com.software.sello.domain.policy.MonthBudgetState.Paused
 import com.software.sello.domain.policy.MonthBudgetState.Unconfigured
 import com.software.sello.domain.port.ArchiveCategory
-import com.software.sello.domain.port.CategoryCommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
@@ -54,7 +54,7 @@ class MonthlyBudgetHistoryTest {
     private suspend fun version(): Long =
         ledger.reads.monthBudget(october).valueOrFail().categories.first().category.version
 
-    private suspend fun committed(outcome: Any) = assertTrue("$outcome", outcome is Committed)
+    private suspend fun committed(outcome: Any) = assertTrue("$outcome", outcome is Committed<*>)
 
     private suspend fun setDefault(pesos: Long) = committed(
         ledger.categories.submit(

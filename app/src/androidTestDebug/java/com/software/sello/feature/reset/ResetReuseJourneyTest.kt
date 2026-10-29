@@ -38,6 +38,7 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
@@ -178,7 +179,7 @@ class ResetReuseJourneyTest {
                     BudgetLimit.Unlimited
                 )
             )
-            assertTrue("$created", created is CategoryCommandOutcome.Committed)
+            assertTrue("$created", created is CommandOutcome.Committed)
             val expense = koin.get<ExpenseCommands>().create(
                 CreateExpense(
                     operation(),

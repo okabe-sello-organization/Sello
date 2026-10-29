@@ -78,7 +78,7 @@ class FencedCategoryCommands(
 ) : CategoryCommands by commands {
     override suspend fun submit(command: CategoryCommand) = fence.write {
         commands.submit(command)
-    }.also { if (it is CategoryCommandOutcome.Committed && !it.replayed) saved() }
+    }.also { if (it is CommandOutcome.Committed && !it.replayed) saved() }
 }
 
 class FencedGoalCommands(

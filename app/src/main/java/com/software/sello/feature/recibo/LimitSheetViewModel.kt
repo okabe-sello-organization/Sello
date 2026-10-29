@@ -16,6 +16,9 @@ import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SetDefaultLimit
@@ -277,9 +280,9 @@ class LimitSheetViewModel(
         }
         viewModelScope.launch {
             when (val outcome = commands.submit(command)) {
-                is CategoryCommandOutcome.Committed -> done()
-                is CategoryCommandOutcome.OutcomeUnknown -> checkSaved()
-                is CategoryCommandOutcome.Rejected -> refused(outcome.reason)
+                is CommandOutcome.Committed -> done()
+                is CommandOutcome.OutcomeUnknown -> checkSaved()
+                is CommandOutcome.Rejected -> refused(outcome.reason)
             }
         }
     }
@@ -304,14 +307,14 @@ class LimitSheetViewModel(
         }
     }
 
-    private fun refused(reason: CategoryRejection) {
+    private fun refused(reason: CommandRejection<CategoryRejection>) {
         // Certain: nothing was written, so this attempt is over.
         saved[KEY_OPERATION] = null
         val error = when (reason) {
-            is CategoryRejection.VersionConflict -> LimitSheetError.Conflict
-            is CategoryRejection.StaleGeneration -> LimitSheetError.DataChanged
-            CategoryRejection.CategoryMissing -> LimitSheetError.CategoryGone
-            CategoryRejection.CategoryArchived -> LimitSheetError.Archived
+            is CommandRejection.VersionConflict -> LimitSheetError.Conflict
+            is CommandRejection.StaleGeneration -> LimitSheetError.DataChanged
+            Specific(CategoryRejection.CategoryMissing) -> LimitSheetError.CategoryGone
+            Specific(CategoryRejection.CategoryArchived) -> LimitSheetError.Archived
             else -> LimitSheetError.NotSaved
         }
         mutable.update { it.copy(busy = false, error = error) }

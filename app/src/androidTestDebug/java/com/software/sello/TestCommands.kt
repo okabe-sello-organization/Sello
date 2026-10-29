@@ -101,7 +101,7 @@ object TestCommands {
                 limit?.let(::finite) ?: BudgetLimit.Unlimited
             )
         )
-        assertTrue("$outcome", outcome is CategoryCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     /** A peso investment named [name], its first aporte [pesos] today, valued the same. */
@@ -136,7 +136,7 @@ object TestCommands {
                 finite(pesos)
             )
         )
-        assertTrue("$outcome", outcome is CategoryCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     fun createExpense(category: String, date: LocalDate, pesos: Long, note: String? = null) =

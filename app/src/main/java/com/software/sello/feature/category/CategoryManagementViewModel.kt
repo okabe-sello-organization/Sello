@@ -21,6 +21,9 @@ import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeCategoryIcon
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.MonthBudget
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.RecordIdSource
@@ -470,9 +473,9 @@ class CategoryManagementViewModel(
         operation: OperationId
     ): Boolean {
         val rejection = when (outcome) {
-            is CategoryCommandOutcome.Committed -> return true
+            is CommandOutcome.Committed -> return true
 
-            is CategoryCommandOutcome.OutcomeUnknown -> when (
+            is CommandOutcome.OutcomeUnknown -> when (
                 val found = commands.find(
                     operation
                 )
@@ -485,24 +488,24 @@ class CategoryManagementViewModel(
                 is Outcome.Success -> if (found.value != null) return true else null
             }
 
-            is CategoryCommandOutcome.Rejected -> outcome.reason
+            is CommandOutcome.Rejected -> outcome.reason
         }
         // Certain: this change was not written, so this attempt is over.
         saved[KEY_OPERATION] = null
-        if (rejection == CategoryRejection.NameTaken) {
+        if (rejection == Specific(CategoryRejection.NameTaken)) {
             render { it.copy(busy = false, nameError = NameError.Taken) }
             return false
         }
         val error = when (rejection) {
-            CategoryRejection.CategoryMissing -> SaveError.CategoryGone
+            Specific(CategoryRejection.CategoryMissing) -> SaveError.CategoryGone
 
-            is CategoryRejection.StaleGeneration -> SaveError.DataChanged
+            is CommandRejection.StaleGeneration -> SaveError.DataChanged
 
             // Each of these says the category is no longer what this form read.
-            is CategoryRejection.VersionConflict,
-            CategoryRejection.CategoryArchived,
-            CategoryRejection.AlreadyArchived,
-            CategoryRejection.NotArchived -> SaveError.Conflict
+            is CommandRejection.VersionConflict,
+            Specific(CategoryRejection.CategoryArchived),
+            Specific(CategoryRejection.AlreadyArchived),
+            Specific(CategoryRejection.NotArchived) -> SaveError.Conflict
 
             else -> SaveError.NotSaved
         }
@@ -605,7 +608,7 @@ class CategoryManagementViewModel(
     }
 
     private fun CategoryCommandOutcome.waitsForPayments() =
-        this is CategoryCommandOutcome.Rejected && reason == CategoryRejection.SchedulesPending
+        this is CommandOutcome.Rejected && reason == Specific(CategoryRejection.SchedulesPending)
 
     private fun archived(unarchived: Boolean) {
         notices.categoryChanged(
