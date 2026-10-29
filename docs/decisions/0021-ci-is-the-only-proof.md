@@ -54,6 +54,9 @@ exactly one part and no check was dropped; `quality` judges the parts as one res
 that must succeed, and `scripts/check --host` still runs them all locally. ktlint now
 runs first in the `lint` part rather than before the tests: a formatting failure
 cannot change a test result, and repeating it would put it on every part's path.
+Measured on its own pull request (#237): the parts took 4.8 (`tests`), 6.5 (`lint`)
+and 7.2 (`assemble`) minutes, so the app device job (8.9 minutes) is the critical
+path again and the run took 9.3 minutes, down from 12–13.
 
 ## Consequences
 

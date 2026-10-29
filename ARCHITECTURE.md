@@ -244,7 +244,7 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
 ## 6. Presentation and Sello design
 
 - **MUST** follow the screen pattern in use: an immutable `State`, `Action`s in, a
-  `ViewModel` exposing the state, and a `ScreenRoot`/`Screen` split (stateless
+  `ViewModel` exposing the state, and a `<Name>Root`/`<Name>Screen` split (stateless
   rendering; Root-owned lifecycle/navigation effects). There are no `Event` types:
   durable results stay in `State`, with no event channels. Local state is ephemeral
   visuals only; small drafts/selections/operation IDs use `SavedStateHandle`, large
