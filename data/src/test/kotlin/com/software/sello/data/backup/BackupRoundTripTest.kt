@@ -118,7 +118,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `every ink is written as the id it has always had, and reads back`() {
-        val file = String(resource("valid-g01-v5.json"))
+        val file = String(resource("valid-g01-v6.json"))
         for ((ink, id) in listOf(
             InkPreference.Cobalto to "cobalto",
             InkPreference.Violeta to "violeta"
