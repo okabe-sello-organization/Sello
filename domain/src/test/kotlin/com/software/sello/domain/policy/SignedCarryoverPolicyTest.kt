@@ -41,6 +41,8 @@ import org.junit.Test
  * The signed carryover calculation by ADR 0020 and docs/testing/signed-carryover-examples.md
  * (SC01–SC07, SC23, SC24, SC40, SC41, SC46 and the refusals of SC08). Every expected figure
  * is copied from there, where it was worked out by hand: `B`, `K`, `C`, `S`, `R` in pesos.
+ * The exceptions are the review round 1 tests (`r1*`, `r4*`), whose values are worked out by
+ * hand from SC19's chains and `C = B + K`, `R = C − S`; the arithmetic is in each test.
  */
 class SignedCarryoverPolicyTest {
     /** Comida on from ene 2027, base 100.000, replayed to [through] with [current] in progress. */
@@ -791,6 +793,8 @@ class SignedCarryoverPolicyTest {
 
     @Test
     fun r1AMonthOfALaterChainNeedsOnlyThatChainsHistory() {
+        // Hand-worked on SC19's chains, not in the corpus. abr starts the chain, so K 0 and
+        // C 100.000; spent 30.000, so R = 100.000 - 30.000 = 70.000, and may's K is that 70.000.
         val may = m(2027, 5)
 
         val entry = SignedCarryoverPolicy.carryIn(laterChainOnly(), may, may).valueOrFail()!!
@@ -803,6 +807,9 @@ class SignedCarryoverPolicyTest {
 
     @Test
     fun r1DroppingInALaterChainNeedsOnlyThatChainsHistory() {
+        // Hand-worked, not in the corpus: may K 70.000 (abr: 100.000 - 30.000), B 100.000, nothing
+        // spent in may. C before = 100.000 + 70.000 = 170.000, R before = 170.000 - 0 = 170.000.
+        // After the drop C = B = 100.000 and R = 100.000 - 0 = 100.000.
         val may = m(2027, 5)
 
         val unconfirmed = SignedCarryoverPolicy.drop(laterChainOnly(), may, null).valueOrFail()
@@ -830,6 +837,7 @@ class SignedCarryoverPolicyTest {
 
     @Test
     fun r1AFullReplayStillNeedsEveryChainsHistoryAndTheCoveringChainStillFailsOnAGap() {
+        // No figures: only which month is reported unread. The chains are SC19's (ene-feb, abr on).
         val may = m(2027, 5)
         val gap =
             comidaInput(listOf(chain(ene, feb), chain(abr)), mar, mar, "2027-05-10", emptyList())
@@ -847,6 +855,7 @@ class SignedCarryoverPolicyTest {
 
     @Test
     fun r4AnotherCategorysDefaultNeverDecidesWhetherCarryCanBeTurnedOn() {
+        // Not in the corpus: the SC08 and SC46 refusals, with a second category's defaults added.
         val otherUnlimited = Carry.unlimitedFrom(ene, Carry.transporte)
         val otherLater = Carry.unlimitedFrom(feb, Carry.transporte)
         val otherPaused = Carry.pausedFrom(ene, Carry.transporte)

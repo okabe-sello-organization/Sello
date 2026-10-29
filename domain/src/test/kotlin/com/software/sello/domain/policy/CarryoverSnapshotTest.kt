@@ -764,6 +764,8 @@ class CarryoverSnapshotTest {
             emptyList()
         ).valueOrFail()
 
+        // Hand-worked, not in the corpus. Y: dic C 120.000, S 200.000, R -80.000; ene K -80.000, C 40.000,
+        // S 100.000, R -60.000; feb K -60.000, C 60.000. average spent = (200.000 + 100.000) / 2 = 150.000.
         // Over C twice (S 200.000 > C 120.000 and S 100.000 > C 40.000 for Y): Y; its limit is
         // the base 120.000, not the capacity 60.000, and the base ranks it above X's 100.000.
         assertEquals(

@@ -18,7 +18,9 @@
   `CarryoverSnapshotTest` SC09–SC16 (SC14 through `ResumenPolicy`), SC35–SC39, SC41, SC06. No-carry mode
   unchanged: a snapshot with no chain is `==` to the plain one (test), and `MonthlyBudgetPolicyTest` and the
   other existing domain suites pass unchanged. Review round 1: a month of a later chain reads only that chain's history (`carryIn`, `drop`) → `SignedCarryoverPolicy.run`; tests `r1*`. Resumen's suggestion offers and ranks by the base → `ResumenPolicy.suggestion`; test `r2*` in `CarryoverSnapshotTest`. `enable` reads only the category's own defaults; test `r4*`. Boundary documentation, including the exact history range per call and every reader of `.limit` left to SELLO-041 with its correct figure → `artifacts/consumer-boundary.md`.
-  Expected values are copied from [signed carryover examples](../../../testing/signed-carryover-examples.md);
+  Expected values are copied from [signed carryover examples](../../../testing/signed-carryover-examples.md),
+  except the review round 1 tests (`r1*`, `r2*`, `r4*`), whose values are worked out by hand (`r1*` on SC19's chains)
+  with `C = B + K` and `R = C − S`, each with its arithmetic in a comment;
   none is computed by production code. Not here, by the ADR 0020 mapping: SC08/SC17–SC22 commands and
   refusals as stored commands, SC34, SC42–SC45 (SELLO-039, SELLO-040).
 - **Red / Green:** red first, against stubs that compiled and returned a wrong answer, so every failure was
