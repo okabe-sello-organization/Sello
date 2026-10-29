@@ -218,13 +218,7 @@ data class GoalBoard(
 )
 
 /** The board as [GoalReads.observeBoard] sees it. A failed read keeps the last good board. */
-sealed interface GoalBoardState {
-    data object Loading : GoalBoardState
-
-    data class Ready(val board: GoalBoard) : GoalBoardState
-
-    data class Failed(val failure: StorageFailure, val lastGood: GoalBoard?) : GoalBoardState
-}
+typealias GoalBoardState = ReadState<GoalBoard, StorageFailure>
 
 interface GoalReads {
     /** One damaged goal fails the read: it is never left out. */

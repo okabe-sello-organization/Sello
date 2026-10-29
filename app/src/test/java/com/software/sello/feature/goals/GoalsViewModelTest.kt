@@ -34,6 +34,7 @@ import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.GoalUndoOffer
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
@@ -137,7 +138,7 @@ class GoalsViewModelTest {
             GoalSummary(history, GoalPolicy.progress(history).value())
         }
 
-    private fun board(vararg goals: GoalSummary, featured: String? = null) = GoalBoardState.Ready(
+    private fun board(vararg goals: GoalSummary, featured: String? = null) = ReadState.Ready(
         GoalBoard(3, 9, goals.toList(), featured?.let { GoalId.of(it).value() })
     )
 
@@ -159,7 +160,7 @@ class GoalsViewModelTest {
                 false
             }
         watch(model)
-        reads.board.value = GoalBoardState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         assertEquals(MetasState.Failed, model.state.value)
 
         model.onAction(MetasAction.Retry)
@@ -367,7 +368,7 @@ class GoalsViewModelTest {
 
 /** The board a test sets by hand; [started] counts observations. */
 class HandGoalReads : GoalReads {
-    val board = MutableStateFlow<GoalBoardState>(GoalBoardState.Loading)
+    val board = MutableStateFlow<GoalBoardState>(ReadState.Loading)
     var started = 0
 
     /** What a one-off read returns; [reads] counts them. */

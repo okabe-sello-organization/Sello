@@ -28,6 +28,7 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -95,7 +96,7 @@ class GoalMovementViewModel(
     )
     private val progress = MutableStateFlow(Progress())
     private val board = reads.observeBoard()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, GoalBoardState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
     private val composer = combine(
         saved.getStateFlow(COMPOSER, false),
         saved.getStateFlow(COMPOSER_TEXT, "")
@@ -272,9 +273,9 @@ class GoalMovementViewModel(
 
     /** The board to work from: the last one read, also after a failed refresh. */
     private fun readable(state: GoalBoardState): GoalBoard? = when (state) {
-        GoalBoardState.Loading -> null
-        is GoalBoardState.Ready -> state.board
-        is GoalBoardState.Failed -> state.lastGood
+        ReadState.Loading -> null
+        is ReadState.Ready -> state.value
+        is ReadState.Failed -> state.lastGood
     }
 
     private fun summary(board: GoalBoard?, id: String?): GoalSummary? =
@@ -344,11 +345,11 @@ class GoalMovementViewModel(
         val note = (Note.of(draft.note) as? Outcome.Success)?.value
         return GoalMovementState(
             loading =
-                board is GoalBoardState.Loading || (
+                board is ReadState.Loading || (
                     editing && read != null && original == null &&
                         saved.get<Boolean>(DRAFTED) != true
                     ),
-            loadFailed = board is GoalBoardState.Failed && read == null,
+            loadFailed = board is ReadState.Failed && read == null,
             editing = editing,
             withdrawal = draft.withdrawal,
             amount = amount?.let { money.format(it.money) },

@@ -11,8 +11,10 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateGoal
+import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommandOutcome
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordGoalMovement
 import java.time.LocalDate
 import kotlin.coroutines.cancellation.CancellationException
@@ -86,25 +88,27 @@ class GoalBoardObservationTest {
                 state
             }
         fun saved(state: GoalBoardState) =
-            (state as? GoalBoardState.Ready)?.board?.goals?.singleOrNull()?.progress?.saved
+            (state as? ReadState.Ready<GoalBoard>)?.value?.goals?.singleOrNull()?.progress?.saved
         try {
-            assertEquals(GoalBoardState.Loading, states.receive())
-            val empty = next { it is GoalBoardState.Ready } as GoalBoardState.Ready
-            assertEquals(emptyList<Any>(), empty.board.goals)
+            assertEquals(ReadState.Loading, states.receive())
+            val empty = next { it is ReadState.Ready } as ReadState.Ready<GoalBoard>
+            assertEquals(emptyList<Any>(), empty.value.goals)
 
             create()
             next { saved(it) == Money.cop(0) }
             aporte(750_000)
-            val good = next { saved(it) == Money.cop(750_000) } as GoalBoardState.Ready
-            assertEquals(viaje, good.board.featured)
+            val good = next { saved(it) == Money.cop(750_000) } as ReadState.Ready<GoalBoard>
+            assertEquals(viaje, good.value.featured)
 
             ledger.database.openHelper.writableDatabase.execSQL(
                 "UPDATE goal_event SET amount_minor = 0 WHERE id = '${uuid(102)}'"
             )
             // Any committed change reads the board again; this one touches no goal.
             ledger.categories.submit(ledger.createCategory("Mercado"))
-            val failed = next { it is GoalBoardState.Failed } as GoalBoardState.Failed
-            assertEquals(good.board, failed.lastGood)
+            val failed = next {
+                it is ReadState.Failed
+            } as ReadState.Failed<GoalBoard, StorageFailure>
+            assertEquals(good.value, failed.lastGood)
             assertEquals(
                 StorageFailure.Integrity("goal_event", uuid(102), "amount_minor"),
                 failed.failure
@@ -126,8 +130,8 @@ class GoalBoardObservationTest {
 
         assertEquals(
             listOf(
-                GoalBoardState.Loading,
-                GoalBoardState.Failed(
+                ReadState.Loading,
+                ReadState.Failed(
                     StorageFailure.Integrity("goal_event", uuid(102), "amount_minor"),
                     null
                 )
@@ -146,6 +150,6 @@ class GoalBoardObservationTest {
         } catch (cancelled: CancellationException) {
             assertTrue(cancelled !is TimeoutCancellationException)
         }
-        assertEquals(listOf<GoalBoardState>(GoalBoardState.Loading), states)
+        assertEquals(listOf<GoalBoardState>(ReadState.Loading), states)
     }
 }

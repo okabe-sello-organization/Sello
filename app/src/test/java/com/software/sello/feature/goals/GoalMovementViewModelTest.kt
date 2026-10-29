@@ -34,6 +34,7 @@ import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.GoalUndoOffer
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
@@ -104,7 +105,7 @@ class GoalMovementViewModelTest {
             ids,
             CoroutineScope(Dispatchers.Main)
         )
-        reads.board.value = GoalBoardState.Ready(
+        reads.board.value = ReadState.Ready(
             GoalBoard(
                 3,
                 9,

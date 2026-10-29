@@ -15,6 +15,7 @@ import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.ReadState
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
@@ -64,32 +65,7 @@ class RoomGoalReads(private val database: SelloDatabase) : GoalReads {
         }
     }
 
-    override fun observeBoard(): Flow<GoalBoardState> = flow {
-        emit(GoalBoardState.Loading)
-        var lastGood: GoalBoard? = null
-        try {
-            // Every command moves the profile's revision in its transaction.
-            database.profileDao().changes().conflate().collect {
-                when (val read = board()) {
-                    is Outcome.Success -> {
-                        lastGood = read.value
-                        emit(GoalBoardState.Ready(read.value))
-                    }
-
-                    is Outcome.Failure -> emit(GoalBoardState.Failed(read.error, lastGood))
-                }
-            }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (failure: SQLException) {
-            emit(GoalBoardState.Failed(unavailable(failure), lastGood))
-        } catch (failure: IllegalStateException) {
-            emit(GoalBoardState.Failed(unavailable(failure), lastGood))
-        }
-    }
-
-    private fun unavailable(failure: Exception) =
-        StorageFailure.Unavailable(failure.javaClass.simpleName)
+    override fun observeBoard(): Flow<GoalBoardState> = database.observeOnRevision { board() }
 
     override suspend fun goal(id: GoalId): Outcome<GoalSummary?, StorageFailure> = reading {
         database.withTransaction {

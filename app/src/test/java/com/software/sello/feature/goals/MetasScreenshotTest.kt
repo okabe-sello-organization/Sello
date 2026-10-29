@@ -24,6 +24,7 @@ import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
@@ -106,7 +107,7 @@ class MetasScreenshotTest {
         ),
         null
     )
-    private val metas = GoalsRenderModel(money).metas(GoalBoardState.Ready(board), today)
+    private val metas = GoalsRenderModel(money).metas(ReadState.Ready(board), today)
 
     private fun capture(look: Look) {
         rule.showSello(look) {
