@@ -20,9 +20,12 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.SweepLook
+import com.software.sello.SweepWindow
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.sweepLooks
 import java.time.LocalDate
 import org.junit.Assert.assertTrue
 import org.junit.Rule

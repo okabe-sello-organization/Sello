@@ -29,6 +29,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.SweepLook
+import com.software.sello.SweepWindow
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.designsystem.component.SelloDestination
 import com.software.sello.designsystem.component.SelloNavigation
@@ -74,6 +76,7 @@ import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.showSello
+import com.software.sello.sweepLooks
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate

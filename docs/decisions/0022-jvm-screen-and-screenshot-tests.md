@@ -40,6 +40,10 @@ at all beyond a person looking.
 - Baselines are committed in `app/src/test/screenshots/`. The host gate runs
   `:app:verifyRoborazziDebug`, so a visual change fails unless the same pull request
   re-records them, and the image diff is the visual review.
+- Every screenshot is drawn by the test (`View.draw` into a bitmap handed to Roborazzi),
+  not copied from the window: the window copy was intermittently blank, and a blank
+  baseline passed its own check. A drawing of fewer than 32 distinct colours fails the
+  test before it is recorded or compared. Baselines are at one pixel per dp (mdpi).
 - Device tests keep storage on real Room, platform contracts and user journeys.
 
 ## Consequences

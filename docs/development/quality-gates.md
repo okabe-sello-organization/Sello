@@ -42,15 +42,26 @@ Robolectric gives it API 37 and the hosted emulator's 320x640 dp screen
 (`app/src/test/resources/robolectric.properties`), a plain `Application` and no network:
 the Android framework jar is a locked Gradle dependency read in offline mode.
 
-The host gate runs `:app:verifyRoborazziDebug` and `:design-system:verifyRoborazziDebug`: every capture must match its committed
-baseline, and a capture without one fails. A visual change re-records the baselines in
-the same pull request, and the image diff in the pull request is how the change is
-reviewed:
+The host gate runs `:app:verifyRoborazziDebug` and `:design-system:verifyRoborazziDebug`:
+every capture must match its committed baseline, and a capture without one fails. A
+visual change re-records the baselines in the same pull request, and the image diff in
+the pull request is how the change is reviewed:
 
 ```bash
-./gradlew :app:recordRoborazziDebug     # write the baselines into app/src/test/screenshots/
+./gradlew :app:recordRoborazziDebug --no-build-cache --rerun-tasks  # write the baselines
 ./gradlew :app:verifyRoborazziDebug     # compare, as the host gate does
 ```
+
+The same tasks exist for `:design-system`. Record without the build cache: it can
+replay an earlier run's images instead of drawing them again.
+
+A screenshot is drawn by the test itself, never copied from the window by Roborazzi:
+the window copy came back blank now and then, and a blank baseline then passed its own
+check. App tests call `rule.captureStill(path)` (`app/src/test/.../StillCapture.kt`),
+which draws the screen and any sheet over it; design-system tests call
+`drawnBitmap().captureBaseline(path)` (`PixelCapture.kt`). Both fail the test, before
+anything is recorded or compared, when the drawing has fewer than 32 distinct colours.
+Baselines are drawn at one pixel per dp (mdpi).
 
 Record on Linux, as CI runs: font rasterizing may differ on another system. A plain
 `:app:testDebugUnitTest` (and `scripts/check app`) runs the screenshot tests without
@@ -142,7 +153,8 @@ result of each job, so the jobs that passed are not repeated.
 | `REFUSED: name your own emulator with ANDROID_SERIAL` | Start your own emulator and export its serial; assembling test APKs is not a device run. |
 | `REFUSED: ... is not an API-30 device, or did not answer` | Use the pinned API-30 image with the default 320x640 profile. |
 | `FAILED: ktlint exited 1` | Run `./gradlew ktlintFormat` and review the diff. |
-| `ExpenseEntryScreenshotTest > ... FAILED` (any `*ScreenshotTest`) | A capture no longer matches its baseline. Open the diff in the host artifact; if the change is intended, run `./gradlew :app:recordRoborazziDebug` and commit the new images. |
+| `ExpenseEntryScreenshotTest > ... FAILED` (any `*ScreenshotTest`) | A capture no longer matches its baseline. Open the diff in the host artifact; if the change is intended, run `./gradlew :app:recordRoborazziDebug --no-build-cache --rerun-tasks` (or `:design-system:`) and commit the new images. |
+| `AssertionError: ... is blank: N distinct colours` | The screen drew nothing when captured; nothing was recorded or compared. Check the test shows its content and waits for it, rather than re-recording. |
 | `FAILED: ... produced no fresh device test results` | The suite did not run: read the Gradle output above it (install or instrumentation failure). |
 | `FAILED: ... skipped N device tests` | A device test is ignored or assumed away. Fix it; skips are not passes. |
 | `FAILED: the host gate produced no test results` | Gradle failed before any test ran; read the first error in the log. |

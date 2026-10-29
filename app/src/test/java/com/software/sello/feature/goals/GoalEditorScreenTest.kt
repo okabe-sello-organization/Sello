@@ -29,6 +29,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.SweepLook
+import com.software.sello.SweepWindow
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
@@ -36,6 +38,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.revealed
 import com.software.sello.showSello
+import com.software.sello.sweepLooks
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
