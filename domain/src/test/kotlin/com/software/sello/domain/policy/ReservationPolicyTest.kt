@@ -9,6 +9,7 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.IconKey
+import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.OverallBudget
@@ -113,6 +114,35 @@ class ReservationPolicyTest {
             ReservationPolicy.reserved(schedules, month)
         ).valueOrFail()
         return snapshot.overall
+    }
+
+    /** RE37: a salary still expected on the 30th sets nothing aside: 600.000, 60.000 per day. */
+    @Test
+    fun re37anIncomeStillExpectedLeavesTheHeadlineAndTheDailyFigureAlone() {
+        val salary = StoredSchedule(
+            Schedule(
+                ScheduleId.of("00000000-0000-4000-8000-000000000002").valueOrFail(),
+                ScheduledEntry.Income(
+                    IncomeSource.of("salary", null).valueOrFail(),
+                    pesos(1_000_000),
+                    null
+                ),
+                Recurrence.of(RepeatRule.Monthly.of(30).valueOrFail(), d("2026-09-01"), null)
+                    .valueOrFail()
+            ),
+            sequence = 2,
+            handled = Occurrence(d("2026-09-30"), 1),
+            version = 1,
+            createdAt = Instant.EPOCH,
+            updatedAt = Instant.EPOCH
+        )
+
+        val with = limited(400_000, listOf(salary)) as OverallBudget.Limited
+
+        assertEquals(limited(400_000, emptyList()), with)
+        assertNull(with.reservation)
+        assertEquals(Money.cop(600_000), with.budget.remaining)
+        assertEquals(Money.cop(60_000), with.allowance?.amount)
     }
 
     /** RE25, BG-E02: rent 200.000 due 28 oct keeps 400.000 and 40.000 per day, Al día. */

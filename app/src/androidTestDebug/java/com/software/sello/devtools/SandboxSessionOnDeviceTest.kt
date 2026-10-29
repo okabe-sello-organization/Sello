@@ -101,8 +101,8 @@ class SandboxSessionOnDeviceTest {
 
     @Test
     fun theDebugBuildChoosesTheSandboxOnlyWhenTheSessionSaysSo() {
-        val normal = DebugComposition(MemoryStore(SandboxSession()), {}, {})
-        val sandbox = DebugComposition(MemoryStore(SandboxSession(active = true)), {}, {})
+        val normal = DebugComposition(MemoryStore(SandboxSession()), {}) {}
+        val sandbox = DebugComposition(MemoryStore(SandboxSession(active = true)), {}) {}
 
         assertEquals(StorageNames.Normal, normal.names)
         assertEquals(SandboxNames, sandbox.names)

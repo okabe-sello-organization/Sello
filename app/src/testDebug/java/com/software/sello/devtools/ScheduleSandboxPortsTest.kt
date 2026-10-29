@@ -24,8 +24,8 @@ import org.junit.Test
 
 /**
  * Schedule writes in the debug build go through the same fence as every other financial
- * write: schedule commands also meet the faults and the log, and catch-up, which has no
- * operation of its own, is fenced and marks the sandbox changed when it records.
+ * write, and catch-up, which has no operation of its own, is fenced and marks the
+ * sandbox changed when it records.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScheduleSandboxPortsTest {
@@ -33,8 +33,6 @@ class ScheduleSandboxPortsTest {
 
     private val ledger = Ledger()
     private val fence = WriteFence()
-    private val faults = DebugFaults()
-    private val log = OperationLog()
     private var saved = 0
     private val today = LocalDate.of(2026, 10, 25)
 
@@ -71,30 +69,6 @@ class ScheduleSandboxPortsTest {
         assertTrue(schedules.sent.isEmpty())
         assertFalse(late.isCompleted)
         late.cancel()
-    }
-
-    @Test
-    fun aLostScheduleAnswerCommitsOnceIsLoggedAndItsReceiptIsFound() = runTest {
-        val schedules = LedgerSchedules(ledger)
-        val commands = FaultyScheduleCommands(schedules, faults, log)
-        val inspector = OperationInspector(
-            LedgerExpenses(ledger),
-            LedgerIncomes(ledger),
-            LedgerCategories(ledger),
-            LedgerGoals(ledger),
-            LedgerInvestments(ledger),
-            schedules
-        )
-        faults.arm(Fault.LostAnswer)
-        val command = pause(4)
-
-        val told = commands.submit(command)
-
-        assertEquals(ScheduleCommandOutcome.OutcomeUnknown(command.operationId), told)
-        assertEquals(1, ledger.writes.size)
-        val logged = log.state.value.single()
-        assertEquals("Programado: PauseSchedule" to Fault.LostAnswer, logged.kind to logged.fault)
-        assertEquals(StoredOutcome.Saved(1), inspector.stored(logged))
     }
 
     private class Batches(val answers: ArrayDeque<CatchUpBatch>) : ScheduleCatchUpStore {

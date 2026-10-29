@@ -21,9 +21,8 @@ import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.composition.viewModels
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.devtools.JourneySetups
 import com.software.sello.devtools.SandboxGraph
-import com.software.sello.devtools.SandboxSession
-import com.software.sello.devtools.Scenarios
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryReads
@@ -48,16 +47,7 @@ class CategoryDetailJourneyTest {
     }
 
     private suspend fun seededScenario(): SandboxGraph {
-        val scenario = Scenarios.CategoryDetail
-        val graph =
-            SandboxGraph(
-                SandboxSession(
-                    active = true,
-                    date = scenario.start,
-                    zone = scenario.zone,
-                    scenario = scenario.key
-                )
-            )
+        val graph = JourneySetups.graph(JourneySetups.CategoryDetail)
         sandbox = graph
         graph.erase()
         graph.open()

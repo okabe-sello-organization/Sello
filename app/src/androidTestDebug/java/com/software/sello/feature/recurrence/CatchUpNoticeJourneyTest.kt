@@ -22,9 +22,8 @@ import com.software.sello.awaitText
 import com.software.sello.composition.viewModels
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.devtools.JourneySetups
 import com.software.sello.devtools.SandboxGraph
-import com.software.sello.devtools.SandboxSession
-import com.software.sello.devtools.Scenarios
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.PreferenceRead
@@ -57,22 +56,14 @@ class CatchUpNoticeJourneyTest {
         sandbox?.erase()
     }
 
-    /** "Una semana fuera" up to its check on 3 oct: two bus rides recorded so far. */
+    /** "Una semana fuera" up to its catch-up on 3 oct: two bus rides recorded so far. */
     private fun beforeTheWeekAway(): SandboxGraph {
-        val scenario = Scenarios.WeekAway
-        val graph = SandboxGraph(
-            SandboxSession(
-                active = true,
-                date = scenario.start,
-                zone = scenario.zone,
-                scenario = scenario.key
-            )
-        )
+        val graph = JourneySetups.graph(JourneySetups.WeekAway)
         sandbox = graph
         graph.erase()
         graph.open()
         val runner = checkNotNull(graph.tools?.scenarios)
-        runBlocking { repeat(STEPS_TO_THIRD_OCTOBER) { runner.step() } }
+        runBlocking { repeat(JourneySetups.UP_TO_THIRD_OCTOBER) { runner.step() } }
         return graph
     }
 
@@ -163,6 +154,3 @@ class CatchUpNoticeJourneyTest {
 
 /** The dock, read as what it does; it shows "Listo". */
 private const val LISTO = "Listo, ya revisé lo que Sello anotó"
-
-/** Two categories, rent, catch-up, the bus, catch-up, 3 oct, catch-up and its check. */
-private const val STEPS_TO_THIRD_OCTOBER = 9

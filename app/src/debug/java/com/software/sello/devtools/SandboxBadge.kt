@@ -91,11 +91,19 @@ object SandboxBadges {
 }
 
 @Composable
-internal fun SandboxBadge(onOpen: () -> Unit, time: SandboxTime? = SandboxRegistry.tools?.time) {
+internal fun SandboxBadge(
+    onOpen: () -> Unit,
+    time: SandboxTime? = SandboxRegistry.tools?.time,
+    scenarios: ScenarioRunner? = SandboxRegistry.tools?.scenarios
+) {
     if (time == null) return
     val state by time.state.collectAsStateWithLifecycle()
     val zone = state.day.zone.id
-    val spoken = stringResource(R.string.sandbox_badge_spoken, spokenDate(state.day.date), zone)
+    // A history not all loaded yet must not pass for a complete one.
+    val history = scenarios?.state?.collectAsStateWithLifecycle()?.value
+    val unfinished = history != null && history.scenario != null && !history.finished
+    val spoken = stringResource(R.string.sandbox_badge_spoken, spokenDate(state.day.date), zone) +
+        if (unfinished) " " + stringResource(R.string.sandbox_badge_unfinished_spoken) else ""
     // The status bar's strip, so it covers no control; never less than the label needs.
     val strip = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Box(
@@ -103,7 +111,8 @@ internal fun SandboxBadge(onOpen: () -> Unit, time: SandboxTime? = SandboxRegist
         contentAlignment = Alignment.Center
     ) {
         Text(
-            stringResource(R.string.sandbox_badge, shortDate(state.day.date), zone),
+            stringResource(R.string.sandbox_badge, shortDate(state.day.date), zone) +
+                if (unfinished) " " + stringResource(R.string.sandbox_badge_unfinished) else "",
             color = Color.White,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
