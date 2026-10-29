@@ -21,9 +21,10 @@ checks a test can read are here. Synthetic data only.
 | M2 | 700 × 900 | 1.0 | Cobalto light | Walk | Medium, a real window |
 | E2 | 1080 × 756 | 1.0 | Cobalto light | Walk | Expanded, a real window |
 
-The sweep is `UiAcceptanceSweepTest`: the real app root with its own database and view
+The sweep is `UiAcceptanceSweep`: the real app root with its own database and view
 models, run on the API 30 gate emulator in a window of the given size, one dp drawn
-as one pixel. A window larger than the emulator's screen proves what exists and
+as one pixel. Pull requests sweep C1 and L2 (`UiAcceptanceSweepTest`); the nightly
+and manual runs add L1, M1 and E1 (`UiAcceptanceSweepNightlyTest`). A window larger than the emulator's screen proves what exists and
 where it is laid out, not what is visible; the walks below cover that.
 
 The walks ran on the isolated API 30 phone emulator `sello022_api30` (1080 × 2340 at

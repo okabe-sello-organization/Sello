@@ -11,8 +11,8 @@ focused checks with `scripts/check`; let the pull request run the gate.
 | --- | --- |
 | G0 | The fast checks, Python and Git only: `tickets` (`tickets.py check`), `quality-tests`, `performance-tests`, `architecture`, `links` and `licences` (the release library list). |
 | G1 | G0, then ktlint, then every host test, the screenshot baselines, lint and the debug and release assemblies. |
-| G2 | G1 plus the device suites the change can affect, on API-30 emulators. |
-| G3 | G1, every device suite, then the release checks of [ADR 0016](../decisions/0016-release-gate-signing-split.md). |
+| G2 | G1 plus the device suites the change can affect, on API-30 emulators, without the `@NightlyOnly` tests. |
+| G3 | G1, every device suite with every test, then the release checks of [ADR 0016](../decisions/0016-release-gate-signing-split.md). |
 
 The Gradle part of G1, kept identical to `scripts/quality/gates.py` by a test:
 
@@ -34,7 +34,23 @@ Which layer tests what ([ADR 0022](../decisions/0022-jvm-screen-and-screenshot-t
 | --- | --- | --- |
 | JVM | Domain rules, view models, and screens rendered from state given by hand: what each state shows, what each control reports, layout geometry, font scale | `<module>/src/test/`, Robolectric |
 | JVM screenshots | What a screen looks like, per ink, light or dark and font scale; what each group of components looks like | `app/src/test/` and `design-system/src/test/`, Roborazzi; baselines in `<module>/src/test/screenshots/` |
-| Device | Storage on real Room, platform contracts (system keyboard, insets, backup, launcher) and user journeys through the real app | `<module>/src/androidTest*/` |
+| Device | Storage on real Room, platform contracts (system keyboard, insets, backup, launcher) and a small set of user journeys through the real app | `<module>/src/androidTest*/` |
+
+Device tests cover critical paths only ([ARCHITECTURE §10](../../ARCHITECTURE.md#10-enforcement-and-evolution)).
+A feature adds none by default; a device test is removed only when a JVM or other
+device test asserts the same behaviour.
+
+## Nightly-only device tests
+
+A device test marked `@NightlyOnly` (`app/src/androidTestDebug/.../NightlyOnly.kt`) runs
+in the nightly and manual runs and in the release gate, never on a pull request: the
+scenario corpus, the three larger windows of the UI sweep (`UiAcceptanceSweepNightlyTest`),
+the twenty-thousand-row backup and the sandbox scenario runs on real Room. A pull
+request still covers each behaviour in a shorter form. `scripts/check --device` leaves
+them out with the runner argument `notAnnotation=com.software.sello.NightlyOnly`;
+`--scope nightly` runs them too. The plan sets the scope from the event, and
+`test_gates` checks that every device group keeps tests on a pull request, since a
+group with no results fails its job.
 
 A JVM screen test runs with `@RunWith(AndroidJUnit4::class)` and `createComposeRule()`
 and shows its screen with `showSello(Look(...))` from `app/src/test/.../JvmScreen.kt`.
@@ -80,10 +96,12 @@ The Quality workflow (`.github/workflows/quality.yml`) has four jobs:
 2. **Host checks** (when the plan selects G1 or more): `scripts/check --host`, which
    repeats the fast checks, runs ktlint, then the Gradle host gate. G3 adds
    `--ci-release`: the licence list and a release APK signed with a throwaway key.
-3. **Device tests** (one job per selected group: `app-1`, `app-2` and `support`): first
+3. **Device tests** (one job per selected group: `app` and `support`): first
    ktlint and the test APKs, then a fresh, cold-booted API-30 emulator runs the
-   group's selected suites. The app suite runs as two shards. A selected suite that
-   leaves no fresh JUnit results, or skips a test, fails its job.
+   group's selected suites, with the plan's scope (`pull-request` or `nightly`). The
+   app suite runs whole: its pull-request tests took under two minutes on an API-30
+   emulator. A selected suite that leaves no fresh JUnit results, or skips a test,
+   fails its job.
 4. **`quality`**, the required check: it judges each job's result against the plan.
    A selected job must succeed and an unselected one must be skipped.
 
@@ -122,8 +140,8 @@ scripts/check app --tests '*Budget*'      # only matching unit tests
 scripts/check design-system --lint        # with Android lint
 scripts/check --fast                      # G0, seconds
 scripts/check --host                      # G1 exactly as CI runs it
-ANDROID_SERIAL=emulator-5580 scripts/check --device           # every device suite on your emulator
-ANDROID_SERIAL=emulator-5580 scripts/check --device support   # one hosted group
+ANDROID_SERIAL=emulator-5580 scripts/check --device           # every device suite, as a pull request runs it
+ANDROID_SERIAL=emulator-5580 scripts/check --device app --scope nightly  # one hosted group, nightly tests too
 scripts/check --plan origin/main          # what the PR will run, from the merge base
 ```
 

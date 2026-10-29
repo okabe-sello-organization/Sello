@@ -1,6 +1,5 @@
 package com.software.sello.feature.goals
 
-import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasTestTag
@@ -58,24 +57,6 @@ class MetasJourneyTest {
         rule.awaitText("Metas")
         rule.onNodeWithText("Metas").performClick()
         rule.awaitTag(METAS_LIST_TAG)
-    }
-
-    @Test
-    fun withNoGoalsMetasInvitesToCreateWithoutAMonthOrAnAnotarAndBackReturnsToRecibo() {
-        openMetas()
-
-        rule.awaitTag("metas.empty")
-        rule.onNodeWithText("Ponle nombre a algo que quieras").assertExists()
-        rule.onNodeWithTag(MONTH_SWITCHER_TAG).assertDoesNotExist()
-        rule.onNodeWithContentDescription("Anotar un gasto").assertDoesNotExist()
-        // With nothing to contribute to yet, the dock creates a goal (SELLO-090).
-        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Crear una meta"))
-        rule.onNodeWithTag(METAS_TOTAL_TAG).assertDoesNotExist()
-
-        Espresso.pressBack()
-        rule.await(hasText("Recibo"))
-        rule.awaitTag(MONTH_SWITCHER_TAG)
-        rule.onNodeWithText("Recibo").assertIsSelected()
     }
 
     @Test
@@ -140,6 +121,12 @@ class MetasJourneyTest {
         )
         Espresso.pressBack()
         rule.awaitTag(METAS_LIST_TAG)
+
+        // Back from the Metas tab returns to Recibo, from the real navigation stack.
+        Espresso.pressBack()
+        rule.await(hasText("Recibo"))
+        rule.awaitTag(MONTH_SWITCHER_TAG)
+        rule.onNodeWithText("Recibo").assertIsSelected()
     }
 
     @Test

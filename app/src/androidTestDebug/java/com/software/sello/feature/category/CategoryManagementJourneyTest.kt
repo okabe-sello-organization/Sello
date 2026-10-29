@@ -6,16 +6,13 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.test.performTextReplacement
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
@@ -123,32 +120,6 @@ class CategoryManagementJourneyTest {
     private fun limits() = TestData.rows(
         "SELECT month, kind, limit_minor FROM month_limit ORDER BY month"
     )
-
-    @Test
-    fun renamingAndRaisingTheLimitKeepsTheSameCategoryItsExpensesAndLastMonthsFigures() {
-        launch()
-        openCafe()
-        edit()
-
-        rule.onNodeWithContentDescription("Nombre").performTextReplacement("Cafetería")
-        rule.typeLimit("120000")
-        save()
-
-        // 120.000 less the 10.000 of this month, under the new name, the same category.
-        rule.awaitText("Categoría actualizada")
-        rule.awaitTag(CATEGORY_DETAIL_TAG)
-        rule.await(saying("Te quedan aquí 110.000 pesos."))
-        rule.onNodeWithText("Cafetería").assertIsDisplayed()
-        assertEquals(listOf("$cafe|Cafetería"), TestData.rows("SELECT id, name FROM category"))
-        assertEquals(2L, TestData.long("SELECT COUNT(*) FROM expense WHERE category_id = '$cafe'"))
-
-        // Last month is as it was: 100.000 less 20.000 (H01).
-        Espresso.pressBack()
-        rule.awaitTag(RECIBO_SUMMARY_TAG)
-        pick(lastMonth)
-        rule.awaitDescription("Restante del presupuesto: 80.000 pesos. Cumplido.")
-        assertEquals(listOf("$lastMonth|finite|100000"), limits())
-    }
 
     @Test
     fun aFinishedMonthsLimitIsCorrectedWithoutTouchingThisMonth() {

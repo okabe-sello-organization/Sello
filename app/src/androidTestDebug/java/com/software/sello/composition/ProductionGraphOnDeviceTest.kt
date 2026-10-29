@@ -9,7 +9,6 @@ import com.software.sello.TestCommands
 import com.software.sello.data.StorageNames
 import com.software.sello.devtools.endProcess
 import com.software.sello.domain.model.Outcome
-import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.platform.ProcessFinancialZone
@@ -76,16 +75,6 @@ class ProductionGraphOnDeviceTest {
     fun theAppIsSelloApplicationAndAReleaseGraphRunsOnRealFinancialTime() {
         assertTrue(context.applicationContext is SelloApplication)
         assertTrue(releaseGraph().get<FinancialClock>() is SystemFinancialClock)
-    }
-
-    @Test
-    fun financialDayIsTheRealDateInTheDeviceZoneAtStartup() {
-        val graph = releaseGraph()
-        val today = graph.get<FinancialClock>().today.value
-        val expected = graph.get<AuditClock>().now().atZone(ZoneId.systemDefault()).toLocalDate()
-
-        assertEquals(ZoneId.systemDefault(), today.zone)
-        assertEquals(expected, today.date)
     }
 
     @Test

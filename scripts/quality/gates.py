@@ -6,6 +6,9 @@ G1  G0, then ktlint, then every host test, the screenshot baselines, lint and th
 G2  G1 plus the device suites of the selected modules on an API-30 emulator.
 G3  every device suite, then the release checks (ADR 0016): the owner's production
     signing locally, a throwaway key on CI.
+
+A pull request's device run leaves out the app tests marked @NightlyOnly
+(NIGHTLY_ONLY); the nightly, a manual run and the release gate run every test.
 """
 from dataclasses import dataclass
 
@@ -28,6 +31,12 @@ HOST_TASKS = (
 )
 HOST_RESULTS = "*/build/test-results/**/TEST-*.xml"
 DEVICE_RESULTS = "{module}/build/outputs/androidTest-results/connected/**/TEST-*.xml"
+# Device tests only the nightly and manual runs execute; only the app suite has them.
+NIGHTLY_ONLY = "com.software.sello.NightlyOnly"
+NIGHTLY_ONLY_SOURCE = "app/src/androidTestDebug/java/com/software/sello/NightlyOnly.kt"
+NIGHTLY_ONLY_MODULES = ("app",)
+# What a device run executes: "pull-request" leaves out NIGHTLY_ONLY; "nightly" runs all.
+SCOPES = ("pull-request", "nightly")
 
 
 @dataclass(frozen=True)
@@ -37,11 +46,12 @@ class Group:
     shard: tuple = ()  # (index, count): the instrumentation runner keeps every count-th test
 
 
-# The app suite is the longest by far, so it runs as two shards side by side; the other
-# three suites share one runner.
+# The app suite runs whole on one runner: its pull-request tests take under two minutes
+# on an API-30 emulator (measured 2026-10-29), less than building a second test APK.
+# A Group can still split a suite into shards; the data and design-system suites share
+# the other runner.
 DEVICE_GROUPS = {
-    "app-1": Group(("app",), shard=(0, 2)),
-    "app-2": Group(("app",), shard=(1, 2)),
+    "app": Group(("app",)),
     "support": Group(("data", "design-system")),
 }
 
@@ -59,13 +69,19 @@ def device_build(modules):
     return gradle(*FORMAT_TASKS, *(f":{module}:assembleDebugAndroidTest" for module in modules))
 
 
-def device_tests(modules, shard=()):
-    split = ()
+def device_tests(modules, shard=(), scope="pull-request"):
+    if scope not in SCOPES:
+        raise ValueError(f"Unknown device scope {scope!r}")
+    arguments = []
     if shard:
         index, count = shard
-        split = (f"-Pandroid.testInstrumentationRunnerArguments.numShards={count}",
-                 f"-Pandroid.testInstrumentationRunnerArguments.shardIndex={index}")
-    return gradle(*(f":{module}:connectedDebugAndroidTest" for module in modules), *split)
+        arguments += [f"-Pandroid.testInstrumentationRunnerArguments.numShards={count}",
+                      f"-Pandroid.testInstrumentationRunnerArguments.shardIndex={index}"]
+    # A Gradle property reaches every module of the run; a test APK without the annotation
+    # class ignores the argument (androidx.test TestRequestBuilder logs and skips it).
+    if scope == "pull-request" and any(module in NIGHTLY_ONLY_MODULES for module in modules):
+        arguments.append(f"-Pandroid.testInstrumentationRunnerArguments.notAnnotation={NIGHTLY_ONLY}")
+    return gradle(*(f":{module}:connectedDebugAndroidTest" for module in modules), *arguments)
 
 
 def release_checks(ci):

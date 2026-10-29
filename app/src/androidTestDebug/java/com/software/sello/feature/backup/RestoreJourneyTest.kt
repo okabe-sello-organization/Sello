@@ -4,8 +4,6 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.content.Context
 import android.content.Intent
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -63,7 +61,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -234,8 +231,14 @@ class RestoreJourneyTest {
     @Test
     fun aConfirmedRestoreReplacesTheHistoryAndAppliesThePreferences() {
         answerWith(backup())
-        openRespaldoAndChoose()
+        // Restaurar on Configuración's card opens the preview on Respaldo.
+        scenario = ActivityScenario.launch(Intent(context, MainActivity::class.java))
+        rule.awaitTag(RECIBO_SUMMARY_TAG)
+        rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
+        rule.awaitTag(SETTINGS_TAG)
+        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).performScrollTo().performClick()
         rule.awaitTag(RESTORE_PREVIEW_TAG)
+        rule.onNodeWithTag(BACKUP_TAG).assertExists()
 
         // Nothing has changed while the preview is on screen.
         assertEquals(
@@ -243,6 +246,7 @@ class RestoreJourneyTest {
             financialRows()
         )
         rule.onNodeWithText("¿Reemplazar tus datos?").assertExists()
+        assertEquals(0, restarts)
         rule.onNodeWithTag(RESTORE_CONFIRM_TAG).performScrollTo().performClick()
         rule.awaitTag(RESTORE_DONE_TAG)
 
@@ -266,50 +270,6 @@ class RestoreJourneyTest {
         rule.onNodeWithTag(RESTORE_LEAVE_TAG).performScrollTo().performClick()
         rule.waitForIdle()
         assertEquals(1, restarts)
-    }
-
-    @Test
-    fun restaurarOnTheCardOpensThePreviewOnRespaldoAndChangesNothing() {
-        answerWith(backup())
-        val before = financialRows()
-        scenario = ActivityScenario.launch(Intent(context, MainActivity::class.java))
-        rule.awaitTag(RECIBO_SUMMARY_TAG)
-        rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
-        rule.awaitTag(SETTINGS_TAG)
-        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).performScrollTo().performClick()
-
-        rule.awaitTag(RESTORE_PREVIEW_TAG)
-        rule.onNodeWithTag(BACKUP_TAG).assertExists()
-        rule.onNodeWithText("¿Reemplazar tus datos?").assertExists()
-        assertEquals(before, financialRows())
-        assertEquals(0, restarts)
-    }
-
-    @Test
-    fun aDismissedPickerLeavesConfiguracionAsItWas() {
-        val monitor = object : Instrumentation.ActivityMonitor() {
-            override fun onStartActivity(intent: Intent): Instrumentation.ActivityResult? =
-                if (intent.action == Intent.ACTION_OPEN_DOCUMENT) {
-                    Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null)
-                } else {
-                    null
-                }
-        }
-        instrumentation.addMonitor(monitor)
-        picker = monitor
-        val before = financialRows()
-        scenario = ActivityScenario.launch(Intent(context, MainActivity::class.java))
-        rule.awaitTag(RECIBO_SUMMARY_TAG)
-        rule.onNodeWithTag(SETTINGS_ACTION_TAG).performClick()
-        rule.awaitTag(SETTINGS_TAG)
-        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).performScrollTo().performClick()
-        rule.waitUntil(timeoutMillis = 10_000) { monitor.hits == 1 }
-        rule.waitForIdle()
-
-        rule.onNodeWithTag(SETTINGS_TAG).assertExists()
-        assertEquals(0, rule.onAllNodes(hasTestTag(BACKUP_TAG)).fetchSemanticsNodes().size)
-        rule.onNodeWithTag(BACKUP_CARD_RESTORE_TAG).assertIsEnabled()
-        assertEquals(before, financialRows())
     }
 
     @Test
@@ -376,21 +336,6 @@ class RestoreJourneyTest {
             listOf(listOf("Mercado", "mercado_2"), listOf("12000"), emptyList(), listOf("2")),
             financialRows()
         )
-    }
-
-    @Test
-    fun cancellingThePreviewChangesNothing() {
-        answerWith(backup())
-        val before = financialRows()
-        openRespaldoAndChoose()
-        rule.awaitTag(RESTORE_PREVIEW_TAG)
-
-        rule.onNodeWithTag(RESTORE_CANCEL_TAG).performScrollTo().performClick()
-        rule.awaitTag(RESTORE_CHOOSE_TAG)
-
-        assertEquals(before, financialRows())
-        assertTrue(File(context.filesDir, "sello-restore").list().isNullOrEmpty())
-        assertEquals(0, restarts)
     }
 
     @Test

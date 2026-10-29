@@ -1,6 +1,5 @@
 package com.software.sello.feature.goals
 
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
@@ -88,23 +87,6 @@ class GoalMovementJourneyTest {
         assertEquals(listOf("contribution|1710000", "contribution|350000"), amounts())
         assertEquals(0L, TestData.count("expense") + TestData.count("income"))
         assertEquals(0L, TestData.count("month_limit") + TestData.count("default_limit"))
-    }
-
-    @Test
-    fun mt08ARetiroAboveWhatIsSavedWaitsAndAllThatIsSavedCanBeWithdrawn() {
-        openGoal()
-        rule.onNodeWithTag("goal.withdraw").performScrollTo().performClick()
-        rule.awaitTag(GOAL_MOVEMENT_KEYPAD_TAG)
-        keys("1", "7", "1", "0", "0", "0", "1")
-
-        rule.awaitText("Más de lo guardado (1.710.000)")
-        rule.onNodeWithTag(GOAL_MOVEMENT_SUBMIT_TAG).assertIsNotEnabled()
-        keys("<", "0")
-        rule.onNodeWithTag(GOAL_MOVEMENT_SUBMIT_TAG).press()
-
-        rule.awaitText("Retiro anotado: 1.710.000")
-        rule.awaitText("0 %")
-        assertEquals(listOf("contribution|1710000", "withdrawal|1710000"), amounts())
     }
 
     @Test

@@ -213,7 +213,7 @@ check judges the jobs are in the [quality gates guide](quality-gates.md#what-ci-
 To reproduce one hosted group on your own emulator:
 
 ```bash
-ANDROID_SERIAL=emulator-5580 scripts/check --device app-1 --modules app
+ANDROID_SERIAL=emulator-5580 scripts/check --device app --modules app
 ANDROID_SERIAL=emulator-5580 scripts/check --device support
 ```
 

@@ -12,6 +12,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
@@ -268,6 +270,9 @@ class MetasScreenTest {
         var created = 0
         destination(GoalBoard(1, 0, emptyList(), null), onCreate = { created++ })
 
+        rule.onNodeWithText("Ponle nombre a algo que quieras").assertExists()
+        rule.onNodeWithTag(MONTH_SWITCHER_TAG).assertDoesNotExist()
+        rule.onNodeWithContentDescription("Anotar un gasto").assertDoesNotExist()
         rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assert(hasText("Crear una meta")).performClick()
         assertEquals(1, created)
         rule.onNodeWithTag(METAS_CREATE_TAG).assertDoesNotExist()
@@ -351,5 +356,36 @@ class MetasScreenTest {
                 .assertExists()
             rule.onNodeWithTag("goal.stamps").performScrollTo().assertExists()
         }
+    }
+
+    private fun showDetail(summary: GoalSummary) {
+        val ready = GoalBoardState.Ready(GoalBoard(1, 1, listOf(summary), null))
+        val detail = GoalsRenderModel(money).detail(ready, summary.history.goal.id.value, today)
+        rule.showSello(Look(density = 1f)) {
+            GoalDetailScreen(detail, {}, dateLabels(), monthNames(), PaddingValues(16.dp))
+        }
+    }
+
+    private fun onHero(description: String) = rule.onNode(
+        hasContentDescription(description) and hasAnyAncestor(hasTestTag("goal.hero")),
+        useUnmergedTree = true
+    )
+
+    @Test
+    fun mt02AGoalPastSeventyFivePercentShowsItsPercentageAndThatStampEarned() {
+        // 1.710.000 + 600.000 = 2.310.000 of 3.000.000: 77 %, past the 75 % place.
+        showDetail(goal(1, "Viaje a la costa", 3_000_000, listOf(1_710_000, 600_000)))
+
+        rule.onNodeWithText("77 %").assertExists()
+        onHero("75 por ciento, logrado").assertExists()
+    }
+
+    @Test
+    fun mt18ALowerTargetThatReachesSeventyFivePercentShowsItEarned() {
+        // 1.710.000 of 2.000.000 is 85 %.
+        showDetail(goal(1, "Viaje a la costa", 2_000_000, listOf(1_710_000)))
+
+        rule.onNodeWithText("85 %").assertExists()
+        onHero("75 por ciento, logrado").assertExists()
     }
 }

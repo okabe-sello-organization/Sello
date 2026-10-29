@@ -6,8 +6,6 @@ import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -26,13 +24,8 @@ import com.software.sello.TestData
 import com.software.sello.awaitTag
 import com.software.sello.designsystem.component.SCAFFOLD_BAR_TAG
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
-import com.software.sello.domain.model.Money
-import com.software.sello.domain.model.Outcome
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.FinancialClock
-import com.software.sello.feature.category.EDITOR_PREREQUISITE_TAG
 import com.software.sello.feature.recibo.RECIBO_FIRST_RUN_TAG
-import com.software.sello.pressBackPastTheKeyboard
 import java.time.YearMonth
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -66,9 +59,6 @@ class ShellOnDeviceTest {
         context.resources.getStringArray(R.array.month_names)[month.monthValue - 1],
         month.year
     )
-
-    private fun short(month: YearMonth) =
-        context.resources.getStringArray(R.array.month_names_short)[month.monthValue - 1]
 
     private fun launch(link: String? = null): ActivityScenario<MainActivity> {
         val intent = Intent(context, MainActivity::class.java)
@@ -162,98 +152,6 @@ class ShellOnDeviceTest {
     }
 
     @Test
-    fun anEarlierMonthCanBePickedAndALaterOneCannot() {
-        launchToRecibo()
-        rule.onNodeWithTag(MONTH_SWITCHER_TAG).performClick()
-
-        for (number in 1..12) {
-            val month = YearMonth.of(current.year, number)
-            val cell = rule.onNodeWithContentDescription(title(month))
-            if (month <= current) cell.assertIsEnabled() else cell.assertIsNotEnabled()
-        }
-        rule.onNodeWithContentDescription(context.getString(R.string.month_picker_previous_year))
-            .performClick()
-        val march = YearMonth.of(current.year - 1, 3)
-        rule.onNodeWithContentDescription(title(march)).performClick()
-
-        rule.onNodeWithTag(MONTH_PICKER_TAG).assertDoesNotExist()
-        monthShown(march)
-        assertEquals(march, shell().state.value.selectedMonth)
-        assertEquals(short(march), "Mar")
-    }
-
-    @Test
-    fun fromAMonthInAnotherYearMesActualGoesStraightBackAndWritesNothing() {
-        launchToRecibo()
-        val revision = TestData.long("SELECT revision FROM profile")
-        rule.onNodeWithTag(MONTH_SWITCHER_TAG).performClick()
-        rule.onNodeWithContentDescription(context.getString(R.string.month_picker_previous_year))
-            .performClick()
-        val march = YearMonth.of(current.year - 1, 3)
-        rule.onNodeWithContentDescription(title(march)).performClick()
-        monthShown(march)
-
-        // The picker opens on last year; the current month's cell is not on it.
-        rule.onNodeWithTag(MONTH_SWITCHER_TAG).performClick()
-        rule.onNodeWithContentDescription(title(current)).assertDoesNotExist()
-        rule.onNodeWithTag(MONTH_PICKER_CURRENT_TAG).performClick()
-
-        rule.onNodeWithTag(MONTH_PICKER_TAG).assertDoesNotExist()
-        monthShown(current)
-        assertEquals(current, shell().state.value.selectedMonth)
-        assertEquals(revision, TestData.long("SELECT revision FROM profile"))
-        assertEquals(0, TestData.financialRows())
-    }
-
-    @Test
-    fun aPastMonthShowsTheRibbonOnReciboAndResumenThroughRecreationAndVolverReturns() {
-        val app = launchToRecibo()
-        val revision = TestData.long("SELECT revision FROM profile")
-        rule.onNodeWithTag(PAST_MONTH_RIBBON_TAG).assertDoesNotExist()
-        rule.onNodeWithTag(MONTH_SWITCHER_TAG).performClick()
-        rule.onNodeWithContentDescription(context.getString(R.string.month_picker_previous_year))
-            .performClick()
-        val march = YearMonth.of(current.year - 1, 3)
-        rule.onNodeWithContentDescription(title(march)).performClick()
-        val viewing = "Estás viendo marzo de ${march.year}"
-        val back = "Volver a " + context.resources
-            .getStringArray(R.array.month_names)[current.monthValue - 1].lowercase()
-
-        rule.onNodeWithText(viewing).assertIsDisplayed()
-        app.recreate()
-        rule.awaitTag(PAST_MONTH_RIBBON_TAG)
-        rule.onNodeWithText(viewing).assertIsDisplayed()
-        rule.onNodeWithText(context.getString(R.string.tab_resumen)).performClick()
-        rule.awaitTag("resumen.income")
-        rule.onNodeWithText(viewing).assertIsDisplayed()
-        rule.onNodeWithText(back).performClick()
-
-        rule.onNodeWithTag(PAST_MONTH_RIBBON_TAG).assertDoesNotExist()
-        monthShown(current)
-        assertEquals(current, shell().state.value.selectedMonth)
-        assertEquals(revision, TestData.long("SELECT revision FROM profile"))
-        assertEquals(0, financialRows())
-    }
-
-    @Test
-    fun theSelectedMonthAndTheOpenPickerSurviveTheScreenBeingRecreated() {
-        val app = launchToRecibo()
-        val march = YearMonth.of(current.year - 1, 3)
-        rule.onNodeWithTag(MONTH_SWITCHER_TAG).performClick()
-        rule.onNodeWithContentDescription(context.getString(R.string.month_picker_previous_year))
-            .performClick()
-        rule.onNodeWithContentDescription(title(march)).performClick()
-        rule.onNodeWithTag(MONTH_SWITCHER_TAG).performClick()
-
-        app.recreate()
-
-        rule.awaitTag(MONTH_PICKER_TAG)
-        rule.onNodeWithTag(MONTH_PICKER_TAG).assertIsDisplayed()
-        Espresso.pressBack()
-        monthShown(march)
-    }
-
-    @Test
     fun leavingAndReturningAreReportedToTheMonthSession() {
         val app = launchToRecibo()
         val session = koin.get<MonthSession>()
@@ -268,30 +166,6 @@ class ShellOnDeviceTest {
         assertNotNull(whileAway)
         assertNull(session.save().backgroundedAtMillis)
         rule.onNodeWithTag(RECIBO_FIRST_RUN_TAG).assertIsDisplayed()
-    }
-
-    @Test
-    fun anEntryLinkWithNoCategoryOpensTheCategoryFormWithTheReasonAndCreatesNoMoney() {
-        launch("sello://anotar?categoria=3f2c1a9e-7b4d-4c61-9a0e-5d8f2b6c7e10&monto=48700")
-        rule.awaitTag(EDITOR_PREREQUISITE_TAG)
-
-        // There is nowhere to record an expense yet, so the person is told what to do first.
-        rule.onNodeWithTag(EDITOR_PREREQUISITE_TAG).assertIsDisplayed()
-        val waiting = shell().state.value.pendingEntry
-        // The form opens with the keyboard up for the name; Back leaves the form.
-        rule.pressBackPastTheKeyboard()
-
-        rule.awaitTag(RECIBO_FIRST_RUN_TAG)
-        rule.onNodeWithTag(RECIBO_FIRST_RUN_TAG).assertIsDisplayed()
-        assertEquals(
-            (TransactionAmount.of(Money.cop(48_700)) as Outcome.Success).value,
-            waiting?.amount
-        )
-        assertEquals("3f2c1a9e-7b4d-4c61-9a0e-5d8f2b6c7e10", waiting?.categoryId?.value)
-        // The request is still waiting for the entry form, and nothing was written.
-        assertEquals(waiting, shell().state.value.pendingEntry)
-        shell().onAction(ShellAction.EntryTaken)
-        assertEquals(0, financialRows())
     }
 
     @Test

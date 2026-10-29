@@ -80,14 +80,14 @@ class HostedWorkflowTests(unittest.TestCase):
 
             def judge(plan='success', host='success', device='success', host_selected='true', device_selected='true'):
                 summary.write_text('', encoding='utf-8')
-                environment = dict(os.environ, GITHUB_STEP_SUMMARY=str(summary), GATE='G2', DEVICE_GROUPS='["app-1"]',
+                environment = dict(os.environ, GITHUB_STEP_SUMMARY=str(summary), GATE='G2', DEVICE_GROUPS='["app"]',
                                    PLAN_RESULT=plan, HOST_RESULT=host, DEVICE_RESULT=device,
                                    HOST_SELECTED=host_selected, DEVICE_SELECTED=device_selected)
                 return subprocess.run(['bash', '-e', '-c', script(block)], env=environment, capture_output=True,
                                       text=True).returncode
 
             self.assertEqual(0, judge())
-            self.assertIn('| Device tests ["app-1"] | success | success |', summary.read_text(encoding='utf-8'))
+            self.assertIn('| Device tests ["app"] | success | success |', summary.read_text(encoding='utf-8'))
             self.assertEqual(0, judge(device='skipped', device_selected='false'))  # G1
             self.assertEqual(0, judge(host='skipped', device='skipped', host_selected='false', device_selected='false'))  # G0
             for case in (dict(device='failure'), dict(device='cancelled'), dict(device='skipped'),
@@ -134,7 +134,7 @@ class HostedWorkflowTests(unittest.TestCase):
         self.assertIn('./scripts/check --fast', self.plan['Run the fast checks'])
         self.assertLess(names.index('Decide what this run verifies'), names.index('Run the fast checks'))
         self.assertIn('fetch-depth: 0', self.plan['actions/checkout'])
-        for output in ('gate', 'host', 'release', 'device', 'groups', 'modules'):
+        for output in ('gate', 'host', 'release', 'device', 'groups', 'modules', 'scope'):
             self.assertIn(f'{output}: ${{{{ steps.plan.outputs.{output} }}}}', self.jobs['plan'])
         for job in ('host', 'device'):
             self.assertIn('    needs: plan\n', self.jobs[job])
@@ -158,7 +158,12 @@ class HostedWorkflowTests(unittest.TestCase):
         build = self.device['Check formatting and build the test APKs']
         self.assertIn('./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES" --build-only', build)
         run = self.device['Run device tests on API 30']
-        self.assertIn('script: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES"; status=$?;', run)
+        # The plan's scope: a pull request or push leaves out @NightlyOnly; the nightly and a
+        # manual run execute every device test.
+        self.assertIn('DEVICE_SCOPE: ${{ needs.plan.outputs.scope }}', device)
+        self.assertIn('script: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES" '
+                      '--scope "$DEVICE_SCOPE"; status=$?;', run)
+        self.assertNotIn('--scope', build)
         names = list(self.device)
         for later in ('Restore Android system image', 'Enable KVM for the emulator', 'Run device tests on API 30'):
             self.assertLess(names.index('Check formatting and build the test APKs'), names.index(later))

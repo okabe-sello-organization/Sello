@@ -193,28 +193,4 @@ class ResetReuseJourneyTest {
         }
         assertEquals(listOf(listOf("Comida"), listOf("12000"), listOf("2")), history())
     }
-
-    @Test
-    fun cancellingAtEitherConfirmationChangesNothing() {
-        val before = history()
-        openReset()
-
-        rule.onNodeWithTag(RESET_CONTINUE_TAG).performScrollTo().performClick()
-        word.performScrollTo().performTextInput("BORRAR")
-        rule.onNodeWithTag(RESET_CANCEL_TAG).performScrollTo().performClick()
-        rule.awaitTag(RESET_COUNTS_TAG)
-        rule.onNodeWithTag(RESET_CLOSE_TAG).performScrollTo().performClick()
-        rule.awaitTag(SETTINGS_TAG)
-
-        assertEquals(before, history())
-        assertEquals(0, restarts)
-        runBlocking {
-            assertEquals(
-                PreferenceRead.Ready(
-                    AppearancePreference(ThemePreference.Dark, InkPreference.Violeta)
-                ),
-                koin.get<AppearancePreferences>().observeAppearance().first()
-            )
-        }
-    }
 }

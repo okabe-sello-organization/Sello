@@ -32,7 +32,10 @@ import com.software.sello.designsystem.component.SELLO_NOTICE_CHECK_TAG
 import com.software.sello.designsystem.component.SelloDestination
 import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.domain.model.GoalPlace
+import com.software.sello.feature.goals.CELEBRATION_TICKET_TAG
 import com.software.sello.presentation.corrections.CorrectionNotice
+import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import java.time.YearMonth
@@ -209,5 +212,67 @@ class ConfirmationNoticeShellTest {
         rule.waitForIdle()
 
         says(notice, "Ingreso anotado", "Ingreso anotado")
+    }
+
+    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
+
+    private val seventyFive = GoalCelebration(
+        goalId = "00000000-0000-4000-9000-000000000001",
+        goalName = "Viaje a la costa",
+        earned = listOf(GoalPlace.ThreeQuarters),
+        relit = emptyList(),
+        reachedMeta = false,
+        missing = pesos("690.000")
+    )
+
+    @Test
+    fun anAporteThatEarnsAStampSaysBothOnTheGoal() {
+        showNotice(CorrectionNotice.GoalMovementRecorded(false, pesos("600.000"), seventyFive))
+
+        rule.onNodeWithText("Aporte anotado: 600.000. Ganaste el sello del 75 %.").assertExists()
+    }
+
+    @Test
+    fun aRetiroIsSaidWithItsAmount() {
+        showNotice(CorrectionNotice.GoalMovementRecorded(true, pesos("1.710.000")))
+
+        rule.onNodeWithText("Retiro anotado: 1.710.000").assertExists()
+    }
+
+    @Test
+    fun aNewTargetThatEarnsAStampSaysBoth() {
+        showNotice(CorrectionNotice.GoalTargetChanged(seventyFive))
+
+        rule.onNodeWithText("Meta actualizada. Ganaste el sello del 75 %.").assertExists()
+    }
+
+    @Test
+    fun aGoalMarkedLogradaAndPutBackAreSaidInItsName() {
+        var notice: CorrectionNotice by mutableStateOf(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = true)
+        )
+        rule.showSello { CorrectionNoticeBar(notice) {} }
+        rule.onNodeWithText("Viaje a la costa, meta lograda.").assertExists()
+        rule.onNodeWithText("Deshacer").assertExists()
+
+        notice = CorrectionNotice.GoalCompletionUndone("Viaje a la costa")
+        rule.waitForIdle()
+
+        rule.onNodeWithText("Viaje a la costa vuelve a estar al 100 %, lista para marcar.")
+            .assertExists()
+    }
+
+    @Test
+    fun onMetasAndReciboAnEarnedStampLandsOnATicketInTheNoticesPlace() {
+        rule.showSello {
+            StampNoticeBar(
+                CorrectionNotice.GoalMovementRecorded(false, pesos("600.000"), seventyFive),
+                {}
+            ) { false }
+        }
+
+        rule.onNodeWithTag(CORRECTION_NOTICE_TAG).assertExists()
+        rule.onNodeWithTag(CELEBRATION_TICKET_TAG, useUnmergedTree = true).assertExists()
+        rule.onNodeWithText("Ganaste el sello del 75 %", useUnmergedTree = true).assertExists()
     }
 }

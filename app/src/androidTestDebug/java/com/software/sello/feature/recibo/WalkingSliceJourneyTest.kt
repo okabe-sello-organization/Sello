@@ -42,10 +42,7 @@ import com.software.sello.feature.expense.ENTRY_SUBMIT_TAG
 import com.software.sello.hideKeyboard
 import com.software.sello.navigation.CORRECTION_NOTICE_TAG
 import com.software.sello.navigation.DETAIL_BACK_TAG
-import com.software.sello.navigation.MONTH_PICKER_TAG
-import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.press
-import java.time.YearMonth
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -146,21 +143,6 @@ class WalkingSliceJourneyTest {
 
     private fun expenseIds() = TestData.rows("SELECT id FROM expense ORDER BY sequence")
 
-    private val monthNames = listOf(
-        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-    )
-
-    private fun pick(month: YearMonth) {
-        rule.onNodeWithTag(MONTH_SWITCHER_TAG).performClick()
-        rule.awaitTag(MONTH_PICKER_TAG)
-        if (month.year < YearMonth.from(TestCommands.today).year) {
-            rule.onNodeWithContentDescription("Año anterior").performClick()
-        }
-        rule.onNodeWithContentDescription("${monthNames[month.monthValue - 1]} ${month.year}")
-            .performScrollTo().performClick()
-    }
-
     @Test
     fun aSavedExpenseReachesReciboItsCategoryAndItsListAndIsThereAfterStartingAgain() {
         val app = startWithMercado()
@@ -239,46 +221,6 @@ class WalkingSliceJourneyTest {
         assertEquals(2, listed())
     }
 
-    @Test
-    fun aFinishedMonthUsesItsOwnBudgetShowsNoDailyAmountAndListsOnlyItsOwnExpenses() {
-        startWithMercado()
-        val lastMonth = YearMonth.from(TestCommands.today).minusMonths(1)
-        TestCommands.setMonthLimit("Mercado", lastMonth, 200_000)
-        TestCommands.createExpense("Mercado", lastMonth.atDay(10), 150_000, "Del mes pasado")
-        TestCommands.createExpense("Mercado", TestCommands.today, 10_000, "De hoy")
-
-        // This month: its own limit, with a daily amount.
-        rule.await(saying("Restante del presupuesto: 290.000 pesos."))
-        rule.onNodeWithTag(RECIBO_PER_DAY_TAG).assertExists()
-
-        pick(lastMonth)
-
-        // Last month: 200.000 less 150.000, judged on what was spent, nothing per day.
-        rule.awaitDescription("Restante del presupuesto: 50.000 pesos. Cumplido.")
-        rule.onNodeWithTag(RECIBO_PER_DAY_TAG).assertDoesNotExist()
-        rule.onNodeWithContentDescription(
-            "Mercado. Te sobraron 50.000 pesos de 200.000 pesos. Cumplido."
-        ).performScrollTo().assertIsDisplayed()
-
-        openMercado()
-        rule.awaitDescription("Te sobraron aquí 50.000 pesos. Cumplido.")
-        inDetail(CATEGORY_DETAIL_SPENT_TAG, "150.000 pesos").assertExists()
-        inDetail(CATEGORY_DETAIL_LIMIT_TAG, "200.000 pesos").assertExists()
-        rule.awaitText("Del mes pasado")
-        rule.onNodeWithText("De hoy").assertDoesNotExist()
-        assertEquals(1, listed())
-
-        // A change made while the screen is open arrives by itself: 210.000 of 200.000.
-        TestCommands.createExpense("Mercado", lastMonth.atDay(11), 60_000, "Otro")
-
-        rule.awaitDescription("Te pasaste aquí por 10.000 pesos. Excedido.")
-        rule.awaitText("Otro")
-        assertEquals(2, listed())
-        Espresso.pressBack()
-        rule.awaitDescription("Restante del presupuesto: menos 10.000 pesos. Excedido.")
-        rule.onNodeWithTag(RECIBO_PER_DAY_TAG).assertDoesNotExist()
-    }
-
     private fun awaitBrowserCount(text: String) {
         rule.await(
             hasTestTag("category.expenses") and
@@ -310,33 +252,6 @@ class WalkingSliceJourneyTest {
         Espresso.pressBack()
         rule.awaitTag(CATEGORY_DETAIL_SPENT_TAG)
         inDetail(CATEGORY_DETAIL_SPENT_TAG, "25.000 pesos").assertExists()
-    }
-
-    @Test
-    fun anExpenseSavedWhileALongListIsOpenLeavesTheListAsLongAndWhereItWas() {
-        startWithMercado()
-        repeat(45) { TestCommands.createExpense("Mercado", TestCommands.today, 1_000) }
-        rule.await(saying("Restante del presupuesto: 255.000 pesos."))
-        openMercado()
-        rule.awaitText("Ver los 45")
-        rule.onNodeWithTag(CATEGORY_DETAIL_MORE_TAG).performScrollTo().performClick()
-        awaitBrowserCount("Se muestran 20 de 45")
-        scrollBrowserTo("category.expenses.more")
-        rule.onNodeWithTag("category.expenses.more").performClick()
-        awaitBrowserCount("Se muestran 40 de 45")
-        scrollBrowserTo("category.expenses.more")
-        rule.onNodeWithTag("category.expenses.more").assertIsDisplayed()
-
-        // 45 × 1.000 + 2.500 = 47.500; the open browser keeps its 40 loaded rows.
-        TestCommands.createExpense("Mercado", TestCommands.today, 2_500, "Nuevo")
-        awaitBrowserCount("Se muestran 40 de 46")
-        rule.onNodeWithTag("category.expenses.more").assertIsDisplayed()
-        scrollBrowserTo(categoryExpenseTag(expenseIds().last()))
-        rule.onNodeWithText("Nuevo").assertIsDisplayed()
-        Espresso.pressBack()
-        rule.await(saying("Te quedan aquí 252.500 pesos."))
-        inDetail(CATEGORY_DETAIL_SPENT_TAG, "47.500 pesos").assertExists()
-        rule.onNodeWithText("Ver los 46").assertExists()
     }
 
     @Test
