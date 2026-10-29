@@ -158,7 +158,7 @@ class HostedWorkflowTests(unittest.TestCase):
         build = self.device['Check formatting and build the test APKs']
         self.assertIn('./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES" --build-only', build)
         run = self.device['Run device tests on API 30']
-        self.assertIn('script: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES"\n', run + '\n')
+        self.assertIn('script: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES"; status=$?;', run)
         names = list(self.device)
         for later in ('Restore Android system image', 'Enable KVM for the emulator', 'Run device tests on API 30'):
             self.assertLess(names.index('Check formatting and build the test APKs'), names.index(later))
@@ -167,6 +167,11 @@ class HostedWorkflowTests(unittest.TestCase):
         device = self.device['Run device tests on API 30']
         for setting in ('force-avd-creation: true', '-no-snapshot', 'api-level: 30', 'target: google_apis', 'arch: x86_64', 'cores: 2'):
             self.assertIn(setting, device)
+
+    def test_the_emulator_cannot_hold_a_finished_device_job(self):
+        run = self.device['Run device tests on API 30']
+        self.assertIn('killall -INT crashpad_handler || true; exit $status', run)
+        self.assertIn('timeout-minutes: 25', run)
 
     def test_reports_of_a_failure_are_kept_without_being_proof(self):
         for group, name, artifact in ((self.host, 'Keep host reports of a failure', 'host-reports-${{ github.run_attempt }}'),

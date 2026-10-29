@@ -32,7 +32,6 @@ import androidx.test.espresso.Espresso
 import com.software.sello.TestCommands
 import com.software.sello.TestData
 import com.software.sello.await
-import com.software.sello.composition.SandboxNames
 import com.software.sello.composition.viewModels
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
@@ -142,7 +141,6 @@ class UiAcceptanceSweepTest(private val window: Window) {
         sandbox.erase()
         sandbox.open()
         TestCommands.use(sandbox.koin)
-        TestData.use(SandboxNames.database)
         assertEquals(FIVE_WEEK_DAY, TestCommands.today)
         TestCommands.showCurrentMonth()
         TestCommands.createCategory("Mercado", 300_000)
@@ -156,7 +154,6 @@ class UiAcceptanceSweepTest(private val window: Window) {
     @After
     fun leaveNothingBehind() {
         TestCommands.useInstalledApp()
-        TestData.useInstalledApp()
         sandbox.erase()
     }
 

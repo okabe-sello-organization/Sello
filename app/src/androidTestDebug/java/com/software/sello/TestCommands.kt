@@ -54,7 +54,8 @@ import org.koin.core.context.GlobalContext
 object TestCommands {
     private var graph: Koin? = null
 
-    private val koin get() = graph ?: GlobalContext.get()
+    /** The graph the commands below run on, and whose database [TestData] reads and writes. */
+    val koin: Koin get() = graph ?: GlobalContext.get()
 
     /**
      * Runs the commands below on [graph], a test's own graph, instead of the installed

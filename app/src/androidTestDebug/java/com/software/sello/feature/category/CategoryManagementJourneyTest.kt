@@ -36,6 +36,7 @@ import com.software.sello.hideKeyboard
 import com.software.sello.navigation.MONTH_PICKER_TAG
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.press
+import com.software.sello.pressBackPastTheKeyboard
 import com.software.sello.revealed
 import java.time.YearMonth
 import org.junit.After
@@ -201,9 +202,8 @@ class CategoryManagementJourneyTest {
         rule.awaitDescription("Anotar un gasto")
         rule.onNodeWithContentDescription("Anotar un gasto").performClick()
         rule.awaitTag(EDITOR_PREREQUISITE_TAG)
-        // The form opens with the keyboard up for the name; Back first puts it away.
-        Espresso.closeSoftKeyboard()
-        Espresso.pressBack()
+        // The form opens with the keyboard up for the name; Back leaves the form.
+        rule.pressBackPastTheKeyboard()
 
         // Unarchived in the same month, it takes expenses again and nothing else changed.
         rule.awaitTag(RECIBO_SUMMARY_TAG)

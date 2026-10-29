@@ -13,6 +13,10 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
+import androidx.test.espresso.Espresso
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
+import androidx.test.runner.lifecycle.Stage
 import com.software.sello.composition.SelloApplication
 import com.software.sello.composition.StartupState
 
@@ -66,6 +70,34 @@ fun SemanticsNodeInteraction.revealed(): SemanticsNodeInteraction {
  */
 fun ActivityScenario<out Activity>.hideKeyboard() {
     onActivity { it.window.insetsController?.hide(WindowInsets.Type.ime()) }
+}
+
+/**
+ * Back twice, as a person leaves a form that opened with the system keyboard up: the
+ * first Back puts the keyboard away, the second leaves the form. Each Back is the real
+ * system key. Closing the keyboard and pressing Back at once raced with the form still
+ * bringing the keyboard up (CI saw it come back about 70 ms after closing), so Back
+ * only closed it. Here each step waits for the keyboard to be really up, then really down.
+ */
+fun ComposeTestRule.pressBackPastTheKeyboard() {
+    waitUntil(PATIENCE_MILLIS) { keyboardShown() }
+    Espresso.pressBack()
+    waitUntil(PATIENCE_MILLIS) { !keyboardShown() }
+    waitForIdle()
+    Espresso.pressBack()
+}
+
+/** Whether the resumed activity's window reports the system keyboard as shown. */
+private fun keyboardShown(): Boolean {
+    var shown = false
+    InstrumentationRegistry.getInstrumentation().runOnMainSync {
+        val resumed = ActivityLifecycleMonitorRegistry.getInstance()
+            .getActivitiesInStage(Stage.RESUMED)
+            .single()
+        shown = resumed.window.decorView.rootWindowInsets
+            ?.isVisible(WindowInsets.Type.ime()) == true
+    }
+    return shown
 }
 
 /** The installed app's own view models. A test run starts on data that opened. */
