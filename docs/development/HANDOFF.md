@@ -7,7 +7,7 @@
 **Snapshot:** 2026-10-26 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
 Epics E01–E08, E10, E12, E13, E15, E17, E18 and E20–E22 are Done; E16 has work under way
 and E19 waits only for its `0.2.0` release ticket. Each ticket's
-own `handoff.md` and `evidence.md` under [docs/tickets](../tickets/README.md) carry
+file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
 This summary is refreshed when an epic closes and adds no verification claims.
 
@@ -80,8 +80,8 @@ tracks the remaining financial inputs.
 
 ## Ticket handoffs
 
-What each ticket changed is in `docs/tickets/<epic>/<ticket>/handoff.md`, next to its
-evidence and retained report. This file no longer repeats them.
+What each ticket changed is in its pull request, linked from the ticket file
+`docs/tickets/<epic>/SELLO-0NN.md`. This file does not repeat them.
 
 ## Remaining work
 

@@ -65,7 +65,7 @@ carryover (E09), legacy import (E10) and the manual assistive-technology pass (E
 
 On the Samsung SM-S731B (Android 16), fresh install of the candidate, synthetic data,
 each figure checked against the value worked out beforehand. Screenshots:
-[evidence](../tickets/E08-release/SELLO-036/artifacts).
+evidence.
 
 | Step | Expected and seen |
 | --- | --- |
@@ -85,7 +85,7 @@ each figure checked against the value worked out beforehand. Screenshots:
 
 **Blocker found and fixed during this walkthrough.** On the first candidate every backup
 failed on the phone with "Tus datos superan lo que cabe en un respaldo"
-([screenshot](../tickets/E08-release/SELLO-036/artifacts/00-respaldo-fallido-antes.png)). Android 16's
+([screenshot](../tickets/E08-release/attachments/SELLO-036-00-respaldo-fallido-antes.png)). Android 16's
 clock gives microseconds and the backup's own timestamp kept them, which the format
 refuses; the API-30 emulators' clock gives milliseconds, so no earlier test met it. The
 export now rounds its timestamp to the millisecond (red first in

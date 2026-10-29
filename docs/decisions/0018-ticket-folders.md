@@ -1,7 +1,13 @@
 # 0018 — One folder per ticket replaces the board
 
 **Owner:** project owner (user) · **Date:** 2026-10-24
-**Status:** user-authorized implementation.
+**Status:** user-authorized implementation; amended 2026-10-29.
+
+> **Amended 2026-10-29:** each ticket is now one file, `docs/tickets/<epic>/SELLO-0NN.md`.
+> Committed evidence was retired ([ADR 0021](0021-ci-is-the-only-proof.md)): the
+> `evidence.md`, `handoff.md` and `quality-report.json` files and unlinked artifacts were
+> removed (Git history keeps them); files other documents link to moved to
+> `<epic>/attachments/`. The rest of this record describes the 2026-10-24 move.
 
 ## Decision
 

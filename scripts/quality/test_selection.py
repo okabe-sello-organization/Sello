@@ -17,9 +17,9 @@ def pr(*paths):
 
 class PullRequestPlanTests(unittest.TestCase):
     def test_documents_alone_get_g0_even_when_they_advance_a_ticket(self):
-        for paths in (("docs/tickets/E09-carryover/SELLO-040/ticket.md",),
-                      ("docs/tickets/E09-carryover/SELLO-040/ticket.md", "docs/tickets/E09-carryover/README.md",
-                       "docs/tickets/E09-carryover/SELLO-040/artifacts/after.png"),
+        for paths in (("docs/tickets/E09-carryover/SELLO-040.md",),
+                      ("docs/tickets/E09-carryover/SELLO-040.md", "docs/tickets/E09-carryover/README.md",
+                       "docs/tickets/E09-carryover/attachments/SELLO-040-after.png"),
                       ("README.md", "AGENTS.md", ".github/pull_request_template.md", "prototype/README.md"),
                       ("docs/release/dependencies.md", "docs/design/v2/screens.html"), ()):
             with self.subTest(paths=paths):

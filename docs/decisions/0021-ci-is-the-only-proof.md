@@ -53,8 +53,8 @@ could never turn it green, and a red test was hard to find in the logs.
   `test_selection` fails.
 - The licence list is a fast check, so a dependency change without its reviewed
   listing fails on the pull request rather than the nightly.
-- Existing `evidence.md` and `quality-report.json` files stay as history until the
-  ticket format changes; nothing reads them.
+- Tickets became one file each (ADR 0018, amended 2026-10-29); the old `evidence.md`,
+  `handoff.md` and `quality-report.json` files were removed and stay in Git history.
 - Tests: `test_selection` (plans per path and event), `test_check` (arguments, stage
   order, result checks), `test_junit` (failure summary) and `test_workflow` (jobs,
   judging, caches, pinned actions, nightly skip).

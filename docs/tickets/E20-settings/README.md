@@ -5,6 +5,8 @@
 - **Goal:** Configuración matches the design snapshot's screen 16, with backup and restore first and easiest to reach, and a person can export all their data to CSV or JSON.
 - **Exit:** Configuración shows Tus datos with the backup card first, then Lo que se repite, Apariencia, Recibo and Inversiones; investments have a default currency and list order; Exportar saves or shares a CSV or JSON of everything.
 
+## Decisions
+
 **Owner direction (2026-10-25):** the owner approved a mockup of Configuración, based on
 [screen 16 of the design snapshot](../../design/sello-spec.html#s-config), with these changes:
 

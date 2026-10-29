@@ -5,7 +5,7 @@ pages](../README.md#metas) (`metas.html`, `goal.html`, `aportar.html`, `create.h
 `celebrate.html`), [ADR 0017](../../../decisions/0017-goals-recurrence-investments.md)
 and the [Metas brief](../../screen-briefs/goals.md). Each item was opened in the code and,
 where something is drawn, in the catalog on an API-30 emulator
-([screenshots](../../../tickets/E17-goals/SELLO-085/artifacts)).
+(screenshots).
 
 **In short:** the visual pieces exist in the design system and the catalog: stamps, goal
 card, Recibo pill, completed row, movements, stamp ticket and the completion
