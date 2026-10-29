@@ -71,9 +71,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -590,8 +588,7 @@ fun NoteComposer(
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
     // Opening on an existing note puts the cursor after it, ready to keep typing or delete.
-    var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
-    if (field.text != value) field = TextFieldValue(value, TextRange(value.length))
+    val edited = rememberEditedText(value)
     Dialog(
         onDismissRequest = onCancel,
         properties = DialogProperties(
@@ -638,11 +635,8 @@ fun NoteComposer(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         BasicTextField(
-                            value = field,
-                            onValueChange = {
-                                field = it
-                                if (it.text != value) onValueChange(it.text)
-                            },
+                            value = edited.field,
+                            onValueChange = { edited.edit(it)?.let(onValueChange) },
                             textStyle = MaterialTheme.typography.bodyLarge.copy(
                                 color = colors.ink,
                                 fontWeight = FontWeight.W600
