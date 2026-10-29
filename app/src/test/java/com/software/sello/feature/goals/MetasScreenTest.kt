@@ -70,7 +70,7 @@ import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.navigation.MetasDestination
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.navigation.ShellState
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
@@ -205,7 +205,7 @@ class MetasScreenTest {
                     clock,
                     money,
                     ids,
-                    ExpenseCorrections(
+                    Corrections(
                         HandExpenseCommands(),
                         HandIncomeCommands(),
                         commands,

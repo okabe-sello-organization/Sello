@@ -83,7 +83,7 @@ bar or a titled bar, and the band grows with it.
 
 ## What is said about a correction
 
-`ExpenseCorrections` (`presentation/corrections`) is one object for the whole process.
+`Corrections` (`presentation/corrections`) is one object for the whole process.
 It deletes and undoes expenses and income, and holds the one notice shown above the
 dock on Recibo, Resumen, category detail and income history. Forms do not show it;
 leaving the form does.

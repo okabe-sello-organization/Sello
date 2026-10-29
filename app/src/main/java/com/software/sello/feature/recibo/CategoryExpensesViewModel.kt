@@ -14,8 +14,8 @@ import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.DeleteResult
-import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth
@@ -63,7 +63,7 @@ class CategoryExpensesViewModel(
     private val snapshots: MonthlySnapshots,
     private val search: CategoryExpenseSearch,
     private val money: MoneyFormatter,
-    private val corrections: ExpenseCorrections
+    private val corrections: Corrections
 ) : ViewModel() {
     val query = saved.getStateFlow("expenseSearch", "")
     val order = saved.getStateFlow("expenseOrder", ExpenseOrder.Date.name)

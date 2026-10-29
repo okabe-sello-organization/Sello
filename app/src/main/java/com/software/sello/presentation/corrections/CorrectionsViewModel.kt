@@ -5,11 +5,11 @@ import kotlinx.coroutines.flow.StateFlow
 
 /**
  * What the frame shows about the last correction, and its one action. It holds
- * nothing itself: the notice and the time to undo live in [ExpenseCorrections], which
+ * nothing itself: the notice and the time to undo live in [Corrections], which
  * outlives every screen, so a screen drawn again shows the same offer with the same
  * time left.
  */
-class CorrectionsViewModel(private val corrections: ExpenseCorrections) : ViewModel() {
+class CorrectionsViewModel(private val corrections: Corrections) : ViewModel() {
     val notice: StateFlow<CorrectionNotice?> = corrections.notice
 
     fun undo() = corrections.undo()

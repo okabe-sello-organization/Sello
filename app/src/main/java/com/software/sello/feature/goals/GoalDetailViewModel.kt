@@ -16,7 +16,7 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.platform.ScreenReader
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +42,7 @@ class GoalDetailViewModel(
     clock: FinancialClock,
     money: MoneyFormatter,
     private val ids: RecordIdSource,
-    corrections: ExpenseCorrections,
+    corrections: Corrections,
     screenReader: ScreenReader
 ) : ViewModel() {
     private class Ui(val busy: Boolean = false, val error: GoalDetailError? = null)

@@ -20,7 +20,7 @@ import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.YearMonth
@@ -98,7 +98,7 @@ class CategoryExpensesViewModelTest {
     ): CategoryExpensesViewModel {
         snapshots.ready(monthOf("2026-10-22", listOf(categoryIn(1, "Comida", 200_000)), rows))
         val corrections =
-            ExpenseCorrections(
+            Corrections(
                 commands,
                 HandIncomeCommands(),
                 HandGoalCommands(),

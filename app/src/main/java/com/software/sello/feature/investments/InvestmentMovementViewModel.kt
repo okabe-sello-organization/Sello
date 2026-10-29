@@ -37,7 +37,7 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.Instant
 import java.time.LocalDate
@@ -67,7 +67,7 @@ class InvestmentMovementViewModel(
     private val clock: FinancialClock,
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
-    private val corrections: ExpenseCorrections
+    private val corrections: Corrections
 ) : ViewModel() {
     private data class Draft(
         val kind: InvestmentMovementKind,

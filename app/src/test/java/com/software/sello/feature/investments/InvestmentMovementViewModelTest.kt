@@ -43,7 +43,7 @@ import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
@@ -78,7 +78,7 @@ class InvestmentMovementViewModelTest {
     private var nextId = 1
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
     private val scheduler = TestCoroutineScheduler()
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     private val fondo = "00000000-0000-4000-9000-000000000001"
     private val ecopetrol = "00000000-0000-4000-9000-000000000002"
@@ -207,7 +207,7 @@ class InvestmentMovementViewModelTest {
     @Before
     fun main() {
         Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             HandGoalCommands(),

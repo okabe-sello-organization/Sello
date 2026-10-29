@@ -34,7 +34,7 @@ import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
@@ -72,12 +72,12 @@ class ScheduleEditorViewModelTest {
         override fun negative(amount: String) = "menos $amount"
         override fun positive(amount: String) = "más $amount"
     })
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     @Before
     fun main() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             HandGoalCommands(),

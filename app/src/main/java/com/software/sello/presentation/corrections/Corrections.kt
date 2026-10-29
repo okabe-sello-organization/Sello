@@ -243,14 +243,13 @@ enum class DeleteResult { Deleted, Gone, Changed, DataChanged, Failed }
  * about the last correction. One instance serves the whole process, so the offer to undo is the same
  * whatever screen is showing and however often it is redrawn, and a deletion is
  * finished and offered even if the screen that asked for it is gone. There is one
- * offer for every kind, as in storage: a later deletion takes its place. (It is named
- * for expenses because it started with them.)
+ * offer for every kind, as in storage: a later deletion takes its place.
  *
  * The time to undo belongs to the commands; this only stops showing the offer when
  * that time is over, by the same [monotonic] clock. [scope] must outlive screens and
  * run everything on the one thread these functions are called from.
  */
-class ExpenseCorrections(
+class Corrections(
     private val commands: ExpenseCommands,
     private val incomes: IncomeCommands,
     private val goals: GoalCommands,
@@ -277,6 +276,9 @@ class ExpenseCorrections(
 
     /** How an attempt to undo ended. [Retry]: nothing was restored and nothing forbids it. */
     private enum class Undone { Restored, TooLate, Blocked, Retry }
+
+    /** What became of a restore command, in the terms every kind has in common. */
+    private enum class Sent { Committed, Unknown, Expired, Conflict, Other }
 
     private val shown = MutableStateFlow<CorrectionNotice?>(null)
     val notice: StateFlow<CorrectionNotice?> = shown
@@ -409,61 +411,90 @@ class ExpenseCorrections(
         ending?.cancel()
         shown.value =
             offer(offered.kind, canUndo = true, undoing = true, goalName = offered.goalName)
-        scope.launch {
-            settle(
-                offered,
-                when (offered.kind) {
-                    Kind.Expense -> restore(offered)
-                    Kind.Income -> restoreIncome(offered)
-                    Kind.GoalMovement -> restoreGoalMovement(offered)
-                    Kind.GoalCompletion -> undoCompletion(offered)
-                    Kind.InvestmentMovement -> restoreInvestmentMovement(offered)
-                }
-            )
-        }
+        scope.launch { settle(offered, restore(offered)) }
     }
 
-    /** An outcome that is not known is asked about with the same operation, never sent as a new one. */
+    /** How a kind sends its restore, and asks about one whose outcome was not known. */
+    private class Restorer(
+        val send: suspend (OperationId, Long, OperationId) -> Sent,
+        val found: suspend (OperationId) -> Boolean
+    )
+
+    private fun restorer(kind: Kind) = when (kind) {
+        Kind.Expense -> Restorer(
+            { operation, generation, deletion ->
+                commands.restore(RestoreExpense(operation, generation, deletion))
+                    .sent(ExpenseRejection.UndoExpired, ExpenseRejection.UndoConflict)
+            },
+            { (commands.find(it) as? Outcome.Success)?.value != null }
+        )
+
+        Kind.Income -> Restorer(
+            { operation, generation, deletion ->
+                incomes.restore(RestoreIncome(operation, generation, deletion))
+                    .sent(IncomeRejection.UndoExpired, IncomeRejection.UndoConflict)
+            },
+            { (incomes.find(it) as? Outcome.Success)?.value != null }
+        )
+
+        Kind.GoalMovement -> Restorer(
+            { operation, generation, deletion ->
+                goals.submit(RestoreGoalMovement(operation, generation, deletion))
+                    .sent(GoalRejection.UndoExpired, GoalRejection.UndoConflict)
+            },
+            { (goals.find(it) as? Outcome.Success)?.value != null }
+        )
+
+        Kind.GoalCompletion -> Restorer(
+            { operation, generation, deletion ->
+                goals.submit(UndoGoalCompletion(operation, generation, deletion))
+                    .sent(GoalRejection.UndoExpired, GoalRejection.UndoConflict)
+            },
+            { (goals.find(it) as? Outcome.Success)?.value != null }
+        )
+
+        Kind.InvestmentMovement -> Restorer(
+            { operation, generation, deletion ->
+                investments.submit(RestoreInvestmentMovement(operation, generation, deletion))
+                    .sent(InvestmentRejection.UndoExpired, InvestmentRejection.UndoConflict)
+            },
+            { (investments.find(it) as? Outcome.Success)?.value != null }
+        )
+    }
+
+    /**
+     * One attempt to put back what [offered] deleted, whatever its kind. An outcome that is
+     * not known is asked about with the same operation, never sent as a new one.
+     */
     private suspend fun restore(offered: Pending): Undone {
-        val command = RestoreExpense(offered.undoOperation, offered.generation, offered.deletionId)
-        return when (val outcome = commands.restore(command)) {
-            is CommandOutcome.Committed -> Undone.Restored
+        val restorer = restorer(offered.kind)
+        return when (restorer.send(offered.undoOperation, offered.generation, offered.deletionId)) {
+            Sent.Committed -> Undone.Restored
 
-            is CommandOutcome.OutcomeUnknown -> {
-                val found = (commands.find(offered.undoOperation) as? Outcome.Success)?.value
-                if (found != null) Undone.Restored else Undone.Retry
-            }
+            Sent.Unknown ->
+                if (restorer.found(offered.undoOperation)) Undone.Restored else Undone.Retry
 
-            is CommandOutcome.Rejected -> when (outcome.reason) {
-                Specific(ExpenseRejection.UndoExpired) -> Undone.TooLate
+            Sent.Expired -> Undone.TooLate
 
-                Specific(
-                    ExpenseRejection.UndoConflict
-                ), is CommandRejection.StaleGeneration -> Undone.Blocked
+            Sent.Conflict -> Undone.Blocked
 
-                else -> Undone.Retry
-            }
+            Sent.Other -> Undone.Retry
         }
     }
 
-    private suspend fun restoreIncome(offered: Pending): Undone {
-        val command = RestoreIncome(offered.undoOperation, offered.generation, offered.deletionId)
-        return when (val outcome = incomes.restore(command)) {
-            is CommandOutcome.Committed -> Undone.Restored
+    /**
+     * How a restore command ended, the same for every kind: [expired] and [conflict] are
+     * that kind's own reasons for "too late" and "blocked"; a replaced history is blocked too.
+     */
+    private fun <F> CommandOutcome<*, F>.sent(expired: F, conflict: F): Sent = when (this) {
+        is CommandOutcome.Committed -> Sent.Committed
 
-            is CommandOutcome.OutcomeUnknown -> {
-                val found = (incomes.find(offered.undoOperation) as? Outcome.Success)?.value
-                if (found != null) Undone.Restored else Undone.Retry
-            }
+        is CommandOutcome.OutcomeUnknown -> Sent.Unknown
 
-            is CommandOutcome.Rejected -> when (outcome.reason) {
-                Specific(IncomeRejection.UndoExpired) -> Undone.TooLate
-
-                Specific(IncomeRejection.UndoConflict),
-                is CommandRejection.StaleGeneration -> Undone.Blocked
-
-                else -> Undone.Retry
-            }
+        is CommandOutcome.Rejected -> when (reason) {
+            Specific(expired) -> Sent.Expired
+            Specific(conflict), is CommandRejection.StaleGeneration -> Sent.Conflict
+            else -> Sent.Other
         }
     }
 
@@ -529,29 +560,6 @@ class ExpenseCorrections(
         deleted(Kind.GoalMovement, receipt.operationId, receipt.generation, until)
     }
 
-    private suspend fun restoreGoalMovement(offered: Pending): Undone {
-        val command =
-            RestoreGoalMovement(offered.undoOperation, offered.generation, offered.deletionId)
-        return when (val outcome = goals.submit(command)) {
-            is CommandOutcome.Committed -> Undone.Restored
-
-            is CommandOutcome.OutcomeUnknown -> {
-                val found = (goals.find(offered.undoOperation) as? Outcome.Success)?.value
-                if (found != null) Undone.Restored else Undone.Retry
-            }
-
-            is CommandOutcome.Rejected -> when (outcome.reason) {
-                Specific(GoalRejection.UndoExpired) -> Undone.TooLate
-
-                Specific(
-                    GoalRejection.UndoConflict
-                ), is CommandRejection.StaleGeneration -> Undone.Blocked
-
-                else -> Undone.Retry
-            }
-        }
-    }
-
     /**
      * Deletes an investment's movement and offers to undo it, as for a goal's movement. It
      * runs to its end even if the caller is cancelled meanwhile.
@@ -571,28 +579,6 @@ class ExpenseCorrections(
         val until = investments.movementUndoOffer()
             ?.takeIf { it.operationId == receipt.operationId }?.until
         deleted(Kind.InvestmentMovement, receipt.operationId, receipt.generation, until)
-    }
-
-    private suspend fun restoreInvestmentMovement(offered: Pending): Undone {
-        val command =
-            RestoreInvestmentMovement(offered.undoOperation, offered.generation, offered.deletionId)
-        return when (val outcome = investments.submit(command)) {
-            is CommandOutcome.Committed -> Undone.Restored
-
-            is CommandOutcome.OutcomeUnknown -> {
-                val found = (investments.find(offered.undoOperation) as? Outcome.Success)?.value
-                if (found != null) Undone.Restored else Undone.Retry
-            }
-
-            is CommandOutcome.Rejected -> when (outcome.reason) {
-                Specific(InvestmentRejection.UndoExpired) -> Undone.TooLate
-
-                Specific(InvestmentRejection.UndoConflict), is CommandRejection.StaleGeneration ->
-                    Undone.Blocked
-
-                else -> Undone.Retry
-            }
-        }
     }
 
     /** A screen reports that a correction of an investment's movement was saved. */
@@ -620,29 +606,6 @@ class ExpenseCorrections(
         val until = goals.completionUndoOffer()
             ?.takeIf { it.operationId == receipt.operationId }?.until
         deleted(Kind.GoalCompletion, receipt.operationId, receipt.generation, until, goalName)
-    }
-
-    private suspend fun undoCompletion(offered: Pending): Undone {
-        val command =
-            UndoGoalCompletion(offered.undoOperation, offered.generation, offered.deletionId)
-        return when (val outcome = goals.submit(command)) {
-            is CommandOutcome.Committed -> Undone.Restored
-
-            is CommandOutcome.OutcomeUnknown -> {
-                val found = (goals.find(offered.undoOperation) as? Outcome.Success)?.value
-                if (found != null) Undone.Restored else Undone.Retry
-            }
-
-            is CommandOutcome.Rejected -> when (outcome.reason) {
-                Specific(GoalRejection.UndoExpired) -> Undone.TooLate
-
-                Specific(
-                    GoalRejection.UndoConflict
-                ), is CommandRejection.StaleGeneration -> Undone.Blocked
-
-                else -> Undone.Retry
-            }
-        }
     }
 
     /** A screen reports that a correction of a goal's movement was saved. */

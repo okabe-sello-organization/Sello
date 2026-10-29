@@ -27,7 +27,7 @@ import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.YearMonth
 import kotlinx.coroutines.Job
@@ -55,7 +55,7 @@ class LimitSheetViewModel(
     private val session: MonthSession,
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
-    private val notices: ExpenseCorrections
+    private val notices: Corrections
 ) : ViewModel() {
     private val month: YearMonth =
         saved.get<String>(KEY_MONTH)?.let { runCatching { YearMonth.parse(it) }.getOrNull() }

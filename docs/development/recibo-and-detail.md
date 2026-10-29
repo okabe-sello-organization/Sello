@@ -145,7 +145,7 @@ filter starts a new page; a failure never reuses rows from another filter, categ
 month or generation. Pages whose revision no longer matches the observed budget
 are withheld until refreshed. The list is lazy, and more-page failures retain the
 already listed rows with retry. Deletion carries the listed generation and record
-version through the same `ExpenseCorrections` recovery/undo path as the preview.
+version through the same `Corrections` recovery/undo path as the preview.
 The matching record count is read in the same transaction as each search page;
 the footer and accessibility state say how many are loaded. Stable lazy-list keys
 retain the reading position while a new save refreshes the loaded rows.
@@ -177,7 +177,7 @@ Nothing depends on a gesture alone. A line under the count always says how: "Toc
 gasto para corregirlo. Para borrarlo, deslízalo o mantenlo presionado."
 
 - **A deletion is of the row as listed.** The view model keeps each listed expense's
-  version and the generation it was listed from, and `ExpenseCorrections.delete`
+  version and the generation it was listed from, and `Corrections.delete`
   sends exactly those. A row that is out of date is refused and said so above the
   rows ("Ese gasto cambió mientras tanto. No se borró; revísalo."); it is not deleted
   as something it no longer is.

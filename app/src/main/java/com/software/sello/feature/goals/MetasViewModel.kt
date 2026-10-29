@@ -10,7 +10,7 @@ import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.platform.ScreenReader
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +33,7 @@ class MetasViewModel(
     clock: FinancialClock,
     money: MoneyFormatter,
     ids: RecordIdSource,
-    corrections: ExpenseCorrections,
+    corrections: Corrections,
     screenReader: ScreenReader
 ) : ViewModel() {
     private val render = GoalsRenderModel(money)

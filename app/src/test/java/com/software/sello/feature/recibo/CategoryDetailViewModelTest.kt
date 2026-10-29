@@ -26,7 +26,7 @@ import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.LocalDate
@@ -76,7 +76,7 @@ class CategoryDetailViewModelTest {
     private fun plain(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     private fun TestScope.started(): CategoryDetailViewModel {
-        val corrections = ExpenseCorrections(
+        val corrections = Corrections(
             commands,
             HandIncomeCommands(),
             HandGoalCommands(),

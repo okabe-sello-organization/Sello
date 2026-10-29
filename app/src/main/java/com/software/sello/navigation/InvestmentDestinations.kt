@@ -1,10 +1,12 @@
 package com.software.sello.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -12,6 +14,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import com.software.sello.R
 import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonTone
@@ -27,9 +34,14 @@ import com.software.sello.feature.investments.InvestmentDetailAction
 import com.software.sello.feature.investments.InvestmentDetailScreen
 import com.software.sello.feature.investments.InvestmentDetailState
 import com.software.sello.feature.investments.InvestmentDetailViewModel
+import com.software.sello.feature.investments.InvestmentEditorRoot
+import com.software.sello.feature.investments.InvestmentMovementRoot
 import com.software.sello.feature.investments.UsdRateAction
+import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.investments.UsdRateScreen
 import com.software.sello.feature.investments.UsdRateViewModel
+import com.software.sello.feature.reset.back
+import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 
@@ -203,4 +215,108 @@ internal fun UsdRateDestination(
         )
     }
     BackHandler(enabled = !state.monthPickerOpen) { onBack() }
+}
+
+/** Inversiones, one investment, its editor, its movements and the dollar rate. */
+internal fun NavGraphBuilder.investmentDestinations(
+    navigation: NavHostController,
+    viewModels: ViewModelProvider.Factory,
+    shellState: State<ShellState>,
+    onShell: (ShellAction) -> Unit,
+    tabs: SelloNavigation,
+    noticeState: State<CorrectionNotice?>,
+    onUndo: () -> Unit
+) {
+    composable<InversionesRoute> {
+        val state by shellState
+        val notice by noticeState
+        InversionesDestination(
+            state = state,
+            viewModels = viewModels,
+            onShell = onShell,
+            tabs = tabs,
+            onOpen = { id ->
+                navigation.navigate(InvestmentRoute(id)) { launchSingleTop = true }
+            },
+            onOpenRate = { navigation.navigate(UsdRateRoute) { launchSingleTop = true } },
+            onAdd = { navigation.navigate(InvestmentEditorRoute()) { launchSingleTop = true } },
+            onMove = {
+                navigation.navigate(InvestmentMovementRoute()) { launchSingleTop = true }
+            },
+            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
+        )
+    }
+    composable<InvestmentRoute> { entry ->
+        val state by shellState
+        val notice by noticeState
+        val id = entry.toRoute<InvestmentRoute>().investmentId
+        InvestmentDestination(
+            state = state,
+            viewModels = viewModels,
+            onShell = onShell,
+            onBack = {
+                val here = navigation.currentBackStackEntry?.destination
+                    ?.hasRoute<InvestmentRoute>()
+                if (here == true) navigation.popBackStack()
+            },
+            onEdit = {
+                navigation.navigate(InvestmentEditorRoute(id)) { launchSingleTop = true }
+            },
+            onMove = { kind ->
+                navigation.navigate(InvestmentMovementRoute(id, kind)) {
+                    launchSingleTop = true
+                }
+            },
+            onEditMovement = { movement ->
+                navigation.navigate(InvestmentMovementRoute(id, movementId = movement)) {
+                    launchSingleTop = true
+                }
+            },
+            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
+        )
+    }
+    composable<InvestmentEditorRoute> {
+        InvestmentEditorRoot(
+            viewModels,
+            onCreated = { id ->
+                navigation.navigate(InvestmentRoute(id)) {
+                    popUpTo<InvestmentEditorRoute> { inclusive = true }
+                    launchSingleTop = true
+                }
+            },
+            onDeleted = {
+                // The deleted investment has no page to go back to: Inversiones shows the rest.
+                navigation.popBackStack<InversionesRoute>(inclusive = false)
+            },
+            onClosed = {
+                val onForm = navigation.currentBackStackEntry?.destination
+                    ?.hasRoute<InvestmentEditorRoute>()
+                if (onForm == true) navigation.popBackStack()
+            }
+        )
+    }
+    composable<InvestmentMovementRoute> {
+        InvestmentMovementRoot(viewModels) {
+            val onForm = navigation.currentBackStackEntry?.destination
+                ?.hasRoute<InvestmentMovementRoute>()
+            if (onForm == true) navigation.popBackStack()
+        }
+    }
+    composable<UsdRateRoute> {
+        val state by shellState
+        UsdRateDestination(
+            state = state,
+            viewModels = viewModels,
+            onShell = onShell,
+            onBack = { navigation.popBackStack() },
+            onChange = { navigation.navigate(UsdRateEntryRoute) { launchSingleTop = true } }
+        )
+    }
+    composable<UsdRateEntryRoute> {
+        UsdRateEntryRoot(viewModels) {
+            val onForm =
+                navigation.currentBackStackEntry?.destination?.hasRoute<UsdRateEntryRoute>()
+            if (onForm == true) navigation.popBackStack()
+        }
+    }
 }
