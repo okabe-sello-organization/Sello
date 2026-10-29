@@ -1,7 +1,7 @@
 # SELLO-037 — Approve signed carryover policy and independent examples
 
 - **Revision:** after review rounds 1 and 2 the gate tested commit `a63958a` on `sello-037-carryover-policy`,
-  four commits on `main` at `cbcf588` (#193); `main` had not moved, so no merge was needed. The only
+  five commits on `main` at `cbcf588` (#193); `main` had not moved, so no merge was needed. The only
   uncommitted file was the retained report. The status, this file and the handoff are added after.
 - **Requirement mapping:** scope, default and opt-in, start month, starting carry, missing and
   skipped history and the continuous formula → [ADR 0020](../../../decisions/0020-signed-carryover-policy.md)
