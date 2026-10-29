@@ -3,6 +3,7 @@ package com.software.sello.feature.investments
 import androidx.compose.runtime.Immutable
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.InvestmentMovementKind
+import com.software.sello.presentation.movement.MovementNoteProblem
 import java.time.LocalDate
 
 /** An investment offered to anotar a movement in, in the overview's order. */
@@ -80,9 +81,6 @@ enum class InvestmentMovementError {
     NotDeleted
 }
 
-/** Why the text being written for the note cannot be kept. */
-enum class InvestmentNoteProblem { TooLong, NotAllowed }
-
 /**
  * Anotar movimiento (v2 Inversiones): an Aporte, Valor de hoy, Retiro or Dividendo o
  * renta, or the correction of one already recorded. [amount] is present only for a valid
@@ -115,7 +113,7 @@ data class InvestmentMovementState(
     val note: String = "",
     val composerOpen: Boolean = false,
     val composerDraft: String = "",
-    val composerProblem: InvestmentNoteProblem? = null,
+    val composerProblem: MovementNoteProblem? = null,
     val composerLength: Int = 0,
     /** Editing: something differs from what is stored. */
     val changed: Boolean = false,
