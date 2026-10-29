@@ -3,17 +3,15 @@ package com.software.sello.feature.investments
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
-import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
-import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
@@ -21,6 +19,9 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SetUsdRate
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -29,6 +30,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Cambiar la tasa (rule 11): pesos per dollar typed with the comma pad and a date. The
@@ -52,10 +54,21 @@ class UsdRateEntryViewModel(
         val atLimit: Boolean = false
     )
 
+    /** The rate as typed, digit by digit, and the date chosen, kept under one key. */
+    @Serializable
+    private data class Draft(
+        val whole: String? = null,
+        val comma: Boolean = false,
+        val cents: String = "",
+        val date: String? = null
+    )
+
     private val render = InvestmentsRenderModel(money)
+    private val drafts = SavedDraft(saved, DRAFT, Draft.serializer())
+    private val submission = Submission(saved, OPERATION, ids)
     private val draft = MutableStateFlow(restored())
     private val date = MutableStateFlow(
-        saved.get<String>(DATE)?.let(LocalDate::parse) ?: clock.today.value.date
+        drafts.read()?.date?.let(LocalDate::parse) ?: clock.today.value.date
     )
     private val progress = MutableStateFlow(Progress())
     private val board = reads.observeBoard()
@@ -71,16 +84,23 @@ class UsdRateEntryViewModel(
         )
 
     init {
-        if (saved.get<String>(OPERATION) != null) viewModelScope.launch { recover() }
+        if (submission.pending) viewModelScope.launch { recover() }
     }
 
     private fun restored(): DecimalDraft {
-        val whole = saved.get<String>(WHOLE) ?: return DecimalDraft(MAX_WHOLE)
-        return DecimalDraft(
-            MAX_WHOLE,
-            whole,
-            saved.get<Boolean>(COMMA) ?: false,
-            saved.get<String>(CENTS).orEmpty()
+        val typed = drafts.read()
+        val whole = typed?.whole ?: return DecimalDraft(MAX_WHOLE)
+        return DecimalDraft(MAX_WHOLE, whole, typed.comma, typed.cents)
+    }
+
+    private fun store(rate: DecimalDraft, date: LocalDate?) {
+        drafts.write(
+            Draft(
+                rate.whole,
+                rate.comma,
+                rate.cents,
+                date?.toString() ?: drafts.read()?.date
+            )
         )
     }
 
@@ -104,7 +124,7 @@ class UsdRateEntryViewModel(
 
             is UsdRateEntryAction.DatePicked -> {
                 if (editable && InvestmentPolicy.acceptsDate(action.date, now.today)) {
-                    saved[DATE] = action.date.toString()
+                    store(draft.value, action.date)
                     date.value = action.date
                 }
                 progress.update { it.copy(datePickerOpen = false) }
@@ -113,7 +133,7 @@ class UsdRateEntryViewModel(
             UsdRateEntryAction.Submit -> if (now.canSubmit) submit()
 
             UsdRateEntryAction.Retry -> if (!now.busy) {
-                if (saved.get<String>(OPERATION) != null) {
+                if (submission.pending) {
                     viewModelScope.launch { recover() }
                 } else {
                     progress.update { it.copy(error = null) }
@@ -121,7 +141,7 @@ class UsdRateEntryViewModel(
             }
 
             // Never closed while a save may be on its way: its outcome comes first.
-            UsdRateEntryAction.Back -> if (!now.busy && saved.get<String>(OPERATION) == null) {
+            UsdRateEntryAction.Back -> if (!now.busy && !submission.pending) {
                 progress.update { it.copy(closed = true) }
             }
         }
@@ -136,9 +156,7 @@ class UsdRateEntryViewModel(
 
     private fun change(next: DecimalDraft) {
         if (next != draft.value) progress.update { it.copy(atLimit = false, error = null) }
-        saved[WHOLE] = next.whole
-        saved[COMMA] = next.comma
-        saved[CENTS] = next.cents
+        store(next, null)
         draft.value = next
     }
 
@@ -191,24 +209,34 @@ class UsdRateEntryViewModel(
         val read = readable(board.value) ?: return
         val hundredths = draft.value.hundredths() ?: return
         val rate = (UsdRate.ofHundredths(hundredths) as? Outcome.Success)?.value ?: return
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[OPERATION] = operation.value
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
-            settle(commands.submit(SetUsdRate(operation, read.generation, rate, date.value)))
+            settle(
+                submission.send(commands::find) { operation ->
+                    commands.submit(SetUsdRate(operation, read.generation, rate, date.value))
+                }
+            )
         }
     }
 
-    private suspend fun settle(outcome: InvestmentCommandOutcome) {
-        when (outcome) {
-            is CommandOutcome.Committed -> committed()
+    private fun settle(settled: Settled<CommittedInvestment, InvestmentRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
-            is CommandOutcome.OutcomeUnknown -> recover()
+            is Settled.Committed ->
+                progress.update { it.copy(busy = false, error = null, closed = true) }
 
-            is CommandOutcome.Rejected -> {
-                // Certain: nothing was written, so this attempt is over.
-                saved[OPERATION] = null
-                val error = when (val reason = outcome.reason) {
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = RateEntryError.Unknown)
+            }
+
+            Settled.NotCommitted -> progress.update {
+                it.copy(busy = false, error = RateEntryError.NotSaved)
+            }
+
+            is Settled.Rejected -> {
+                val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> RateEntryError.DataChanged
 
                     CommandRejection.OperationConflict,
@@ -227,37 +255,16 @@ class UsdRateEntryViewModel(
 
     /** Asks how the saved operation ended, with its own identifier. Only a receipt counts. */
     private suspend fun recover() {
-        val operation =
-            (saved.get<String>(OPERATION)?.let(OperationId::of) as? Outcome.Success)?.value
-                ?: return
+        if (!submission.pending) return
         progress.update { it.copy(busy = true, error = null) }
-        when (val found = commands.find(operation)) {
-            is Outcome.Failure -> progress.update {
-                it.copy(busy = false, error = RateEntryError.Unknown)
-            }
-
-            is Outcome.Success -> if (found.value != null) {
-                committed()
-            } else {
-                saved[OPERATION] = null
-                progress.update { it.copy(busy = false, error = RateEntryError.NotSaved) }
-            }
-        }
-    }
-
-    private fun committed() {
-        saved[OPERATION] = null
-        progress.update { it.copy(busy = false, error = null, closed = true) }
+        settle(submission.recover(commands::find))
     }
 
     private companion object {
         /** 100.000,00 is six whole digits (rule 11). */
         const val MAX_WHOLE = 6
 
-        const val WHOLE = "usd.rate.whole"
-        const val COMMA = "usd.rate.comma"
-        const val CENTS = "usd.rate.cents"
-        const val DATE = "usd.rate.date"
+        const val DRAFT = "usd.rate.draft"
         const val OPERATION = "usd.rate.operation"
     }
 }
