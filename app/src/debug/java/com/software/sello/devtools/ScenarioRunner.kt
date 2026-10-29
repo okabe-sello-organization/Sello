@@ -512,9 +512,9 @@ class ScenarioRunner(
         outcome: ScheduleCommandOutcome,
         made: (ScheduleId) -> Unit = {}
     ): String? = when (outcome) {
-        is ScheduleCommandOutcome.Committed -> null.also { made(outcome.schedule.scheduleId) }
-        is ScheduleCommandOutcome.Rejected -> rejected(outcome.reason)
-        is ScheduleCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.Committed -> null.also { made(outcome.value.scheduleId) }
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private suspend fun scheduleCommand(

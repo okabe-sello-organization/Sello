@@ -569,11 +569,11 @@ class IncomeFormViewModel(
                     )
                 )
             ) {
-                is ScheduleCommandOutcome.Committed -> followingSaved()
+                is CommandOutcome.Committed -> followingSaved()
 
-                is ScheduleCommandOutcome.OutcomeUnknown -> recover()
+                is CommandOutcome.OutcomeUnknown -> recover()
 
-                is ScheduleCommandOutcome.Rejected -> {
+                is CommandOutcome.Rejected -> {
                     saved[OPERATION] = null
                     saved[OPERATION_SCHEDULE] = null
                     saved[FOLLOWING] = null
@@ -596,18 +596,25 @@ class IncomeFormViewModel(
 
     private suspend fun settleSchedule(outcome: ScheduleCommandOutcome) {
         when (outcome) {
-            is ScheduleCommandOutcome.Committed -> scheduleSaved(outcome.schedule.scheduleId)
+            is CommandOutcome.Committed -> scheduleSaved(outcome.value.scheduleId)
 
-            is ScheduleCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is ScheduleCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 saved[OPERATION] = null
                 saved[OPERATION_SCHEDULE] = null
-                val error = when (outcome.reason) {
-                    is ScheduleRejection.StartTooEarly -> IncomeFormError.StartTooEarly
-                    is ScheduleRejection.EndTooEarly -> IncomeFormError.EndTooEarly
-                    is ScheduleRejection.StaleGeneration -> IncomeFormError.DataChanged
-                    else -> IncomeFormError.NotSaved
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.VersionConflict,
+                    is CommandRejection.StorageFailed -> IncomeFormError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        is ScheduleRejection.StartTooEarly -> IncomeFormError.StartTooEarly
+                        is ScheduleRejection.EndTooEarly -> IncomeFormError.EndTooEarly
+                        else -> IncomeFormError.NotSaved
+                    }
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }

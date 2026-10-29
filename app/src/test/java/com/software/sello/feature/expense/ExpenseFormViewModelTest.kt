@@ -10,6 +10,8 @@ import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.ExpenseCommandOutcome
@@ -948,13 +950,13 @@ class ExpenseFormViewModelTest {
         form.repeat(RepeatAction.Open)
         form.repeat(RepeatAction.Done)
         schedules.answer = {
-            ScheduleCommandOutcome.Rejected(
-                ScheduleRejection.StartTooEarly(LocalDate.parse("2026-10-23"))
+            CommandOutcome.Rejected(
+                Specific(ScheduleRejection.StartTooEarly(LocalDate.parse("2026-10-23")))
             )
         }
         form.submit()
         val early = form.now
-        schedules.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.CategoryArchived) }
+        schedules.answer = { CommandOutcome.Rejected(Specific(ScheduleRejection.CategoryArchived)) }
         form.submit()
 
         assertEquals(EntryError.StartTooEarly, early.error)
@@ -973,7 +975,7 @@ class ExpenseFormViewModelTest {
         form.type("950000")
         form.repeat(RepeatAction.Open)
         form.repeat(RepeatAction.Done)
-        schedules.answer = { ScheduleCommandOutcome.OutcomeUnknown(it.operationId) }
+        schedules.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         schedules.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         form.submit()
         val unknown = form.now

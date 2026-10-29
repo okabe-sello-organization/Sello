@@ -16,14 +16,16 @@ import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.ResumeSchedule
 import com.software.sello.domain.port.ScheduleCommand
 import com.software.sello.domain.port.ScheduleCommandOutcome
-import com.software.sello.domain.port.ScheduleCommandOutcome.Committed
-import com.software.sello.domain.port.ScheduleCommandOutcome.Rejected
 import com.software.sello.domain.port.ScheduleRejection
 import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
@@ -130,7 +132,7 @@ class ScheduleCommandContractTest {
 
         val outcome = submit(create("2026-10-22"))
 
-        assertEquals(scheduleId(), (outcome as Committed).schedule.scheduleId)
+        assertEquals(scheduleId(), (outcome as Committed).value.scheduleId)
         assertEquals(
             listOf(
                 "$rent|payment|${hogar.value}|950000|Arriendo|monthly|5|2026-10-22|null|0|null|1"
@@ -143,7 +145,7 @@ class ScheduleCommandContractTest {
             receipts().last()
         )
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM expense"))
-        assertEquals(OperationKind.CreateSchedule, outcome.schedule.receipt.kind)
+        assertEquals(OperationKind.CreateSchedule, outcome.value.receipt.kind)
     }
 
     @Test
@@ -188,7 +190,7 @@ class ScheduleCommandContractTest {
         val different = submit(create("2026-10-23", operation = operation))
 
         assertEquals(true, (again as Committed).replayed)
-        assertEquals(Rejected(ScheduleRejection.OperationConflict), different)
+        assertEquals(Rejected(CommandRejection.OperationConflict), different)
         assertEquals(before, schedules() to ledger.revision())
     }
 
@@ -199,19 +201,21 @@ class ScheduleCommandContractTest {
             val before = ledger.revision()
 
             assertEquals(
-                Rejected(ScheduleRejection.StartTooEarly(d("2026-10-09"))),
+                Rejected(Specific(ScheduleRejection.StartTooEarly(d("2026-10-09")))),
                 submit(create("2026-10-08"))
             )
             assertEquals(
-                Rejected(ScheduleRejection.InvalidRecurrence(RecurrenceError.EndBeforeStart)),
+                Rejected(
+                    Specific(ScheduleRejection.InvalidRecurrence(RecurrenceError.EndBeforeStart))
+                ),
                 submit(create("2026-10-22", end = "2026-10-21"))
             )
             assertEquals(
-                Rejected(ScheduleRejection.StaleGeneration(1)),
+                Rejected(CommandRejection.StaleGeneration(1)),
                 submit(create("2026-10-22", generation = 2))
             )
             assertEquals(
-                Rejected(ScheduleRejection.CategoryMissing),
+                Rejected(Specific(ScheduleRejection.CategoryMissing)),
                 submit(
                     create(
                         "2026-10-22",
@@ -221,7 +225,7 @@ class ScheduleCommandContractTest {
             )
             ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, hogar, 1))
             assertEquals(
-                Rejected(ScheduleRejection.CategoryArchived),
+                Rejected(Specific(ScheduleRejection.CategoryArchived)),
                 submit(create("2026-10-22"))
             )
             assertEquals(emptyList<String>(), schedules())
@@ -257,7 +261,7 @@ class ScheduleCommandContractTest {
         ledger.goTo("2026-10-10")
 
         assertEquals(
-            Rejected(ScheduleRejection.StartTooEarly(d("2026-10-11"))),
+            Rejected(Specific(ScheduleRejection.StartTooEarly(d("2026-10-11")))),
             submit(change(1, "2026-10-10", monthly(25)))
         )
         committed(submit(change(1, "2026-10-11", monthly(25))))
@@ -276,12 +280,12 @@ class ScheduleCommandContractTest {
 
         // 5 October is due and not recorded yet.
         assertEquals(
-            Rejected(ScheduleRejection.CatchUpPending),
+            Rejected(Specific(ScheduleRejection.CatchUpPending)),
             submit(change(1, "2026-10-01", entry = payment(1_000_000)))
         )
         handledThrough("2026-10-05")
         assertEquals(
-            Rejected(ScheduleRejection.KindChanged),
+            Rejected(Specific(ScheduleRejection.KindChanged)),
             submit(
                 change(
                     1,
@@ -290,14 +294,17 @@ class ScheduleCommandContractTest {
                 )
             )
         )
-        assertEquals(Rejected(ScheduleRejection.Unchanged), submit(change(1, "2026-10-01")))
         assertEquals(
-            Rejected(ScheduleRejection.EndTooEarly(d("2026-10-10"))),
+            Rejected(Specific(ScheduleRejection.Unchanged)),
+            submit(change(1, "2026-10-01"))
+        )
+        assertEquals(
+            Rejected(Specific(ScheduleRejection.EndTooEarly(d("2026-10-10")))),
             submit(change(1, "2026-10-01", end = "2026-10-09"))
         )
         committed(submit(change(1, "2026-10-01", end = "2026-12-05")))
         assertEquals(
-            Rejected(ScheduleRejection.VersionConflict(2)),
+            Rejected(CommandRejection.VersionConflict(2)),
             submit(change(1, "2026-10-01", entry = payment(1)))
         )
     }
@@ -312,7 +319,7 @@ class ScheduleCommandContractTest {
 
         committed(submit(PauseSchedule(ledger.operation(), 1, scheduleId(), 1)))
         assertEquals(
-            Rejected(ScheduleRejection.AlreadyPaused),
+            Rejected(Specific(ScheduleRejection.AlreadyPaused)),
             submit(PauseSchedule(ledger.operation(), 1, scheduleId(), 2))
         )
         ledger.goTo("2026-12-05")
@@ -320,7 +327,7 @@ class ScheduleCommandContractTest {
 
         assertEquals(listOf("$rent|2026-10-03|2026-12-05"), pauses())
         assertEquals(
-            Rejected(ScheduleRejection.NotPaused),
+            Rejected(Specific(ScheduleRejection.NotPaused)),
             submit(ResumeSchedule(ledger.operation(), 1, scheduleId(), 3))
         )
         assertEquals("3", ledger.rows("schedule", "version").single())
@@ -339,7 +346,7 @@ class ScheduleCommandContractTest {
         assertEquals(emptyList<String>(), pauses())
         ledger.goTo("2026-11-06")
         assertEquals(
-            Rejected(ScheduleRejection.CatchUpPending),
+            Rejected(Specific(ScheduleRejection.CatchUpPending)),
             submit(PauseSchedule(ledger.operation(), 1, scheduleId(), 3))
         )
     }
@@ -369,7 +376,7 @@ class ScheduleCommandContractTest {
         )
         ledger.goTo("2026-10-10")
         assertEquals(
-            Rejected(ScheduleRejection.CatchUpPending),
+            Rejected(Specific(ScheduleRejection.CatchUpPending)),
             submit(DeleteSchedule(ledger.operation(), 1, scheduleId(), 1))
         )
         handledThrough("2026-10-05")
@@ -422,7 +429,7 @@ class ScheduleCommandContractTest {
 
         val resumed = submit(ResumeSchedule(ledger.operation(), 1, scheduleId(), 2))
 
-        assertEquals(Rejected(ScheduleRejection.CategoryArchived), resumed)
+        assertEquals(Rejected(Specific(ScheduleRejection.CategoryArchived)), resumed)
         assertEquals(listOf("$rent|2026-10-12|null"), pauses())
     }
 
@@ -472,7 +479,7 @@ class ScheduleCommandContractTest {
 
         val found = ledger.schedules.find(operation).valueOrFail()
 
-        assertEquals((outcome as Committed).schedule, found)
+        assertEquals((outcome as Committed).value, found)
         assertEquals(null, ledger.schedules.find(ledger.operation()).valueOrFail())
     }
 }

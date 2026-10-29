@@ -18,6 +18,8 @@ import com.software.sello.domain.policy.AmountDraftError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
@@ -430,11 +432,11 @@ class ScheduleEditorViewModel(
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
             when (val outcome = schedules.submit(command)) {
-                is ScheduleCommandOutcome.Committed -> done(change)
+                is CommandOutcome.Committed -> done(change)
 
-                is ScheduleCommandOutcome.OutcomeUnknown -> recover()
+                is CommandOutcome.OutcomeUnknown -> recover()
 
-                is ScheduleCommandOutcome.Rejected -> {
+                is CommandOutcome.Rejected -> {
                     saved[OPERATION] = null
                     saved[OPERATION_KIND] = null
                     progress.update { it.copy(busy = false, error = error(outcome.reason)) }
@@ -443,12 +445,19 @@ class ScheduleEditorViewModel(
         }
     }
 
+    private fun error(reason: CommandRejection<ScheduleRejection>) = when (reason) {
+        is CommandRejection.StaleGeneration -> ScheduleEditorError.DataChanged
+
+        is CommandRejection.VersionConflict -> ScheduleEditorError.ScheduleChanged
+
+        CommandRejection.OperationConflict,
+        is CommandRejection.StorageFailed -> ScheduleEditorError.NotSaved
+
+        is CommandRejection.Specific -> error(reason.reason)
+    }
+
     private fun error(reason: ScheduleRejection) = when (reason) {
-        is ScheduleRejection.StaleGeneration -> ScheduleEditorError.DataChanged
-
         ScheduleRejection.ScheduleMissing -> ScheduleEditorError.ScheduleGone
-
-        is ScheduleRejection.VersionConflict -> ScheduleEditorError.ScheduleChanged
 
         ScheduleRejection.CatchUpPending -> ScheduleEditorError.CatchUpPending
 

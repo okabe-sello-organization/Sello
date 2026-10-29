@@ -109,7 +109,7 @@ class FencedScheduleCommands(
 ) : ScheduleCommands by commands {
     override suspend fun submit(command: ScheduleCommand): ScheduleCommandOutcome = fence.write {
         commands.submit(command)
-    }.also { if (it is ScheduleCommandOutcome.Committed && !it.replayed) saved() }
+    }.also { if (it is CommandOutcome.Committed && !it.replayed) saved() }
 }
 
 /** Catch-up on opening, through the fence; a batch that recorded anything is a change. */

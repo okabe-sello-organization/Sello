@@ -750,7 +750,7 @@ class IncomeFormViewModelTest {
         form.type("1000000")
         form.repeat(RepeatAction.Open)
         form.repeat(RepeatAction.Done)
-        schedules.answer = { ScheduleCommandOutcome.OutcomeUnknown(it.operationId) }
+        schedules.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         schedules.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         form.onAction(IncomeFormAction.Submit)
         val unknown = form.now.error

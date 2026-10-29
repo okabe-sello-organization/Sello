@@ -20,6 +20,11 @@ import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.SchedulePolicy
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedSchedule
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteSchedule
@@ -29,9 +34,6 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ResumeSchedule
 import com.software.sello.domain.port.ScheduleCommand
 import com.software.sello.domain.port.ScheduleCommandOutcome
-import com.software.sello.domain.port.ScheduleCommandOutcome.Committed
-import com.software.sello.domain.port.ScheduleCommandOutcome.OutcomeUnknown
-import com.software.sello.domain.port.ScheduleCommandOutcome.Rejected
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleEdit
 import com.software.sello.domain.port.ScheduleRejection
@@ -58,7 +60,7 @@ class RoomScheduleCommands internal constructor(
             CommandRun.Unknown -> OutcomeUnknown(command.operationId)
         }
 
-    private fun failed(failure: StorageFailure) = Rejected(ScheduleRejection.StorageFailed(failure))
+    private fun failed(failure: StorageFailure) = Rejected(CommandRejection.StorageFailed(failure))
 
     private fun StoredReceipt.committed() =
         CommittedSchedule(receipt, checkNotNull(scheduleId) { "Not a schedule receipt" })
@@ -73,12 +75,12 @@ class RoomScheduleCommands internal constructor(
             is CommandStart.Proceed -> start.profile
 
             is CommandStart.Stale -> return Rejected(
-                ScheduleRejection.StaleGeneration(start.current)
+                CommandRejection.StaleGeneration(start.current)
             )
 
             is CommandStart.Replay -> return Committed(start.original.committed(), replayed = true)
 
-            CommandStart.Conflict -> return Rejected(ScheduleRejection.OperationConflict)
+            CommandStart.Conflict -> return Rejected(CommandRejection.OperationConflict)
 
             is CommandStart.Damaged -> return failed(start.failure)
         }
@@ -119,7 +121,7 @@ class RoomScheduleCommands internal constructor(
         data class Refused(val outcome: ScheduleCommandOutcome) : Written
     }
 
-    private fun refused(reason: ScheduleRejection) = Written.Refused(Rejected(reason))
+    private fun refused(reason: ScheduleRejection) = Written.Refused(Rejected(Specific(reason)))
 
     /** A schedule as stored, read inside the transaction. */
     private class Loaded(val row: ScheduleEntity, val stored: StoredSchedule) {
@@ -143,9 +145,9 @@ class RoomScheduleCommands internal constructor(
 
     private suspend fun load(command: ScheduleEdit): Load {
         val row = database.scheduleDao().byId(command.scheduleId.value)
-            ?: return Load.Refused(Rejected(ScheduleRejection.ScheduleMissing))
+            ?: return Load.Refused(Rejected(Specific(ScheduleRejection.ScheduleMissing)))
         if (row.version != command.expectedVersion) {
-            return Load.Refused(Rejected(ScheduleRejection.VersionConflict(row.version)))
+            return Load.Refused(Rejected(CommandRejection.VersionConflict(row.version)))
         }
         return when (val stored = row.toStored(database.scheduleDao().pauses(row.id))) {
             is Outcome.Success -> Load.Found(Loaded(row, stored.value))

@@ -72,7 +72,7 @@ class ScheduleCatchUpContractTest {
         val created = ledger.schedules.submit(
             CreateSchedule(ledger.operation(), 1, entry, rule, d(start), null)
         )
-        return (created as ScheduleCommandOutcome.Committed).schedule.scheduleId
+        return (created as CommandOutcome.Committed).value.scheduleId
     }
 
     private fun payment(category: Int, amount: Long, note: String? = null) = ScheduledEntry.Payment(

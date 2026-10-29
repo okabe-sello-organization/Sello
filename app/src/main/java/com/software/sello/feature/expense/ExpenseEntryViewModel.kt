@@ -17,6 +17,8 @@ import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.AmountDraftError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.EditExpense
@@ -679,11 +681,11 @@ class ExpenseEntryViewModel(
                     )
                 )
             ) {
-                is ScheduleCommandOutcome.Committed -> followingSaved()
+                is CommandOutcome.Committed -> followingSaved()
 
-                is ScheduleCommandOutcome.OutcomeUnknown -> recover()
+                is CommandOutcome.OutcomeUnknown -> recover()
 
-                is ScheduleCommandOutcome.Rejected -> {
+                is CommandOutcome.Rejected -> {
                     saved[KEY_OPERATION] = null
                     saved[KEY_OPERATION_SCHEDULE] = null
                     saved[KEY_FOLLOWING] = null
@@ -706,27 +708,33 @@ class ExpenseEntryViewModel(
 
     private suspend fun settleSchedule(outcome: ScheduleCommandOutcome) {
         when (outcome) {
-            is ScheduleCommandOutcome.Committed -> scheduleSaved(outcome.schedule.scheduleId)
+            is CommandOutcome.Committed -> scheduleSaved(outcome.value.scheduleId)
 
-            is ScheduleCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is ScheduleCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written. The draft and the choice stay.
                 saved[KEY_OPERATION] = null
                 saved[KEY_OPERATION_SCHEDULE] = null
-                val error = when (outcome.reason) {
-                    ScheduleRejection.CategoryMissing, ScheduleRejection.CategoryArchived -> {
-                        setCategory(null)
-                        EntryError.CategoryGone
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> EntryError.DataChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.VersionConflict,
+                    is CommandRejection.StorageFailed -> EntryError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        ScheduleRejection.CategoryMissing, ScheduleRejection.CategoryArchived -> {
+                            setCategory(null)
+                            EntryError.CategoryGone
+                        }
+
+                        is ScheduleRejection.StartTooEarly -> EntryError.StartTooEarly
+
+                        is ScheduleRejection.EndTooEarly -> EntryError.EndTooEarly
+
+                        else -> EntryError.NotSaved
                     }
-
-                    is ScheduleRejection.StartTooEarly -> EntryError.StartTooEarly
-
-                    is ScheduleRejection.EndTooEarly -> EntryError.EndTooEarly
-
-                    is ScheduleRejection.StaleGeneration -> EntryError.DataChanged
-
-                    else -> EntryError.NotSaved
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }

@@ -17,6 +17,8 @@ import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseRejection
@@ -582,7 +584,7 @@ class ExpenseEditViewModelTest {
     fun refusedNewTermsWriteNothingAndTheChoiceIsAskedAgain() {
         val form = fromSchedule()
         form.retype("52000")
-        schedules.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.CatchUpPending) }
+        schedules.answer = { CommandOutcome.Rejected(Specific(ScheduleRejection.CatchUpPending)) }
         form.onAction(ExpenseEntryAction.Submit)
         form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
         val refused = form.now

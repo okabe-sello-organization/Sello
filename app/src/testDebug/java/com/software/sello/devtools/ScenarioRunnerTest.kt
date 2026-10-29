@@ -14,6 +14,7 @@ import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CommittedGoal
@@ -282,13 +283,13 @@ class LedgerSchedules(private val ledger: Ledger) : ScheduleCommands {
         sent += command
         ledger.write(command.operationId, OperationKind.PauseSchedule, null)
             ?.let { (receipt, id, replayed) ->
-                ScheduleCommandOutcome.Committed(
+                CommandOutcome.Committed(
                     CommittedSchedule(receipt, ScheduleId.of(id).value()),
                     replayed
                 )
-            } ?: ScheduleCommandOutcome.Rejected(ScheduleRejection.Unchanged)
+            } ?: CommandOutcome.Rejected(Specific(ScheduleRejection.Unchanged))
     } catch (_: Ledger.Unknown) {
-        ScheduleCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
