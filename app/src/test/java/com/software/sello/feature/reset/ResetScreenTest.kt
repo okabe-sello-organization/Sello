@@ -1,8 +1,6 @@
 package com.software.sello.feature.reset
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -13,19 +11,22 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.Look
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.ResetPreview
+import com.software.sello.showSello
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** The screen alone, given state by hand: what each step shows and what each control reports. */
+/**
+ * The screen alone, given state by hand: what each step shows and what each control reports.
+ * On the JVM (ADR 0022).
+ */
 @RunWith(AndroidJUnit4::class)
 class ResetScreenTest {
     @get:Rule
@@ -40,13 +41,8 @@ class ResetScreenTest {
         (OperationId.of("00000000-0000-4000-8000-000000007000") as Outcome.Success).value
 
     private fun show(state: ResetState, fontScale: Float = 1f) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    ResetScreen(state, { actions += it }, PaddingValues(), { closes++ })
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale)) {
+            ResetScreen(state, { actions += it }, PaddingValues(), { closes++ })
         }
     }
 

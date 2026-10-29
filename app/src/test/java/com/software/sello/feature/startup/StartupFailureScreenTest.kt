@@ -1,7 +1,5 @@
 package com.software.sello.feature.startup
 
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -12,9 +10,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.Look
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
@@ -25,6 +22,7 @@ import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.presentation.restore.RESTORE_DONE_TAG
 import com.software.sello.presentation.restore.RESTORE_LEAVE_TAG
+import com.software.sello.showSello
 import java.time.Instant
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
@@ -33,7 +31,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** The screen alone, given state by hand: what each state shows and what each control reports. */
+/**
+ * The screen alone, given state by hand: what each state shows and what each control reports.
+ * On the JVM (ADR 0022).
+ */
 @RunWith(AndroidJUnit4::class)
 class StartupFailureScreenTest {
     @get:Rule
@@ -42,13 +43,8 @@ class StartupFailureScreenTest {
     private val actions = mutableListOf<StartupFailureAction>()
 
     private fun show(state: StartupFailureState, fontScale: Float = 1f) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    StartupFailureScreen(state, { actions += it })
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale)) {
+            StartupFailureScreen(state, { actions += it })
         }
     }
 

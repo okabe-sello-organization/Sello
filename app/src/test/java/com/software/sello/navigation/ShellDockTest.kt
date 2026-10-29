@@ -8,8 +8,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.component.SelloDock
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -19,6 +19,7 @@ import org.junit.runner.RunWith
 /**
  * The dock records an expense on every screen, unless a screen offers its own entry, as
  * income history does with "Anotar ingreso". Its title can be a whole phrase too.
+ * On the JVM (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
 class ShellDockTest {
@@ -32,13 +33,11 @@ class ShellDockTest {
 
     @Test
     fun byDefaultTheDockStartsAnExpense() {
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                ShellScreen(state, monthNames(), {
-                    actions += it
-                }, onBack = {}, screenTitle = "X") {
-                    Text("contenido")
-                }
+        rule.showSello {
+            ShellScreen(state, monthNames(), {
+                actions += it
+            }, onBack = {}, screenTitle = "X") {
+                Text("contenido")
             }
         }
 
@@ -49,18 +48,16 @@ class ShellDockTest {
 
     @Test
     fun incomeHistoryOffersItsOwnEntryAndTitleAndStartsNoExpense() {
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                ShellScreen(
-                    state,
-                    monthNames(),
-                    { actions += it },
-                    onBack = {},
-                    screenTitle = "Ingresos",
-                    titleLabel = "Ingresos de octubre",
-                    dock = SelloDock("Anotar un ingreso", "Anotar ingreso", { incomes++ })
-                ) { Text("contenido") }
-            }
+        rule.showSello {
+            ShellScreen(
+                state,
+                monthNames(),
+                { actions += it },
+                onBack = {},
+                screenTitle = "Ingresos",
+                titleLabel = "Ingresos de octubre",
+                dock = SelloDock("Anotar un ingreso", "Anotar ingreso", { incomes++ })
+            ) { Text("contenido") }
         }
 
         rule.onNodeWithText("Ingresos de octubre").assertIsDisplayed()

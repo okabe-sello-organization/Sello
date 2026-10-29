@@ -3,12 +3,10 @@ package com.software.sello.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -21,26 +19,29 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.SelloDestination
 import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * The ribbon over a past month, drawn by the frame the way the app draws it: on a tab,
  * on a pushed screen and on a category's own screen, but not on Configuración, and
- * never in the current month.
+ * never in the current month. On the JVM (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
+// Real text measurement: the layout below depends on how wide the words are.
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class PastMonthRibbonShellTest {
     @get:Rule
     val rule = createComposeRule()
@@ -111,12 +112,7 @@ class PastMonthRibbonShellTest {
     }
 
     private fun show(screen: Screen, fontScale: Float = 1f) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) { Frame(screen) }
-            }
-        }
+        rule.showSello(Look(fontScale = fontScale)) { Frame(screen) }
     }
 
     private val ribbon get() = rule.onNodeWithTag(PAST_MONTH_RIBBON_TAG)

@@ -1,13 +1,8 @@
 package com.software.sello.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertHasClickAction
@@ -16,24 +11,29 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.SCAFFOLD_SECONDARY_TAG
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * "Mes actual" in the month picker: one press goes to the month the financial day is
  * in, from whatever year is being browsed, the same way picking its cell would.
+ * On the JVM (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
+// Real text measurement: the layout below depends on how wide the words are.
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class MonthPickerShortcutTest {
     @get:Rule
     val rule = createComposeRule()
@@ -51,14 +51,10 @@ class MonthPickerShortcutTest {
     private var state by mutableStateOf(browsing("2026-10", "2023-05", 2021))
 
     /** The picker's content alone, one dp drawn as one pixel, in a sheet of this width. */
-    private fun showPicker(width: Int = 360, fontScale: Float = 1f) = rule.setContent {
-        CompositionLocalProvider(LocalDensity provides Density(1f, fontScale)) {
-            SelloTheme(reducedMotion = true) {
-                Box(Modifier.requiredSize(width.dp, 700.dp)) {
-                    MonthPicker(state, monthNames(), { actions += it })
-                }
-            }
-        }
+    private fun showPicker(width: Int = 360, fontScale: Float = 1f) = rule.showSello(
+        Look(fontScale = fontScale, window = DpSize(width.dp, 700.dp), density = 1f)
+    ) {
+        MonthPicker(state, monthNames(), { actions += it })
     }
 
     private val shortcut get() = rule.onNodeWithTag(MONTH_PICKER_CURRENT_TAG)
@@ -140,14 +136,8 @@ class MonthPickerShortcutTest {
 
     @Test
     fun theSidePanelOfAWideWindowHasItToo() {
-        rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
-                SelloTheme(reducedMotion = true) {
-                    Box(Modifier.requiredSize(1000.dp, 700.dp)) {
-                        ShellScreen(state, monthNames(), { actions += it }) {}
-                    }
-                }
-            }
+        rule.showSello(Look(window = DpSize(1000.dp, 700.dp), density = 1f)) {
+            ShellScreen(state, monthNames(), { actions += it }) {}
         }
 
         rule.onNodeWithTag(SCAFFOLD_SECONDARY_TAG).assertExists()
