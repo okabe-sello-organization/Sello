@@ -4,6 +4,22 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
+ * Version 7 adds the carry chains of signed budget carryover (ADR 0020), empty: every
+ * category of an existing history stays off (CP1). Nothing that existed in version 6 is
+ * read, changed or removed.
+ */
+internal val Migration6To7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `carry_chain` (`category_id` TEXT NOT NULL, " +
+                "`start_month` TEXT NOT NULL, `end_month` TEXT, " +
+                "PRIMARY KEY(`category_id`, `start_month`), FOREIGN KEY(`category_id`) " +
+                "REFERENCES `category`(`id`) ON UPDATE RESTRICT ON DELETE RESTRICT )"
+        )
+    }
+}
+
+/**
  * Version 6 adds investments: their movements, the copy kept for undoing a deleted
  * movement and the dated USD rates, all empty. Nothing that existed in version 5 is read,
  * changed or removed.

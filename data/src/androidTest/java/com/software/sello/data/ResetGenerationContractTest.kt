@@ -8,9 +8,13 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.BackupSummary
+import com.software.sello.domain.port.CategoryCommandOutcome
+import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.PreferenceFailure
@@ -156,7 +160,8 @@ class ResetGenerationContractTest {
         "investment",
         "investment_movement",
         "deleted_investment_movement",
-        "usd_rate"
+        "usd_rate",
+        "carry_chain"
     ).associateWith { ledger.long("SELECT COUNT(*) FROM $it") }
 
     private fun everyRow(): List<List<String>> = listOf(
@@ -294,6 +299,28 @@ class ResetGenerationContractTest {
         assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)), draft)
         assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)), undo)
         assertTrue(counts().values.all { it == 0L })
+    }
+
+    /** CP26 and SC45: an erase removes every carry chain and fences carry commands. */
+    @Test
+    fun anEraseRemovesEveryCarryChainAndFencesCarryCommandsPreparedBefore() = runBlocking {
+        currentHistory()
+        val enabled = ledger.categories.submit(
+            EnableCarry(ledger.operation(), 1, ledger.categoryId(100), 1)
+        )
+        assertTrue("$enabled", enabled is CategoryCommandOutcome.Committed)
+        assertEquals(listOf("${uuid(100)}|2026-10|null"), ledger.chainRows())
+
+        resets().reset(preview(), ledger.operation())
+        val prepared = ledger.categories.submit(
+            DisableCarry(ledger.operation(), 1, ledger.categoryId(100), 2)
+        )
+
+        assertEquals(emptyList<String>(), ledger.chainRows())
+        assertEquals(
+            CategoryCommandOutcome.Rejected(CategoryRejection.StaleGeneration(2)),
+            prepared
+        )
     }
 
     @Test

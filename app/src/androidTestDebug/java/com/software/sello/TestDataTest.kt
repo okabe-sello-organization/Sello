@@ -34,12 +34,15 @@ class TestDataTest {
         TestData.execute(
             "INSERT INTO schedule_pause (schedule_id, from_date) VALUES ('$schedule', '2026-10-07')"
         )
+        TestData.execute(
+            "INSERT INTO carry_chain (category_id, start_month) VALUES ('$category', '2026-10')"
+        )
 
         TestData.reset()
 
         assertEquals(
-            listOf(0L, 0L, 0L),
-            listOf("schedule_pause", "schedule", "category").map(TestData::count)
+            listOf(0L, 0L, 0L, 0L),
+            listOf("schedule_pause", "schedule", "carry_chain", "category").map(TestData::count)
         )
     }
 }

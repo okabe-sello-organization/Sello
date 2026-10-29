@@ -22,9 +22,12 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupSummary
+import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.PendingPreferences
@@ -415,6 +418,29 @@ class RestoreCommandContractTest {
         assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)), undo)
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM deleted_expense"))
         assertEquals(3L, ledger.long("SELECT COUNT(*) FROM expense"))
+    }
+
+    /** CP26 and SC45: the restore replaces the carry chains too; this backup has none. */
+    @Test
+    fun aRestoreLeavesEveryCategoryOffAndFencesCarryCommandsPreparedBefore() = runBlocking {
+        currentHistory()
+        val enabled = ledger.categories.submit(
+            EnableCarry(ledger.operation(), 1, ledger.categoryId(100), 1)
+        )
+        assertTrue("$enabled", enabled is CategoryCommandOutcome.Committed)
+        assertEquals(listOf("${uuid(100)}|2026-10|null"), ledger.chainRows())
+
+        restores().replace(stage())
+        val prepared = ledger.categories.submit(
+            EnableCarry(ledger.operation(), 1, ledger.categoryId(1), 1)
+        )
+
+        assertEquals(emptyList<String>(), ledger.chainRows())
+        assertEquals(
+            CategoryCommandOutcome.Rejected(CategoryRejection.StaleGeneration(2)),
+            prepared
+        )
+        assertEquals(emptyList<String>(), ledger.chainRows())
     }
 
     @Test

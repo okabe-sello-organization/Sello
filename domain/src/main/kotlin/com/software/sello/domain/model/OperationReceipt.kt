@@ -19,6 +19,8 @@ enum class OperationKind(val key: String) {
     UnarchiveCategory("category.unarchive"),
     SetDefaultLimit("category.set_default_limit"),
     SetMonthLimit("category.set_month_limit"),
+    EnableCarry("category.enable_carry"),
+    DisableCarry("category.disable_carry"),
     CreateGoal("goal.create"),
     EditGoal("goal.edit"),
     ChangeGoalTarget("goal.change_target"),

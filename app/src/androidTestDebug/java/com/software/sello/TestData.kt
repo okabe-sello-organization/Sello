@@ -38,6 +38,8 @@ object TestData {
         // Schedules point at categories, and pauses at schedules.
         "schedule_pause",
         "schedule",
+        // Carry chains point at categories.
+        "carry_chain",
         "category",
         "operation_receipt"
     )
