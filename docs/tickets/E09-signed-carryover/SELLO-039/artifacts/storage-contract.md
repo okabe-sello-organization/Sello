@@ -64,6 +64,10 @@ every refusal before the first write. A carry setting change raises the category
   makes it calculable again goes through without a list, since none can be shown, so the
   category is never locked. Dropping a balance nobody can calculate stays refused with
   `CarryUnavailable` (CP9); SELLO-041 shows that refusal with a pointer to the repair.
+  Accepted limit (review round 2, R5, orchestrator ruling): when only damaged data makes a
+  chain overflow at a later month, a repair dated earlier saves without a list of the months
+  in between; no command can reach this (CP25, CP13), and a partial list built from damaged
+  data could mislead.
 - **Unarchive** and a return from unlimited never turn carry on (CP11).
 - **Catch-up** records payments in earlier chain months without a preview (CP18) and is
   unchanged: it records due payments even when the chain can then not be calculated (ruling
