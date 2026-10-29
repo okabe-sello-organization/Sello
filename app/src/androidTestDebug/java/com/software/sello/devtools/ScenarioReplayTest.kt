@@ -81,13 +81,15 @@ class ScenarioReplayTest {
     private fun open() {
         graph?.endProcess()
         val composition = DebugComposition(store, {}) { tools = it }
-        val opened = openStorage(
-            context,
-            checkNotNull(composition.newDataZone),
-            SystemDispatcherProvider(),
-            SystemAuditClock(),
-            SandboxNames
-        ) as Outcome.Success
+        val opened = runBlocking {
+            openStorage(
+                context,
+                checkNotNull(composition.newDataZone),
+                SystemDispatcherProvider(),
+                SystemAuditClock(),
+                SandboxNames
+            )
+        } as Outcome.Success
         val zone = ProcessFinancialZone().apply { initialize(opened.value.profile.zone) }
         graph = koinApplication {
             allowOverride(true)

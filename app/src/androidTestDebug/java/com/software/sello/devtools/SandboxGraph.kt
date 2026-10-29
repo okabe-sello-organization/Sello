@@ -38,13 +38,15 @@ class SandboxGraph(var session: SandboxSession) {
     fun open(): SandboxGraph {
         close()
         val composition = DebugComposition(store, {}) { tools = it }
-        val opened = openStorage(
-            context,
-            composition.newDataZone ?: ZoneId.of("America/Bogota"),
-            SystemDispatcherProvider(),
-            SystemAuditClock(),
-            SandboxNames
-        ) as Outcome.Success
+        val opened = runBlocking {
+            openStorage(
+                context,
+                composition.newDataZone ?: ZoneId.of("America/Bogota"),
+                SystemDispatcherProvider(),
+                SystemAuditClock(),
+                SandboxNames
+            )
+        } as Outcome.Success
         val zone = ProcessFinancialZone().apply { initialize(opened.value.profile.zone) }
         graph = koinApplication {
             allowOverride(true)

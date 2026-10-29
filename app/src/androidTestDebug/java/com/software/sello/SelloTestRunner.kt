@@ -2,6 +2,7 @@ package com.software.sello
 
 import android.app.Application
 import androidx.test.runner.AndroidJUnitRunner
+import com.software.sello.composition.SelloApplication
 import com.software.sello.devtools.TestFinancialTime
 import java.time.LocalDate
 
@@ -15,6 +16,18 @@ class SelloTestRunner : AndroidJUnitRunner() {
     override fun callApplicationOnCreate(app: Application) {
         TestFinancialTime.fixedDate = TEST_DAY
         super.callApplicationOnCreate(app)
+    }
+
+    /**
+     * The app opens its data off the main thread, and its graph exists only once that
+     * answered. No test starts before then: a helper reaching the graph first would
+     * find none. This runs beside the application's own start, so it first lets that
+     * finish on the main thread.
+     */
+    override fun onStart() {
+        waitForIdleSync()
+        (targetContext.applicationContext as SelloApplication).awaitOpened()
+        super.onStart()
     }
 
     companion object {

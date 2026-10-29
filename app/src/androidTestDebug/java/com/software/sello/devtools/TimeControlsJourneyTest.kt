@@ -89,13 +89,15 @@ class TimeControlsJourneyTest {
     @Before
     fun openTheSandbox() {
         eraseFinancialStorage(context, SandboxNames)
-        val opened = openStorage(
-            context,
-            bogota,
-            SystemDispatcherProvider(),
-            SystemAuditClock(),
-            SandboxNames
-        ) as Outcome.Success
+        val opened = runBlocking {
+            openStorage(
+                context,
+                bogota,
+                SystemDispatcherProvider(),
+                SystemAuditClock(),
+                SandboxNames
+            )
+        } as Outcome.Success
         val composition = DebugComposition(store, { restarts++ }) { tools = it }
         val zone = ProcessFinancialZone().apply { initialize(opened.value.profile.zone) }
         graph = koinApplication {

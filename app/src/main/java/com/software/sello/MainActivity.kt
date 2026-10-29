@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.composition.SelloApplication
 import com.software.sello.composition.StartupState
@@ -20,10 +21,13 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.feature.settings.AppearanceViewModel
 import com.software.sello.feature.settings.asSelloTheme
 import com.software.sello.feature.startup.StartupFailureRoot
+import com.software.sello.feature.startup.StartupLoading
 import com.software.sello.navigation.SelloAppRoot
 import com.software.sello.navigation.ShellAction
 import com.software.sello.navigation.ShellViewModel
 import com.software.sello.platform.ProcessAppRestart
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val startup get() = (application as SelloApplication).startup
@@ -31,14 +35,25 @@ class MainActivity : ComponentActivity() {
     /** Set once the unreadable data was set aside and this activity is being replaced. */
     private var startingOver by mutableStateOf(false)
 
+    /** A link not yet handed over because the data is still opening; kept across recreation. */
+    private var pendingLink: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Only a fresh start carries a link to act on; a restored one already did.
-        if (savedInstanceState == null) open(intent)
+        // Only a fresh start carries a link to act on; a restored one already did, unless
+        // the data was still opening, and then the link it kept is handed over now.
+        if (savedInstanceState == null) {
+            open(intent)
+        } else {
+            savedInstanceState.getString(KEY_PENDING_LINK)?.let(::deliver)
+        }
         setContent {
             val state by startup.state.collectAsStateWithLifecycle()
             when (val now = state) {
+                // Without a graph there is no stored appearance yet: the default paper.
+                StartupState.Opening -> SelloTheme { StartupLoading() }
+
                 // The app is shown only on data that opened. Recomposition changes its
                 // tokens without replacing any saved route, draft or financial view model.
                 is StartupState.Ready -> {
@@ -68,15 +83,29 @@ class MainActivity : ComponentActivity() {
         open(intent)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_PENDING_LINK, pendingLink)
+    }
+
     /**
-     * A link only ever becomes a request to prefill a draft; see `EntryLinks`. Without
-     * data there is no draft to prefill, so the link is dropped.
+     * A link only ever becomes a request to prefill a draft; see `EntryLinks`. It waits
+     * while the data opens; without data there is no draft to prefill, so it is dropped.
      */
     private fun open(intent: Intent?) {
-        val ready = startup.state.value as? StartupState.Ready ?: return
-        if (intent?.action == Intent.ACTION_VIEW) {
-            ViewModelProvider(this, ready.viewModels)[ShellViewModel::class.java]
-                .onAction(ShellAction.OpenLink(intent.dataString))
+        if (intent?.action != Intent.ACTION_VIEW) return
+        // A link without data prefills nothing.
+        intent.dataString?.let(::deliver)
+    }
+
+    private fun deliver(link: String) {
+        pendingLink = link
+        lifecycleScope.launch {
+            val now = startup.state.first { it != StartupState.Opening }
+            if (pendingLink == link) pendingLink = null
+            val ready = now as? StartupState.Ready ?: return@launch
+            ViewModelProvider(this@MainActivity, ready.viewModels)[ShellViewModel::class.java]
+                .onAction(ShellAction.OpenLink(link))
         }
     }
 
@@ -87,10 +116,18 @@ class MainActivity : ComponentActivity() {
      */
     private fun startOver() {
         startingOver = true
-        startup.retry()
-        startActivity(
-            Intent(this, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        )
+        val context = applicationContext
+        // The new task opens only once the empty data has, even if this activity is
+        // recreated meanwhile; until then this one shows the data opening.
+        startup.startOver {
+            context.startActivity(
+                Intent(context, MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            )
+        }
+    }
+
+    private companion object {
+        const val KEY_PENDING_LINK = "main.pendingLink"
     }
 }

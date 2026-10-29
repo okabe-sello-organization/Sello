@@ -16,6 +16,7 @@ import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemDispatcherProvider
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -58,13 +59,15 @@ class SandboxSessionOnDeviceTest {
         TestCommands.createCategory("Comida", 100_000)
         val before = TestData.rows("SELECT * FROM category")
 
-        val opened = openStorage(
-            context,
-            bogota,
-            SystemDispatcherProvider(),
-            SystemAuditClock(),
-            SandboxNames
-        )
+        val opened = runBlocking {
+            openStorage(
+                context,
+                bogota,
+                SystemDispatcherProvider(),
+                SystemAuditClock(),
+                SandboxNames
+            )
+        }
         assertTrue("$opened", opened is Outcome.Success)
         (opened as Outcome.Success).value.storage.close()
 
@@ -76,13 +79,15 @@ class SandboxSessionOnDeviceTest {
     @Test
     fun resettingErasesOnlyTheSandboxAndRefusesTheAppsOwnData() {
         TestCommands.createCategory("Comida", null)
-        val opened = openStorage(
-            context,
-            bogota,
-            SystemDispatcherProvider(),
-            SystemAuditClock(),
-            SandboxNames
-        ) as Outcome.Success
+        val opened = runBlocking {
+            openStorage(
+                context,
+                bogota,
+                SystemDispatcherProvider(),
+                SystemAuditClock(),
+                SandboxNames
+            )
+        } as Outcome.Success
         opened.value.storage.close()
 
         eraseFinancialStorage(context, SandboxNames)

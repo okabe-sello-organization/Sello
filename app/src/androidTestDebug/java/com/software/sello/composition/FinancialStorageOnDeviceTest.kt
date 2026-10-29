@@ -128,7 +128,9 @@ class FinancialStorageOnDeviceTest {
                 "'salary', NULL, NULL, 1, 0, 0, NULL, NULL, NULL)"
         )
 
-        val opened = openStorage(context, ZoneId.of("Pacific/Kiritimati"), koin.get(), koin.get())
+        val opened = runBlocking {
+            openStorage(context, ZoneId.of("Pacific/Kiritimati"), koin.get(), koin.get())
+        }
 
         assertTrue("$opened", opened is Outcome.Success)
         (opened as Outcome.Success).value.storage.close()

@@ -10,6 +10,7 @@ import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemDispatcherProvider
 import com.software.sello.platform.deviceZone
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.koin.core.context.startKoin
 
@@ -26,21 +27,26 @@ class SelloApplication : Application() {
         variant = variantComposition(this)
         val dispatchers = SystemDispatcherProvider()
         val documents = AndroidDocumentReader(contentResolver, dispatchers)
+        // The data opens off the main thread while the first frame shows it loading; the
+        // graph is then built back on the main thread, which the process's scope uses.
         startup = Startup(
-            start = ::openAndBuildGraph,
-            moveUnreadable = { setAsideStorage(applicationContext, variant.names) },
+            scope = CoroutineScope(SupervisorJob() + dispatchers.main),
+            start = { openAndBuildGraph(dispatchers) },
+            moveUnreadable = { setAsideStorage(applicationContext, dispatchers, variant.names) },
             readBackup = { readStartupBackup(documents, it, dispatchers) }
         )
     }
 
     /** The graph is started only on data that opened, so it is started at most once. */
-    private fun openAndBuildGraph(): Outcome<Started, StorageFailure> {
+    private suspend fun openAndBuildGraph(
+        dispatchers: SystemDispatcherProvider
+    ): Outcome<Started, StorageFailure> {
         // The financial zone comes from the database: the device zone is stored on first
         // use and never read again, so a later trip does not move recorded days.
         val opened = openStorage(
             applicationContext,
             variant.newDataZone ?: deviceZone(),
-            SystemDispatcherProvider(),
+            dispatchers,
             SystemAuditClock(),
             variant.names
         )
