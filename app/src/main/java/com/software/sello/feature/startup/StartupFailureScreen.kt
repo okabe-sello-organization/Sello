@@ -333,7 +333,7 @@ private fun Warning(state: StartupFailureState, onAction: (StartupFailureAction)
                 text = stringResource(R.string.startup_start_over_confirm),
                 onClick = { onAction(StartupFailureAction.Confirm) },
                 modifier = Modifier.weight(1f).testTag(STARTUP_CONFIRM_TAG),
-                kind = ButtonKind.Destructive,
+                tone = ButtonTone.Loss,
                 enabled = state.canConfirm
             )
         }

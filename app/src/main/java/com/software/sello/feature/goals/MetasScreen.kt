@@ -37,9 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonTone
-import com.software.sello.designsystem.component.CompletedGoalRow
 import com.software.sello.designsystem.component.ErrorSlip
-import com.software.sello.designsystem.component.GoalCard
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MilestoneState
@@ -140,7 +138,7 @@ fun MetasScreen(
                             SelloButton(
                                 stringResource(R.string.goal_mark_complete),
                                 { onAction(MetasAction.MarkComplete(goal.id)) },
-                                Modifier.fillMaxWidth().padding(top = 8.dp)
+                                Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm)
                                     .testTag("metas.markComplete.${goal.id}"),
                                 icon = SelloIcon.Check,
                                 enabled = state.completion == CompletionState.Idle ||
@@ -239,7 +237,7 @@ private fun MetasTotal(band: MetasBand) {
         if (contributed != null) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs),
                 modifier = Modifier.padding(top = 6.dp)
             ) {
                 Icon(

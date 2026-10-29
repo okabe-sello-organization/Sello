@@ -2,7 +2,6 @@ package com.software.sello.feature.resumen
 
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
-import com.software.sello.designsystem.component.ComparisonBar
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.WeekdayPattern
 import com.software.sello.domain.port.ReadState

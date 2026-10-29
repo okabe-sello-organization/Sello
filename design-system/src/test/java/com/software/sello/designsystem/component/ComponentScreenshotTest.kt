@@ -96,70 +96,6 @@ class ComponentScreenshotTest {
     }
 
     @Test
-    fun categories() = capture("categories") {
-        CategoryGrid(listOf("left", "over", "free")) { _, id ->
-            when (id) {
-                "left" -> CategoryCell(
-                    "Alimentación",
-                    SelloIcon.Restaurant,
-                    pesos("287.600"),
-                    0.68f,
-                    "Alimentación. Quedan 287.600 pesos de 900.000. 68 por ciento usado.",
-                    {}
-                )
-
-                "over" -> CategoryCell(
-                    "Entretenimiento",
-                    SelloIcon.Theaters,
-                    pesos("120.000", minus = true),
-                    1.8f,
-                    "Entretenimiento. Pasado por 120.000 pesos de 150.000.",
-                    {},
-                    over = true
-                )
-
-                else -> CategoryCell(
-                    "Transporte",
-                    SelloIcon.DirectionsBus,
-                    pesos("86.000"),
-                    null,
-                    "Transporte. Gastado 86.000 pesos. Sin límite.",
-                    {},
-                    amountCaption = "gastado"
-                )
-            }
-        }
-    }
-
-    @Test
-    fun goalsAndInvestments() = capture("goals-and-investments") {
-        val places = listOf("25 %", "50 %", "75 %", "Meta").mapIndexed { index, label ->
-            MilestoneSpec(
-                label,
-                "$label, por alcanzar",
-                if (index == 0) MilestoneState.Earned else MilestoneState.Empty
-            )
-        }
-        GoalCard(
-            "Curso de inglés", SelloIcon.School, "15 %", pesos("300.000"), "de 2.000.000",
-            "jun 2027", 0.15f, places, {}
-        )
-        CompletedGoalRow("Vacunas de Luna", "400.000, 30 sep", SelloIcon.Pets, "Lograda", {})
-        InvestmentRow(
-            "Parqueadero",
-            "Finca raíz · valor del 12 jun",
-            SelloIcon.Home,
-            SelloTheme.colors.brand,
-            pesos("19.000.000"),
-            "Sin valor",
-            "+7,5 %",
-            {}
-        )
-        PerformanceLine("+5,6 %", "+2.066.000 de ganancia", false)
-        PerformanceLine("-3,1 %", "-120.000 de pérdida", true)
-    }
-
-    @Test
     fun feedback() = capture("feedback") {
         EmptySlip("Dale forma a tu mes", "Crea una categoría.", SelloIcon.ReceiptLong)
         ErrorSlip(
@@ -188,14 +124,6 @@ class ComponentScreenshotTest {
             )
         )
         ColumnsChart(points, "Gasto por mes. El más alto es agosto.")
-        LineChart(points, "Gasto por mes. El más alto es agosto.")
-    }
-
-    @Test
-    fun barsAndKeypad() = capture("bars-and-keypad") {
-        TitleBar("Inversiones")
-        MonthBar("Octubre", "2026", {})
-        AmountKeypad({}, {}, {}, {})
     }
 
     @Test
@@ -217,7 +145,11 @@ class ComponentScreenshotTest {
                         windowInsets = WindowInsets(0, 0, 0, 0)
                     ) { padding ->
                         Box(Modifier.fillMaxSize().padding(padding)) {
-                            EmptySlip("Aún no hay gastos", "Anota el primero.")
+                            EmptySlip(
+                                "Aún no hay gastos",
+                                "Anota el primero.",
+                                SelloIcon.ReceiptLong
+                            )
                         }
                     }
                 }

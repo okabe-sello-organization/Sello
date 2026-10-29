@@ -1,4 +1,4 @@
-package com.software.sello.designsystem.component
+package com.software.sello.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -22,6 +22,12 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.component.Blotter
+import com.software.sello.designsystem.component.SCAFFOLD_BAND_TAG
+import com.software.sello.designsystem.component.SelloDestination
+import com.software.sello.designsystem.component.SelloDock
+import com.software.sello.designsystem.component.SelloNavigation
+import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import kotlin.math.abs

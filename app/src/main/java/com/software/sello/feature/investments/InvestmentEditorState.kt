@@ -107,8 +107,6 @@ data class InvestmentEditorState(
     val changed: Boolean = false,
     val result: InvestmentEditorResult? = null
 ) {
-    val padOpen: Boolean get() = padField != null
-
     /** The new investment's id once it is created, for its detail to open. */
     val created: String? get() = (result as? InvestmentEditorResult.Created)?.investmentId
 

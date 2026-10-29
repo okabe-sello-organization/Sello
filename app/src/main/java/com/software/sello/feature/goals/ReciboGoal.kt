@@ -8,8 +8,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.software.sello.R
 import com.software.sello.designsystem.component.ErrorSlip
-import com.software.sello.designsystem.component.GoalPill
-import com.software.sello.designsystem.component.ReachedRow
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**

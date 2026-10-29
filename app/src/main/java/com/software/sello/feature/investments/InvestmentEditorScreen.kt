@@ -369,7 +369,7 @@ private fun Identity(
     Slip(Modifier.fillMaxWidth().testTag("investment.editor.identity"), pinked = false) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
         ) {
             IconPickerCircle(
                 icon = key?.let(InvestmentIcons::iconFor),
@@ -414,7 +414,7 @@ private fun Identity(
             label = stringResource(R.string.investment_editor_description),
             value = state.description,
             onValueChange = { onAction(InvestmentEditorAction.DescriptionChanged(it)) },
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm)
                 .testTag(INVESTMENT_EDITOR_DESCRIPTION_TAG),
             enabled = state.editable,
             message = textMessage(
@@ -446,13 +446,14 @@ private fun Identity(
                         )
                     )
                 },
-                Modifier.padding(top = 12.dp).testTag(INVESTMENT_EDITOR_CURRENCY_TAG),
+                Modifier.padding(top = SelloTheme.spacing.md)
+                    .testTag(INVESTMENT_EDITOR_CURRENCY_TAG),
                 enabled = state.editable
             )
             if (state.currency == Currency.USD) {
                 FactLine(
                     AnnotatedString(stringResource(R.string.investment_editor_dollars_fact)),
-                    Modifier.padding(top = 8.dp)
+                    Modifier.padding(top = SelloTheme.spacing.sm)
                 )
             }
         }
@@ -571,8 +572,8 @@ private fun FirstContribution(
 private fun ValueLine(state: InvestmentEditorState, onAction: (InvestmentEditorAction) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.padding(top = 8.dp)
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
+        modifier = Modifier.padding(top = SelloTheme.spacing.sm)
     ) {
         Icon(
             SelloIcon.Insights.painter(),
@@ -624,7 +625,7 @@ private fun OtherValue(state: InvestmentEditorState, onAction: (InvestmentEditor
     ) {
         FactLine(
             AnnotatedString(stringResource(R.string.investment_editor_value_fact)),
-            Modifier.padding(top = 4.dp)
+            Modifier.padding(top = SelloTheme.spacing.xs)
         )
     }
 }
@@ -689,7 +690,7 @@ private fun Rate(
     ) {
         FactLine(
             AnnotatedString(stringResource(R.string.investment_editor_rate_fact)),
-            Modifier.padding(top = 4.dp)
+            Modifier.padding(top = SelloTheme.spacing.xs)
         )
     }
 }

@@ -40,15 +40,15 @@ Missing = nothing exists.
 
 | Element | State | Where, or what differs |
 | --- | --- | --- |
-| Top bar "Inversiones", **+**, settings, no month bar | Present | `TitleBar`; `ComponentContractsTest.titleBarNamesTheTabAsAHeadingAndKeepsActionsReachable` (uses "Inversiones"); Metas uses it the same way |
+| Top bar "Inversiones", **+**, settings, no month bar | Present | `TitleBar`; `ShellBarsContractsTest.titleBarNamesTheTabAsAHeadingAndKeepsActionsReachable` (uses "Inversiones"); Metas uses it the same way |
 | Answer slip "Tus inversiones valen", stamp, value as the big number in ink | Partial | `AnswerSlip`; with `StampInk.Over` (Pierde) it draws the big number in loss red, the design keeps it in ink |
 | Gana / Pierde stamps | Present | `Stamp` with `StampInk.Good` / `Over`; `PaperAndStampTest` |
-| Signed return "▲ +5,6 % · +2.066.000 de ganancia" | Partial | `PerformanceLine`; `ComponentContractsTest.returnShowsItsPercentageAndAmountOnOneLine`. The big percentage reads "+5 , 6 %" with gaps around the comma ([catalog](../../../tickets/E19-investments/attachments/SELLO-105-catalog-return-and-rows.png)); the row's "+7,5 %" does not |
+| Signed return "▲ +5,6 % · +2.066.000 de ganancia" | Partial | `PerformanceLine`; `InvestmentContractsTest.returnShowsItsPercentageAndAmountOnOneLine`. The big percentage reads "+5 , 6 %" with gaps around the comma ([catalog](../../../tickets/E19-investments/attachments/SELLO-105-catalog-return-and-rows.png)); the row's "+7,5 %" does not |
 | "En total, desde mar 2025" | Present | Caption text |
 | Aportaste, Retiraste, Dividendos y rentas, Ganancia (signed, coloured) | Present | `LeaderLine` with a `MoneyText` value; `PaperAndStampTest`, `PlanPartsTest` |
 | Footnote "Valores anotados entre el 12 jun y el 14 oct ›" | Partial | `Footnote` (E18, `ReservedPartsTest`) draws it; the page does not say what it opens |
 | Distribution bar, one shade per investment | Partial | `SplitBar` takes any number of coloured segments, no test; `investmentShade` has four shades, a fifth investment repeats the last; no 2dp gap between segments |
-| Investment row: shaded icon, name, "kind · valor del 12 jun", value, signed % | Present | `InvestmentRow`; `ComponentContractsTest.investmentRowCarriesItsValueAndChangeOnTheRight` |
+| Investment row: shaded icon, name, "kind · valor del 12 jun", value, signed % | Present | `InvestmentRow`; `InvestmentContractsTest.investmentRowCarriesItsValueAndChangeOnTheRight` |
 | Row without a value: **Sin valor**, "aportaste 2.000.000", dashed circle | Partial | `InvestmentRow(value = null)` draws a solid circle, not the dashed one its KDoc and the design describe; at 1.0× on a 411dp screen the caption cuts to "sin valor a…" |
 | Dock **Anotar movimiento** in ink; **Agregar inversión** when empty | Present | `ButtonTone.Ink` in `EntryDock` / `SelloDock`; `DockToneTest` covers Gain and Brand, not Ink |
 | Empty slip without button or chart | Present | `EmptySlip`; `FeedbackInteractionTest` |

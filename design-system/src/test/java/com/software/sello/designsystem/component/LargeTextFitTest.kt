@@ -133,14 +133,6 @@ class LargeTextFitTest {
     }
 
     @Test
-    fun aMonthSwitcherTitleTakesASecondLineInsteadOfBeingShortened() {
-        // Beside the back arrow on the narrowest phone.
-        show(272, 640) { MonthSwitcher("Respaldo · Octubre 2026", onClick = {}) }
-
-        assertWhole("Respaldo · Octubre 2026")
-    }
-
-    @Test
     fun theRailWidensSoEveryTabLabelIsWhole() {
         show(640, 360) { SelloNavigationRail(navigation) }
 

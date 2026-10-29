@@ -58,12 +58,9 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.CategoryCell
-import com.software.sello.designsystem.component.CategoryGrid
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.Footnote
-import com.software.sello.designsystem.component.LineAction
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.SelloButton
@@ -223,7 +220,7 @@ internal fun ShortfallNote(shortfall: ReciboShortfall) {
         style = MaterialTheme.typography.bodyMedium,
         color = SelloTheme.colors.inkSoft,
         modifier = Modifier
-            .padding(top = 8.dp)
+            .padding(top = SelloTheme.spacing.sm)
             .testTag(RECIBO_SHORTFALL_TAG)
             .clearAndSetSemantics { contentDescription = spoken }
     )
@@ -259,7 +256,7 @@ private fun AdjustBudgetLink(onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .padding(top = 4.dp)
+            .padding(top = SelloTheme.spacing.xs)
             .heightIn(min = SelloTheme.spacing.minTouchTarget)
             .clickable(role = Role.Button, onClick = onClick)
             // Before the clear: a tag after it would be cleared with everything else.
@@ -313,7 +310,7 @@ private fun PerDayFigure(perDay: ReciboPerDay, over: Boolean) {
                 text = stringResource(R.string.recibo_per_day_unit),
                 style = MaterialTheme.typography.bodyLarge,
                 color = SelloTheme.colors.inkSoft,
-                modifier = Modifier.padding(bottom = 4.dp)
+                modifier = Modifier.padding(bottom = SelloTheme.spacing.xs)
             )
         }
         Text(
@@ -344,57 +341,10 @@ private fun ClosedMonthNote(closed: ReciboClosedMonth) {
         style = MaterialTheme.typography.bodyMedium,
         color = SelloTheme.colors.inkSoft,
         modifier = Modifier
-            .padding(top = 8.dp)
+            .padding(top = SelloTheme.spacing.sm)
             .testTag(RECIBO_CLOSED_TAG)
             .semantics { contentDescription = spoken }
     )
-}
-
-/**
- * A sentence, its amount and its verdict, read as one: "Te quedan 937.200 pesos. Al
- * día." The verdict is a word on the screen and in the description, not a colour alone.
- */
-@Composable
-internal fun FigureHeader(
-    headline: String,
-    figure: BudgetFigure,
-    style: MoneyStyle,
-    showStamp: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val stamp = stampText(figure.stamp)
-    val spoken =
-        stringResource(R.string.recibo_summary_description, headline, figure.amount.spoken, stamp)
-    Column(
-        modifier = modifier.fillMaxWidth().clearAndSetSemantics {
-            contentDescription = spoken
-        }
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
-        ) {
-            Text(
-                text = headline,
-                style = MaterialTheme.typography.bodyLarge,
-                color = SelloTheme.colors.inkSoft,
-                modifier = Modifier.weight(1f)
-            )
-            if (showStamp) {
-                // Room for the corners of a rotated stamp.
-                Stamp(stamp, stampInk(figure.stamp), Modifier.padding(vertical = 6.dp))
-            }
-        }
-        MoneyText(
-            figure.amount,
-            style = style,
-            color = if (figure.headline == ReciboHeadline.Overspent) {
-                SelloTheme.colors.semantic.loss
-            } else {
-                SelloTheme.colors.ink
-            }
-        )
-    }
 }
 
 @Composable

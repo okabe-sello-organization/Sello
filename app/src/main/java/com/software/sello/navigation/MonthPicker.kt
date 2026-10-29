@@ -15,7 +15,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.MonthCell
@@ -50,7 +49,9 @@ fun MonthPicker(
     modifier: Modifier = Modifier
 ) {
     val year = state.pickerYear
-    Column(modifier = modifier.fillMaxWidth().testTag(MONTH_PICKER_TAG).padding(16.dp)) {
+    Column(
+        modifier = modifier.fillMaxWidth().testTag(MONTH_PICKER_TAG).padding(SelloTheme.spacing.lg)
+    ) {
         // The title, and at its right the way back to the month in progress. With a
         // large font the two do not fit on one line and the button goes under the title.
         val current = stringResource(
@@ -60,7 +61,7 @@ fun MonthPicker(
         FlowRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             itemVerticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+            modifier = Modifier.fillMaxWidth().padding(bottom = SelloTheme.spacing.sm)
         ) {
             Text(
                 text = stringResource(R.string.month_picker_title),

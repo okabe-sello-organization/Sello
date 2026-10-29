@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+"""An API-30 emulator of your own, made as CI makes it. See scripts/quality/emulator.py and docs/development/setup.md."""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "quality"))
+import emulator  # noqa: E402
+
+if __name__ == "__main__":
+    sys.exit(emulator.main())

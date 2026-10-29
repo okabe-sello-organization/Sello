@@ -1,9 +1,6 @@
 package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -12,7 +9,6 @@ import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.isSelectable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -20,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -37,6 +32,7 @@ class SettingsPartsTest {
     val rule = createComposeRule()
 
     private val isButton = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
+
     private val isRadio = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton)
 
     @Test
@@ -80,28 +76,6 @@ class SettingsPartsTest {
             rule.onNodeWithText("Tema").assert(!isButton)
             rule.onNode(hasText("Dólar") and hasText("4.150,25")).performClick()
             assertEquals(scheme, 0, taps)
-        }
-    }
-
-    @Test
-    fun eachInkIsARadioButtonAndChoosingOneReportsIt() {
-        var chosen by mutableStateOf(SelloInk.Cobalto)
-        rule.inEveryScheme(reset = { chosen = SelloInk.Cobalto }, content = {
-            InkSwatches(
-                inks = listOf(SelloInk.Cobalto to "Cobalto", SelloInk.Violeta to "Violeta"),
-                selected = chosen,
-                onSelect = { chosen = it }
-            )
-        }) { scheme ->
-            assertEquals(scheme, 2, rule.onAllNodes(isSelectable()).fetchSemanticsNodes().size)
-            rule.onNodeWithText("Cobalto").assert(isRadio).assertIsSelected()
-            rule.onNodeWithText("Violeta").assertIsNotSelected().performClick()
-            assertEquals(scheme, SelloInk.Violeta, chosen)
-            rule.onNodeWithText("Violeta").assertIsSelected()
-            assertTrue(
-                scheme,
-                rule.onNodeWithText("Violeta").getUnclippedBoundsInRoot().height >= 48.dp
-            )
         }
     }
 

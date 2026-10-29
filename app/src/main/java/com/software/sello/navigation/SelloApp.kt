@@ -47,16 +47,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.software.sello.R
 import com.software.sello.designsystem.component.Blotter
-import com.software.sello.designsystem.component.MonthBar
-import com.software.sello.designsystem.component.MonthSwitcher
-import com.software.sello.designsystem.component.PastMonthRibbon
 import com.software.sello.designsystem.component.SelloDestination
 import com.software.sello.designsystem.component.SelloDock
 import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.Slip
-import com.software.sello.designsystem.component.TitleBar
 import com.software.sello.designsystem.component.selloWindowLayout
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter

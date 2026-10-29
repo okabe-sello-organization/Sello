@@ -30,21 +30,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.ErrorSlip
-import com.software.sello.designsystem.component.InkSwatches
 import com.software.sello.designsystem.component.OptionSlip
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SettingRow
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.Currency
-import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.ThemePreference
+import com.software.sello.presentation.appearance.InkChoices
+import com.software.sello.presentation.appearance.choice
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.investments.label
 import com.software.sello.presentation.investments.newInvestmentLabel
@@ -237,18 +236,10 @@ private fun AppearanceControls(state: SettingsState, onAction: (SettingsAction) 
             modifier = Modifier.padding(top = SelloTheme.spacing.sm)
         )
         InkSwatches(
-            inks = InkPreference.entries.map { ink ->
-                ink.asSelloInk() to stringResource(
-                    if (ink == InkPreference.Cobalto) {
-                        R.string.settings_ink_cobalto
-                    } else {
-                        R.string.settings_ink_violeta
-                    }
-                )
-            },
-            selected = state.appearance.ink.asSelloInk(),
+            inks = InkChoices.map { it.ink to stringResource(it.label) },
+            selected = state.appearance.ink.choice.ink,
             onSelect = { ink ->
-                val chosen = InkPreference.entries.first { it.asSelloInk() == ink }
+                val chosen = InkChoices.first { it.ink == ink }.preference
                 onAction(SettingsAction.InkChosen(chosen))
             },
             enabled = !state.busy,
@@ -337,11 +328,6 @@ private fun SectionTitle(resource: Int) {
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(bottom = SelloTheme.spacing.sm).semantics { heading() }
     )
-}
-
-private fun InkPreference.asSelloInk() = when (this) {
-    InkPreference.Cobalto -> SelloInk.Cobalto
-    InkPreference.Violeta -> SelloInk.Violeta
 }
 
 private fun CategoryOrder.label() = when (this) {

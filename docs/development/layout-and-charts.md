@@ -40,8 +40,9 @@ Resumen, Metas, Inversiones) with the Anotar dock above them; its
   selection, including the current tab again; the app owns back stacks and what a
   reselect does. `SelloDock` is the same action for the dock and for the rail's "+".
 - `MonthSwitcher` is a title that reports a tap; tabs use `MonthBar` through the
-  scaffold's `topBar` slot. An optional `ribbon` sits on the band under the month bar or
-  the titled bar. `MonthGrid` draws the cells it is
+  scaffold's `topBar` slot. Both, `TitleBar` and `PastMonthRibbon` belong to the shell
+  (`app/.../navigation/ShellBars.kt`). An optional `ribbon` sits on the band under the
+  month bar or the titled bar. `MonthGrid` draws the cells it is
   given; the app decides which months are enabled (never a future one), have data or
   are current, using `EffectiveDates.forSelection`.
 
@@ -49,7 +50,9 @@ Resumen, Metas, Inversiones) with the Anotar dock above them; its
 
 - A category is known by its icon and name in brand ink. There is no per-category
   colour in any API.
-- `CategoryCircle` clamps only what it draws. `CategoryCell` shows the exact amount
+- `CategoryCircle` (design system) clamps only what it draws. `CategoryCell` and
+  `CategoryGrid` belong to Recibo (`app/.../feature/recibo/ReciboComponents.kt`).
+  `CategoryCell` shows the exact amount
   the app formatted and speaks the full `description` the app wrote, so an overspend
   far beyond the limit still reads exactly. `CategoryGrid` uses two columns, three from
   560dp, one from font scale 1.3.
@@ -58,8 +61,7 @@ Resumen, Metas, Inversiones) with the Anotar dock above them; its
 
 - A `ChartPoint` carries an `id`, a `value` used only for geometry, and `spoken`, the
   mark in words with its exact amount. A selection reports the `id`; the app looks the
-  amount up and shows it with `MoneyText`; screens place it in their own heading, and
-  `SlipHeading` (a small question over a large answer) is available for that.
+  amount up and shows it with `MoneyText`; screens place it in their own heading.
   Nothing is read back from
   a pixel or a height, so two amounts that draw identically stay distinct.
 - Every mark is a selectable item with its `spoken` text, and the chart has a `summary`,
@@ -67,3 +69,18 @@ Resumen, Metas, Inversiones) with the Anotar dock above them; its
 - Charts are at least 130dp tall and take at most one `ChartReference`. A period that
   has not happened is `ChartPeriod.Upcoming` and is drawn as an outline. Short figures
   such as `86 mil` are allowed only as `valueLabel` and in a reference label.
+
+## Themes
+
+A theme is an ink with a light and a dark palette; `SelloInk` is the one list of them.
+Adding one, say Verde:
+
+1. `design-system/.../theme/VerdePalette.kt`: `VerdeLight` and `VerdeDark`, usually a
+   `CobaltoLight.copy(...)`/`CobaltoDark.copy(...)` that changes only brand, paper and
+   line colours. Gain, loss, warn and the category colours stay the base ink's.
+2. Register it: a `SelloInk.Verde({ VerdeLight }, { VerdeDark })` entry; an
+   `InkPreference.Verde("verde")` entry with an id never used before (preferences and
+   backups write it, so ids are never changed or reused); an `InkChoices` entry in
+   `presentation/appearance` with its `settings_ink_verde` name.
+3. Its two rows of reference colours in `SelloPaletteTest`, which checks every palette's
+   values and contrast. Component tests run in the base ink only.

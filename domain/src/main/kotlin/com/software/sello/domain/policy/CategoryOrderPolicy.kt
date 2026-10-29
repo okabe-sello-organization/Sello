@@ -13,9 +13,6 @@ import com.software.sello.domain.model.CategoryOrderDirection
  * by identifier, so the result never depends on the order rows were read in.
  */
 object CategoryOrderPolicy {
-    fun mostUsed(categories: List<CategoryMonth>): List<CategoryMonth> =
-        order(categories, CategoryOrder.MostUsed, CategoryOrderDirection.Descending)
-
     /**
      * D06 in one comparator: finite categories before unlimited ones, categories without
      * selected-month expenses last inside either partition, then the selected metric.

@@ -35,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalClipboard
@@ -48,7 +47,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -464,48 +462,6 @@ fun Footnote(
 }
 
 @Composable
-fun SuggestionNote(
-    title: String,
-    evidence: String,
-    advice: String,
-    actionLabel: String,
-    dismissLabel: String,
-    onAction: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colors = SelloTheme.colors
-    Column(
-        modifier.fillMaxWidth().background(
-            colors.brandSoft,
-            SelloTheme.shapes.control
-        ).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                SelloIcon.Insights.painter(),
-                null,
-                Modifier.padding(end = 8.dp),
-                colors.onBrandSoft
-            )
-            Text(
-                title,
-                Modifier.weight(1f),
-                color = colors.onBrandSoft,
-                fontWeight = FontWeight.W800
-            )
-            androidx.compose.material3.IconButton(onClick = onDismiss) {
-                Icon(SelloIcon.Close.painter(), dismissLabel, tint = colors.onBrandSoft)
-            }
-        }
-        Text(evidence, color = colors.onBrandSoft)
-        Text(advice, color = colors.onBrandSoft, fontWeight = FontWeight.W800)
-        SelloButton(actionLabel, onAction, kind = ButtonKind.Text)
-    }
-}
-
-@Composable
 fun DangerSlip(
     title: String,
     consequences: AnnotatedString,
@@ -530,31 +486,5 @@ fun DangerSlip(
             kind = ButtonKind.Outlined,
             tone = ButtonTone.Loss
         )
-    }
-}
-
-@Composable
-fun ReviewInvitation(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val color = SelloTheme.colors.brand
-    Row(
-        modifier.fillMaxWidth().heightIn(
-            min = 48.dp
-        ).clickable(role = Role.Button, onClick = onClick)
-            .drawBehind {
-                drawRoundRect(
-                    color,
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(10.dp.toPx()),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(
-                        1.5.dp.toPx(),
-                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(
-                            floatArrayOf(5.dp.toPx(), 4.dp.toPx())
-                        )
-                    )
-                )
-            }.padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, Modifier.weight(1f), color = color)
-        Icon(SelloIcon.ChevronRight.painter(), null, tint = color)
     }
 }

@@ -34,19 +34,16 @@ import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.Footnote
-import com.software.sello.designsystem.component.InvestmentRow
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.component.PerformanceLine
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.TearLine
-import com.software.sello.designsystem.component.investmentShade
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -222,7 +219,7 @@ private fun NoTotal(missingRate: Boolean) {
                 }
             ),
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = SelloTheme.spacing.sm)
         )
     }
 }
@@ -242,7 +239,7 @@ private fun Rows(
             ),
             // A sentence, not a figure: tabular figures would widen its comma.
             style = MaterialTheme.typography.titleSmall.copy(fontFeatureSettings = null),
-            modifier = Modifier.semantics { heading() }.padding(bottom = 8.dp)
+            modifier = Modifier.semantics { heading() }.padding(bottom = SelloTheme.spacing.sm)
         )
         if (state.total != null && valued.isNotEmpty()) {
             SplitBar(
@@ -359,7 +356,7 @@ private fun QuietLine(icon: SelloIcon, text: AnnotatedString, modifier: Modifier
     Row(
         modifier.fillMaxWidth().heightIn(min = 32.dp).padding(top = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
     ) {
         Icon(icon.painter(), null, Modifier.size(18.dp), SelloTheme.colors.inkSoft)
         Text(text, style = MaterialTheme.typography.bodySmall, color = SelloTheme.colors.inkSoft)
