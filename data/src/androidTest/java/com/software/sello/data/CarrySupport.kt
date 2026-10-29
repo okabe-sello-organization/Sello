@@ -11,6 +11,7 @@ import com.software.sello.domain.policy.CarryMonthChange
 import com.software.sello.domain.policy.SettledBalanceChange
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
@@ -43,7 +44,8 @@ fun SettledBalanceChange.text(): String = "${categoryId.value.takeLast(3)}|${bef
 
 /** The refusal of an expense correction, with its list and what confirms it (CP20). */
 fun ExpenseCommandOutcome.refusedCorrection(): ExpenseRejection.CorrectionUnconfirmed =
-    (this as ExpenseCommandOutcome.Rejected).reason as ExpenseRejection.CorrectionUnconfirmed
+    ((this as CommandOutcome.Rejected).reason as Specific).reason
+        as ExpenseRejection.CorrectionUnconfirmed
 
 /** The list an expense correction was refused with, to be confirmed (CP20). */
 fun ExpenseCommandOutcome.listedCorrection(): CarryCorrection = refusedCorrection().correction
@@ -80,7 +82,7 @@ class CarryHistories(private val ledger: TestLedger) {
         ledger.goTo(date)
         val number = ledger.nextRecord
         val outcome = ledger.expenses.create(ledger.createExpense(category, date, pesos))
-        check(outcome is ExpenseCommandOutcome.Committed) { "spend $pesos on $date: $outcome" }
+        check(outcome is CommandOutcome.Committed) { "spend $pesos on $date: $outcome" }
         return number
     }
 

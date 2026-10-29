@@ -155,7 +155,7 @@ class CarryoverReadContractTest {
         go.complete(Unit)
         val seen = reads.awaitAll()
 
-        assertTrue("${saved.await()}", saved.await() is ExpenseCommandOutcome.Committed)
+        assertTrue("${saved.await()}", saved.await() is CommandOutcome.Committed)
         // SC25's figures before the deletion, or after it; never some of each.
         assertTrue(
             "$seen",
@@ -245,7 +245,7 @@ class CarryoverReadContractTest {
                     asked.refusedCorrection().confirmation
                 )
             )
-        assertTrue("$deleted", deleted is ExpenseCommandOutcome.Committed)
+        assertTrue("$deleted", deleted is CommandOutcome.Committed)
         assertEquals(
             emptyList<Any>(),
             ledger.carry.catchUpNotice(listOf(recorded)).valueOrFail().categories

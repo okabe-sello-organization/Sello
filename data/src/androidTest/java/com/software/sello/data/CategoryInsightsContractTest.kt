@@ -7,6 +7,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CategoryInsightsState
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.SetDefaultLimit
@@ -41,7 +42,7 @@ class CategoryInsightsContractTest {
                         Note.of(it).valueOrFail()
                     }
                 )
-            ) is ExpenseCommandOutcome.Committed
+            ) is CommandOutcome.Committed
         )
     }
     private suspend fun read() = ledger.categoryInsights.read(id, october).valueOrFail()

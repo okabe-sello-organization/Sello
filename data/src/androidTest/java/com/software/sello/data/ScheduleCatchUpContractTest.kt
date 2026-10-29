@@ -252,7 +252,7 @@ class ScheduleCatchUpContractTest {
 
         val undone = ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
 
-        assertTrue("$undone", undone is ExpenseCommandOutcome.Committed)
+        assertTrue("$undone", undone is CommandOutcome.Committed)
         assertEquals(listOf("2026-10-05|1|950000|${uuid(100)}|null|${rent.value}"), expenses())
         assertEquals(CatchUpBatch.Recorded(emptyList()), batch("2026-10-07"))
         assertEquals(listOf("0|2026-10-05|1"), checkpoints())

@@ -66,7 +66,7 @@ class ReservedSnapshotTest {
         ledger.goTo("2026-10-22")
         assertTrue(
             ledger.expenses.create(ledger.createExpense(100, "2026-10-05", 400_000)) is
-                ExpenseCommandOutcome.Committed
+                CommandOutcome.Committed
         )
         val reserved = limited()
         assertEquals(Money.cop(600_000), reserved.budget.remaining)

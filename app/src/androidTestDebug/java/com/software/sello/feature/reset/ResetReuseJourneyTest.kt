@@ -190,7 +190,7 @@ class ResetReuseJourneyTest {
                     Note.of(null).value()
                 )
             )
-            assertTrue("$expense", expense is ExpenseCommandOutcome.Committed)
+            assertTrue("$expense", expense is CommandOutcome.Committed)
         }
         assertEquals(listOf(listOf("Comida"), listOf("12000"), listOf("2")), history())
     }

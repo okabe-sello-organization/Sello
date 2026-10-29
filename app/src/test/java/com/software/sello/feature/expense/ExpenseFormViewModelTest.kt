@@ -11,6 +11,7 @@ import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
@@ -546,7 +547,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun aCategoryThatStoppedAcceptingExpensesIsDeselectedAndTheNextTryIsANewOperation() {
-        commands.answer = { ExpenseCommandOutcome.Rejected(ExpenseRejection.CategoryArchived) }
+        commands.answer = { CommandOutcome.Rejected(Specific(ExpenseRejection.CategoryArchived)) }
         val form = ready(food, coffee)
         form.type("10000")
         form.pick(1)
@@ -554,7 +555,7 @@ class ExpenseFormViewModelTest {
         form.submit()
         val refused = form.now
         commands.answer =
-            { ExpenseCommandOutcome.Committed(commands.committed(it.operationId), false) }
+            { CommandOutcome.Committed(commands.committed(it.operationId), false) }
         form.pick(2)
         form.submit()
 
@@ -568,17 +569,18 @@ class ExpenseFormViewModelTest {
     @Test
     fun everyOtherRejectionKeepsTheDraftAndSaysNothingWasSaved() {
         val cases = listOf(
-            ExpenseRejection.CategoryMissing to EntryError.CategoryGone,
-            ExpenseRejection.FutureDate(LocalDate.of(2026, 10, 21)) to EntryError.FutureDate,
-            ExpenseRejection.InvalidDate to EntryError.InvalidDate,
-            ExpenseRejection.StaleGeneration(current = 2) to EntryError.DataChanged,
-            ExpenseRejection.OperationConflict to EntryError.NotSaved,
-            ExpenseRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")) to
+            Specific(ExpenseRejection.CategoryMissing) to EntryError.CategoryGone,
+            Specific(ExpenseRejection.FutureDate(LocalDate.of(2026, 10, 21))) to
+                EntryError.FutureDate,
+            Specific(ExpenseRejection.InvalidDate) to EntryError.InvalidDate,
+            CommandRejection.StaleGeneration(current = 2) to EntryError.DataChanged,
+            CommandRejection.OperationConflict to EntryError.NotSaved,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")) to
                 EntryError.NotSaved
         )
 
         for ((reason, error) in cases) {
-            commands.answer = { ExpenseCommandOutcome.Rejected(reason) }
+            commands.answer = { CommandOutcome.Rejected(reason) }
             val form = ready(food).chosen()
             form.type("10000")
             form.onAction(ExpenseEntryAction.NoteChanged("Pan"))
@@ -595,14 +597,14 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun afterTheDataWasReplacedTheNextAttemptUsesTheNewGeneration() {
-        commands.answer = { ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)) }
+        commands.answer = { CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)) }
         val form = ready(food).chosen()
         form.type("10000")
         form.submit()
 
         snapshots.ready(monthOf("2026-10-22", listOf(food), generation = 2))
         commands.answer =
-            { ExpenseCommandOutcome.Committed(commands.committed(it.operationId), false) }
+            { CommandOutcome.Committed(commands.committed(it.operationId), false) }
         form.submit()
 
         assertEquals(listOf(1L, 2L), commands.created.map { it.generation })
@@ -612,7 +614,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun anUnknownOutcomeIsSettledByAskingAboutTheSameOperationNeverBySendingAgain() {
-        commands.answer = { ExpenseCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Success(commands.committed(it)) }
         val form = ready(food).chosen()
         form.type("10000")
@@ -626,7 +628,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun anUnknownOutcomeThatWasNotSavedReturnsToTheDraftWithNothingRecorded() {
-        commands.answer = { ExpenseCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         val form = ready(food).chosen()
         form.type("10000")
 
@@ -642,7 +644,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun whileTheOutcomeCannotBeReadTheDraftIsLockedAndRetryOnlyAsksAgain() {
-        commands.answer = { ExpenseCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("SQLiteException")) }
         val form = ready(food).chosen()
         form.type("10000")
@@ -697,7 +699,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun aRejectedAttemptLeavesNothingToRecoverAfterARestart() {
-        commands.answer = { ExpenseCommandOutcome.Rejected(ExpenseRejection.CategoryArchived) }
+        commands.answer = { CommandOutcome.Rejected(Specific(ExpenseRejection.CategoryArchived)) }
         val saved = SavedStateHandle()
         val first = ready(food, saved = saved)
         first.type("10000")

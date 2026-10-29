@@ -49,7 +49,7 @@ class FencedExpenseCommands(
     override suspend fun restore(command: RestoreExpense) = run { commands.restore(command) }
 
     private suspend fun run(block: suspend () -> ExpenseCommandOutcome) = fence.write(block).also {
-        if (it is ExpenseCommandOutcome.Committed && !it.replayed) saved()
+        if (it is CommandOutcome.Committed && !it.replayed) saved()
     }
 }
 

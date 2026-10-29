@@ -3,6 +3,7 @@ package com.software.sello.data
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.SnapshotState
 import java.time.YearMonth
@@ -59,7 +60,7 @@ class MonthlySnapshotPlacementTest {
 
     private suspend fun spend(pesos: Long) {
         val outcome = ledger.expenses.create(ledger.createExpense(100, "2026-10-03", pesos))
-        assertTrue("$outcome", outcome is ExpenseCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     /** Mercado, limit 100.000, with 10.000 and 5.000 spent: revision 3. */

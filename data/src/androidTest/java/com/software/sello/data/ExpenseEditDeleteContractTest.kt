@@ -10,11 +10,14 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.ArchiveCategory
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
+import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
-import com.software.sello.domain.port.ExpenseCommandOutcome.Committed
-import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SnapshotState
@@ -105,7 +108,7 @@ class ExpenseEditDeleteContractTest {
         generation: Long = 1
     ) = DeleteExpense(operation, generation, ExpenseId.of(expense).valueOrFail(), version)
 
-    private fun committed(outcome: ExpenseCommandOutcome) = (outcome as Committed).expense
+    private fun committed(outcome: ExpenseCommandOutcome) = (outcome as Committed).value
 
     private suspend fun assertUnchangedSince(start: List<String>, revision: Long, receipts: Int) {
         assertEquals(start, expenses())
@@ -174,7 +177,7 @@ class ExpenseEditDeleteContractTest {
 
         val stale = ledger.expenses.edit(edit(version = 1, pesos = 99_000))
 
-        assertEquals(Rejected(ExpenseRejection.VersionConflict(current = 2)), stale)
+        assertEquals(Rejected(CommandRejection.VersionConflict(current = 2)), stale)
         assertUnchangedSince(after, revision = 3, receipts = 3)
     }
 
@@ -187,8 +190,8 @@ class ExpenseEditDeleteContractTest {
         ledger.expenses.delete(delete(version = 1))
         val deleted = ledger.expenses.edit(edit(version = 1, pesos = 12_000))
 
-        assertEquals(Rejected(ExpenseRejection.ExpenseMissing), never)
-        assertEquals(Rejected(ExpenseRejection.ExpenseMissing), deleted)
+        assertEquals(Rejected(Specific(ExpenseRejection.ExpenseMissing)), never)
+        assertEquals(Rejected(Specific(ExpenseRejection.ExpenseMissing)), deleted)
         assertEquals(1, before.size)
         assertEquals(emptyList<String>(), expenses())
         // Only the deletion moved the revision: 2 to 3.
@@ -213,7 +216,7 @@ class ExpenseEditDeleteContractTest {
             )
 
             assertEquals(Committed(committed(first), replayed = true), again)
-            assertEquals(Rejected(ExpenseRejection.OperationConflict), other)
+            assertEquals(Rejected(CommandRejection.OperationConflict), other)
             assertUnchangedSince(after, revision = 3, receipts = 3)
             assertEquals(Outcome.Success(committed(first)), ledger.expenses.find(operation))
         }
@@ -225,7 +228,7 @@ class ExpenseEditDeleteContractTest {
 
         val outcome = ledger.expenses.edit(edit(version = 1))
 
-        assertEquals(Rejected(ExpenseRejection.Unchanged), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.Unchanged)), outcome)
         assertUnchangedSince(before, revision = 2, receipts = 2)
     }
 
@@ -242,8 +245,8 @@ class ExpenseEditDeleteContractTest {
         val intoNothing = ledger.expenses.edit(edit(version = 2, pesos = 12_000, category = 777))
 
         assertTrue("$kept", kept is Committed)
-        assertEquals(Rejected(ExpenseRejection.CategoryArchived), intoArchived)
-        assertEquals(Rejected(ExpenseRejection.CategoryMissing), intoNothing)
+        assertEquals(Rejected(Specific(ExpenseRejection.CategoryArchived)), intoArchived)
+        assertEquals(Rejected(Specific(ExpenseRejection.CategoryMissing)), intoNothing)
         assertEquals(
             listOf("1|$pan|${uuid(100)}|2026-10-03|12000|COP|null|2|$recorded|$recorded"),
             expenses()
@@ -261,10 +264,10 @@ class ExpenseEditDeleteContractTest {
         val today = ledger.expenses.edit(edit(version = 1, date = "2026-10-09"))
 
         assertEquals(
-            Rejected(ExpenseRejection.FutureDate(today = LocalDate.of(2026, 10, 9))),
+            Rejected(Specific(ExpenseRejection.FutureDate(today = LocalDate.of(2026, 10, 9)))),
             tomorrow
         )
-        assertEquals(Rejected(ExpenseRejection.InvalidDate), unreadable)
+        assertEquals(Rejected(Specific(ExpenseRejection.InvalidDate)), unreadable)
         assertTrue("$today", today is Committed)
         assertEquals(1, before.size)
         assertEquals(listOf("2026-10-09"), ledger.rows("expense", "effective_date"))
@@ -285,7 +288,7 @@ class ExpenseEditDeleteContractTest {
 
         assertTrue("$amountOnly", amountOnly is Committed)
         assertEquals(
-            Rejected(ExpenseRejection.FutureDate(today = LocalDate.of(2026, 10, 1))),
+            Rejected(Specific(ExpenseRejection.FutureDate(today = LocalDate.of(2026, 10, 1)))),
             toAnotherFutureDay
         )
         assertEquals(
@@ -307,7 +310,7 @@ class ExpenseEditDeleteContractTest {
 
         val outcome = ledger.expenses.edit(edit(version = 1, pesos = 12_000))
 
-        assertEquals(Rejected(ExpenseRejection.StaleGeneration(current = 2)), outcome)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 2)), outcome)
         assertUnchangedSince(before, revision = 2, receipts = 2)
     }
 
@@ -323,7 +326,7 @@ class ExpenseEditDeleteContractTest {
 
         assertEquals(
             Rejected(
-                ExpenseRejection.StorageFailed(
+                CommandRejection.StorageFailed(
                     StorageFailure.Integrity("profile", null, "revision")
                 )
             ),
@@ -369,8 +372,8 @@ class ExpenseEditDeleteContractTest {
         val stale = ledger.expenses.delete(delete(version = 1))
         val never = ledger.expenses.delete(delete(version = 1, expense = uuid(999)))
 
-        assertEquals(Rejected(ExpenseRejection.VersionConflict(current = 2)), stale)
-        assertEquals(Rejected(ExpenseRejection.ExpenseMissing), never)
+        assertEquals(Rejected(CommandRejection.VersionConflict(current = 2)), stale)
+        assertEquals(Rejected(Specific(ExpenseRejection.ExpenseMissing)), never)
         assertUnchangedSince(after, revision = 3, receipts = 3)
         assertEquals(emptyList<String>(), kept())
         assertNull(ledger.expenses.undoOffer())
@@ -448,17 +451,17 @@ class ExpenseEditDeleteContractTest {
             async(Dispatchers.Default) { ledger.expenses.edit(it) }
         }.awaitAll()
 
-        val saved = outcomes.filterIsInstance<Committed>()
+        val saved = outcomes.filterIsInstance<Committed<CommittedExpense>>()
         assertEquals(1, saved.size)
         assertEquals(
             7,
             outcomes.count {
                 it ==
-                    Rejected(ExpenseRejection.VersionConflict(current = 2))
+                    Rejected(CommandRejection.VersionConflict(current = 2))
             }
         )
         // The amount stored is the winner's, at version 2, with one receipt for it.
-        val winner = edits.single { it.operationId == saved.single().expense.receipt.operationId }
+        val winner = edits.single { it.operationId == saved.single().value.receipt.operationId }
         assertEquals(
             listOf("${winner.amount.money.minorUnits}|2"),
             ledger.rows("expense", "amount_minor", "version")
@@ -479,10 +482,10 @@ class ExpenseEditDeleteContractTest {
 
         val expected = if (outcomes.first is Committed) {
             // The edit was first: the deletion held a version that no longer exists.
-            Rejected(ExpenseRejection.VersionConflict(current = 2)) to
+            Rejected(CommandRejection.VersionConflict(current = 2)) to
                 listOf("1|$pan|${uuid(100)}|2026-10-03|12000|COP|null|2|$recorded|$recorded")
         } else {
-            Rejected(ExpenseRejection.ExpenseMissing) to emptyList()
+            Rejected(Specific(ExpenseRejection.ExpenseMissing)) to emptyList()
         }
         val loser = if (outcomes.first is Committed) outcomes.second else outcomes.first
         assertEquals(1, listOf(outcomes.first, outcomes.second).count { it is Committed })

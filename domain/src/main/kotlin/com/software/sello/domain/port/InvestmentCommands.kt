@@ -132,7 +132,7 @@ data class SetUsdRate(
     val date: LocalDate
 ) : InvestmentCommand
 
-/** Why a investment command wrote nothing, beyond the reasons every [CommandRejection] has. */
+/** Why an investment command wrote nothing, beyond the reasons every [CommandRejection] has. */
 sealed interface InvestmentRejection {
     data object InvestmentMissing : InvestmentRejection
 

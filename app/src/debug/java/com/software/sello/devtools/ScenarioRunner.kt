@@ -488,9 +488,9 @@ class ScenarioRunner(
     }
 
     private fun expense(outcome: ExpenseCommandOutcome): String? = when (outcome) {
-        is ExpenseCommandOutcome.Committed -> null
-        is ExpenseCommandOutcome.Rejected -> rejected(outcome.reason)
-        is ExpenseCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.Committed -> null
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private fun goal(outcome: GoalCommandOutcome): String? = when (outcome) {

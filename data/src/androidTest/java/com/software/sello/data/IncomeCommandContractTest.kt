@@ -11,6 +11,7 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
@@ -576,7 +577,7 @@ class IncomeCommandContractTest {
 
         assertEquals(expenseDeletion, offered!!.deletionId)
         assertNull(ledger.expenses.undoOffer())
-        assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.UndoExpired), expenseUndo)
+        assertEquals(CommandOutcome.Rejected(Specific(ExpenseRejection.UndoExpired)), expenseUndo)
         // One kept copy across both kinds, the income's.
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM deleted_expense"))
         assertEquals(1, keptIncome().size)

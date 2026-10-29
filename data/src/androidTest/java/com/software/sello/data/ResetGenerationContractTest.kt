@@ -298,8 +298,8 @@ class ResetGenerationContractTest {
         val draft = ledger.expenses.create(ledger.createExpense(100, "2026-10-08", 1_000))
         val undo = ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
 
-        assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)), draft)
-        assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)), undo)
+        assertEquals(CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)), draft)
+        assertEquals(CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)), undo)
         assertTrue(counts().values.all { it == 0L })
     }
 
@@ -398,7 +398,7 @@ class ResetGenerationContractTest {
             ledger.createExpense(comida, "2026-10-09", 12_000).copy(generation = 2)
         )
 
-        assertTrue("$created", created is ExpenseCommandOutcome.Committed)
+        assertTrue("$created", created is CommandOutcome.Committed)
         assertEquals(listOf("12000"), ledger.rows("expense", "amount_minor"))
     }
 

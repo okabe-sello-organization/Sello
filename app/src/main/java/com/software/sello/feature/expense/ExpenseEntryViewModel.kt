@@ -616,33 +616,38 @@ class ExpenseEntryViewModel(
 
     private suspend fun settle(outcome: ExpenseCommandOutcome) {
         when (outcome) {
-            is ExpenseCommandOutcome.Committed -> saved(outcome.expense.expenseId)
+            is CommandOutcome.Committed -> saved(outcome.value.expenseId)
 
-            is ExpenseCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is ExpenseCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written, so this attempt is over. The draft stays,
                 // and Solo este or Este y los siguientes is asked again unless the
                 // following payments already changed.
                 saved[KEY_OPERATION] = null
                 if (saved.get<Boolean>(KEY_FOLLOWING_SAVED) != true) saved[KEY_FOLLOWING] = null
-                val error = when (outcome.reason) {
-                    ExpenseRejection.CategoryMissing, ExpenseRejection.CategoryArchived -> {
-                        setCategory(null)
-                        EntryError.CategoryGone
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> EntryError.DataChanged
+
+                    is CommandRejection.VersionConflict -> EntryError.ExpenseChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.StorageFailed -> EntryError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        ExpenseRejection.CategoryMissing, ExpenseRejection.CategoryArchived -> {
+                            setCategory(null)
+                            EntryError.CategoryGone
+                        }
+
+                        is ExpenseRejection.FutureDate -> EntryError.FutureDate
+
+                        ExpenseRejection.InvalidDate -> EntryError.InvalidDate
+
+                        ExpenseRejection.ExpenseMissing -> EntryError.ExpenseGone
+
+                        else -> EntryError.NotSaved
                     }
-
-                    is ExpenseRejection.FutureDate -> EntryError.FutureDate
-
-                    ExpenseRejection.InvalidDate -> EntryError.InvalidDate
-
-                    is ExpenseRejection.StaleGeneration -> EntryError.DataChanged
-
-                    ExpenseRejection.ExpenseMissing -> EntryError.ExpenseGone
-
-                    is ExpenseRejection.VersionConflict -> EntryError.ExpenseChanged
-
-                    else -> EntryError.NotSaved
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }

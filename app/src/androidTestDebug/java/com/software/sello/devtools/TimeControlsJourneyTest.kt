@@ -139,7 +139,7 @@ class TimeControlsJourneyTest {
                 date,
                 null
             )
-        ) as ExpenseCommandOutcome.Committed
+        ) as CommandOutcome.Committed
     }
 
     @Test
@@ -163,17 +163,17 @@ class TimeControlsJourneyTest {
     @NightlyOnly
     @Test
     fun aYearOfFinancialTimeLaterUndoStillHasItsSixRealSeconds() = runBlocking {
-        val expense = expenseIn("Comida", october31).expense
+        val expense = expenseIn("Comida", october31).value
         val commands = graph.koin.get<ExpenseCommands>()
         val deletion = operation()
         val deleted = commands.delete(DeleteExpense(deletion, 1, expense.expenseId, 1))
-        assertTrue("$deleted", deleted is ExpenseCommandOutcome.Committed)
+        assertTrue("$deleted", deleted is CommandOutcome.Committed)
 
         time.advanceMonths(12)
 
         assertNotNull(commands.undoOffer())
         val undone = commands.restore(RestoreExpense(operation(), 1, deletion))
-        assertTrue("$undone", undone is ExpenseCommandOutcome.Committed)
+        assertTrue("$undone", undone is CommandOutcome.Committed)
         assertEquals(LocalDate.of(2027, 10, 31), graph.koin.get<FinancialClock>().today.value.date)
     }
 

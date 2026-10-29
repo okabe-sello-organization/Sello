@@ -10,6 +10,7 @@ import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeCategoryIcon
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
@@ -246,7 +247,7 @@ class CategoryCommandContractTest {
         )
         assertEquals(Committed(change, replayed = false), archived)
         assertEquals(
-            ExpenseCommandOutcome.Rejected(ExpenseRejection.CategoryArchived),
+            CommandOutcome.Rejected(Specific(ExpenseRejection.CategoryArchived)),
             newExpense
         )
         assertEquals(Committed(change, replayed = true), replay)
@@ -434,7 +435,7 @@ class CategoryCommandContractTest {
         )
         assertEquals(List(8) { Rejected(CommandRejection.OperationConflict) }, conflicts)
         assertEquals(
-            ExpenseCommandOutcome.Rejected(ExpenseRejection.OperationConflict),
+            CommandOutcome.Rejected(CommandRejection.OperationConflict),
             expenseUnderACategoryOperation
         )
         assertEquals(before, Triple(categoryRows(), defaultRows(), ledger.revision()))

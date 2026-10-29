@@ -54,7 +54,7 @@ class ResumenSnapshotContractTest {
     private suspend fun spend(pesos: Long, date: String = "2026-10-01") {
         assertTrue(
             ledger.expenses.create(ledger.createExpense(100, date, pesos))
-                is ExpenseCommandOutcome.Committed
+                is CommandOutcome.Committed
         )
     }
 
@@ -119,7 +119,7 @@ class ResumenSnapshotContractTest {
                     LocalDate.of(2026, 10, 2),
                     null
                 )
-            ) is ExpenseCommandOutcome.Committed
+            ) is CommandOutcome.Committed
         )
         val corrected = read()
         assertEquals(

@@ -77,11 +77,8 @@ data class RestoreExpense(
  */
 data class UndoOffer(val deletionId: OperationId, val expenseId: ExpenseId, val until: Duration)
 
-/** Why nothing was written. Each of these is certain: nothing changed. */
+/** Why an expense command wrote nothing, beyond the reasons every [CommandRejection] has. */
 sealed interface ExpenseRejection {
-    /** The history was replaced (restore or reset) since the command was prepared. */
-    data class StaleGeneration(val current: Long) : ExpenseRejection
-
     data object CategoryMissing : ExpenseRejection
 
     data object CategoryArchived : ExpenseRejection
@@ -92,14 +89,8 @@ sealed interface ExpenseRejection {
     /** The date cannot be stored and read back; see `EffectiveDateError.OutOfRange`. */
     data object InvalidDate : ExpenseRejection
 
-    /** This operation already committed with different input. The original is unchanged. */
-    data object OperationConflict : ExpenseRejection
-
     /** There is no expense with that identifier: never recorded, or already deleted. */
     data object ExpenseMissing : ExpenseRejection
-
-    /** The expense changed since the caller read it. [current] is its version now. */
-    data class VersionConflict(val current: Long) : ExpenseRejection
 
     /** The edit asks for exactly what is already recorded, so there is nothing to save. */
     data object Unchanged : ExpenseRejection
@@ -128,9 +119,6 @@ sealed interface ExpenseRejection {
 
     /** The category's carry could not be calculated before or after the change (CP8, CP23). */
     data class CarryUnavailable(val failure: CarryoverFailure) : ExpenseRejection
-
-    /** Storage failed and the write was rolled back. */
-    data class StorageFailed(val failure: StorageFailure) : ExpenseRejection
 }
 
 /**
@@ -140,22 +128,7 @@ sealed interface ExpenseRejection {
  */
 data class CommittedExpense(val receipt: OperationReceipt, val expenseId: ExpenseId)
 
-sealed interface ExpenseCommandOutcome {
-    /**
-     * The change is saved. [replayed] is true when this operation had already
-     * committed with the same input and this call wrote nothing new.
-     */
-    data class Committed(val expense: CommittedExpense, val replayed: Boolean) :
-        ExpenseCommandOutcome
-
-    data class Rejected(val reason: ExpenseRejection) : ExpenseCommandOutcome
-
-    /**
-     * It is not known whether the change was saved. Ask [ExpenseCommands.find] with
-     * the same [operationId], or submit the same command again; never a new one.
-     */
-    data class OutcomeUnknown(val operationId: OperationId) : ExpenseCommandOutcome
-}
+typealias ExpenseCommandOutcome = CommandOutcome<CommittedExpense, ExpenseRejection>
 
 interface ExpenseCommands {
     /**

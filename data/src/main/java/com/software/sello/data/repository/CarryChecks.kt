@@ -322,24 +322,24 @@ internal suspend fun SelloDatabase.expenseCarry(
     revision: Long,
     change: String,
     confirmation: CorrectionConfirmation?
-): ExpenseRejection? {
+): CommandRejection<ExpenseRejection>? {
     val categories = listOfNotNull(removed?.categoryId, added?.categoryId).distinct()
     val corrections = ArrayList<CategoryCorrection>(categories.size)
     for (category in categories) {
         val chains = when (val stored = carryChains(category)) {
             is Outcome.Success -> stored.value
-            is Outcome.Failure -> return ExpenseRejection.StorageFailed(stored.error)
+            is Outcome.Failure -> return CommandRejection.StorageFailed(stored.error)
         }
         if (chains.isEmpty()) continue
         if (chains.any { it.start > month }) {
-            return ExpenseRejection.CarryUnavailable(CarryoverFailure.FutureMonth(month))
+            return Specific(ExpenseRejection.CarryUnavailable(CarryoverFailure.FutureMonth(month)))
         }
         val id = chains.first().categoryId
         val (gone, put) = listOf(removed, added).map { candidate ->
             candidate?.takeIf { it.categoryId == category }?.let { row ->
                 when (val decoded = row.toDomain()) {
                     is Outcome.Success -> decoded.value
-                    is Outcome.Failure -> return ExpenseRejection.StorageFailed(decoded.error)
+                    is Outcome.Failure -> return CommandRejection.StorageFailed(decoded.error)
                 }
             }
         }
@@ -351,14 +351,14 @@ internal suspend fun SelloDatabase.expenseCarry(
         val from = reached.minOfOrNull { it.start } ?: continue
         val rows = when (val stored = carryRows(id, reached, from, month)) {
             is Outcome.Success -> stored.value
-            is Outcome.Failure -> return ExpenseRejection.StorageFailed(stored.error)
+            is Outcome.Failure -> return CommandRejection.StorageFailed(stored.error)
         }
         val expenses = rows.expenses.filterNot { it.id == gone?.id } + listOfNotNull(put)
         val after = when (val input = rows.input(today, expenses = expenses)) {
             is Outcome.Success -> input.value
-            is Outcome.Failure -> return ExpenseRejection.CarryUnavailable(input.error)
+            is Outcome.Failure -> return Specific(ExpenseRejection.CarryUnavailable(input.error))
         }
-        replayFailure(after, month)?.let { return ExpenseRejection.CarryUnavailable(it) }
+        replayFailure(after, month)?.let { return Specific(ExpenseRejection.CarryUnavailable(it)) }
         val before = (rows.input(today) as? Outcome.Success)?.value
             ?.takeIf { replayFailure(it, month) == null }
             ?: continue
@@ -367,9 +367,9 @@ internal suspend fun SelloDatabase.expenseCarry(
     if (corrections.isEmpty()) return null
     val correction = when (val previewed = CarryoverCorrectionReplay.preview(month, corrections)) {
         is Outcome.Success -> previewed.value
-        is Outcome.Failure -> return ExpenseRejection.CarryUnavailable(previewed.error)
+        is Outcome.Failure -> return Specific(ExpenseRejection.CarryUnavailable(previewed.error))
     }
     val expected = CorrectionConfirmation(revision, change)
     if (correction.isEmpty || confirmation == expected) return null
-    return ExpenseRejection.CorrectionUnconfirmed(expected, correction)
+    return Specific(ExpenseRejection.CorrectionUnconfirmed(expected, correction))
 }

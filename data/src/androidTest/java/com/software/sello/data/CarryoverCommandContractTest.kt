@@ -15,6 +15,7 @@ import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
@@ -670,7 +671,7 @@ class CarryoverCommandContractTest {
         assertEquals(first.confirmation.change, second.confirmation.change)
         assertEquals(listed, second.correction.listed())
         assertEquals(before, unchanged)
-        assertTrue("$saved", saved is ExpenseCommandOutcome.Committed)
+        assertTrue("$saved", saved is CommandOutcome.Committed)
         assertEquals(revision + 2, ledger.revision())
         assertEquals(
             listOf(
@@ -699,9 +700,9 @@ class CarryoverCommandContractTest {
         val beforeTheChain = ledger.expenses.create(ledger.createExpense(100, "2026-12-05", 30_000))
         val noCarry = ledger.expenses.create(ledger.createExpense(ocio, "2027-01-15", 30_000))
 
-        assertTrue("$thisMonth", thisMonth is ExpenseCommandOutcome.Committed)
-        assertTrue("$beforeTheChain", beforeTheChain is ExpenseCommandOutcome.Committed)
-        assertTrue("$noCarry", noCarry is ExpenseCommandOutcome.Committed)
+        assertTrue("$thisMonth", thisMonth is CommandOutcome.Committed)
+        assertTrue("$beforeTheChain", beforeTheChain is CommandOutcome.Committed)
+        assertTrue("$noCarry", noCarry is CommandOutcome.Committed)
         assertEquals(
             "2027-04|K -40000|C 60000|S 15000|R 45000|OnTrack",
             history(100, "2027-04").replay.months.last().text()
@@ -754,7 +755,7 @@ class CarryoverCommandContractTest {
             correction.edited.map { it.text() }
         )
         assertEquals(emptyMap<YearMonth, Money>(), correction.overallCapacityChange)
-        assertTrue("$saved", saved is ExpenseCommandOutcome.Committed)
+        assertTrue("$saved", saved is CommandOutcome.Committed)
         assertEquals(
             listOf("${uuid(february)}|${uuid(transporte)}"),
             ledger.rows("expense", "id", "category_id").filter { it.startsWith(uuid(february)) }
@@ -796,8 +797,8 @@ class CarryoverCommandContractTest {
         )
 
         assertEquals(
-            ExpenseCommandOutcome.Rejected(
-                ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable)
+            CommandOutcome.Rejected(
+                Specific(ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable))
             ),
             deleted
         )
@@ -977,7 +978,7 @@ class CarryoverCommandContractTest {
             brokenRead
         )
         assertEquals(
-            ExpenseCommandOutcome.Rejected(ExpenseRejection.CarryUnavailable(broken)),
+            CommandOutcome.Rejected(Specific(ExpenseRejection.CarryUnavailable(broken))),
             stillBroken
         )
         assertEquals(Rejected(Specific(CategoryRejection.CarryUnavailable(broken))), drop)
@@ -1019,12 +1020,12 @@ class CarryoverCommandContractTest {
             ),
             brokenBefore
         )
-        assertTrue("$repaired", repaired is ExpenseCommandOutcome.Committed)
+        assertTrue("$repaired", repaired is CommandOutcome.Committed)
         // ene R 9.223.372.036.854.425.807; feb C …525.807; mar …625.807; abr C …725.807.
         assertEquals(cop(9_223_372_036_854_725_807), budget(comida, "2027-04").budget?.limit)
         assertEquals(
-            ExpenseCommandOutcome.Rejected(
-                ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable)
+            CommandOutcome.Rejected(
+                Specific(ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable))
             ),
             undone
         )
@@ -1068,7 +1069,7 @@ class CarryoverCommandContractTest {
             other.listedCorrection().months.map { it.text() }
         )
         assertEquals(expenses, unchanged)
-        assertTrue("$ownList", ownList is ExpenseCommandOutcome.Committed)
+        assertTrue("$ownList", ownList is CommandOutcome.Committed)
         assertEquals(revision + 1, ledger.revision())
     }
 }

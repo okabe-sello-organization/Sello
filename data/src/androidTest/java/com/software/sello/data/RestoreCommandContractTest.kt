@@ -414,10 +414,10 @@ class RestoreCommandContractTest {
         val undo = ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
 
         assertEquals(
-            ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)),
+            CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)),
             draft
         )
-        assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)), undo)
+        assertEquals(CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)), undo)
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM deleted_expense"))
         assertEquals(3L, ledger.long("SELECT COUNT(*) FROM expense"))
     }

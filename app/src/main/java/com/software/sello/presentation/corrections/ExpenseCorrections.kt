@@ -327,16 +327,16 @@ class ExpenseCorrections(
         val operation = operation()
         val command = DeleteExpense(operation, generation, expenseId, expectedVersion)
         val committed = when (val outcome = commands.delete(command)) {
-            is ExpenseCommandOutcome.Committed -> true
+            is CommandOutcome.Committed -> true
 
             // Asked, never sent again: only a receipt says it was deleted.
-            is ExpenseCommandOutcome.OutcomeUnknown ->
+            is CommandOutcome.OutcomeUnknown ->
                 (commands.find(operation) as? Outcome.Success)?.value != null
 
-            is ExpenseCommandOutcome.Rejected -> return@async when (outcome.reason) {
-                ExpenseRejection.ExpenseMissing -> DeleteResult.Gone
-                is ExpenseRejection.VersionConflict -> DeleteResult.Changed
-                is ExpenseRejection.StaleGeneration -> DeleteResult.DataChanged
+            is CommandOutcome.Rejected -> return@async when (outcome.reason) {
+                Specific(ExpenseRejection.ExpenseMissing) -> DeleteResult.Gone
+                is CommandRejection.VersionConflict -> DeleteResult.Changed
+                is CommandRejection.StaleGeneration -> DeleteResult.DataChanged
                 else -> DeleteResult.Failed
             }
         }
@@ -427,16 +427,20 @@ class ExpenseCorrections(
     private suspend fun restore(offered: Pending): Undone {
         val command = RestoreExpense(offered.undoOperation, offered.generation, offered.deletionId)
         return when (val outcome = commands.restore(command)) {
-            is ExpenseCommandOutcome.Committed -> Undone.Restored
+            is CommandOutcome.Committed -> Undone.Restored
 
-            is ExpenseCommandOutcome.OutcomeUnknown -> {
+            is CommandOutcome.OutcomeUnknown -> {
                 val found = (commands.find(offered.undoOperation) as? Outcome.Success)?.value
                 if (found != null) Undone.Restored else Undone.Retry
             }
 
-            is ExpenseCommandOutcome.Rejected -> when (outcome.reason) {
-                ExpenseRejection.UndoExpired -> Undone.TooLate
-                ExpenseRejection.UndoConflict, is ExpenseRejection.StaleGeneration -> Undone.Blocked
+            is CommandOutcome.Rejected -> when (outcome.reason) {
+                Specific(ExpenseRejection.UndoExpired) -> Undone.TooLate
+
+                Specific(
+                    ExpenseRejection.UndoConflict
+                ), is CommandRejection.StaleGeneration -> Undone.Blocked
+
                 else -> Undone.Retry
             }
         }

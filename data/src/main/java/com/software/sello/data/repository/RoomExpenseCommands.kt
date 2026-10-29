@@ -18,15 +18,17 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.EffectiveDateError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.AuditClock
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
-import com.software.sello.domain.port.ExpenseCommandOutcome.Committed
-import com.software.sello.domain.port.ExpenseCommandOutcome.OutcomeUnknown
-import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.FinancialClock
@@ -93,7 +95,7 @@ class RoomExpenseCommands internal constructor(
         CommandRun.Unknown -> OutcomeUnknown(operationId)
     }
 
-    private fun failed(failure: StorageFailure) = Rejected(ExpenseRejection.StorageFailed(failure))
+    private fun failed(failure: StorageFailure) = Rejected(CommandRejection.StorageFailed(failure))
 
     private fun StoredReceipt.committedExpense() =
         CommittedExpense(receipt, checkNotNull(expenseId) { "Not an expense receipt" })
@@ -108,9 +110,9 @@ class RoomExpenseCommands internal constructor(
     ): ExpenseCommandOutcome =
         when (val start = database.startCommand(operationId, generation, kind, digest)) {
             is CommandStart.Proceed -> proceed(start.profile)
-            is CommandStart.Stale -> Rejected(ExpenseRejection.StaleGeneration(start.current))
+            is CommandStart.Stale -> Rejected(CommandRejection.StaleGeneration(start.current))
             is CommandStart.Replay -> Committed(start.original.committedExpense(), true)
-            CommandStart.Conflict -> Rejected(ExpenseRejection.OperationConflict)
+            CommandStart.Conflict -> Rejected(CommandRejection.OperationConflict)
             is CommandStart.Damaged -> failed(start.failure)
         }
 
@@ -133,12 +135,18 @@ class RoomExpenseCommands internal constructor(
     /** Why an expense cannot be put into [categoryId], or null when it can. */
     private suspend fun categoryRejection(categoryId: CategoryId): ExpenseCommandOutcome? {
         val category = database.categoryDao().byId(categoryId.value)
-            ?: return Rejected(ExpenseRejection.CategoryMissing)
+            ?: return Rejected(Specific(ExpenseRejection.CategoryMissing))
         return when (val stored = category.toDomain()) {
             is Outcome.Failure -> failed(stored.error)
 
             is Outcome.Success ->
-                if (stored.value.archived) Rejected(ExpenseRejection.CategoryArchived) else null
+                if (stored.value.archived) {
+                    Rejected(
+                        Specific(ExpenseRejection.CategoryArchived)
+                    )
+                } else {
+                    null
+                }
         }
     }
 
@@ -171,7 +179,7 @@ class RoomExpenseCommands internal constructor(
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             categoryRejection(command.categoryId)?.let { return it }
-            dateRejection(command.date)?.let { return Rejected(it) }
+            dateRejection(command.date)?.let { return Rejected(Specific(it)) }
 
             val now = audit.now()
             val expenseId = when (val id = ExpenseId.of(ids.next())) {
@@ -225,26 +233,26 @@ class RoomExpenseCommands internal constructor(
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             val row = database.expenseDao().byId(command.expenseId.value)
-                ?: return Rejected(ExpenseRejection.ExpenseMissing)
+                ?: return Rejected(Specific(ExpenseRejection.ExpenseMissing))
             val current = when (val stored = row.toDomain()) {
                 is Outcome.Success -> stored.value
                 is Outcome.Failure -> return failed(stored.error)
             }
             if (current.version != command.expectedVersion) {
-                return Rejected(ExpenseRejection.VersionConflict(current.version))
+                return Rejected(CommandRejection.VersionConflict(current.version))
             }
             val same = current.categoryId == command.categoryId &&
                 current.amount == command.amount &&
                 current.date == command.date &&
                 current.note == command.note
-            if (same) return Rejected(ExpenseRejection.Unchanged)
+            if (same) return Rejected(Specific(ExpenseRejection.Unchanged))
             if (command.categoryId != current.categoryId) {
                 categoryRejection(command.categoryId)?.let { return it }
             }
             // As with the category, only where it is moved to is checked: an expense
             // already dated after today can still have its other fields corrected.
             if (command.date != current.date) {
-                dateRejection(command.date)?.let { return Rejected(it) }
+                dateRejection(command.date)?.let { return Rejected(Specific(it)) }
             }
             val edited = current.copy(
                 categoryId = command.categoryId,
@@ -289,9 +297,9 @@ class RoomExpenseCommands internal constructor(
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             val row = database.expenseDao().byId(command.expenseId.value)
-                ?: return Rejected(ExpenseRejection.ExpenseMissing)
+                ?: return Rejected(Specific(ExpenseRejection.ExpenseMissing))
             if (row.version != command.expectedVersion) {
-                return Rejected(ExpenseRejection.VersionConflict(row.version))
+                return Rejected(CommandRejection.VersionConflict(row.version))
             }
             carryRejection(
                 profile,
@@ -343,14 +351,14 @@ class RoomExpenseCommands internal constructor(
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             val inTime =
                 undo.offered(UndoWindow.Kind.Expense)?.deletionId == command.deletionId
-            if (!inTime) return Rejected(ExpenseRejection.UndoExpired)
+            if (!inTime) return Rejected(Specific(ExpenseRejection.UndoExpired))
             val kept = database.deletedExpenseDao().find(command.deletionId.value)
-                ?: return Rejected(ExpenseRejection.UndoExpired)
+                ?: return Rejected(Specific(ExpenseRejection.UndoExpired))
             val taken = kept.generation != profile.generation ||
                 database.expenseDao().byId(kept.expenseId) != null ||
                 database.expenseDao().countAtSequence(kept.sequence) != 0 ||
                 kept.originTaken()
-            if (taken) return Rejected(ExpenseRejection.UndoConflict)
+            if (taken) return Rejected(Specific(ExpenseRejection.UndoConflict))
 
             val restored = ExpenseEntity(
                 id = kept.expenseId,

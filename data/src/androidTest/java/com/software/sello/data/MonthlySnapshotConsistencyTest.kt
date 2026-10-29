@@ -63,7 +63,7 @@ class MonthlySnapshotConsistencyTest {
         val outcome = ledger.expenses.create(ledger.createExpense(category, date, pesos))
         assertTrue(
             "$outcome",
-            outcome is com.software.sello.domain.port.ExpenseCommandOutcome.Committed
+            outcome is com.software.sello.domain.port.CommandOutcome.Committed
         )
     }
 

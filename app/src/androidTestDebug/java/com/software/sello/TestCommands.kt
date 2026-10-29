@@ -151,7 +151,7 @@ object TestCommands {
                     Note.of(note).value()
                 )
             )
-            assertTrue("$outcome", outcome is ExpenseCommandOutcome.Committed)
+            assertTrue("$outcome", outcome is CommandOutcome.Committed)
         }
 
     private fun goalVersion(id: String): Long =

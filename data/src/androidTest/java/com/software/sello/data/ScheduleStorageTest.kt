@@ -19,6 +19,8 @@ import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
@@ -314,7 +316,7 @@ class ScheduleStorageTest {
     fun aDeletedOccurrenceComesBackWithItsOriginOnUndo() = runBlocking {
         hogar()
         val created = ledger.expenses.create(ledger.createExpense(100, "2026-10-05", 950_000))
-        val expense = (created as ExpenseCommandOutcome.Committed).expense.expenseId
+        val expense = (created as CommandOutcome.Committed).value.expenseId
         ledger.database.openHelper.writableDatabase.execSQL(
             "UPDATE expense SET origin_schedule_id = '$rent', origin_date = '2026-10-05', " +
                 "origin_slot = 1 WHERE id = '${expense.value}'"
@@ -328,7 +330,7 @@ class ScheduleStorageTest {
         )
         val restored = ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
 
-        assertTrue("$restored", restored is ExpenseCommandOutcome.Committed)
+        assertTrue("$restored", restored is CommandOutcome.Committed)
         assertEquals(
             listOf("$rent|2026-10-05|1"),
             ledger.rows("expense", "origin_schedule_id", "origin_date", "origin_slot")
@@ -339,7 +341,7 @@ class ScheduleStorageTest {
     fun undoIsRefusedWhileAnotherEntryRecordsTheSameOccurrence() = runBlocking {
         hogar()
         val created = ledger.expenses.create(ledger.createExpense(100, "2026-10-05", 950_000))
-        val expense = (created as ExpenseCommandOutcome.Committed).expense.expenseId
+        val expense = (created as CommandOutcome.Committed).value.expenseId
         ledger.database.openHelper.writableDatabase.execSQL(
             "UPDATE expense SET origin_schedule_id = '$rent', origin_date = '2026-10-05', " +
                 "origin_slot = 1 WHERE id = '${expense.value}'"
@@ -350,6 +352,6 @@ class ScheduleStorageTest {
 
         val restored = ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
 
-        assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.UndoConflict), restored)
+        assertEquals(CommandOutcome.Rejected(Specific(ExpenseRejection.UndoConflict)), restored)
     }
 }

@@ -9,14 +9,14 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
+import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.ExpenseCommandOutcome
-import com.software.sello.domain.port.ExpenseCommandOutcome.OutcomeUnknown
-import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalRejection
@@ -83,7 +83,7 @@ class ExpenseCorrectionsTest {
         )
 
     private val storageFailed =
-        Rejected(ExpenseRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")))
+        Rejected(CommandRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")))
 
     init {
         // As the real commands do: a committed deletion is on offer for six seconds.
@@ -133,9 +133,9 @@ class ExpenseCorrectionsTest {
     @Test
     fun aDeletionThatWasRefusedSaysWhyAndOffersNothing() = test {
         val answers = listOf(
-            Rejected(ExpenseRejection.ExpenseMissing) to DeleteResult.Gone,
-            Rejected(ExpenseRejection.VersionConflict(current = 4)) to DeleteResult.Changed,
-            Rejected(ExpenseRejection.StaleGeneration(current = 8)) to DeleteResult.DataChanged,
+            Rejected(Specific(ExpenseRejection.ExpenseMissing)) to DeleteResult.Gone,
+            Rejected(CommandRejection.VersionConflict(current = 4)) to DeleteResult.Changed,
+            Rejected(CommandRejection.StaleGeneration(current = 8)) to DeleteResult.DataChanged,
             storageFailed to DeleteResult.Failed
         )
 
@@ -290,17 +290,17 @@ class ExpenseCorrectionsTest {
 
     @Test
     fun anUndoThatCameTooLateOrIsBlockedSaysSoAndRestoresNothing() = test {
-        commands.restoreAnswer = { Rejected(ExpenseRejection.UndoExpired) }
+        commands.restoreAnswer = { Rejected(Specific(ExpenseRejection.UndoExpired)) }
         delete()
         corrections.undo()
         runCurrent()
         val late = notice
-        commands.restoreAnswer = { Rejected(ExpenseRejection.UndoConflict) }
+        commands.restoreAnswer = { Rejected(Specific(ExpenseRejection.UndoConflict)) }
         delete()
         corrections.undo()
         runCurrent()
         val conflict = notice
-        commands.restoreAnswer = { Rejected(ExpenseRejection.StaleGeneration(current = 9)) }
+        commands.restoreAnswer = { Rejected(CommandRejection.StaleGeneration(current = 9)) }
         delete()
         corrections.undo()
         runCurrent()
@@ -319,7 +319,7 @@ class ExpenseCorrectionsTest {
         val failed = notice
         commands.restoreAnswer =
             {
-                ExpenseCommandOutcome.Committed(
+                CommandOutcome.Committed(
                     commands.committed(it.operationId),
                     replayed = false
                 )

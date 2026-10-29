@@ -156,21 +156,21 @@ class HandExpenseCommands : ExpenseCommands {
     val restored = mutableListOf<RestoreExpense>()
     val looked = mutableListOf<OperationId>()
     var answer: (CreateExpense) -> ExpenseCommandOutcome =
-        { ExpenseCommandOutcome.Committed(committed(it.operationId), replayed = false) }
+        { CommandOutcome.Committed(committed(it.operationId), replayed = false) }
     var editAnswer: (EditExpense) -> ExpenseCommandOutcome = {
-        ExpenseCommandOutcome.Committed(
+        CommandOutcome.Committed(
             committed(it.operationId, it.expenseId, OperationKind.EditExpense),
             replayed = false
         )
     }
     var deleteAnswer: (DeleteExpense) -> ExpenseCommandOutcome = {
-        ExpenseCommandOutcome.Committed(
+        CommandOutcome.Committed(
             committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
             replayed = false
         )
     }
     var restoreAnswer: (RestoreExpense) -> ExpenseCommandOutcome = {
-        ExpenseCommandOutcome.Committed(
+        CommandOutcome.Committed(
             committed(it.operationId, expenseId(900), OperationKind.RestoreExpense),
             replayed = false
         )

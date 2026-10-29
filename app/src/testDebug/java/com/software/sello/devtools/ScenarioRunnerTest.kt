@@ -144,13 +144,13 @@ class LedgerExpenses(private val ledger: Ledger) : ExpenseCommands {
             OperationKind.CreateExpense,
             command.date
         )?.let { (receipt, id, replayed) ->
-            ExpenseCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedExpense(receipt, ExpenseId.of(id).value()),
                 replayed
             )
-        } ?: ExpenseCommandOutcome.Rejected(ExpenseRejection.CategoryMissing)
+        } ?: CommandOutcome.Rejected(Specific(ExpenseRejection.CategoryMissing))
     } catch (_: Ledger.Unknown) {
-        ExpenseCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(

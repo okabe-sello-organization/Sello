@@ -272,7 +272,7 @@ class CarryoverMigrationTest {
         assertEquals(emptyList<Any>(), history.replay.months)
         // The receipt version 6 committed still answers the same command, unchanged.
         assertEquals(
-            ExpenseCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedExpense(
                     OperationReceipt(
                         operationIdOf(9),
