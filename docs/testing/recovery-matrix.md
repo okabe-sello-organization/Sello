@@ -89,7 +89,7 @@ is refused, even when restored record identifiers match earlier ones.
 
 | Situation | What happens | Proof |
 | --- | --- | --- |
-| The database cannot be opened (damaged, newer, unreadable) | The start-up failure screen; it is never shown as an empty ledger. Intentar de nuevo, Restaurar un respaldo or Empezar de cero | `StartupTest`; `StartupFailureScreenTest` |
+| The database cannot be opened (damaged, newer, unreadable) | The start-up failure screen; it is never shown as an empty ledger. Intentar de nuevo, Restaurar un respaldo or Empezar de cero | `StartupTest`; `StartupFailureScreenTest` (the screen, on the JVM) |
 | Empezar de cero | The file is kept whole as `sello-unreadable.db`; the next open is empty | `UnreadableFileSetAsideTest.aDamagedFileIsKeptByteForByteAndTheNextOpenIsANewEmptyHistory` |
 | Restore at start-up | Checked before anything moves; set aside, new store filled from the backup | `RestoreAfterSetAsideTest`; `StartupTest` |
 | Restore at start-up cannot finish after the set-aside | "La restauración no terminó", then a restart; Respaldo can restore again | `StartupTest.aReplacementThatFailedOrMayHaveFailedIsInterruptedNotRestored` |
