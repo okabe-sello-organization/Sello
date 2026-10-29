@@ -38,11 +38,16 @@ class StartupFailureViewModel(
         val now = mutable.value
         // The data has been moved and the app is starting again: nothing else applies.
         if (now.startedOver) return
+        // An open or a move is under way; its outcome decides what applies next.
+        if (now.busy) return
         if (now.restoreBegun) return afterRestore(action)
         when (action) {
             StartupFailureAction.Retry -> {
-                val opened = recovery.retry()
-                mutable.update { it.copy(stillFailing = !opened) }
+                mutable.update { it.copy(busy = true) }
+                viewModelScope.launch {
+                    val opened = recovery.retry()
+                    mutable.update { it.copy(busy = false, stillFailing = !opened) }
+                }
             }
 
             StartupFailureAction.StartOver -> if (!now.choosing) {
@@ -56,9 +61,14 @@ class StartupFailureViewModel(
             }
 
             StartupFailureAction.Confirm -> if (now.confirming && now.canConfirm) {
-                val moved = recovery.setAside()
-                warning(open = false)
-                mutable.update { it.copy(startedOver = moved, notSetAside = !moved) }
+                mutable.update { it.copy(busy = true) }
+                viewModelScope.launch {
+                    val moved = recovery.setAside()
+                    warning(open = false)
+                    mutable.update {
+                        it.copy(busy = false, startedOver = moved, notSetAside = !moved)
+                    }
+                }
             }
 
             StartupFailureAction.Cancel -> warning(open = false)

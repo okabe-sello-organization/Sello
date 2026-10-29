@@ -10,14 +10,20 @@ import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.Restores
 import com.software.sello.feature.startup.StartupRecovery
 import com.software.sello.feature.startup.StartupRestore
-import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
-/** Whether the app has its data. There is no third case that shows the app without it. */
+/** Whether the app has its data. No case shows the app without it. */
 sealed interface StartupState {
+    /** The data is being opened. Neither the app nor the failure screen is shown yet. */
+    data object Opening : StartupState
+
     /** The data opened and the graph was built on it. */
     class Ready(val viewModels: ViewModelProvider.Factory) : StartupState
 
@@ -44,30 +50,45 @@ class ChosenBackup(val bytes: ByteArray, val checked: CheckedBackup)
  * reads the restored zone and history from the start. Once that store is open nothing
  * here opens or moves anything again.
  *
- * Everything here runs on the main thread, as the application's start does, which is
- * what keeps two attempts from overlapping.
+ * Creating it only begins the first open, in [scope]: the state is [StartupState.Opening]
+ * until [start] answers, so the application's start never waits on the disk. [start] and
+ * [moveUnreadable] do their file work off the main thread themselves. Opens, moves and
+ * restores take turns, one at a time, and each runs to its end in [scope] even when the
+ * caller goes away; the caller's cancellation is still rethrown to it.
  */
 class Startup(
-    private val start: () -> Outcome<Started, StorageFailure>,
-    private val moveUnreadable: () -> Outcome<Unit, StorageFailure>,
+    private val scope: CoroutineScope,
+    private val start: suspend () -> Outcome<Started, StorageFailure>,
+    private val moveUnreadable: suspend () -> Outcome<Unit, StorageFailure>,
     private val readBackup: suspend (DocumentSource) -> Outcome<ChosenBackup, RestoreRejection>
 ) : StartupRecovery {
-    private val mutable = MutableStateFlow(attempt())
+    private val mutable = MutableStateFlow<StartupState>(StartupState.Opening)
     val state: StateFlow<StartupState> = mutable.asStateFlow()
+
+    private val turns = Mutex()
 
     private var chosen: ChosenBackup? = null
 
     /** The store a restore opened. It is never shown and never opened twice. */
     private var restoring: Started? = null
 
-    override fun retry(): Boolean {
-        if (mutable.value is StartupState.Failed && restoring == null) mutable.value = attempt()
-        return mutable.value is StartupState.Ready
+    init {
+        scope.launch { turns.withLock { mutable.value = attempt() } }
     }
 
-    override fun setAside(): Boolean = mutable.value is StartupState.Failed &&
-        restoring == null &&
-        moveUnreadable() is Outcome.Success
+    override suspend fun retry(): Boolean = inTurn {
+        if (mutable.value is StartupState.Failed && restoring == null) {
+            mutable.value = StartupState.Opening
+            mutable.value = attempt()
+        }
+        mutable.value is StartupState.Ready
+    }
+
+    override suspend fun setAside(): Boolean = inTurn {
+        mutable.value is StartupState.Failed &&
+            restoring == null &&
+            moveUnreadable() is Outcome.Success
+    }
 
     override suspend fun check(source: DocumentSource): Outcome<CheckedBackup, RestoreRejection> {
         chosen = null
@@ -85,16 +106,16 @@ class Startup(
         chosen = null
     }
 
-    override suspend fun restore(): StartupRestore = withContext(NonCancellable) {
+    override suspend fun restore(): StartupRestore = inTurn {
         val backup = chosen
         if (backup == null || mutable.value !is StartupState.Failed || restoring != null) {
-            return@withContext StartupRestore.NotSetAside
+            return@inTurn StartupRestore.NotSetAside
         }
-        if (moveUnreadable() !is Outcome.Success) return@withContext StartupRestore.NotSetAside
+        if (moveUnreadable() !is Outcome.Success) return@inTurn StartupRestore.NotSetAside
         val started = when (val opened = start()) {
             is Outcome.Failure -> {
                 mutable.value = StartupState.Failed(opened.error)
-                return@withContext StartupRestore.Interrupted
+                return@inTurn StartupRestore.Interrupted
             }
 
             is Outcome.Success -> opened.value
@@ -103,7 +124,7 @@ class Startup(
         chosen = null
         val staged = when (val stage = started.restores.stage(backup.bytes)) {
             is Outcome.Success -> stage.value
-            is Outcome.Failure -> return@withContext StartupRestore.Interrupted
+            is Outcome.Failure -> return@inTurn StartupRestore.Interrupted
         }
         when (val outcome = started.restores.replace(staged)) {
             is RestoreOutcome.Restored -> StartupRestore.Restored(outcome)
@@ -114,7 +135,11 @@ class Startup(
     override suspend fun applyPending(): RestoreOutcome.Restored? =
         restoring?.restores?.applyPending()
 
-    private fun attempt(): StartupState = when (val started = start()) {
+    /** Runs [step] after any step before it, to its end; a cancelled caller stops waiting. */
+    private suspend fun <T> inTurn(step: suspend () -> T): T =
+        scope.async { turns.withLock { step() } }.await()
+
+    private suspend fun attempt(): StartupState = when (val started = start()) {
         is Outcome.Success -> StartupState.Ready(started.value.viewModels)
         is Outcome.Failure -> StartupState.Failed(started.error)
     }

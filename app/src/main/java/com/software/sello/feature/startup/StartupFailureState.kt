@@ -12,13 +12,13 @@ import com.software.sello.domain.port.RestoreRejection
  */
 interface StartupRecovery {
     /** Opens the data again. True when it opened and the app can be shown. */
-    fun retry(): Boolean
+    suspend fun retry(): Boolean
 
     /**
      * Moves the data that could not be opened out of the way, keeping it, so the next
      * start is an empty one. True when it was moved. Never touches data that opened.
      */
-    fun setAside(): Boolean
+    suspend fun setAside(): Boolean
 
     /** Reads and checks a backup the person chose, whole. Nothing is opened, moved or written. */
     suspend fun check(source: DocumentSource): Outcome<CheckedBackup, RestoreRejection>
@@ -81,6 +81,8 @@ sealed interface StartupRestoreStep {
 data class StartupFailureState(
     /** Trying again was asked for and the data still did not open. */
     val stillFailing: Boolean = false,
+    /** Trying again or setting the data aside is under way; nothing else starts meanwhile. */
+    val busy: Boolean = false,
     /** The warning before starting from zero is open. */
     val confirming: Boolean = false,
     /** Exactly what was typed to confirm. */

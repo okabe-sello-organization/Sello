@@ -19,6 +19,9 @@ import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
 import com.software.sello.composition.SelloApplication
 import com.software.sello.composition.StartupState
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 
 /*
  * The app reads its database off the main thread, which the test framework does not
@@ -100,6 +103,12 @@ private fun keyboardShown(): Boolean {
     return shown
 }
 
-/** The installed app's own view models. A test run starts on data that opened. */
-fun SelloApplication.readyViewModels(): ViewModelProvider.Factory =
-    (startup.state.value as StartupState.Ready).viewModels
+/**
+ * The installed app's own view models, once its data opened. A test run starts on
+ * data that opens.
+ */
+fun SelloApplication.readyViewModels(): ViewModelProvider.Factory = runBlocking {
+    withTimeout(PATIENCE_MILLIS) {
+        startup.state.first { it != StartupState.Opening } as StartupState.Ready
+    }.viewModels
+}

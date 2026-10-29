@@ -42,7 +42,6 @@ import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRecordReads
 import com.software.sello.platform.deviceZone
 import java.time.ZoneId
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -53,21 +52,22 @@ class OpenedStorage(val storage: FinancialStorage, val profile: FinancialProfile
 
 /**
  * Opens the database and establishes the profile: stored on first use with
- * [deviceZone], read back on every later start. It waits for that one small read
- * because the financial zone must be known before anything computes a date.
+ * [deviceZone], read back on every later start. Nothing is built before that one small
+ * read, because the financial zone must be known before anything computes a date; the
+ * caller waits for it without blocking, and the work runs on [DispatcherProvider.io].
  *
  * A database that cannot be read is a failure with the storage closed again. It is
  * never replaced by an empty one and the device zone is never used in its place.
  */
-fun openStorage(
+suspend fun openStorage(
     context: Context,
     deviceZone: ZoneId,
     dispatchers: DispatcherProvider,
     audit: AuditClock,
     names: StorageNames = StorageNames.Normal
-): Outcome<OpenedStorage, StorageFailure> {
+): Outcome<OpenedStorage, StorageFailure> = withContext(dispatchers.io) {
     val storage = openFinancialStorage(context, dispatchers.io, audit, names)
-    val opened = runBlocking {
+    val opened = try {
         when (val profile = storage.profiles.establish(deviceZone)) {
             is Outcome.Failure -> profile
 
@@ -77,16 +77,22 @@ fun openStorage(
                 is Outcome.Success -> Outcome.Success(OpenedStorage(storage, profile.value))
             }
         }
+    } catch (stopped: Throwable) {
+        // Cancelled or thrown part way: nothing holds this storage, so it is closed.
+        storage.close()
+        throw stopped
     }
     if (opened is Outcome.Failure) storage.close()
-    return opened
+    opened
 }
 
-/** Keeps the file that could not be opened under another name; see `:data`. */
-fun setAsideStorage(
+/** Keeps the file that could not be opened under another name, on [DispatcherProvider.io]. */
+suspend fun setAsideStorage(
     context: Context,
+    dispatchers: DispatcherProvider,
     names: StorageNames = StorageNames.Normal
-): Outcome<Unit, StorageFailure> = setAsideFinancialStorage(context, names)
+): Outcome<Unit, StorageFailure> =
+    withContext(dispatchers.io) { setAsideFinancialStorage(context, names) }
 
 /** Ports backed by the database. Closing the graph closes the database. */
 fun storageModule(storage: FinancialStorage): Module = module {

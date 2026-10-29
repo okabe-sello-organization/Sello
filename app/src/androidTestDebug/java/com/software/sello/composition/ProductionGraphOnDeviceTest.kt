@@ -55,13 +55,15 @@ class ProductionGraphOnDeviceTest {
     /** The production modules and [ProductionComposition] on new data, as a release build starts. */
     private fun releaseGraph(): Koin {
         eraseFinancialStorage(context, names)
-        val opened = openStorage(
-            context,
-            ZoneId.systemDefault(),
-            SystemDispatcherProvider(),
-            SystemAuditClock(),
-            names
-        ) as Outcome.Success
+        val opened = runBlocking {
+            openStorage(
+                context,
+                ZoneId.systemDefault(),
+                SystemDispatcherProvider(),
+                SystemAuditClock(),
+                names
+            )
+        } as Outcome.Success
         val zone = ProcessFinancialZone().apply { initialize(opened.value.profile.zone) }
         return koinApplication {
             modules(
