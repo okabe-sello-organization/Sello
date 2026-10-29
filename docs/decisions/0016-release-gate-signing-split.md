@@ -39,8 +39,9 @@ device group on the nightly and manual runs:
 The build signs the release APK only from the owner's `sello.signing.*` Gradle
 properties; without them it stays unsigned and `release-production` fails: G3 is
 blocked, never satisfied by a debug or throwaway key. CI's run never completes a
-release: the release pull request reports the owner's passed `scripts/check --release`
-run, and the owner's go is what lets it merge.
+release. Since [ADR 0021](0021-ci-is-the-only-proof.md) the production-signing proof is
+the owner's local `scripts/check --release` result, stated in the release pull request;
+nothing in CI checks it. The owner merges releases (AGENTS.md, "Who merges").
 
 ## Consequences
 

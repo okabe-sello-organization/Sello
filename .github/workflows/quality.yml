@@ -19,7 +19,8 @@ permissions:
 
 concurrency:
   group: quality-${{ github.ref }}-${{ github.event_name }}
-  cancel-in-progress: true
+  # A newer push to a pull request replaces its run; runs on main always finish.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   BASE: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}

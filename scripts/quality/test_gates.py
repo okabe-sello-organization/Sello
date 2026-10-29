@@ -25,7 +25,7 @@ class GateTests(unittest.TestCase):
                      ":app:assembleRelease", ":app:assembleDebug", ":catalog:assembleDebug"):
             self.assertIn(task, gates.HOST_TASKS)
         self.assertEqual(("ktlintCheck",), gates.FORMAT_TASKS)
-        self.assertEqual(["tickets", "quality-tests", "performance-tests", "architecture", "links"],
+        self.assertEqual(["tickets", "quality-tests", "performance-tests", "architecture", "links", "licences"],
                          [name for name, _ in gates.FAST_CHECKS])
 
     def test_ci_release_checks_sign_with_a_throwaway_key_and_never_claim_production(self):
@@ -58,6 +58,18 @@ class GateTests(unittest.TestCase):
             with self.subTest(name=name), patch.dict(gates.DEVICE_GROUPS, groups, clear=True):
                 with self.assertRaises(ValueError):
                     gates.validate_device_groups()
+
+    def test_lint_errors_fail_the_build_because_nothing_relaxes_lint(self):
+        # Android lint aborts on errors by default; the gate relies on Gradle's exit code.
+        root = GUIDE.parents[2]
+        relaxing = re.compile(r"abortOnError\s*=\s*false|isAbortOnError\s*=\s*false|ignoreFailures\s*=\s*true"
+                              r"|baseline\s*[=(]|ignoreWarnings\s*=\s*true|checkReleaseBuilds\s*=\s*false")
+        builds = [*root.glob("*.gradle.kts"), *root.glob("*/build.gradle.kts"), *root.glob("gradle/*.kts")]
+        self.assertTrue(builds)
+        for build in builds:
+            with self.subTest(build=build.name):
+                self.assertIsNone(relaxing.search(build.read_text(encoding="utf-8")))
+        self.assertEqual([], [p for p in root.glob("**/lint*.xml") if "build" not in p.parts])
 
     def test_unit_test_tasks(self):
         self.assertEqual(":domain:test", gates.unit_test_task("domain"))

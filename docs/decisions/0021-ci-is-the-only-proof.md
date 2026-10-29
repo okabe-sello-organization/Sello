@@ -22,7 +22,9 @@ could never turn it green, and a red test was hard to find in the logs.
 - The pull request's required `quality` check is the only proof. No report, field,
   fingerprint or hash is committed or validated; `scripts/verify-ticket` is gone.
   `tickets.py check` validates structure, IDs, statuses and dependencies only.
-- Documents alone get G0 on a pull request, even when they advance a ticket.
+- Documents alone get G0 on a pull request, even when they advance a ticket. Markdown
+  inside a `src/` directory is code, and a document a test reads
+  (`selection.HOST_INPUTS`, kept complete by a test) runs those tests.
   Python tooling and unit tests alone get the host gate. Other paths select device
   suites by the module map in `scripts/quality/selection.py`; build files, workflows,
   lockfiles, `gradle/`, the scripts the device jobs run and unknown paths select all.
@@ -34,18 +36,22 @@ could never turn it green, and a red test was hard to find in the logs.
 - `scripts/check` is the local loop and the command CI runs. Pushes to `main` keep
   G1 to publish trusted caches; the nightly keeps G3 on `main` with a throwaway key,
   only when `main` moved; manual runs keep G3.
-- A release still needs the owner's production signing (ADR 0016):
-  `scripts/check --release` on the owner's machine, reported in the release pull
-  request.
+- The production-signing proof of a release (ADR 0016) is now the owner's local
+  `scripts/check --release` result, stated in the release pull request. Nothing in
+  CI checks it: the owner merges releases (AGENTS.md, "Who merges"), and that merge
+  is the acceptance.
+- A ticket's `Gate` field is advisory; CI selects by changed paths. Runs on `main`
+  are never cancelled by a newer run; pull request runs are.
 
 ## Consequences
 
 - A ticket's pull request needs no local gate; contributors run focused checks and
   the device tests they wrote. The check's history on GitHub is the record; a merged
   ticket points at its pull request.
-- A pull request that only changes documents read by tests (for example
-  `docs/testing/sandbox-scenarios.md`) gets G0; the push to `main` gets G0 too, and
-  the nightly is the first run that executes those tests.
+- A new test that reads a `docs/` file must list it in `selection.HOST_INPUTS`, or
+  `test_selection` fails.
+- The licence list is a fast check, so a dependency change without its reviewed
+  listing fails on the pull request rather than the nightly.
 - Existing `evidence.md` and `quality-report.json` files stay as history until the
   ticket format changes; nothing reads them.
 - Tests: `test_selection` (plans per path and event), `test_check` (arguments, stage

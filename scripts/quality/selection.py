@@ -1,6 +1,7 @@
 """What a hosted run verifies: the gate and the device groups, from the event and the changed paths.
 
-Documents (Markdown anywhere, recognized content under docs/) → G0, Python/Git only.
+Documents (Markdown outside src/ directories, recognized content under docs/) → G0,
+Python/Git only, except the documents tests read (HOST_INPUTS), which run those tests.
 Tooling under scripts/ → host checks only, unless the device job runs it.
 Module sources select the device suites of that module's consumers. Build files,
 workflows, lockfiles, gradle/ and unknown paths select every device suite.
@@ -27,14 +28,27 @@ DEVICE_SCRIPTS = (
     "scripts/quality/junit.py", "scripts/quality/selection.py",
 )
 EVENTS = ("pull_request", "push", "schedule", "workflow_dispatch")
+# Documents that tests read, and the device suites that read them (() = host tests only).
+# test_selection fails when a test starts reading a docs/ file that is not listed here.
+HOST_INPUTS = {
+    "docs/testing/sandbox-scenarios.md": (),  # app ScenarioDefinitionTest (testDebug)
+}
 
 
 def is_document(path):
-    return path.endswith(".md") or (path.startswith("docs/") and path.endswith(DOCUMENT_SUFFIXES))
+    if path in HOST_INPUTS:
+        return False
+    if path.endswith(".md"):
+        # Markdown is a document at the root, in docs/ or .github/, and anywhere outside src/.
+        return ("/" not in path or path.startswith(("docs/", ".github/"))
+                or "src" not in path.split("/")[:-1])
+    return path.startswith("docs/") and path.endswith(DOCUMENT_SUFFIXES)
 
 
 def device_modules(path):
     """The device suites a non-document path can affect; () for host-only paths."""
+    if path in HOST_INPUTS:
+        return HOST_INPUTS[path]
     if path in DEVICE_SCRIPTS:
         return MODULES
     if path.startswith("scripts/"):
@@ -99,9 +113,21 @@ def resolve(root, base):
     return result.stdout.strip() if result.returncode == 0 else None
 
 
+def merge_base(root, base):
+    """Where HEAD left [base]: a branch name compares from there, as the pull request will."""
+    result = subprocess.run(["git", "-C", str(root), "merge-base", base, "HEAD"], capture_output=True, text=True)
+    return result.stdout.strip() if result.returncode == 0 else None
+
+
 def plan_for(root, event, base):
-    """Plan from the repository; an unknown base selects everything rather than nothing."""
+    """Plan from the repository; an unknown base selects everything rather than nothing.
+
+    CI passes the exact base commit. A name such as origin/main is compared from its
+    merge base with HEAD, so commits that landed on main since are not counted.
+    """
     resolved = resolve(root, base)
+    if resolved is not None and not re.fullmatch(r"[0-9a-f]{40}", base):
+        resolved = merge_base(root, resolved)
     if resolved is None:
         result = plan(event, ["<unknown base>"], base)
         result["changed"] = {}

@@ -1,6 +1,6 @@
 """What each gate runs. scripts/check executes it, locally and in the Quality workflow.
 
-G0  the Python/Git checks (FAST_CHECKS).
+G0  the Python/Git checks (FAST_CHECKS), including the release licence list.
 G1  G0, then ktlint, then every host test, lint and the assemblies (HOST_TASKS).
 G2  G1 plus the device suites of the selected modules on an API-30 emulator.
 G3  every device suite, then the release checks (ADR 0016): the owner's production
@@ -17,6 +17,7 @@ FAST_CHECKS = (
     ("performance-tests", ("python3", "-m", "unittest", "discover", "-s", "scripts/performance", "-p", "test_*.py")),
     ("architecture", ("python3", "scripts/quality/architecture.py")),
     ("links", ("python3", "scripts/quality/links.py")),
+    ("licences", ("python3", "scripts/quality/licenses.py", "check")),
 )
 FORMAT_TASKS = ("ktlintCheck",)
 HOST_TASKS = (

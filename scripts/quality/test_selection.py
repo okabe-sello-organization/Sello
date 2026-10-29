@@ -3,6 +3,7 @@ import re
 import subprocess
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 import selection
@@ -24,6 +25,45 @@ class PullRequestPlanTests(unittest.TestCase):
             with self.subTest(paths=paths):
                 plan = pr(*paths)
                 self.assertEqual(("G0", False, [], []), (plan["gate"], plan["host"], plan["modules"], plan["groups"]))
+
+    def test_documents_that_tests_read_run_those_tests(self):
+        for event in ("pull_request", "push"):
+            with self.subTest(event=event):
+                plan = selection.plan(event, ["docs/testing/sandbox-scenarios.md"])
+                self.assertEqual(("G1", True, []), (plan["gate"], plan["host"], plan["groups"]))
+                self.assertEqual({"docs/testing/sandbox-scenarios.md": "host"}, plan["changed"])
+        with unittest.mock.patch.dict(selection.HOST_INPUTS, {"docs/testing/device-corpus.md": ("data",)}):
+            self.assertEqual(("G2", ["data"], ["support"]),
+                             tuple(pr("docs/testing/device-corpus.md")[k] for k in ("gate", "modules", "groups")))
+
+    def test_every_docs_file_a_test_reads_is_a_host_input(self):
+        root = Path(__file__).resolve().parents[2]
+        listed = subprocess.run(["git", "-C", str(root), "ls-files", "*/src/test*", "*/src/androidTest*"],
+                                check=True, capture_output=True, text=True).stdout.split()
+        for source in listed:
+            text = (root / source).read_text(encoding="utf-8", errors="replace")
+            module, _, relative = source.partition("/")
+            for path in re.findall(r'"(?:\.\./)*(docs/[^"]+)"', text):
+                with self.subTest(source=source, path=path):
+                    self.assertIn(path, selection.HOST_INPUTS, "add it to selection.HOST_INPUTS")
+                    if relative.startswith("src/androidTest"):
+                        self.assertIn(module, selection.HOST_INPUTS[path])
+        self.assertIn("docs/testing/sandbox-scenarios.md", selection.HOST_INPUTS)
+
+    def test_markdown_inside_a_source_directory_is_code(self):
+        expected = {
+            "app/src/main/assets/x.md": ("G2", ["app"]),
+            "design-system/src/main/res/raw/notes.md": ("G2", ["design-system", "app", "catalog"]),
+            "domain/src/test/resources/cases.md": ("G1", []),
+            "app/README.md": ("G0", []),
+            "docs/examples/src/a.md": ("G0", []),
+            ".github/pull_request_template.md": ("G0", []),
+            "AGENTS.md": ("G0", []),
+        }
+        for path, outcome in expected.items():
+            with self.subTest(path=path):
+                plan = pr(path)
+                self.assertEqual(outcome, (plan["gate"], plan["modules"]))
 
     def test_python_tooling_gets_the_host_gate_without_device_suites(self):
         for path in ("scripts/quality/tickets.py", "scripts/quality/links.py", "scripts/quality/test_tickets.py",
@@ -131,6 +171,20 @@ class RepositoryPlanTests(unittest.TestCase):
         plan = selection.plan_for(self.root, "pull_request", self.base)
         self.assertEqual(("G2", ["app"]), (plan["gate"], plan["modules"]))
         self.assertIn("app/src/main/Main.kt", plan["changed"])
+
+    def test_a_branch_name_is_compared_from_the_merge_base(self):
+        self.git("checkout", "-qb", "feature")
+        self.write("docs/notes.md", "Feature notes.\n")
+        self.git("commit", "-qam", "feature docs")
+        self.git("checkout", "-q", "main")
+        self.write("app/src/main/Main.kt", "fun main() = println(1)\n")
+        self.git("commit", "-qam", "main moved")
+        tip = self.git("rev-parse", "HEAD").strip()
+        self.git("checkout", "-q", "feature")
+        plan = selection.plan_for(self.root, "pull_request", "main")
+        self.assertEqual(("G0", self.base, ["docs/notes.md"]), (plan["gate"], plan["base"], list(plan["changed"])))
+        # CI passes the exact base commit and gets exactly that comparison.
+        self.assertEqual("G2", selection.plan_for(self.root, "pull_request", tip)["gate"])
 
     def test_an_unknown_base_selects_everything_instead_of_nothing(self):
         plan = selection.plan_for(self.root, "pull_request", "0" * 40)

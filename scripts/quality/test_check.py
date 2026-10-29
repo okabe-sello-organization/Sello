@@ -113,19 +113,21 @@ class CheckTests(unittest.TestCase):
     def test_fast_runs_every_python_check_and_no_gradle(self):
         self.fake.exit_codes = {"scripts/quality/tickets.py": 1}
         self.assertEqual(1, self.check("--fast"))
-        self.assertEqual(["tickets.py", "scripts/quality", "scripts/performance", "architecture.py", "links.py"], self.fake.names())
+        self.assertEqual(["tickets.py", "scripts/quality", "scripts/performance", "architecture.py", "links.py", "licenses.py"],
+                         self.fake.names())
         self.assertIn("`tickets`", self.summary.read_text(encoding="utf-8"))
 
     def test_host_runs_cheap_checks_first_then_ktlint_then_the_gradle_host_gate(self):
         self.assertEqual(0, self.check("--host"))
         names = self.fake.names()
-        self.assertEqual(["tickets.py", "scripts/quality", "scripts/performance", "architecture.py", "links.py", "ktlintCheck"], names[:6])
-        self.assertTrue(names[6].startswith(":domain:test :data:testDebugUnitTest"))
-        self.assertEqual(7, len(names))
+        self.assertEqual(["tickets.py", "scripts/quality", "scripts/performance", "architecture.py", "links.py", "licenses.py",
+                          "ktlintCheck"], names[:7])
+        self.assertTrue(names[7].startswith(":domain:test :data:testDebugUnitTest"))
+        self.assertEqual(8, len(names))
         self.assertIn("### Host tests: 2 passed, 0 failed, 0 skipped", self.summary.read_text(encoding="utf-8"))
 
     def test_a_failed_cheap_stage_stops_before_gradle(self):
-        for failing, ran in (("links.py", 5), ("ktlintCheck", 6)):
+        for failing, ran in (("links.py", 6), ("ktlintCheck", 7)):
             with self.subTest(failing=failing):
                 self.fake.ran.clear()
                 self.fake.exit_codes = {"scripts/quality/links.py" if failing == "links.py" else failing: 1}
@@ -205,14 +207,14 @@ class CheckTests(unittest.TestCase):
     def test_release_runs_the_whole_gate_then_the_owners_signing_and_launch(self):
         self.assertEqual(0, self.check("--release", environ={"ANDROID_SERIAL": "emulator-5580"}))
         names = self.fake.names()
-        self.assertEqual("ktlintCheck", names[5])
-        self.assertTrue(names[6].startswith(":domain:test"))
+        self.assertEqual("ktlintCheck", names[6])
+        self.assertTrue(names[7].startswith(":domain:test"))
         self.assertEqual("ktlintCheck :data:assembleDebugAndroidTest :design-system:assembleDebugAndroidTest "
-                         ":app:assembleDebugAndroidTest :catalog:assembleDebugAndroidTest", names[7])
-        self.assertIn(":app:connectedDebugAndroidTest", names[8])
-        self.assertNotIn("numShards", names[8])
-        self.assertEqual(["licenses.py", "release.py", "release.py"], names[9:])
-        self.assertEqual(["check", "production", "launch"], [argv[-1] for argv in self.fake.ran[9:]])
+                         ":app:assembleDebugAndroidTest :catalog:assembleDebugAndroidTest", names[8])
+        self.assertIn(":app:connectedDebugAndroidTest", names[9])
+        self.assertNotIn("numShards", names[9])
+        self.assertEqual(["licenses.py", "release.py", "release.py"], names[10:])
+        self.assertEqual(["check", "production", "launch"], [argv[-1] for argv in self.fake.ran[10:]])
 
     # Plan
 

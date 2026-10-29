@@ -51,6 +51,11 @@ class HostedWorkflowTests(unittest.TestCase):
         self.assertNotIn('merge_group', self.code)
         self.assertIn('BASE: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}', self.code)
 
+    def test_only_pull_request_runs_are_cancelled_by_a_newer_run(self):
+        concurrency = self.code.split('concurrency:\n', 1)[1].split('\n\n', 1)[0]
+        self.assertIn('group: quality-${{ github.ref }}-${{ github.event_name }}', concurrency)
+        self.assertIn("cancel-in-progress: ${{ github.event_name == 'pull_request' }}", concurrency)
+
     def test_exactly_one_required_quality_result_depends_on_every_job(self):
         self.assertEqual({'plan', 'host', 'device', 'quality'}, set(self.jobs))
         self.assertEqual(1, len(re.findall(r'(?m)^    name: quality$', self.code)))

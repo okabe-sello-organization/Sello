@@ -9,7 +9,7 @@ focused checks with `scripts/check`; let the pull request run the gate.
 
 | Gate | Runs |
 | --- | --- |
-| G0 | The fast checks, Python and Git only: `tickets` (`tickets.py check`), `quality-tests`, `performance-tests`, `architecture` and `links`. |
+| G0 | The fast checks, Python and Git only: `tickets` (`tickets.py check`), `quality-tests`, `performance-tests`, `architecture`, `links` and `licences` (the release library list). |
 | G1 | G0, then ktlint, then every host test, lint and the debug and release assemblies. |
 | G2 | G1 plus the device suites the change can affect, on API-30 emulators. |
 | G3 | G1, every device suite, then the release checks of [ADR 0016](../decisions/0016-release-gate-signing-split.md). |
@@ -22,8 +22,8 @@ The Gradle part of G1, kept identical to `scripts/quality/gates.py` by a test:
   :catalog:testDebugUnitTest lintDebug :app:assembleDebug :app:assembleRelease :catalog:assembleDebug --continue
 ```
 
-A ticket's `Gate` field says which of these its work must pass; the pull request's
-plan decides what actually runs, from the changed paths.
+A ticket's `Gate` field is advisory: what the ticket expects to need. Nothing enforces
+it; CI selects the gate from the changed paths alone.
 
 ## What CI runs
 
@@ -56,7 +56,8 @@ How paths select device suites, in `scripts/quality/selection.py`:
 
 | Changed path | Device suites |
 | --- | --- |
-| Markdown anywhere; text, images, HTML, CSS, CSV and JSON under `docs/` | none (documents) |
+| Markdown outside `src/` directories; text, images, HTML, CSS, CSV and JSON under `docs/` | none (documents) |
+| Documents tests read (`HOST_INPUTS`, such as `docs/testing/sandbox-scenarios.md`) | host checks, plus the suites that read them |
 | `scripts/**`, except the scripts the device jobs run | none (host checks) |
 | `<module>/src/test*/` | none (host checks) |
 | `domain` or `data` sources, `data/schemas/` | data, app |
@@ -66,10 +67,9 @@ How paths select device suites, in `scripts/quality/selection.py`:
 | `<module>/src/androidTest*/` | that module's suite only |
 | Build files, lockfiles, `gradle/`, workflows, `scripts/check` and the modules it imports, unknown paths | all |
 
-Mixed changes union their suites. Only the groups that hold a selected suite start.
-There is no path filter: `quality` always reports. Pull requests read the Gradle
-caches; only runs on `main` write them, and only the `support` group on `main`
-saves the Android system image.
+Mixed changes union their suites; only groups holding a selected suite start. No path
+filter: `quality` always reports. Pull requests only read the Gradle caches; runs on
+`main` write them, and only its `support` group saves the Android system image.
 
 ## The local loop
 
@@ -81,7 +81,7 @@ scripts/check --fast                      # G0, seconds
 scripts/check --host                      # G1 exactly as CI runs it
 ANDROID_SERIAL=emulator-5580 scripts/check --device           # every device suite on your emulator
 ANDROID_SERIAL=emulator-5580 scripts/check --device support   # one hosted group
-scripts/check --plan origin/main          # what the pull request will run
+scripts/check --plan origin/main          # what the PR will run, from the merge base
 ```
 
 Run the device tests you wrote or changed on your own emulator ([setup](setup.md#device-smoke));
