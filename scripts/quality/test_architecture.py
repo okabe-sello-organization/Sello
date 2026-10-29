@@ -122,6 +122,29 @@ class ArchitectureTests(unittest.TestCase):
         write(self.root, path, "package com.software.sello.feature.expense\n\nimport com.software.sello.feature.income.IncomeScreen\n")
         self.assert_violation("feature-isolation", f"{path}:3")
 
+    def feature_importing(self, name):
+        write(self.root, f"{APP}/feature/income/IncomeScreen.kt", "package com.software.sello.feature.income\n\nclass IncomeScreen\n")
+        path = f"{APP}/feature/expense/Uses.kt"
+        write(self.root, path, f"package com.software.sello.feature.expense\n\nimport com.software.sello.feature.income.{name}\n")
+        return path
+
+    def test_feature_may_import_another_features_state_action_and_route_types(self):
+        for name in ("IncomeFormState", "IncomeFormAction", "IncomeFormAction.Save", "IncomeRoute", "IncomeFormActions"):
+            with self.subTest(name=name):
+                self.feature_importing(name)
+                self.assertEqual([], self.found())
+
+    def test_feature_may_name_another_features_state_fully_qualified(self):
+        write(self.root, f"{APP}/feature/expense/Qualified.kt",
+              "package com.software.sello.feature.expense\n\nval shown: com.software.sello.feature.income.IncomeFormState? = null\n")
+        self.assertEqual([], self.found())
+
+    def test_feature_cannot_import_another_features_view_model(self):
+        for name in ("IncomeFormViewModel", "IncomeFormViewModelState", "IncomeFormStateHolder", "incomeFormState", "sub.IncomeFormState", "*"):
+            with self.subTest(name=name):
+                path = self.feature_importing(name)
+                self.assert_violation("feature-isolation", f"{path}:3")
+
     def test_feature_may_reference_its_own_subpackages(self):
         write(self.root, f"{APP}/feature/expense/form/Form.kt",
               "package com.software.sello.feature.expense.form\n\nimport com.software.sello.feature.expense.ExpenseScreen\n")

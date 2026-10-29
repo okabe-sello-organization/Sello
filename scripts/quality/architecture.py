@@ -8,7 +8,8 @@ Rules
   domain-pure             :domain references Android, UI, storage, DI or HTTP libraries
   data-composition-only   :app references :data outside the composition package and directory
   composition-is-root     an :app feature references the composition package
-  feature-isolation       an :app feature references another feature's package
+  feature-isolation       an :app feature references another feature's package, other than its public
+                          State, Action or Route types (never its view models, screens or internals)
   debug-tools-in-release  developer tools are declared or referenced outside debug source sets
   ad-hoc-time             wall clock, device zone or uptime is read outside :app's platform package
   global-coroutines       GlobalScope anywhere, or a global dispatcher named outside the platform package
@@ -61,6 +62,8 @@ AD_HOC_TIME = re.compile(
 QUALIFIED_TIME = re.compile(r"(?<![\w.])(?:java\.time|java\.util|android\.os|kotlinx\.datetime)\.(?=[A-Z])")
 GLOBAL_SCOPE = re.compile(r"(?<![\w])GlobalScope\b")
 GLOBAL_DISPATCHER = re.compile(r"(?<![\w])Dispatchers\.(?:Main|Default|IO|Unconfined)\b")
+# What one feature may name of another: the types that describe a screen's contract.
+PUBLIC_CONTRACT = re.compile(r"\.([A-Z]\w*(?:State|Action|Route)s?)\b")
 KOIN = re.compile(r"(?<![\w.])org\.koin\.")
 
 
@@ -118,6 +121,12 @@ def line_of(text, offset):
     return text.count("\n", 0, offset) + 1
 
 
+def public_contract(code, offset):
+    """True when the reference that ends at offset goes on to name a State, Action or Route type."""
+    named = PUBLIC_CONTRACT.match(code, offset)
+    return bool(named) and "ViewModel" not in named.group(1)
+
+
 def source_violations(module, source_set, relative, text):
     code = code_only(text)
     declared = PACKAGE.search(code)
@@ -165,7 +174,14 @@ def source_violations(module, source_set, relative, text):
             report(match.start(), "debug-tools-in-release", f"source set '{source_set}' references developer tools")
         elif segment == "composition" and feature and not is_test:
             report(match.start(), "composition-is-root", "features must not reference the composition root")
-        elif segment == "feature" and feature and child and child != feature.group(1) and not is_test:
+        elif (
+            segment == "feature"
+            and feature
+            and child
+            and child != feature.group(1)
+            and not is_test
+            and not public_contract(code, match.end())
+        ):
             report(match.start(), "feature-isolation", f"feature '{feature.group(1)}' must not reference feature '{child}'")
     return found
 
