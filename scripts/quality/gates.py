@@ -2,7 +2,7 @@
 
 G0  the Python/Git checks (FAST_CHECKS), including the release licence list.
 G1  G0, then ktlint, then every host test, the screenshot baselines, lint and the
-    assemblies (HOST_TASKS).
+    assemblies (HOST_TASKS), in three parts CI runs side by side (HOST_PARTS).
 G2  G1 plus the device suites of the selected modules on an API-30 emulator.
 G3  every device suite, then the release checks (ADR 0016): the owner's production
     signing locally, a throwaway key on CI.
@@ -24,11 +24,21 @@ FAST_CHECKS = (
     ("licences", ("python3", "scripts/quality/licenses.py", "check")),
 )
 FORMAT_TASKS = ("ktlintCheck",)
-HOST_TASKS = (
-    ":domain:test", ":data:testDebugUnitTest", ":design-system:testDebugUnitTest",
-    ":app:testDebugUnitTest", ":app:verifyRoborazziDebug", ":design-system:verifyRoborazziDebug",
-    "lintDebug", ":app:assembleDebug", ":app:assembleRelease",
-)
+# CI runs the host gate as parallel jobs, one per part, since each part keeps a 4-core
+# runner busy on its own; locally `--host` runs every part in one build. Every host task
+# is in exactly one part. ktlint runs first in the static-checks part (FORMAT_PART); the
+# release checks read the APK the assembling part (RELEASE_PART) makes.
+HOST_PARTS = {
+    "tests": (
+        ":domain:test", ":data:testDebugUnitTest", ":design-system:testDebugUnitTest",
+        ":app:testDebugUnitTest", ":app:verifyRoborazziDebug", ":design-system:verifyRoborazziDebug",
+    ),
+    "lint": ("lintDebug",),
+    "assemble": (":app:assembleDebug", ":app:assembleRelease"),
+}
+HOST_TASKS = tuple(task for part in HOST_PARTS.values() for task in part)
+FORMAT_PART = "lint"
+RELEASE_PART = "assemble"
 HOST_RESULTS = "*/build/test-results/**/TEST-*.xml"
 DEVICE_RESULTS = "{module}/build/outputs/androidTest-results/connected/**/TEST-*.xml"
 # Device tests only the nightly and manual runs execute; only the app suite has them.

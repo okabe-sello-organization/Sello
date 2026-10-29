@@ -14,7 +14,10 @@ focused checks with `scripts/check`; let the pull request run the gate.
 | G2 | G1 plus the device suites the change can affect, on API-30 emulators, without the `@NightlyOnly` tests. |
 | G3 | G1, every device suite with every test, then the release checks of [ADR 0016](../decisions/0016-release-gate-signing-split.md). |
 
-The Gradle part of G1, kept identical to `scripts/quality/gates.py` by a test:
+The Gradle part of G1, kept identical to `scripts/quality/gates.py` by a test. CI runs
+it in three parts side by side (`HOST_PARTS`), each task in exactly one: `tests`, the
+unit tests and both screenshot verifications; `lint`, ktlint, then Android lint; and
+`assemble`, the debug and release assemblies.
 
 ```bash
 ./gradlew ktlintCheck --continue
@@ -93,9 +96,15 @@ The Quality workflow (`.github/workflows/quality.yml`) has four jobs:
    and device groups and writes them to the job summary; then `scripts/check --fast`
    runs G0. Every other job needs this one, so a broken ticket, link, architecture
    rule or tool test fails in about a minute, before Gradle or an emulator starts.
-2. **Host checks** (when the plan selects G1 or more): `scripts/check --host`, which
-   repeats the fast checks, runs ktlint, then the Gradle host gate. G3 adds
-   `--ci-release`: the licence list and a release APK signed with a throwaway key.
+2. **Host checks** (when the plan selects G1 or more), three jobs side by side, one per
+   part of the host gate, each repeating the fast checks first:
+   `scripts/check --host tests` runs every unit test and both screenshot verifications;
+   `scripts/check --host lint` runs ktlint, then Android lint; `scripts/check --host
+   assemble` builds the debug and release APKs. G3 adds `--ci-release` to the assemble
+   part: the licence list and the release APK it made, signed with a throwaway key.
+   `quality` judges the three as one result: every part must succeed. One runner took
+   12 minutes for the whole host gate, longer than the device jobs; each part takes
+   about a third of the work. Plain `scripts/check --host` runs every part in one build.
 3. **Device tests** (one job per selected group: `app` and `support`): first
    ktlint and the test APKs, then a fresh, cold-booted API-30 emulator runs the
    group's selected suites, with the plan's scope (`pull-request` or `nightly`). The
@@ -139,7 +148,8 @@ scripts/check domain app                  # ktlint and unit tests of these modul
 scripts/check app --tests '*Budget*'      # only matching unit tests
 scripts/check design-system --lint        # with Android lint
 scripts/check --fast                      # G0, seconds
-scripts/check --host                      # G1 exactly as CI runs it
+scripts/check --host                      # G1: every part CI runs, in one build
+scripts/check --host tests                # one CI part: tests, lint or assemble
 ANDROID_SERIAL=emulator-5580 scripts/check --device           # every device suite, as a pull request runs it
 ANDROID_SERIAL=emulator-5580 scripts/check --device app --scope nightly  # one hosted group, nightly tests too
 scripts/check --plan origin/main          # what the PR will run, from the merge base

@@ -77,12 +77,20 @@ jobs:
         run: ./scripts/check --fast
 
   host:
-    name: Host checks
+    name: Host checks (${{ matrix.part }})
     needs: plan
     if: needs.plan.outputs.host == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # The host gate in parts side by side (scripts/quality/gates.py HOST_PARTS): the
+    # unit and screenshot tests; ktlint, then lint; both assemblies, then the release
+    # checks on the APK they made. One 4-core runner took 12 minutes for all three.
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [tests, lint, assemble]
     env:
+      HOST_PART: ${{ matrix.part }}
       RELEASE: ${{ needs.plan.outputs.release }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -97,6 +105,7 @@ jobs:
       - name: Set up Gradle caching
         uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
         with:
+          # Job identity and matrix context give each part its own cache.
           cache-read-only: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
           add-job-summary: always
           add-job-summary-as-pr-comment: never
@@ -108,17 +117,17 @@ jobs:
 
       - name: Run the host gate
         run: |
-          if [ "$RELEASE" = true ]; then
-            ./scripts/check --host --ci-release
+          if [ "$RELEASE" = true ] && [ "$HOST_PART" = assemble ]; then
+            ./scripts/check --host "$HOST_PART" --ci-release
           else
-            ./scripts/check --host
+            ./scripts/check --host "$HOST_PART"
           fi
 
       - name: Keep host reports of a failure
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: host-reports-${{ github.run_attempt }}
+          name: host-reports-${{ github.run_attempt }}-${{ matrix.part }}
           retention-days: 14
           if-no-files-found: ignore
           path: |
@@ -252,7 +261,7 @@ jobs:
             if [ "$2" != "$expected" ]; then failed=1; fi
           }
           judge "Plan and fast checks" "$PLAN_RESULT" true
-          judge "Host checks" "$HOST_RESULT" "$HOST_SELECTED"
+          judge "Host checks (tests, lint, assemble)" "$HOST_RESULT" "$HOST_SELECTED"
           judge "Device tests ${DEVICE_GROUPS:-[]}" "$DEVICE_RESULT" "$DEVICE_SELECTED"
           echo "$report"
           echo "$report" >> "$GITHUB_STEP_SUMMARY"

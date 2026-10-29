@@ -7,6 +7,8 @@ import textwrap
 import unittest
 from pathlib import Path
 
+import gates
+
 WORKFLOW = Path(__file__).resolve().parents[2] / '.github/workflows/quality.yml'
 GRADLE_PROPERTIES = WORKFLOW.parents[2] / 'gradle.properties'
 READ_ONLY_CACHE = "cache-read-only: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}"
@@ -88,6 +90,8 @@ class HostedWorkflowTests(unittest.TestCase):
 
             self.assertEqual(0, judge())
             self.assertIn('| Device tests ["app"] | success | success |', summary.read_text(encoding='utf-8'))
+            # A matrix job's result is "success" only when every part succeeded.
+            self.assertIn('| Host checks (tests, lint, assemble) | success | success |', summary.read_text(encoding='utf-8'))
             self.assertEqual(0, judge(device='skipped', device_selected='false'))  # G1
             self.assertEqual(0, judge(host='skipped', device='skipped', host_selected='false', device_selected='false'))  # G0
             for case in (dict(device='failure'), dict(device='cancelled'), dict(device='skipped'),
@@ -142,12 +146,37 @@ class HostedWorkflowTests(unittest.TestCase):
         self.assertEqual(["if: needs.plan.outputs.host == 'true'"], re.findall(r'(?m)^    (if: .+)$', self.jobs['host']))
         self.assertEqual(["if: needs.plan.outputs.device == 'true'"], re.findall(r'(?m)^    (if: .+)$', self.jobs['device']))
 
-    def test_host_job_runs_the_host_gate_and_ci_release_checks_only_when_planned(self):
+    def test_host_job_runs_each_part_of_the_host_gate_in_parallel_and_ci_release_checks_only_when_planned(self):
+        host = self.jobs['host']
+        # One job per part, every part once, and a failing part never cancels the other.
+        parts = re.search(r'(?m)^        part: \[(.*)\]$', host).group(1).split(', ')
+        self.assertEqual(list(gates.HOST_PARTS), parts)
+        self.assertIn('fail-fast: false', host)
+        self.assertIn('name: Host checks (${{ matrix.part }})', host)
+        self.assertIn('HOST_PART: ${{ matrix.part }}', host)
+        self.assertIn('RELEASE: ${{ needs.plan.outputs.release }}', host)
         block = self.host['Run the host gate']
-        self.assertIn('RELEASE: ${{ needs.plan.outputs.release }}', self.jobs['host'])
-        self.assertIn('./scripts/check --host --ci-release', block)
-        self.assertIn('./scripts/check --host\n', block)
+        self.assertIn(f'if [ "$RELEASE" = true ] && [ "$HOST_PART" = {gates.RELEASE_PART} ]; then', block)
+        self.assertIn('./scripts/check --host "$HOST_PART" --ci-release', block)
+        self.assertIn('./scripts/check --host "$HOST_PART"\n', block)
         self.assertNotIn('production', self.code)
+
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory) / 'scripts'
+            fake.mkdir()
+            (fake / 'check').write_text('#!/bin/sh\necho "$@"\n', encoding='utf-8')
+            (fake / 'check').chmod(0o755)
+
+            def run(part, release):
+                environment = dict(os.environ, HOST_PART=part, RELEASE=release)
+                return subprocess.run(['bash', '-e', '-c', script(block)], env=environment, cwd=directory,
+                                      capture_output=True, text=True, check=True).stdout.strip()
+
+            for part in gates.HOST_PARTS:
+                with self.subTest(part=part):
+                    release = ' --ci-release' if part == gates.RELEASE_PART else ''
+                    self.assertEqual(f'--host {part}{release}', run(part, 'true'))
+                    self.assertEqual(f'--host {part}', run(part, 'false'))
 
     def test_device_groups_build_before_the_emulator_and_never_cancel_a_sibling(self):
         device = self.jobs['device']
@@ -179,7 +208,8 @@ class HostedWorkflowTests(unittest.TestCase):
         self.assertIn('timeout-minutes: 25', run)
 
     def test_reports_of_a_failure_are_kept_without_being_proof(self):
-        for group, name, artifact in ((self.host, 'Keep host reports of a failure', 'host-reports-${{ github.run_attempt }}'),
+        for group, name, artifact in ((self.host, 'Keep host reports of a failure',
+                                       'host-reports-${{ github.run_attempt }}-${{ matrix.part }}'),
                                       (self.device, 'Keep device reports of a failure',
                                        'device-reports-${{ github.run_attempt }}-${{ matrix.group }}')):
             with self.subTest(step=name):

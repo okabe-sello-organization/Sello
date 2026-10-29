@@ -57,6 +57,16 @@ class GateTests(unittest.TestCase):
         self.assertEqual(["tickets", "quality-tests", "performance-tests", "architecture", "links", "licences"],
                          [name for name, _ in gates.FAST_CHECKS])
 
+    def test_every_host_task_is_in_exactly_one_part(self):
+        self.assertEqual(["tests", "lint", "assemble"], list(gates.HOST_PARTS))
+        tasks = [task for part in gates.HOST_PARTS.values() for task in part]
+        self.assertEqual(len(tasks), len(set(tasks)))
+        self.assertEqual(gates.HOST_TASKS, tuple(tasks))
+        self.assertTrue(all(task.endswith(("test", "UnitTest", "verifyRoborazziDebug")) for task in gates.HOST_PARTS["tests"]))
+        self.assertEqual(("lintDebug",), gates.HOST_PARTS[gates.FORMAT_PART])
+        # The release checks read the release APK, so it is built by the part that runs them.
+        self.assertEqual((":app:assembleDebug", ":app:assembleRelease"), gates.HOST_PARTS[gates.RELEASE_PART])
+
     def test_host_gate_compares_the_screenshots_with_their_baselines(self):
         for module in ("app", "design-system"):
             self.assertIn(f":{module}:verifyRoborazziDebug", gates.HOST_TASKS)
