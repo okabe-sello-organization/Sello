@@ -122,6 +122,8 @@ jobs:
           if-no-files-found: ignore
           path: |
             */build/reports/tests/
+            */build/reports/roborazzi/
+            */build/outputs/roborazzi/
             */build/reports/lint-results-debug.html
             */build/reports/ktlint/
 

@@ -27,6 +27,10 @@ class GateTests(unittest.TestCase):
         self.assertEqual(["tickets", "quality-tests", "performance-tests", "architecture", "links", "licences"],
                          [name for name, _ in gates.FAST_CHECKS])
 
+    def test_host_gate_compares_the_screenshots_with_their_baselines(self):
+        self.assertIn(":app:verifyRoborazziDebug", gates.HOST_TASKS)
+        self.assertNotIn(":app:recordRoborazziDebug", gates.HOST_TASKS)
+
     def test_ci_release_checks_sign_with_a_throwaway_key_and_never_claim_production(self):
         self.assertEqual(["release-licenses", "release-ephemeral"], [name for name, _ in gates.release_checks(ci=True)])
         local = gates.release_checks(ci=False)

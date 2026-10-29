@@ -10,7 +10,7 @@ focused checks with `scripts/check`; let the pull request run the gate.
 | Gate | Runs |
 | --- | --- |
 | G0 | The fast checks, Python and Git only: `tickets` (`tickets.py check`), `quality-tests`, `performance-tests`, `architecture`, `links` and `licences` (the release library list). |
-| G1 | G0, then ktlint, then every host test, lint and the debug and release assemblies. |
+| G1 | G0, then ktlint, then every host test, the screenshot baselines, lint and the debug and release assemblies. |
 | G2 | G1 plus the device suites the change can affect, on API-30 emulators. |
 | G3 | G1, every device suite, then the release checks of [ADR 0016](../decisions/0016-release-gate-signing-split.md). |
 
@@ -19,11 +19,43 @@ The Gradle part of G1, kept identical to `scripts/quality/gates.py` by a test:
 ```bash
 ./gradlew ktlintCheck --continue
 ./gradlew :domain:test :data:testDebugUnitTest :design-system:testDebugUnitTest :app:testDebugUnitTest \
-  lintDebug :app:assembleDebug :app:assembleRelease --continue
+  :app:verifyRoborazziDebug lintDebug :app:assembleDebug :app:assembleRelease --continue
 ```
 
 A ticket's `Gate` field is advisory: what the ticket expects to need. Nothing enforces
 it; CI selects the gate from the changed paths alone.
+
+## JVM screen and screenshot tests
+
+Which layer tests what ([ADR 0022](../decisions/0022-jvm-screen-and-screenshot-tests.md)):
+
+| Layer | Tests | Where |
+| --- | --- | --- |
+| JVM | Domain rules, view models, and screens rendered from state given by hand: what each state shows, what each control reports, layout geometry, font scale | `<module>/src/test/`, Robolectric |
+| JVM screenshots | What a screen looks like, per ink, light or dark and font scale | `app/src/test/`, Roborazzi; baselines in `app/src/test/screenshots/` |
+| Device | Storage on real Room, platform contracts (system keyboard, insets, backup, launcher) and user journeys through the real app | `<module>/src/androidTest*/` |
+
+A JVM screen test runs with `@RunWith(AndroidJUnit4::class)` and `createComposeRule()`
+and shows its screen with `showSello(Look(...))` from `app/src/test/.../JvmScreen.kt`.
+Robolectric gives it API 37 and the hosted emulator's 320x640 dp screen
+(`app/src/test/resources/robolectric.properties`), a plain `Application` and no network:
+the Android framework jar is a locked Gradle dependency read in offline mode.
+
+The host gate runs `:app:verifyRoborazziDebug`: every capture must match its committed
+baseline, and a capture without one fails. A visual change re-records the baselines in
+the same pull request, and the image diff in the pull request is how the change is
+reviewed:
+
+```bash
+./gradlew :app:recordRoborazziDebug     # write the baselines into app/src/test/screenshots/
+./gradlew :app:verifyRoborazziDebug     # compare, as the host gate does
+```
+
+Record on Linux, as CI runs: font rasterizing may differ on another system. A plain
+`:app:testDebugUnitTest` (and `scripts/check app`) runs the screenshot tests without
+comparing them. A failed comparison leaves the expected, actual and diff images under
+`app/build/outputs/roborazzi/` and a report under `app/build/reports/roborazzi/`; the
+host job keeps both in its artifact.
 
 ## What CI runs
 
@@ -109,6 +141,7 @@ result of each job, so the jobs that passed are not repeated.
 | `REFUSED: name your own emulator with ANDROID_SERIAL` | Start your own emulator and export its serial; assembling test APKs is not a device run. |
 | `REFUSED: ... is not an API-30 device, or did not answer` | Use the pinned API-30 image with the default 320x640 profile. |
 | `FAILED: ktlint exited 1` | Run `./gradlew ktlintFormat` and review the diff. |
+| `ExpenseEntryScreenshotTest > ... FAILED` (any `*ScreenshotTest`) | A capture no longer matches its baseline. Open the diff in the host artifact; if the change is intended, run `./gradlew :app:recordRoborazziDebug` and commit the new images. |
 | `FAILED: ... produced no fresh device test results` | The suite did not run: read the Gradle output above it (install or instrumentation failure). |
 | `FAILED: ... skipped N device tests` | A device test is ignored or assumed away. Fix it; skips are not passes. |
 | `FAILED: the host gate produced no test results` | Gradle failed before any test ran; read the first error in the log. |

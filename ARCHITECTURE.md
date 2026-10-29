@@ -89,7 +89,7 @@ Start with four Gradle modules, not one module per screen:
 | Background | WorkManager + injected WorkerFactory, **only when** recurrence/alerts ship. Workers call use cases, not DAOs. |
 | Network | **SHOULD** use Ktor Client + a maintained Android engine/typed serialization when provider rates ship; no HTTP dependency or INTERNET permission for MVP. |
 | Charts | **SHOULD** start with small Compose drawing primitives behind Sello chart contracts. **COULD** adopt a renderer after precision, accessibility, theme, and performance tests—not expose its types to domain. |
-| Verification | JUnit, `kotlinx-coroutines-test`, real-Room instrumented tests, Compose UI tests, Android Lint; **SHOULD** use ktlint and Detekt plus architecture rules (§10). |
+| Verification | JUnit, `kotlinx-coroutines-test`, real-Room instrumented tests, Compose UI tests (screens from given state on the JVM with Robolectric, journeys on a device), Roborazzi screenshot baselines, Android Lint; **SHOULD** use ktlint and Detekt plus architecture rules (§10). |
 
 - **MUST** pin dependencies centrally; review licenses/security/maintenance and
   transitive costs. No dynamic versions; upgrades must pass gates.
