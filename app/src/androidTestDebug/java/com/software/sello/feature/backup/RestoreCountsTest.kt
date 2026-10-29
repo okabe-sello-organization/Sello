@@ -1,6 +1,8 @@
 package com.software.sello.feature.backup
 
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -29,9 +31,9 @@ class RestoreCountsTest {
     fun carryChainsGetTheirOwnRowOnlyWhenEitherSideHasAny() {
         show(BackupSummary(7, 10, 1, 0, 0), BackupSummary(8, 12, 1, 0, 0, carryChains = 4))
 
+        // One row, its two cells said together: Ahora 0, Respaldo 4.
         rule.onNodeWithText("Arrastres").assertIsDisplayed()
-        // Now 0, backup 4: both columns say theirs.
-        rule.onNodeWithText("4").assertIsDisplayed()
+            .assert(hasContentDescription("Ahora 0") and hasContentDescription("Respaldo 4"))
         assertEquals(0, rule.onAllNodesWithTextCount("Inversiones"))
     }
 
