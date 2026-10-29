@@ -108,7 +108,9 @@ fun viewModels(koin: Koin): ViewModelProvider.Factory = viewModelFactory {
     initializer {
         BackupViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
     }
-    initializer { RestoreViewModel(koin.get(), koin.get(), koin.get()) }
+    initializer {
+        RestoreViewModel(createSavedStateHandle(), koin.get(), koin.get(), koin.get())
+    }
     initializer { ResetViewModel(createSavedStateHandle(), koin.get(), koin.get()) }
     initializer {
         ResumenViewModel(

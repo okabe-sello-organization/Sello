@@ -1,5 +1,6 @@
 package com.software.sello.feature.backup
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.port.AppRestart
@@ -11,14 +12,23 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * The Restaurar part of Respaldo. Choosing a file is the system's; checking and
  * replacing belong to [RestoreSession], so they outlive this screen. After a
  * replacement, going on restarts the app, because the history, its generation and
  * possibly its financial zone are not the ones this process started with.
+ *
+ * The chosen file's address is kept across process death only while it is being
+ * checked, so a file the process died checking is checked again, once. From then on
+ * the staging alone stands for the file, whichever screen confirms or cancels it, so
+ * a file cancelled, confirmed or no longer staged is never read again. The file itself
+ * is not kept: the system keeps the read grant the picker gave; if that is gone the
+ * file is named unreadable.
  */
 class RestoreViewModel(
+    private val handle: SavedStateHandle,
     private val session: RestoreSession,
     private val restart: AppRestart,
     clock: FinancialClock
@@ -26,7 +36,12 @@ class RestoreViewModel(
     private val pickerRequest = MutableStateFlow(false)
 
     init {
-        session.resume()
+        val chosen = handle.get<String>(CHOSEN)
+        handle.remove<String>(CHOSEN)
+        session.resume(chosen?.let(::DocumentSource))
+        viewModelScope.launch {
+            session.step.collect { if (it != RestoreStep.Checking) handle.remove<String>(CHOSEN) }
+        }
     }
 
     val state: StateFlow<RestoreState> = combine(
@@ -43,7 +58,12 @@ class RestoreViewModel(
 
             RestoreAction.PickerOpened -> pickerRequest.value = false
 
-            is RestoreAction.Chosen -> action.source?.let { session.choose(DocumentSource(it)) }
+            is RestoreAction.Chosen -> action.source?.let {
+                handle[CHOSEN] = it
+                session.choose(DocumentSource(it))
+                // Not checked after all, or checked already.
+                if (session.step.value != RestoreStep.Checking) handle.remove<String>(CHOSEN)
+            }
 
             RestoreAction.Confirm -> session.confirm()
 
@@ -61,6 +81,7 @@ class RestoreViewModel(
     }
 
     private companion object {
+        const val CHOSEN = "restore.chosen"
         const val STOP_MILLIS = 5_000L
     }
 }
