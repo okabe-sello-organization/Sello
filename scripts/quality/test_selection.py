@@ -76,17 +76,17 @@ class PullRequestPlanTests(unittest.TestCase):
         for path in selection.DEVICE_SCRIPTS:
             with self.subTest(path=path):
                 plan = pr(path)
-                self.assertEqual(("G2", ALL, ["app-1", "app-2", "support"]), (plan["gate"], plan["modules"], plan["groups"]))
+                self.assertEqual(("G2", ALL, ["app", "support"]), (plan["gate"], plan["modules"], plan["groups"]))
 
     def test_each_module_selects_the_suites_of_its_consumers(self):
         expected = {
-            "app/src/main/java/A.kt": (["app"], ["app-1", "app-2"]),
-            "data/src/main/java/A.kt": (["data", "app"], ["app-1", "app-2", "support"]),
-            "domain/src/main/kotlin/A.kt": (["data", "app"], ["app-1", "app-2", "support"]),
-            "design-system/src/main/java/A.kt": (["design-system", "app"], ["app-1", "app-2", "support"]),
-            "data/schemas/com.software.sello.data.local.SelloDatabase/9.json": (["data", "app"], ["app-1", "app-2", "support"]),
-            "app/src/debug/java/Sandbox.kt": (["app"], ["app-1", "app-2"]),
-            "app/src/androidTestDebug/java/AppTest.kt": (["app"], ["app-1", "app-2"]),
+            "app/src/main/java/A.kt": (["app"], ["app"]),
+            "data/src/main/java/A.kt": (["data", "app"], ["app", "support"]),
+            "domain/src/main/kotlin/A.kt": (["data", "app"], ["app", "support"]),
+            "design-system/src/main/java/A.kt": (["design-system", "app"], ["app", "support"]),
+            "data/schemas/com.software.sello.data.local.SelloDatabase/9.json": (["data", "app"], ["app", "support"]),
+            "app/src/debug/java/Sandbox.kt": (["app"], ["app"]),
+            "app/src/androidTestDebug/java/AppTest.kt": (["app"], ["app"]),
             "data/src/androidTest/java/DaoTest.kt": (["data"], ["support"]),
             "design-system/src/androidTest/java/ButtonTest.kt": (["design-system"], ["support"]),
         }
@@ -110,12 +110,12 @@ class PullRequestPlanTests(unittest.TestCase):
                      "docs/check.sh", "app/lint.xml"):
             with self.subTest(path=path):
                 plan = pr(path)
-                self.assertEqual(("G2", ALL, ["app-1", "app-2", "support"]), (plan["gate"], plan["modules"], plan["groups"]))
+                self.assertEqual(("G2", ALL, ["app", "support"]), (plan["gate"], plan["modules"], plan["groups"]))
 
     def test_the_plan_names_what_each_path_selects(self):
         plan = pr("docs/a.md", "scripts/quality/links.py", "app/src/main/A.kt")
         self.assertEqual({"docs/a.md": "document", "scripts/quality/links.py": "host", "app/src/main/A.kt": "app"}, plan["changed"])
-        self.assertIn("app-1, app-2", selection.summary(plan))
+        self.assertIn("- Device groups: app (modules: app; pull-request tests)", selection.summary(plan))
 
 
 class EventPlanTests(unittest.TestCase):
@@ -128,8 +128,15 @@ class EventPlanTests(unittest.TestCase):
             for paths in ([], ["docs/a.md"], ["app/src/main/A.kt"]):
                 with self.subTest(event=event, paths=paths):
                     plan = selection.plan(event, paths)
-                    self.assertEqual(("G3", True, True, ALL, ["app-1", "app-2", "support"]),
+                    self.assertEqual(("G3", True, True, ALL, ["app", "support"]),
                                      (plan["gate"], plan["host"], plan["release"], plan["modules"], plan["groups"]))
+
+    def test_only_the_nightly_and_manual_runs_execute_the_nightly_only_device_tests(self):
+        for event, scope in (("pull_request", "pull-request"), ("push", "pull-request"),
+                             ("schedule", "nightly"), ("workflow_dispatch", "nightly")):
+            with self.subTest(event=event):
+                self.assertEqual(scope, selection.plan(event, ["app/src/main/A.kt"])["scope"])
+        self.assertIn("nightly tests", selection.summary(selection.plan("schedule", [])))
 
     def test_an_unknown_event_is_refused(self):
         with self.assertRaises(ValueError):

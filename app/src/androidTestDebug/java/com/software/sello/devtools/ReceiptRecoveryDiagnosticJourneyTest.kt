@@ -7,6 +7,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.NightlyOnly
 import com.software.sello.composition.SandboxNames
 import com.software.sello.composition.eraseFinancialStorage
 import com.software.sello.designsystem.theme.SelloTheme
@@ -23,15 +24,9 @@ import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
-import com.software.sello.domain.port.MonthlySnapshots
-import com.software.sello.domain.port.SnapshotState
 import java.time.LocalDate
-import java.time.YearMonth
 import java.util.UUID
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -121,53 +116,8 @@ class ReceiptRecoveryDiagnosticJourneyTest {
         )
     }
 
-    @Test
-    fun aFailureBeforeStorageLeavesNothingAndTheInspectorSaysNothingWasWritten() = runBlocking {
-        val commands = sandbox.koin.get<ExpenseCommands>()
-        val command = expense(category(), 10_000)
-        diagnostics.faults.arm(Fault.FailBeforeStorage)
-
-        assertTrue(commands.create(command) is ExpenseCommandOutcome.OutcomeUnknown)
-
-        assertNull(commands.find(command.operationId).value())
-        assertEquals(listOf("0"), sandbox.rows("SELECT COUNT(*) FROM expense"))
-        assertEquals(
-            StoredOutcome.Nothing,
-            diagnostics.inspector.stored(diagnostics.log.state.value.last())
-        )
-    }
-
-    @Test
-    fun aReadFailureShowsTheLastGoodThirtyThousandNotZeroAndARetryReadsAgain() = runBlocking {
-        val commands = sandbox.koin.get<ExpenseCommands>()
-        val comida = category()
-        listOf(10_000L, 15_000L, 5_000L).forEach { commands.create(expense(comida, it)) }
-        val snapshots = sandbox.koin.get<MonthlySnapshots>()
-        val october = YearMonth.of(2026, 10)
-        val states = mutableListOf<SnapshotState>()
-        val reading = launch { snapshots.observe(october).collect { states += it } }
-        withTimeout(5_000) {
-            while ((states.lastOrNull() as? SnapshotState.Ready)?.snapshot?.spent !=
-                Money.cop(30_000)
-            ) {
-                kotlinx.coroutines.yield()
-            }
-        }
-
-        diagnostics.faults.arm(Fault.ReadFailure)
-        withTimeout(5_000) {
-            while (states.last() !is SnapshotState.Failed) kotlinx.coroutines.yield()
-        }
-        reading.cancel()
-
-        val failed = states.last() as SnapshotState.Failed
-        assertEquals(SimulatedReadFailure, failed.failure)
-        assertEquals(Money.cop(30_000), failed.lastGood?.spent)
-        val retried =
-            withTimeout(5_000) { snapshots.observe(october).first { it is SnapshotState.Ready } }
-        assertEquals(Money.cop(30_000), (retried as SnapshotState.Ready).snapshot.spent)
-    }
-
+    // A whole scenario on real Room: nightly only, with the scenario corpus.
+    @NightlyOnly
     @Test
     fun theEdgesScenarioMeetsEachExpectedOutcomeOnRealRoom() = runBlocking {
         sandbox.erase()

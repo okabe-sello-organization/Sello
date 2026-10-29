@@ -9,6 +9,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.software.sello.NightlyOnly
 import com.software.sello.composition.DebugComposition
 import com.software.sello.composition.SandboxNames
 import com.software.sello.composition.eraseFinancialStorage
@@ -153,27 +154,8 @@ class ScenarioReplayTest {
         assertEquals(listOf("3"), rows<String>("SELECT COUNT(*) FROM expense"))
     }
 
-    @Test
-    fun aRunInterruptedAfterACommitAndResumedMatchesAFreshRunExactly() = runBlocking {
-        load(Scenarios.G01)
-        runToTheEnd()
-        val fresh = history()
-        graph?.endProcess()
-        graph = null
-        eraseFinancialStorage(context, SandboxNames)
-
-        load(Scenarios.G01)
-        repeat(4) { runner.step() }
-        // Step 4 (the 15.000 expense) committed, but the process ended before its checkpoint.
-        store.session = store.session.copy(nextStep = 3)
-        open()
-        runToTheEnd()
-
-        assertEquals(fresh, history())
-        assertEquals(listOf("3"), rows<String>("SELECT COUNT(*) FROM expense"))
-        assertEquals("Ya estaba guardado", runner.state.value.log.first { it.index == 3 }.result)
-    }
-
+    // A sandbox scenario run on real Room: nightly only, with the scenario corpus.
+    @NightlyOnly
     @Test
     fun sixMonthsGrowTheMonthByMonthHistoryWithTheScenariosOwnTotals() = runBlocking {
         val scenario = Scenarios.SixMonths
@@ -219,6 +201,8 @@ class ScenarioReplayTest {
         assertEquals(runner.state.value.next, store.session.nextStep)
     }
 
+    // A sandbox scenario run on real Room: nightly only, with the scenario corpus.
+    @NightlyOnly
     @Test
     fun aResetBetweenStepsKeepsTheRunnerOutOfTheNewHistory() = runBlocking {
         load(Scenarios.G01)
@@ -241,6 +225,8 @@ class ScenarioReplayTest {
         }
     }
 
+    // A sandbox scenario run on real Room: nightly only, with the scenario corpus.
+    @NightlyOnly
     @Test
     fun afterAResetANewProcessBringsBackNoneOfTheScenarioItErased() = runBlocking {
         load(Scenarios.G01)

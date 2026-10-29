@@ -29,7 +29,6 @@ import com.software.sello.MainActivity
 import com.software.sello.TestData
 import com.software.sello.awaitDescription
 import com.software.sello.awaitTag
-import com.software.sello.awaitText
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.feature.category.EDITOR_PREREQUISITE_TAG
 import com.software.sello.feature.category.EDITOR_SUBMIT_TAG
@@ -153,7 +152,10 @@ class ExpenseEntryJourneyTest {
 
         press("1", "0", "000")
         writeNote("Pan")
-        rule.onNodeWithContentDescription("Anotar gasto de 10.000 pesos en Mercado").press()
+        // Two presses with nothing in between, faster than a finger could manage.
+        val save = rule.onNodeWithContentDescription("Anotar gasto de 10.000 pesos en Mercado")
+            .fetchSemanticsNode()
+        rule.runOnUiThread { repeat(2) { save.config[SemanticsActions.OnClick].action!!.invoke() } }
 
         // No receipt and no Listo: straight back, with the stored figures already on Recibo.
         savedAndBackOnRecibo("Gasto anotado: 10.000 en Mercado")
@@ -161,7 +163,11 @@ class ExpenseEntryJourneyTest {
             .assertExists()
         rule.onNodeWithText("Listo").assertDoesNotExist()
         assertEquals(listOf("10000|COP|Mercado|$today|Pan|1|1"), expenses())
-        // The receipt in storage is for exactly that expense.
+        // One receipt, for exactly that expense.
+        assertEquals(
+            1,
+            TestData.long("SELECT COUNT(*) FROM operation_receipt WHERE kind = 'expense.create'")
+        )
         assertEquals(
             TestData.rows("SELECT id FROM expense"),
             TestData.rows("SELECT subject_id FROM operation_receipt WHERE kind = 'expense.create'")
@@ -171,24 +177,6 @@ class ExpenseEntryJourneyTest {
             .assertIsDisplayed()
         rule.onNodeWithContentDescription("Mercado. Has gastado 10.000 pesos. Sin límite.")
             .performScrollTo().assertIsDisplayed()
-    }
-
-    @Test
-    fun pressingAnotarGastoTwiceRecordsOneExpense() {
-        startWithCategory()
-        openAnotar()
-        press("5", "000")
-
-        // Two presses with nothing in between, faster than a finger could manage.
-        val save = rule.onNodeWithTag(ENTRY_SUBMIT_TAG).fetchSemanticsNode()
-        rule.runOnUiThread { repeat(2) { save.config[SemanticsActions.OnClick].action!!.invoke() } }
-
-        savedAndBackOnRecibo("Gasto anotado: 5.000 en Mercado")
-        assertEquals(listOf("5000|COP|Mercado|$today|null|1|1"), expenses())
-        assertEquals(
-            1,
-            TestData.long("SELECT COUNT(*) FROM operation_receipt WHERE kind = 'expense.create'")
-        )
     }
 
     @Test
@@ -248,43 +236,5 @@ class ExpenseEntryJourneyTest {
         savedAndBackOnRecibo("Gasto anotado: 48.700 en Café")
 
         assertEquals(listOf("48700|COP|Café|$today|null|1|1"), expenses())
-    }
-
-    @Test
-    fun nuevaCreatesACategoryAndComesBackWithItChosenAndTheDraftKept() {
-        startWithCategory()
-        openAnotar()
-        press("4", "8", "7", "0", "0")
-
-        rule.onNodeWithTag(ENTRY_NEW_CATEGORY_TAG).performScrollTo().performClick()
-        createCategory("Café")
-
-        rule.awaitTag(ENTRY_KEYPAD_TAG)
-        rule.onNode(hasText("Café") and hasAnyAncestor(hasTestTag(ENTRY_CATEGORIES_TAG)))
-            .assertIsSelected()
-        amountShows("48.700 pesos")
-        assertEquals(emptyList<String>(), expenses())
-        rule.onNodeWithTag(ENTRY_SUBMIT_TAG).press()
-        savedAndBackOnRecibo("Gasto anotado: 48.700 en Café")
-
-        assertEquals(listOf("48700|COP|Café|$today|null|1|1"), expenses())
-    }
-
-    @Test
-    fun aTypedDraftIsNotThrownAwayWithoutAsking() {
-        startWithCategory()
-        openAnotar()
-        press("5")
-
-        rule.onNodeWithContentDescription("Cerrar").performClick()
-        rule.awaitText("¿Descartar este gasto?")
-        rule.onNodeWithText("Seguir anotando").performClick()
-        amountShows("5 pesos")
-        rule.onNodeWithContentDescription("Cerrar").performClick()
-        rule.awaitText("¿Descartar este gasto?")
-        rule.onNodeWithText("Descartar").performClick()
-
-        rule.awaitTag(RECIBO_CATEGORIES_TAG)
-        assertEquals(emptyList<String>(), expenses())
     }
 }

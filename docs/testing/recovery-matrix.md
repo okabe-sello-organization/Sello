@@ -36,7 +36,8 @@ applied), erased there (nothing financial left, the device's zone, generation 3)
 restored again from the same file (generation 4). The first installation is only
 read throughout.
 
-`TemporalScenarioCorpusTest.everyScenarioRestoredFromItsBackupKeepsItsRowsAndLastFigures`:
+`TemporalScenarioCorpusTest.everyScenarioRestoredFromItsBackupKeepsItsRowsAndLastFigures`
+(nightly):
 each of the nine sandbox scenarios is played to the end, backed up, and restored into
 a new installation at the same simulated day. The restored rows equal the originals
 for all nine; for the seven whose last check follows their last saved change, that
@@ -64,7 +65,7 @@ compared row for row.
 
 | Failure point | Outcome | Proof |
 | --- | --- | --- |
-| Cancel or any word but `BORRAR` | Nothing changes | `ResetViewModelTest.anythingButTheExactWordErasesNothing`; `ResetReuseJourneyTest` |
+| Cancel or any word but `BORRAR` | Nothing changes | `ResetViewModelTest.anythingButTheExactWordErasesNothing`, `cancellingTheWordGoesBackToTheCountsAndForgetsWhatWasTyped` |
 | History changed after the counts | Refused; counts again and both confirmations again | `ResetGenerationContractTest.aChangeAfterTheCountsRefusesTheEraseAndForgetsIt` |
 | Failure inside the transaction | Everything rolled back, kept copy untouched | `aFailureInsideTheEraseRollsEverythingBack` |
 | Process ends before the commit | The pending file is forgotten; nothing erased | `anEraseThatNeverCommittedIsForgottenAndChangesNothing` |
@@ -82,8 +83,8 @@ is refused, even when restored record identifiers match earlier ones.
 | --- | --- | --- |
 | Draft saved after a restore or reset | `StaleGeneration` | `oldDraftsAndUndoCannotCrossTheReplacement`, `oldDraftsAndUndoCannotCrossTheErase` |
 | Undo of a deletion from before | `StaleGeneration`; the kept copy is gone | the same tests |
-| Sandbox scenario mid-run when a reset happens | Its next step is refused | `ScenarioReplayTest.aResetBetweenStepsKeepsTheRunnerOutOfTheNewHistory` |
-| The same scenario in a new process after the reset | Finds no receipts, does not advance, writes nothing back | `ScenarioReplayTest.afterAResetANewProcessBringsBackNoneOfTheScenarioItErased` |
+| Sandbox scenario mid-run when a reset happens | Its next step is refused | `ScenarioReplayTest.aResetBetweenStepsKeepsTheRunnerOutOfTheNewHistory` (nightly) |
+| The same scenario in a new process after the reset | Finds no receipts, does not advance, writes nothing back | `ScenarioReplayTest.afterAResetANewProcessBringsBackNoneOfTheScenarioItErased` (nightly) |
 
 ## Corrupt or unavailable storage
 

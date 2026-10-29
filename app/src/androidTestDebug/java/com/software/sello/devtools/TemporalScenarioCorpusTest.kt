@@ -2,6 +2,7 @@ package com.software.sello.devtools
 
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.NightlyOnly
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.BackupExports
 import com.software.sello.domain.port.RestoreOutcome
@@ -22,6 +23,7 @@ import org.junit.runner.RunWith
  * is also saved as a backup and restored into a new installation, where its last
  * check must find the same figures.
  */
+@NightlyOnly
 @RunWith(AndroidJUnit4::class)
 class TemporalScenarioCorpusTest {
     private var sandbox: SandboxGraph? = null

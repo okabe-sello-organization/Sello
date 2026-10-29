@@ -43,6 +43,7 @@ jobs:
       device: ${{ steps.plan.outputs.device }}
       groups: ${{ steps.plan.outputs.groups }}
       modules: ${{ steps.plan.outputs.modules }}
+      scope: ${{ steps.plan.outputs.scope }}
     steps:
       - name: Skip a nightly when main has not moved
         id: nightly
@@ -140,6 +141,8 @@ jobs:
     env:
       DEVICE_GROUP: ${{ matrix.group }}
       DEVICE_MODULES: ${{ needs.plan.outputs.modules }}
+      # pull-request leaves out @NightlyOnly device tests; the nightly and a manual run do not.
+      DEVICE_SCOPE: ${{ needs.plan.outputs.scope }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -196,7 +199,7 @@ jobs:
           # The action runs each script line on its own, so one line keeps the exit status.
           # The emulator's crashpad_handler can outlive "emu kill" and keep the action
           # waiting until the job times out (seen 2026-10-29 after every test passed).
-          script: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES"; status=$?; killall -INT crashpad_handler || true; exit $status
+          script: ./scripts/check --device "$DEVICE_GROUP" --modules "$DEVICE_MODULES" --scope "$DEVICE_SCOPE"; status=$?; killall -INT crashpad_handler || true; exit $status
 
       - name: Identify installed Android system image
         if: matrix.group == 'support' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'

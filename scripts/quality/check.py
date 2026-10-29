@@ -3,7 +3,7 @@
     scripts/check MODULE... [--tests PATTERN] [--lint]   ktlint and unit tests of some modules
     scripts/check --fast                                 G0: the Python/Git checks
     scripts/check --host                                 G1: --fast, ktlint, then the Gradle host gate
-    scripts/check --device [GROUP...]                    device suites on the emulator in ANDROID_SERIAL
+    scripts/check --device [GROUP...] [--scope SCOPE]    device suites on the emulator in ANDROID_SERIAL
     scripts/check --release                              G3 with the owner's production signing
     scripts/check --plan BASE [--event EVENT]            what a hosted run would verify (JSON)
 
@@ -18,7 +18,6 @@ import re
 import shutil
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import gates
@@ -165,7 +164,14 @@ class Check:
             runs.append((name, selected, group.shard))
         return runs
 
-    def device(self, runs, build_only=False):
+    def filesystem_now(self):
+        """Now, on the clock file times use: it can run a tick behind time.time_ns()."""
+        marker = self.root / "build" / "device-run-started"
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.touch()
+        return marker.stat().st_mtime_ns
+
+    def device(self, runs, build_only=False, scope="pull-request"):
         built = [module for module in selection.MODULES if any(module in selected for _, selected, _ in runs)]
         if not self.run("device-build", gates.device_build(built)):
             return False
@@ -173,8 +179,8 @@ class Check:
             return True
         passed = True
         for label, modules, shard in runs:
-            started = time.time_ns()
-            passed = self.run(label, gates.device_tests(modules, shard)) and passed
+            started = self.filesystem_now()
+            passed = self.run(label, gates.device_tests(modules, shard, scope)) and passed
             for module in modules:
                 paths = junit.glob(self.root, gates.DEVICE_RESULTS.format(module=module), newer_than=started)
                 results = self.results(f"Device tests: {module}" + (f" (shard {shard[0] + 1} of {shard[1]})" if shard else ""), paths)
@@ -206,7 +212,7 @@ def plan(root, base, event, environ):
     print(json.dumps(result, indent=2))
     if environ.get("GITHUB_OUTPUT"):
         with open(environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-            for key in ("gate", "host", "release"):
+            for key in ("gate", "host", "release", "scope"):
                 print(f"{key}={str(result[key]).lower() if isinstance(result[key], bool) else result[key]}", file=output)
             print(f"device={'true' if result['groups'] else 'false'}", file=output)
             print(f"groups={json.dumps(result['groups'])}", file=output)
@@ -238,6 +244,9 @@ def parser():
     parser.add_argument("--modules", metavar="M,M", help="With --device: only these modules (the plan's selection)")
     parser.add_argument("--build-only", action="store_true",
                         help="With --device: ktlint and the test APKs only, before an emulator exists")
+    parser.add_argument("--scope", choices=gates.SCOPES,
+                        help="With --device: pull-request (the default) leaves out @NightlyOnly tests; "
+                             "nightly runs every test")
     return parser
 
 
@@ -256,8 +265,8 @@ def main(argv=None, root=ROOT, execute=default_execute, out=sys.stdout, environ=
         usage("--tests and --lint go with modules")
     if arguments.ci_release and not arguments.host:
         usage("--ci-release goes with --host")
-    if (arguments.modules or arguments.build_only) and arguments.device is None:
-        usage("--modules and --build-only go with --device")
+    if (arguments.modules or arguments.build_only or arguments.scope) and arguments.device is None:
+        usage("--modules, --build-only and --scope go with --device")
     if arguments.event != "pull_request" and arguments.plan is None:
         usage("--event goes with --plan")
     if arguments.plan is not None:
@@ -281,11 +290,12 @@ def main(argv=None, root=ROOT, execute=default_execute, out=sys.stdout, environ=
             runs = check.device_runs(arguments.device, modules)
             if not arguments.build_only:
                 check.environ["ANDROID_SERIAL"] = select_device(root, environ, devices, api)
-            passed = check.device(runs, arguments.build_only)
+            passed = check.device(runs, arguments.build_only, arguments.scope or "pull-request")
         else:
             check.environ["ANDROID_SERIAL"] = select_device(root, environ, devices, api)
             passed = (check.fast() and check.host_gradle()
-                      and check.device(check.device_runs([], [])) and check.release_checks(ci=False))
+                      and check.device(check.device_runs([], []), scope="nightly")
+                      and check.release_checks(ci=False))
     except Refusal as error:
         print(f"REFUSED: {error}", file=out)
         return 2

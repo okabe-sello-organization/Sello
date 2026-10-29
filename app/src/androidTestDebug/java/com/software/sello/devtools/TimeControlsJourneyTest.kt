@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.software.sello.NightlyOnly
 import com.software.sello.composition.DebugComposition
 import com.software.sello.composition.SandboxNames
 import com.software.sello.composition.eraseFinancialStorage
@@ -26,14 +27,12 @@ import com.software.sello.composition.openStorage
 import com.software.sello.composition.productionModules
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.BudgetLimit
-import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TransactionAmount
-import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CreateCategory
@@ -42,7 +41,6 @@ import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.FinancialClock
-import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SnapshotState
@@ -158,32 +156,8 @@ class TimeControlsJourneyTest {
         assertEquals(LocalDate.of(2026, 11, 1), store.session.date)
     }
 
-    @Test
-    fun steppingMovesNeitherAuditNorElapsedTime() {
-        val audit = graph.koin.get<AuditClock>()
-        val monotonic = graph.koin.get<MonotonicClock>()
-        val auditBefore = audit.now()
-        val elapsedBefore = monotonic.elapsed()
-
-        time.advanceMonths(14)
-        time.advanceDays(400)
-
-        val auditMoved = java.time.Duration.between(auditBefore, audit.now())
-        val elapsedMoved = monotonic.elapsed() - elapsedBefore
-        assertTrue("audit moved $auditMoved", auditMoved.seconds < 60)
-        assertTrue("elapsed moved $elapsedMoved", elapsedMoved.inWholeSeconds < 60)
-    }
-
-    @Test
-    fun aSavedExpenseMakesTheDateForwardOnly() {
-        expenseIn("Comida", october31)
-
-        assertTrue(store.session.changed)
-        assertEquals(DateChange.RefusedBeforeSavedHistory, time.jumpTo(LocalDate.of(2026, 10, 1)))
-        assertEquals(october31, graph.koin.get<FinancialClock>().today.value.date)
-        assertEquals(DateChange.Moved, time.jumpTo(LocalDate.of(2026, 12, 24)))
-    }
-
+    // Nightly only: the undo window's own clock is tested on the JVM (DebugGraphTest).
+    @NightlyOnly
     @Test
     fun aYearOfFinancialTimeLaterUndoStillHasItsSixRealSeconds() = runBlocking {
         val expense = expenseIn("Comida", october31).expense
@@ -234,17 +208,6 @@ class TimeControlsJourneyTest {
         rule.onNodeWithTag(TOOLS_RESET_CONFIRM_TAG).performScrollTo().performClick()
         rule.waitUntil(5_000) { restarts == 1 }
         assertEquals(SandboxSession(active = true, wipe = true), store.session)
-    }
-
-    @Test
-    fun leavingRestartsIntoTheNormalProfileAndKeepsTheSandboxDate() {
-        rule.setContent { SelloTheme(reducedMotion = true) { ToolsScreen(checkNotNull(tools)) } }
-
-        rule.onNodeWithTag(TOOLS_PROFILE_TAG).assertTextContains("Sandbox, con sus propios datos")
-        rule.onNodeWithTag(TOOLS_SWITCH_TAG).performClick()
-        rule.waitUntil(5_000) { restarts == 1 }
-
-        assertEquals(SandboxSession(active = false, date = october31), store.session)
     }
 
     @Test

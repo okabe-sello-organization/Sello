@@ -69,11 +69,12 @@ For `detalle-categoria@1`, finish replaying, open Alimentación and change its l
 from 200.000 to 500.000. The current October point in **Un mes normal aquí** must
 immediately show 500.000; August and September stay at 200.000, and the average is
 still 10.000 from two completed months. Advance to November 1: October closes with
-its 500.000 limit and November starts at 500.000. The real editor/Room/observer path
-is exercised by `CategoryDetailJourneyTest.editingTheCurrentLimitRefreshesItsChartPointBeforeRollover`.
+its 500.000 limit and November starts at 500.000. The live limit on the current point is
+checked by `CategoryInsightsRenderModelTest`, each month's own limit and the rollover on
+real Room by `CategoryInsightsContractTest`.
 
-`TemporalScenarioCorpusTest` runs every scenario fresh, then again interrupted after
-a committed step whose checkpoint was lost, and requires the same receipts, expenses,
+`TemporalScenarioCorpusTest`, in the nightly run, runs every scenario fresh, then again
+interrupted after a committed step whose checkpoint was lost, and requires the same receipts, expenses,
 incomes, categories, limits, goals, goal movements, Recibo's choice, investments, their
 movements and the USD rates from both runs, and every `Verify` to match. Its backup test
 restores every scenario, compares the rows (investments and rates included, without the

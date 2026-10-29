@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import java.io.File
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -62,6 +63,15 @@ class LauncherIdentityTest {
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
             }
         }
+    }
+
+    @Test
+    fun theDebugBuildIsItsOwnAppNamedSelloDebug() {
+        assertEquals("com.software.sello.debug", context.packageName)
+        assertEquals(
+            "Sello Debug",
+            context.applicationInfo.loadLabel(context.packageManager).toString()
+        )
     }
 
     @Test fun theTwoLaunchersHaveDifferentIcons() = distinct(themed = false)

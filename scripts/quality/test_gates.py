@@ -6,7 +6,37 @@ from unittest.mock import patch
 
 import gates
 
-GUIDE = Path(__file__).resolve().parents[2] / "docs/development/quality-gates.md"
+ROOT = Path(__file__).resolve().parents[2]
+GUIDE = ROOT / "docs/development/quality-gates.md"
+
+
+def java_hash(text):
+    """String.hashCode, as the instrumentation runner's ShardingFilter reads a test's name."""
+    value = 0
+    for character in text:
+        value = (31 * value + ord(character)) & 0xFFFFFFFF
+    return value - (1 << 32) if value >= 1 << 31 else value
+
+
+def pull_request_tests(module):
+    """'method(package.Class)' for each device test a pull request runs (parameters aside)."""
+    def marked(lines, at):
+        return any(line.strip() == "@NightlyOnly" for line in lines[max(0, at - 4):at])
+
+    tests = []
+    for source in sorted((ROOT / module / "src").glob("androidTest*/**/*.kt")):
+        lines = source.read_text(encoding="utf-8").splitlines()
+        package = next(line.split()[1] for line in lines if line.startswith("package "))
+        owner, nightly = None, False
+        for at, line in enumerate(lines):
+            declared = re.match(r"(?:abstract |open )?class (\w+)", line)
+            if declared:
+                owner, nightly = declared.group(1), marked(lines, at)
+            test = re.match(r"\s*(?:@Test\s+)?fun (\w+)", line)
+            if test and owner and not nightly and not marked(lines, at) and (
+                    "@Test" in line or any(lines[k].strip() == "@Test" for k in range(max(0, at - 3), at))):
+                tests.append(f"{test.group(1)}({package}.{owner})")
+    return tests
 
 
 class GateTests(unittest.TestCase):
@@ -38,16 +68,53 @@ class GateTests(unittest.TestCase):
         self.assertEqual(["release-licenses", "release-production", "release-launch"], [name for name, _ in local])
         self.assertIn("production", local[1][1])
 
-    def test_the_app_suite_runs_as_two_shards_and_the_rest_as_one_group(self):
-        self.assertEqual(["app-1", "app-2", "support"], list(gates.DEVICE_GROUPS))
+    def test_the_app_suite_runs_whole_on_one_runner_and_the_rest_as_one_group(self):
+        self.assertEqual(["app", "support"], list(gates.DEVICE_GROUPS))
         gates.validate_device_groups()
         self.assertEqual(("./gradlew", ":app:connectedDebugAndroidTest",
                           "-Pandroid.testInstrumentationRunnerArguments.numShards=2",
                           "-Pandroid.testInstrumentationRunnerArguments.shardIndex=1", "--continue"),
-                         gates.device_tests(("app",), gates.DEVICE_GROUPS["app-2"].shard))
+                         gates.device_tests(("app",), (1, 2), scope="nightly"))
+        self.assertNotIn("numShards", " ".join(gates.device_tests(("app",), gates.DEVICE_GROUPS["app"].shard)))
         self.assertNotIn("numShards", " ".join(gates.device_tests(("data", "design-system"))))
         self.assertEqual(("./gradlew", "ktlintCheck", ":data:assembleDebugAndroidTest", "--continue"),
                          gates.device_build(("data",)))
+
+    def test_a_pull_request_leaves_out_the_nightly_only_app_tests_and_the_nightly_runs_them(self):
+        leave_out = f"-Pandroid.testInstrumentationRunnerArguments.notAnnotation={gates.NIGHTLY_ONLY}"
+        self.assertEqual(("./gradlew", ":app:connectedDebugAndroidTest", leave_out, "--continue"),
+                         gates.device_tests(("app",)))
+        self.assertEqual(("./gradlew", ":app:connectedDebugAndroidTest", "--continue"),
+                         gates.device_tests(("app",), scope="nightly"))
+        # Only the app suite has the annotation.
+        self.assertNotIn(leave_out, gates.device_tests(("data", "design-system")))
+        with self.assertRaises(ValueError):
+            gates.device_tests(("app",), scope="everything")
+
+    def test_the_nightly_only_annotation_is_the_class_the_argument_names(self):
+        # A missing class is ignored by the runner, so a moved annotation would quietly
+        # run the nightly tests on every pull request.
+        source = ROOT / gates.NIGHTLY_ONLY_SOURCE
+        package, name = gates.NIGHTLY_ONLY.rsplit(".", 1)
+        text = source.read_text(encoding="utf-8")
+        self.assertIn(f"package {package}\n", text)
+        self.assertIn(f"annotation class {name}\n", text)
+        self.assertIn("AnnotationRetention.RUNTIME", text)
+        self.assertEqual(f"{name}.kt", source.name)
+        self.assertEqual(package.replace(".", "/"), str(source.parent).split("/java/", 1)[1])
+        self.assertEqual(("app",), gates.NIGHTLY_ONLY_MODULES)
+
+    def test_every_device_group_keeps_tests_on_a_pull_request(self):
+        # A group whose selected suite leaves no results fails its job by design, so the
+        # tests left out on a pull request must never be all of a group's tests.
+        for name, group in gates.DEVICE_GROUPS.items():
+            for module in group.modules:
+                with self.subTest(group=name, module=module):
+                    kept = pull_request_tests(module)
+                    if group.shard:
+                        index, count = group.shard
+                        kept = [test for test in kept if abs(java_hash(test)) % count == index]
+                    self.assertTrue(kept, f"{name} would run no {module} device tests on a pull request")
 
     def test_an_incomplete_or_inconsistent_shard_split_is_refused(self):
         support = gates.DEVICE_GROUPS["support"]

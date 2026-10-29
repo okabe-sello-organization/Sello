@@ -19,7 +19,7 @@ DEPENDENTS = {
     "app": ("app",),
 }
 # Hosted device groups and the modules each runs; gates.DEVICE_GROUPS holds the shards.
-GROUPS = {"app-1": ("app",), "app-2": ("app",), "support": ("data", "design-system")}
+GROUPS = {"app": ("app",), "support": ("data", "design-system")}
 DOCUMENT_SUFFIXES = (".md", ".txt", ".html", ".css", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".csv", ".json")
 # The scripts a device job executes: a change to them is tested on the device jobs too.
 DEVICE_SCRIPTS = (
@@ -90,6 +90,8 @@ def plan(event, paths, base=""):
     return {
         "event": event, "base": base, "gate": gate, "host": gate != "G0",
         "release": gate == "G3", "modules": modules, "groups": groups(modules),
+        # The nightly and a manual run execute every device test; others skip @NightlyOnly.
+        "scope": "nightly" if event in ("schedule", "workflow_dispatch") else "pull-request",
         "changed": {path: ("document" if is_document(path) else ",".join(device_modules(path)) or "host")
                     for path in paths},
     }
@@ -139,7 +141,8 @@ def summary(result):
     lines = [f"### Plan: {result['gate']} ({result['event']})", "",
              f"- Host checks: {'yes' if result['host'] else 'no (Python/Git checks only)'}",
              f"- Device groups: {', '.join(result['groups']) or 'none'}"
-             + (f" (modules: {', '.join(result['modules'])})" if result["modules"] else ""),
+             + (f" (modules: {', '.join(result['modules'])}; {result['scope']} tests)"
+                if result["modules"] else ""),
              f"- Release checks with a throwaway key: {'yes' if result['release'] else 'no'}"]
     changed = result["changed"]
     if changed:

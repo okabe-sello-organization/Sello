@@ -11,6 +11,7 @@ from pathlib import Path
 
 import check
 
+NOT_NIGHTLY = "-Pandroid.testInstrumentationRunnerArguments.notAnnotation=com.software.sello.NightlyOnly"
 SETTINGS = "".join(f'include(":{module}")\n' for module in ("app", "data", "design-system", "domain"))
 SUITE = ('<testsuite name="{name}" tests="{tests}" failures="{failures}" errors="0" skipped="{skipped}">'
          '{cases}</testsuite>')
@@ -84,7 +85,8 @@ class CheckTests(unittest.TestCase):
     def test_mixed_or_missing_modes_are_usage_errors(self):
         for argv in ((), ("app", "--host"), ("--host", "--fast"), ("--tests", "X"), ("--lint", "--host"),
                      ("--ci-release",), ("app", "--ci-release"), ("--modules", "app", "--host"), ("--build-only", "--fast"),
-                     ("--event", "push", "--host"), ("--device", "app-3"), ("--plan",)):
+                     ("--event", "push", "--host"), ("--device", "app-3"), ("--plan",),
+                     ("--fast", "--scope", "nightly"), ("--device", "--scope", "everything")):
             with self.subTest(argv=argv):
                 self.usage_error(*argv)
 
@@ -168,22 +170,28 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(0, self.check("--device", "support", "--modules", "data,app", "--build-only"))
         self.assertEqual(["ktlintCheck :data:assembleDebugAndroidTest"], self.fake.names())
 
-    def test_a_hosted_group_runs_its_shard_of_the_selected_modules_after_building(self):
+    def test_a_hosted_group_runs_its_selected_modules_after_building(self):
         environ = {"ANDROID_SERIAL": "emulator-5580"}
-        self.assertEqual(0, self.check("--device", "app-2", "--modules", "data,app", environ=environ))
+        self.assertEqual(0, self.check("--device", "app", "--modules", "data,app", environ=environ))
         self.assertEqual(["ktlintCheck :app:assembleDebugAndroidTest",
-                          ":app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.numShards=2 "
-                          "-Pandroid.testInstrumentationRunnerArguments.shardIndex=1"], self.fake.names())
+                          ":app:connectedDebugAndroidTest " + NOT_NIGHTLY], self.fake.names())
         self.assertEqual("emulator-5580", self.fake.serial)
         self.fake.ran.clear()
         self.assertEqual(0, self.check("--device", "support", "--modules", "design-system", environ=environ))
         self.assertEqual(":design-system:connectedDebugAndroidTest", self.fake.names()[-1])
-        self.assertEqual(2, self.check("--device", "app-1", "--modules", "design-system", environ=environ))
+        self.assertEqual(2, self.check("--device", "app", "--modules", "design-system", environ=environ))
+
+    def test_a_pull_request_run_leaves_out_the_nightly_only_tests_and_the_nightly_runs_them(self):
+        environ = {"ANDROID_SERIAL": "emulator-5580"}
+        self.assertEqual(0, self.check("--device", "app", "--scope", "pull-request", environ=environ))
+        self.assertEqual(":app:connectedDebugAndroidTest " + NOT_NIGHTLY, self.fake.names()[-1])
+        self.assertEqual(0, self.check("--device", "app", "--scope", "nightly", environ=environ))
+        self.assertEqual(":app:connectedDebugAndroidTest", self.fake.names()[-1])
 
     def test_locally_every_suite_runs_whole_on_one_emulator(self):
         self.assertEqual(0, self.check("--device", environ={"ANDROID_SERIAL": "emulator-5580"}))
         self.assertEqual(":data:connectedDebugAndroidTest :design-system:connectedDebugAndroidTest "
-                         ":app:connectedDebugAndroidTest", self.fake.names()[-1])
+                         ":app:connectedDebugAndroidTest " + NOT_NIGHTLY, self.fake.names()[-1])
 
     def test_a_selected_suite_without_fresh_results_or_with_skips_fails(self):
         environ = {"ANDROID_SERIAL": "emulator-5580"}
@@ -213,6 +221,7 @@ class CheckTests(unittest.TestCase):
                          ":app:assembleDebugAndroidTest", names[8])
         self.assertIn(":app:connectedDebugAndroidTest", names[9])
         self.assertNotIn("numShards", names[9])
+        self.assertNotIn("notAnnotation", names[9])  # the release gate runs every device test
         self.assertEqual(["licenses.py", "release.py", "release.py"], names[10:])
         self.assertEqual(["check", "production", "launch"], [argv[-1] for argv in self.fake.ran[10:]])
 
@@ -232,8 +241,8 @@ class CheckTests(unittest.TestCase):
         with contextlib.redirect_stdout(printed):
             self.assertEqual(0, self.check("--plan", "HEAD"))
         self.assertEqual("G2", json.loads(printed.getvalue())["gate"])
-        self.assertEqual("gate=G2\nhost=true\nrelease=false\ndevice=true\n"
-                         'groups=["app-1", "app-2", "support"]\nmodules=data,app\n', output.read_text(encoding="utf-8"))
+        self.assertEqual("gate=G2\nhost=true\nrelease=false\nscope=pull-request\ndevice=true\n"
+                         'groups=["app", "support"]\nmodules=data,app\n', output.read_text(encoding="utf-8"))
         self.assertIn("### Plan: G2 (pull_request)", self.summary.read_text(encoding="utf-8"))
         self.assertEqual([], self.fake.ran)
 

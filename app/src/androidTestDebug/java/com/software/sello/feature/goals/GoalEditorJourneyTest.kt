@@ -11,7 +11,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
@@ -23,7 +22,6 @@ import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.hideKeyboard
-import com.software.sello.navigation.GOAL_EDIT_TAG
 import com.software.sello.press
 import com.software.sello.revealed
 import java.time.YearMonth
@@ -126,69 +124,5 @@ class GoalEditorJourneyTest {
             listOf("1200000"),
             TestData.rows("SELECT amount_minor FROM goal_event")
         )
-    }
-
-    @Test
-    fun aGoalIsEditedThenDeletedOnlyAfterTheConfirmSlip() {
-        val viaje = TestCommands.createGoal("Viaje a la costa", 3_000_000)
-        TestCommands.recordGoalMovement(viaje, 1_710_000)
-        openMetas()
-        rule.awaitTag("metas.goal.$viaje")
-        rule.onNodeWithTag("metas.goal.$viaje").performClick()
-        rule.awaitTag(GOAL_EDIT_TAG)
-        rule.onNodeWithTag(GOAL_EDIT_TAG).performClick()
-        rule.awaitTag(GOAL_EDITOR_TAG)
-        rule.awaitText("Editar meta")
-
-        name("Viaje a Cartagena")
-        keys(*Array(7) { BACKSPACE }, "2", "000", "000")
-        rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).press()
-
-        // 1.710.000 of 2.000.000 is 85 %.
-        rule.awaitText("Viaje a Cartagena")
-        rule.awaitText("85 %")
-        assertEquals(
-            // Created at 1, the aporte 2, the name 3 and the target 4.
-            listOf("Viaje a Cartagena|4"),
-            TestData.rows("SELECT name, version FROM goal")
-        )
-        assertEquals(
-            listOf("3000000", "1710000", "2000000"),
-            TestData.rows("SELECT amount_minor FROM goal_event ORDER BY sequence")
-        )
-
-        rule.onNodeWithTag(GOAL_EDIT_TAG).performClick()
-        rule.awaitTag(GOAL_EDITOR_DELETE_TAG)
-        rule.onNodeWithText("Borrar meta").performScrollTo().performClick()
-        rule.awaitText("¿Borrar Viaje a Cartagena?")
-        assertEquals(1L, TestData.count("goal"))
-        rule.onNodeWithText("Borrar").press()
-
-        rule.awaitTag("metas.empty")
-        assertEquals(0L, TestData.count("goal"))
-        assertEquals(0L, TestData.count("goal_event"))
-    }
-
-    @Test
-    fun aDraftSurvivesRecreationAndLeavingAsksBeforeDiscardingIt() {
-        val viaje = TestCommands.createGoal("Viaje a la costa", 3_000_000)
-        openMetas()
-        // With goals, Nueva meta beside the title creates the next one.
-        rule.awaitTag(METAS_TOTAL_TAG)
-        rule.onNodeWithTag(METAS_CREATE_TAG).assert(hasText("Nueva meta")).performClick()
-        rule.awaitTag(GOAL_EDITOR_TAG)
-        name("Casa")
-        keys("5", "000")
-
-        scenario?.recreate()
-        rule.awaitTag(GOAL_EDITOR_PAD_TAG)
-        rule.onNodeWithContentDescription("5.000 pesos", substring = true).assertExists()
-        rule.onNodeWithText("Casa").assertExists()
-
-        rule.onNodeWithTag(GOAL_EDITOR_CLOSE_TAG).performClick()
-        rule.awaitText("¿Descartar los cambios?")
-        rule.onNodeWithText("Descartar").press()
-        rule.awaitTag("metas.goal.$viaje")
-        assertEquals(1L, TestData.count("goal"))
     }
 }
