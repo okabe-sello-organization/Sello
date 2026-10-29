@@ -59,7 +59,7 @@ import org.junit.Test
 
 /**
  * Every daily-use screen of the real app, on its own database and view models, in the
- * windows, text sizes and themes of the [UI acceptance matrix](docs/testing/ui-acceptance-matrix.md).
+ * windows and themes of the [UI acceptance matrix](docs/testing/ui-acceptance-matrix.md).
  * One dp is drawn as one pixel, so a window can be larger than the test device's
  * screen: what is checked is what exists and where it is laid out, not what is
  * visible. Each screen is checked for:
@@ -72,12 +72,11 @@ import org.junit.Test
  * (with [UiAcceptanceSweepNightlyTest]).
  */
 abstract class UiAcceptanceSweep(private val window: Window) {
-    /** A window of [width] × [height] dp at [fontScale], drawn in one theme. */
+    /** A window of [width] × [height] dp, drawn in one theme. */
     data class Window(
         val name: String,
         val width: Int,
         val height: Int,
-        val fontScale: Float,
         val ink: SelloInk,
         val dark: Boolean
     ) {
@@ -128,8 +127,7 @@ abstract class UiAcceptanceSweep(private val window: Window) {
     fun everyDailyUseScreenFitsItsWindowAndIsFullyOperable() {
         val viewModels = viewModels(sandbox.koin)
         rule.setContent {
-            val density = Density(1f, window.fontScale)
-            CompositionLocalProvider(LocalDensity provides density) {
+            CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 SelloTheme(ink = window.ink, darkTheme = window.dark, reducedMotion = true) {
                     Box(
                         Modifier.requiredSize(window.width.dp, window.height.dp).testTag(WINDOW_TAG)

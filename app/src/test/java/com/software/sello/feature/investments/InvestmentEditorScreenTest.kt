@@ -54,7 +54,7 @@ import org.robolectric.annotation.Config
  * Nueva inversión and Editar inversión as they are drawn (v2 *Agregar / editar
  * inversión*, *Dólares y la tasa*): the currency only when creating, the rate slip only
  * for dollars with no rate, Crear waiting for it, deletion counting the movements, and
- * the longest name and largest amounts whole at 1.0 and 1.3 on narrow and wider
+ * the longest name and largest amounts whole on narrow and wider
  * windows in all four themes.
  */
 @RunWith(AndroidJUnit4::class)
@@ -232,7 +232,7 @@ class InvestmentEditorScreenTest {
     @Test
     fun theFieldBeingTypedStaysAboveThePadOnASmallWindow() {
         var state by mutableStateOf(dollarsNoRate)
-        rule.showSello(Look(fontScale = 1.3f, density = 1f)) {
+        rule.showSello(Look(density = 1f)) {
             Box(Modifier.requiredSize(320.dp, 640.dp)) {
                 InvestmentEditorScreen(state) { actions += it }
             }
@@ -306,11 +306,11 @@ class InvestmentEditorScreenTest {
     @Test
     // A screen larger than every window below, so each window is laid out whole.
     @Config(qualifiers = "w900dp-h900dp-mdpi")
-    fun theFormStaysWholeAndTheActionReachableInEveryThemeSizeAndWindow() {
-        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
+    fun theFormStaysWholeAndTheActionReachableInEveryThemeAndWindow() {
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, SweepWindow(320, 640)))
         var state by mutableStateOf(creating)
         rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
+            CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
                     Box(
                         Modifier.requiredSize(

@@ -8,7 +8,7 @@ import org.junit.runners.Parameterized
 
 /**
  * The sweep on every pull request: the smallest phone window and the shortest
- * landscape one, both at the normal font size, in light and dark.
+ * landscape one, in light and dark.
  */
 @RunWith(Parameterized::class)
 class UiAcceptanceSweepTest(window: Window) : UiAcceptanceSweep(window) {
@@ -16,15 +16,8 @@ class UiAcceptanceSweepTest(window: Window) : UiAcceptanceSweep(window) {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun windows() = listOf(
-            Window("compact 320x640 at 1.0, Cobalto light", 320, 640, 1f, SelloInk.Cobalto, false),
-            Window(
-                "short landscape 640x360 at 1.0, Cobalto dark",
-                640,
-                360,
-                1f,
-                SelloInk.Cobalto,
-                true
-            )
+            Window("compact 320x640, Cobalto light", 320, 640, SelloInk.Cobalto, false),
+            Window("short landscape 640x360, Cobalto dark", 640, 360, SelloInk.Cobalto, true)
         )
     }
 }
@@ -37,23 +30,9 @@ class UiAcceptanceSweepNightlyTest(window: Window) : UiAcceptanceSweep(window) {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun windows() = listOf(
-            Window(
-                "short landscape 640x360 at 1.3, Violeta dark",
-                640,
-                360,
-                1.3f,
-                SelloInk.Violeta,
-                true
-            ),
-            Window("medium 700x900 at 1.0, Violeta light", 700, 900, 1f, SelloInk.Violeta, false),
-            Window(
-                "expanded 1000x700 at 1.0, Cobalto light",
-                1000,
-                700,
-                1f,
-                SelloInk.Cobalto,
-                false
-            )
+            Window("short landscape 640x360, Violeta dark", 640, 360, SelloInk.Violeta, true),
+            Window("medium 700x900, Violeta light", 700, 900, SelloInk.Violeta, false),
+            Window("expanded 1000x700, Cobalto light", 1000, 700, SelloInk.Cobalto, false)
         )
     }
 }

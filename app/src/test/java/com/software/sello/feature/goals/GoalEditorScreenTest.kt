@@ -50,7 +50,7 @@ import org.robolectric.annotation.Config
 /**
  * Nueva meta as it is drawn: the plan says its assumption, the action waits, and the
  * largest amount, the longest name and every caption stay whole on a narrow phone and
- * wider windows, at font scales 1.0 and 1.3, in all four themes.
+ * wider windows, in all four themes.
  */
 @RunWith(AndroidJUnit4::class)
 class GoalEditorScreenTest {
@@ -82,10 +82,10 @@ class GoalEditorScreenTest {
     @Test
     // A screen larger than every window below, so each window is laid out whole.
     @Config(qualifiers = "w900dp-h900dp-mdpi")
-    fun thePlanStaysWholeAndTheActionReachableInEveryThemeSizeAndWindow() {
-        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
+    fun thePlanStaysWholeAndTheActionReachableInEveryThemeAndWindow() {
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, SweepWindow(320, 640)))
         rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
+            CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
                     Box(
                         Modifier.requiredSize(

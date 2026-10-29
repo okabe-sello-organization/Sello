@@ -34,7 +34,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The frame alone, given state by hand, in windows of chosen sizes and font scales.
+ * The frame alone, given state by hand, in windows of chosen sizes.
  * On the JVM (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)

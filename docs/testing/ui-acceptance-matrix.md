@@ -14,7 +14,7 @@ checks a test can read are here. Synthetic data only.
 | C1 | 320 × 640 | 1.0 | Cobalto light | Sweep | Compact phone: tab bar, dock, one pane |
 | P1 | 393 × 851 | 1.0 and 2.0 (as run) | Cobalto light | Walk | A real phone window with system bars and keyboard |
 | P2 | 851 × 393 | 2.0 (as run) | Cobalto light | Walk | The same phone sideways, keyboard open, navigation bar on the right |
-| L1 | 640 × 360 | 1.3 | Violeta dark | Sweep | Short landscape: rail, two panes |
+| L1 | 640 × 360 | 1.0 | Violeta dark | Sweep | Short landscape: rail, two panes |
 | L2 | 640 × 360 | 1.0 | Cobalto dark | Sweep | Short landscape: rail, two panes |
 | M1 | 700 × 900 | 1.0 | Violeta light | Sweep | Medium: tab bar, side-by-side detail |
 | E1 | 1000 × 700 | 1.0 | Cobalto light | Sweep | Expanded: rail, list and detail panes |
@@ -37,11 +37,8 @@ Every theme appears once in the sweep; colour contrast for all four is checked
 separately, token by token, by `SelloColorsTest` (WCAG AA: 4.5:1 for text, 3:1 for
 marks and large text), including the stamps, soft fills and past-month bar.
 
-Font scales 1.0 and 1.3 on a compact phone are covered by each screen's own tests
-(`*ScreenTest`, `ShellScreenLayoutTest`, `ExpenseEntryGeometryTest` and the
-design-system suites); the sweep takes the riskiest corners rather than all 48
-combinations. Font scale 2.0 is not supported and is not tested (owner decision,
-2026-10-29); the walks P1 and P2 ran at 2.0 before that.
+Only the normal font size is tested: other font scales are not supported (owner
+decision, 2026-10-29). The walks P1 and P2 ran at 2.0 before that.
 
 ## Screens and checks
 
