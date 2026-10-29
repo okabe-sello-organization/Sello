@@ -11,11 +11,6 @@ a deliberately smaller, tested MVP and the Sello visual language.
   principles for new screens, with [superseded decisions and transition](docs/decisions/0011-goal-centered-design.md).
 - [Screen and interaction briefs](docs/design/screen-briefs/README.md): the product
   intent and open policy behind each v2 screen.
-- [Current app experience baseline](docs/development/current-app-experience.md):
-  the implemented screens, navigation, behavior, adaptive layout and component
-  families to use as the starting point for UI/UX work.
-- [Current navigation graph](docs/development/navigation-graph.md): the visual route
-  map, screen composable hierarchy and navigation test coverage.
 - [Architecture and guardrails](ARCHITECTURE.md): ownership, financial/recovery
   contracts, technologies, MVP scope and developer tooling requirements.
 - [Tickets](docs/tickets/README.md): one folder per ticket with its evidence,

@@ -4,8 +4,8 @@
 Design: [Sello v2](../design/v2/README.md) shells and [components](../design/v2/components.html).
 
 The frame every screen sits in, and the state that belongs to the whole app instead
-of to one screen. All of it is in `:app`, package `navigation`; every route is listed
-in the [navigation graph](navigation-graph.md).
+of to one screen. All of it is in `:app`, package `navigation`; every route is declared
+in `Routes.kt`.
 
 ## What is on screen today
 

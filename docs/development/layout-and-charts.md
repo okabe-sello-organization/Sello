@@ -4,9 +4,9 @@ Contracts of the `:design-system` structure components. They hold no state and n
 financial rule; the application supplies selection, the month, formatted exact amounts
 and every word.
 
-The approved [Sello v2](../design/v2/README.md) adds a Metas tab and moves Anotar to a
-dock above the tabs; its [components](../design/v2/components.html) mark what exists,
-what is extended and what is new. None of that is implemented yet.
+The app follows the approved [Sello v2](../design/v2/README.md): four tabs (Recibo,
+Resumen, Metas, Inversiones) with the Anotar dock above them; its
+[components](../design/v2/components.html) list the shared parts.
 
 ## Frame and navigation
 
@@ -30,13 +30,13 @@ what is extended and what is new. None of that is implemented yet.
     them side by side only from 600dp (`showsDetailBeside`).
   - The expense form's second pane is the keypad, which works at about 160dp. In a
     393×400dp window two panes keep the amount, category, keys and button on screen
-    ([capture](../tickets/retired/SELLO-052/artifacts/01-two-columns-393x400.png)); one column
+    ([capture](images/01-two-columns-393x400.png)); one column
     hides the amount and cuts off the button
-    ([capture](../tickets/retired/SELLO-052/artifacts/02-one-column-393x400-rejected.png)).
+    ([capture](images/02-one-column-393x400-rejected.png)).
   Do not give the form Recibo's 600dp rule. If a window too narrow for 48dp keys
   (under about 350dp wide and under 480dp tall) ever matters, it needs its own design,
   not the one-column layout.
-- `SelloNavigation` takes any list of destinations (two today) and reports every
+- `SelloNavigation` takes any list of destinations (four in the app) and reports every
   selection, including the current tab again; the app owns back stacks and what a
   reselect does. `SelloDock` is the same action for the dock and for the rail's "+".
 - `MonthSwitcher` is a title that reports a tap; tabs use `MonthBar` through the
@@ -58,7 +58,9 @@ what is extended and what is new. None of that is implemented yet.
 
 - A `ChartPoint` carries an `id`, a `value` used only for geometry, and `spoken`, the
   mark in words with its exact amount. A selection reports the `id`; the app looks the
-  amount up and shows it with `MoneyText` in a `SlipHeading`. Nothing is read back from
+  amount up and shows it with `MoneyText`; screens place it in their own heading, and
+  `SlipHeading` (a small question over a large answer) is available for that but only
+  the catalog uses it today. Nothing is read back from
   a pixel or a height, so two amounts that draw identically stay distinct.
 - Every mark is a selectable item with its `spoken` text, and the chart has a `summary`,
   so charts work with a screen reader, keyboard and Switch Access.
