@@ -273,7 +273,8 @@ class RoomCategoryCommands(
                         command.month,
                         command.limit,
                         profile.revision,
-                        command.confirmedRevision
+                        correctionIdentity(command),
+                        command.confirmation
                     )
                 }.chainsOr { return it }
                 limits.put(MonthLimit(id, command.month, command.limit).toEntity())

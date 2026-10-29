@@ -19,6 +19,7 @@ import com.software.sello.domain.policy.EffectiveDateError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.CommittedExpense
+import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.EditExpense
@@ -47,7 +48,8 @@ import java.time.YearMonth
  *
  * A change that reaches a closed month of a carry chain is a correction (ADR 0020 CP21):
  * [carryRejection] lets it through only when the list of later months it changes was seen
- * at the current revision, and never when a month could no longer be calculated.
+ * for this very change at the current revision, and never when a month could no longer be
+ * calculated afterwards.
  */
 class RoomExpenseCommands internal constructor(
     private val database: SelloDatabase,
@@ -148,7 +150,8 @@ class RoomExpenseCommands internal constructor(
         profile: FinancialProfile,
         removed: ExpenseEntity?,
         added: ExpenseEntity?,
-        confirmedRevision: Long?
+        change: String,
+        confirmation: CorrectionConfirmation?
     ): ExpenseCommandOutcome? {
         val today = clock.today.value.date
         return database.expenseCarry(
@@ -157,7 +160,8 @@ class RoomExpenseCommands internal constructor(
             YearMonth.from(today),
             today,
             profile.revision,
-            confirmedRevision
+            change,
+            confirmation
         )?.let { Rejected(it) }
     }
 
@@ -190,7 +194,13 @@ class RoomExpenseCommands internal constructor(
                 createdAt = now,
                 updatedAt = now
             ).toEntity()
-            carryRejection(profile, null, expense, command.confirmedRevision)?.let { return it }
+            carryRejection(
+                profile,
+                null,
+                expense,
+                correctionIdentity(command),
+                command.confirmation
+            )?.let { return it }
             val receipt = database.commitCommand(
                 profile,
                 command.operationId,
@@ -242,7 +252,13 @@ class RoomExpenseCommands internal constructor(
                 date = command.date,
                 note = command.note
             ).toEntity()
-            carryRejection(profile, row, edited, command.confirmedRevision)?.let { return it }
+            carryRejection(
+                profile,
+                row,
+                edited,
+                correctionIdentity(command),
+                command.confirmation
+            )?.let { return it }
 
             val now = audit.now()
             val changed = database.expenseDao().update(
@@ -277,7 +293,13 @@ class RoomExpenseCommands internal constructor(
             if (row.version != command.expectedVersion) {
                 return Rejected(ExpenseRejection.VersionConflict(row.version))
             }
-            carryRejection(profile, row, null, command.confirmedRevision)?.let { return it }
+            carryRejection(
+                profile,
+                row,
+                null,
+                correctionIdentity(command),
+                command.confirmation
+            )?.let { return it }
 
             val now = audit.now()
             database.discardKeptCopies()
@@ -346,7 +368,13 @@ class RoomExpenseCommands internal constructor(
                 originSlot = kept.originSlot
             )
             // Undoing a deletion in a closed chain month is a correction too (CP21).
-            carryRejection(profile, null, restored, command.confirmedRevision)?.let { return it }
+            carryRejection(
+                profile,
+                null,
+                restored,
+                correctionIdentity(command),
+                command.confirmation
+            )?.let { return it }
             database.expenseDao().insert(restored)
             val removed = database.deletedExpenseDao().remove(kept.deletionId)
             check(removed == 1) { "The kept copy changed inside the transaction that read it" }

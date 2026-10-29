@@ -76,6 +76,7 @@ class RoomCarryoverReads(
                         categoryId,
                         read.profile.generation,
                         read.profile.revision,
+                        today,
                         read.chains,
                         replay.value
                     )
@@ -157,7 +158,9 @@ class RoomCarryoverReads(
                         return@withContext Outcome.Failure(CarryReadFailure.Carryover(change.error))
                 }
             }
-            Outcome.Success(CarryCatchUpNotice(profile.generation, profile.revision, categories))
+            Outcome.Success(
+                CarryCatchUpNotice(profile.generation, profile.revision, today, categories)
+            )
         }
     }
 

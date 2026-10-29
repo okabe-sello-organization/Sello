@@ -40,10 +40,12 @@ fun SettledBalance.text(): String = "$chainStart|$endMonth|${balance.minorUnits}
 fun SettledBalanceChange.text(): String = "${categoryId.value.takeLast(3)}|${before.endMonth}|" +
     "${before.balance.minorUnits}→${after.balance.minorUnits}"
 
+/** The refusal of an expense correction, with its list and what confirms it (CP20). */
+fun ExpenseCommandOutcome.refusedCorrection(): ExpenseRejection.CorrectionUnconfirmed =
+    (this as ExpenseCommandOutcome.Rejected).reason as ExpenseRejection.CorrectionUnconfirmed
+
 /** The list an expense correction was refused with, to be confirmed (CP20). */
-fun ExpenseCommandOutcome.listedCorrection(): CarryCorrection =
-    ((this as ExpenseCommandOutcome.Rejected).reason as ExpenseRejection.CorrectionUnconfirmed)
-        .correction
+fun ExpenseCommandOutcome.listedCorrection(): CarryCorrection = refusedCorrection().correction
 
 /** The carry chains as stored, one row per chain. */
 fun TestLedger.chainRows(): List<String> =

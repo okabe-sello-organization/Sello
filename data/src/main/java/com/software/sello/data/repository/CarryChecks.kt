@@ -21,6 +21,7 @@ import com.software.sello.domain.policy.CarryoverCorrectionReplay
 import com.software.sello.domain.policy.CategoryCorrection
 import com.software.sello.domain.policy.SignedCarryoverPolicy
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.ExpenseRejection
 import java.time.LocalDate
 import java.time.YearMonth
@@ -100,10 +101,7 @@ internal class CategoryCarry(
 
     /** Whether every month of [input]'s chains up to this one can still be calculated (CP8, CP23). */
     private fun replays(input: CategoryCarryInput): CategoryRejection? =
-        when (val replayed = SignedCarryoverPolicy.replay(input, month, month)) {
-            is Outcome.Success -> null
-            is Outcome.Failure -> unavailable(replayed.error)
-        }
+        replayFailure(input, month)?.let(::unavailable)
 
     /**
      * Turning carry off, archiving, or making this month unlimited (CP9–CP11): the chain
@@ -220,13 +218,17 @@ internal class CategoryCarry(
      * (that is [drop]). A month outside every chain is no concern of carry. Inside one, a
      * past month cannot become unlimited (CP13) and no base may pass the cap (CP25). A
      * past month's finite correction that changes later months must have been confirmed
-     * at the current [revision] (CP20–CP22); this month's needs no confirmation.
+     * for this very [change] at the current [revision] (CP20–CP22); this month's needs no
+     * confirmation. Only the chain as it will be must calculate: a correction that repairs
+     * a chain whose stored state cannot be calculated goes through, with no list to show
+     * (review round 1, R1).
      */
     suspend fun monthLimit(
         limitMonth: YearMonth,
         limit: BudgetLimit,
         revision: Long,
-        confirmedRevision: Long?
+        change: String,
+        confirmation: CorrectionConfirmation?
     ): CarryDecision {
         val chains = when (val read = load()) {
             is Outcome.Success -> read.value
@@ -248,10 +250,6 @@ internal class CategoryCarry(
             is Outcome.Success -> read.value
             is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }
-        val before = when (val read = rows.inputOrRefuse()) {
-            is Outcome.Success -> read.value
-            is Outcome.Failure -> return CarryDecision.Refused(read.error)
-        }
         val after = when (
             val read = rows.inputOrRefuse(
                 overrides = rows.overrides.filterNot { it.month == limitMonth } +
@@ -261,9 +259,12 @@ internal class CategoryCarry(
             is Outcome.Success -> read.value
             is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }
-        if (limitMonth == month) {
-            return replays(after)?.let { CarryDecision.Refused(it) } ?: CarryDecision.Unchanged
-        }
+        replays(after)?.let { return CarryDecision.Refused(it) }
+        if (limitMonth == month) return CarryDecision.Unchanged
+        // A stored state that cannot be calculated has no list to show; this change repairs it.
+        val before = (rows.input(today) as? Outcome.Success)?.value
+            ?.takeIf { replayFailure(it, month) == null }
+            ?: return CarryDecision.Unchanged
         val correction = when (
             val previewed = CarryoverCorrectionReplay.preview(
                 month,
@@ -273,8 +274,9 @@ internal class CategoryCarry(
             is Outcome.Success -> previewed.value
             is Outcome.Failure -> return CarryDecision.Refused(unavailable(previewed.error))
         }
-        if (correction.isEmpty || confirmedRevision == revision) return CarryDecision.Unchanged
-        return CarryDecision.Refused(CategoryRejection.CorrectionUnconfirmed(revision, correction))
+        val expected = CorrectionConfirmation(revision, change)
+        if (correction.isEmpty || confirmation == expected) return CarryDecision.Unchanged
+        return CarryDecision.Refused(CategoryRejection.CorrectionUnconfirmed(expected, correction))
     }
 
     /** Replaces the category's stored chains with [chains]. A write: call it after every check. */
@@ -284,12 +286,20 @@ internal class CategoryCarry(
     }
 }
 
+/** Why [input]'s chains cannot be calculated up to [month], or null when they can (CP8, CP23). */
+private fun replayFailure(input: CategoryCarryInput, month: YearMonth): CarryoverFailure? =
+    (SignedCarryoverPolicy.replay(input, month, month) as? Outcome.Failure)?.error
+
 /**
  * Whether an expense change may commit (ADR 0020 CP20–CP23): [removed] is the stored row
  * that changes or goes away, [added] the row as it will be stored. A category with no
- * chain is not read further and neither row is decoded for it. A change that reaches a closed month of a chain and changes
- * later months must have been confirmed at the current [revision]; one that leaves any month
- * impossible to calculate is refused. Null when the change may go ahead.
+ * chain is not read further and neither row is decoded for it.
+ *
+ * A change that leaves a month impossible to calculate is refused. A change that reaches a
+ * closed month of a chain and changes later months must have been confirmed for this very
+ * [change] at the current [revision]. A change that repairs a chain whose stored state cannot
+ * be calculated has no list to show and goes through (review round 1, R1). Null when the
+ * change may go ahead.
  */
 internal suspend fun SelloDatabase.expenseCarry(
     removed: ExpenseEntity?,
@@ -297,7 +307,8 @@ internal suspend fun SelloDatabase.expenseCarry(
     month: YearMonth,
     today: LocalDate,
     revision: Long,
-    confirmedRevision: Long?
+    change: String,
+    confirmation: CorrectionConfirmation?
 ): ExpenseRejection? {
     val categories = listOfNotNull(removed?.categoryId, added?.categoryId).distinct()
     val corrections = ArrayList<CategoryCorrection>(categories.size)
@@ -329,15 +340,15 @@ internal suspend fun SelloDatabase.expenseCarry(
             is Outcome.Success -> stored.value
             is Outcome.Failure -> return ExpenseRejection.StorageFailed(stored.error)
         }
-        val before = when (val input = rows.input(today)) {
-            is Outcome.Success -> input.value
-            is Outcome.Failure -> return ExpenseRejection.CarryUnavailable(input.error)
-        }
         val expenses = rows.expenses.filterNot { it.id == gone?.id } + listOfNotNull(put)
         val after = when (val input = rows.input(today, expenses = expenses)) {
             is Outcome.Success -> input.value
             is Outcome.Failure -> return ExpenseRejection.CarryUnavailable(input.error)
         }
+        replayFailure(after, month)?.let { return ExpenseRejection.CarryUnavailable(it) }
+        val before = (rows.input(today) as? Outcome.Success)?.value
+            ?.takeIf { replayFailure(it, month) == null }
+            ?: continue
         corrections += CategoryCorrection(before, after)
     }
     if (corrections.isEmpty()) return null
@@ -345,6 +356,7 @@ internal suspend fun SelloDatabase.expenseCarry(
         is Outcome.Success -> previewed.value
         is Outcome.Failure -> return ExpenseRejection.CarryUnavailable(previewed.error)
     }
-    if (correction.isEmpty || confirmedRevision == revision) return null
-    return ExpenseRejection.CorrectionUnconfirmed(revision, correction)
+    val expected = CorrectionConfirmation(revision, change)
+    if (correction.isEmpty || confirmation == expected) return null
+    return ExpenseRejection.CorrectionUnconfirmed(expected, correction)
 }

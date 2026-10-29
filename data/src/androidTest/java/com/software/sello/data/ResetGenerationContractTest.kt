@@ -160,7 +160,8 @@ class ResetGenerationContractTest {
         "investment",
         "investment_movement",
         "deleted_investment_movement",
-        "usd_rate"
+        "usd_rate",
+        "carry_chain"
     ).associateWith { ledger.long("SELECT COUNT(*) FROM $it") }
 
     private fun everyRow(): List<List<String>> = listOf(

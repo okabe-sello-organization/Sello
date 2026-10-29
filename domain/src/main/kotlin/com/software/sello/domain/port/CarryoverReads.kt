@@ -8,25 +8,32 @@ import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.CarryCorrection
+import java.time.LocalDate
 import java.time.YearMonth
 
-/** One category's chains and every month they carry, all read at one [revision]. */
+/**
+ * One category's chains and every month they carry, all read at one [revision] as of the
+ * financial day [asOf] (ADR 0020 CP27).
+ */
 data class CarryHistory(
     val categoryId: CategoryId,
     val generation: Long,
     val revision: Long,
+    val asOf: LocalDate,
     val chains: List<CarryChain>,
     val replay: CarryReplay
 )
 
 /**
  * What recording catch-up's payments changed in carry chains (ADR 0020 CP18), one entry per
- * category a listed payment reaches, read at one [revision]. Derived from the listed
- * payments that are still recorded: one deleted since is no longer in it.
+ * category a listed payment reaches, read at one [revision] as of the financial day [asOf].
+ * Derived from the listed payments that are still recorded: one deleted since is no longer
+ * in it.
  */
 data class CarryCatchUpNotice(
     val generation: Long,
     val revision: Long,
+    val asOf: LocalDate,
     val categories: List<CarryCorrection>
 )
 

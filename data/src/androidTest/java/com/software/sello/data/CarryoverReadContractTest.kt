@@ -92,6 +92,7 @@ class CarryoverReadContractTest {
         val history = readings.first()[0] as CarryHistory
         assertEquals(sc01, history.replay.months.map { it.text() })
         assertEquals(5L, history.revision)
+        assertEquals(LocalDate.parse("2027-04-05"), history.asOf)
         assertEquals(1L, history.generation)
         assertEquals(
             listOf(CarryChain.of(ledger.categoryId(100), month("2027-01")).valueOrFail()),
@@ -122,9 +123,16 @@ class CarryoverReadContractTest {
     @Test
     fun readsDuringAConfirmedCorrectionSeeOneRevisionOrTheOther() = runBlocking {
         histories.sc01()
-        val revision = ledger.revision()
         val go = CompletableDeferred<Unit>()
-        val delete = DeleteExpense(ledger.operation(), 1, expenseIdOf(101), 1, revision)
+        val operation = ledger.operation()
+        val shown = ledger.expenses.delete(DeleteExpense(operation, 1, expenseIdOf(101), 1))
+        val delete = DeleteExpense(
+            operation,
+            1,
+            expenseIdOf(101),
+            1,
+            shown.refusedCorrection().confirmation
+        )
 
         val reads = List(24) {
             async(Dispatchers.Default) {
@@ -204,6 +212,7 @@ class CarryoverReadContractTest {
         )
         assertEquals(null, recordedAfter.reservation)
         assertEquals(after.revision, notice.revision)
+        assertEquals(LocalDate.parse("2027-03-10"), notice.asOf)
         val change = notice.categories.single()
         assertEquals(
             listOf("100|2027-03|C 1200000→900000|R 700000→400000|OnTrack→OnTrack"),
@@ -214,7 +223,6 @@ class CarryoverReadContractTest {
             change.edited.map { it.text() }
         )
 
-        val revision = ledger.revision()
         val asked = ledger.expenses.delete(DeleteExpense(ledger.operation(), 1, recorded, 1))
         val listed = asked.listedCorrection()
         assertEquals(
@@ -226,7 +234,15 @@ class CarryoverReadContractTest {
             listed.edited.map { it.text() }
         )
         val deleted =
-            ledger.expenses.delete(DeleteExpense(ledger.operation(), 1, recorded, 1, revision))
+            ledger.expenses.delete(
+                DeleteExpense(
+                    ledger.operation(),
+                    1,
+                    recorded,
+                    1,
+                    asked.refusedCorrection().confirmation
+                )
+            )
         assertTrue("$deleted", deleted is ExpenseCommandOutcome.Committed)
         assertEquals(
             emptyList<Any>(),
