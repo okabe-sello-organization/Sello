@@ -60,7 +60,7 @@ class SubmissionTest {
         val submission = submission(saved)
         val store = Store()
 
-        val settled = submission.send("create", store.find) { operation ->
+        val settled = submission.send(store.find, "create") { operation ->
             store.sent += operation
             assertEquals(first, saved.get<String>("form.operation"))
             assertEquals("create", submission.step)
@@ -84,9 +84,9 @@ class SubmissionTest {
             answer.await()
         }
 
-        val sending = async { submission.send("create", store.find, command) }
+        val sending = async { submission.send(store.find, "create", command) }
         runCurrent()
-        val again = submission.send("create", store.find, command)
+        val again = submission.send(store.find, "create", command)
         val asked = submission.recover(store.find)
         answer.complete(CommandOutcome.Committed("gasto", replayed = false))
 
@@ -102,7 +102,7 @@ class SubmissionTest {
         val submission = submission()
         val store = Store()
 
-        val settled = submission.send("create", store.find) {
+        val settled = submission.send(store.find, "create") {
             CommandOutcome.Rejected(CommandRejection.Specific("FutureDate"))
         }
 
@@ -116,7 +116,7 @@ class SubmissionTest {
         val submission = submission()
         val store = Store()
 
-        val settled = submission.send("create", store.find) { operation ->
+        val settled = submission.send(store.find, "create") { operation ->
             store.sent += operation
             store.committed[operation] = "gasto"
             CommandOutcome.OutcomeUnknown(operation)
@@ -133,7 +133,7 @@ class SubmissionTest {
         val submission = submission()
         val store = Store()
 
-        val settled = submission.send("create", store.find) { operation ->
+        val settled = submission.send(store.find, "create") { operation ->
             store.sent += operation
             CommandOutcome.OutcomeUnknown(operation)
         }
@@ -149,7 +149,7 @@ class SubmissionTest {
         val submission = submission()
         val store = Store().apply { lookupFails = true }
 
-        val settled = submission.send("delete", store.find) { operation ->
+        val settled = submission.send(store.find, "delete") { operation ->
             store.sent += operation
             store.committed[operation] = "borrado"
             CommandOutcome.OutcomeUnknown(operation)
@@ -173,7 +173,7 @@ class SubmissionTest {
         val store = Store()
         val before = submission(saved)
         val gone = launch {
-            before.send("create", store.find) { operation ->
+            before.send(store.find, "create") { operation ->
                 store.sent += operation
                 CompletableDeferred<CommandOutcome<String, String>>().await()
             }
@@ -210,7 +210,7 @@ class SubmissionTest {
         val store = Store()
 
         try {
-            submission.send<String, String>("create", store.find) {
+            submission.send<String, String>(store.find, "create") {
                 throw CancellationException("left the screen")
             }
             fail("cancellation was swallowed")

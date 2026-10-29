@@ -9,21 +9,19 @@ import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementId
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.Note
-import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.GoalPolicy
-import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.EditGoalMovement
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
-import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
@@ -35,6 +33,11 @@ import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.submission.AmountDraftSerializer
+import com.software.sello.presentation.submission.LocalDateSerializer
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +47,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Aportar and Retirar, and the correction or deletion of a movement already recorded.
@@ -62,10 +66,11 @@ class GoalMovementViewModel(
     private val money: MoneyFormatter,
     private val corrections: Corrections
 ) : ViewModel() {
+    @Serializable
     private data class Draft(
-        val amount: AmountDraft,
+        @Serializable(with = AmountDraftSerializer::class) val amount: AmountDraft,
         val goalId: String?,
-        val date: LocalDate,
+        @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
         val note: String,
         val withdrawal: Boolean
     )
@@ -85,13 +90,16 @@ class GoalMovementViewModel(
     private val movementId: String? = saved[KEY_MOVEMENT]
     private val editing = movementId != null
 
+    private val drafts = SavedDraft(saved, DRAFT, Draft.serializer())
+    private val submission = Submission(saved, OPERATION, ids)
+
     private val draft = MutableStateFlow(
-        Draft(
-            saved.get<String>(AMOUNT)?.let(AmountDraft::paste) ?: AmountDraft.Empty,
-            saved[GOAL] ?: saved[KEY_GOAL],
-            saved.get<String>(DATE)?.let(LocalDate::parse) ?: clock.today.value.date,
-            saved[NOTE] ?: "",
-            saved[KIND] ?: saved[KEY_WITHDRAWAL] ?: false
+        drafts.read()?.let { it.copy(goalId = it.goalId ?: saved[KEY_GOAL]) } ?: Draft(
+            AmountDraft.Empty,
+            saved[KEY_GOAL],
+            clock.today.value.date,
+            "",
+            saved[KEY_WITHDRAWAL] ?: false
         )
     )
     private val progress = MutableStateFlow(Progress())
@@ -146,7 +154,7 @@ class GoalMovementViewModel(
                 }
             }
         }
-        if (saved.get<String>(OPERATION) != null) viewModelScope.launch { recover() }
+        if (submission.pending) viewModelScope.launch { recover() }
     }
 
     fun onAction(action: GoalMovementAction) {
@@ -209,7 +217,7 @@ class GoalMovementViewModel(
             GoalMovementAction.Submit -> if (now.canSubmit) submit()
 
             GoalMovementAction.Retry -> if (!now.busy) {
-                if (saved.get<String>(OPERATION) != null) {
+                if (submission.pending) {
                     viewModelScope.launch { recover() }
                 } else {
                     progress.update { it.copy(error = null) }
@@ -219,7 +227,7 @@ class GoalMovementViewModel(
             GoalMovementAction.Delete -> if (now.canDelete) delete()
 
             GoalMovementAction.Back -> when {
-                now.busy || saved.get<String>(OPERATION) != null -> Unit
+                now.busy || submission.pending -> Unit
                 typed(now) -> progress.update { it.copy(confirmDiscard = true) }
                 else -> progress.update { it.copy(closed = true) }
             }
@@ -233,15 +241,7 @@ class GoalMovementViewModel(
 
     private fun change(next: Draft) {
         if (next.amount != draft.value.amount) progress.update { it.copy(atLimit = false) }
-        saved[AMOUNT] = when (val amount = next.amount) {
-            AmountDraft.Empty -> null
-            is AmountDraft.Digits -> amount.digits
-            is AmountDraft.Rejected -> amount.original
-        }
-        saved[GOAL] = next.goalId
-        saved[DATE] = next.date.toString()
-        saved[NOTE] = next.note
-        saved[KIND] = next.withdrawal
+        drafts.write(next)
         progress.update { it.copy(deleteBlockedBy = null) }
         draft.value = next
     }
@@ -387,13 +387,6 @@ class GoalMovementViewModel(
         )
     }
 
-    private fun operation(step: String): OperationId {
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[OPERATION] = operation.value
-        saved[STEP] = step
-        return operation
-    }
-
     private fun submit() {
         val read = readable(board.value) ?: return
         val current = draft.value
@@ -406,44 +399,46 @@ class GoalMovementViewModel(
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
             if (original != null) {
-                val operation = operation(STEP_EDIT)
                 settle(
                     STEP_EDIT,
-                    commands.submit(
-                        EditGoalMovement(
-                            operation,
-                            read.generation,
-                            id,
-                            version,
-                            original.id,
-                            original.version,
-                            amount,
-                            current.date,
-                            note
+                    submission.send(commands::find, STEP_EDIT) { operation ->
+                        commands.submit(
+                            EditGoalMovement(
+                                operation,
+                                read.generation,
+                                id,
+                                version,
+                                original.id,
+                                original.version,
+                                amount,
+                                current.date,
+                                note
+                            )
                         )
-                    )
+                    }
                 )
             } else {
-                val operation =
-                    operation(if (current.withdrawal) STEP_WITHDRAW else STEP_CONTRIBUTE)
+                val step = if (current.withdrawal) STEP_WITHDRAW else STEP_CONTRIBUTE
                 settle(
-                    saved[STEP] ?: STEP_CONTRIBUTE,
-                    commands.submit(
-                        RecordGoalMovement(
-                            operation,
-                            read.generation,
-                            id,
-                            version,
-                            if (current.withdrawal) {
-                                GoalMovementKind.Withdrawal
-                            } else {
-                                GoalMovementKind.Contribution
-                            },
-                            amount,
-                            current.date,
-                            note
+                    step,
+                    submission.send(commands::find, step) { operation ->
+                        commands.submit(
+                            RecordGoalMovement(
+                                operation,
+                                read.generation,
+                                id,
+                                version,
+                                if (current.withdrawal) {
+                                    GoalMovementKind.Withdrawal
+                                } else {
+                                    GoalMovementKind.Contribution
+                                },
+                                amount,
+                                current.date,
+                                note
+                            )
                         )
-                    )
+                    }
                 )
             }
         }
@@ -454,39 +449,55 @@ class GoalMovementViewModel(
         val (goal, movement) = original(read) ?: return
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
-            val operation = operation(STEP_DELETE)
             settle(
                 STEP_DELETE,
-                corrections.deleteGoalMovement(
-                    DeleteGoalMovement(
-                        operation,
-                        read.generation,
-                        goal.history.goal.id,
-                        goal.history.goal.version,
-                        movement.id,
-                        movement.version
+                submission.send(commands::find, STEP_DELETE) { operation ->
+                    corrections.deleteGoalMovement(
+                        DeleteGoalMovement(
+                            operation,
+                            read.generation,
+                            goal.history.goal.id,
+                            goal.history.goal.version,
+                            movement.id,
+                            movement.version
+                        )
                     )
-                )
+                }
             )
         }
     }
 
-    private suspend fun settle(step: String, outcome: GoalCommandOutcome) {
-        when (outcome) {
-            // A deletion was already offered to undo by [corrections].
-            is CommandOutcome.Committed -> committed(
+    private fun settle(step: String, settled: Settled<CommittedGoal, GoalRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
+
+            // A deletion sent from here was already offered to undo by [corrections]; one
+            // found after an unknown outcome was not, and its change is never celebrated.
+            is Settled.Committed -> committed(
                 step,
-                outcome.value.receipt,
-                announced = true,
-                change = outcome.value.change
+                settled.value.receipt,
+                announced = !settled.found,
+                change = settled.value.change.takeIf { !settled.found }
             )
 
-            is CommandOutcome.OutcomeUnknown -> recover()
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = GoalMovementError.Unknown)
+            }
 
-            is CommandOutcome.Rejected -> {
-                // Certain: nothing was written, so this attempt is over.
-                saved[OPERATION] = null
-                val reason = outcome.reason
+            Settled.NotCommitted -> progress.update {
+                it.copy(
+                    busy = false,
+                    error = if (step == STEP_DELETE) {
+                        GoalMovementError.NotDeleted
+                    } else {
+                        GoalMovementError.NotSaved
+                    }
+                )
+            }
+
+            is Settled.Rejected -> {
+                val reason = settled.reason
                 val specific = (reason as? CommandRejection.Specific)?.reason
                 if (specific is GoalRejection.AboveSaved) {
                     progress.update {
@@ -528,35 +539,10 @@ class GoalMovementViewModel(
 
     /** Asks how the saved operation ended, with its own identifier. Only a receipt counts. */
     private suspend fun recover() {
-        val operation =
-            (saved.get<String>(OPERATION)?.let(OperationId::of) as? Outcome.Success)?.value
-                ?: return
-        val step = saved[STEP] ?: STEP_CONTRIBUTE
+        if (!submission.pending) return
+        val step = submission.step ?: STEP_CONTRIBUTE
         progress.update { it.copy(busy = true, error = null) }
-        when (val found = commands.find(operation)) {
-            is Outcome.Failure -> progress.update {
-                it.copy(busy = false, error = GoalMovementError.Unknown)
-            }
-
-            is Outcome.Success -> {
-                val committed = found.value
-                if (committed != null) {
-                    committed(step, committed.receipt, announced = false)
-                } else {
-                    saved[OPERATION] = null
-                    progress.update {
-                        it.copy(
-                            busy = false,
-                            error = if (step == STEP_DELETE) {
-                                GoalMovementError.NotDeleted
-                            } else {
-                                GoalMovementError.NotSaved
-                            }
-                        )
-                    }
-                }
-            }
-        }
+        settle(step, submission.recover(commands::find))
     }
 
     /**
@@ -569,7 +555,6 @@ class GoalMovementViewModel(
         announced: Boolean,
         change: GoalChange? = null
     ) {
-        saved[OPERATION] = null
         val amount = (draft.value.amount.toTransactionAmount() as? Outcome.Success)?.value
         when (step) {
             STEP_DELETE -> if (!announced) corrections.goalMovementDeleted(receipt)
@@ -615,16 +600,11 @@ class GoalMovementViewModel(
         private val CANDIDATE =
             (GoalMovementId.of("00000000-0000-4000-8000-ffffffffffff") as Outcome.Success).value
 
-        private const val AMOUNT = "goal.movement.amount"
-        private const val GOAL = "goal.movement.goal"
-        private const val DATE = "goal.movement.date"
-        private const val NOTE = "goal.movement.note"
-        private const val KIND = "goal.movement.withdrawal"
+        private const val DRAFT = "goal.movement.draft"
         private const val DRAFTED = "goal.movement.drafted"
         private const val COMPOSER = "goal.movement.composer"
         private const val COMPOSER_TEXT = "goal.movement.composer.text"
         private const val OPERATION = "goal.movement.operation"
-        private const val STEP = "goal.movement.step"
         private const val STEP_CONTRIBUTE = "contribute"
         private const val STEP_WITHDRAW = "withdraw"
         private const val STEP_EDIT = "edit"

@@ -6,18 +6,20 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
-import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.GoalCommand
-import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
+import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.platform.ScreenReader
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -51,6 +53,7 @@ class GoalDetailViewModel(
     private val goalId: String = saved[KEY_GOAL] ?: ""
     private val attempts = MutableStateFlow(0)
     private val ui = MutableStateFlow(Ui())
+    private val submission = Submission(saved, KEY_OPERATION, ids)
     private val completer =
         GoalCompleter(saved, commands, corrections, ids, clock, screenReader, viewModelScope)
 
@@ -84,7 +87,7 @@ class GoalDetailViewModel(
     )
 
     init {
-        if (saved.get<String>(KEY_OPERATION) != null) viewModelScope.launch { recover() }
+        if (submission.pending) viewModelScope.launch { recover() }
     }
 
     fun onAction(action: GoalDetailAction) {
@@ -126,7 +129,7 @@ class GoalDetailViewModel(
     private fun ready(): GoalDetailState.Ready? = state.value as? GoalDetailState.Ready
 
     /** Whether a command may be sent: nothing in flight and no outcome left unknown. */
-    private fun free(): Boolean = !ui.value.busy && saved.get<String>(KEY_OPERATION) == null
+    private fun free(): Boolean = !ui.value.busy && !submission.pending
 
     private fun feature() {
         val goal = ready()?.goal ?: return
@@ -143,49 +146,41 @@ class GoalDetailViewModel(
     }
 
     private fun send(step: String, command: (OperationId) -> GoalCommand) {
-        val operation = (OperationId.of(ids.next()) as? Outcome.Success)?.value ?: return
-        // Saved before it leaves, so this attempt is recognised whatever happens next.
-        saved[KEY_OPERATION] = operation.value
-        saved[KEY_STEP] = step
         ui.value = Ui(busy = true)
         viewModelScope.launch {
-            when (val outcome = commands.submit(command(operation))) {
-                is CommandOutcome.Committed -> committed(step)
-                is CommandOutcome.Rejected -> notSaved()
-                is CommandOutcome.OutcomeUnknown -> recover()
-            }
+            settle(step, submission.send(commands::find, step) { commands.submit(command(it)) })
         }
     }
 
     /** Asks how the saved operation ended, with its own identifier. */
     private suspend fun recover() {
-        val operation = (saved.get<String>(KEY_OPERATION)?.let(OperationId::of) as? Outcome.Success)
-            ?.value ?: return run { saved[KEY_OPERATION] = null }
-        val step = saved.get<String>(KEY_STEP)
+        if (!submission.pending) return
+        val step = submission.step
         ui.value = Ui(busy = true)
-        when (val found = commands.find(operation)) {
-            is Outcome.Failure -> ui.value = Ui(error = GoalDetailError.Unknown)
-            is Outcome.Success -> found.value?.let { committed(step) } ?: notSaved()
-        }
+        settle(step, submission.recover(commands::find))
     }
 
-    private fun committed(step: String?) {
-        saved[KEY_OPERATION] = null
-        saved[KEY_STEP] = null
-        if (step == STEP_DELETE) {
-            saved[KEY_CONFIRM] = false
-            saved[KEY_DELETED] = true
-            _deleted.value = true
-        }
-        ui.value = Ui()
-    }
+    private fun settle(step: String?, settled: Settled<CommittedGoal, GoalRejection>?) {
+        when (settled) {
+            null -> if (!submission.pending) ui.value = Ui()
 
-    /** Certain: nothing was written, so this attempt is over. */
-    private fun notSaved() {
-        saved[KEY_OPERATION] = null
-        saved[KEY_STEP] = null
-        saved[KEY_CONFIRM] = false
-        ui.value = Ui(error = GoalDetailError.NotSaved)
+            is Settled.Committed -> {
+                if (step == STEP_DELETE) {
+                    saved[KEY_CONFIRM] = false
+                    saved[KEY_DELETED] = true
+                    _deleted.value = true
+                }
+                ui.value = Ui()
+            }
+
+            is Settled.Unknown -> ui.value = Ui(error = GoalDetailError.Unknown)
+
+            // Certain: nothing was written, so this attempt is over.
+            is Settled.Rejected, Settled.NotCommitted -> {
+                saved[KEY_CONFIRM] = false
+                ui.value = Ui(error = GoalDetailError.NotSaved)
+            }
+        }
     }
 
     companion object {
@@ -193,7 +188,6 @@ class GoalDetailViewModel(
         const val KEY_GOAL = "goalId"
 
         private const val KEY_OPERATION = "goal.detail.operation"
-        private const val KEY_STEP = "goal.detail.step"
         private const val KEY_CONFIRM = "goal.detail.confirmDelete"
         private const val KEY_ALL = "goal.detail.allMovements"
         private const val KEY_DELETED = "goal.detail.deleted"

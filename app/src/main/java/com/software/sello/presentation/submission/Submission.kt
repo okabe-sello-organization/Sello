@@ -41,8 +41,8 @@ class Submission(
      * lookup is still in flight, and nothing was sent.
      */
     suspend fun <C, F> send(
-        step: String,
         find: Lookup<C>,
+        step: String? = null,
         command: suspend (OperationId) -> CommandOutcome<C, F>
     ): Settled<C, F>? {
         if (inFlight) return null
@@ -74,7 +74,7 @@ class Submission(
      * Asks how the saved operation ended, with its own ID, after an unknown outcome or a
      * restart. Null when nothing is [pending] or something is already in flight.
      */
-    suspend fun <C> recover(find: Lookup<C>): Settled<C, Nothing>? {
+    suspend fun <C> recover(find: Lookup<C>): Recovered<C>? {
         if (inFlight || !pending) return null
         val operation = (saved.get<String>(key)?.let(OperationId::of) as? Outcome.Success)?.value
         // Not an ID this class wrote; there is nothing it could be asked about.
@@ -93,7 +93,7 @@ class Submission(
         saved[stepKey] = null
     }
 
-    private suspend fun <C> lookUp(operation: OperationId, find: Lookup<C>): Settled<C, Nothing> =
+    private suspend fun <C> lookUp(operation: OperationId, find: Lookup<C>): Recovered<C> =
         when (val found = find(operation)) {
             is Outcome.Failure -> Settled.Unknown(found.error)
 
@@ -110,14 +110,17 @@ sealed interface Settled<out C, out F> {
      * Saved. [found] is true when it was learned by asking after an unknown outcome or a
      * restart: the change itself was not seen, so it is never celebrated.
      */
-    data class Committed<out C>(val value: C, val found: Boolean) : Settled<C, Nothing>
+    data class Committed<out C>(val value: C, val found: Boolean) : Recovered<C>
 
     /** Refused: nothing was written. */
     data class Rejected<out F>(val reason: CommandRejection<F>) : Settled<Nothing, F>
 
     /** Asked with its own ID: nothing was written. */
-    data object NotCommitted : Settled<Nothing, Nothing>
+    data object NotCommitted : Recovered<Nothing>
 
     /** Still not known; the operation stays [Submission.pending] for the next ask. */
-    data class Unknown(val failure: StorageFailure) : Settled<Nothing, Nothing>
+    data class Unknown(val failure: StorageFailure) : Recovered<Nothing>
 }
+
+/** How asking about a saved operation ended: never a refusal, since nothing new was sent. */
+sealed interface Recovered<out C> : Settled<C, Nothing>
