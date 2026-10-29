@@ -31,4 +31,4 @@ Where the existing code, decisions and predecessors are.
 - Edge cases, money bounds, cancellation, restoration, things that went wrong before.
 
 ### Verification recipe
-Focused tests, then `./scripts/verify-ticket SELLO-0NN --retain`.
+Focused checks with `scripts/check <module>`; the pull request's `quality` check runs the gate.

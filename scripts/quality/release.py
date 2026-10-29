@@ -5,7 +5,7 @@ production  The owner's machine. The APK must be signed by the certificate pinne
             together in build/release-candidate/.
 ephemeral   CI, which holds no customer key. The unsigned APK is signed with a key made
             for this run only, to prove it can be signed and verified. This is not
-            customer signing; the production proof is the owner's retained G3 report.
+            customer signing; the production proof is the owner's local G3 run.
 launch      The owner's machine. Installs the production candidate on the emulator named
             by ANDROID_SERIAL, never a physical device, opens it and checks that it starts.
 
@@ -24,7 +24,7 @@ import tempfile
 import time
 from pathlib import Path
 
-import runner
+import check
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKAGE = "com.software.sello"
@@ -84,7 +84,7 @@ def sha256(path):
 
 
 def build_tools(root):
-    sdk = runner.sdk_directory(root)
+    sdk = check.sdk_directory(root)
     if sdk is None:
         raise ReleaseError("Android SDK not found; set ANDROID_HOME")
     candidates = sorted((sdk / "build-tools").glob("*/apksigner"),
@@ -186,7 +186,7 @@ def launch(root, serial=None, timeout=30.0):
     serial = serial or os.environ.get("ANDROID_SERIAL")
     if not serial:
         raise ReleaseError("name the emulator with ANDROID_SERIAL")
-    sdk = runner.sdk_directory(root)
+    sdk = check.sdk_directory(root)
     adb_path = shutil.which("adb") or (str(sdk / "platform-tools/adb") if sdk else "adb")
 
     def adb(target, *args, check=True):

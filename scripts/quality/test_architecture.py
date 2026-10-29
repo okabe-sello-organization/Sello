@@ -3,7 +3,12 @@ import unittest
 from pathlib import Path
 
 import architecture
-from support import write
+
+
+def write(root, relative, text):
+    path = Path(root) / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
 
 SETTINGS = 'include(":app")\ninclude(":catalog")\ninclude(":data")\ninclude(":design-system")\ninclude(":domain")\n'
 BUILDS = {

@@ -9,7 +9,7 @@ Do not execute all tickets at once or copy a proposed API blindly over completed
 
 1. Run `pwd`, `git status --short`, `git log -1 --oneline`, and inspect applicable
    `AGENTS.md`. Preserve existing work.
-2. Read the ticket's dependencies and their Delivery evidence. Locate their
+2. Read the ticket's dependencies and their pull requests. Locate their
    **actual** produced contracts, tests and decision records. If a supposedly Done
    prerequisite is missing/broken, report the discrepancy; do not recreate a fake
    adapter just to unblock yourself. Ready work still requires its listed approvals.
@@ -57,12 +57,10 @@ Focused **host** examples:
 The test names specified by tickets are **tests to create**; if compatible predecessor
 tests already exist, document the actual selector. A no-matching-tests result is
 not a pass. For a no-test configuration/docs change, verify the actual config/links
-and run its gate instead of fabricating behavior red→green.
-G0/G1/G2/G3 commands are in [README.md](../tickets/README.md#gate-profiles). Run the assigned
-gate after focused tests. Default ticket commands run the host gate G1; the hosted
-`quality` check runs the device suites on the merge result. `--affected BASE` runs
-the documented dependency-aware device scope locally; an explicit `--gate G2` runs
-every device suite. Do not replace gate evidence with a focused task.
+and run its checks instead of fabricating behavior red→green.
+The gates and `scripts/check` are in the [quality gates guide](quality-gates.md).
+Run focused checks while working and the device tests you wrote or changed on your
+own emulator; the pull request's `quality` check runs the gate and is the proof.
 
 ## Device and process restoration
 
@@ -147,9 +145,8 @@ need their own independent examples before the D03 ones they replace are retired
 
 ## Delivery record
 
-Verification commands, the executor flow, what makes a report stale and how to
-recover from each failure are in the [quality gates guide](quality-gates.md#quality-runner).
-The evidence fields, the ticket folder and the definition of done are in the
+Verification commands, what CI runs and how to read a red check are in the
+[quality gates guide](quality-gates.md). The ticket folder and the definition of done are in the
 [tickets README](../tickets/README.md#definition-of-done--every-ticket). Do not
 commit or publish unless the current user request authorizes it.
 

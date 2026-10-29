@@ -2,7 +2,8 @@
 
 **Owner:** project owner (user) · **Date:** 2026-10-23
 **Status:** owner-approved (option 1 of three, 2026-10-23); delivered by SELLO-035.
-Supersedes the G3 refusal in ADRs 0006, 0009 and 0014.
+Supersedes the G3 refusal in ADRs 0006, 0009 and 0014. Commands updated for
+[ADR 0021](0021-ci-is-the-only-proof.md) on 2026-10-29.
 
 ## Context
 
@@ -16,15 +17,17 @@ ticket could never pass its pull request.
 ## Alternatives
 
 1. **Split (chosen).** The owner's machine runs all of G3 with the key; CI runs G3 with
-   a throwaway key and leaves the production proof to the owner's retained report.
+   a throwaway key and leaves the production proof to the owner's run.
 2. Production key in GitHub secrets, so CI runs all of G3. Rejected: a second copy of
    the key, outside the owner's custody.
 3. No CI verification of G3. Rejected: merging needs passing required checks.
 
 ## Decision
 
-G3 is all of G2 with full device coverage, then the release checks
-(`scripts/quality/gates.py`, `release_checks`):
+G3 is the host gate and every device suite, then the release checks
+(`scripts/quality/gates.py`, `release_checks`). The owner runs it with
+`scripts/check --release`; CI runs `scripts/check --host --ci-release` and every
+device group on the nightly and manual runs:
 
 | Check | Owner's machine | CI |
 | --- | --- | --- |
@@ -35,14 +38,14 @@ G3 is all of G2 with full device coverage, then the release checks
 
 The build signs the release APK only from the owner's `sello.signing.*` Gradle
 properties; without them it stays unsigned and `release-production` fails: G3 is
-blocked, never satisfied by a debug or throwaway key. Completion evidence for a G3
-ticket must contain a passed `release-production` check (`evidence.check`); CI's report
-never completes one. CI accepts the owner's retained report only for the exact inputs
-under review, through `tickets.py check --base` as for every ticket.
+blocked, never satisfied by a debug or throwaway key. CI's run never completes a
+release: the release pull request reports the owner's passed `scripts/check --release`
+run, and the owner's go is what lets it merge.
 
 ## Consequences
 
-- G3 runs only for tickets whose gate is G3; everyday pull requests keep G2.
+- The owner's G3 runs only for release work; pull requests keep the plan's gate, and
+  CI's G3 runs nightly on `main`.
 - CI's G3 host part also needs `keytool` and build-tools' `apksigner`, `zipalign` and
   `aapt2`, already present with the JDK and Android SDK.
 - Changing the key is a one-line change to the pinned digest. Users keep their data
@@ -52,8 +55,7 @@ under review, through `tickets.py check --base` as for every ticket.
 
 ## Verification
 
-`test_gates`, `test_selection`, `test_evidence`, `test_distributed`, `test_workflow`,
-`test_release` and `test_licenses` cover both plans, full coverage, the production
-requirement for completion, CI's G3 plan and device jobs, certificate mismatch,
-refusal without a key and refusal of a physical device. SELLO-035's retained report is
-the first local G3 run.
+`test_gates`, `test_check`, `test_selection`, `test_workflow`, `test_release` and
+`test_licenses` cover both check lists, the order of the owner's run, CI's G3 plan and
+device jobs, certificate mismatch, refusal without a key and refusal of a physical
+device. SELLO-035 recorded the first local G3 run.
