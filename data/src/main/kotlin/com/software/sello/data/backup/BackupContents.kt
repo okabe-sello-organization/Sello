@@ -184,7 +184,13 @@ enum class ChainFault {
     NoFiniteBase,
 
     /** A month it carries into has a base above 999.999.999.999 (CP25). */
-    BaseAboveLimit
+    BaseAboveLimit,
+
+    /** An open chain on an archived category: archiving ends a chain (CP11). */
+    OpenOnArchivedCategory,
+
+    /** It starts after the month the backup was made in: carry starts in the current month (CP3). */
+    StartsAfterExport
 }
 
 /** Whether a codec accepts a backup in which categories carry their balance (CP26). */

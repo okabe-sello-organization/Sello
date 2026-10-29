@@ -38,6 +38,7 @@ import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StageFailure
 import java.io.File
+import java.time.Instant
 import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -131,8 +132,11 @@ class CarryBackupRestoreTest {
         codec
     )
 
-    private suspend fun backup(source: TestLedger = ledger): ByteArray =
-        export(source).create().valueOrFail().bytes
+    /** Made on the financial day of the history, 5 abr 2027, as a person's would be. */
+    private suspend fun backup(source: TestLedger = ledger): ByteArray {
+        source.audit = Instant.parse("2027-04-05T15:00:00Z")
+        return export(source).create().valueOrFail().bytes
+    }
 
     private fun restoresInto(
         target: TestLedger,
@@ -365,6 +369,8 @@ class CarryBackupRestoreTest {
     @Test
     fun theCustomerPathMakesNoBackupOfAHistoryItCouldNotRestore() = runBlocking {
         CarryHistories(ledger).sc01()
+
+        ledger.audit = Instant.parse("2027-04-05T15:00:00Z")
 
         val created = export(ledger, BackupCodec()).create()
         val prepared = export(ledger, BackupCodec()).prepare()

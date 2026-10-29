@@ -180,7 +180,9 @@ Every key is required, even when its value is `null`, and no other key is allowe
   `categoryId` is a category in the file. `end` is after `start`: a chain turned off in its
   first month never existed and is not written. A category's chains share no month (one
   may end in the month the next starts) and only its last may be open; the same
-  `categoryId` and `start` twice is refused. Every month a chain carries into has a
+  `categoryId` and `start` twice is refused. Carry starts in the current month and archiving ends a chain, so a chain
+  that starts after the month the backup was made in (`exportedAt` in `financial.zone`) and an
+  open chain on an archived category are refused too: Sello could not have written them. Every month a chain carries into has a
   finite base, an unlimited, paused or unconfigured month is refused, and a base of at
   most 999.999.999.999: a month's own limit counts where it exists, otherwise the default
   in force. An open chain reaches every later month, so the default in force after the

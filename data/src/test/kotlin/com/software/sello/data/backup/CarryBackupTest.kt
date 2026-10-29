@@ -111,9 +111,9 @@ class CarryBackupTest {
 
     @Test
     fun `chains are written by category then start, whatever order they were read in`() {
-        val comida = chain("2027-01")
-        val later = chain("2027-03", category = 2)
-        val earlier = chain("2027-01", "2027-02", category = 2)
+        val comida = chain("2026-10")
+        val later = chain("2026-05", "2026-08", category = 2)
+        val earlier = chain("2026-02", "2026-03", category = 2)
         val base = g01().financial
         val contents = g01().copy(
             financial = base.copy(
@@ -132,9 +132,9 @@ class CarryBackupTest {
 
         assertEquals(
             listOf(
-                uuid(1) to "2027-01",
-                uuid(2) to "2027-01",
-                uuid(2) to "2027-03"
+                uuid(1) to "2026-10",
+                uuid(2) to "2026-02",
+                uuid(2) to "2026-05"
             ),
             Regex("\"categoryId\": \"([0-9a-f-]+)\",\\s+\"start\": \"([0-9-]+)\"")
                 .findAll(written).map { it.groupValues[1] to it.groupValues[2] }.toList()
@@ -500,6 +500,42 @@ class CarryBackupTest {
         assertEquals(
             invalid(chainPath, ChainFault.BaseAboveLimit),
             rejection(variant("\"monthLimits\": [],", outside))
+        )
+    }
+
+    // Chains no Sello could have written (CP3, CP9, CP11).
+
+    @Test
+    fun `an open chain on an archived category is rejected, an ended one is not`() {
+        val archived = "\"archived\": true"
+
+        assertEquals(
+            invalid(chainPath, ChainFault.OpenOnArchivedCategory),
+            rejection(variant("\"archived\": false", archived))
+        )
+        // Archiving ended the chain in the month it happened: that history is possible.
+        accepted(variant("\"archived\": false", archived, ended))
+    }
+
+    @Test
+    fun `a chain that starts after the month the backup was made in is rejected`() {
+        val exported = "\"exportedAt\": \"2027-04-05T15:00:00Z\""
+        // Carry starts in the current month only, so the export month is the latest start.
+        accepted(variant("\"start\": \"2027-01\"", "\"start\": \"2027-04\""))
+        val later = variant("\"start\": \"2027-01\"", "\"start\": \"2027-05\"")
+        for (file in listOf(later, later.replace("\"end\": null", "\"end\": \"2027-06\""))) {
+            assertEquals(invalid(chainPath, ChainFault.StartsAfterExport), rejection(file))
+        }
+        // 3 h UTC on 1 may is still 30 abr in the financial zone, America/Bogota.
+        val lateApril = variant(exported, "\"exportedAt\": \"2027-05-01T03:00:00Z\"")
+        accepted(lateApril)
+        assertEquals(
+            invalid(chainPath, ChainFault.StartsAfterExport),
+            rejection(lateApril.replace("\"start\": \"2027-01\"", "\"start\": \"2027-05\""))
+        )
+        accepted(
+            variant(exported, "\"exportedAt\": \"2027-05-01T05:00:00Z\"")
+                .replace("\"start\": \"2027-01\"", "\"start\": \"2027-05\"")
         )
     }
 

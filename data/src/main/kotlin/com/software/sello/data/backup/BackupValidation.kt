@@ -190,10 +190,11 @@ private fun contentsOf(file: BackupFileV6): BackupContents {
     }
     val schedules = schedules(financial.schedules, categories)
     val handled = schedules.associate { it.schedule.id to it.handled }
+    val exportedAt = instant(file.exportedAt, "exportedAt")
     val defaultLimits = defaultLimits(financial.defaultLimits, known)
     val monthLimits = monthLimits(financial.monthLimits, known)
     return BackupContents(
-        exportedAt = instant(file.exportedAt, "exportedAt"),
+        exportedAt = exportedAt,
         financial = FinancialSnapshot(
             zone = zone,
             revision = revision,
@@ -207,7 +208,13 @@ private fun contentsOf(file: BackupFileV6): BackupContents {
             schedules = schedules,
             investments = investments(financial.investments),
             usdRates = usdRates(financial.usdRates),
-            carryChains = carryChains(financial.carryChains, known, defaultLimits, monthLimits)
+            carryChains = carryChains(
+                financial.carryChains,
+                categories,
+                defaultLimits,
+                monthLimits,
+                YearMonth.from(exportedAt.atZone(zone))
+            )
         ),
         preferences = file.preferences?.let(::preferences)
     )
@@ -843,17 +850,22 @@ private fun usdRates(wire: List<UsdRateV4>): List<UsdRateEntry> {
  * answer. A month is checked where its base can change: the chain's first month, each
  * default's first month, each month with a limit of its own and the month after it. An
  * open chain reaches every later month, so the default in force after the last one, its
- * latest, is checked too (CP3). A file holds no carry, so none is validated here; the
+ * latest, is checked too (CP3). A chain Sello could not have written is
+ * refused as well: one starting after the month the backup was made in (CP3), and an open one on
+ * an archived category (CP9, CP11). A file holds no carry, so none is validated here; the
  * figures are worked out again from the records. They fit a signed `Long` whatever the
  * file says: the base is capped, and no more than 100,000 records of at most
  * 999.999.999.999 each are spent against it.
  */
 private fun carryChains(
     wire: List<CarryChainV6>,
-    known: Set<CategoryId>,
+    categories: List<Category>,
     defaults: List<DefaultLimit>,
-    overrides: List<MonthLimit>
+    overrides: List<MonthLimit>,
+    exportMonth: YearMonth
 ): List<CarryChain> {
+    val known = categories.mapTo(HashSet()) { it.id }
+    val archived = categories.filter { it.archived }.mapTo(HashSet()) { it.id }
     val starts = HashSet<Pair<CategoryId, YearMonth>>()
     val paths = HashMap<CarryChain, String>()
     val chains = wire.mapIndexed { index, row ->
@@ -863,7 +875,16 @@ private fun carryChains(
         val end = row.end?.let { month(it, "$path.end") }
         if (!starts.add(category to start)) reject(BackupRejection.DuplicateEntry("$path.start"))
         // A chain that ends in or before its start never existed: it is removed, not stored.
-        CarryChain.of(category, start, end).or("$path.end").also { paths[it] = path }
+        val chain = CarryChain.of(category, start, end).or("$path.end")
+        // Sello writes neither: carry starts in the current month (CP3), and archiving
+        // ends the chain (CP9, CP11), so no file of Sello's can hold these.
+        if (start > exportMonth) {
+            reject(BackupRejection.InvalidChain(path, ChainFault.StartsAfterExport))
+        }
+        if (end == null && category in archived) {
+            reject(BackupRejection.InvalidChain(path, ChainFault.OpenOnArchivedCategory))
+        }
+        chain.also { paths[it] = path }
     }
     val defaultsOf = defaults.groupBy { it.categoryId }
     val overridesOf = overrides.groupBy { it.categoryId }
