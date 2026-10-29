@@ -1,15 +1,10 @@
 package com.software.sello.feature.expense
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.requiredSize
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasAnyAncestor
@@ -20,27 +15,30 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.showSello
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 /**
  * Where the keys and the button are. Typing changes the amount, never the place a
- * finger has to go: whatever the form says, a key stays where it was.
+ * finger has to go: whatever the form says, a key stays where it was. On the JVM (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
+// A screen larger than every window below, so each window is laid out whole.
+@Config(qualifiers = "w800dp-h800dp-mdpi")
 class ExpenseEntryGeometryTest {
     @get:Rule
     val rule = createComposeRule()
@@ -79,16 +77,10 @@ class ExpenseEntryGeometryTest {
 
     private var state by mutableStateOf(empty)
 
-    /** One dp is one pixel, so a window of any size fits the device's screen. */
+    /** One dp is one pixel (pinned), so the pixel sizes asserted below are dp. */
     private fun show(window: DpSize, fontScale: Float = 1f) {
-        rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    Box(Modifier.requiredSize(window)) {
-                        ExpenseEntryScreen(state, dateLabels(), { actions += it })
-                    }
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale, window = window, density = 1f)) {
+            ExpenseEntryScreen(state, dateLabels(), { actions += it })
         }
     }
 

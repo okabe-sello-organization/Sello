@@ -1,8 +1,6 @@
 package com.software.sello.feature.expense
 
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -26,11 +24,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.presentation.date.dateLabels
@@ -42,6 +39,7 @@ import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatKind
 import com.software.sello.presentation.recurrence.RepeatUi
 import com.software.sello.revealed
+import com.software.sello.showSello
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -49,7 +47,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** The form alone, given state by hand: what each state shows and what each control reports. */
+/**
+ * The form alone, given state by hand: what each state shows and what each control reports.
+ * On the JVM (ADR 0022).
+ */
 @RunWith(AndroidJUnit4::class)
 class ExpenseEntryScreenTest {
     @get:Rule
@@ -87,28 +88,23 @@ class ExpenseEntryScreenTest {
         showPastExpenseAnnouncement: Boolean = false
     ) {
         val shown = mutableStateOf(state)
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    ExpenseEntryScreen(
-                        state = shown.value,
-                        dates = dateLabels(),
-                        onAction = { action ->
-                            actions += action
-                            if (action is ExpenseEntryAction.NoteDraftChanged) {
-                                shown.value = shown.value.copy(
-                                    noteDraft = action.text,
-                                    noteDraftLength = action.text.length
-                                )
-                            }
-                        },
-                        onCreateCategory = { created++ },
-                        showPastExpenseAnnouncement = showPastExpenseAnnouncement,
-                        dismissPastExpenseAnnouncement = { pastExpenseAnnouncementDismissed++ }
-                    )
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale)) {
+            ExpenseEntryScreen(
+                state = shown.value,
+                dates = dateLabels(),
+                onAction = { action ->
+                    actions += action
+                    if (action is ExpenseEntryAction.NoteDraftChanged) {
+                        shown.value = shown.value.copy(
+                            noteDraft = action.text,
+                            noteDraftLength = action.text.length
+                        )
+                    }
+                },
+                onCreateCategory = { created++ },
+                showPastExpenseAnnouncement = showPastExpenseAnnouncement,
+                dismissPastExpenseAnnouncement = { pastExpenseAnnouncementDismissed++ }
+            )
         }
     }
 

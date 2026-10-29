@@ -1,7 +1,8 @@
 """What each gate runs. scripts/check executes it, locally and in the Quality workflow.
 
 G0  the Python/Git checks (FAST_CHECKS), including the release licence list.
-G1  G0, then ktlint, then every host test, lint and the assemblies (HOST_TASKS).
+G1  G0, then ktlint, then every host test, the screenshot baselines, lint and the
+    assemblies (HOST_TASKS).
 G2  G1 plus the device suites of the selected modules on an API-30 emulator.
 G3  every device suite, then the release checks (ADR 0016): the owner's production
     signing locally, a throwaway key on CI.
@@ -22,7 +23,8 @@ FAST_CHECKS = (
 FORMAT_TASKS = ("ktlintCheck",)
 HOST_TASKS = (
     ":domain:test", ":data:testDebugUnitTest", ":design-system:testDebugUnitTest",
-    ":app:testDebugUnitTest", "lintDebug", ":app:assembleDebug", ":app:assembleRelease",
+    ":app:testDebugUnitTest", ":app:verifyRoborazziDebug", "lintDebug", ":app:assembleDebug",
+    ":app:assembleRelease",
 )
 HOST_RESULTS = "*/build/test-results/**/TEST-*.xml"
 DEVICE_RESULTS = "{module}/build/outputs/androidTest-results/connected/**/TEST-*.xml"
