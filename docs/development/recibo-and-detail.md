@@ -219,5 +219,4 @@ side of the screen, as it already did at the top and bottom.
 ## Not here yet
 
 Swiping between months and the count-up and stamp-landing motion remain deferred.
-Category comparison, weekly spending and historical charts are described above;
-[Resumen](current-app-experience.md#4-resumen) retains its own overview charts.
+Category comparison, weekly spending and historical charts are described above.

@@ -16,11 +16,8 @@ Behind it:
   and open policy behind each screen.
 - [Architecture](../../ARCHITECTURE.md) and ADRs 0001–0012 own financial and recovery
   contracts. v2 numbers are synthetic and approve no financial rule.
-- The [current app baseline](../development/current-app-experience.md) describes what
-  is delivered today; completed epic acceptance and evidence are historical.
-
-The earlier [HTML exploration](proposals/index.html) is history only; see its
-[guide](proposals/README.md).
+- Completed epic acceptance and evidence are historical; the code is the source of
+  truth for what is delivered today.
 
 ## Preserved v1.1 visual reference
 

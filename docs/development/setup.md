@@ -185,9 +185,8 @@ execution for matching Gradle inputs. Device results must still be fresh for eac
 G2 run. To investigate cache behavior, run a focused task with `--info`; use
 `--no-build-cache --rerun-tasks` when fresh execution is needed.
 
-The options, baseline and verification live in the
-[CI performance plan](ci-performance-plan.md). Hosted speedup is measured after
-cache restore/save is observed on GitHub, not inferred from a local cache hit.
+Hosted speedup is measured after cache restore/save is observed on GitHub, not
+inferred from a local cache hit.
 
 ## Android system-image caching in CI
 

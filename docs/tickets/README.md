@@ -17,7 +17,6 @@ docs/tickets/
       quality-report.json     the retained gate report, written by --retain
       handoff.md              what changed, where, what is still open
       artifacts/              screenshots, walk notes, reviews
-  retired/                    history of the retired SELLO-045–060 (E11), not tickets
 ```
 
 Nothing generated is committed. A status view is printed on demand and never
@@ -179,7 +178,7 @@ recurrence and Inversiones to the `0.2.0` release with the decisions in
 [ADR 0017](../decisions/0017-goals-recurrence-investments.md).
 
 The retired stabilization epic E11 (SELLO-045–060) is not a ticket set; its reports
-and captures are kept under `retired/` as history. Retired IDs are never reused.
+and captures were removed and stay in Git history. Retired IDs are never reused.
 Until 2026-10-24 the tickets lived in epic files with generated board, roadmap and
 Jira CSV views; [ADR 0018](../decisions/0018-ticket-folders.md) records why they
 moved here and why nothing generated is committed any more.

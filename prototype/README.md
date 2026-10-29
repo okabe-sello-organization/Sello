@@ -26,7 +26,7 @@ ktlint's line-length rule is off in this folder.
 ## Prototype versus where the MVP is heading
 
 Compared on 2026-10-15 with ADR 0001, the open MVP tickets, the post-MVP
-roadmap and [the current app](../docs/development/current-app-experience.md).
+roadmap and the app as it was then.
 The MVP will be a deliberate subset of this prototype, and several remaining
 screens will be simpler than it shows.
 

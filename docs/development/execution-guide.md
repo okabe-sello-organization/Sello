@@ -27,11 +27,11 @@ Do not execute all tickets at once or copy a proposed API blindly over completed
 
 | Ownership | Where it lives |
 | --- | --- |
-| Pure financial types/policies/ports | `domain/src/main/kotlin/com/software/sello/domain/{model,policy,port}/`; tests in `domain/src/test/kotlin/` |
-| Room/transactions/codecs | `data/src/main/java/com/software/sello/data/{local,mapper,repository}/` and `data/src/main/kotlin/.../data/preferences/`; host tests in `data/src/test/`, real Room in `data/src/androidTest/`; exported schemas in `data/schemas/`. Backup codecs (`backup`) do not exist yet |
+| Pure financial types/policies/ports | `domain/src/main/kotlin/com/software/sello/domain/{model,policy,port,usecase}/`; tests in `domain/src/test/kotlin/` |
+| Room/transactions/codecs | `data/src/main/java/com/software/sello/data/{local,mapper,repository}/` and `data/src/main/kotlin/.../data/{backup,export,preferences,reset}/` (backup codecs, CSV/JSON export, DataStore preferences, reset); host tests in `data/src/test/`, real Room in `data/src/androidTest/`; exported schemas in `data/schemas/` |
 | Reusable UI | `design-system/src/main/java/com/software/sello/designsystem/{component,icon,theme}/`; previews and host/device tests alongside that module |
 | App wiring/platform | `app/src/main/java/com/software/sello/{composition,navigation,platform,presentation}/`; composition is the only app package importing data implementations |
-| Feature UI | `app/src/main/java/com/software/sello/feature/{category,expense,income,recibo,resumen,settings,startup}/`; each owns State/Action/Event/ViewModel/ScreenRoot/Screen as needed. A `backup` feature does not exist yet |
+| Feature UI | `app/src/main/java/com/software/sello/feature/{backup,category,expense,goals,income,investments,recibo,recurrence,reset,resumen,settings,startup}/` (recurrence holds the schedules); each owns State/Action/ViewModel/ScreenRoot/Screen as needed (no Event types; results stay in State) |
 | Sandbox | `app/src/debug/java/com/software/sello/devtools/`, `app/src/debug/res/` and debug-only bindings; release has no reverse dependency |
 | Catalog | `catalog/src/main/java/com/software/sello/catalog/{components,foundations}/`; synthetic render examples only, no domain/data/app dependency |
 | Decisions, tickets and runbooks | `docs/decisions/`, `docs/tickets/<epic>/<ticket>/`, `docs/testing/`, `docs/release/` |
@@ -70,7 +70,7 @@ Use the API 30 emulator from [setup](setup.md#device-smoke) or an
 explicitly selected device. If
 T3 device tools are available, list/open a suitable device first; otherwise use
 Android Studio's AVD manager and `adb devices`. Set `ANDROID_SERIAL` when multiple
-devices exist. Device permissions follow [AGENTS.md](../../AGENTS.md#tests-and-verification).
+devices exist. Device permissions follow [AGENTS.md](../../AGENTS.md#tests).
 Release QA uses an isolated synthetic test installation; sandbox scenarios use debug only.
 
 ```bash

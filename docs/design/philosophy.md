@@ -20,8 +20,7 @@ the [v1.1 snapshot](sello-spec.html) covers only what v2 does not show.
 and [0013](../decisions/0013-sello-v2-design.md) records the final v2 rules.
 
 MVP has Recibo and Resumen; goals, recurrence, advanced insights and investments
-come later. Design approval does not mean implementation; see the
-[current app inventory](../development/current-app-experience.md). Replace financial
+come later. Design approval does not mean implementation. Replace financial
 calculations through scoped work with approved independent examples and tests.
 
 ## Principles for every screen

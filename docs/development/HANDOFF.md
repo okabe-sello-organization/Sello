@@ -105,7 +105,6 @@ Every MVP ticket is Done. The post-MVP epics E09, E10 and E14–E20 live under
 
 ## Detail references
 
-- [Current app inventory](current-app-experience.md) and [navigation graph](navigation-graph.md).
 - [Architecture](../../ARCHITECTURE.md), [current decisions](../decisions/0001-mvp-contract.md) and [design guide](../design/README.md).
 - [Storage](storage.md), [backup format](../data/backup-format.md), [command recovery](commands.md) and [monthly snapshots](monthly-snapshot.md).
 - [Setup](setup.md), [device-test notes](execution-guide.md#device-test-notes) and [quality flow](quality-gates.md).
