@@ -245,15 +245,8 @@ class CategoryExpensesViewModel(
         /** The first [MAX_SEARCH] units, never ending on half of a two-unit character. */
         fun String.cutToSearchLimit(): String {
             if (length <= MAX_SEARCH) return this
-            val end = if (Character.isHighSurrogate(
-                    this[MAX_SEARCH - 1]
-                )
-            ) {
-                MAX_SEARCH - 1
-            } else {
-                MAX_SEARCH
-            }
-            return substring(0, end)
+            val endsOnAHalf = Character.isHighSurrogate(this[MAX_SEARCH - 1])
+            return substring(0, if (endsOnAHalf) MAX_SEARCH - 1 else MAX_SEARCH)
         }
     }
 }
