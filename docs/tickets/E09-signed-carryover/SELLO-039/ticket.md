@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** In Progress
 - **Depends on:** SELLO-038, SELLO-011, SELLO-012, SELLO-013, SELLO-004
 - **Gate:** G2
 
