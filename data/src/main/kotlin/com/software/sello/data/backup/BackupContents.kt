@@ -1,6 +1,7 @@
 package com.software.sello.data.backup
 
 import com.software.sello.domain.model.AppearancePreference
+import com.software.sello.domain.model.CarryChain
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.DefaultLimit
@@ -14,6 +15,7 @@ import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.port.StoredSchedule
 import java.time.Instant
+import java.time.YearMonth
 import java.time.ZoneId
 
 /**
@@ -41,7 +43,12 @@ data class FinancialSnapshot(
      */
     val investments: List<InvestmentHistory>,
     /** Every entered USD rate, as entered; never changed by a restore. */
-    val usdRates: List<UsdRateEntry>
+    val usdRates: List<UsdRateEntry>,
+    /**
+     * Each category's carry chains, months only (ADR 0020 CP26): carry, capacity and
+     * remaining are derived again from the records and base history after a restore.
+     */
+    val carryChains: List<CarryChain>
 ) {
     val counts: BackupCounts
         get() = BackupCounts(
@@ -56,7 +63,8 @@ data class FinancialSnapshot(
             schedules = schedules.size,
             investments = investments.size,
             investmentMovements = investments.sumOf { it.movements.size },
-            usdRates = usdRates.size
+            usdRates = usdRates.size,
+            carryChains = carryChains.size
         )
 }
 
@@ -73,7 +81,14 @@ data class PortablePreferences(
  * up: the money is what matters, so the file is still made, and says so.
  */
 data class BackupContents(
+    /** When the backup was made, by the audit clock: informative, never a financial month. */
     val exportedAt: Instant,
+    /**
+     * The financial month the backup was made in, by the financial clock (ADR 0020 CP24),
+     * never later than which a chain starts or ends. Version 6 files say it; an older file
+     * has no chains and reads as the month of [exportedAt] in its zone.
+     */
+    val financialMonth: YearMonth,
     val financial: FinancialSnapshot,
     val preferences: PortablePreferences?
 )
@@ -90,7 +105,8 @@ data class BackupCounts(
     val schedules: Int,
     val investments: Int,
     val investmentMovements: Int,
-    val usdRates: Int
+    val usdRates: Int,
+    val carryChains: Int
 )
 
 /**
@@ -156,4 +172,43 @@ sealed interface BackupRejection {
 
     /** More default-limit history for one category than the app can hold. */
     data class HistoryTooLong(val path: String) : BackupRejection
+
+    /** A carry chain that breaks a rule of ADR 0020 CP26, named by [fault]. */
+    data class InvalidChain(val path: String, val fault: ChainFault) : BackupRejection
+
+    /**
+     * A valid backup in which a category carries its balance. This version of Sello
+     * cannot show carry yet, so it refuses the file whole, before anything changes.
+     */
+    data object CarryNotSupported : BackupRejection
+}
+
+/** What is wrong with a carry chain in a file; the chain itself is named by the path. */
+enum class ChainFault {
+    /** It shares a month with another chain of the same category. */
+    Overlap,
+
+    /** A month it carries into has no finite base: unlimited, paused or never set. */
+    NoFiniteBase,
+
+    /** A month it carries into has a base above 999.999.999.999 (CP25). */
+    BaseAboveLimit,
+
+    /** An open chain on an archived category: archiving ends a chain (CP11). */
+    OpenOnArchivedCategory,
+
+    /**
+     * It starts or ends after the financial month the file says it was made in: carry
+     * starts in the current month (CP3) and a chain ends by a command, never ahead of time.
+     */
+    AfterFinancialMonth
+}
+
+/** Whether a codec accepts a backup in which categories carry their balance (CP26). */
+enum class CarryChainSupport {
+    /** The customer app until SELLO-041: such a file is refused before any change. */
+    Refused,
+
+    /** Test and developer paths: chains are read, written and restored. */
+    Accepted
 }

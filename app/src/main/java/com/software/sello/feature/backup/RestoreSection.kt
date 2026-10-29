@@ -181,10 +181,10 @@ private fun Preview(
 
 /**
  * Now and backup, side by side: categories, expenses, incomes, and goals, recurring
- * payments and incomes, and investments when either has any.
+ * payments and incomes, investments and carry chains when either has any.
  */
 @Composable
-private fun Counts(current: BackupSummary, replacement: BackupSummary) {
+internal fun Counts(current: BackupSummary, replacement: BackupSummary) {
     val now = stringResource(R.string.restore_preview_now)
     val backup = stringResource(R.string.restore_preview_backup)
     Row(Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md)) {
@@ -201,7 +201,9 @@ private fun Counts(current: BackupSummary, replacement: BackupSummary) {
         Triple(R.string.backup_schedules, current.schedules, replacement.schedules)
             .takeIf { current.schedules > 0 || replacement.schedules > 0 },
         Triple(R.string.backup_investments, current.investments, replacement.investments)
-            .takeIf { current.investments > 0 || replacement.investments > 0 }
+            .takeIf { current.investments > 0 || replacement.investments > 0 },
+        Triple(R.string.backup_carry_chains, current.carryChains, replacement.carryChains)
+            .takeIf { current.carryChains > 0 || replacement.carryChains > 0 }
     ).filterNotNull().forEach { (label, before, after) ->
         val name = stringResource(label)
         Row(

@@ -120,8 +120,10 @@ the last successful backup is remembered in DataStore, never in Room.
 Restore (`RoomRestores`) stages a checked file in the profile's private folder
 (`sello-restore/`, `sandbox-restore/` for the sandbox), then in one transaction
 deletes every financial row and kept undo copy, inserts the backup's rows with
-their identifiers and order, sets the backup's zone, advances the generation and
-revision, and stores a `history.restore` receipt with no subject. Preferences are
+their identifiers and order (carry chains after their categories, months only: carry is
+derived again on read), sets the backup's zone, advances the generation and
+revision, and stores a `history.restore` receipt with no subject. Until SELLO-041 the
+customer app's codec refuses a file that holds a chain before it is staged. Preferences are
 applied afterwards from the staged file, which stays until each group is applied.
 
 Setting an unreadable database aside also clears its restore folder: a staged file

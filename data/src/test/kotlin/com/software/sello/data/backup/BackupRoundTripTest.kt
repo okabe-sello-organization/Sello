@@ -50,7 +50,8 @@ class BackupRoundTripTest {
                 schedules = 0,
                 investments = 0,
                 investmentMovements = 0,
-                usdRates = 0
+                usdRates = 0,
+                carryChains = 0
             ),
             plan.counts
         )
@@ -66,16 +67,24 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun `G01 is written byte for byte as the documented version 5 file`() {
+    fun `G01 is written byte for byte as the documented version 6 file`() {
         assertEquals(
-            String(resource("valid-g01-v5.json")),
+            String(resource("valid-g01-v6.json")),
             String(codec.encode(g01InDollars()).value())
         )
     }
 
     @Test
-    fun `the version 5 file reads back with its investment settings`() {
-        assertEquals(g01InDollars(), codec.read(resource("valid-g01-v5.json")).value().contents)
+    fun `the version 5 file reads with its investment settings and no carry chains`() {
+        val contents = codec.read(resource("valid-g01-v5.json")).value().contents
+
+        assertEquals(g01InDollars(), contents)
+        assertEquals(emptyList<Any>(), contents.financial.carryChains)
+    }
+
+    @Test
+    fun `the version 6 file reads back as the same G01 history`() {
+        assertEquals(g01InDollars(), codec.read(resource("valid-g01-v6.json")).value().contents)
     }
 
     @Test
@@ -109,7 +118,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `every ink is written as the id it has always had, and reads back`() {
-        val file = String(resource("valid-g01-v5.json"))
+        val file = String(resource("valid-g01-v6.json"))
         for ((ink, id) in listOf(
             InkPreference.Cobalto to "cobalto",
             InkPreference.Violeta to "violeta"
@@ -277,6 +286,7 @@ class BackupRoundTripTest {
             setOf(
                 "sourceRevision",
                 "zone",
+                "financialMonth",
                 "categories",
                 "defaultLimits",
                 "monthLimits",
@@ -286,7 +296,8 @@ class BackupRoundTripTest {
                 "featuredGoal",
                 "schedules",
                 "investments",
-                "usdRates"
+                "usdRates",
+                "carryChains"
             ),
             financial.keys
         )
