@@ -76,7 +76,7 @@ internal fun ComparisonSlip(
         Text(
             explanation,
             style = typography.titleMedium,
-            modifier = Modifier.padding(top = 4.dp)
+            modifier = Modifier.padding(top = SelloTheme.spacing.xs)
         )
         if (trend != null) {
             Text(
@@ -84,7 +84,7 @@ internal fun ComparisonSlip(
                 style = typography.bodyMedium,
                 fontWeight = FontWeight.W700,
                 color = colors.inkSoft,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = SelloTheme.spacing.sm)
             )
         }
         TearLine()
@@ -93,7 +93,7 @@ internal fun ComparisonSlip(
             style = typography.labelSmall.copy(fontWeight = FontWeight.W400),
             color = colors.inkSoft
         )
-        ComparisonBars(bars, Modifier.padding(top = 8.dp))
+        ComparisonBars(bars, Modifier.padding(top = SelloTheme.spacing.sm))
     }
 }
 
@@ -169,7 +169,7 @@ internal fun SpendingRankRow(
             min = 52.dp
         ).clickable(role = Role.Button, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
     ) {
         CategoryCircle(icon, 1f, size = 36.dp, animate = false)
         // The name and its bar are one block, so the amount beside them is centred on both.
@@ -213,14 +213,14 @@ internal fun SuggestionNote(
         modifier.fillMaxWidth().background(
             colors.brandSoft,
             SelloTheme.shapes.control
-        ).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        ).padding(SelloTheme.spacing.lg),
+        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 SelloIcon.Insights.painter(),
                 null,
-                Modifier.padding(end = 8.dp),
+                Modifier.padding(end = SelloTheme.spacing.sm),
                 colors.onBrandSoft
             )
             Text(

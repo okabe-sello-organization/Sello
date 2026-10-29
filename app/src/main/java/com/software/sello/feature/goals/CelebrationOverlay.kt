@@ -404,9 +404,9 @@ private fun Plate(
             .border(4.dp, onGain, RoundedCornerShape(14.dp))
             .padding(5.dp)
             .border(1.5.dp, onGain, RoundedCornerShape(9.dp))
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 14.dp, vertical = SelloTheme.spacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
     ) {
         Text(
             plateTitle.uppercase(Locale.ROOT),
@@ -452,7 +452,7 @@ private fun Plate(
                         pathEffect = dash
                     )
                 }
-                .padding(top = 8.dp, bottom = 6.dp),
+                .padding(top = SelloTheme.spacing.sm, bottom = 6.dp),
             contentAlignment = Alignment.Center
         ) {
             MoneyText(
@@ -495,7 +495,7 @@ private fun Actions(
             .graphicsLayer { alpha = p }
             .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
     ) {
         Box(
             Modifier
@@ -515,10 +515,10 @@ private fun Actions(
         }
         Row(
             Modifier
-                .heightIn(min = 48.dp)
+                .heightIn(min = SelloTheme.spacing.minTouchTarget)
                 .clip(SelloTheme.shapes.button)
                 .clickable(enabled = ready, role = Role.Button, onClick = onView)
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = SelloTheme.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(2.dp)
         ) {

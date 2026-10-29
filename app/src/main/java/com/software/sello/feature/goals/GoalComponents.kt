@@ -99,19 +99,19 @@ internal fun GoalPill(
                         size = Size(edge, size.height)
                     )
                 }
-            }.padding(4.dp),
+            }.padding(SelloTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            Modifier.weight(1f).heightIn(min = 48.dp).clip(CircleShape)
+            Modifier.weight(1f).heightIn(min = SelloTheme.spacing.minTouchTarget).clip(CircleShape)
                 .clickable(role = Role.Button, onClick = onOpen)
                 .semantics(mergeDescendants = true) {
                     openDescription?.let { contentDescription = it }
                     progressBarRangeInfo = ProgressBarRangeInfo(fill, 0f..1f)
                 }
-                .padding(start = 14.dp, end = 12.dp),
+                .padding(start = 14.dp, end = SelloTheme.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
         ) {
             Icon(icon.painter(), null, Modifier.size(22.dp), tint = onSoft)
             Text(
@@ -258,7 +258,7 @@ internal fun GoalCard(
     Slip(modifier.fillMaxWidth(), onClick = onOpen) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
         ) {
             Icon(icon.painter(), null, Modifier.size(24.dp), tint = colors.semantic.gain)
             Text(
@@ -275,9 +275,9 @@ internal fun GoalCard(
                 )
             )
         }
-        FittedMoneyText(saved, Modifier.padding(top = 8.dp), startSize = 34)
+        FittedMoneyText(saved, Modifier.padding(top = SelloTheme.spacing.sm), startSize = 34)
         Row(
-            Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 8.dp),
+            Modifier.fillMaxWidth().padding(top = 2.dp, bottom = SelloTheme.spacing.sm),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -290,7 +290,7 @@ internal fun GoalCard(
                 Icon(
                     SelloIcon.Flag.painter(),
                     null,
-                    Modifier.padding(end = 4.dp).size(16.dp),
+                    Modifier.padding(end = SelloTheme.spacing.xs).size(16.dp),
                     tint = colors.inkSoft
                 )
             }
@@ -305,7 +305,7 @@ internal fun GoalCard(
             )
         }
         Row(
-            Modifier.fillMaxWidth().padding(top = 12.dp),
+            Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             places.forEach { MilestonePlace(it) }
@@ -364,7 +364,9 @@ internal fun GoalPinPill(
                 selected,
                 role = Role.RadioButton,
                 onClick = onClick
-            ).heightIn(min = 48.dp).padding(horizontal = 12.dp),
+            )
+            .heightIn(min = SelloTheme.spacing.minTouchTarget)
+            .padding(horizontal = SelloTheme.spacing.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {

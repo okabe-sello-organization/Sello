@@ -5,8 +5,20 @@ import java.time.YearMonth
 /** The three display modes a person can select. `System` is the first-run default. */
 enum class ThemePreference { System, Light, Dark }
 
-/** The two Sello brand-ink families. This is deliberately not a design-system enum. */
-enum class InkPreference { Cobalto, Violeta }
+/**
+ * The Sello brand-ink families, in picker order. This is deliberately not a
+ * design-system enum. [id] is what preferences and backups write: never change or reuse
+ * one, since both MUST keep accepting every id ever written.
+ */
+enum class InkPreference(val id: String) {
+    Cobalto("cobalto"),
+    Violeta("violeta");
+
+    companion object {
+        /** The ink written as [id], or null for an id Sello never wrote. */
+        fun fromId(id: String): InkPreference? = entries.firstOrNull { it.id == id }
+    }
+}
 
 /**
  * How the categories on Recibo are ranked. Stable storage values are owned by the

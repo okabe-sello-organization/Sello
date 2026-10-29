@@ -312,7 +312,7 @@ private fun BackupStamp(age: BackupAge, land: Boolean) {
         text = stringResource(text),
         ink = ink,
         land = land,
-        modifier = Modifier.padding(vertical = 4.dp).testTag(BACKUP_CARD_STAMP_TAG)
+        modifier = Modifier.padding(vertical = SelloTheme.spacing.xs).testTag(BACKUP_CARD_STAMP_TAG)
     )
 }
 

@@ -36,13 +36,13 @@ import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
-import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StagedRestore
+import com.software.sello.presentation.appearance.choice
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.investments.label
@@ -116,7 +116,7 @@ private fun Pending(
                         stringResource(
                             R.string.restore_pending_appearance,
                             stringResource(it.theme.label()),
-                            stringResource(it.ink.label())
+                            stringResource(it.ink.choice.label)
                         )
                     )
                 },
@@ -220,11 +220,6 @@ private fun ThemePreference.label() = when (this) {
     ThemePreference.System -> R.string.settings_theme_system
     ThemePreference.Light -> R.string.settings_theme_light
     ThemePreference.Dark -> R.string.settings_theme_dark
-}
-
-private fun InkPreference.label() = when (this) {
-    InkPreference.Cobalto -> R.string.settings_ink_cobalto
-    InkPreference.Violeta -> R.string.settings_ink_violeta
 }
 
 private fun CategoryOrder.label() = when (this) {

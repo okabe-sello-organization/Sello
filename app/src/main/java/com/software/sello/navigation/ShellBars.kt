@@ -76,12 +76,12 @@ internal fun MonthBar(
     val large = LocalDensity.current.fontScale >= 1.3f
     Row(
         modifier.fillMaxWidth().background(colors.band).heightIn(min = 56.dp)
-            .padding(start = 16.dp, end = 6.dp),
+            .padding(start = SelloTheme.spacing.lg, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
             buttonModifier
-                .heightIn(min = 48.dp)
+                .heightIn(min = SelloTheme.spacing.minTouchTarget)
                 .clickable(role = Role.Button, onClick = onClick)
                 .clearAndSetSemantics {
                     contentDescription = description
@@ -139,7 +139,7 @@ internal fun TitleBar(
     var compact by remember(title, scale, width) { mutableStateOf(false) }
     Row(
         modifier.fillMaxWidth().background(colors.band).heightIn(min = 56.dp)
-            .padding(start = 16.dp, end = 6.dp),
+            .padding(start = SelloTheme.spacing.lg, end = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -156,7 +156,11 @@ internal fun TitleBar(
             onTextLayout = { if (chip != null && it.hasVisualOverflow) compact = true }
         )
         if (chip != null) {
-            Box(Modifier.padding(start = 8.dp, end = if (compact) 0.dp else 6.dp)) { chip(compact) }
+            Box(
+                Modifier.padding(start = SelloTheme.spacing.sm, end = if (compact) 0.dp else 6.dp)
+            ) {
+                chip(compact)
+            }
         }
         CompositionLocalProvider(LocalContentColor provides colors.onBand) { actions() }
     }
@@ -208,12 +212,12 @@ internal fun PastMonthRibbon(
         Column(
             modifier.fillMaxWidth()
                 .background(colors.onBand.copy(alpha = 0.16f), RoundedCornerShape(20.dp))
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(SelloTheme.spacing.md),
+            verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
             ) { info(Modifier.weight(1f)) }
             back(Modifier.align(Alignment.End))
         }
@@ -221,9 +225,14 @@ internal fun PastMonthRibbon(
         Row(
             modifier.fillMaxWidth()
                 .background(colors.onBand.copy(alpha = 0.16f), CircleShape)
-                .padding(start = 12.dp, top = 4.dp, end = 4.dp, bottom = 4.dp),
+                .padding(
+                    start = SelloTheme.spacing.md,
+                    top = SelloTheme.spacing.xs,
+                    end = SelloTheme.spacing.xs,
+                    bottom = SelloTheme.spacing.xs
+                ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
         ) {
             info(Modifier.weight(1f))
             back(Modifier)
@@ -240,7 +249,7 @@ internal fun MonthSwitcher(label: String, onClick: () -> Unit, modifier: Modifie
             .heightIn(min = SelloTheme.spacing.minTouchTarget)
             .clip(SelloTheme.shapes.control)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(end = 4.dp)
+            .padding(end = SelloTheme.spacing.xs)
     ) {
         Text(
             text = label,

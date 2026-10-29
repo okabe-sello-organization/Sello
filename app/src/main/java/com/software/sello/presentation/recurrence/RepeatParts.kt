@@ -184,7 +184,7 @@ fun RepeatChoiceSheet(
                 next == today -> stringResource(R.string.repeat_next_today)
                 else -> stringResource(R.string.repeat_next, dates.day(next, today))
             },
-            modifier = Modifier.padding(vertical = 8.dp)
+            modifier = Modifier.padding(vertical = SelloTheme.spacing.sm)
         )
         RepeatSheetActions(
             dismissLabel = stringResource(R.string.repeat_remove),
@@ -259,7 +259,7 @@ private fun Label(text: String) {
         text,
         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W800),
         color = SelloTheme.colors.inkSoft,
-        modifier = Modifier.padding(top = 12.dp, bottom = 6.dp)
+        modifier = Modifier.padding(top = SelloTheme.spacing.md, bottom = 6.dp)
     )
 }
 
@@ -393,7 +393,7 @@ internal fun DayGrid(
                                 )
                                 .semantics { contentDescription = dayDescription(day) }
                                 .alpha(if (enabled) 1f else DISABLED_ALPHA)
-                                .padding(horizontal = 2.dp, vertical = 4.dp)
+                                .padding(horizontal = 2.dp, vertical = SelloTheme.spacing.xs)
                                 .fillMaxWidth()
                                 .heightIn(min = 40.dp)
                                 .clip(CircleShape)
@@ -437,7 +437,7 @@ internal fun IntervalStepper(
     val colors = SelloTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
         modifier = modifier.fillMaxWidth().padding(horizontal = 2.dp)
     ) {
         StepButton(MINUS, decreaseLabel, canDecrease, onDecrease)
@@ -512,10 +512,15 @@ internal fun RepeatNext(text: String, modifier: Modifier = Modifier) {
     val colors = SelloTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 2.dp, end = 2.dp, top = 8.dp, bottom = 12.dp)
+            .padding(
+                start = 2.dp,
+                end = 2.dp,
+                top = SelloTheme.spacing.sm,
+                bottom = SelloTheme.spacing.md
+            )
     ) {
         Icon(SelloIcon.Autorenew.painter(), null, Modifier.size(20.dp), colors.brand)
         Text(text, style = MaterialTheme.typography.bodyMedium, color = colors.inkSoft)
