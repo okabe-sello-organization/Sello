@@ -33,6 +33,8 @@ a deliberately smaller, tested MVP and the Sello visual language.
   form's rules, saving once, and what it hands back.
 - [Anotar](docs/development/expense-entry.md): recording an expense, the preview,
   saving once and the receipt.
+- [Feature guide](docs/development/feature-guide.md): where a feature's files go and the
+  money, write, read, screen and test rules, with Metas as the example.
 - [Quality gates](docs/development/quality-gates.md): `scripts/check`, the gates and
   what CI runs.
 - [Design references](docs/design/README.md): Sello v2, the v1.1 snapshot and provenance.
