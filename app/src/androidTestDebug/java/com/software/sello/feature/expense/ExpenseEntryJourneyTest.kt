@@ -237,4 +237,24 @@ class ExpenseEntryJourneyTest {
 
         assertEquals(listOf("48700|COP|Café|$today|null|1|1"), expenses())
     }
+
+    @Test
+    fun nuevaCreatesACategoryAndComesBackWithItChosenAndTheDraftKept() {
+        startWithCategory()
+        openAnotar()
+        press("4", "8", "7", "0", "0")
+
+        rule.onNodeWithTag(ENTRY_NEW_CATEGORY_TAG).performScrollTo().performClick()
+        createCategory("Café")
+
+        rule.awaitTag(ENTRY_KEYPAD_TAG)
+        rule.onNode(hasText("Café") and hasAnyAncestor(hasTestTag(ENTRY_CATEGORIES_TAG)))
+            .assertIsSelected()
+        amountShows("48.700 pesos")
+        assertEquals(emptyList<String>(), expenses())
+        rule.onNodeWithTag(ENTRY_SUBMIT_TAG).press()
+        savedAndBackOnRecibo("Gasto anotado: 48.700 en Café")
+
+        assertEquals(listOf("48700|COP|Café|$today|null|1|1"), expenses())
+    }
 }

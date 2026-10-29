@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
@@ -22,6 +23,7 @@ import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.hideKeyboard
+import com.software.sello.navigation.GOAL_EDIT_TAG
 import com.software.sello.press
 import com.software.sello.revealed
 import java.time.YearMonth
@@ -124,5 +126,27 @@ class GoalEditorJourneyTest {
             listOf("1200000"),
             TestData.rows("SELECT amount_minor FROM goal_event")
         )
+    }
+
+    @Test
+    fun aGoalIsDeletedFromItsEditorOnlyAfterTheConfirmSlipAndMetasIsShown() {
+        val viaje = TestCommands.createGoal("Viaje a la costa", 3_000_000)
+        TestCommands.recordGoalMovement(viaje, 1_710_000)
+        openMetas()
+        rule.awaitTag("metas.goal.$viaje")
+        rule.onNodeWithTag("metas.goal.$viaje").performClick()
+        rule.awaitTag(GOAL_EDIT_TAG)
+        rule.onNodeWithTag(GOAL_EDIT_TAG).performClick()
+        rule.awaitTag(GOAL_EDITOR_DELETE_TAG)
+
+        rule.onNodeWithText("Borrar meta").performScrollTo().performClick()
+        rule.awaitText("¿Borrar Viaje a la costa?")
+        assertEquals(1L, TestData.count("goal"))
+        rule.onNodeWithText("Borrar").press()
+
+        // Back on Metas, not on the goal that no longer exists.
+        rule.awaitTag("metas.empty")
+        assertEquals(0L, TestData.count("goal"))
+        assertEquals(0L, TestData.count("goal_event"))
     }
 }

@@ -6,9 +6,9 @@ package com.software.sello
  * A pull request still covers the behaviour in a shorter form.
  *
  * `scripts/check --device` leaves these out with the instrumentation argument
- * `notAnnotation=com.software.sello.NightlyOnly` unless it is given `--nightly`
- * (scripts/quality/gates.py); the Quality workflow passes `--nightly` on the schedule and
- * on a manual run. Moving or renaming this class needs the same change there.
+ * `notAnnotation=com.software.sello.NightlyOnly` unless it is given `--scope nightly`
+ * (scripts/quality/gates.py); the Quality workflow passes `--scope nightly` on the
+ * schedule and on a manual run. Moving or renaming this class needs the same change there.
  */
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)

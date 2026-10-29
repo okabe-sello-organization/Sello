@@ -1,7 +1,9 @@
 package com.software.sello.feature.goals
 
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -15,6 +17,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.MainActivity
 import com.software.sello.TestCommands
 import com.software.sello.TestData
+import com.software.sello.await
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
@@ -118,6 +121,12 @@ class MetasJourneyTest {
         )
         Espresso.pressBack()
         rule.awaitTag(METAS_LIST_TAG)
+
+        // Back from the Metas tab returns to Recibo, from the real navigation stack.
+        Espresso.pressBack()
+        rule.await(hasText("Recibo"))
+        rule.awaitTag(MONTH_SWITCHER_TAG)
+        rule.onNodeWithText("Recibo").assertIsSelected()
     }
 
     @Test
