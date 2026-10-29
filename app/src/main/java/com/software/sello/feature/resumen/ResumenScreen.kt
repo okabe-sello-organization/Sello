@@ -337,6 +337,7 @@ private fun ChartSlips(
         EmptySlip(
             stringResource(R.string.resumen_empty),
             stringResource(R.string.resumen_empty_body),
+            SelloIcon.Insights,
             Modifier.fillMaxWidth().testTag("resumen.empty"),
             stringResource(R.string.resumen_record_expense),
             onExpense

@@ -16,7 +16,10 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -69,10 +72,21 @@ class FeedbackInteractionTest {
             reset = { actions = 0 },
             content = {
                 Column {
-                    EmptySlip("Aún no hay gastos", "Anota el primero.", Modifier, "Anotar") {
+                    EmptySlip(
+                        "Aún no hay gastos",
+                        "Anota el primero.",
+                        SelloIcon.ReceiptLong,
+                        Modifier,
+                        "Anotar"
+                    ) {
                         actions++
                     }
-                    EmptySlip("Sin movimientos", "Nada que mostrar.", Modifier.testTag("bare"))
+                    EmptySlip(
+                        "Sin movimientos",
+                        "Nada que mostrar.",
+                        SelloIcon.Insights,
+                        Modifier.testTag("bare")
+                    )
                 }
             }
         ) {
@@ -84,7 +98,7 @@ class FeedbackInteractionTest {
     }
 
     @Test
-    fun withAnIconTheStateSlipsCentreTheirTextAndKeepTheIconSilent() {
+    fun stateSlipsCentreTheirTextAndKeepTheIconSilent() {
         var retries = 0
         rule.inEveryScheme(
             reset = { retries = 0 },
@@ -127,6 +141,44 @@ class FeedbackInteractionTest {
             rule.onNodeWithText("Reintentar").assert(isButton).performClick()
             assertEquals(it, 1, retries)
             assertTouchTarget("Reintentar", it)
+        }
+    }
+
+    @Test
+    fun everyStateSlipShowsItsIconCentredAboveTheText() {
+        rule.inEveryScheme(
+            content = {
+                Column {
+                    EmptySlip(
+                        "Dale forma a tu mes",
+                        "Crea una categoría.",
+                        SelloIcon.ReceiptLong,
+                        Modifier.testTag("empty")
+                    )
+                    ErrorSlip(
+                        "Tus registros siguen guardados.",
+                        {},
+                        Modifier.testTag("error"),
+                        title = "No pudimos leer tu mes"
+                    )
+                }
+            }
+        ) {
+            listOf("empty" to "Dale forma a tu mes", "error" to "No pudimos leer tu mes")
+                .forEach { (tag, title) ->
+                    val slip = hasTestTag(tag)
+                    val icon = rule.onNode(hasAnyAncestor(slip) and hasTestTag(STATE_ICON_TAG))
+                        .getUnclippedBoundsInRoot()
+                    val heading = rule.onNode(hasAnyAncestor(slip) and hasText(title))
+                        .getUnclippedBoundsInRoot()
+                    val iconMiddle = (icon.left + icon.right) / 2
+                    val headingMiddle = (heading.left + heading.right) / 2
+                    assertTrue(
+                        "$it: $tag icon is centred on its text",
+                        (iconMiddle - headingMiddle).value in -1f..1f
+                    )
+                    assertTrue("$it: $tag icon is above its text", icon.bottom <= heading.top)
+                }
         }
     }
 
