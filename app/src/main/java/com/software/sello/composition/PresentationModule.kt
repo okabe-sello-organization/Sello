@@ -62,11 +62,10 @@ import com.software.sello.presentation.money.ResourceMoneyLabels
 import kotlin.reflect.KClass
 import kotlinx.coroutines.CoroutineScope
 import org.koin.core.Koin
-import org.koin.core.annotation.KoinInternalApi
 import org.koin.core.module.Module
-import org.koin.core.module.dsl.viewModelOf
+import org.koin.core.module.dsl.factoryOf
+import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
-import org.koin.viewmodel.factory.KoinViewModelFactory
 
 /** What screens share: the one month session and the money formatter. */
 fun presentationModule(): Module = module {
@@ -99,54 +98,64 @@ fun presentationModule(): Module = module {
  * How every view model is built. Screens ask for a view model by type and never see
  * the graph; each definition names its collaborators by constructor, so a missing one
  * fails when the screen opens instead of silently defaulting. A [SavedStateHandle]
- * parameter is the one of the entry that asked.
+ * parameter is the one of the entry that asked, passed as a Koin parameter.
  */
 private fun Module.viewModels() {
-    viewModelOf(::AppearanceViewModel)
-    viewModelOf(::SettingsViewModel)
-    viewModelOf(::ExportViewModel)
-    viewModelOf(::BackupViewModel)
-    viewModelOf(::RestoreViewModel)
-    viewModelOf(::ResetViewModel)
-    viewModelOf(::ResumenViewModel)
-    viewModelOf(::IncomeHistoryViewModel)
-    viewModelOf(::IncomeFormViewModel)
-    viewModelOf(::ShellViewModel)
-    viewModelOf(::CorrectionsViewModel)
-    viewModelOf(::CorrectionAnnouncementsViewModel)
-    viewModelOf(::CategoryManagementViewModel)
-    viewModelOf(::ReciboViewModel)
-    viewModelOf(::ReciboGoalViewModel)
-    viewModelOf(::InversionesViewModel)
-    viewModelOf(::UsdRateViewModel)
-    viewModelOf(::InvestmentDetailViewModel)
-    viewModelOf(::InvestmentEditorViewModel)
-    viewModelOf(::InvestmentMovementViewModel)
-    viewModelOf(::UsdRateEntryViewModel)
-    viewModelOf(::MetasViewModel)
-    viewModelOf(::GoalEditorViewModel)
-    viewModelOf(::GoalMovementViewModel)
-    viewModelOf(::GoalDetailViewModel)
-    viewModelOf(::CategoryDetailViewModel)
-    viewModelOf(::CategoryExpensesViewModel)
-    viewModelOf(::ExpenseEntryViewModel)
-    viewModelOf(::CategoryEditorViewModel)
-    viewModelOf(::UpcomingPaymentsViewModel)
-    viewModelOf(::AdjustBudgetViewModel)
-    viewModelOf(::LimitSheetViewModel)
-    viewModelOf(::CatchUpNoticeViewModel)
-    viewModelOf(::SchedulesViewModel)
-    viewModelOf(::ScheduleEditorViewModel)
+    factoryOf(::AppearanceViewModel)
+    factoryOf(::SettingsViewModel)
+    factoryOf(::ExportViewModel)
+    factoryOf(::BackupViewModel)
+    factoryOf(::RestoreViewModel)
+    factoryOf(::ResetViewModel)
+    factoryOf(::ResumenViewModel)
+    factoryOf(::IncomeHistoryViewModel)
+    factoryOf(::IncomeFormViewModel)
+    factoryOf(::ShellViewModel)
+    factoryOf(::CorrectionsViewModel)
+    factoryOf(::CorrectionAnnouncementsViewModel)
+    factoryOf(::CategoryManagementViewModel)
+    factoryOf(::ReciboViewModel)
+    factoryOf(::ReciboGoalViewModel)
+    factoryOf(::InversionesViewModel)
+    factoryOf(::UsdRateViewModel)
+    factoryOf(::InvestmentDetailViewModel)
+    factoryOf(::InvestmentEditorViewModel)
+    factoryOf(::InvestmentMovementViewModel)
+    factoryOf(::UsdRateEntryViewModel)
+    factoryOf(::MetasViewModel)
+    factoryOf(::GoalEditorViewModel)
+    factoryOf(::GoalMovementViewModel)
+    factoryOf(::GoalDetailViewModel)
+    factoryOf(::CategoryDetailViewModel)
+    factoryOf(::CategoryExpensesViewModel)
+    factoryOf(::ExpenseEntryViewModel)
+    factoryOf(::CategoryEditorViewModel)
+    factoryOf(::UpcomingPaymentsViewModel)
+    factoryOf(::AdjustBudgetViewModel)
+    factoryOf(::LimitSheetViewModel)
+    factoryOf(::CatchUpNoticeViewModel)
+    factoryOf(::SchedulesViewModel)
+    factoryOf(::ScheduleEditorViewModel)
 }
+
+/** Whether [type] takes the saved state of the entry that asked for it. */
+private fun takesSavedState(type: KClass<*>): Boolean =
+    type.java.declaredConstructors.any { SavedStateHandle::class.java in it.parameterTypes }
 
 /**
  * A factory for a screen's owner that builds whichever view model it asks for from
- * [koin]. Koin offers no public way to reach the root scope the definitions live in.
+ * [koin]. The saved state is made only for the view models that take it.
  */
-@OptIn(KoinInternalApi::class)
 fun viewModels(koin: Koin): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T =
-        KoinViewModelFactory(modelClass, koin.scopeRegistry.rootScope).create(modelClass, extras)
+        koin.get(modelClass, null) {
+            if (takesSavedState(modelClass)) {
+                parametersOf(extras.createSavedStateHandle())
+            } else {
+                parametersOf()
+            }
+        } as T
 }
 
 /**
