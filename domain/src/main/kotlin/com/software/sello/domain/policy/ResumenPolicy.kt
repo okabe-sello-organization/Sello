@@ -1,6 +1,7 @@
 package com.software.sello.domain.policy
 
 import com.software.sello.domain.model.BudgetStanding
+import com.software.sello.domain.model.CategoryCarryInput
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DailySpending
 import com.software.sello.domain.model.ExactTotal
@@ -30,7 +31,8 @@ import java.time.temporal.ChronoUnit
 data class ResumenMonthInput(
     val month: YearMonth,
     val categories: List<CategoryInMonth>,
-    val expenses: List<Expense>
+    val expenses: List<Expense>,
+    val carryover: List<CategoryCarryInput> = emptyList()
 )
 
 object ResumenPolicy {
@@ -57,7 +59,8 @@ object ResumenPolicy {
                     generation,
                     revision,
                     input.categories,
-                    input.expenses
+                    input.expenses,
+                    carryover = input.carryover
                 )
             ) {
                 is Outcome.Failure -> return snapshot
@@ -73,7 +76,8 @@ object ResumenPolicy {
             is Outcome.Success -> sum.value
         }
         val limited = budget.overall as? OverallBudget.Limited
-        val allocated = limited?.budget?.limit ?: Money.cop(0)
+        // Por asignar is income minus the base limits: carry is never income (ADR 0020 CP17).
+        val allocated = limited?.budget?.base ?: Money.cop(0)
         val netFlow = when (val difference = income - budget.spent) {
             is Outcome.Failure -> return Outcome.Failure(SnapshotFailure.Unrepresentable)
             is Outcome.Success -> difference.value
@@ -251,7 +255,8 @@ object ResumenPolicy {
         val before = snapshots.subList(snapshots.size - 3, snapshots.size - 1)
         return now.categories.mapNotNull { line ->
             if (line.category.archived) return@mapNotNull null
-            val limit = line.budget?.limit ?: return@mapNotNull null
+            // The base: it is the limit the person can change (ADR 0020), not the capacity with carry.
+            val limit = line.budget?.base ?: return@mapNotNull null
             val over = before.map { month ->
                 month.categories.firstOrNull { it.category.id == line.category.id }
                     ?.takeIf {
