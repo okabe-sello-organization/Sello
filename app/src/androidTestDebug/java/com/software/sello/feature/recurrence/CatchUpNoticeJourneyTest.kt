@@ -87,10 +87,28 @@ class CatchUpNoticeJourneyTest {
     private fun inBar(text: String) =
         rule.onNode(hasText(text) and hasAnyAncestor(hasTestTag(CATCH_UP_BAR_TAG)), true)
 
+    /** Each recorded entry: note, date, the occurrence it came from and pesos. */
+    private fun SandboxGraph.entries() = rows(
+        "SELECT note || '|' || effective_date || '|' || origin_date || '|' || amount_minor " +
+            "FROM expense ORDER BY effective_date, note"
+    )
+
+    /** The last occurrence each schedule handled: note, date and slot. */
+    private fun SandboxGraph.checkpoints() = rows(
+        "SELECT note || '|' || IFNULL(handled_date || '|' || handled_slot, 'none') " +
+            "FROM schedule ORDER BY note"
+    )
+
     @Test
     fun openingAfterAWeekShowsWhatWasRecordedUntilListo() {
         val graph = beforeTheWeekAway()
         val runner = checkNotNull(graph.tools?.scenarios)
+        // RE10 by 3 oct: the bus on 26 sep and 3 oct, nothing of the rent yet.
+        assertEquals(
+            listOf("Bus|2026-09-26|2026-09-26|20000", "Bus|2026-10-03|2026-10-03|20000"),
+            graph.entries()
+        )
+        assertEquals(listOf("Arriendo|none", "Bus|2026-10-03|1"), graph.checkpoints())
         rule.setContent {
             SelloTheme(reducedMotion = true) { SelloAppRoot(viewModels(graph.koin)) }
         }
@@ -113,6 +131,27 @@ class CatchUpNoticeJourneyTest {
         // A week away: on 24 oct catch-up records rent and three rides.
         runBlocking { while (runner.step()) Unit }
         assertEquals(true, runner.state.value.finished)
+        // RE10 on 24 oct, each on its own date: rent 950.000 and rides of 20.000 on the
+        // 10th, 17th and 24th. October by hand: 20.000 (3 oct) + 950.000 + 3 × 20.000.
+        assertEquals(
+            listOf(
+                "Bus|2026-09-26|2026-09-26|20000",
+                "Bus|2026-10-03|2026-10-03|20000",
+                "Arriendo|2026-10-05|2026-10-05|950000",
+                "Bus|2026-10-10|2026-10-10|20000",
+                "Bus|2026-10-17|2026-10-17|20000",
+                "Bus|2026-10-24|2026-10-24|20000"
+            ),
+            graph.entries()
+        )
+        assertEquals(
+            listOf("1030000"),
+            graph.rows(
+                "SELECT SUM(amount_minor) FROM expense " +
+                    "WHERE effective_date BETWEEN '2026-10-01' AND '2026-10-31'"
+            )
+        )
+        assertEquals(listOf("Arriendo|2026-10-05|1", "Bus|2026-10-24|1"), graph.checkpoints())
         rule.awaitTag(CATCH_UP_BAR_TAG)
         inBar("Sello anotó 4 pagos fijos").assertExists()
         capture("bar")

@@ -210,7 +210,8 @@ time must be included in the comparison.
 
 What each event runs, how changed paths select device groups and how the `quality`
 check judges the jobs are in the [quality gates guide](quality-gates.md#what-ci-runs).
-To reproduce one hosted group on your own emulator:
+To reproduce one hosted group on your own emulator (`scripts/emulator start`, see
+[device smoke](#device-smoke)):
 
 ```bash
 ANDROID_SERIAL=emulator-5580 scripts/check --device app --modules app
@@ -219,37 +220,44 @@ ANDROID_SERIAL=emulator-5580 scripts/check --device support
 
 ## Device smoke
 
-Use a dedicated synthetic AVD; do not wipe/reset an owner's device or reuse their
-private data. Example isolated setup for an already installed API-30 image:
+Use your own emulator, made the way CI makes its own: `scripts/emulator` creates an
+AVD with a unique name in its own directory under `~/.cache/sello-emulators/`, picks a
+port no other emulator uses, cold-boots it and prints its serial:
 
 ```bash
-export ANDROID_AVD_HOME="$(mktemp -d)"
-printf 'no\n' | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd \
-  --name sello_api30 --package 'system-images;android-30;google_apis;x86_64' \
-  --path "$ANDROID_AVD_HOME/sello_api30.avd"
-"$ANDROID_HOME/emulator/emulator" -avd sello_api30 -port 5580 \
-  -no-window -no-audio -no-snapshot -gpu swiftshader -no-boot-anim
+export ANDROID_SERIAL="$(scripts/emulator start)"   # such as emulator-5556
+scripts/check --device                               # every device suite
+scripts/emulator stop "$ANDROID_SERIAL"              # shuts it down and deletes the AVD
+scripts/emulator list                                # what it started and still knows
 ```
 
-Run the emulator in its own terminal; first confirm that port/device slot is free.
-In another terminal with the same SDK/JDK environment:
+It copies the Quality workflow's emulator step: the pinned API-30 `google_apis` x86_64
+image, avdmanager's default hardware with no `--device` profile (320x640 at mdpi, no
+navigation bar, no hardware keyboard), two cores, `-no-window -gpu swiftshader_indirect
+-no-snapshot -noaudio -no-boot-anim`, the screen unlocked and the three animation
+scales at zero. A test of `scripts/quality/test_emulator.py` keeps it equal to the
+workflow. Do not make the AVD another way: a phone profile such as `-d pixel` adds an
+on-screen navigation bar even with its screen edited to 320x640, the window loses
+48 dp, and journeys that pass on CI fail (#224).
+
+Agents can start emulators at once: a lock on the script's record makes them choose
+different ports. `stop` refuses a serial it did not start, and stops one it did only
+while both the emulator on that port and the recorded process still run that AVD; after
+a crash the port or process may be someone else's, so then it only deletes the record
+and the AVD. A boot that fails ends only the process it started. It never restarts the
+adb server.
+
+To look at the app by hand on it:
 
 ```bash
-export ANDROID_SERIAL=emulator-5580
-timeout 90 adb -s "$ANDROID_SERIAL" wait-for-device
-adb -s "$ANDROID_SERIAL" shell getprop sys.boot_completed
-adb -s "$ANDROID_SERIAL" shell getprop ro.build.version.sdk
 adb -s "$ANDROID_SERIAL" install -r app/build/outputs/apk/debug/app-debug.apk
 adb -s "$ANDROID_SERIAL" shell am start -W \
   -n com.software.sello.debug/com.software.sello.MainActivity
-scripts/check --device                       # every device suite
 ```
 
-Wait for boot completion `1` with a bounded condition check; device connectivity
-alone is not readiness. Confirm API `30` and that the debug app opens on Recibo, not
-just successful installs. The unsigned release APK cannot be
+Confirm that the debug app opens on Recibo, not just that it installs. The unsigned release APK cannot be
 installed, so customer/debug coexistence on a device needs the owner's signed build.
-Shut down only the emulator you created: `adb -s "$ANDROID_SERIAL" emu kill`.
+Shut down only the emulator you created, with `scripts/emulator stop`.
 
 ## Troubleshooting and signing
 
@@ -261,7 +269,7 @@ Shut down only the emulator you created: `adb -s "$ANDROID_SERIAL" emu kill`.
 | Missing SDK license/platform or repository access | Resolve actual install/license/network failure; don't bypass checks or silently change SDK/versions. |
 | KSP adds forbidden kotlin.sourceSets | Use the pinned KSP2 version. Don't disable built-in Kotlin validation. |
 | Child Kotlin JVM plugin has an unknown classpath version | Declare the version catalog's JVM plugin at root with apply false before AGP/Compose, then apply it in the child. |
-| No device or boot not completed | APK assembly is not launch/instrumentation evidence; provide an isolated emulator or record the missing gate. |
+| No device or boot not completed | APK assembly is not launch/instrumentation evidence; start your own with `scripts/emulator start` or record the missing gate. |
 
 Debug/test builds use a local development keystore outside source. `assembleRelease`
 needs **no distribution key**: without the owner's `sello.signing.*` entries in
