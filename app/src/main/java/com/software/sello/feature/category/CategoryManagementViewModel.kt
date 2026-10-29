@@ -21,9 +21,9 @@ import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeCategoryIcon
-import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
+import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.MonthBudget
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.RecordIdSource
@@ -37,12 +37,16 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import java.time.YearMonth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Changes an existing category through the real commands: its name, its icon, the
@@ -90,6 +94,31 @@ class CategoryManagementViewModel(
         val paused: Boolean
     )
 
+    /** What was typed and chosen, kept under one key. */
+    @Serializable
+    private data class Draft(
+        val name: String = "",
+        val icon: String = "",
+        val unlimited: Boolean = false,
+        val limit: String = ""
+    )
+
+    /** [Original] as kept in [saved]: the limit as pesos, [UNLIMITED] or none. */
+    @Serializable
+    private data class Kept(
+        val version: Long,
+        val name: String,
+        val icon: String,
+        val archived: Boolean,
+        val paused: Boolean,
+        val limit: String?
+    )
+
+    private val drafts = SavedDraft(saved, KEY_DRAFT, Draft.serializer())
+    private val kept = SavedDraft(saved, KEY_ORIGINAL, Kept.serializer())
+    private var typed = drafts.read() ?: Draft()
+    private val submission = Submission(saved, KEY_OPERATION, ids)
+
     private val categoryId: CategoryId? =
         (saved.get<String>(KEY_CATEGORY)?.let(CategoryId::of) as? Outcome.Success)?.value
 
@@ -112,11 +141,11 @@ class CategoryManagementViewModel(
     private val mutable = MutableStateFlow(
         CategoryEditorState(
             editing = true,
-            name = saved[KEY_NAME] ?: "",
+            name = typed.name,
             iconKeys = CategoryIcons.keys,
-            iconKey = saved[KEY_ICON] ?: "",
-            unlimited = saved[KEY_UNLIMITED] ?: false,
-            limitText = saved[KEY_LIMIT] ?: "",
+            iconKey = typed.icon,
+            unlimited = typed.unlimited,
+            limitText = typed.limit,
             suggestions = LimitFigures(money).suggestions(null),
             targetMonth = targetMonth,
             historical = targetMonth < currentMonth
@@ -129,7 +158,7 @@ class CategoryManagementViewModel(
         viewModelScope.launch {
             // A restored draft keeps what it was started from; only the rest is read.
             load(keepOriginal = original != null, resetDraft = original == null)
-            if (saved.get<String>(KEY_OPERATION) != null) recover()
+            if (submission.pending) recover()
         }
     }
 
@@ -137,13 +166,13 @@ class CategoryManagementViewModel(
         val now = mutable.value
         when (action) {
             is CategoryEditorAction.NameChanged -> if (now.editable) {
-                saved[KEY_NAME] = action.text
+                remember(typed.copy(name = action.text))
                 render { it.copy(name = action.text, nameError = takenError(action.text)) }
             }
 
             is CategoryEditorAction.IconPicked ->
                 if (now.editable && action.key in CategoryIcons.keys) {
-                    saved[KEY_ICON] = action.key
+                    remember(typed.copy(icon = action.key))
                     render { it.copy(iconKey = action.key) }
                 }
 
@@ -176,7 +205,7 @@ class CategoryManagementViewModel(
             CategoryEditorAction.Retry -> when {
                 now.busy -> Unit
 
-                saved.get<String>(KEY_OPERATION) != null -> viewModelScope.launch { recover() }
+                submission.pending -> viewModelScope.launch { recover() }
 
                 else -> viewModelScope.launch {
                     load(keepOriginal = original != null, resetDraft = original == null)
@@ -216,9 +245,13 @@ class CategoryManagementViewModel(
 
     private fun month(text: String): YearMonth? = runCatching { YearMonth.parse(text) }.getOrNull()
 
+    private fun remember(next: Draft) {
+        typed = next
+        drafts.write(next)
+    }
+
     private fun setLimit(unlimited: Boolean, text: String) {
-        saved[KEY_UNLIMITED] = unlimited
-        saved[KEY_LIMIT] = text
+        remember(typed.copy(unlimited = unlimited, limit = text))
         render { it.copy(unlimited = unlimited, limitText = text, limitError = null) }
     }
 
@@ -265,33 +298,37 @@ class CategoryManagementViewModel(
     }
 
     private fun savedOriginal(): Original? {
-        val version = saved.get<Long>(KEY_ORIGINAL_VERSION) ?: return null
+        val stored = kept.read() ?: return null
         return Original(
-            version = version,
-            name = saved.get<String>(KEY_ORIGINAL_NAME) ?: return null,
-            icon = saved.get<String>(KEY_ORIGINAL_ICON) ?: return null,
-            archived = saved.get<Boolean>(KEY_ORIGINAL_ARCHIVED) ?: return null,
-            limit = when (val limit = saved.get<String>(KEY_ORIGINAL_LIMIT)) {
+            version = stored.version,
+            name = stored.name,
+            icon = stored.icon,
+            archived = stored.archived,
+            limit = when (val limit = stored.limit) {
                 null -> StoredLimit.None
                 UNLIMITED -> StoredLimit.Unlimited
                 else -> StoredLimit.Finite(limit.toLongOrNull() ?: return null)
             },
-            paused = saved.get<Boolean>(KEY_ORIGINAL_PAUSED) ?: false
+            paused = stored.paused
         )
     }
 
     private fun keep(stored: Original) {
         original = stored
-        saved[KEY_ORIGINAL_VERSION] = stored.version
-        saved[KEY_ORIGINAL_NAME] = stored.name
-        saved[KEY_ORIGINAL_ICON] = stored.icon
-        saved[KEY_ORIGINAL_ARCHIVED] = stored.archived
-        saved[KEY_ORIGINAL_PAUSED] = stored.paused
-        saved[KEY_ORIGINAL_LIMIT] = when (val limit = stored.limit) {
-            StoredLimit.None -> null
-            StoredLimit.Unlimited -> UNLIMITED
-            is StoredLimit.Finite -> limit.pesos.toString()
-        }
+        kept.write(
+            Kept(
+                version = stored.version,
+                name = stored.name,
+                icon = stored.icon,
+                archived = stored.archived,
+                paused = stored.paused,
+                limit = when (val limit = stored.limit) {
+                    StoredLimit.None -> null
+                    StoredLimit.Unlimited -> UNLIMITED
+                    is StoredLimit.Finite -> limit.pesos.toString()
+                }
+            )
+        )
     }
 
     private fun CategoryBudget.asOriginal() = Original(
@@ -313,10 +350,7 @@ class CategoryManagementViewModel(
     private fun draftFrom(stored: Original) {
         val unlimited = stored.limit == StoredLimit.Unlimited
         val text = (stored.limit as? StoredLimit.Finite)?.pesos?.toString().orEmpty()
-        saved[KEY_NAME] = stored.name
-        saved[KEY_ICON] = stored.icon
-        saved[KEY_UNLIMITED] = unlimited
-        saved[KEY_LIMIT] = text
+        remember(Draft(stored.name, stored.icon, unlimited, text))
         mutable.update {
             it.copy(
                 name = stored.name,
@@ -372,15 +406,6 @@ class CategoryManagementViewModel(
         viewModelScope.launch { load(keepOriginal = false, resetDraft = resetDraft) }
     }
 
-    private fun operation(step: String): OperationId {
-        // The identifier is saved before the command leaves, so whatever happens next
-        // this attempt can be recognised and never made twice.
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[KEY_OPERATION] = operation.value
-        saved[KEY_STEP] = step
-        return operation
-    }
-
     private fun submit() {
         val state = mutable.value
         val stored = original ?: return
@@ -422,20 +447,22 @@ class CategoryManagementViewModel(
         viewModelScope.launch {
             for (part in pending) {
                 val version = original?.version ?: return@launch
-                val operation = operation(STEP_EDIT)
-                val command: CategoryCommand = when (part) {
-                    EditPart.Name -> RenameCategory(operation, generation, id, version, name)
+                val settled = submission.send(commands::find, STEP_EDIT) { operation ->
+                    val command: CategoryCommand = when (part) {
+                        EditPart.Name -> RenameCategory(operation, generation, id, version, name)
 
-                    EditPart.Icon -> ChangeCategoryIcon(operation, generation, id, version, icon)
+                        EditPart.Icon ->
+                            ChangeCategoryIcon(operation, generation, id, version, icon)
 
-                    EditPart.Limit -> if (targetMonth < currentMonth) {
-                        SetMonthLimit(operation, generation, id, version, targetMonth, limit!!)
-                    } else {
-                        SetDefaultLimit(operation, generation, id, version, limit!!)
+                        EditPart.Limit -> if (targetMonth < currentMonth) {
+                            SetMonthLimit(operation, generation, id, version, targetMonth, limit!!)
+                        } else {
+                            SetDefaultLimit(operation, generation, id, version, limit!!)
+                        }
                     }
+                    commands.submit(command)
                 }
-                if (!committed(commands.submit(command), operation)) return@launch
-                saved[KEY_OPERATION] = null
+                if (!committed(settled)) return@launch
                 // This part is stored now, at the next version.
                 original?.let { before ->
                     keep(
@@ -465,33 +492,26 @@ class CategoryManagementViewModel(
     }
 
     /**
-     * Whether [outcome] is a receipt. If not, the form is left saying why and nothing
-     * further is sent. An outcome that is not known is asked about, never sent again.
+     * Whether [settled] is a receipt. If not, the form is left saying why and nothing
+     * further is sent. An outcome that is not known was asked about, never sent again.
      */
-    private suspend fun committed(
-        outcome: CategoryCommandOutcome,
-        operation: OperationId
-    ): Boolean {
-        val rejection = when (outcome) {
-            is CommandOutcome.Committed -> return true
+    private fun committed(settled: Settled<CommittedCategoryChange, CategoryRejection>?): Boolean {
+        val rejection = when (settled) {
+            // Something is still in flight and will settle the form.
+            null -> return false
 
-            is CommandOutcome.OutcomeUnknown -> when (
-                val found = commands.find(
-                    operation
-                )
-            ) {
-                is Outcome.Failure -> {
-                    render { it.copy(busy = false, saveError = SaveError.Unknown) }
-                    return false
-                }
+            is Settled.Committed -> return true
 
-                is Outcome.Success -> if (found.value != null) return true else null
+            is Settled.Unknown -> {
+                render { it.copy(busy = false, saveError = SaveError.Unknown) }
+                return false
             }
 
-            is CommandOutcome.Rejected -> outcome.reason
+            Settled.NotCommitted -> null
+
+            is Settled.Rejected -> settled.reason
         }
         // Certain: this change was not written, so this attempt is over.
-        saved[KEY_OPERATION] = null
         if (rejection == Specific(CategoryRejection.NameTaken)) {
             render { it.copy(busy = false, nameError = NameError.Taken) }
             return false
@@ -518,21 +538,19 @@ class CategoryManagementViewModel(
      * the draft still has that storage does not is what remains to be saved.
      */
     private suspend fun recover() {
-        val operation = (saved.get<String>(KEY_OPERATION)?.let(OperationId::of) as? Outcome.Success)
-            ?.value
-        val step = saved.get<String>(KEY_STEP)
-        if (operation == null) {
-            saved[KEY_OPERATION] = null
-            return
-        }
+        if (!submission.pending) return
+        val step = submission.step
         mutable.update { it.copy(busy = true, saveError = null) }
-        val committed = when (val found = commands.find(operation)) {
-            is Outcome.Failure ->
+        val committed = when (submission.recover(commands::find)) {
+            null -> return render { it.copy(busy = false) }
+
+            is Settled.Unknown ->
                 return render { it.copy(busy = false, saveError = SaveError.Unknown) }
 
-            is Outcome.Success -> found.value != null
+            is Settled.Committed -> true
+
+            Settled.NotCommitted -> false
         }
-        saved[KEY_OPERATION] = null
         if (committed && step != STEP_EDIT) return archived(unarchived = step == STEP_UNARCHIVE)
         if (!load(keepOriginal = false, resetDraft = false)) return render { it.copy(busy = false) }
         when {
@@ -570,45 +588,36 @@ class CategoryManagementViewModel(
         mutable.update { it.copy(busy = true, saveError = null, archiveQuestion = null) }
         viewModelScope.launch {
             if (stored.archived) {
-                val operation = operation(STEP_UNARCHIVE)
-                val command = UnarchiveCategory(operation, generation, id, stored.version)
-                if (committed(commands.submit(command), operation)) {
-                    saved[KEY_OPERATION] = null
-                    archived(unarchived = true)
+                val settled = submission.send(commands::find, STEP_UNARCHIVE) { operation ->
+                    commands.submit(UnarchiveCategory(operation, generation, id, stored.version))
                 }
+                if (committed(settled)) archived(unarchived = true)
                 return@launch
             }
-            var operation = operation(STEP_ARCHIVE)
-            var outcome = commands.submit(
-                ArchiveCategory(operation, generation, id, stored.version)
-            )
-            if (outcome.waitsForPayments()) {
+            val archive: suspend (OperationId) -> CategoryCommandOutcome = { operation ->
+                commands.submit(ArchiveCategory(operation, generation, id, stored.version))
+            }
+            var settled = submission.send(commands::find, STEP_ARCHIVE, archive)
+            if (settled.waitsForPayments()) {
                 // A fixed payment of the category is due and not recorded yet (rule 9):
                 // Sello records what is due, then archives under a new operation, since
                 // the refused one wrote nothing.
-                saved[KEY_OPERATION] = null
                 if (catchUp.run().stopped != null) {
                     render { it.copy(busy = false, saveError = SaveError.PaymentsPending) }
                     return@launch
                 }
-                operation = operation(STEP_ARCHIVE)
-                outcome =
-                    commands.submit(ArchiveCategory(operation, generation, id, stored.version))
-                if (outcome.waitsForPayments()) {
-                    saved[KEY_OPERATION] = null
+                settled = submission.send(commands::find, STEP_ARCHIVE, archive)
+                if (settled.waitsForPayments()) {
                     render { it.copy(busy = false, saveError = SaveError.PaymentsPending) }
                     return@launch
                 }
             }
-            if (committed(outcome, operation)) {
-                saved[KEY_OPERATION] = null
-                archived(unarchived = false)
-            }
+            if (committed(settled)) archived(unarchived = false)
         }
     }
 
-    private fun CategoryCommandOutcome.waitsForPayments() =
-        this is CommandOutcome.Rejected && reason == Specific(CategoryRejection.SchedulesPending)
+    private fun Settled<*, CategoryRejection>?.waitsForPayments() =
+        this is Settled.Rejected && reason == Specific(CategoryRejection.SchedulesPending)
 
     private fun archived(unarchived: Boolean) {
         notices.categoryChanged(
@@ -633,18 +642,9 @@ class CategoryManagementViewModel(
         const val KEY_MONTH = "month"
 
         private const val KEY_CURRENT = "category.edit.currentMonth"
-        private const val KEY_NAME = "category.edit.name"
-        private const val KEY_ICON = "category.edit.icon"
-        private const val KEY_UNLIMITED = "category.edit.unlimited"
-        private const val KEY_LIMIT = "category.edit.limit"
+        private const val KEY_DRAFT = "category.edit.draft"
+        private const val KEY_ORIGINAL = "category.edit.original"
         private const val KEY_OPERATION = "category.edit.operation"
-        private const val KEY_STEP = "category.edit.step"
-        private const val KEY_ORIGINAL_VERSION = "category.edit.original.version"
-        private const val KEY_ORIGINAL_NAME = "category.edit.original.name"
-        private const val KEY_ORIGINAL_ICON = "category.edit.original.icon"
-        private const val KEY_ORIGINAL_ARCHIVED = "category.edit.original.archived"
-        private const val KEY_ORIGINAL_PAUSED = "category.edit.original.paused"
-        private const val KEY_ORIGINAL_LIMIT = "category.edit.original.limit"
         private const val UNLIMITED = "unlimited"
         private const val STEP_EDIT = "edit"
         private const val STEP_ARCHIVE = "archive"
