@@ -37,6 +37,7 @@ HOST_PARTS = {
     "assemble": (":app:assembleDebug", ":app:assembleRelease"),
 }
 HOST_TASKS = tuple(task for part in HOST_PARTS.values() for task in part)
+TESTS_PART = "tests"
 FORMAT_PART = "lint"
 RELEASE_PART = "assemble"
 HOST_RESULTS = "*/build/test-results/**/TEST-*.xml"

@@ -143,7 +143,7 @@ class Check:
             return False
         ran = self.run(f"gradle-host-{part}" if part else "gradle-host",
                        gates.gradle(*(gates.HOST_PARTS[part] if part else gates.HOST_TASKS)))
-        if part not in (None, "tests"):
+        if part not in (None, gates.TESTS_PART):
             return ran
         results = self.results("Host tests", junit.glob(self.root, gates.HOST_RESULTS))
         if results.tests == 0:
