@@ -225,7 +225,7 @@ internal fun MonthSwitcher(label: String, onClick: () -> Unit, modifier: Modifie
         Text(
             text = label,
             style = MaterialTheme.typography.titleLarge.copy(fontSize = 21.sp, lineHeight = 24.sp),
-            // A second line before an ellipsis, as for any screen title at large text.
+            // A second line before an ellipsis, as for any long screen title.
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )

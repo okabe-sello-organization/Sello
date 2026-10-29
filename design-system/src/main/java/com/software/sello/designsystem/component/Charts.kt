@@ -344,7 +344,7 @@ private fun AxisLabels(points: List<ChartPoint>, short: Boolean, modifier: Modif
                 style = MaterialTheme.typography.labelSmall,
                 color = SelloTheme.colors.inkSoft,
                 textAlign = TextAlign.Center,
-                // Large text on a narrow column wraps "sem 2" rather than cutting it.
+                // On a narrow column "sem 2" wraps rather than being cut.
                 maxLines = 2,
                 modifier = Modifier.weight(1f).padding(top = 4.dp)
             )
