@@ -15,7 +15,6 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PlaceState
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.ChangeGoalTarget
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
@@ -69,8 +68,6 @@ class GoalCommandContractTest {
     private val today = LocalDate.of(2026, 10, 9)
     private val viaje = GoalId.of(uuid(100)).valueOrFail()
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private fun movement(number: Int) = GoalMovementId.of(uuid(number)).valueOrFail()
 
     private fun events() =
@@ -91,7 +88,7 @@ class GoalCommandContractTest {
         generation,
         GoalName.of(name).valueOrFail(),
         IconKey.of("flight").valueOrFail(),
-        pesos(target),
+        transactionPesos(target),
         YearMonth.of(2026, 12)
     )
 
@@ -107,7 +104,16 @@ class GoalCommandContractTest {
         goal: GoalId = viaje,
         operation: OperationId = ledger.operation()
     ) = submit(
-        RecordGoalMovement(operation, 1, goal, version(goal), kind, pesos(pesos), date, null)
+        RecordGoalMovement(
+            operation,
+            1,
+            goal,
+            version(goal),
+            kind,
+            transactionPesos(pesos),
+            date,
+            null
+        )
     )
 
     private suspend fun aporte(pesos: Long, goal: GoalId = viaje) = record(pesos, goal = goal)
@@ -243,7 +249,7 @@ class GoalCommandContractTest {
                 viaje,
                 1,
                 GoalMovementKind.Contribution,
-                pesos(1),
+                transactionPesos(1),
                 today,
                 null
             )
@@ -268,7 +274,7 @@ class GoalCommandContractTest {
                 version(),
                 movement(103),
                 1,
-                pesos(900_000),
+                transactionPesos(900_000),
                 today,
                 Note.of("Prima").valueOrFail()
             )
@@ -337,7 +343,7 @@ class GoalCommandContractTest {
             CreateIncome(
                 ledger.operation(),
                 1,
-                pesos(150_000),
+                transactionPesos(150_000),
                 IncomeSource.of("salary", null).valueOrFail(),
                 today,
                 null
@@ -362,7 +368,15 @@ class GoalCommandContractTest {
         aporte(1_710_000)
 
         val outcome =
-            submit(ChangeGoalTarget(ledger.operation(), 1, viaje, version(), pesos(2_000_000)))
+            submit(
+                ChangeGoalTarget(
+                    ledger.operation(),
+                    1,
+                    viaje,
+                    version(),
+                    transactionPesos(2_000_000)
+                )
+            )
 
         assertEquals(listOf(GoalPlace.ThreeQuarters), committed(outcome).change?.earned)
         assertEquals(85L, summary().progress.percentage)
@@ -374,7 +388,9 @@ class GoalCommandContractTest {
         started()
         aporte(1_710_000)
 
-        submit(ChangeGoalTarget(ledger.operation(), 1, viaje, version(), pesos(4_000_000)))
+        submit(
+            ChangeGoalTarget(ledger.operation(), 1, viaje, version(), transactionPesos(4_000_000))
+        )
 
         val progress = summary().progress
         assertEquals(42L, progress.percentage)
@@ -531,7 +547,7 @@ class GoalCommandContractTest {
             viaje,
             version(),
             GoalMovementKind.Contribution,
-            pesos(750_000),
+            transactionPesos(750_000),
             today,
             null
         )

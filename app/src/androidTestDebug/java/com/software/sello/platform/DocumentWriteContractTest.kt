@@ -3,11 +3,9 @@ package com.software.sello.platform
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.DocumentDestination
 import com.software.sello.domain.port.DocumentWrite
 import java.util.UUID
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -18,11 +16,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class DocumentWriteContractTest {
     private val context: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Main
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = SystemDispatcherProvider()
     private val writer by lazy { AndroidDocumentWriter(context.contentResolver, dispatchers) }
 
     // Synthetic content: no real backup is needed to prove the bytes arrive intact.

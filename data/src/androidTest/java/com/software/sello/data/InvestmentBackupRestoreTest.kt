@@ -25,7 +25,6 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.DatedUsdRate
 import com.software.sello.domain.port.DeleteInvestmentMovement
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.PreferenceRead
@@ -63,11 +62,7 @@ class InvestmentBackupRestoreTest {
     val files = DatabaseFiles()
 
     private val ledger by lazy { TestLedger(files).also { it.start() } }
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
     private val investments = HandInvestmentPreferences()
     private val preferences = object : AppearancePreferences, CategoryOrderingPreferences {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = flowOf(

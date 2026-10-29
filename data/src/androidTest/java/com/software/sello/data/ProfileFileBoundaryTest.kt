@@ -3,7 +3,6 @@ package com.software.sello.data
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ResetOutcome
 import java.io.File
@@ -33,11 +32,7 @@ class ProfileFileBoundaryTest {
     private val other = StorageNames("other-$id.db", "other-$id")
     private val document = File(context.filesDir, "respaldo-$id.json")
     private val opened = mutableListOf<FinancialStorage>()
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
 
     @After
     fun removeEverything() {

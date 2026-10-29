@@ -1,7 +1,6 @@
 package com.software.sello.feature.goals
 
 import com.software.sello.designsystem.component.MoneySign
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalEvent
 import com.software.sello.domain.model.GoalHistory
@@ -23,8 +22,7 @@ import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -38,16 +36,7 @@ import org.junit.Test
  * approved examples (docs/testing/goal-examples.md); today is 23 October 2026.
  */
 class GoalsRenderModelTest {
-    private val render = GoalsRenderModel(
-        MoneyFormatter(object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                "$digits pesos"
-
-            override fun negative(amount: String) = "menos $amount"
-
-            override fun positive(amount: String) = "más $amount"
-        })
-    )
+    private val render = GoalsRenderModel(testMoney())
     private val today = LocalDate.of(2026, 10, 23)
 
     private fun <T> Outcome<T, *>.value(): T = (this as Outcome.Success).value

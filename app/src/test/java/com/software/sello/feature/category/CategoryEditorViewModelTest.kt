@@ -3,7 +3,6 @@ package com.software.sello.feature.category
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
@@ -24,8 +23,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -87,16 +85,7 @@ class CategoryEditorViewModelTest {
     private val reads = HandCategoryReads()
     private val session = MonthSession(HandFinancialClock("2026-10-09"), HandMonotonicClock())
     private var nextId = 500
-    private val money = MoneyFormatter(
-        object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                "$digits pesos"
-
-            override fun negative(amount: String) = amount
-
-            override fun positive(amount: String) = amount
-        }
-    )
+    private val money = testMoney()
 
     @Before
     fun mainDispatcher() = Dispatchers.setMain(UnconfinedTestDispatcher())

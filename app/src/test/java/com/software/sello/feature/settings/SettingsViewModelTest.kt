@@ -21,8 +21,8 @@ import com.software.sello.feature.investments.HandInvestmentPreferences
 import com.software.sello.feature.investments.HandInvestmentReads
 import com.software.sello.feature.investments.rateEntry
 import com.software.sello.feature.investments.ratesBoard
-import com.software.sello.feature.investments.testMoney
 import com.software.sello.feature.recurrence.HandScheduleReads
+import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

@@ -1,6 +1,5 @@
 package com.software.sello.feature.recibo
 
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
@@ -10,16 +9,14 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.MonthlyBudgetPolicy
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.ReadState
-import com.software.sello.domain.port.SnapshotState
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
-import com.software.sello.feature.expense.pesos
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
 import com.software.sello.navigation.HandFinancialClock
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -39,11 +36,7 @@ class UpcomingPaymentsViewModelTest {
     private val october = YearMonth.of(2026, 10)
     private val snapshots = HandSnapshots()
     private val clock = HandFinancialClock("2026-10-22")
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())

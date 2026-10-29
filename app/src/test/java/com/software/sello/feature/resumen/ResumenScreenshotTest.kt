@@ -6,10 +6,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.theme.SelloInk
-import com.software.sello.domain.model.Currency
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.showSello
+import com.software.sello.testing.testMoney
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,11 +24,7 @@ class ResumenScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
 
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
     private val state = resumenExample(money)
 
     private fun capture(look: Look) {

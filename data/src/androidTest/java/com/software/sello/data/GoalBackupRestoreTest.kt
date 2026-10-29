@@ -16,13 +16,11 @@ import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.ThemePreference
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateGoal
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalCommand
@@ -36,7 +34,6 @@ import com.software.sello.domain.port.RestoreOutcome
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -63,11 +60,7 @@ class GoalBackupRestoreTest {
     private val ledger by lazy { TestLedger(files).also { it.start() } }
     private val other by lazy { TestLedger(fresh).also { it.start() } }
     private val today = LocalDate.of(2026, 10, 9)
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
     private val investments = HandInvestmentPreferences()
     private val preferences = object : AppearancePreferences, CategoryOrderingPreferences {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = flowOf(
@@ -97,8 +90,6 @@ class GoalBackupRestoreTest {
     }
     private var nextId = 5_000
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private suspend fun TestLedger.submit(command: GoalCommand) =
         goals.submit(command).also { assertTrue("$it", it is CommandOutcome.Committed) }
 
@@ -114,7 +105,7 @@ class GoalBackupRestoreTest {
                 1,
                 GoalName.of(name).valueOrFail(),
                 IconKey.of("flight").valueOrFail(),
-                pesos(target),
+                transactionPesos(target),
                 YearMonth.of(2026, 12)
             )
         ) as CommandOutcome.Committed
@@ -129,7 +120,7 @@ class GoalBackupRestoreTest {
                 goal,
                 version(goal),
                 kind,
-                pesos(amount),
+                transactionPesos(amount),
                 today,
                 null
             )

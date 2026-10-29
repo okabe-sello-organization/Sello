@@ -1,6 +1,5 @@
 package com.software.sello.feature.recurrence
 
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SourceName
@@ -14,11 +13,10 @@ import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.ScheduleRecordReads
 import com.software.sello.domain.port.ScheduleRecordsState
 import com.software.sello.feature.expense.storedExpense
-import com.software.sello.feature.expense.storedIncome
+import com.software.sello.feature.income.storedIncome
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
@@ -96,11 +94,7 @@ class CatchUpNoticeViewModelTest {
     }
     private val clock = HandFinancialClock("2026-10-22")
     private var auditNow = Instant.parse("2026-10-22T15:00:00Z")
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())

@@ -1,6 +1,5 @@
 package com.software.sello.feature.income
 
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Occurrence
@@ -24,15 +23,11 @@ import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.StoredSchedule
-import com.software.sello.feature.expense.HandIncomeReads
-import com.software.sello.feature.expense.incomeId
-import com.software.sello.feature.expense.storedIncome
 import com.software.sello.feature.resumen.resumenSnapshot
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -57,11 +52,7 @@ class IncomeHistoryViewModelTest {
     private val clock = HandFinancialClock("2026-10-22")
     private val session = MonthSession(clock, HandMonotonicClock())
     private val october = YearMonth.of(2026, 10)
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
 
     /** Resumen's summary of each month, as the history reads it. */
     private val summaries = mutableMapOf<YearMonth, MutableStateFlow<ResumenSnapshotState>>()

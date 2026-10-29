@@ -3,7 +3,6 @@ package com.software.sello.feature.expense
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
@@ -20,8 +19,8 @@ import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
-import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.feature.recurrence.HandScheduleCommands
 import com.software.sello.feature.recurrence.HandScheduleReads
@@ -29,10 +28,11 @@ import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatKind
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -61,16 +61,7 @@ class ExpenseFormViewModelTest {
     private val schedules = HandScheduleCommands(scheduleBook)
     private val clock = HandFinancialClock("2026-10-22")
     private var nextId = 500
-    private val money = MoneyFormatter(
-        object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                "$digits pesos"
-
-            override fun negative(amount: String) = "menos $amount"
-
-            override fun positive(amount: String) = "más $amount"
-        }
-    )
+    private val money = testMoney()
 
     /** The reference's month: 937.200 left overall, 287.600 left in Alimentación. */
     private val food = categoryIn(1, "Alimentación", 900_000, icon = "restaurant")

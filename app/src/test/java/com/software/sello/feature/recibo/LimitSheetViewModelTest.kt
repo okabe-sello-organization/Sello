@@ -5,7 +5,6 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
@@ -27,15 +26,13 @@ import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
-import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
@@ -43,8 +40,8 @@ import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -77,11 +74,7 @@ class LimitSheetViewModelTest {
     private val snapshots = HandSnapshots()
     private val reads = HandCategoryReads().apply { generation = 7 }
     private var nextId = 500
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
     private lateinit var notices: Corrections
 
     /** Commands a test scripts. Unless told otherwise every command commits. */

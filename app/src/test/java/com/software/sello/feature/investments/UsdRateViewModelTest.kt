@@ -17,6 +17,7 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SetUsdRate
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers

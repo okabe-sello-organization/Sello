@@ -19,7 +19,6 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CheckedBackup
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
@@ -55,11 +54,7 @@ class RestoreAfterSetAsideTest {
     private val kept: File get() = files.context.getDatabasePath(names.setAsideDatabase)
     private val bogota = ZoneId.of("America/Bogota")
     private val opened = mutableListOf<FinancialStorage>()
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
 
     /** Preferences that record what was applied. */
     private class Preferences :

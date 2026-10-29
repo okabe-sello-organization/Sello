@@ -40,6 +40,7 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.revealed
 import com.software.sello.showSello
+import com.software.sello.testing.pesos
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -76,8 +77,6 @@ class CategoryEditorScreenTest {
     /** A key of the Sello pad under the form. */
     private fun key(label: String) =
         rule.onNode(hasText(label) and hasAnyAncestor(hasTestTag(EDITOR_PAD_TAG)))
-
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     @Test
     fun whileItLoadsThereIsNoFormAndAFailureOffersRetry() {

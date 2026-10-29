@@ -35,8 +35,6 @@ class PlanPartsTest {
     @get:Rule
     val rule = createComposeRule()
 
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
-
     private val salary = "Salario esperado el vie 30 oct: 1.000.000 pesos"
 
     @Test

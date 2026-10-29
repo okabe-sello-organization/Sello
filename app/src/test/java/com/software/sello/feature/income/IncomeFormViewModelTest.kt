@@ -3,7 +3,6 @@ package com.software.sello.feature.income
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeSource
@@ -34,11 +33,6 @@ import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
-import com.software.sello.feature.expense.HandIncomeReads
-import com.software.sello.feature.expense.incomeId
-import com.software.sello.feature.expense.pesos
-import com.software.sello.feature.expense.storedIncome
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
@@ -50,9 +44,9 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -61,7 +55,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -89,16 +82,7 @@ class IncomeFormViewModelTest {
     private val schedules = HandScheduleCommands(scheduleBook)
     private val clock = HandFinancialClock("2026-10-22")
     private var nextId = 500
-    private val money = MoneyFormatter(
-        object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                "$digits pesos"
-
-            override fun negative(amount: String) = "menos $amount"
-
-            override fun positive(amount: String) = "más $amount"
-        }
-    )
+    private val money = testMoney()
     private lateinit var corrections: Corrections
 
     private val design = IncomeSource.Other((SourceName.of("Diseño") as Outcome.Success).value)

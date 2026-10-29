@@ -1,7 +1,6 @@
 package com.software.sello.feature.goals
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalHistory
@@ -13,13 +12,11 @@ import com.software.sello.domain.model.GoalName
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.GoalTargetChange
 import com.software.sello.domain.model.IconKey
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.ChangeGoalTarget
 import com.software.sello.domain.port.CommandOutcome
@@ -36,15 +33,15 @@ import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -72,11 +69,7 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class GoalEditorViewModelTest {
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
     private val clock = HandFinancialClock("2026-10-23")
     private val reads = HandGoalReads()
     private val commands = HandGoalCommands()
@@ -106,8 +99,6 @@ class GoalEditorViewModelTest {
     fun reset() = Dispatchers.resetMain()
 
     private fun <T> Outcome<T, *>.value(): T = (this as Outcome.Success).value
-
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).value()
 
     private fun goal(
         target: Long,

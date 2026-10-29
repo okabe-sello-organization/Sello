@@ -1,11 +1,10 @@
 package com.software.sello.platform
 
-import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.testing.TestDispatcherProvider
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -13,7 +12,6 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -29,12 +27,7 @@ class ClockOwnershipTest {
     private val oneMinuteBeforeNovember = Instant.parse("2026-11-01T04:59:00Z")
     private val signals = RecordingTimeSignals()
 
-    private fun TestScope.dispatchers() = object : DispatcherProvider {
-        private val dispatcher = StandardTestDispatcher(testScheduler)
-        override val main: CoroutineDispatcher get() = dispatcher
-        override val default: CoroutineDispatcher get() = dispatcher
-        override val io: CoroutineDispatcher get() = dispatcher
-    }
+    private fun TestScope.dispatchers() = TestDispatcherProvider(testScheduler)
 
     private fun TestScope.clockIn(owner: CoroutineScope): SystemFinancialClock {
         val zone = ProcessFinancialZone().apply { initialize(bogota) }

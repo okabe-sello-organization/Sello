@@ -20,6 +20,7 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.category.CategoryIcons
+import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

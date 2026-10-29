@@ -20,6 +20,7 @@ import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.showSello
+import com.software.sello.testing.pesos
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
@@ -38,8 +39,6 @@ class IncomeHistoryScreenTest {
     private val actions = mutableListOf<IncomeHistoryAction>()
     private var created = 0
     private val edited = mutableListOf<String>()
-
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     private fun minus(digits: String) =
         MoneyTextValue(MoneySign.Minus, "", digits, "menos $digits pesos")

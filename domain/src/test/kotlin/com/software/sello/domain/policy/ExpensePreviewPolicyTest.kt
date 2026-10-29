@@ -12,7 +12,7 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.model.SnapshotFailure
-import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.pesos
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.valueOrFail
 import java.time.Instant
@@ -27,8 +27,6 @@ class ExpensePreviewPolicyTest {
     private fun uuid(number: Int) = "00000000-0000-4000-8000-%012d".format(number)
 
     private fun id(number: Int) = CategoryId.of(uuid(number)).valueOrFail()
-
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
 
     private fun category(number: Int, state: MonthBudgetState) = CategoryInMonth(
         Category(

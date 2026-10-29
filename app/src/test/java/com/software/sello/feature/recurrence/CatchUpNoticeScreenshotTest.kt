@@ -11,11 +11,10 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
-import com.software.sello.designsystem.component.MoneySign
-import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.showSello
+import com.software.sello.testing.pesos
 import java.time.LocalDate
 import org.junit.Rule
 import org.junit.Test
@@ -31,8 +30,6 @@ import org.robolectric.annotation.GraphicsMode
 class CatchUpNoticeScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
-
-    private fun pesos(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     private val recorded = CatchUpNoticeState.Ready(
         listOf(

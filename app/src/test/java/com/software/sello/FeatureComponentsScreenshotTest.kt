@@ -16,8 +16,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MilestoneState
-import com.software.sello.designsystem.component.MoneySign
-import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.feature.goals.CompletedGoalRow
@@ -28,6 +26,7 @@ import com.software.sello.feature.recibo.CategoryCell
 import com.software.sello.feature.recibo.CategoryGrid
 import com.software.sello.navigation.MonthBar
 import com.software.sello.navigation.TitleBar
+import com.software.sello.testing.pesos
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,13 +40,6 @@ import org.robolectric.annotation.GraphicsMode
 class FeatureComponentsScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
-
-    private fun pesos(digits: String, minus: Boolean = false) = MoneyTextValue(
-        if (minus) MoneySign.Minus else MoneySign.None,
-        "",
-        digits,
-        "$digits pesos"
-    )
 
     /** [content] on the desk, 320 dp wide and as tall as it needs, captured as [name]. */
     private fun capture(name: String, content: @Composable () -> Unit) {

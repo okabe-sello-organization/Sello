@@ -39,11 +39,12 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RestoreInvestmentMovement
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
