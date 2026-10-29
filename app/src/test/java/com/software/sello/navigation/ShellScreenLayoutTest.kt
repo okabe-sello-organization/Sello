@@ -1,13 +1,9 @@
 package com.software.sello.navigation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assert
@@ -21,22 +17,29 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.SCAFFOLD_BAR_TAG
 import com.software.sello.designsystem.component.SCAFFOLD_RAIL_TAG
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.GraphicsMode
 
-/** The frame alone, given state by hand, in windows of chosen sizes and font scales. */
+/**
+ * The frame alone, given state by hand, in windows of chosen sizes and font scales.
+ * On the JVM (ADR 0022).
+ */
 @RunWith(AndroidJUnit4::class)
+// Real text measurement: the layout below depends on how wide the words are.
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ShellScreenLayoutTest {
     @get:Rule
     val rule = createComposeRule()
@@ -56,12 +59,7 @@ class ShellScreenLayoutTest {
 
     /** The frame in the test device's own window, which on a phone is a compact one. */
     private fun showOnThisScreen(pickerOpen: Boolean, fontScale: Float = 1f) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) { Frame(pickerOpen) }
-            }
-        }
+        rule.showSello(Look(fontScale = fontScale)) { Frame(pickerOpen) }
     }
 
     /**
@@ -70,12 +68,8 @@ class ShellScreenLayoutTest {
      * and where it is laid out, not whether it is visible on the screen.
      */
     private fun showInWindow(width: Int, height: Int, pickerOpen: Boolean) {
-        rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
-                SelloTheme(reducedMotion = true) {
-                    Box(Modifier.requiredSize(width.dp, height.dp)) { Frame(pickerOpen) }
-                }
-            }
+        rule.showSello(Look(window = DpSize(width.dp, height.dp), density = 1f)) {
+            Frame(pickerOpen)
         }
     }
 

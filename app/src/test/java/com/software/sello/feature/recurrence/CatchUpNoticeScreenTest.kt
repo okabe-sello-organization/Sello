@@ -8,7 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.AccessibilityManager
 import androidx.compose.ui.platform.LocalAccessibilityManager
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -16,19 +15,20 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.showSello
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** The bar on Recibo and Lo que Sello anotó, drawn from state given by hand. */
+/** The bar on Recibo and Lo que Sello anotó, drawn from state given by hand. On the JVM (ADR 0022). */
 @RunWith(AndroidJUnit4::class)
 class CatchUpNoticeScreenTest {
     @get:Rule
@@ -61,18 +61,13 @@ class CatchUpNoticeScreenTest {
     private fun ready(items: List<RecordedItem>) = CatchUpNoticeState.Ready(items, today)
 
     private fun list(state: CatchUpNoticeState, fontScale: Float = 1f) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    CatchUpRecordedScreen(
-                        state,
-                        PaddingValues(12.dp),
-                        onRetry = { retried++ },
-                        onEdit = { id, income -> edited += id to income }
-                    )
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale)) {
+            CatchUpRecordedScreen(
+                state,
+                PaddingValues(12.dp),
+                onRetry = { retried++ },
+                onEdit = { id, income -> edited += id to income }
+            )
         }
     }
 
@@ -81,11 +76,7 @@ class CatchUpNoticeScreenTest {
         var state by mutableStateOf<CatchUpNoticeState>(
             ready(List(4) { payment("b$it", "Bus", "Transporte", 3 + it * 7, "20.000") })
         )
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                Column { CatchUpNoticeBar(state, onTimeout = {}) { viewed++ } }
-            }
-        }
+        rule.showSello { Column { CatchUpNoticeBar(state, onTimeout = {}) { viewed++ } } }
 
         rule.onNodeWithText("Sello anotó 4 pagos fijos").assertIsDisplayed()
         rule.onNodeWithText("Ver").performClick()

@@ -8,8 +8,8 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -19,6 +19,7 @@ import org.junit.runner.RunWith
 /**
  * What a screen reader is told the month switcher is showing. "Mes actual" is said
  * only of the month the financial day is in; any other month is the selected one.
+ * On the JVM (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
 class MonthSwitcherLabelTest {
@@ -35,9 +36,7 @@ class MonthSwitcherLabelTest {
         pendingEntry = null
     )
 
-    private fun show() = rule.setContent {
-        SelloTheme(reducedMotion = true) { ShellScreen(state, monthNames(), {}) {} }
-    }
+    private fun show() = rule.showSello { ShellScreen(state, monthNames(), {}) {} }
 
     private fun spoken(): List<String>? = rule.onNodeWithTag(MONTH_SWITCHER_TAG)
         .fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)
@@ -87,11 +86,9 @@ class MonthSwitcherLabelTest {
     fun whatIsSpokenAndWhatIsShownNameTheSameMonth() {
         state = showing(current = "2026-10", selected = "2026-09")
         var label: MonthBarLabel? = null
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                label = monthBarLabel(state, monthNames())
-                ShellScreen(state, monthNames(), {}) {}
-            }
+        rule.showSello {
+            label = monthBarLabel(state, monthNames())
+            ShellScreen(state, monthNames(), {}) {}
         }
 
         // The bar draws [month] large and [year] small; both come from the same month.

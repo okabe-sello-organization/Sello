@@ -1,9 +1,7 @@
 package com.software.sello.feature.recurrence
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -23,27 +21,33 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.recurrence.REPEAT_ROW_TAG
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatUi
+import com.software.sello.showSello
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.GraphicsMode
 
-/** Pagos e ingresos fijos and one schedule's editor, drawn from state given by hand. */
+/**
+ * Pagos e ingresos fijos and one schedule's editor, drawn from state given by hand.
+ * On the JVM (ADR 0022).
+ */
 @RunWith(AndroidJUnit4::class)
+// Real text measurement: the layout below depends on how wide the words are.
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ScheduleScreensTest {
     @get:Rule
     val rule = createComposeRule()
@@ -115,20 +119,15 @@ class ScheduleScreensTest {
     )
 
     private fun list(state: SchedulesState, fontScale: Float = 1f) {
-        rule.setContent {
-            val density = LocalDensity.current.density
-            CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
-                SelloTheme(reducedMotion = true) {
-                    SchedulesScreen(
-                        state,
-                        today,
-                        { listActions += it },
-                        { opened += it },
-                        PaddingValues(12.dp),
-                        { added += it }
-                    )
-                }
-            }
+        rule.showSello(Look(fontScale = fontScale)) {
+            SchedulesScreen(
+                state,
+                today,
+                { listActions += it },
+                { opened += it },
+                PaddingValues(12.dp),
+                { added += it }
+            )
         }
     }
 
@@ -246,11 +245,7 @@ class ScheduleScreensTest {
         val shown = mutableStateOf<SchedulesState>(
             SchedulesState.Ready(ScheduleTab.Payments, zero, emptyList(), emptyList())
         )
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                SchedulesScreen(shown.value, today, {}, {}, PaddingValues(12.dp), {})
-            }
-        }
+        rule.showSello { SchedulesScreen(shown.value, today, {}, {}, PaddingValues(12.dp), {}) }
         fun height() = stub().getUnclippedBoundsInRoot().let { it.bottom - it.top }
         val empty = height()
         rule.runOnIdle { shown.value = ready.copy(tab = ScheduleTab.Incomes) }
@@ -307,11 +302,7 @@ class ScheduleScreensTest {
     )
 
     private fun editor(state: ScheduleEditorState) {
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                ScheduleEditorScreen(state, dateLabels()) { editorActions += it }
-            }
-        }
+        rule.showSello { ScheduleEditorScreen(state, dateLabels()) { editorActions += it } }
     }
 
     @Test
