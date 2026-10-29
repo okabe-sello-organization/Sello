@@ -64,16 +64,23 @@ class RestoreSession(
         }
     }
 
-    /** On opening the screen: a staged file still waiting, or a replacement still pending. */
-    fun resume() {
+    /**
+     * On opening the screen: a replacement still pending, or a staged file still
+     * waiting. Failing both, [chosen], a file an earlier process was given but had not
+     * finished with, is checked again; it is never replaced without a confirmation.
+     */
+    fun resume(chosen: DocumentSource? = null) {
         if (state.value != RestoreStep.Idle) return
         scope.launch {
             val pending = restores.pending()
             val next = when {
                 pending != null -> RestoreStep.Restored(pending)
-                else -> restores.staged()?.let { RestoreStep.Previewing(it) } ?: RestoreStep.Idle
+                else -> restores.staged()?.let { RestoreStep.Previewing(it) }
             }
-            state.compareAndSet(RestoreStep.Idle, next)
+            when {
+                next != null -> state.compareAndSet(RestoreStep.Idle, next)
+                chosen != null -> choose(chosen)
+            }
         }
     }
 

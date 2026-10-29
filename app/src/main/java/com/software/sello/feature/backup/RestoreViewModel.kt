@@ -1,5 +1,6 @@
 package com.software.sello.feature.backup
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.port.AppRestart
@@ -17,8 +18,14 @@ import kotlinx.coroutines.flow.stateIn
  * replacing belong to [RestoreSession], so they outlive this screen. After a
  * replacement, going on restarts the app, because the history, its generation and
  * possibly its financial zone are not the ones this process started with.
+ *
+ * The chosen file's address is kept across process death until it is confirmed,
+ * cancelled or dismissed, so a file the process died checking is checked again. The
+ * file itself is not kept: the staging holds it, and the system keeps the read grant
+ * the picker gave; if that is gone the file is named unreadable.
  */
 class RestoreViewModel(
+    private val handle: SavedStateHandle,
     private val session: RestoreSession,
     private val restart: AppRestart,
     clock: FinancialClock
@@ -26,7 +33,7 @@ class RestoreViewModel(
     private val pickerRequest = MutableStateFlow(false)
 
     init {
-        session.resume()
+        session.resume(handle.get<String>(CHOSEN)?.let(::DocumentSource))
     }
 
     val state: StateFlow<RestoreState> = combine(
@@ -43,13 +50,27 @@ class RestoreViewModel(
 
             RestoreAction.PickerOpened -> pickerRequest.value = false
 
-            is RestoreAction.Chosen -> action.source?.let { session.choose(DocumentSource(it)) }
+            is RestoreAction.Chosen -> action.source?.let {
+                handle[CHOSEN] = it
+                session.choose(DocumentSource(it))
+            }
 
-            RestoreAction.Confirm -> session.confirm()
+            // From here the staging alone stands for the file, so a restart never
+            // stages it under a new operation.
+            RestoreAction.Confirm -> {
+                handle.remove<String>(CHOSEN)
+                session.confirm()
+            }
 
-            RestoreAction.Cancel -> session.cancel()
+            RestoreAction.Cancel -> {
+                handle.remove<String>(CHOSEN)
+                session.cancel()
+            }
 
-            RestoreAction.Dismiss -> session.dismiss()
+            RestoreAction.Dismiss -> {
+                handle.remove<String>(CHOSEN)
+                session.dismiss()
+            }
 
             RestoreAction.ApplyPreferences -> session.applyPreferences()
 
@@ -61,6 +82,7 @@ class RestoreViewModel(
     }
 
     private companion object {
+        const val CHOSEN = "restore.chosen"
         const val STOP_MILLIS = 5_000L
     }
 }
