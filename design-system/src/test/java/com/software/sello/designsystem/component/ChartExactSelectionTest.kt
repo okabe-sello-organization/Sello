@@ -51,7 +51,8 @@ class ChartExactSelectionTest {
         assertTrue(first.value != second.value)
     }
 
-    private fun selectsExactly(line: Boolean) {
+    @Test
+    fun columnsSelectTheOriginalPointNotAPixel() {
         var selected by mutableStateOf<String?>(null)
         val picks = mutableListOf<String>()
         rule.inEveryScheme(
@@ -64,11 +65,7 @@ class ChartExactSelectionTest {
                     selected = it
                     picks += it
                 }
-                if (line) {
-                    LineChart(points, summary, Modifier.testTag("chart"), selected, onSelect)
-                } else {
-                    ColumnsChart(points, summary, Modifier.testTag("chart"), selected, onSelect)
-                }
+                ColumnsChart(points, summary, Modifier.testTag("chart"), selected, onSelect)
             }
         ) {
             rule.onNodeWithTag("chart").assertContentDescriptionEquals(summary)
@@ -83,12 +80,6 @@ class ChartExactSelectionTest {
             assertEquals(it, 3, rule.onAllNodes(selectable).fetchSemanticsNodes().size)
         }
     }
-
-    @Test
-    fun columnsSelectTheOriginalPointNotAPixel() = selectsExactly(line = false)
-
-    @Test
-    fun lineMarksSelectTheOriginalPointNotAPixel() = selectsExactly(line = true)
 
     @Test
     fun aPartlyStripedColumnKeepsRecordedAndAvailableAmountsDistinctWhenSelected() {

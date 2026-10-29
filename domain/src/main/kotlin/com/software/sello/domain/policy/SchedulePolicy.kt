@@ -1,17 +1,11 @@
 package com.software.sello.domain.policy
 
 import com.software.sello.domain.model.Occurrence
-import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.Recurrence
 import com.software.sello.domain.model.RepeatRule
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.ChronoUnit
-
-sealed interface ScheduleStartError {
-    /** A schedule may start no earlier than [earliest]. */
-    data class TooEarly(val earliest: LocalDate) : ScheduleStartError
-}
 
 /**
  * The repeat rules of docs/testing/recurrence-examples.md. "Today" is always passed in
@@ -53,25 +47,6 @@ object SchedulePolicy {
 
     private fun Occurrence.isAfter(other: Occurrence) =
         date.isAfter(other.date) || (date == other.date && slot > other.slot)
-
-    /** A new schedule starts today or later (rule 3). */
-    fun newStart(start: LocalDate, today: LocalDate): Outcome<LocalDate, ScheduleStartError> =
-        if (start.isBefore(today)) {
-            Outcome.Failure(ScheduleStartError.TooEarly(today))
-        } else {
-            Outcome.Success(start)
-        }
-
-    /**
-     * A changed rule starts after today, so it never reaches back to an occurrence that was
-     * or could have been recorded (rule 7).
-     */
-    fun changedStart(start: LocalDate, today: LocalDate): Outcome<LocalDate, ScheduleStartError> =
-        if (start.isAfter(today)) {
-            Outcome.Success(start)
-        } else {
-            Outcome.Failure(ScheduleStartError.TooEarly(today.plusDays(1)))
-        }
 
     /** The parts of [from]..[to] inside the start and end and outside every pause. */
     private fun activeSpans(

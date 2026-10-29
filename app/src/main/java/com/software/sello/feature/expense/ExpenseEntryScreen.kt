@@ -80,7 +80,6 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
-import com.software.sello.designsystem.component.StampSize
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
 import com.software.sello.designsystem.component.selloWindowLayout

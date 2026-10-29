@@ -1,17 +1,11 @@
 package com.software.sello.designsystem.component
 
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
@@ -29,10 +23,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.em
-import com.software.sello.designsystem.theme.SelloMotion
 import com.software.sello.designsystem.theme.SelloTheme
-import java.math.BigDecimal
-import java.math.RoundingMode
 
 enum class MoneySign { None, Plus, Minus }
 
@@ -108,56 +99,6 @@ fun MoneyText(
             constraints.maxWidth
         val chosen = if (fits) hero else MoneyStyle.Total.textStyle(fontWeight)
         Text(moneyAnnotatedString(value, style, chosen, ink), color = ink, style = chosen)
-    }
-}
-
-/**
- * A [MoneyText] that counts to a new amount when [amountMinor] changes while it is
- * shown. The spoken value is always the final amount, the last frame is exactly
- * [format] of the target, and with reduced motion there is no counting at all.
- */
-@Composable
-fun CountingMoneyText(
-    amountMinor: Long,
-    format: (Long) -> MoneyTextValue,
-    modifier: Modifier = Modifier,
-    style: MoneyStyle = MoneyStyle.Line,
-    color: Color = Color.Unspecified
-) {
-    val reduced = SelloTheme.reducedMotion
-    var shown by remember { mutableLongStateOf(amountMinor) }
-    var from by remember { mutableLongStateOf(amountMinor) }
-    LaunchedEffect(amountMinor, reduced) {
-        if (reduced || shown == amountMinor) {
-            shown = amountMinor
-        } else {
-            from = shown
-            Animatable(0f).animateTo(1f, SelloMotion.count()) {
-                shown = countFrame(from, amountMinor, this.value)
-            }
-            shown = amountMinor
-        }
-        from = amountMinor
-    }
-    val target = format(amountMinor)
-    val visible = if (reduced || shown == amountMinor) target else format(shown)
-    MoneyText(visible.copy(spoken = target.spoken), modifier, style, color)
-}
-
-/**
- * The whole amount shown at [progress] (0..1) of a count. Exact at both ends and never
- * outside them, including for amounts no floating-point type can hold.
- */
-internal fun countFrame(from: Long, to: Long, progress: Float): Long = when {
-    progress <= 0f -> from
-
-    progress >= 1f -> to
-
-    else -> {
-        val span = BigDecimal(to).subtract(BigDecimal(from))
-        val step = span.multiply(BigDecimal(progress.toDouble())).setScale(0, RoundingMode.DOWN)
-        // Between two Longs by construction; longValueExact needs API 31.
-        BigDecimal(from).add(step).toBigInteger().toLong()
     }
 }
 

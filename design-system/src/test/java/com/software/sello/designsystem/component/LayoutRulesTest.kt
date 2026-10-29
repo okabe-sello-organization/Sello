@@ -13,7 +13,7 @@ class LayoutRulesTest {
         for ((w, h) in listOf(360 to 760, 411 to 891, 599 to 900, 320 to 480)) {
             assertEquals(
                 "$w x $h",
-                SelloWindowLayout(SelloWindowClass.Compact, useRail = false, twoPane = false),
+                SelloWindowLayout(useRail = false, twoPane = false),
                 layout(w, h)
             )
         }
@@ -24,7 +24,7 @@ class LayoutRulesTest {
         for ((w, h) in listOf(760 to 360, 891 to 411, 640 to 479, 1000 to 400, 500 to 300)) {
             assertEquals(
                 "$w x $h",
-                SelloWindowLayout(SelloWindowClass.ShortLandscape, useRail = true, twoPane = true),
+                SelloWindowLayout(useRail = true, twoPane = true),
                 layout(w, h)
             )
         }
@@ -36,7 +36,6 @@ class LayoutRulesTest {
             assertEquals(
                 "$w x $h",
                 SelloWindowLayout(
-                    SelloWindowClass.Medium,
                     useRail = false,
                     twoPane = false,
                     contentMaxWidth = 560.dp
@@ -52,7 +51,6 @@ class LayoutRulesTest {
             assertEquals(
                 "$w x $h",
                 SelloWindowLayout(
-                    SelloWindowClass.Expanded,
                     useRail = true,
                     twoPane = true,
                     listPaneWidth = 400.dp,

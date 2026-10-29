@@ -350,53 +350,6 @@ private fun ClosedMonthNote(closed: ReciboClosedMonth) {
     )
 }
 
-/**
- * A sentence, its amount and its verdict, read as one: "Te quedan 937.200 pesos. Al
- * día." The verdict is a word on the screen and in the description, not a colour alone.
- */
-@Composable
-internal fun FigureHeader(
-    headline: String,
-    figure: BudgetFigure,
-    style: MoneyStyle,
-    showStamp: Boolean,
-    modifier: Modifier = Modifier
-) {
-    val stamp = stampText(figure.stamp)
-    val spoken =
-        stringResource(R.string.recibo_summary_description, headline, figure.amount.spoken, stamp)
-    Column(
-        modifier = modifier.fillMaxWidth().clearAndSetSemantics {
-            contentDescription = spoken
-        }
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
-        ) {
-            Text(
-                text = headline,
-                style = MaterialTheme.typography.bodyLarge,
-                color = SelloTheme.colors.inkSoft,
-                modifier = Modifier.weight(1f)
-            )
-            if (showStamp) {
-                // Room for the corners of a rotated stamp.
-                Stamp(stamp, stampInk(figure.stamp), Modifier.padding(vertical = 6.dp))
-            }
-        }
-        MoneyText(
-            figure.amount,
-            style = style,
-            color = if (figure.headline == ReciboHeadline.Overspent) {
-                SelloTheme.colors.semantic.loss
-            } else {
-                SelloTheme.colors.ink
-            }
-        )
-    }
-}
-
 @Composable
 private fun CategoriesSlip(
     categories: List<ReciboCategory>,
