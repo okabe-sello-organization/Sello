@@ -42,6 +42,7 @@ import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRecordReads
 import com.software.sello.platform.deviceZone
 import java.time.ZoneId
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -55,6 +56,7 @@ class OpenedStorage(val storage: FinancialStorage, val profile: FinancialProfile
  * [deviceZone], read back on every later start. Nothing is built before that one small
  * read, because the financial zone must be known before anything computes a date; the
  * caller waits for it without blocking, and the work runs on [DispatcherProvider.io].
+ * A caller cancelled at any point gets no storage, and none is left open.
  *
  * A database that cannot be read is a failure with the storage closed again. It is
  * never replaced by an empty one and the device zone is never used in its place.
@@ -65,25 +67,30 @@ suspend fun openStorage(
     dispatchers: DispatcherProvider,
     audit: AuditClock,
     names: StorageNames = StorageNames.Normal
-): Outcome<OpenedStorage, StorageFailure> = withContext(dispatchers.io) {
-    val storage = openFinancialStorage(context, dispatchers.io, audit, names)
-    val opened = try {
-        when (val profile = storage.profiles.establish(deviceZone)) {
-            is Outcome.Failure -> profile
+): Outcome<OpenedStorage, StorageFailure> {
+    var storage: FinancialStorage? = null
+    return try {
+        withContext(dispatchers.io) {
+            val opening = openFinancialStorage(context, dispatchers.io, audit, names)
+            storage = opening
+            val opened = when (val profile = opening.profiles.establish(deviceZone)) {
+                is Outcome.Failure -> profile
 
-            // Whatever an earlier process kept to undo a deletion can no longer be undone.
-            is Outcome.Success -> when (val discarded = storage.discardUndoCopies()) {
-                is Outcome.Failure -> discarded
-                is Outcome.Success -> Outcome.Success(OpenedStorage(storage, profile.value))
+                // Whatever an earlier process kept to undo a deletion can no longer be undone.
+                is Outcome.Success -> when (val discarded = opening.discardUndoCopies()) {
+                    is Outcome.Failure -> discarded
+                    is Outcome.Success -> Outcome.Success(OpenedStorage(opening, profile.value))
+                }
             }
+            if (opened is Outcome.Failure) opening.close()
+            opened
         }
     } catch (stopped: Throwable) {
-        // Cancelled or thrown part way: nothing holds this storage, so it is closed.
-        storage.close()
+        // Cancelled or thrown part way, or cancelled just as the open answered: no one
+        // holds this storage, so it is closed. Closing it twice is harmless.
+        withContext(NonCancellable + dispatchers.io) { storage?.close() }
         throw stopped
     }
-    if (opened is Outcome.Failure) storage.close()
-    opened
 }
 
 /** Keeps the file that could not be opened under another name, on [DispatcherProvider.io]. */

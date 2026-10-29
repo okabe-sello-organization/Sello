@@ -10,7 +10,7 @@ import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemDispatcherProvider
 import com.software.sello.platform.deviceZone
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.koin.core.context.startKoin
 
@@ -30,7 +30,7 @@ class SelloApplication : Application() {
         // The data opens off the main thread while the first frame shows it loading; the
         // graph is then built back on the main thread, which the process's scope uses.
         startup = Startup(
-            scope = MainScope(),
+            scope = CoroutineScope(SupervisorJob() + dispatchers.main),
             start = { openAndBuildGraph(dispatchers) },
             moveUnreadable = { setAsideStorage(applicationContext, dispatchers, variant.names) },
             readBackup = { readStartupBackup(documents, it, dispatchers) }

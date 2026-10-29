@@ -103,12 +103,11 @@ private fun keyboardShown(): Boolean {
     return shown
 }
 
-/**
- * The installed app's own view models, once its data opened. A test run starts on
- * data that opens.
- */
-fun SelloApplication.readyViewModels(): ViewModelProvider.Factory = runBlocking {
-    withTimeout(PATIENCE_MILLIS) {
-        startup.state.first { it != StartupState.Opening } as StartupState.Ready
-    }.viewModels
+/** Waits until the installed app's data has opened or failed; see [SelloTestRunner]. */
+fun SelloApplication.awaitOpened(): StartupState = runBlocking {
+    withTimeout(PATIENCE_MILLIS) { startup.state.first { it != StartupState.Opening } }
 }
+
+/** The installed app's own view models. A test run starts on data that opened. */
+fun SelloApplication.readyViewModels(): ViewModelProvider.Factory =
+    (awaitOpened() as StartupState.Ready).viewModels

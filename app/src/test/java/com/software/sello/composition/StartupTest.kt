@@ -341,6 +341,73 @@ class StartupTest {
     }
 
     @Test
+    fun startingOverAfterASetAsideOpensTheEmptyDataThenRelaunchesOnce() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
+        var relaunches = 0
+        startup.setAside()
+
+        startup.startOver { relaunches++ }
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
+        assertEquals(2, opened)
+        assertEquals(1, relaunches)
+    }
+
+    @Test
+    fun askingAgainAfterTheEmptyDataFailedOpensAndRelaunchesNothingMore() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Failure(full))
+        var relaunches = 0
+        startup.setAside()
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        // The failure screen comes back with its start-over still done and asks again.
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        assertEquals(StartupState.Failed(full), startup.state.value)
+        assertEquals(2, opened)
+        assertEquals(1, relaunches)
+    }
+
+    @Test
+    fun withoutASetAsideStartingOverOpensAndRelaunchesNothing() = runTest {
+        val startup = started(Outcome.Failure(corrupt))
+        var relaunches = 0
+
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        assertEquals(StartupState.Failed(corrupt), startup.state.value)
+        assertEquals(1, opened)
+        assertEquals(0, relaunches)
+    }
+
+    @Test
+    fun aSecondSetAsideAllowsASecondStartOver() = runTest {
+        val startup = started(
+            Outcome.Failure(corrupt),
+            Outcome.Failure(full),
+            Outcome.Success(factory)
+        )
+        var relaunches = 0
+        startup.setAside()
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        startup.setAside()
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
+        assertEquals(3, opened)
+        assertEquals(2, moves)
+        assertEquals(2, relaunches)
+    }
+
+    @Test
     fun checkingABackupReadsItAndMovesOrOpensNothing() = runTest {
         val startup = started(Outcome.Failure(corrupt))
 

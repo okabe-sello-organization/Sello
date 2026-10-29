@@ -26,7 +26,6 @@ import com.software.sello.navigation.SelloAppRoot
 import com.software.sello.navigation.ShellAction
 import com.software.sello.navigation.ShellViewModel
 import com.software.sello.platform.ProcessAppRestart
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -36,11 +35,19 @@ class MainActivity : ComponentActivity() {
     /** Set once the unreadable data was set aside and this activity is being replaced. */
     private var startingOver by mutableStateOf(false)
 
+    /** A link not yet handed over because the data is still opening; kept across recreation. */
+    private var pendingLink: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Only a fresh start carries a link to act on; a restored one already did.
-        if (savedInstanceState == null) open(intent)
+        // Only a fresh start carries a link to act on; a restored one already did, unless
+        // the data was still opening, and then the link it kept is handed over now.
+        if (savedInstanceState == null) {
+            open(intent)
+        } else {
+            savedInstanceState.getString(KEY_PENDING_LINK)?.let(::deliver)
+        }
         setContent {
             val state by startup.state.collectAsStateWithLifecycle()
             when (val now = state) {
@@ -76,16 +83,27 @@ class MainActivity : ComponentActivity() {
         open(intent)
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString(KEY_PENDING_LINK, pendingLink)
+    }
+
     /**
      * A link only ever becomes a request to prefill a draft; see `EntryLinks`. It waits
      * while the data opens; without data there is no draft to prefill, so it is dropped.
      */
     private fun open(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
-        val link = intent.dataString
+        // A link without data prefills nothing.
+        intent.dataString?.let(::deliver)
+    }
+
+    private fun deliver(link: String) {
+        pendingLink = link
         lifecycleScope.launch {
-            val ready = startup.state.first { it != StartupState.Opening } as? StartupState.Ready
-                ?: return@launch
+            val now = startup.state.first { it != StartupState.Opening }
+            if (pendingLink == link) pendingLink = null
+            val ready = now as? StartupState.Ready ?: return@launch
             ViewModelProvider(this@MainActivity, ready.viewModels)[ShellViewModel::class.java]
                 .onAction(ShellAction.OpenLink(link))
         }
@@ -101,12 +119,15 @@ class MainActivity : ComponentActivity() {
         val context = applicationContext
         // The new task opens only once the empty data has, even if this activity is
         // recreated meanwhile; until then this one shows the data opening.
-        lifecycleScope.launch(NonCancellable) {
-            startup.retry()
+        startup.startOver {
             context.startActivity(
                 Intent(context, MainActivity::class.java)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             )
         }
+    }
+
+    private companion object {
+        const val KEY_PENDING_LINK = "main.pendingLink"
     }
 }

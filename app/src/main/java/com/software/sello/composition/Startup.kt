@@ -76,18 +76,37 @@ class Startup(
         scope.launch { turns.withLock { mutable.value = attempt() } }
     }
 
+    /** A set-aside whose new start has not been asked for yet. */
+    private var setAsidePending = false
+
     override suspend fun retry(): Boolean = inTurn {
-        if (mutable.value is StartupState.Failed && restoring == null) {
-            mutable.value = StartupState.Opening
-            mutable.value = attempt()
-        }
+        openAgain()
         mutable.value is StartupState.Ready
     }
 
     override suspend fun setAside(): Boolean = inTurn {
-        mutable.value is StartupState.Failed &&
+        val moved = mutable.value is StartupState.Failed &&
             restoring == null &&
             moveUnreadable() is Outcome.Success
+        if (moved) setAsidePending = true
+        moved
+    }
+
+    /**
+     * After a set-aside, opens the empty data and then calls [relaunch], in [scope], so
+     * a caller that goes away stops neither. It happens once per set-aside: asking again,
+     * even after the empty data also failed to open, opens and relaunches nothing.
+     */
+    fun startOver(relaunch: () -> Unit) {
+        scope.launch {
+            val due = turns.withLock {
+                setAsidePending.also {
+                    setAsidePending = false
+                    if (it) openAgain()
+                }
+            }
+            if (due) relaunch()
+        }
     }
 
     override suspend fun check(source: DocumentSource): Outcome<CheckedBackup, RestoreRejection> {
@@ -138,6 +157,14 @@ class Startup(
     /** Runs [step] after any step before it, to its end; a cancelled caller stops waiting. */
     private suspend fun <T> inTurn(step: suspend () -> T): T =
         scope.async { turns.withLock { step() } }.await()
+
+    /** Opens again while the start is failed and no restore has opened its store. */
+    private suspend fun openAgain() {
+        if (mutable.value is StartupState.Failed && restoring == null) {
+            mutable.value = StartupState.Opening
+            mutable.value = attempt()
+        }
+    }
 
     private suspend fun attempt(): StartupState = when (val started = start()) {
         is Outcome.Success -> StartupState.Ready(started.value.viewModels)
