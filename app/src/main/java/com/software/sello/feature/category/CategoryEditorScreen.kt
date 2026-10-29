@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -329,11 +328,9 @@ private fun Identity(
     // the form can first be changed: not again after the person moves elsewhere, nor
     // when the form is read again, as archiving does just before the editor closes.
     val nameFocus = remember { FocusRequester() }
-    val keyboard = LocalSoftwareKeyboardController.current
     LaunchedEffect(state.editable) {
         if (state.editable && focusName) {
             nameFocus.requestFocus()
-            keyboard?.show()
             onNameFocused()
         }
     }

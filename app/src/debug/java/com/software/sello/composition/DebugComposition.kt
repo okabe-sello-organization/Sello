@@ -41,6 +41,7 @@ import com.software.sello.devtools.ScenarioRunner
 import com.software.sello.devtools.ScenarioSchedules
 import com.software.sello.devtools.Scenarios
 import com.software.sello.devtools.SharedPreferencesSessionStore
+import com.software.sello.devtools.TestFinancialTime
 import com.software.sello.devtools.WriteFence
 import com.software.sello.devtools.restartApp
 import com.software.sello.domain.model.FinancialProfile
@@ -113,7 +114,8 @@ fun variantComposition(application: Application): VariantComposition {
  * In both profiles every financial command runs through one [WriteFence], so a move
  * between them waits for writes in progress. In the sandbox the financial clock is a
  * [ControlledFinancialClock] on the sandbox's stored date, or today's in its financial
- * zone the first time; audit and elapsed time stay the real ones.
+ * zone the first time; audit and elapsed time stay the real ones. Under device tests
+ * the app's own profile is held on [TestFinancialTime.fixedDate] the same way.
  */
 class DebugComposition(
     private val store: SandboxSessionStore,
@@ -137,6 +139,8 @@ class DebugComposition(
         val fence = WriteFence()
         val scope = CoroutineScope(SupervisorJob() + SystemDispatcherProvider().main)
         val time = if (session.active) sandboxTime(profile, scope) else null
+        // Device tests hold the app's own profile on one day; see TestFinancialTime.
+        val held = if (time == null) heldTime(profile) else null
         val saved: () -> Unit = { time?.markChanged() }
         val profiles = SandboxProfiles(store, fence, restart)
         publish(SandboxTools(profiles, time))
@@ -204,6 +208,7 @@ class DebugComposition(
                         saved
                     )
                 }
+                if (held != null) single<FinancialClock> { held }
                 if (time != null) {
                     single<FinancialClock> { time.clock }
                     single<GoalReads> { FaultyGoalReads(get<FinancialStorage>().goalReads, faults) }
@@ -278,6 +283,11 @@ class DebugComposition(
             }
         )
     }
+
+    private fun heldTime(profile: FinancialProfile): ControlledFinancialClock? =
+        TestFinancialTime.fixedDate?.let { date ->
+            ControlledFinancialClock(FinancialDay(date, profile.zone))
+        }
 
     private fun sandboxTime(profile: FinancialProfile, scope: CoroutineScope): SandboxTime {
         val today = SystemAuditClock().now().atZone(profile.zone).toLocalDate()

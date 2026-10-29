@@ -34,6 +34,7 @@ import com.software.sello.feature.category.EDITOR_SUBMIT_TAG
 import com.software.sello.feature.category.typeLimit
 import com.software.sello.navigation.SelloAppRoot
 import com.software.sello.press
+import com.software.sello.pressBackPastTheKeyboard
 import java.io.File
 import java.time.LocalDate
 import java.time.YearMonth
@@ -130,8 +131,7 @@ class CategoryDetailJourneyTest {
         Espresso.pressBack()
         rule.awaitTag("category.expenses")
         rule.onNodeWithText("Nombre").performClick()
-        Espresso.closeSoftKeyboard()
-        Espresso.pressBack()
+        rule.pressBackPastTheKeyboard()
         rule.awaitTag(CATEGORY_DETAIL_TAG)
         rule.onNodeWithTag(CATEGORY_DETAIL_EDIT_TAG).performClick()
         rule.awaitText("Editar categoría")

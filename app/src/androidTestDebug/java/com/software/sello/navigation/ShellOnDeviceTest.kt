@@ -32,6 +32,7 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.feature.category.EDITOR_PREREQUISITE_TAG
 import com.software.sello.feature.recibo.RECIBO_FIRST_RUN_TAG
+import com.software.sello.pressBackPastTheKeyboard
 import java.time.YearMonth
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -277,9 +278,8 @@ class ShellOnDeviceTest {
         // There is nowhere to record an expense yet, so the person is told what to do first.
         rule.onNodeWithTag(EDITOR_PREREQUISITE_TAG).assertIsDisplayed()
         val waiting = shell().state.value.pendingEntry
-        // The form opens with the keyboard up for the name; Back first puts it away.
-        Espresso.closeSoftKeyboard()
-        Espresso.pressBack()
+        // The form opens with the keyboard up for the name; Back leaves the form.
+        rule.pressBackPastTheKeyboard()
 
         rule.awaitTag(RECIBO_FIRST_RUN_TAG)
         rule.onNodeWithTag(RECIBO_FIRST_RUN_TAG).assertIsDisplayed()

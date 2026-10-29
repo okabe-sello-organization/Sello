@@ -1,6 +1,7 @@
 package com.software.sello.feature.expense
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -75,19 +76,33 @@ class ExpenseEntryScreenTest {
     )
     private var created = 0
 
+    /**
+     * Shows [state]. The note's text is fed back as the view model feeds it back, so the
+     * composer shows what was typed: a field left on its old text would have the keyboard
+     * send the whole text again, and the test would see that as a second change.
+     */
     private fun show(
         state: ExpenseEntryState,
         fontScale: Float = 1f,
         showPastExpenseAnnouncement: Boolean = false
     ) {
+        val shown = mutableStateOf(state)
         rule.setContent {
             val density = LocalDensity.current.density
             CompositionLocalProvider(LocalDensity provides Density(density, fontScale)) {
                 SelloTheme(reducedMotion = true) {
                     ExpenseEntryScreen(
-                        state = state,
+                        state = shown.value,
                         dates = dateLabels(),
-                        onAction = { actions += it },
+                        onAction = { action ->
+                            actions += action
+                            if (action is ExpenseEntryAction.NoteDraftChanged) {
+                                shown.value = shown.value.copy(
+                                    noteDraft = action.text,
+                                    noteDraftLength = action.text.length
+                                )
+                            }
+                        },
                         onCreateCategory = { created++ },
                         showPastExpenseAnnouncement = showPastExpenseAnnouncement,
                         dismissPastExpenseAnnouncement = { pastExpenseAnnouncementDismissed++ }
