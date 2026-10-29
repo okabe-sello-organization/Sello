@@ -35,8 +35,9 @@ from ene 2027, and months not mentioned have no expenses.
 
 | ID | Situation | Result |
 | --- | --- | --- |
-| SC07 | Carry off. ene spent 140.000 (40.000 over). Turned on 17 feb; feb spent 30.000 on days 1–16 and 20.000 on days 17–28 | `K` feb 0, `C` 100.000: the ene overrun never counts. All of feb counts from day 1: `S` 50.000, `R` 50.000, mar `K` 50.000, `C` 150.000. Not 180.000 (counting only the 20.000 after the 17th) and not 60.000 (carrying ene's overrun) |
-| SC08 | Turning on for: an unlimited category; an archived one; a category with no limit this month; one already on; one with base 1.000.000.000.000 | Each refused with its own reason and nothing changed. Base 0 and base 999.999.999.999 are accepted |
+| SC07 | Carry off. ene spent 140.000 (40.000 over). Turned on 17 feb; feb spent 30.000 on days 1–16 and 20.000 on days 17–28 | `K` feb 0, `C` 100.000: the ene overrun never counts. All of feb counts from day 1: `S` 50.000, `R` 50.000, mar `K` 50.000, `C` 150.000. Not 180.000 (counting only the 20.000 after the 17th) and not 110.000 (carrying ene's overrun would make feb `C` 60.000, `R` 10.000) |
+| SC08 | Turning on for: an unlimited category; an archived one; a category with no limit this month; one already on; one with base 1.000.000.000.000; one whose default is unlimited (SC46) | Each refused with its own reason and nothing changed. Base 0 and base 999.999.999.999 are accepted |
+| SC46 | Comida's default is unlimited; feb 2027's own limit is set to 100.000 (the default stays unlimited). Turning carry on in feb; then the default is set to 100.000 from feb and carry is turned on; later the default is set to unlimited | First: refused, because mar would take an unlimited base from the default and the chain would end with no confirmation; nothing changed. Second: accepted, the default after feb is finite. Third: while the chain is open this is the CP11 trigger, so Sello shows the exact `K` and asks to confirm the drop; no chain month is ever left without a finite base |
 
 ## Verdicts and the daily allowance (CP14, CP15)
 
@@ -103,8 +104,9 @@ spent in it yet. "Lists" is what Sello shows before saving.
 | --- | --- | --- |
 | SC35 | ene spent 800.000, feb 1.000.000; mar spent 900.000; rent 150.000 reserved (`Q`) | mar `K` 200.000, `C` 1.200.000, `R` 300.000, `M` 150.000, allowance 50 × floor(150.000 / 850) = 8.800, Al día with 150.000 separated |
 | SC36 | ene spent 1.200.000, feb 1.000.000; mar spent 900.000; `Q` 150.000 | feb `K` −200.000, `C` 800.000, `R` −200.000; mar `K` −200.000, `C` 800.000, `R` −100.000, `M` −250.000: Revisar, not Excedido; Falta para tus pagos 250.000; allowance 0. Once recorded: spent 1.050.000, `Q` 0, `R` −250.000, Excedido by 250.000 |
-| SC37 | ene spent 1.000.000; feb recorded 800.000 and a 200.000 payment due 5 feb that catch-up has not recorded; 10 mar (`D` = 22), mar spent 500.000 | Before: feb `R` 200.000, mar `K` 200.000, `C` 1.200.000, `R` 700.000, `Q` 200.000 (pending in an earlier month of the chain), `M` 500.000, allowance 22.700. Catch-up records it in feb: feb `R` 0, mar `K` 0, `C` 1.000.000, `R` 500.000, `Q` 0, `M` 500.000, allowance 22.700. The headline never moves; no preview is asked |
+| SC37 | ene spent 1.000.000; feb recorded 800.000 and a 200.000 payment due 5 feb that catch-up has not recorded; 10 mar (`D` = 22), mar spent 500.000 | Before: feb `R` 200.000, mar `K` 200.000, `C` 1.200.000, `R` 700.000, `Q` 200.000 (pending in an earlier month of the chain), `M` 500.000, allowance 22.700. Catch-up records it in feb: feb `R` 0, mar `K` 0, `C` 1.000.000, `R` 500.000, `Q` 0, `M` 500.000, allowance 22.700. The headline never moves; no pre-save preview is asked. The opening notice also names: Hogar, feb: Restante 200.000 → 0, still Cumplido; mar: Límite con arrastre 1.200.000 → 1.000.000 (−200.000) |
 | SC38 | SC37, mar 10, `S` 500.000, `N` 31, `d` 10 | Forecast 500.000 × 31 / 10 = 1.550.000, labelled an estimate, drawn against `C` (1.200.000, then 1.000.000); carry does not change it and the status stays Al día from recorded spending |
+| SC47 | As SC37, but the payment due 5 feb is 300.000, so feb spent becomes 1.100.000 once catch-up records it | Before: feb `R` 200.000, Cumplido; mar `K` 200.000, `C` 1.200.000. After: feb `R` −100.000, Cumplido → Excedido by 100.000; mar `K` −100.000, `C` 900.000. The opening notice lists Hogar, feb: Restante 200.000 → −100.000, now Excedido; mar: Límite con arrastre 1.200.000 → 900.000 (−300.000), derived from the listed 300.000 payment. If that occurrence is deleted from the notice, its lines leave with it |
 
 ## Order, bounds and time (CP19, CP23–CP25)
 
@@ -120,7 +122,7 @@ spent in it yet. "Lists" is what Sello shows before saving.
 | --- | --- | --- |
 | SC42 | A version 5 file with SC01's expenses and base 100.000 is restored | Every category is off: ene `C` 100.000; mar `R` −150.000; abr `C` 100.000, not 60.000. No starting deficit is guessed |
 | SC43 | A file with SC01's expenses and a Comida chain open from ene 2027 | After restore the replay gives SC01: abr `K` −40.000, `C` 60.000. The file holds the chain, not the −40.000 |
-| SC44 | Files rejected before the preview, each changing nothing: overlapping chains; a chain ending before it starts; a chain whose first month has an unlimited limit; a chain with a base of 1.000.000.000.000; a version this app cannot read | Each rejected whole, naming where, never what the file says |
+| SC44 | Files rejected before the preview, each changing nothing: overlapping chains; a chain ending before it starts; a chain whose first month has an unlimited limit; a chain with a base of 1.000.000.000.000; an open chain whose latest default is unlimited; a version this app cannot read | Each rejected whole, naming where, never what the file says |
 | SC45 | Reset; or restoring a file with no chains over one that has them | All chains are gone and every category is off |
 
 ## Open points

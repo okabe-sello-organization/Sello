@@ -106,7 +106,8 @@ Changing a default sets the current month's limit and the default for following
 months. It must not rewrite earlier months. Each MVP month renews its configured
 budget without carrying surplus or deficit. Keep past results; renewal does not
 reset actual money. Future signed carryover is defined in
-[ADR 0002](0002-signed-carryover-direction.md); detailed policy belongs to SELLO-037.
+[ADR 0002](0002-signed-carryover-direction.md); the detailed policy is
+[ADR 0020](0020-signed-carryover-policy.md).
 
 An unopened month uses the configuration effective then. If October's default was
 100,000 and December's became 120,000, November still gets 100,000. Keep dated

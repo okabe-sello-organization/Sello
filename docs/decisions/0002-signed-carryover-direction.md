@@ -2,7 +2,7 @@
 
 **Owner:** project owner (user) · **Updated:** 2026-10-16
 **Status:** approved post-MVP direction; the detailed policy is
-[ADR 0020](0020-signed-carryover-policy.md), approved 2026-10-28.
+[ADR 0020](0020-signed-carryover-policy.md), approved by merging the SELLO-037 pull request.
 
 Carryover preserves both unused budget and overspending across months. Neither
 may disappear silently. MVP renews configured monthly budgets without carryover;

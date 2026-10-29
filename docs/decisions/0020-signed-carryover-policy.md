@@ -11,7 +11,7 @@ number 0003 is taken by [the transaction amount range](0003-mvp-transaction-amou
 both survive from month to month, never disappear silently, and are neither income nor
 expense. This record turns it into rules the E09 tickets (SELLO-038–043) implement without
 inventing any financial choice. The worked examples are in
-[signed carryover examples](../testing/signed-carryover-examples.md) (SC01–SC45); rule
+[signed carryover examples](../testing/signed-carryover-examples.md) (SC01–SC47); rule
 numbers CP1–CP28 are cited there. [Architecture](../../ARCHITECTURE.md), the
 [product contract](0001-mvp-contract.md) (D03, D04), [ADR 0012](0012-budget-guidance-contract.md)
 and ADR 0003 still own money, dates, recovery, guidance and bounds.
@@ -44,9 +44,15 @@ net flow and never in the 1–999.999.999.999 transaction range, which it does n
   it is turned on (needs a prorated base nobody configured); choosing an earlier month
   (the owner: past never counts) or a later one (future months cannot be viewed).
 - **CP3 (Proposed)** Turning on needs a **finite base this month** (zero is allowed) of at
-  most 999.999.999.999 (CP25). It is refused for an unlimited, paused, archived or
-  unconfigured category, and when already on. *Reason:* without a base there is no
-  capacity to carry from.
+  most 999.999.999.999 (CP25) **and a finite default in force after this month**, because
+  every later month takes its base from that default (a month's own limit can only be set
+  for a month that has started). It is refused for an unlimited, paused, archived or
+  unconfigured category, when this month is finite only through its own limit while the
+  default is unlimited, and when already on. *Reason:* without a base there is no capacity
+  to carry from, and a chain must never reach a month with none through no command that
+  could ask for the CP9 confirmation. *Rejected:* letting the chain end silently at that
+  month (it would forgive the balance), reading the missing base as 0, or failing the
+  snapshot.
 - **CP4 (Proposed)** The setting is a history of **chains**: a chain starts in one month
   with carry-in 0 and ends in the first month that no longer carries (open while it
   carries). A month is in a chain when start ≤ month < end. Turning on again is a new
@@ -83,8 +89,9 @@ net flow and never in the 1–999.999.999.999 transaction range, which it does n
   with every expense); dropping part of it.
 - **CP11 (Proposed)** The triggers: turning off; `ArchiveCategory` (which also keeps its
   existing effect: the month keeps its limit, later months are paused); setting the default
-  limit, or this month's limit, to unlimited (even when this month keeps a finite limit of
-  its own). **Unarchiving and returning from unlimited to a finite limit never turn carry
+  limit, or this month's limit, to unlimited. While a chain is open no other command can
+  leave one of its months, or the default after it, without a finite base: CP3 refuses
+  turning on otherwise and CP13 refuses the past. **Unarchiving and returning from unlimited to a finite limit never turn carry
   back on**: the person turns it on, starting at 0 in that month. *Rejected:* resuming
   automatically (it would restart a chain nobody confirmed).
 - **CP12 (Proposed)** The dropped balance is **not stored as a number**: it is the derived
@@ -98,13 +105,17 @@ net flow and never in the 1–999.999.999.999 transaction range, which it does n
 
 ## Verdicts and guidance
 
-- **CP14 (Owner)** Status, remaining and daily allowance use **base + carry** (`C`).
-  Current month: **Excedido** when `S > C`, **Al límite** when `S = C > 0`, otherwise
-  **Al día** (so `C = 0` with nothing spent is Al día, as D04). Past month: **Cumplido**
-  when `S ≤ C`, otherwise **Excedido**. **Proposed consequence:** a negative `C` is always
-  Excedido, even with nothing spent this month, showing the exact overrun `−R`, because
-  the earlier deficit is real. *Rejected:* judging the base alone, which forgives a deficit.
-- **CP15 (Owner)** **A deficit shows even when the allowance is 0.** The daily allowance is
+- **CP14 (Owner, thresholds from D04 and ADR 0012 BG1)** The owner chose that status,
+  remaining and daily allowance use **base + carry** (`C`) in place of the limit. The
+  thresholds are the existing ones, unchanged: current month **Excedido** when `S > C`,
+  **Al límite** when `S = C > 0`, otherwise **Al día** (so `C = 0` with nothing spent is
+  Al día, D04); past month **Cumplido** when `S ≤ C`, otherwise **Excedido**.
+  **Proposed consequence:** a negative `C` is always Excedido, even with nothing spent this
+  month (Revisar instead while reservations leave a shortfall, CP18), showing the exact
+  overrun `−R`, because the earlier deficit is real. *Rejected:* judging the base alone,
+  which forgives a deficit.
+- **CP15 (Owner, formula from D03 and ADR 0012 BG2)** The owner chose that **a deficit shows
+  even when the allowance is 0.** The allowance is the existing
   `50 × floor(max(M, 0) / (50 × D))` with `M = R − Q` (CP18); only this figure is clamped
   and rounded. `R`, carry and capacity are exact, so a remaining of −120 shows −120 and an
   allowance of 0, never −50.
@@ -122,8 +133,17 @@ net flow and never in the 1–999.999.999.999 transaction range, which it does n
   closed month carries `R` without them. Unrecorded schedule payments dated in an earlier
   **month of an enabled chain** are reserved in `Q` of the current month until catch-up
   records them, so the headline does not move when they land (they leave `Q` and lower
-  carry-in by the same amount); catch-up recalculates the chain in the same commit and
-  asks for no preview, because it is not a correction by the person.
+  carry-in by the same amount). Catch-up recalculates the chain in the same commit and
+  asks for **no pre-save preview**, because no person is making a correction then; this
+  narrows CP20 for automatic catch-up only. It never changes availability silently: the
+  opening notice of the recurrence rules (rule 14) also names, for each category in a
+  chain that a listed occurrence reaches, the month of the occurrence with its remaining
+  and any verdict that changed, and each later month with its capacity before and after.
+  The change is derived from the listed occurrences, not stored: a month's capacity falls
+  by the sum of that category's listed occurrences dated in earlier months of the chain,
+  and an occurrence deleted from the list leaves the notice. *Rejected:* a preview before
+  catch-up (it would block recording payments that are already due) and a silent
+  recalculation (it breaks CP9 and CP20).
 - **CP19 (Proposed)** The D03 forecast `S × N / d` is spending only; carry never enters it,
   and no verdict uses it. Wherever it is drawn against a limit, that limit is `C`, labelled
   an estimate. Category detail (ADR 0015) uses the category's `C` and `R` for its remaining
@@ -136,7 +156,8 @@ net flow and never in the 1–999.999.999.999 transaction range, which it does n
 
 - **CP20 (Owner)** **Before saving a historical correction, Sello lists each later month
   whose availability changes and by how much; after confirmation all later months
-  recalculate at once.** Base limits never change. *Rejected by the owner:* only the edited
+  recalculate at once.** Base limits never change. (Automatic catch-up is the one exception,
+  CP18.) *Rejected by the owner:* only the edited
   month, which would forgive deficits.
 - **CP21 (Proposed)** *Correction* is any change that reaches a closed month of a chain:
   adding, editing, deleting or undoing an expense dated there; a changed date, amount or
@@ -175,12 +196,15 @@ net flow and never in the 1–999.999.999.999 transaction range, which it does n
   open) beside the records and the base history, and **never** carry, capacity or remaining:
   they are derived, and a stored value would be a cache to distrust. Backups of versions 1–5
   read as every category off; no starting deficit is guessed. Validation before the
-  preview: no overlap, start ≤ end, a finite base in every month of a chain, base within
-  CP25; a bad file changes nothing. Restore replaces the chains; reset removes them. Until
+  preview: no overlap, start ≤ end, a finite base in every month of a chain, an open chain's latest default finite (CP3),
+  base within CP25; a bad file changes nothing. Restore replaces the chains; reset removes them. Until
   SELLO-041 the customer app refuses a file with an enabled chain before any change.
-- **CP27 (Proposed)** Report provenance: any report or export of a carry month gives base,
+- **CP27 (Proposed)** Report provenance: any on-screen report of a carry month gives base,
   carry-in, capacity, spent and remaining, the chain's start month, and the revision and
-  as-of day they were read at. Carry is never labelled a balance, income or expense.
+  as-of day they were read at. Carry is never labelled a balance, income or expense. The
+  CSV and JSON data exports (SELLO-121, `JsonExport` version 1) stay as they are: records
+  and base limits, no carry, capacity or remaining; adding them would need its own decision
+  and ticket.
 - **CP28 (Proposed)** Every setting change is a category command with operation ID,
   generation and the category version, like the other category commands; its receipt
   survives restart and an identical replay returns it.
@@ -200,6 +224,7 @@ are not used (ADR 0012 and architecture §4).
 | Effective capacity | **Límite con arrastre** 80.000 (always with base and arrastre beside it) |
 | Remaining | **Restante del presupuesto** (signed; Excedido by the exact amount when negative) |
 | Drop | "¿Dejar de arrastrar −20.000?" · "Este mes el límite vuelve a ser el base. No se borra ningún gasto." · **Dejar de arrastrar** / **Cancelar** |
+| Catch-up notice | "Al registrar tus pagos pendientes cambió el límite con arrastre" · "mar 2027: 1.200.000 → 1.000.000 (−200.000)" |
 | Correction | "Esto cambia el límite con arrastre de 3 meses" · "mar 2027: 210.000 → 230.000 (+20.000)" · **Guardar** / **Cancelar** |
 
 ## Effect on existing meanings
@@ -214,15 +239,16 @@ separate from `C`; CP17 and CP19 say which each uses. ADR 0002's open decisions 
 
 | Ticket | Implements | Examples |
 | --- | --- | --- |
-| SELLO-038 domain | CP4–CP8, CP10, CP14–CP19, CP21–CP25: chain replay, base/carry/capacity/remaining, verdicts, allowance, overall, affected range, typed failures | SC01–SC07, SC09–SC16, SC23–SC30, SC35–SC41 |
-| SELLO-039 storage | CP1–CP4, CP9–CP13, CP20–CP22, CP25, CP26, CP28: chain storage, commands and refusals, atomic correction and preview fence, no activation before recovery and UI | SC08, SC17–SC22, SC25–SC34 |
+| SELLO-038 domain | CP4–CP8, CP10, CP14–CP19, CP21–CP25: chain replay, base/carry/capacity/remaining, verdicts, allowance, overall, affected range, typed failures | SC01–SC07, SC09–SC16, SC23–SC33, SC35–SC41, SC46, SC47 |
+| SELLO-039 storage | CP1–CP4, CP9–CP13, CP20–CP22, CP25, CP26, CP28: chain storage, commands and refusals, atomic correction and preview fence, no activation before recovery and UI | SC08, SC17–SC22, SC25–SC34, SC46, SC47 |
 | SELLO-040 portable | CP25–CP27: chains in the file, version rules, validation, replay equals SC01, reset | SC40, SC42–SC45 |
-| SELLO-041 UI | CP9–CP11, CP14–CP22, CP27 and the wording above: opt-in, drop and correction confirmations, breakdowns | SC08–SC22, SC25–SC34 |
-| SELLO-042 sandbox | The named histories through real commands, never stored carry arrays | SC01–SC05, SC17–SC21, SC25–SC30, SC37 |
-| SELLO-043 release | The whole corpus on the release matrix | SC01–SC45 |
+| SELLO-041 UI | CP9–CP11, CP14–CP22, CP27 and the wording above: opt-in, drop and correction confirmations, breakdowns | SC08–SC22, SC25–SC34, SC46, SC47 |
+| SELLO-042 sandbox | The named histories through real commands, never stored carry arrays | SC01–SC05, SC17–SC21, SC25–SC30, SC37, SC41, SC47 |
+| SELLO-043 release | The whole corpus on the release matrix | SC01–SC47 |
 
 ## Approval
 
 Product: the owner's answers of 2026-10-28, given to the orchestrator of the E09 run, and
-approval of the Proposed rules by merging. Independent review: an adversarial reviewer
-agent (Claude Opus 5.5) on the pull request; it is an agent, never recorded as a human.
+approval of the Proposed rules by merging the SELLO-037 pull request. Independent review:
+an adversarial reviewer agent (Claude Opus 5.5) reviews the pull request; its verdicts and
+the answers to them are the pull request's comments. It is an agent, never a human approval.

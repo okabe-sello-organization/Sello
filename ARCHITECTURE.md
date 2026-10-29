@@ -21,8 +21,8 @@ Sello is an offline-first, local-only Android financial app, Spanish first
 - **MUST** retain the reference's non-widget capabilities in the roadmap, with
   acceptance examples per increment. Do not prebuild deferred tables/jobs.
 - **MUST** retain signed budget carryover (surplus **and** overspending) as a future
-  post-MVP requirement, planned in SELLO-E09; optional category/global scope and
-  detailed policy remain undecided. MVP renews configured monthly budgets without carryover.
+  post-MVP requirement, planned in SELLO-E09; the policy (per category, opt-in, off by default)
+  is in [ADR 0020](docs/decisions/0020-signed-carryover-policy.md). MVP renews configured monthly budgets without carryover.
   Preserve MVP history/domain boundaries without dormant carryover infrastructure;
   see [carryover direction](docs/decisions/0002-signed-carryover-direction.md).
 - **MUST NOT** implement widgets/Glance, notification ingestion, capture inboxes,
@@ -190,8 +190,8 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   explicit historical corrections without changing unrelated configured limits;
   announce this capability with accessible contextual guidance and show the target
   period/change scope before submission and confirmed completion afterward.
-  Signed carryover is deferred beyond MVP; activation details require SELLO-037
-  approval. Do not erase historical overspending/underspending records when renewing
+  Signed carryover is deferred beyond MVP; its activation follows
+  [ADR 0020](docs/decisions/0020-signed-carryover-policy.md). Do not erase historical overspending/underspending records when renewing
   a non-carry MVP budget or imply the renewal resets actual funds.
 - **MUST** resolve unopened historical months from configuration effective in that
   month, not today's default or app-open timing. Retain effective-month default
