@@ -9,6 +9,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -19,24 +21,23 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.software.sello.Look
-import com.software.sello.Window
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.InvestmentMovementKind
-import com.software.sello.looks
-import com.software.sello.press
+import com.software.sello.showSello
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 /**
  * Anotar movimiento as it is drawn from state given by hand: the type chips and the
@@ -76,9 +77,7 @@ class InvestmentMovementScreenTest {
     )
 
     private fun show(state: InvestmentMovementState) {
-        rule.setContent {
-            SelloTheme(reducedMotion = true) { InvestmentMovementScreen(state) { actions += it } }
-        }
+        rule.showSello { InvestmentMovementScreen(state) { actions += it } }
     }
 
     private fun top(tag: String) = rule.onNodeWithTag(tag, useUnmergedTree = true)
@@ -112,9 +111,7 @@ class InvestmentMovementScreenTest {
     @Test
     fun eachTypeDrawsItsOwnSignLabelAndAction() {
         var state by mutableStateOf(aporte)
-        rule.setContent {
-            SelloTheme(reducedMotion = true) { InvestmentMovementScreen(state) { actions += it } }
-        }
+        rule.showSello { InvestmentMovementScreen(state) { actions += it } }
         val expected = listOf(
             Triple(InvestmentMovementKind.Contribution, "+", "Anotar aporte"),
             Triple(InvestmentMovementKind.Valuation, "", "Anotar valor"),
@@ -217,9 +214,7 @@ class InvestmentMovementScreenTest {
     @Test
     fun theCommaKeyIsThereOnlyForDollars() {
         var state by mutableStateOf(aporte)
-        rule.setContent {
-            SelloTheme(reducedMotion = true) { InvestmentMovementScreen(state) { actions += it } }
-        }
+        rule.showSello { InvestmentMovementScreen(state) { actions += it } }
         rule.onNodeWithContentDescription("Coma decimal").assertDoesNotExist()
         rule.onNodeWithText("000", useUnmergedTree = true).assertExists()
 
@@ -252,13 +247,15 @@ class InvestmentMovementScreenTest {
     }
 
     @Test
+    // A screen larger than every window below, so each window is laid out whole.
+    @Config(qualifiers = "w900dp-h900dp-mdpi")
     fun theFiguresAndTheActionStayWholeAtLargeTextOnANarrowPhone() {
         val largest = aporte.copy(
             investmentId = "u",
             amount = dollars("9.999.999.999,99"),
             fact = InvestmentMovementFact.Contributed(dollars("1.000,00"), "Acciones EE. UU.")
         )
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
@@ -273,7 +270,8 @@ class InvestmentMovementScreenTest {
                 }
             }
         }
-        for (each in looks(listOf(Window(320, 640), Window(600, 640)), scales = listOf(1f, 2f))) {
+        val windows = listOf(SweepWindow(320, 640), SweepWindow(600, 640))
+        for (each in sweepLooks(windows, scales = listOf(1f, 2f))) {
             look = each
             rule.waitForIdle()
             val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()
@@ -287,3 +285,7 @@ class InvestmentMovementScreenTest {
         }
     }
 }
+
+/** Presses a control through its accessibility action instead of by screen position. */
+private fun SemanticsNodeInteraction.press(): SemanticsNodeInteraction =
+    performSemanticsAction(SemanticsActions.OnClick)

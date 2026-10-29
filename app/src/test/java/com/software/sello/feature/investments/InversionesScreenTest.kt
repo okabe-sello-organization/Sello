@@ -29,7 +29,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
-import com.software.sello.Window
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.designsystem.component.SelloDestination
 import com.software.sello.designsystem.component.SelloNavigation
@@ -66,7 +65,6 @@ import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
-import com.software.sello.looks
 import com.software.sello.navigation.INVERSIONES_ADD_TAG
 import com.software.sello.navigation.InversionesDestination
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
@@ -75,6 +73,7 @@ import com.software.sello.navigation.ShellState
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.showSello
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -89,6 +88,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 /**
  * Inversiones as it is drawn (docs/design/v2/inversiones.html; investment examples):
@@ -268,31 +268,27 @@ class InversionesScreenTest {
         val factory = viewModelFactory {
             initializer { InversionesViewModel(Reads(state), Order(), clock, money) }
         }
-        rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
-                SelloTheme(reducedMotion = true) {
-                    Box(Modifier.requiredSize(360.dp, 2000.dp)) {
-                        InversionesDestination(
-                            state = shell,
-                            viewModels = factory,
-                            onShell = {},
-                            tabs = SelloNavigation(
-                                listOf(
-                                    SelloDestination("recibo", "Recibo", SelloIcon.ReceiptLong),
-                                    SelloDestination("resumen", "Resumen", SelloIcon.Insights),
-                                    SelloDestination("metas", "Metas", SelloIcon.Flag),
-                                    SelloDestination(
-                                        "inversiones",
-                                        "Inversiones",
-                                        SelloIcon.AccountBalance
-                                    )
-                                ),
-                                "inversiones"
-                            ) {},
-                            onAdd = onAdd
-                        )
-                    }
-                }
+        rule.showSello(Look(density = 1f)) {
+            Box(Modifier.requiredSize(360.dp, 2000.dp)) {
+                InversionesDestination(
+                    state = shell,
+                    viewModels = factory,
+                    onShell = {},
+                    tabs = SelloNavigation(
+                        listOf(
+                            SelloDestination("recibo", "Recibo", SelloIcon.ReceiptLong),
+                            SelloDestination("resumen", "Resumen", SelloIcon.Insights),
+                            SelloDestination("metas", "Metas", SelloIcon.Flag),
+                            SelloDestination(
+                                "inversiones",
+                                "Inversiones",
+                                SelloIcon.AccountBalance
+                            )
+                        ),
+                        "inversiones"
+                    ) {},
+                    onAdd = onAdd
+                )
             }
         }
     }
@@ -372,10 +368,8 @@ class InversionesScreenTest {
     fun loadingFailureEmptyAndNoValuesAreEachTheirOwnState() {
         val render = InvestmentsRenderModel(money)
         var shown by mutableStateOf<InversionesState>(InversionesState.Loading)
-        rule.setContent {
-            SelloTheme(reducedMotion = true) {
-                InversionesScreen(shown, {}, dateLabels(), PaddingValues(16.dp))
-            }
+        rule.showSello {
+            InversionesScreen(shown, {}, dateLabels(), PaddingValues(16.dp))
         }
         rule.onNodeWithTag("inversiones.loading").assertExists()
 
@@ -405,11 +399,13 @@ class InversionesScreenTest {
     }
 
     @Test
+    // A screen larger than every window below, so each window is laid out whole.
+    @Config(qualifiers = "w900dp-h900dp-mdpi")
     fun everyFigureStaysWholeInEveryThemeSizeAndWindow() {
         val shown = InvestmentsRenderModel(
             money
         ).overview(InvestmentBoardState.Ready(largest()), today)
-        var look by mutableStateOf(Look(SelloInk.Cobalto, false, 1f, Window(320, 640)))
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
         rule.setContent {
             CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
@@ -424,7 +420,8 @@ class InversionesScreenTest {
                 }
             }
         }
-        for (each in looks(listOf(Window(320, 640), Window(600, 900), Window(840, 600)))) {
+        val windows = listOf(SweepWindow(320, 640), SweepWindow(600, 900), SweepWindow(840, 600))
+        for (each in sweepLooks(windows)) {
             look = each
             rule.waitForIdle()
             val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()
