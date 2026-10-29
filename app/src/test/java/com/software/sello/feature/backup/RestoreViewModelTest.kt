@@ -112,9 +112,9 @@ class RestoreViewModelTest {
 
     private fun TestScope.model(
         handle: SavedStateHandle = SavedStateHandle(),
-        scope: CoroutineScope = backgroundScope
+        scope: CoroutineScope = backgroundScope,
+        session: RestoreSession = RestoreSession(restores, reader, scope, 10 * 1024 * 1024)
     ): Pair<RestoreViewModel, RestoreSession> {
-        val session = RestoreSession(restores, reader, scope, 10 * 1024 * 1024)
         val model = RestoreViewModel(
             handle,
             session,
@@ -315,8 +315,79 @@ class RestoreViewModelTest {
     ): RestoreViewModel {
         process.cancel()
         runCurrent()
-        val saved = handle.keys().associateWith { handle.get<Any?>(it) }
-        return model(SavedStateHandle(saved)).first
+        return model(saved(handle)).first
+    }
+
+    private fun saved(handle: SavedStateHandle) =
+        SavedStateHandle(handle.keys().associateWith { handle.get<Any?>(it) })
+
+    /**
+     * Tus datos and Respaldo each have their own model and handle over the one session:
+     * a file is chosen on Tus datos and finished on Respaldo. After [finish] the process
+     * dies with both screens on the back stack, and both come back.
+     */
+    private fun TestScope.chosenOnTusDatosAfterProcessDeath(
+        finish: (RestoreViewModel) -> Unit
+    ): List<RestoreViewModel> {
+        val tusDatos = SavedStateHandle()
+        val respaldo = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        val (picker, session) = model(tusDatos, process)
+        val (screen) = model(respaldo, process, session)
+        choose(picker)
+        assertEquals(RestoreStep.Previewing(staged), screen.state.value.step)
+        finish(screen)
+        runCurrent()
+
+        process.cancel()
+        runCurrent()
+        val next = CoroutineScope(backgroundScope.coroutineContext + Job())
+        val (restoredScreen, restoredSession) = model(saved(respaldo), next)
+        val (restoredPicker) = model(saved(tusDatos), next, restoredSession)
+        return listOf(restoredPicker, restoredScreen)
+    }
+
+    @Test
+    fun aFileChosenOnTusDatosAndCancelledOnRespaldoStaysClosedAfterTheRestart() = runTest {
+        restores.stageAnswer = Outcome.Success(staged)
+
+        val restored = chosenOnTusDatosAfterProcessDeath { it.onAction(RestoreAction.Cancel) }
+
+        assertEquals(1, restores.discarded)
+        restored.forEach { assertEquals(RestoreStep.Idle, it.state.value.step) }
+        assertEquals(1, read.size)
+        assertEquals(listOf(2_297), restores.staged)
+    }
+
+    @Test
+    fun aFileChosenOnTusDatosAndConfirmedOnRespaldoIsNotStagedAgainAfterTheRestart() = runTest {
+        restores.stageAnswer = Outcome.Success(staged)
+        restores.replaceAnswer = done
+
+        val restored = chosenOnTusDatosAfterProcessDeath { it.onAction(RestoreAction.Confirm) }
+
+        assertEquals(1, restores.replaced)
+        restored.forEach { assertEquals(RestoreStep.Idle, it.state.value.step) }
+        assertEquals(1, read.size)
+        assertEquals(listOf(2_297), restores.staged)
+    }
+
+    @Test
+    fun aPreviewWhoseStagingIsGoneIsNotReadAgainFromTheFileAfterTheRestart() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        restores.stageAnswer = Outcome.Success(staged)
+        val (model) = model(handle, process)
+        choose(model)
+        assertEquals(RestoreStep.Previewing(staged), model.state.value.step)
+
+        // The staging expired or the history moved on: nothing waits any more.
+        restores.stagedAnswer = null
+        val restored = afterProcessDeath(handle, process)
+
+        assertEquals(RestoreStep.Idle, restored.state.value.step)
+        assertEquals(1, read.size)
+        assertEquals(listOf(2_297), restores.staged)
     }
 
     @Test

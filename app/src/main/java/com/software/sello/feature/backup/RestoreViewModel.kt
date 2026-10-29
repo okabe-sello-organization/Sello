@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
  * The Restaurar part of Respaldo. Choosing a file is the system's; checking and
@@ -19,10 +20,12 @@ import kotlinx.coroutines.flow.stateIn
  * replacement, going on restarts the app, because the history, its generation and
  * possibly its financial zone are not the ones this process started with.
  *
- * The chosen file's address is kept across process death until it is confirmed,
- * cancelled or dismissed, so a file the process died checking is checked again. The
- * file itself is not kept: the staging holds it, and the system keeps the read grant
- * the picker gave; if that is gone the file is named unreadable.
+ * The chosen file's address is kept across process death only while it is being
+ * checked, so a file the process died checking is checked again, once. From then on
+ * the staging alone stands for the file, whichever screen confirms or cancels it, so
+ * a file cancelled, confirmed or no longer staged is never read again. The file itself
+ * is not kept: the system keeps the read grant the picker gave; if that is gone the
+ * file is named unreadable.
  */
 class RestoreViewModel(
     private val handle: SavedStateHandle,
@@ -33,7 +36,12 @@ class RestoreViewModel(
     private val pickerRequest = MutableStateFlow(false)
 
     init {
-        session.resume(handle.get<String>(CHOSEN)?.let(::DocumentSource))
+        val chosen = handle.get<String>(CHOSEN)
+        handle.remove<String>(CHOSEN)
+        session.resume(chosen?.let(::DocumentSource))
+        viewModelScope.launch {
+            session.step.collect { if (it != RestoreStep.Checking) handle.remove<String>(CHOSEN) }
+        }
     }
 
     val state: StateFlow<RestoreState> = combine(
@@ -53,24 +61,15 @@ class RestoreViewModel(
             is RestoreAction.Chosen -> action.source?.let {
                 handle[CHOSEN] = it
                 session.choose(DocumentSource(it))
+                // Not checked after all, or checked already.
+                if (session.step.value != RestoreStep.Checking) handle.remove<String>(CHOSEN)
             }
 
-            // From here the staging alone stands for the file, so a restart never
-            // stages it under a new operation.
-            RestoreAction.Confirm -> {
-                handle.remove<String>(CHOSEN)
-                session.confirm()
-            }
+            RestoreAction.Confirm -> session.confirm()
 
-            RestoreAction.Cancel -> {
-                handle.remove<String>(CHOSEN)
-                session.cancel()
-            }
+            RestoreAction.Cancel -> session.cancel()
 
-            RestoreAction.Dismiss -> {
-                handle.remove<String>(CHOSEN)
-                session.dismiss()
-            }
+            RestoreAction.Dismiss -> session.dismiss()
 
             RestoreAction.ApplyPreferences -> session.applyPreferences()
 
