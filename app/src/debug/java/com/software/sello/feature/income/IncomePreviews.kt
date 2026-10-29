@@ -31,7 +31,6 @@ private fun IncomePreview(ink: SelloInk, dark: Boolean, busy: Boolean = false) {
 }
 
 @Preview(name = "Cobalto claro", locale = "es", showBackground = true)
-@Preview(name = "Fuente 1.3", locale = "es", fontScale = 1.3f)
 @Composable
 private fun CobaltoLightIncome() = IncomePreview(SelloInk.Cobalto, false)
 
