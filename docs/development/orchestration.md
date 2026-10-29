@@ -11,7 +11,8 @@ run only, the delegation, branches, pull requests, comments and merges described
 
 - **Orchestrator** (the owner's session): before dispatching anything, asks the owner
   every money, privacy, design or release decision the epic leaves open, and records
-  the answers in the epic README's *Decisions* section. Then it dispatches one
+  the owner's own answers in the epic README's *Decisions* section (creating it if
+  missing). Then it dispatches one
   implementer per ticket in dependency order, starts a fresh reviewer for every review
   that [AGENTS.md](../../AGENTS.md#pull-requests-and-merging) requires, posts the
   findings, rules on disputes and reports to the owner. It writes no ticket code and
@@ -37,7 +38,8 @@ otherwise merge, except a release. The implementer squash-merges with
 - every comment and review thread is answered, and none from the owner is open;
 - every check is green, and none was skipped by changing a gate, test or workflow;
 - `main` is green (push run and nightly);
-- any owner approval the ticket needs is recorded in the epic's *Decisions*;
+- any owner approval the ticket needs is recorded in the epic's *Decisions* from the
+  owner's own answers (a reviewer's verdict never counts as one);
 - pull requests stacked on its branch were retargeted to `main` first
   (`gh pr edit <n> --base main`): merging a base with `--delete-branch` closes them.
 

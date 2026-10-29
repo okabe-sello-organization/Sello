@@ -10,9 +10,13 @@ approved by the owner: propose a change in your report, never make it inside oth
 - Read this file, ARCHITECTURE.md, your ticket or issue, and the *Decisions* section
   of its epic README. Look up other docs when the work touches them; don't read ahead.
 - Check `git status`, then the actual code and tests around the change.
-- **Clear ticket:** start. **Unclear or risky** (money, privacy, data-deleting
-  behaviour, conflicting requirements, or a claim that may not be true): post a short
-  brief and wait. A bug brief verifies the claim against the code first.
+- Say in one line whether the ticket is clear or unclear/risky. **Clear:** start.
+  **Unclear or risky** (money, privacy, data-deleting behaviour, conflicting
+  requirements, or a claim that may not be true): post a short brief in simple English
+  and wait. A bug brief verifies the claim against the code, then says whether it's
+  real, whether to fix it, the effort from 0 to 10, and challenges the proposed fix. A
+  feature brief gives the gist, old versus new, the approach, and each pitfall with how
+  to avoid it.
 - **Changes to how something looks or is laid out:** show a mock for approval first.
 - **Decisions the ticket leaves open:** ask only about money, privacy, data-deleting
   behaviour or conflicting requirements. Decide the rest yourself and record the
@@ -23,8 +27,12 @@ approved by the owner: propose a change in your report, never make it inside oth
 - Do the ticket and fix causes. No unrelated cleanup, broad renames, speculative
   abstractions or dormant features.
 - An unrelated defect you notice: don't touch it; open a GitHub issue labelled `bug`.
-- Never discard, overwrite, stash, reset or clean work that isn't yours. Worktrees
-  share branches and the stash.
+- Never discard, overwrite, stash, reset or clean work that isn't yours; stop and ask
+  when edits overlap. Worktrees share branches and the stash.
+- Changes reach `main` only through pull requests. Never push to `main`, force-push a
+  shared branch, rewrite published history, tag or publish without the owner's go.
+  Check the diff and stage only the intended files before committing.
+- Never change a ticket's acceptance criteria to fit what you built; propose the change.
 - Dependency, toolchain, permission and schema changes are decisions to ask about.
   Use pinned catalog versions and `./scripts/update-dependency-locks`.
 
@@ -40,8 +48,9 @@ ARCHITECTURE §4–§5 have the detail. The short version:
   screen only when nothing ever loaded. Never turn a failure into zero or empty data.
 - Money writes carry an operation ID and are safe to replay. An unknown outcome is
   checked before any retry; cancellation is rethrown, never swallowed.
-- A schema change comes with a migration, the exported schema and a real-Room test
-  showing old data survives. No destructive fallback.
+- A schema change comes with a migration, the exported schema, a real-Room test
+  showing old data survives and a check of the backup format (ARCHITECTURE §7). No
+  destructive fallback and no history deleted as a side effect.
 - No personal financial data, credentials, signing material or raw sensitive logs in
   source, tests, fixtures, screenshots or reports. Synthetic data only.
 
@@ -91,13 +100,18 @@ ARCHITECTURE §4–§5 have the detail. The short version:
 - The pull request's `quality` check is the proof that checks passed; see
   [quality gates](docs/development/quality-gates.md). Run focused tests while working.
 - Update a branch from `main` only when GitHub reports a conflict.
-- **Review by risk.** Changes to money rules, storage or schema, recovery, privacy or
-  CI get an adversarial review by a separate agent ([orchestration](docs/development/orchestration.md));
-  UI changes a lighter review with screenshots; documentation only the automated checks.
-- **Merging** is a squash merge. The agent merges documentation, UI and test changes
-  itself once checks are green, the review approves and no comment from the owner is
-  open. The owner merges changes to money rules, storage or schema, privacy, CI, these
-  rules and releases. Never `--admin` or bypass a ruleset.
+- **Review by risk.** Money rules, storage or schema, backup and restore, recovery,
+  privacy, and CI or gates get an adversarial review by a separate agent
+  ([orchestration](docs/development/orchestration.md)). Other code changes (screens,
+  components, ViewModels, tests, sandbox, build) get a lighter review by a separate
+  agent, never the author, with screenshots for visible changes. Documentation gets
+  only the automated checks.
+- **Who merges.** The owner merges changes to money rules, storage schema, privacy,
+  CI, gates, build or dependencies, these rules, and releases. The agent merges
+  everything else. A pull request takes the strictest review and merge of anything it
+  touches. In an orchestrated run the owner delegates every merge except releases.
+- **Merging** is a squash merge, once every check is green, the required review
+  approves and no comment from the owner is open. Never `--admin` or bypass a ruleset.
 - A red check on `main`, from a push or the nightly run, is fixed before anything else
   merges.
 - Subagents only when the owner asks or in an orchestrated run, each with its own
@@ -109,5 +123,10 @@ ARCHITECTURE §4–§5 have the detail. The short version:
   screenshots).
 - A lasting architecture or policy decision gets a short ADR in `docs/decisions/`.
 - The pull request that closes an epic refreshes [HANDOFF](docs/development/HANDOFF.md).
-- Your report gives the changes, paths, exact verification results, what didn't run
-  and open decisions. Never claim a run, review or approval that didn't happen.
+- Share the pull request's details (what changed, what the owner will see, the proof,
+  what isn't covered) as soon as it opens; report the checks' result afterwards.
+- Your report gives the changes, paths, exact verification results with the tested
+  revision (a dirty tree is not a tested commit), what didn't run and open decisions.
+  Never claim a run, review or approval that didn't happen.
+- Leave finished code buildable. If blocked, say what's done, the blocker and the
+  next step.

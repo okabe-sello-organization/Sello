@@ -249,8 +249,9 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   durable results stay in `State`, with no event channels. Local state is ephemeral
   visuals only; small drafts/selections/operation IDs use `SavedStateHandle`, large
   datasets reconstruct from persisted IDs.
-- **MUST** distinguish Loading, Ready (including true empty), and Failed with
-  retry/optional last-good data. Durable submission results belong in state/receipts.
+- **MUST** distinguish Loading, Ready (including true empty), and Failed. A failed
+  read keeps the last good figures, marked as older, with a notice and retry; it shows
+  an error only when nothing ever loaded, never zero or empty data. Durable submission results belong in state/receipts.
   Recomposition/restoration never submits again;
   success stamps require a confirmed receipt, and edits do not celebrate creation.
 - **MUST** centralize theme, paper, stamps, money, inputs, charts, and feedback.
