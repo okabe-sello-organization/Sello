@@ -152,7 +152,7 @@ internal class LedgerCommands<Row : Any, Kept : Any, D : Any, C : Any, F : Any>(
                 now
             )
             records.insert(row)
-            committed(receipt)
+            freshlyCommitted(receipt)
         }
     }
 
@@ -189,7 +189,9 @@ internal class LedgerCommands<Row : Any, Kept : Any, D : Any, C : Any, F : Any>(
             check(changed == 1) {
                 "The ${records.noun} changed inside the transaction that read it"
             }
-            committed(database.commitCommand(profile, operationId, kind, digest, facts.id, now))
+            freshlyCommitted(
+                database.commitCommand(profile, operationId, kind, digest, facts.id, now)
+            )
         }
     }
 
@@ -224,7 +226,9 @@ internal class LedgerCommands<Row : Any, Kept : Any, D : Any, C : Any, F : Any>(
                 check(removed == 1) {
                     "The ${records.noun} changed inside the transaction that read it"
                 }
-                committed(database.commitCommand(profile, operationId, kind, digest, facts.id, now))
+                freshlyCommitted(
+                    database.commitCommand(profile, operationId, kind, digest, facts.id, now)
+                )
             }
         }
         if (outcome is Committed && !outcome.replayed) {
@@ -274,7 +278,7 @@ internal class LedgerCommands<Row : Any, Kept : Any, D : Any, C : Any, F : Any>(
                     facts.id,
                     audit.now()
                 )
-                committed(receipt)
+                freshlyCommitted(receipt)
             }
         }
         if (outcome is Committed && !outcome.replayed) undo.closed()
@@ -306,11 +310,11 @@ internal class LedgerCommands<Row : Any, Kept : Any, D : Any, C : Any, F : Any>(
         }
     }
 
-    private fun committed(stored: StoredReceipt): CommandOutcome<C, F> =
+    private fun freshlyCommitted(stored: StoredReceipt): CommandOutcome<C, F> =
         Committed(records.receiptOf(stored), replayed = false)
 
     private fun LedgerRecords<Row, Kept, D, C, F>.receiptOf(stored: StoredReceipt): C =
-        checkNotNull(committed(stored)) { "Not an $noun receipt" }
+        checkNotNull(this.committed(stored)) { "Not an $noun receipt" }
 
     /** Steps 1 and 2 of every command. [proceed] runs only for an operation not seen before. */
     private suspend inline fun starting(
