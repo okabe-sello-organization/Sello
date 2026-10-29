@@ -110,7 +110,7 @@ class CategoryExpensesViewModel(
             is CategoryExpensesAction.Show -> saved["expenseCategory"] = action.categoryId
 
             is CategoryExpensesAction.Search ->
-                saved["expenseSearch"] = action.query.take(MAX_SEARCH)
+                saved["expenseSearch"] = action.query.cutToSearchLimit()
 
             is CategoryExpensesAction.Sort -> saved["expenseOrder"] = action.order.name
 
@@ -241,5 +241,19 @@ class CategoryExpensesViewModel(
     private companion object {
         const val PAGE_SIZE = 20
         const val MAX_SEARCH = 60
+
+        /** The first [MAX_SEARCH] units, never ending on half of a two-unit character. */
+        fun String.cutToSearchLimit(): String {
+            if (length <= MAX_SEARCH) return this
+            val end = if (Character.isHighSurrogate(
+                    this[MAX_SEARCH - 1]
+                )
+            ) {
+                MAX_SEARCH - 1
+            } else {
+                MAX_SEARCH
+            }
+            return substring(0, end)
+        }
     }
 }

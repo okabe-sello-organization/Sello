@@ -222,6 +222,19 @@ class CategoryExpensesViewModelTest {
     }
 
     @Test
+    fun theCutNeverSplitsACharacterThatTakesTwoUnits() = runTest {
+        val model = started()
+        // An emoji (two UTF-16 units) sits across the limit: positions 60 and 61.
+        val pasted = "a".repeat(59) + "\uD83D\uDE00" + "bbb"
+
+        model.onAction(CategoryExpensesAction.Search(pasted))
+        runCurrent()
+
+        assertEquals("a".repeat(59), model.query.value)
+        assertEquals("a".repeat(59), requests.last().second)
+    }
+
+    @Test
     fun deletionUsesTheVersionAndGenerationOfTheListedExpense() = runTest {
         val model = started()
         model.onAction(CategoryExpensesAction.Delete(uuid(100)))
