@@ -66,13 +66,13 @@ class RoomExpenseCommands internal constructor(
     }
 
     override suspend fun create(command: CreateExpense): ExpenseCommandOutcome =
-        run(command.operationId) { decide(command) }
+        database.runOutcome(command.operationId) { decide(command) }
 
     override suspend fun edit(command: EditExpense): ExpenseCommandOutcome =
-        run(command.operationId) { decide(command) }
+        database.runOutcome(command.operationId) { decide(command) }
 
     override suspend fun delete(command: DeleteExpense): ExpenseCommandOutcome = undo.changing {
-        val outcome = run(command.operationId) { decide(command) }
+        val outcome = database.runOutcome(command.operationId) { decide(command) }
         // A replay is the original deletion, so it never starts the time again.
         if (outcome is Committed && !outcome.replayed) {
             undo.opened(UndoWindow.Kind.Expense, command.operationId, command.expenseId.value)
@@ -81,21 +81,10 @@ class RoomExpenseCommands internal constructor(
     }
 
     override suspend fun restore(command: RestoreExpense): ExpenseCommandOutcome = undo.changing {
-        val outcome = run(command.operationId) { decide(command) }
+        val outcome = database.runOutcome(command.operationId) { decide(command) }
         if (outcome is Committed && !outcome.replayed) undo.closed()
         outcome
     }
-
-    private suspend fun run(
-        operationId: OperationId,
-        decide: suspend () -> ExpenseCommandOutcome
-    ): ExpenseCommandOutcome = when (val run = database.runCommand(decide)) {
-        is CommandRun.Finished -> run.value
-        is CommandRun.RolledBack -> failed(run.failure)
-        CommandRun.Unknown -> OutcomeUnknown(operationId)
-    }
-
-    private fun failed(failure: StorageFailure) = Rejected(CommandRejection.StorageFailed(failure))
 
     private fun StoredReceipt.committedExpense() =
         CommittedExpense(receipt, checkNotNull(expenseId) { "Not an expense receipt" })
@@ -107,14 +96,11 @@ class RoomExpenseCommands internal constructor(
         kind: OperationKind,
         digest: String,
         proceed: (FinancialProfile) -> ExpenseCommandOutcome
-    ): ExpenseCommandOutcome =
-        when (val start = database.startCommand(operationId, generation, kind, digest)) {
-            is CommandStart.Proceed -> proceed(start.profile)
-            is CommandStart.Stale -> Rejected(CommandRejection.StaleGeneration(start.current))
-            is CommandStart.Replay -> Committed(start.original.committedExpense(), true)
-            CommandStart.Conflict -> Rejected(CommandRejection.OperationConflict)
-            is CommandStart.Damaged -> failed(start.failure)
+    ): ExpenseCommandOutcome = proceed(
+        database.proceedOr(operationId, generation, kind, digest, { it.committedExpense() }) {
+            return it
         }
+    )
 
     /** Why [date] cannot be an expense's date today, or null when it can. */
     private fun dateRejection(date: LocalDate): ExpenseRejection? {
@@ -137,7 +123,7 @@ class RoomExpenseCommands internal constructor(
         val category = database.categoryDao().byId(categoryId.value)
             ?: return Rejected(Specific(ExpenseRejection.CategoryMissing))
         return when (val stored = category.toDomain()) {
-            is Outcome.Failure -> failed(stored.error)
+            is Outcome.Failure -> storageFailed(stored.error)
 
             is Outcome.Success ->
                 if (stored.value.archived) {
@@ -236,7 +222,7 @@ class RoomExpenseCommands internal constructor(
                 ?: return Rejected(Specific(ExpenseRejection.ExpenseMissing))
             val current = when (val stored = row.toDomain()) {
                 is Outcome.Success -> stored.value
-                is Outcome.Failure -> return failed(stored.error)
+                is Outcome.Failure -> return storageFailed(stored.error)
             }
             if (current.version != command.expectedVersion) {
                 return Rejected(CommandRejection.VersionConflict(current.version))

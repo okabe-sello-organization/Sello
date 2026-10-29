@@ -81,7 +81,7 @@ class RoomInvestmentCommands internal constructor(
     override suspend fun submit(command: InvestmentCommand): InvestmentCommandOutcome =
         when (command) {
             is DeleteInvestmentMovement -> undo.changing {
-                val outcome = run(command.operationId) { decide(command) }
+                val outcome = database.runOutcome(command.operationId) { decide(command) }
                 // A replay is the original deletion, so it never starts the time again.
                 if (outcome is Committed && !outcome.replayed) {
                     undo.opened(
@@ -94,34 +94,27 @@ class RoomInvestmentCommands internal constructor(
             }
 
             is RestoreInvestmentMovement -> undo.changing {
-                val outcome = run(command.operationId) { decide(command) }
+                val outcome = database.runOutcome(command.operationId) { decide(command) }
                 if (outcome is Committed && !outcome.replayed) undo.closed()
                 outcome
             }
 
-            is CreateInvestment -> run(command.operationId) { decide(command) }
+            is CreateInvestment -> database.runOutcome(command.operationId) { decide(command) }
 
-            is EditInvestment -> run(command.operationId) { decide(command) }
+            is EditInvestment -> database.runOutcome(command.operationId) { decide(command) }
 
-            is RecordInvestmentMovement -> run(command.operationId) { decide(command) }
+            is RecordInvestmentMovement -> database.runOutcome(command.operationId) {
+                decide(command)
+            }
 
-            is EditInvestmentMovement -> run(command.operationId) { decide(command) }
+            is EditInvestmentMovement -> database.runOutcome(command.operationId) {
+                decide(command)
+            }
 
-            is DeleteInvestment -> run(command.operationId) { decide(command) }
+            is DeleteInvestment -> database.runOutcome(command.operationId) { decide(command) }
 
-            is SetUsdRate -> run(command.operationId) { decide(command) }
+            is SetUsdRate -> database.runOutcome(command.operationId) { decide(command) }
         }
-
-    private suspend fun run(
-        operationId: OperationId,
-        decide: suspend () -> InvestmentCommandOutcome
-    ): InvestmentCommandOutcome = when (val run = database.runCommand(decide)) {
-        is CommandRun.Finished -> run.value
-        is CommandRun.RolledBack -> failed(run.failure)
-        CommandRun.Unknown -> OutcomeUnknown(operationId)
-    }
-
-    private fun failed(failure: StorageFailure) = Rejected(CommandRejection.StorageFailed(failure))
 
     /** The committed change a receipt describes, or null when it is not an investment's. */
     private fun StoredReceipt.committedOrNull(): CommittedInvestment? = when {
@@ -137,19 +130,15 @@ class RoomInvestmentCommands internal constructor(
     private suspend inline fun starting(
         command: InvestmentCommand,
         proceed: (FinancialProfile) -> InvestmentCommandOutcome
-    ): InvestmentCommandOutcome = when (
-        val start = database.startCommand(
+    ): InvestmentCommandOutcome {
+        val profile = database.proceedOr(
             command.operationId,
             command.generation,
             command.kind,
-            inputDigest(command)
-        )
-    ) {
-        is CommandStart.Proceed -> proceed(start.profile)
-        is CommandStart.Stale -> Rejected(CommandRejection.StaleGeneration(start.current))
-        is CommandStart.Replay -> Committed(start.original.committed(), true)
-        CommandStart.Conflict -> Rejected(CommandRejection.OperationConflict)
-        is CommandStart.Damaged -> failed(start.failure)
+            inputDigest(command),
+            { it.committed() }
+        ) { return it }
+        return proceed(profile)
     }
 
     private suspend fun commit(
@@ -189,7 +178,7 @@ class RoomInvestmentCommands internal constructor(
         val history =
             when (val read = row.toHistory(database.investmentDao().movements(row.id))) {
                 is Outcome.Success -> read.value
-                is Outcome.Failure -> return Load.Refused(failed(read.error))
+                is Outcome.Failure -> return Load.Refused(storageFailed(read.error))
             }
         if (history.investment.version != command.expectedVersion) {
             return Load.Refused(
@@ -200,7 +189,7 @@ class RoomInvestmentCommands internal constructor(
         // out was damaged afterwards.
         val worked = InvestmentPolicy.figures(history)
         if (worked is Outcome.Failure) {
-            return Load.Refused(failed(damage(history.investment.id, worked.error)))
+            return Load.Refused(storageFailed(damage(history.investment.id, worked.error)))
         }
         return Load.Found(Loaded(row, history))
     }
@@ -564,7 +553,7 @@ class RoomInvestmentCommands internal constructor(
             )
             val history = when (val read = row.toHistory(dao.movements(row.id) + movement)) {
                 is Outcome.Success -> read.value
-                is Outcome.Failure -> return failed(read.error)
+                is Outcome.Failure -> return storageFailed(read.error)
             }
             if (checked(history) is Outcome.Failure) {
                 return Rejected(Specific(InvestmentRejection.UndoConflict))

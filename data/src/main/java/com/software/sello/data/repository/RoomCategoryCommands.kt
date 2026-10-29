@@ -67,13 +67,7 @@ class RoomCategoryCommands(
     private val ids: RecordIdSource
 ) : CategoryCommands {
     override suspend fun submit(command: CategoryCommand): CategoryCommandOutcome =
-        when (val run = database.runCommand { decide(command) }) {
-            is CommandRun.Finished -> run.value
-            is CommandRun.RolledBack -> Rejected(CommandRejection.StorageFailed(run.failure))
-            CommandRun.Unknown -> OutcomeUnknown(command.operationId)
-        }
-
-    private fun failed(failure: StorageFailure) = Rejected(CommandRejection.StorageFailed(failure))
+        database.runOutcome(command.operationId) { decide(command) }
 
     private fun StoredReceipt.change() =
         CommittedCategoryChange(receipt, checkNotNull(categoryId) { "Not a category receipt" })
@@ -81,21 +75,13 @@ class RoomCategoryCommands(
     /** Runs inside the transaction. Every rejection returns before the first write. */
     private suspend fun decide(command: CategoryCommand): CategoryCommandOutcome {
         val digest = inputDigest(command)
-        val start =
-            database.startCommand(command.operationId, command.generation, command.kind, digest)
-        val profile = when (start) {
-            is CommandStart.Proceed -> start.profile
-
-            is CommandStart.Stale -> return Rejected(
-                CommandRejection.StaleGeneration(start.current)
-            )
-
-            is CommandStart.Replay -> return Committed(start.original.change(), replayed = true)
-
-            CommandStart.Conflict -> return Rejected(CommandRejection.OperationConflict)
-
-            is CommandStart.Damaged -> return failed(start.failure)
-        }
+        val profile = database.proceedOr(
+            command.operationId,
+            command.generation,
+            command.kind,
+            digest,
+            { it.change() }
+        ) { return it }
         val month = YearMonth.from(clock.today.value.date)
         val now = audit.now()
         val categoryId = when (command) {
@@ -146,7 +132,7 @@ class RoomCategoryCommands(
         val schedules = database.scheduleDao().ofCategory(categoryId).map { row ->
             when (val stored = row.toStored(database.scheduleDao().pauses(row.id))) {
                 is Outcome.Success -> row to stored.value
-                is Outcome.Failure -> return Written.Refused(failed(stored.error))
+                is Outcome.Failure -> return Written.Refused(storageFailed(stored.error))
             }
         }
         val pending = schedules.any { (_, stored) ->
@@ -200,7 +186,7 @@ class RoomCategoryCommands(
             ?: return refused(Specific(CategoryRejection.CategoryMissing))
         val category = when (val stored = row.toDomain()) {
             is Outcome.Success -> stored.value
-            is Outcome.Failure -> return Written.Refused(failed(stored.error))
+            is Outcome.Failure -> return Written.Refused(storageFailed(stored.error))
         }
         if (category.version != command.expectedVersion) {
             return refused(CommandRejection.VersionConflict(category.version))
@@ -238,7 +224,7 @@ class RoomCategoryCommands(
                 if (!category.archived) return refused(Specific(CategoryRejection.NotArchived))
                 val history = when (val stored = database.defaultHistory(id.value)) {
                     is Outcome.Success -> stored.value
-                    is Outcome.Failure -> return Written.Refused(failed(stored.error))
+                    is Outcome.Failure -> return Written.Refused(storageFailed(stored.error))
                 }
                 val change = CategoryBudgetPolicy.unarchive(month, history)
                 change.remove.forEach { limits.removeDefault(id.value, it.toString()) }

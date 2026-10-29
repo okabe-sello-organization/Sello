@@ -54,13 +54,7 @@ class RoomScheduleCommands internal constructor(
     private val ids: RecordIdSource
 ) : ScheduleCommands {
     override suspend fun submit(command: ScheduleCommand): ScheduleCommandOutcome =
-        when (val run = database.runCommand { decide(command) }) {
-            is CommandRun.Finished -> run.value
-            is CommandRun.RolledBack -> failed(run.failure)
-            CommandRun.Unknown -> OutcomeUnknown(command.operationId)
-        }
-
-    private fun failed(failure: StorageFailure) = Rejected(CommandRejection.StorageFailed(failure))
+        database.runOutcome(command.operationId) { decide(command) }
 
     private fun StoredReceipt.committed() =
         CommittedSchedule(receipt, checkNotNull(scheduleId) { "Not a schedule receipt" })
@@ -68,22 +62,13 @@ class RoomScheduleCommands internal constructor(
     /** Runs inside the transaction. Every rejection returns before the first write. */
     private suspend fun decide(command: ScheduleCommand): ScheduleCommandOutcome {
         val digest = inputDigest(command)
-        val profile = when (
-            val start =
-                database.startCommand(command.operationId, command.generation, command.kind, digest)
-        ) {
-            is CommandStart.Proceed -> start.profile
-
-            is CommandStart.Stale -> return Rejected(
-                CommandRejection.StaleGeneration(start.current)
-            )
-
-            is CommandStart.Replay -> return Committed(start.original.committed(), replayed = true)
-
-            CommandStart.Conflict -> return Rejected(CommandRejection.OperationConflict)
-
-            is CommandStart.Damaged -> return failed(start.failure)
-        }
+        val profile = database.proceedOr(
+            command.operationId,
+            command.generation,
+            command.kind,
+            digest,
+            { it.committed() }
+        ) { return it }
         val today = clock.today.value.date
         val now = audit.now()
         val written = when (command) {
@@ -151,7 +136,7 @@ class RoomScheduleCommands internal constructor(
         }
         return when (val stored = row.toStored(database.scheduleDao().pauses(row.id))) {
             is Outcome.Success -> Load.Found(Loaded(row, stored.value))
-            is Outcome.Failure -> Load.Refused(failed(stored.error))
+            is Outcome.Failure -> Load.Refused(storageFailed(stored.error))
         }
     }
 

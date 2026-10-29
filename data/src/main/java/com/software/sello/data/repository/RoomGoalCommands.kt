@@ -97,7 +97,7 @@ class RoomGoalCommands internal constructor(
 
     override suspend fun submit(command: GoalCommand): GoalCommandOutcome = when (command) {
         is DeleteGoalMovement -> undo.changing {
-            val outcome = run(command.operationId) { decide(command) }
+            val outcome = database.runOutcome(command.operationId) { decide(command) }
             // A replay is the original deletion, so it never starts the time again.
             if (outcome is Committed && !outcome.replayed) {
                 undo.opened(UndoWindow.Kind.GoalMovement, command.operationId, command.goalId.value)
@@ -106,14 +106,14 @@ class RoomGoalCommands internal constructor(
         }
 
         is RestoreGoalMovement -> undo.changing {
-            val outcome = run(command.operationId) { decide(command) }
+            val outcome = database.runOutcome(command.operationId) { decide(command) }
             if (outcome is Committed && !outcome.replayed) undo.closed()
             outcome
         }
 
         is CompleteGoal -> {
             var completedVersion: Long? = null
-            val outcome = run(command.operationId) {
+            val outcome = database.runOutcome(command.operationId) {
                 decide(command) { completedVersion = it }
             }
             if (outcome is Committed && !outcome.replayed) {
@@ -128,36 +128,25 @@ class RoomGoalCommands internal constructor(
         }
 
         is UndoGoalCompletion -> {
-            val outcome = run(command.operationId) { decide(command) }
+            val outcome = database.runOutcome(command.operationId) { decide(command) }
             if (outcome is Committed && !outcome.replayed) completion = null
             outcome
         }
 
-        is CreateGoal -> run(command.operationId) { decide(command) }
+        is CreateGoal -> database.runOutcome(command.operationId) { decide(command) }
 
-        is EditGoal -> run(command.operationId) { decide(command) }
+        is EditGoal -> database.runOutcome(command.operationId) { decide(command) }
 
-        is ChangeGoalTarget -> run(command.operationId) { decide(command) }
+        is ChangeGoalTarget -> database.runOutcome(command.operationId) { decide(command) }
 
-        is RecordGoalMovement -> run(command.operationId) { decide(command) }
+        is RecordGoalMovement -> database.runOutcome(command.operationId) { decide(command) }
 
-        is EditGoalMovement -> run(command.operationId) { decide(command) }
+        is EditGoalMovement -> database.runOutcome(command.operationId) { decide(command) }
 
-        is DeleteGoal -> run(command.operationId) { decide(command) }
+        is DeleteGoal -> database.runOutcome(command.operationId) { decide(command) }
 
-        is FeatureGoal -> run(command.operationId) { decide(command) }
+        is FeatureGoal -> database.runOutcome(command.operationId) { decide(command) }
     }
-
-    private suspend fun run(
-        operationId: OperationId,
-        decide: suspend () -> GoalCommandOutcome
-    ): GoalCommandOutcome = when (val run = database.runCommand(decide)) {
-        is CommandRun.Finished -> run.value
-        is CommandRun.RolledBack -> failed(run.failure)
-        CommandRun.Unknown -> OutcomeUnknown(operationId)
-    }
-
-    private fun failed(failure: StorageFailure) = Rejected(CommandRejection.StorageFailed(failure))
 
     private fun StoredReceipt.committed(change: GoalChange?) =
         CommittedGoal(receipt, checkNotNull(goalId) { "Not a goal receipt" }, change)
@@ -166,19 +155,15 @@ class RoomGoalCommands internal constructor(
     private suspend inline fun starting(
         command: GoalCommand,
         proceed: (FinancialProfile) -> GoalCommandOutcome
-    ): GoalCommandOutcome = when (
-        val start = database.startCommand(
+    ): GoalCommandOutcome {
+        val profile = database.proceedOr(
             command.operationId,
             command.generation,
             command.kind,
-            inputDigest(command)
-        )
-    ) {
-        is CommandStart.Proceed -> proceed(start.profile)
-        is CommandStart.Stale -> Rejected(CommandRejection.StaleGeneration(start.current))
-        is CommandStart.Replay -> Committed(start.original.committed(null), true)
-        CommandStart.Conflict -> Rejected(CommandRejection.OperationConflict)
-        is CommandStart.Damaged -> failed(start.failure)
+            inputDigest(command),
+            { it.committed(null) }
+        ) { return it }
+        return proceed(profile)
     }
 
     private suspend fun commit(
@@ -213,7 +198,7 @@ class RoomGoalCommands internal constructor(
             ?: return Load.Refused(Rejected(Specific(GoalRejection.GoalMissing)))
         val history = when (val read = row.toHistory(database.goalDao().events(row.id))) {
             is Outcome.Success -> read.value
-            is Outcome.Failure -> return Load.Refused(failed(read.error))
+            is Outcome.Failure -> return Load.Refused(storageFailed(read.error))
         }
         if (history.goal.version != command.expectedVersion) {
             return Load.Refused(Rejected(CommandRejection.VersionConflict(history.goal.version)))
@@ -227,7 +212,9 @@ class RoomGoalCommands internal constructor(
             // What is stored was checked before it was written; a history that does not
             // work out was damaged afterwards.
             is Outcome.Failure -> return Load.Refused(
-                failed(StorageFailure.Integrity(GoalEventEntity.TABLE, row.id, "amount_minor"))
+                storageFailed(
+                    StorageFailure.Integrity(GoalEventEntity.TABLE, row.id, "amount_minor")
+                )
             )
         }
         return Load.Found(Loaded(row, history, progress))
@@ -582,7 +569,7 @@ class RoomGoalCommands internal constructor(
                 )
             ) {
                 is Outcome.Success -> read.value
-                is Outcome.Failure -> return failed(read.error)
+                is Outcome.Failure -> return storageFailed(read.error)
             }
             if (checked(
                     history
