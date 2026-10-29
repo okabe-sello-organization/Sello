@@ -13,7 +13,10 @@ import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeMonthState
+import com.software.sello.domain.port.IncomePage
+import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBook
@@ -32,6 +35,7 @@ import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +44,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -78,8 +83,22 @@ class IncomeHistoryViewModelTest {
         override fun observe() = book
     }
 
+    /** The same reads, but a page can be held back to look at the screen while it is read. */
+    private val gated = object : IncomeReads by reads {
+        var gate: CompletableDeferred<Unit>? = null
+
+        override suspend fun inMonth(
+            month: YearMonth,
+            after: IncomeCursor?,
+            limit: Int
+        ): Outcome<IncomePage, StorageFailure> {
+            gate?.await()
+            return reads.inMonth(month, after, limit)
+        }
+    }
+
     private fun history() =
-        IncomeHistoryViewModel(reads, session, snapshots, schedules, money, clock)
+        IncomeHistoryViewModel(gated, session, snapshots, schedules, money, clock)
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -103,6 +122,75 @@ class IncomeHistoryViewModelTest {
         assertEquals(51, all.lines.size)
         assertEquals(51, all.lines.map { it.id }.distinct().size)
         assertEquals(listOf(50, 50), reads.pages.map { it.second })
+    }
+
+    @Test
+    fun aChangeKeepsTheListAndThePagesAlreadyLoadedAndOnlyTheFirstLoadShowsLoading() {
+        repeat(51) { index ->
+            reads.stored[incomeId(index + 1)] = storedIncome(index + 1, "2026-10-01", 1_000)
+        }
+        val model = history()
+        reads.publish(october)
+        model.onAction(IncomeHistoryAction.More)
+        assertEquals(51, (model.state.value as IncomeHistoryState.Ready).lines.size)
+
+        // A new income lands while the list is read again.
+        val gate = CompletableDeferred<Unit>()
+        gated.gate = gate
+        reads.stored[incomeId(52)] = storedIncome(52, "2026-10-02", 2_000)
+        reads.publish(october, revision = 2)
+        val reading = model.state.value
+        gate.complete(Unit)
+
+        assertTrue("The list flashed $reading", reading is IncomeHistoryState.Ready)
+        assertEquals(51, (reading as IncomeHistoryState.Ready).lines.size)
+        val updated = model.state.value as IncomeHistoryState.Ready
+        assertEquals(52, updated.lines.size)
+        assertEquals(incomeId(52).value, updated.lines.first().id)
+        assertEquals("53.000 pesos", updated.total.spoken)
+        assertFalse(updated.more)
+        assertFalse(updated.busy)
+    }
+
+    @Test
+    fun deletingAnIncomeUpdatesTheLoadedPagesInPlace() {
+        repeat(51) { index ->
+            reads.stored[incomeId(index + 1)] = storedIncome(index + 1, "2026-10-01", 1_000)
+        }
+        val model = history()
+        reads.publish(october)
+        model.onAction(IncomeHistoryAction.More)
+
+        reads.stored.remove(incomeId(51))
+        reads.publish(october, revision = 2)
+
+        val updated = model.state.value as IncomeHistoryState.Ready
+        assertEquals(50, updated.lines.size)
+        assertEquals("50.000 pesos", updated.total.spoken)
+        assertFalse(updated.more)
+    }
+
+    @Test
+    fun aChangeWhileAPageIsBeingReadDoesNotLeaveTheListBusy() {
+        repeat(51) { index ->
+            reads.stored[incomeId(index + 1)] = storedIncome(index + 1, "2026-10-01", 1_000)
+        }
+        val model = history()
+        reads.publish(october)
+        val gate = CompletableDeferred<Unit>()
+        gated.gate = gate
+        model.onAction(IncomeHistoryAction.More)
+
+        reads.stored[incomeId(52)] = storedIncome(52, "2026-10-02", 2_000)
+        reads.publish(october, revision = 2)
+        gate.complete(Unit)
+
+        val updated = model.state.value as IncomeHistoryState.Ready
+        assertEquals(50, updated.lines.size)
+        assertTrue(updated.more)
+        assertFalse(updated.busy)
+        model.onAction(IncomeHistoryAction.More)
+        assertEquals(52, (model.state.value as IncomeHistoryState.Ready).lines.size)
     }
 
     @Test
