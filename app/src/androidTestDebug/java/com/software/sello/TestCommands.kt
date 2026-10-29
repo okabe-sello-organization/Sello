@@ -121,7 +121,7 @@ object TestCommands {
                 null
             )
         )
-        assertTrue("$outcome", outcome is InvestmentCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     fun setMonthLimit(category: String, month: YearMonth, pesos: Long) = runBlocking {

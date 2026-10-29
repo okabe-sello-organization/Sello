@@ -241,7 +241,7 @@ class LedgerInvestments(private val ledger: Ledger) : InvestmentCommands {
         sent += command
         refuseNext?.let {
             refuseNext = null
-            return InvestmentCommandOutcome.Rejected(it)
+            return CommandOutcome.Rejected(Specific(it))
         }
         val subject = (command as? InvestmentEdit)?.investmentId
         try {
@@ -255,13 +255,13 @@ class LedgerInvestments(private val ledger: Ledger) : InvestmentCommands {
                 )
             }
         }?.let { (receipt, _, replayed) ->
-            InvestmentCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedInvestment(receipt, subjects[command.operationId.value]),
                 replayed
             )
-        } ?: InvestmentCommandOutcome.Rejected(InvestmentRejection.VersionConflict(0))
+        } ?: CommandOutcome.Rejected(CommandRejection.VersionConflict(0))
     } catch (_: Ledger.Unknown) {
-        InvestmentCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     /** What each committed operation changed: the investment it made or named; none for a rate. */

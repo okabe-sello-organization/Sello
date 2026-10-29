@@ -592,7 +592,7 @@ class ExpenseCorrectionsTest {
         corrections.undo()
         runCurrent()
 
-        assertEquals(true, outcome is InvestmentCommandOutcome.Committed)
+        assertEquals(true, outcome is CommandOutcome.Committed)
         assertEquals(CorrectionNotice.InvestmentMovementDeleted(canUndo = true), offered)
         val sent = investments.sent.last() as RestoreInvestmentMovement
         assertEquals(
@@ -615,12 +615,12 @@ class ExpenseCorrectionsTest {
         runCurrent()
         val after = notice
         deleteInvestmentMovement()
-        investments.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.UndoExpired)
+        investments.answers += CommandOutcome.Rejected(Specific(InvestmentRejection.UndoExpired))
         corrections.undo()
         runCurrent()
         val late = notice
         deleteInvestmentMovement()
-        investments.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.UndoConflict)
+        investments.answers += CommandOutcome.Rejected(Specific(InvestmentRejection.UndoConflict))
         corrections.undo()
         runCurrent()
 
@@ -633,7 +633,7 @@ class ExpenseCorrectionsTest {
     @Test
     fun anUnknownUndoOfAnInvestmentMovementIsAskedWithTheSameOperationNeverSentAgain() = test {
         deleteInvestmentMovement()
-        investments.answers += InvestmentCommandOutcome.OutcomeUnknown(
+        investments.answers += CommandOutcome.OutcomeUnknown(
             (OperationId.of(uuid(500)) as Outcome.Success).value
         )
         investments.found = Outcome.Failure(StorageFailure.Unavailable("x"))
@@ -653,13 +653,13 @@ class ExpenseCorrectionsTest {
     @Test
     fun aRefusedInvestmentMovementDeletionOffersNothing() = test {
         investments.answers +=
-            InvestmentCommandOutcome.Rejected(InvestmentRejection.LastContribution)
+            CommandOutcome.Rejected(Specific(InvestmentRejection.LastContribution))
 
         val outcome = deleteInvestmentMovement()
         val afterRefusal = notice
         corrections.investmentMovementUpdated()
 
-        assertEquals(true, outcome is InvestmentCommandOutcome.Rejected)
+        assertEquals(true, outcome is CommandOutcome.Rejected)
         assertNull(afterRefusal)
         assertEquals(CorrectionNotice.InvestmentMovementUpdated, notice)
     }

@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.domain.model.InvestmentMovementKind.Valuation
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import kotlin.coroutines.cancellation.CancellationException
@@ -65,7 +66,7 @@ class InvestmentBoardObservationTest {
             ledger.recorded(cdt, Valuation, pesosValue(10_746_000), "2026-10-01")
             val good = next { value(it) == Money.cop(10_746_000) } as InvestmentBoardState.Ready
             // A new rate is a committed change too.
-            assertTrue(ledger.setRate(415_025, "2026-10-09") is InvestmentCommandOutcome.Committed)
+            assertTrue(ledger.setRate(415_025, "2026-10-09") is CommandOutcome.Committed)
             val withRate = next {
                 (it as? InvestmentBoardState.Ready)?.board?.rates?.current != null
             } as InvestmentBoardState.Ready

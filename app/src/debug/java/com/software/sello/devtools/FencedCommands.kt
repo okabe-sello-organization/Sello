@@ -99,7 +99,7 @@ class FencedInvestmentCommands(
     override suspend fun submit(command: InvestmentCommand): InvestmentCommandOutcome =
         fence.write {
             commands.submit(command)
-        }.also { if (it is InvestmentCommandOutcome.Committed && !it.replayed) saved() }
+        }.also { if (it is CommandOutcome.Committed && !it.replayed) saved() }
 }
 
 class FencedScheduleCommands(

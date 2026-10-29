@@ -17,6 +17,8 @@ import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.DatedUsdRate
 import com.software.sello.domain.port.DeleteInvestment
@@ -619,29 +621,34 @@ class InvestmentEditorViewModel(
         outcome: InvestmentCommandOutcome
     ) {
         when (outcome) {
-            is InvestmentCommandOutcome.Committed -> committed(step, outcome.change.investmentId)
+            is CommandOutcome.Committed -> committed(step, outcome.value.investmentId)
 
-            is InvestmentCommandOutcome.OutcomeUnknown -> ask(step, operation)
+            is CommandOutcome.OutcomeUnknown -> ask(step, operation)
 
-            is InvestmentCommandOutcome.Rejected -> notSaved(
-                when (outcome.reason) {
-                    is InvestmentRejection.StaleGeneration,
-                    is InvestmentRejection.VersionConflict,
-                    InvestmentRejection.InvestmentMissing,
-                    InvestmentRejection.OperationConflict -> InvestmentSaveError.Changed
+            is CommandOutcome.Rejected -> notSaved(
+                when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration,
+                    is CommandRejection.VersionConflict,
+                    CommandRejection.OperationConflict -> InvestmentSaveError.Changed
 
-                    is InvestmentRejection.FutureDate -> InvestmentSaveError.FutureDate
+                    is CommandRejection.StorageFailed -> InvestmentSaveError.NotSaved
 
-                    InvestmentRejection.InvalidAmount,
-                    InvestmentRejection.InvalidDate,
-                    InvestmentRejection.CurrencyMismatch,
-                    InvestmentRejection.Unrepresentable -> InvestmentSaveError.Invalid
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        InvestmentRejection.InvestmentMissing -> InvestmentSaveError.Changed
 
-                    InvestmentRejection.RateRequired -> InvestmentSaveError.RateRequired
+                        is InvestmentRejection.FutureDate -> InvestmentSaveError.FutureDate
 
-                    InvestmentRejection.Unchanged -> InvestmentSaveError.Unchanged
+                        InvestmentRejection.InvalidAmount,
+                        InvestmentRejection.InvalidDate,
+                        InvestmentRejection.CurrencyMismatch,
+                        InvestmentRejection.Unrepresentable -> InvestmentSaveError.Invalid
 
-                    else -> InvestmentSaveError.NotSaved
+                        InvestmentRejection.RateRequired -> InvestmentSaveError.RateRequired
+
+                        InvestmentRejection.Unchanged -> InvestmentSaveError.Unchanged
+
+                        else -> InvestmentSaveError.NotSaved
+                    }
                 }
             )
         }

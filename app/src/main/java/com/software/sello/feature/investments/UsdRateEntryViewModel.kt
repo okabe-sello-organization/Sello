@@ -8,6 +8,8 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
@@ -198,17 +200,24 @@ class UsdRateEntryViewModel(
 
     private suspend fun settle(outcome: InvestmentCommandOutcome) {
         when (outcome) {
-            is InvestmentCommandOutcome.Committed -> committed()
+            is CommandOutcome.Committed -> committed()
 
-            is InvestmentCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is InvestmentCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written, so this attempt is over.
                 saved[OPERATION] = null
-                val error = when (outcome.reason) {
-                    is InvestmentRejection.FutureDate -> RateEntryError.FutureDate
-                    is InvestmentRejection.StaleGeneration -> RateEntryError.DataChanged
-                    else -> RateEntryError.NotSaved
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> RateEntryError.DataChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.VersionConflict,
+                    is CommandRejection.StorageFailed -> RateEntryError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        is InvestmentRejection.FutureDate -> RateEntryError.FutureDate
+                        else -> RateEntryError.NotSaved
+                    }
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }

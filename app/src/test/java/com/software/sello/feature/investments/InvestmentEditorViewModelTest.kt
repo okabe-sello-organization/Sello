@@ -7,6 +7,9 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.DeleteInvestment
 import com.software.sello.domain.port.EditInvestment
@@ -374,7 +377,7 @@ class InvestmentEditorViewModelTest {
         assertEquals(InvestmentSaveError.Unchanged, model.state.value.saveError)
 
         // The command's own Unchanged says the same.
-        commands.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.Unchanged)
+        commands.answers += CommandOutcome.Rejected(Specific(InvestmentRejection.Unchanged))
         model.onAction(InvestmentEditorAction.NameChanged("Ecopetrol "))
         model.onAction(InvestmentEditorAction.NameChanged("Ecopetrol S.A."))
         model.onAction(InvestmentEditorAction.Submit)
@@ -413,7 +416,7 @@ class InvestmentEditorViewModelTest {
     @Test
     fun anUnknownOutcomeIsAskedAboutWithTheSameIdBeforeAnythingElse() = runTest {
         val unknown = operation(1)
-        commands.answers += InvestmentCommandOutcome.OutcomeUnknown(unknown)
+        commands.answers += CommandOutcome.OutcomeUnknown(unknown)
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         val model = editor()
         model.identity()
@@ -429,7 +432,7 @@ class InvestmentEditorViewModelTest {
         assertEquals(1, commands.sent.size)
 
         commands.found = Outcome.Success(
-            committedInvestment(unknown, OperationKind.CreateInvestment, createdId).change
+            committedInvestment(unknown, OperationKind.CreateInvestment, createdId).value
         )
         model.onAction(InvestmentEditorAction.Retry)
         assertEquals(listOf(unknown, unknown), commands.asked)
@@ -439,7 +442,7 @@ class InvestmentEditorViewModelTest {
 
     @Test
     fun anUnknownOutcomeFoundNotSavedLetsThePersonTryAgain() = runTest {
-        commands.answers += InvestmentCommandOutcome.OutcomeUnknown(operation(1))
+        commands.answers += CommandOutcome.OutcomeUnknown(operation(1))
         commands.found = Outcome.Success(null)
         val model = editor()
         model.identity()
@@ -455,16 +458,16 @@ class InvestmentEditorViewModelTest {
     @Test
     fun certainRejectionsSayWhy() = runTest {
         val cases = listOf(
-            InvestmentRejection.RateRequired to InvestmentSaveError.RateRequired,
-            InvestmentRejection.FutureDate(LocalDate.of(2026, 10, 25)) to
+            Specific(InvestmentRejection.RateRequired) to InvestmentSaveError.RateRequired,
+            Specific(InvestmentRejection.FutureDate(LocalDate.of(2026, 10, 25))) to
                 InvestmentSaveError.FutureDate,
-            InvestmentRejection.InvalidAmount to InvestmentSaveError.Invalid,
-            InvestmentRejection.InvalidDate to InvestmentSaveError.Invalid,
-            InvestmentRejection.StaleGeneration(2) to InvestmentSaveError.Changed,
-            InvestmentRejection.VersionConflict(4) to InvestmentSaveError.Changed
+            Specific(InvestmentRejection.InvalidAmount) to InvestmentSaveError.Invalid,
+            Specific(InvestmentRejection.InvalidDate) to InvestmentSaveError.Invalid,
+            CommandRejection.StaleGeneration(2) to InvestmentSaveError.Changed,
+            CommandRejection.VersionConflict(4) to InvestmentSaveError.Changed
         )
         for ((reason, error) in cases) {
-            commands.answers += InvestmentCommandOutcome.Rejected(reason)
+            commands.answers += CommandOutcome.Rejected(reason)
             val model = editor()
             model.identity()
             model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
@@ -479,7 +482,7 @@ class InvestmentEditorViewModelTest {
     @Test
     fun aStaleGenerationTakesTheNewOneForTheNextAttempt() = runTest {
         commands.answers +=
-            InvestmentCommandOutcome.Rejected(InvestmentRejection.StaleGeneration(2))
+            CommandOutcome.Rejected(CommandRejection.StaleGeneration(2))
         created()
         val model = editor()
         model.identity()
@@ -529,7 +532,7 @@ class InvestmentEditorViewModelTest {
     @Test
     fun anOperationInFlightWhenTheProcessDiedIsAskedAboutFirst() = runTest {
         val saved = SavedStateHandle()
-        commands.answers += InvestmentCommandOutcome.OutcomeUnknown(operation(1))
+        commands.answers += CommandOutcome.OutcomeUnknown(operation(1))
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         val before = editor(saved)
         before.identity()
@@ -539,7 +542,7 @@ class InvestmentEditorViewModelTest {
         assertEquals(InvestmentSaveError.Unknown, before.state.value.saveError)
 
         commands.found = Outcome.Success(
-            committedInvestment(operation(1), OperationKind.CreateInvestment, createdId).change
+            committedInvestment(operation(1), OperationKind.CreateInvestment, createdId).value
         )
         val after = editor(SavedStateHandle(saved.keys().associateWith { saved.get<Any>(it) }))
         assertEquals(listOf(operation(1), operation(1)), commands.asked)

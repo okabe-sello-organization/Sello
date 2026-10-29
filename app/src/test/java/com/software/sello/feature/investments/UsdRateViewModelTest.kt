@@ -7,6 +7,8 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommandOutcome
@@ -56,7 +58,7 @@ class UsdRateViewModelTest {
         )
     }
 
-    private fun committed() = InvestmentCommandOutcome.Committed(
+    private fun committed() = CommandOutcome.Committed(
         CommittedInvestment(
             OperationReceipt(
                 (OperationId.of("00000000-0000-4000-a000-000000000001") as Outcome.Success).value,
@@ -162,7 +164,7 @@ class UsdRateViewModelTest {
 
     @Test
     fun anUnknownOutcomeIsAskedAboutWithItsOwnIdentifierBeforeAnythingElse() = runTest {
-        commands.answers += InvestmentCommandOutcome.OutcomeUnknown(
+        commands.answers += CommandOutcome.OutcomeUnknown(
             (OperationId.of("00000000-0000-4000-a000-000000000001") as Outcome.Success).value
         )
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
@@ -181,7 +183,7 @@ class UsdRateViewModelTest {
         // Back waits while the outcome is not known; asking again finds it saved.
         model.onAction(UsdRateEntryAction.Back)
         assertFalse(model.state.value.closed)
-        commands.found = Outcome.Success(committed().change)
+        commands.found = Outcome.Success(committed().value)
         model.onAction(UsdRateEntryAction.Retry)
         runCurrent()
         assertTrue(model.state.value.closed)
@@ -191,7 +193,7 @@ class UsdRateViewModelTest {
     @Test
     fun aRestoredScreenKeepsTheDraftAndAsksAboutTheSaveInFlight() = runTest {
         val saved = SavedStateHandle()
-        commands.answers += InvestmentCommandOutcome.OutcomeUnknown(
+        commands.answers += CommandOutcome.OutcomeUnknown(
             (OperationId.of("00000000-0000-4000-a000-000000000001") as Outcome.Success).value
         )
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
@@ -212,7 +214,7 @@ class UsdRateViewModelTest {
     @Test
     fun aCertainRefusalSaysWhyAndKeepsTheDraft() = runTest {
         commands.answers +=
-            InvestmentCommandOutcome.Rejected(InvestmentRejection.StaleGeneration(2))
+            CommandOutcome.Rejected(CommandRejection.StaleGeneration(2))
         val model = entry()
         model.type("4000")
         model.onAction(UsdRateEntryAction.Submit)

@@ -552,12 +552,12 @@ class ScenarioRunner(
         outcome: InvestmentCommandOutcome,
         made: (InvestmentId) -> Unit = {}
     ): String? = when (outcome) {
-        is InvestmentCommandOutcome.Committed ->
-            null.also { outcome.change.investmentId?.let(made) }
+        is CommandOutcome.Committed ->
+            null.also { outcome.value.investmentId?.let(made) }
 
-        is InvestmentCommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
 
-        is InvestmentCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private suspend fun investmentCommand(

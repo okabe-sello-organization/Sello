@@ -556,8 +556,8 @@ class ExpenseCorrections(
         command: DeleteInvestmentMovement
     ): InvestmentCommandOutcome = scope.async {
         val outcome = investments.submit(command)
-        if (outcome is InvestmentCommandOutcome.Committed) {
-            investmentMovementDeleted(outcome.change.receipt)
+        if (outcome is CommandOutcome.Committed) {
+            investmentMovementDeleted(outcome.value.receipt)
         }
         outcome
     }.await()
@@ -573,17 +573,17 @@ class ExpenseCorrections(
         val command =
             RestoreInvestmentMovement(offered.undoOperation, offered.generation, offered.deletionId)
         return when (val outcome = investments.submit(command)) {
-            is InvestmentCommandOutcome.Committed -> Undone.Restored
+            is CommandOutcome.Committed -> Undone.Restored
 
-            is InvestmentCommandOutcome.OutcomeUnknown -> {
+            is CommandOutcome.OutcomeUnknown -> {
                 val found = (investments.find(offered.undoOperation) as? Outcome.Success)?.value
                 if (found != null) Undone.Restored else Undone.Retry
             }
 
-            is InvestmentCommandOutcome.Rejected -> when (outcome.reason) {
-                InvestmentRejection.UndoExpired -> Undone.TooLate
+            is CommandOutcome.Rejected -> when (outcome.reason) {
+                Specific(InvestmentRejection.UndoExpired) -> Undone.TooLate
 
-                InvestmentRejection.UndoConflict, is InvestmentRejection.StaleGeneration ->
+                Specific(InvestmentRejection.UndoConflict), is CommandRejection.StaleGeneration ->
                     Undone.Blocked
 
                 else -> Undone.Retry
