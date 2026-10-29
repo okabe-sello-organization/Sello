@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.software.sello.designsystem.theme.SelloTheme
 
 /** Past is a finished period, Current the one in progress, Over one above its limit, Upcoming one not yet happened. */
@@ -369,8 +371,13 @@ private fun ChartFrame(
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.inkSoft,
                     textAlign = TextAlign.Center,
-                    // Large text on a narrow column wraps "sem 2" rather than cutting it.
+                    // Large text on a narrow column wraps "sem 2" rather than cutting it, and
+                    // when even a wrapped word does not fit it gets a little smaller.
                     maxLines = 2,
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = AxisLabelMinSize,
+                        maxFontSize = MaterialTheme.typography.labelSmall.fontSize
+                    ),
                     modifier = Modifier.weight(1f).padding(top = 4.dp)
                 )
             }
@@ -380,6 +387,7 @@ private fun ChartFrame(
 
 private val LabelRoom = 18.dp
 private val AxisRoom = 20.dp
+private val AxisLabelMinSize = 8.sp
 private const val COLUMN_WIDTH_SHARE = 0.62f
 private const val DIMMED_ALPHA = 0.5f
 
