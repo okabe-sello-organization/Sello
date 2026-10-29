@@ -6,28 +6,30 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.IconKey
-import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.policy.CopAmountInput
-import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
-import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
+import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.MonthBudget
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Creates a category through the real command. The draft and the identifier of a save
@@ -42,6 +44,19 @@ class CategoryEditorViewModel(
     private val ids: RecordIdSource,
     money: MoneyFormatter
 ) : ViewModel() {
+    /** What was typed and chosen, kept under one key. */
+    @Serializable
+    private data class Draft(
+        val name: String = "",
+        val icon: String = "",
+        val iconChosen: Boolean = false,
+        val unlimited: Boolean = false,
+        val limit: String = ""
+    )
+
+    private val drafts = SavedDraft(saved, KEY_DRAFT, Draft.serializer())
+    private var typed = drafts.read() ?: Draft()
+    private val submission = Submission(saved, KEY_OPERATION, ids)
     private var generation: Long? = null
     private val figures = LimitFigures(money)
 
@@ -54,13 +69,13 @@ class CategoryEditorViewModel(
     private val mutable = MutableStateFlow(
         CategoryEditorState(
             forEntry = saved[KEY_FOR_ENTRY] ?: false,
-            name = saved[KEY_NAME] ?: "",
+            name = typed.name,
             iconKeys = CategoryIcons.keys,
-            iconKey = saved[KEY_ICON] ?: "",
+            iconKey = typed.icon,
             // No limit is chosen, never assumed: a new draft starts asking for an amount.
-            unlimited = saved[KEY_UNLIMITED] ?: false,
-            limitText = saved[KEY_LIMIT] ?: "",
-            limitAmount = figures.amount(saved[KEY_LIMIT] ?: ""),
+            unlimited = typed.unlimited,
+            limitText = typed.limit,
+            limitAmount = figures.amount(typed.limit),
             suggestions = LimitFigures(money).suggestions(null),
             result = saved.get<String>(KEY_CREATED)?.let(EditorResult::Created)
         )
@@ -75,14 +90,13 @@ class CategoryEditorViewModel(
         val now = mutable.value
         when (action) {
             is CategoryEditorAction.NameChanged -> if (now.editable) {
-                saved[KEY_NAME] = action.text
+                keep(typed.copy(name = action.text))
                 mutable.update { it.copy(name = action.text, nameError = takenError(action.text)) }
             }
 
             is CategoryEditorAction.IconPicked ->
                 if (now.editable && action.key in CategoryIcons.keys) {
-                    saved[KEY_ICON] = action.key
-                    saved[KEY_ICON_CHOSEN] = true
+                    keep(typed.copy(icon = action.key, iconChosen = true))
                     mutable.update { it.copy(iconKey = action.key) }
                 }
 
@@ -122,7 +136,7 @@ class CategoryEditorViewModel(
 
             CategoryEditorAction.Retry -> when {
                 now.busy -> Unit
-                saved.get<String>(KEY_OPERATION) != null -> recover()
+                submission.pending -> recover()
                 else -> load()
             }
 
@@ -155,9 +169,13 @@ class CategoryEditorViewModel(
         return NameError.Taken.takeIf { name.uniquenessKey in takenNames }
     }
 
+    private fun keep(next: Draft) {
+        typed = next
+        drafts.write(next)
+    }
+
     private fun setLimit(unlimited: Boolean, text: String) {
-        saved[KEY_UNLIMITED] = unlimited
-        saved[KEY_LIMIT] = text
+        keep(typed.copy(unlimited = unlimited, limit = text))
         mutable.update {
             it.copy(
                 unlimited = unlimited,
@@ -173,7 +191,7 @@ class CategoryEditorViewModel(
     private fun isDirty(state: CategoryEditorState) = state.name.isNotBlank() ||
         state.limitText.isNotBlank() ||
         state.unlimited ||
-        saved.get<Boolean>(KEY_ICON_CHOSEN) == true
+        typed.iconChosen
 
     /**
      * Reads the generation a command must carry and which icons are taken, then, if a
@@ -195,7 +213,7 @@ class CategoryEditorViewModel(
                     if (mutable.value.iconKey.isEmpty()) {
                         val first = CategoryIcons.keys.firstOrNull { it !in used }
                             ?: CategoryIcons.keys.first()
-                        saved[KEY_ICON] = first
+                        keep(typed.copy(icon = first))
                         mutable.update { it.copy(iconKey = first) }
                     }
                     // A restored draft may hold a name that is taken.
@@ -207,7 +225,7 @@ class CategoryEditorViewModel(
                             limitTotal = figures.total(read.value, null, it.unlimited, it.limitText)
                         )
                     }
-                    if (saved.get<String>(KEY_OPERATION) != null) recover()
+                    if (submission.pending) recover()
                 }
             }
         }
@@ -243,73 +261,52 @@ class CategoryEditorViewModel(
         }
         val icon = (IconKey.of(state.iconKey) as? Outcome.Success)?.value ?: return
         val generation = generation ?: return
-        // The identifier is saved before the command leaves, so whatever happens next
-        // this attempt can be recognised and never made twice.
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[KEY_OPERATION] = operation.value
         mutable.update { it.copy(busy = true, saveError = null, nameError = null) }
         viewModelScope.launch {
-            settle(commands.submit(CreateCategory(operation, generation, name, icon, limit)))
-        }
-    }
-
-    private suspend fun settle(outcome: CategoryCommandOutcome) {
-        when (outcome) {
-            is CommandOutcome.Committed -> created(outcome.value.categoryId.value)
-
-            is CommandOutcome.OutcomeUnknown -> recoverNow()
-
-            is CommandOutcome.Rejected -> {
-                // Certain: nothing was written, so this attempt is over.
-                saved[KEY_OPERATION] = null
-                when (outcome.reason) {
-                    Specific(CategoryRejection.NameTaken) ->
-                        mutable.update { it.copy(busy = false, nameError = NameError.Taken) }
-
-                    is CommandRejection.StaleGeneration -> {
-                        generation = null
-                        mutable.update { it.copy(busy = false, saveError = SaveError.DataChanged) }
-                        load()
-                    }
-
-                    else -> mutable.update { it.copy(busy = false, saveError = SaveError.NotSaved) }
+            settle(
+                submission.send(commands::find) { operation ->
+                    commands.submit(CreateCategory(operation, generation, name, icon, limit))
                 }
-            }
+            )
         }
     }
 
-    private fun recover() {
-        mutable.update { it.copy(busy = true, saveError = null) }
-        viewModelScope.launch { recoverNow() }
-    }
+    private fun settle(settled: Settled<CommittedCategoryChange, CategoryRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) mutable.update { it.copy(busy = false) }
 
-    /** Asks storage how the saved operation ended. Only a receipt counts as created. */
-    private suspend fun recoverNow() {
-        val operation = (saved.get<String>(KEY_OPERATION)?.let(OperationId::of) as? Outcome.Success)
-            ?.value
-        if (operation == null) {
-            saved[KEY_OPERATION] = null
-            return mutable.update { it.copy(busy = false) }
-        }
-        when (val found = commands.find(operation)) {
-            is Outcome.Failure ->
+            // Only a receipt counts as created.
+            is Settled.Committed -> created(settled.value.categoryId.value)
+
+            is Settled.Unknown ->
                 mutable.update { it.copy(busy = false, saveError = SaveError.Unknown) }
 
-            is Outcome.Success -> {
-                val change = found.value
-                if (change != null) {
-                    created(change.categoryId.value)
-                } else {
-                    saved[KEY_OPERATION] = null
-                    mutable.update { it.copy(busy = false, saveError = null) }
+            Settled.NotCommitted -> mutable.update { it.copy(busy = false, saveError = null) }
+
+            is Settled.Rejected -> when (settled.reason) {
+                Specific(CategoryRejection.NameTaken) ->
+                    mutable.update { it.copy(busy = false, nameError = NameError.Taken) }
+
+                is CommandRejection.StaleGeneration -> {
+                    generation = null
+                    mutable.update { it.copy(busy = false, saveError = SaveError.DataChanged) }
+                    load()
                 }
+
+                else -> mutable.update { it.copy(busy = false, saveError = SaveError.NotSaved) }
             }
         }
+    }
+
+    /** Asks storage how the saved operation ended, with its own identifier. */
+    private fun recover() {
+        mutable.update { it.copy(busy = true, saveError = null) }
+        viewModelScope.launch { settle(submission.recover(commands::find)) }
     }
 
     private fun created(categoryId: String) {
         saved[KEY_CREATED] = categoryId
-        saved[KEY_OPERATION] = null
         mutable.update {
             it.copy(busy = false, saveError = null, result = EditorResult.Created(categoryId))
         }
@@ -319,11 +316,7 @@ class CategoryEditorViewModel(
         /** The route's argument: opened because an expense needs a category. */
         const val KEY_FOR_ENTRY = "forEntry"
 
-        private const val KEY_NAME = "category.name"
-        private const val KEY_ICON = "category.icon"
-        private const val KEY_ICON_CHOSEN = "category.iconChosen"
-        private const val KEY_UNLIMITED = "category.unlimited"
-        private const val KEY_LIMIT = "category.limit"
+        private const val KEY_DRAFT = "category.draft"
         private const val KEY_OPERATION = "category.operation"
         private const val KEY_CREATED = "category.created"
     }

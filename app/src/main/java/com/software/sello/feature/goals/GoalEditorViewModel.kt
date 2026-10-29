@@ -12,22 +12,19 @@ import com.software.sello.domain.model.GoalProgress
 import com.software.sello.domain.model.GoalTargetChange
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
-import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.ChangeGoalTarget
-import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
+import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.EditGoal
 import com.software.sello.domain.port.FinancialClock
-import com.software.sello.domain.port.GoalCommand
-import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
@@ -37,6 +34,9 @@ import com.software.sello.platform.ScreenReader
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import java.time.YearMonth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Nueva meta and Editar meta through the real goal commands. The draft, a save in
@@ -71,6 +72,19 @@ class GoalEditorViewModel(
     private var stored: GoalSummary? = null
     private var version: Long = 0
 
+    /** What was typed: the name, the icon, the target's digits and the month, as text. */
+    @Serializable
+    private data class Draft(
+        val name: String = "",
+        val icon: String? = null,
+        val digits: String? = null,
+        val month: String? = null
+    )
+
+    private val drafts = SavedDraft(saved, KEY_DRAFT, Draft.serializer())
+    private var form = drafts.read() ?: Draft()
+    private val submission = Submission(saved, KEY_OP, ids)
+
     private val mutable = MutableStateFlow(GoalEditorState(editing = goalId != null))
     private val completer =
         GoalCompleter(saved, commands, corrections, ids, clock, screenReader, viewModelScope)
@@ -87,20 +101,20 @@ class GoalEditorViewModel(
         val now = state.value
         val editable = now.editable
         when (action) {
-            is GoalEditorAction.NameChanged -> if (editable) set(KEY_NAME, action.text)
+            is GoalEditorAction.NameChanged -> if (editable) edit(form.copy(name = action.text))
 
             is GoalEditorAction.IconPicked ->
-                if (editable && action.key in GoalIcons.keys) set(KEY_ICON, action.key)
+                if (editable && action.key in GoalIcons.keys) edit(form.copy(icon = action.key))
 
             is GoalEditorAction.Digit -> if (editable) press { it.digit(action.digit) }
 
             GoalEditorAction.TripleZero -> if (editable) press { it.tripleZero() }
 
             GoalEditorAction.Backspace -> if (editable) {
-                set(KEY_DIGITS, (draft().backspace() as? AmountDraft.Digits)?.digits)
+                edit(form.copy(digits = (draft().backspace() as? AmountDraft.Digits)?.digits))
             }
 
-            GoalEditorAction.ClearAmount -> if (editable) set(KEY_DIGITS, null)
+            GoalEditorAction.ClearAmount -> if (editable) edit(form.copy(digits = null))
 
             GoalEditorAction.ChooseMonth -> if (editable) set(KEY_CHOOSING, true)
 
@@ -110,7 +124,7 @@ class GoalEditorViewModel(
             }
 
             is GoalEditorAction.PickMonth -> if (editable && offered(action.month)) {
-                saved[KEY_MONTH] = action.month.toString()
+                form = form.copy(month = action.month.toString()).also(drafts::write)
                 set(KEY_CHOOSING, false)
             }
 
@@ -118,18 +132,18 @@ class GoalEditorViewModel(
 
             // From the month sheet: no date, and the sheet closes as after a month.
             GoalEditorAction.NoDate -> if (editable) {
-                saved[KEY_MONTH] = null
+                form = form.copy(month = null).also(drafts::write)
                 set(KEY_CHOOSING, false)
             }
 
-            GoalEditorAction.Submit -> if (now.canSubmit && saved.get<String>(KEY_OP) == null) {
+            GoalEditorAction.Submit -> if (now.canSubmit && !submission.pending) {
                 submit()
             }
 
             GoalEditorAction.Retry -> when {
                 completer.state.value is CompletionState.Failed -> completer.retry()
                 now.busy -> Unit
-                saved.get<String>(KEY_OP) != null -> viewModelScope.launch { recover() }
+                submission.pending -> viewModelScope.launch { recover() }
                 else -> load()
             }
 
@@ -168,7 +182,7 @@ class GoalEditorViewModel(
         val summary = stored ?: return
         val generation = generation ?: return
         if (now.busy || now.completed || now.result != null) return
-        if (saved.get<String>(KEY_OP) != null) return
+        if (submission.pending) return
         val goal = summary.history.goal
         completer.complete(
             CompletionTarget(
@@ -183,20 +197,25 @@ class GoalEditorViewModel(
         )
     }
 
+    private fun edit(next: Draft) {
+        form = next
+        drafts.write(next)
+        render()
+    }
+
     private fun set(key: String, value: Any?) {
         saved[key] = value
         render()
     }
 
-    private fun draft(): AmountDraft =
-        saved.get<String>(KEY_DIGITS)?.let(AmountDraft::Digits) ?: AmountDraft.Empty
+    private fun draft(): AmountDraft = form.digits?.let(AmountDraft::Digits) ?: AmountDraft.Empty
 
     private fun press(key: (AmountDraft) -> AmountDraft.Change) {
         val change = key(draft())
         if (change.limitReached) {
             mutable.update { it.copy(amountPulse = it.amountPulse + 1) }
         } else {
-            set(KEY_DIGITS, (change.draft as? AmountDraft.Digits)?.digits)
+            edit(form.copy(digits = (change.draft as? AmountDraft.Digits)?.digits))
         }
     }
 
@@ -211,9 +230,9 @@ class GoalEditorViewModel(
     private fun target(): TransactionAmount? =
         (draft().toTransactionAmount() as? Outcome.Success)?.value
 
-    private fun month(): YearMonth? = saved.get<String>(KEY_MONTH)?.let(YearMonth::parse)
+    private fun month(): YearMonth? = form.month?.let(YearMonth::parse)
 
-    private fun name(): String = saved[KEY_NAME] ?: ""
+    private fun name(): String = form.name
 
     private fun storedTarget(summary: GoalSummary): TransactionAmount? =
         summary.history.events.filterIsInstance<GoalTargetChange>()
@@ -221,7 +240,7 @@ class GoalEditorViewModel(
 
     private fun detailsChanged(summary: GoalSummary): Boolean {
         val goal = summary.history.goal
-        return name().trim() != goal.name.value || saved.get<String>(KEY_ICON) != goal.icon.value ||
+        return name().trim() != goal.name.value || form.icon != goal.icon.value ||
             month() != goal.targetMonth
     }
 
@@ -230,8 +249,7 @@ class GoalEditorViewModel(
     private fun dirty(state: GoalEditorState): Boolean = if (state.editing) {
         state.changed
     } else {
-        name().isNotBlank() || saved.get<String>(KEY_ICON) != null ||
-            saved.get<String>(KEY_DIGITS) != null || month() != null
+        name().isNotBlank() || form.icon != null || form.digits != null || month() != null
     }
 
     /** Reads the generation a command must carry and, when editing, the goal itself. */
@@ -239,7 +257,7 @@ class GoalEditorViewModel(
         mutable.update { it.copy(loading = true, loadFailed = false) }
         viewModelScope.launch {
             if (!read()) return@launch
-            if (saved.get<String>(KEY_OP) != null) recover()
+            if (submission.pending) recover()
         }
     }
 
@@ -264,10 +282,12 @@ class GoalEditorViewModel(
             version = summary.history.goal.version
             if (saved.get<Boolean>(KEY_DRAFTED) != true) {
                 val goal = summary.history.goal
-                saved[KEY_NAME] = goal.name.value
-                saved[KEY_ICON] = goal.icon.value
-                saved[KEY_DIGITS] = storedTarget(summary)?.money?.minorUnits?.toString()
-                saved[KEY_MONTH] = goal.targetMonth?.toString()
+                form = Draft(
+                    name = goal.name.value,
+                    icon = goal.icon.value,
+                    digits = storedTarget(summary)?.money?.minorUnits?.toString(),
+                    month = goal.targetMonth?.toString()
+                ).also(drafts::write)
                 saved[KEY_DRAFTED] = true
             }
         }
@@ -310,8 +330,8 @@ class GoalEditorViewModel(
                     TextError.ControlCharacter -> GoalNameError.NotAllowed
                     TextError.Required, null -> null
                 },
-                iconKey = saved[KEY_ICON],
-                amount = saved.get<String>(KEY_DIGITS)?.let {
+                iconKey = form.icon,
+                amount = form.digits?.let {
                     money.format(Money.cop(it.toLong()))
                 },
                 targetMonth = month,
@@ -340,7 +360,7 @@ class GoalEditorViewModel(
 
     private fun submit() {
         val name = (GoalName.of(name()) as? Outcome.Success)?.value ?: return
-        val icon = saved.get<String>(KEY_ICON)?.let { (IconKey.of(it) as? Outcome.Success)?.value }
+        val icon = form.icon?.let { (IconKey.of(it) as? Outcome.Success)?.value }
             ?: return
         val target = target() ?: return
         val generation = generation ?: return
@@ -349,11 +369,13 @@ class GoalEditorViewModel(
         mutable.update { it.copy(busy = true, saveError = null) }
         viewModelScope.launch {
             if (summary == null) {
-                val operation = operation(STEP_CREATE)
                 settle(
                     STEP_CREATE,
-                    operation,
-                    commands.submit(CreateGoal(operation, generation, name, icon, target, month))
+                    submission.send(commands::find, STEP_CREATE) { operation ->
+                        commands.submit(
+                            CreateGoal(operation, generation, name, icon, target, month)
+                        )
+                    }
                 )
                 return@launch
             }
@@ -363,13 +385,16 @@ class GoalEditorViewModel(
                 if (targetChanged(summary)) add(STEP_TARGET)
             }
             for (step in parts) {
-                val operation = operation(step)
-                val command: GoalCommand = if (step == STEP_DETAILS) {
-                    EditGoal(operation, generation, id, version, name, icon, month)
-                } else {
-                    ChangeGoalTarget(operation, generation, id, version, target)
+                val settled = submission.send(commands::find, step) { operation ->
+                    commands.submit(
+                        if (step == STEP_DETAILS) {
+                            EditGoal(operation, generation, id, version, name, icon, month)
+                        } else {
+                            ChangeGoalTarget(operation, generation, id, version, target)
+                        }
+                    )
                 }
-                if (!settle(step, operation, commands.submit(command))) return@launch
+                if (!settle(step, settled)) return@launch
             }
             finish(GoalEditorResult.Updated)
         }
@@ -380,48 +405,38 @@ class GoalEditorViewModel(
         val generation = generation ?: return
         mutable.update { it.copy(busy = true, saveError = null) }
         viewModelScope.launch {
-            val operation = operation(STEP_DELETE)
             val id = summary.history.goal.id
             settle(
                 STEP_DELETE,
-                operation,
-                commands.submit(DeleteGoal(operation, generation, id, version))
+                submission.send(commands::find, STEP_DELETE) { operation ->
+                    commands.submit(DeleteGoal(operation, generation, id, version))
+                }
             )
         }
     }
 
-    /** Saved before the command leaves, so this attempt is recognised whatever happens. */
-    private fun operation(step: String): OperationId {
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[KEY_OP] = operation.value
-        saved[KEY_STEP] = step
-        return operation
-    }
-
-    /** Whether [outcome] is a receipt; if not, the form says why and nothing more is sent. */
+    /** Whether [settled] is a receipt; if not, the form says why and nothing more is sent. */
     private suspend fun settle(
         step: String,
-        operation: OperationId,
-        outcome: GoalCommandOutcome
-    ): Boolean = when (outcome) {
-        is CommandOutcome.Committed -> {
-            committed(step, outcome.value.goalId, outcome.value.change)
+        settled: Settled<CommittedGoal, GoalRejection>?
+    ): Boolean = when (settled) {
+        // Another save is still in flight and settles the form itself.
+        null -> false
+
+        // A save found after an unknown outcome is never celebrated.
+        is Settled.Committed -> {
+            committed(step, settled.value.goalId, settled.value.change.takeIf { !settled.found })
             true
         }
 
-        is CommandOutcome.OutcomeUnknown -> when (val found = commands.find(operation)) {
-            is Outcome.Failure -> {
-                mutable.update { it.copy(busy = false, saveError = GoalSaveError.Unknown) }
-                false
-            }
-
-            is Outcome.Success -> found.value?.let {
-                committed(step, it.goalId)
-                true
-            } ?: notSaved(GoalSaveError.NotSaved)
+        is Settled.Unknown -> {
+            mutable.update { it.copy(busy = false, saveError = GoalSaveError.Unknown) }
+            false
         }
 
-        is CommandOutcome.Rejected -> when (outcome.reason) {
+        Settled.NotCommitted -> notSaved(GoalSaveError.NotSaved)
+
+        is Settled.Rejected -> when (settled.reason) {
             is CommandRejection.StaleGeneration,
             is CommandRejection.VersionConflict,
             Specific(GoalRejection.GoalMissing),
@@ -440,8 +455,6 @@ class GoalEditorViewModel(
      * replay or a save found after an unknown outcome, which are never celebrated.
      */
     private fun committed(step: String, id: GoalId, change: GoalChange? = null) {
-        saved[KEY_OP] = null
-        saved[KEY_STEP] = null
         when (step) {
             STEP_CREATE -> finish(GoalEditorResult.Created(id.value))
 
@@ -478,8 +491,6 @@ class GoalEditorViewModel(
 
     /** Certain: nothing was written, so this attempt is over. */
     private fun notSaved(error: GoalSaveError): Boolean {
-        saved[KEY_OP] = null
-        saved[KEY_STEP] = null
         saved[KEY_CONFIRM] = false
         mutable.update { it.copy(busy = false, saveError = error) }
         render()
@@ -488,29 +499,22 @@ class GoalEditorViewModel(
 
     /** Asks how the saved operation ended, with its own identifier, then reads again. */
     private suspend fun recover() {
-        val operation = (saved.get<String>(KEY_OP)?.let(OperationId::of) as? Outcome.Success)?.value
-        val step = saved.get<String>(KEY_STEP) ?: STEP_CREATE
-        if (operation == null) {
-            saved[KEY_OP] = null
-            return
-        }
+        if (!submission.pending) return
+        val step = submission.step ?: STEP_CREATE
         mutable.update { it.copy(busy = true, saveError = null) }
-        when (val found = commands.find(operation)) {
-            is Outcome.Failure ->
+        when (val settled = submission.recover(commands::find)) {
+            null -> mutable.update { it.copy(busy = false) }
+
+            is Settled.Unknown ->
                 mutable.update { it.copy(busy = false, saveError = GoalSaveError.Unknown) }
 
-            is Outcome.Success -> {
-                val committed = found.value
-                if (committed == null) {
-                    notSaved(GoalSaveError.NotSaved)
-                } else if (step == STEP_CREATE || step == STEP_DELETE) {
-                    committed(step, committed.goalId)
-                } else {
-                    saved[KEY_OP] = null
-                    saved[KEY_STEP] = null
-                    if (read() && !mutable.value.changed) finish(GoalEditorResult.Updated)
-                    mutable.update { it.copy(busy = false) }
-                }
+            Settled.NotCommitted -> notSaved(GoalSaveError.NotSaved)
+
+            is Settled.Committed -> if (step == STEP_CREATE || step == STEP_DELETE) {
+                committed(step, settled.value.goalId)
+            } else {
+                if (read() && !mutable.value.changed) finish(GoalEditorResult.Updated)
+                mutable.update { it.copy(busy = false) }
             }
         }
     }
@@ -539,16 +543,12 @@ class GoalEditorViewModel(
         /** How far ahead a target month can be chosen. */
         const val YEARS_AHEAD = 50
 
-        private const val KEY_NAME = "goal.editor.name"
-        private const val KEY_ICON = "goal.editor.icon"
-        private const val KEY_DIGITS = "goal.editor.digits"
-        private const val KEY_MONTH = "goal.editor.month"
+        private const val KEY_DRAFT = "goal.editor.draft"
         private const val KEY_CHOOSING = "goal.editor.choosingMonth"
         private const val KEY_YEAR = "goal.editor.pickerYear"
         private const val KEY_DRAFTED = "goal.editor.drafted"
         private const val KEY_CONFIRM = "goal.editor.confirmDelete"
         private const val KEY_OP = "goal.editor.operation"
-        private const val KEY_STEP = "goal.editor.step"
         private const val KEY_RESULT = "goal.editor.result"
         private const val STEP_CREATE = "create"
         private const val STEP_DETAILS = "details"

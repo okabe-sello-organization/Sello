@@ -17,8 +17,8 @@ import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
-import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.DatedUsdRate
 import com.software.sello.domain.port.DeleteInvestment
@@ -27,7 +27,6 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommand
-import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.InvestmentReads
@@ -37,6 +36,9 @@ import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -46,6 +48,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Nueva inversión and Editar inversión through the real investment commands (rules 1, 2,
@@ -74,7 +77,32 @@ class InvestmentEditorViewModel(
         val result: InvestmentEditorResult? = null
     )
 
+    /** A figure typed with the comma: dollars or the rate. */
+    @Serializable
+    private data class Decimal(val whole: String, val comma: Boolean, val cents: String)
+
+    /** What was typed and chosen, kept under one key. Pesos are digits, "0" only for Otro valor. */
+    @Serializable
+    private data class Draft(
+        val name: String = "",
+        val description: String = "",
+        val icon: String? = null,
+        val currency: String? = null,
+        val sameValue: Boolean? = null,
+        val copFirst: String? = null,
+        val copValue: String? = null,
+        val usdFirst: Decimal? = null,
+        val usdValue: Decimal? = null,
+        val rate: Decimal? = null,
+        val date: String? = null,
+        val rateDate: String? = null,
+        val pad: String? = null
+    )
+
     private val investmentId: String? = saved[KEY_INVESTMENT]
+    private val stash = SavedDraft(saved, KEY_DRAFT, Draft.serializer())
+    private var form = stash.read() ?: Draft()
+    private val submission = Submission(saved, KEY_OP, ids)
 
     /** Bumped whenever [saved] changes, so the state is drawn again. */
     private val drafts = MutableStateFlow(0)
@@ -112,37 +140,45 @@ class InvestmentEditorViewModel(
 
     init {
         viewModelScope.launch { board.collect(::read) }
-        if (saved.get<String>(KEY_OP) != null) viewModelScope.launch { recover() }
+        if (submission.pending) viewModelScope.launch { recover() }
     }
 
     fun onAction(action: InvestmentEditorAction) {
         val now = state.value
         val editable = now.editable
         when (action) {
-            is InvestmentEditorAction.NameChanged -> if (editable) set(KEY_NAME, action.text)
+            is InvestmentEditorAction.NameChanged -> if (editable) {
+                edit(
+                    form.copy(name = action.text)
+                )
+            }
 
             is InvestmentEditorAction.DescriptionChanged ->
-                if (editable) set(KEY_DESCRIPTION, action.text)
+                if (editable) edit(form.copy(description = action.text))
 
             is InvestmentEditorAction.IconPicked ->
-                if (editable && action.key in InvestmentIcons.keys) set(KEY_ICON, action.key)
+                if (editable &&
+                    action.key in InvestmentIcons.keys
+                ) {
+                    edit(form.copy(icon = action.key))
+                }
 
             is InvestmentEditorAction.CurrencyPicked ->
                 if (editable && !now.editing && action.currency in InvestmentAmount.currencies) {
-                    set(KEY_CURRENCY, action.currency.code)
+                    edit(form.copy(currency = action.currency.code))
                 }
 
             is InvestmentEditorAction.SameValuePicked -> if (editable && !now.editing) {
-                saved[KEY_SAME] = action.same
-                when {
-                    !action.same -> saved[KEY_PAD] = InvestmentField.Value.name
-                    now.padField == InvestmentField.Value -> saved[KEY_PAD] = null
+                val pad = when {
+                    !action.same -> InvestmentField.Value.name
+                    now.padField == InvestmentField.Value -> null
+                    else -> form.pad
                 }
-                changed()
+                edit(form.copy(sameValue = action.same, pad = pad))
             }
 
             is InvestmentEditorAction.TypeInto -> if (editable && !now.editing) {
-                set(KEY_PAD, action.field.name)
+                edit(form.copy(pad = action.field.name))
             }
 
             is InvestmentEditorAction.Digit -> if (editable) digit(now, action.digit)
@@ -167,15 +203,19 @@ class InvestmentEditorViewModel(
                 if (editable && field != null &&
                     InvestmentPolicy.acceptsDate(action.date, now.today)
                 ) {
-                    saved[if (field == InvestmentField.Rate) KEY_RATE_DATE else KEY_DATE] =
-                        action.date.toString()
+                    val date = action.date.toString()
+                    store(
+                        if (field == InvestmentField.Rate) {
+                            form.copy(rateDate = date)
+                        } else {
+                            form.copy(date = date)
+                        }
+                    )
                 }
                 set(KEY_PICKER, null)
             }
 
-            InvestmentEditorAction.Submit -> if (now.canSubmit &&
-                saved.get<String>(KEY_OP) == null
-            ) {
+            InvestmentEditorAction.Submit -> if (now.canSubmit && !submission.pending) {
                 if (now.editing && !now.changed) {
                     progress.update { it.copy(saveError = InvestmentSaveError.Unchanged) }
                 } else {
@@ -185,20 +225,20 @@ class InvestmentEditorViewModel(
 
             InvestmentEditorAction.Retry -> when {
                 now.busy -> Unit
-                saved.get<String>(KEY_OP) != null -> viewModelScope.launch { recover() }
+                submission.pending -> viewModelScope.launch { recover() }
                 else -> progress.update { it.copy(saveError = null) }
             }
 
             // Never closed while a save may be on its way: its outcome comes first.
             InvestmentEditorAction.Back -> when {
-                now.busy || saved.get<String>(KEY_OP) != null -> Unit
+                now.busy || submission.pending -> Unit
                 now.confirmDelete -> set(KEY_CONFIRM, false)
                 dirty(now) -> progress.update { it.copy(confirmDiscard = true) }
                 else -> finish(InvestmentEditorResult.Discarded)
             }
 
             InvestmentEditorAction.DiscardConfirmed ->
-                if (!now.busy && saved.get<String>(KEY_OP) == null) {
+                if (!now.busy && !submission.pending) {
                     finish(InvestmentEditorResult.Discarded)
                 }
 
@@ -211,12 +251,22 @@ class InvestmentEditorViewModel(
             InvestmentEditorAction.CancelDelete -> if (!now.busy) set(KEY_CONFIRM, false)
 
             InvestmentEditorAction.Delete ->
-                if (now.confirmDelete && !now.busy && saved.get<String>(KEY_OP) == null) delete()
+                if (now.confirmDelete && !now.busy && !submission.pending) delete()
         }
     }
 
     private fun set(key: String, value: Any?) {
         saved[key] = value
+        changed()
+    }
+
+    private fun store(next: Draft) {
+        form = next
+        stash.write(next)
+    }
+
+    private fun edit(next: Draft) {
+        store(next)
         changed()
     }
 
@@ -255,15 +305,19 @@ class InvestmentEditorViewModel(
         if (investmentId != null) {
             val summary = stored(read)
             if (summary == null) {
-                val idle = saved.get<String>(KEY_OP) == null && !progress.value.busy
+                val idle = !submission.pending && !progress.value.busy
                 if (idle && progress.value.result == null) finish(InvestmentEditorResult.Discarded)
                 return
             }
             if (saved.get<Boolean>(KEY_DRAFTED) != true) {
                 val investment = summary.history.investment
-                saved[KEY_NAME] = investment.name.value
-                saved[KEY_DESCRIPTION] = investment.description?.value.orEmpty()
-                saved[KEY_ICON] = investment.icon.value
+                store(
+                    form.copy(
+                        name = investment.name.value,
+                        description = investment.description?.value.orEmpty(),
+                        icon = investment.icon.value
+                    )
+                )
                 saved[KEY_VERSION] = investment.version
                 saved[KEY_DRAFTED] = true
             }
@@ -283,7 +337,7 @@ class InvestmentEditorViewModel(
         rateNeeded: Boolean
     ): InvestmentField? {
         if (editing) return null
-        val chosen = saved.get<String>(KEY_PAD)?.let(InvestmentField::valueOf)
+        val chosen = form.pad?.let(InvestmentField::valueOf)
         return when (chosen) {
             InvestmentField.Value -> chosen.takeUnless { sameValue }
             InvestmentField.Rate -> chosen.takeIf { rateNeeded }
@@ -328,10 +382,9 @@ class InvestmentEditorViewModel(
      * 0 (an investment that lost everything); a first contribution never starts with 0.
      */
     private fun copPress(field: InvestmentField, keys: String) {
-        val key = copKey(field)
-        val current = saved.get<String>(key)?.takeUnless { it == "0" }
+        val current = cop(field)?.takeUnless { it == "0" }
         if (current == null && keys.all { it == '0' }) {
-            set(key, if (field == InvestmentField.Value) "0" else null)
+            edit(withCop(field, if (field == InvestmentField.Value) "0" else null))
             return
         }
         val draft = current?.let(AmountDraft::Digits) ?: AmountDraft.Empty
@@ -339,7 +392,7 @@ class InvestmentEditorViewModel(
         if (change.limitReached) {
             progress.update { it.copy(pulse = it.pulse + 1, atLimit = field) }
         } else {
-            set(key, (change.draft as? AmountDraft.Digits)?.digits)
+            edit(withCop(field, (change.draft as? AmountDraft.Digits)?.digits))
         }
     }
 
@@ -349,9 +402,8 @@ class InvestmentEditorViewModel(
             storeDecimal(field, decimalDraft(field).backspace())
             changed()
         } else {
-            val key = copKey(field)
-            val digits = saved.get<String>(key)
-            set(key, digits?.takeIf { it.length > 1 && it != "0" }?.dropLast(1))
+            val digits = cop(field)
+            edit(withCop(field, digits?.takeIf { it.length > 1 && it != "0" }?.dropLast(1)))
         }
     }
 
@@ -361,39 +413,43 @@ class InvestmentEditorViewModel(
             storeDecimal(field, DecimalDraft(maxWhole(field)))
             changed()
         } else {
-            set(copKey(field), null)
+            edit(withCop(field, null))
         }
     }
 
-    private fun copKey(field: InvestmentField) =
-        if (field == InvestmentField.First) KEY_COP_FIRST else KEY_COP_VALUE
+    /** The pesos typed for [field]: Primer aporte or Otro valor. */
+    private fun cop(field: InvestmentField): String? =
+        if (field == InvestmentField.First) form.copFirst else form.copValue
 
-    private fun decimalKey(field: InvestmentField) = when (field) {
-        InvestmentField.First -> KEY_USD_FIRST
-        InvestmentField.Value -> KEY_USD_VALUE
-        InvestmentField.Rate -> KEY_RATE
-    }
+    private fun withCop(field: InvestmentField, digits: String?): Draft =
+        if (field == InvestmentField.First) {
+            form.copy(copFirst = digits)
+        } else {
+            form.copy(copValue = digits)
+        }
 
     /** 100.000,00 pesos is six whole digits; USD 9.999.999.999,99 is ten (rules 2 and 11). */
     private fun maxWhole(field: InvestmentField) =
         if (field == InvestmentField.Rate) RATE_WHOLE_DIGITS else USD_WHOLE_DIGITS
 
     private fun decimalDraft(field: InvestmentField): DecimalDraft {
-        val key = decimalKey(field)
-        val whole = saved.get<String>("$key.whole") ?: return DecimalDraft(maxWhole(field))
-        return DecimalDraft(
-            maxWhole(field),
-            whole,
-            saved.get<Boolean>("$key.comma") ?: false,
-            saved.get<String>("$key.cents").orEmpty()
-        )
+        val typed = when (field) {
+            InvestmentField.First -> form.usdFirst
+            InvestmentField.Value -> form.usdValue
+            InvestmentField.Rate -> form.rate
+        } ?: return DecimalDraft(maxWhole(field))
+        return DecimalDraft(maxWhole(field), typed.whole, typed.comma, typed.cents)
     }
 
     private fun storeDecimal(field: InvestmentField, draft: DecimalDraft) {
-        val key = decimalKey(field)
-        saved["$key.whole"] = draft.whole
-        saved["$key.comma"] = draft.comma
-        saved["$key.cents"] = draft.cents
+        val typed = Decimal(draft.whole, draft.comma, draft.cents)
+        store(
+            when (field) {
+                InvestmentField.First -> form.copy(usdFirst = typed)
+                InvestmentField.Value -> form.copy(usdValue = typed)
+                InvestmentField.Rate -> form.copy(rate = typed)
+            }
+        )
     }
 
     /** The draft as the pad wrote it: "1.000,5". */
@@ -408,7 +464,7 @@ class InvestmentEditorViewModel(
         if (currency == Currency.USD) {
             decimalDraft(field).hundredths()?.let { Money(it, Currency.USD) }
         } else {
-            saved.get<String>(copKey(field))?.let { Money.cop(it.toLong()) }
+            cop(field)?.let { Money.cop(it.toLong()) }
         }
 
     private fun shown(field: InvestmentField, currency: Currency) =
@@ -423,13 +479,13 @@ class InvestmentEditorViewModel(
 
     // ── The form ─────────────────────────────────────────────────────────────────────
 
-    private fun name(): String = saved[KEY_NAME] ?: ""
+    private fun name(): String = form.name
 
-    private fun description(): String = saved[KEY_DESCRIPTION] ?: ""
+    private fun description(): String = form.description
 
     private fun chosenCurrency(summary: InvestmentSummary?, starting: Currency): Currency =
         summary?.history?.investment?.currency
-            ?: saved.get<String>(KEY_CURRENCY)?.let { code ->
+            ?: form.currency?.let { code ->
                 Currency.entries.first {
                     it.code ==
                         code
@@ -437,8 +493,8 @@ class InvestmentEditorViewModel(
             }
             ?: starting
 
-    private fun date(key: String, today: LocalDate): LocalDate =
-        saved.get<String>(key)?.let(LocalDate::parse) ?: today
+    private fun date(typed: String?, today: LocalDate): LocalDate =
+        typed?.let(LocalDate::parse) ?: today
 
     private fun rate(): UsdRate? = decimalDraft(InvestmentField.Rate).hundredths()
         ?.let { (UsdRate.ofHundredths(it) as? Outcome.Success)?.value }
@@ -460,7 +516,7 @@ class InvestmentEditorViewModel(
         }
         return name().trim() != investment.name.value ||
             description != investment.description?.value ||
-            saved.get<String>(KEY_ICON) != investment.icon.value
+            form.icon != investment.icon.value
     }
 
     private fun dirty(state: InvestmentEditorState): Boolean = if (state.editing) {
@@ -489,7 +545,7 @@ class InvestmentEditorViewModel(
         val about = description()
         val rateNeeded = !editing && currency == Currency.USD && read != null &&
             read.rates.current == null
-        val sameValue = saved[KEY_SAME] ?: true
+        val sameValue = form.sameValue ?: true
         return InvestmentEditorState(
             loading = (read == null && board !is ReadState.Failed) ||
                 (editing && read != null && saved.get<Boolean>(KEY_DRAFTED) != true),
@@ -502,11 +558,11 @@ class InvestmentEditorViewModel(
             descriptionLength = length(about),
             descriptionError =
                 textError((InvestmentDescription.of(about) as? Outcome.Failure)?.error),
-            iconKey = saved[KEY_ICON],
+            iconKey = form.icon,
             currency = currency,
             firstContribution = shown(InvestmentField.First, currency),
             firstReady = first != null && InvestmentAmount.of(first) is Outcome.Success,
-            date = date(KEY_DATE, today),
+            date = date(form.date, today),
             today = today,
             sameValue = sameValue,
             otherValue = shown(InvestmentField.Value, currency),
@@ -520,7 +576,7 @@ class InvestmentEditorViewModel(
                 else -> null
             },
             rateReady = rate() != null,
-            rateDate = date(KEY_RATE_DATE, today),
+            rateDate = date(form.rateDate, today),
             currentRate = read?.rates?.current?.let {
                 RateModel(money.decimal(it.rate.hundredths, Currency.USD.scale), it.date)
             },
@@ -548,7 +604,7 @@ class InvestmentEditorViewModel(
                 description()
             ) as? Outcome.Success ?: return
             ).value
-        val icon = saved.get<String>(KEY_ICON)?.let { (IconKey.of(it) as? Outcome.Success)?.value }
+        val icon = form.icon?.let { (IconKey.of(it) as? Outcome.Success)?.value }
             ?: return
         val generation = saved.get<Long>(KEY_GENERATION) ?: read.generation
         if (now.editing) {
@@ -607,27 +663,28 @@ class InvestmentEditorViewModel(
         }
     }
 
-    /** The operation is saved before the command leaves, so this attempt is recognised whatever happens. */
     private fun send(step: String, command: (OperationId) -> InvestmentCommand) {
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[KEY_OP] = operation.value
-        saved[KEY_STEP] = step
         progress.update { it.copy(busy = true, saveError = null) }
-        viewModelScope.launch { settle(step, operation, commands.submit(command(operation))) }
+        viewModelScope.launch {
+            settle(step, submission.send(commands::find, step) { commands.submit(command(it)) })
+        }
     }
 
-    private suspend fun settle(
-        step: String,
-        operation: OperationId,
-        outcome: InvestmentCommandOutcome
-    ) {
-        when (outcome) {
-            is CommandOutcome.Committed -> committed(step, outcome.value.investmentId)
+    private fun settle(step: String, settled: Settled<CommittedInvestment, InvestmentRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
-            is CommandOutcome.OutcomeUnknown -> ask(step, operation)
+            is Settled.Committed -> committed(step, settled.value.investmentId)
 
-            is CommandOutcome.Rejected -> notSaved(
-                when (val reason = outcome.reason) {
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, saveError = InvestmentSaveError.Unknown)
+            }
+
+            Settled.NotCommitted -> notSaved(InvestmentSaveError.NotSaved)
+
+            is Settled.Rejected -> notSaved(
+                when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration,
                     is CommandRejection.VersionConflict,
                     CommandRejection.OperationConflict -> InvestmentSaveError.Changed
@@ -655,32 +712,18 @@ class InvestmentEditorViewModel(
         }
     }
 
-    /** Asks how [operation] ended, with its own identifier. Only a receipt counts as saved. */
-    private suspend fun ask(step: String, operation: OperationId) {
-        progress.update { it.copy(busy = true, saveError = null) }
-        when (val found = commands.find(operation)) {
-            is Outcome.Failure -> progress.update {
-                it.copy(busy = false, saveError = InvestmentSaveError.Unknown)
-            }
-
-            is Outcome.Success -> found.value?.let { committed(step, it.investmentId) }
-                ?: notSaved(InvestmentSaveError.NotSaved)
-        }
-    }
-
-    /** The saved operation after a restart or a Comprobar, asked about before anything else. */
+    /**
+     * The saved operation after a restart or a Comprobar, asked about with its own
+     * identifier before anything else. Only a receipt counts as saved.
+     */
     private suspend fun recover() {
-        val operation = (saved.get<String>(KEY_OP)?.let(OperationId::of) as? Outcome.Success)?.value
-        if (operation == null) {
-            saved[KEY_OP] = null
-            return
-        }
-        ask(saved.get<String>(KEY_STEP) ?: STEP_CREATE, operation)
+        if (!submission.pending) return
+        val step = submission.step ?: STEP_CREATE
+        progress.update { it.copy(busy = true, saveError = null) }
+        settle(step, submission.recover(commands::find))
     }
 
     private fun committed(step: String, id: InvestmentId?) {
-        saved[KEY_OP] = null
-        saved[KEY_STEP] = null
         finish(
             when (step) {
                 STEP_CREATE -> id?.let { InvestmentEditorResult.Created(it.value) }
@@ -698,8 +741,6 @@ class InvestmentEditorViewModel(
      * the form takes the generation and version as they are now and keeps the draft.
      */
     private fun notSaved(error: InvestmentSaveError) {
-        saved[KEY_OP] = null
-        saved[KEY_STEP] = null
         saved[KEY_CONFIRM] = false
         if (error == InvestmentSaveError.Changed) {
             readable()?.let { read ->
@@ -744,26 +785,13 @@ class InvestmentEditorViewModel(
         private const val USD_WHOLE_DIGITS = 10
         private const val RATE_WHOLE_DIGITS = 6
 
-        private const val KEY_NAME = "investment.editor.name"
-        private const val KEY_DESCRIPTION = "investment.editor.description"
-        private const val KEY_ICON = "investment.editor.icon"
-        private const val KEY_CURRENCY = "investment.editor.currency"
-        private const val KEY_SAME = "investment.editor.sameValue"
-        private const val KEY_COP_FIRST = "investment.editor.cop.first"
-        private const val KEY_COP_VALUE = "investment.editor.cop.value"
-        private const val KEY_USD_FIRST = "investment.editor.usd.first"
-        private const val KEY_USD_VALUE = "investment.editor.usd.value"
-        private const val KEY_RATE = "investment.editor.rate"
-        private const val KEY_DATE = "investment.editor.date"
-        private const val KEY_RATE_DATE = "investment.editor.rateDate"
-        private const val KEY_PAD = "investment.editor.pad"
+        private const val KEY_DRAFT = "investment.editor.draft"
         private const val KEY_PICKER = "investment.editor.datePicker"
         private const val KEY_DRAFTED = "investment.editor.drafted"
         private const val KEY_GENERATION = "investment.editor.generation"
         private const val KEY_VERSION = "investment.editor.version"
         private const val KEY_CONFIRM = "investment.editor.confirmDelete"
         private const val KEY_OP = "investment.editor.operation"
-        private const val KEY_STEP = "investment.editor.step"
         private const val KEY_RESULT = "investment.editor.result"
         private const val STEP_CREATE = "create"
         private const val STEP_EDIT = "edit"
