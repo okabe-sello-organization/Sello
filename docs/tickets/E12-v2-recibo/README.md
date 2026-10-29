@@ -14,6 +14,8 @@ v2 as presentation guidance only: goals, recurrence and reservations are not MVP
 so the goal pill, "Llegó al 100 %" row, reserved-payment footnote, **Sin margen**
 and **Revisar** are out of this epic and must not appear as placeholders.
 
+## Decisions
+
 **Current focus (owner decision, 2026-10-16):** bring Recibo to a working v2 state
 before new features and before MVP release work; SELLO-033 therefore depends on this
 epic. Read dependency links for order: SELLO-068 and SELLO-069 wire the built

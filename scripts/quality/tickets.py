@@ -13,6 +13,7 @@ from pathlib import Path
 
 TICKETS_DIR = "docs/tickets"
 TEMPLATE_DIR = "TEMPLATE"
+ATTACHMENTS = "attachments"
 STATUSES = ("Backlog", "Ready", "In Progress", "Review", "Blocked", "Done")
 REQUIRED_SECTIONS = ("Outcome", "Acceptance criteria")
 PRIORITIES = {"P0": "Highest", "P1": "High", "P2": "Medium"}
@@ -104,6 +105,11 @@ def load(root):
     base = Path(root) / TICKETS_DIR
     if not base.is_dir():
         raise ValueError(f"No tickets under {TICKETS_DIR}")
+    for entry in sorted(base.iterdir()):
+        if entry.name.startswith(".") or entry.name in ("README.md", TEMPLATE_DIR):
+            continue
+        if not (entry.is_dir() and EPIC_FOLDER.fullmatch(entry.name)):
+            raise ValueError(f"{entry.relative_to(root)}: not an epic folder (E0N-<slug>)")
     epics = []
     for epic_dir in sorted(path for path in base.iterdir() if path.is_dir() and EPIC_FOLDER.fullmatch(path.name)):
         readme = epic_dir / "README.md"
@@ -113,6 +119,11 @@ def load(root):
         folders = sorted(path.name for path in epic_dir.iterdir() if path.is_dir() and TICKET_ID.fullmatch(path.name))
         if folders:
             raise ValueError(f"{epic_dir.relative_to(root)}: ticket folders {', '.join(folders)}; a ticket is one file, SELLO-0NN.md")
+        for entry in sorted(epic_dir.iterdir()):
+            allowed = (entry.name == "README.md" or (entry.is_dir() and entry.name == ATTACHMENTS)
+                       or (entry.is_file() and TICKET_FILE.fullmatch(entry.name)))
+            if not (allowed or entry.name.startswith(".")):
+                raise ValueError(f"{entry.relative_to(root)}: an epic folder holds only README.md, SELLO-0NN.md files and {ATTACHMENTS}/")
         for source in sorted(path for path in epic_dir.iterdir() if path.is_file() and TICKET_FILE.fullmatch(path.name)):
             ticket = parse_ticket(source, source.read_text(encoding="utf-8"), epic.identifier)
             if ticket.identifier != source.stem:

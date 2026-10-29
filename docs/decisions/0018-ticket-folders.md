@@ -1,4 +1,4 @@
-# 0018 — One folder per ticket replaces the board
+# 0018 — One folder per ticket replaces the board (now one file per ticket)
 
 **Owner:** project owner (user) · **Date:** 2026-10-24
 **Status:** user-authorized implementation; amended 2026-10-29.

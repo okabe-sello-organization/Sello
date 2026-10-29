@@ -5,7 +5,7 @@ SELLO-105, checked on 2026-10-25 at `main` `c8d0b4c` against the locked v2
 (`components.html`), [ADR 0017](../../../decisions/0017-goals-recurrence-investments.md)
 and the [Inversiones brief](../../screen-briefs/investments.md). Each item was opened in
 the code and, where something is drawn, in the app and the catalog on an API-30 emulator
-(screenshots).
+(screenshots removed on 2026-10-29 with the ticket evidence; Git history before commit `02fe99b9` keeps them).
 
 **In short:** most of the drawing exists. The v2 component pass built `PerformanceLine`,
 `InvestmentRow`, `investmentShade`, `RecordedValuesChart`, `SplitBar`, the ink tone for

@@ -181,8 +181,9 @@ by month → which days → one suggestion. The month in progress is never proje
   only: goal and investment records are not destinations (ADR 0012 BG4), and Sin asignar
   stays on the income screen. Under the tear line, a stub of two centred halves:
   **Ingresos** ("3 en octubre") opens the income list and **Fijos** ("Próximo: 28 oct",
-  "hoy", "mañana" or "Ninguno activo") opens Pagos e ingresos fijos. The mockup is in
-  SELLO-124's `artifacts/`.
+  "hoy", "mañana" or "Ninguno activo") opens Pagos e ingresos fijos. The mockup is
+  [SELLO-124's maqueta](../../tickets/E22-income-receipt/attachments/SELLO-124-maqueta.html)
+  ([image](../../tickets/E22-income-receipt/attachments/SELLO-124-maqueta.png)).
 - **Mes a mes:** "Un mes normal" (average of the full months shown) first, then
   v1.1 columns: past months in `pastBar`, the month in progress striped and marked
   `*`, one dashed limit line, values printed only on the highest and current

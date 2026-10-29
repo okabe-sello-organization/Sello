@@ -59,13 +59,13 @@ carryover (E09), legacy import (E10) and the manual assistive-technology pass (E
   target met on the shrunk release.
 - Privacy: [MVP data handling](../privacy/mvp-data-handling.md).
 - Libraries: [dependencies](dependencies.md) and [advisories](advisories.md).
-- The final G3 run and its counts: SELLO-036's delivery evidence.
+- The final G3 run and its counts: SELLO-036's delivery evidence (removed on 2026-10-29 with the ticket evidence; Git history before commit `02fe99b9` keeps it).
 
 ## Owner walkthrough on the signed candidate
 
 On the Samsung SM-S731B (Android 16), fresh install of the candidate, synthetic data,
-each figure checked against the value worked out beforehand. Screenshots:
-evidence.
+each figure checked against the value worked out beforehand. The screenshots were
+removed on 2026-10-29 with the ticket evidence; Git history before commit `02fe99b9` keeps them.
 
 | Step | Expected and seen |
 | --- | --- |

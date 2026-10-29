@@ -68,13 +68,37 @@ class TicketFileTests(unittest.TestCase):
 
     def test_old_sections_and_images_are_allowed(self):
         self.epic(SELLO_001=ticket_text() + "\n### Implementation plan\n1. Build it.\n")
-        self.write("docs/tickets/E01-foundation/images/SELLO-001-screen.png", "png")
+        self.write("docs/tickets/E01-foundation/attachments/SELLO-001-screen.png", "png")
         self.assertEqual(["SELLO-001"], [t.identifier for t in self.load()[0].tickets])
 
     def test_epic_folder_without_a_readme_is_rejected(self):
         self.write("docs/tickets/E01-foundation/SELLO-001.md", ticket_text())
         with self.assertRaisesRegex(ValueError, "README.md"):
             self.load()
+
+    def test_stray_files_and_folders_are_rejected(self):
+        for stray in ("docs/tickets/E01-foundation/notes.md", "docs/tickets/E01-foundation/SELLO-12.md",
+                      "docs/tickets/E01-foundation/images/a.png", "docs/tickets/SELLO-002.md",
+                      "docs/tickets/E23_misnamed/SELLO-003.md"):
+            with self.subTest(stray=stray):
+                directory = tempfile.TemporaryDirectory()
+                self.addCleanup(directory.cleanup)
+                self.root = Path(directory.name)
+                self.epic(SELLO_001=ticket_text())
+                self.write(stray, ticket_text("SELLO-003"))
+                with self.assertRaisesRegex(ValueError, "epic folder"):
+                    self.load()
+
+    def test_rejects_invalid_fields_and_duplicate_metadata(self):
+        for old, new, message in (("- **Type:** Task", "- **Type:** Epic", "invalid type/gate"),
+                                  ("- **Gate:** G1", "- **Gate:** G9", "invalid type/gate"),
+                                  ("- **Priority:** P0", "- **Priority:** P9", "invalid status/priority"),
+                                  ("- **Status:** Backlog", "- **Status:** Started", "invalid status/priority"),
+                                  ("- **Gate:** G1", "- **Gate:** G1\n- **Gate:** G2", "Duplicate metadata")):
+            with self.subTest(new=new):
+                self.epic(SELLO_001=ticket_text().replace(old, new))
+                with self.assertRaisesRegex(ValueError, message):
+                    self.validate()
 
     def test_template_folder_is_not_an_epic(self):
         self.epic(SELLO_001=ticket_text())

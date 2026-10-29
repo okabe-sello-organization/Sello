@@ -434,6 +434,6 @@ IDs, C01/C02 and unnumbered illustrations, including exact arithmetic and 17
 ordering comparisons, with no blocking findings. These are independently checked
 documentation expectations, not passing app tests or human technical review.
 SELLO-001 is Done with documentation/G0 evidence in the
-canonical ticket.
+[canonical ticket](../tickets/E01-foundation/SELLO-001.md).
 Policies, numerical expectations and corpus version 32 are unchanged. Older
 walkthrough/pending-review entries preserve chronology, not current blockers.
