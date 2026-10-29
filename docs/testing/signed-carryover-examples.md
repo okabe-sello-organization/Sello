@@ -98,7 +98,7 @@ spent in it yet. "Lists" is what Sello shows before saving.
 
 ## Reservations, catch-up and the forecast (CP18, CP19)
 
-**Hogar**, base 1.000.000, on from ene, 15 mar 2027 (`D` = 17).
+**Hogar**, base 1.000.000, on from ene. SC35–SC36 are on 15 mar 2027 (`D` = 17); SC37 and SC47 are on 10 mar 2027 (`D` = 22).
 
 | ID | Situation | Result |
 | --- | --- | --- |
@@ -106,7 +106,7 @@ spent in it yet. "Lists" is what Sello shows before saving.
 | SC36 | ene spent 1.200.000, feb 1.000.000; mar spent 900.000; `Q` 150.000 | feb `K` −200.000, `C` 800.000, `R` −200.000; mar `K` −200.000, `C` 800.000, `R` −100.000, `M` −250.000: Revisar, not Excedido; Falta para tus pagos 250.000; allowance 0. Once recorded: spent 1.050.000, `Q` 0, `R` −250.000, Excedido by 250.000 |
 | SC37 | ene spent 1.000.000; feb recorded 800.000 and a 200.000 payment due 5 feb that catch-up has not recorded; 10 mar (`D` = 22), mar spent 500.000 | Before: feb `R` 200.000, mar `K` 200.000, `C` 1.200.000, `R` 700.000, `Q` 200.000 (pending in an earlier month of the chain), `M` 500.000, allowance 22.700. Catch-up records it in feb: feb `R` 0, mar `K` 0, `C` 1.000.000, `R` 500.000, `Q` 0, `M` 500.000, allowance 22.700. The headline never moves; no pre-save preview is asked. The opening notice also names: Hogar, feb: Restante 200.000 → 0, still Cumplido; mar: Límite con arrastre 1.200.000 → 1.000.000 (−200.000) |
 | SC38 | SC37, mar 10, `S` 500.000, `N` 31, `d` 10 | Forecast 500.000 × 31 / 10 = 1.550.000, labelled an estimate, drawn against `C` (1.200.000, then 1.000.000); carry does not change it and the status stays Al día from recorded spending |
-| SC47 | As SC37, but the payment due 5 feb is 300.000, so feb spent becomes 1.100.000 once catch-up records it | Before: feb `R` 200.000, Cumplido; mar `K` 200.000, `C` 1.200.000. After: feb `R` −100.000, Cumplido → Excedido by 100.000; mar `K` −100.000, `C` 900.000. The opening notice lists Hogar, feb: Restante 200.000 → −100.000, now Excedido; mar: Límite con arrastre 1.200.000 → 900.000 (−300.000), derived from the listed 300.000 payment. If that occurrence is deleted from the notice, its lines leave with it |
+| SC47 | As SC37, but the payment due 5 feb is 300.000, so feb spent becomes 1.100.000 once catch-up records it | Before: feb `R` 200.000, Cumplido; mar `K` 200.000, `C` 1.200.000. After: feb `R` −100.000, Cumplido → Excedido by 100.000; mar `K` −100.000, `C` 900.000. The opening notice lists Hogar, feb: Restante 200.000 → −100.000, now Excedido; mar: Límite con arrastre 1.200.000 → 900.000 (−300.000), derived from the listed 300.000 payment. If that occurrence is deleted from the notice, its lines leave with it; the deletion is a correction (CP21), so first the list shows mar: 900.000 → 1.200.000 (+300.000) and feb: Excedido → Cumplido |
 
 ## Order, bounds and time (CP19, CP23–CP25)
 

@@ -141,7 +141,8 @@ net flow and never in the 1–999.999.999.999 transaction range, which it does n
   and any verdict that changed, and each later month with its capacity before and after.
   The change is derived from the listed occurrences, not stored: a month's capacity falls
   by the sum of that category's listed occurrences dated in earlier months of the chain,
-  and an occurrence deleted from the list leaves the notice. *Rejected:* a preview before
+  and an occurrence deleted from the list leaves the notice. Deleting it from the notice is
+  a correction (CP21): the CP20 list of later months is shown before saving. *Rejected:* a preview before
   catch-up (it would block recording payments that are already due) and a silent
   recalculation (it breaks CP9 and CP20).
 - **CP19 (Proposed)** The D03 forecast `S × N / d` is spending only; carry never enters it,
