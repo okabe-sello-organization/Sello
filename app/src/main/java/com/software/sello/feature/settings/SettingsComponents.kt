@@ -54,7 +54,7 @@ internal fun InkSwatches(
                         role = Role.RadioButton
                     ) { onSelect(ink) }
                     .alpha(if (enabled) 1f else DISABLED_ROW_ALPHA)
-                    .padding(4.dp)
+                    .padding(SelloTheme.spacing.xs)
             ) {
                 Box(
                     contentAlignment = Alignment.Center,

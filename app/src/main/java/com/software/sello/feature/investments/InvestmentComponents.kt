@@ -65,7 +65,7 @@ internal fun PerformanceLine(
     Row(
         modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
     ) {
         if (!even) {
             Icon(
@@ -307,7 +307,7 @@ internal fun RecordedValuesChart(
             }
         }
         axis?.let { (start, end) ->
-            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = SelloTheme.spacing.sm)) {
                 Text(
                     start,
                     Modifier.weight(1f),
@@ -324,8 +324,8 @@ internal fun RecordedValuesChart(
         }
         legend?.let { (value, put) ->
             FlowRow(
-                Modifier.fillMaxWidth().padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                Modifier.fillMaxWidth().padding(SelloTheme.spacing.sm),
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
             ) {
                 LegendItem(value, dashed = false, color = colors.brand)
                 LegendItem(put, dashed = true, color = colors.inkSoft)
@@ -340,7 +340,7 @@ internal fun RecordedValuesChart(
                         min = 48.dp
                     ).selectable(mark.id == selectedId, role = Role.RadioButton) {
                         onSelect(mark.id)
-                    }.padding(8.dp),
+                    }.padding(SelloTheme.spacing.sm),
                     color = colors.ink
                 )
             }

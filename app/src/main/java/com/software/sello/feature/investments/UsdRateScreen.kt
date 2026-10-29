@@ -18,7 +18,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.EmptySlip
@@ -87,7 +86,9 @@ fun UsdRateScreen(
                             Text(
                                 stringResource(R.string.usd_rate_history),
                                 style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.semantics { heading() }.padding(bottom = 4.dp)
+                                modifier = Modifier
+                                    .semantics { heading() }
+                                    .padding(bottom = SelloTheme.spacing.xs)
                             )
                             state.history.forEach { rate ->
                                 LeaderLine(dates.dayMonthYear(rate.date), rate.rate)
@@ -115,7 +116,7 @@ private fun Current(
             Text(
                 current.rate,
                 style = MaterialTheme.typography.displayMedium.copy(fontFeatureSettings = null),
-                modifier = Modifier.padding(vertical = 4.dp)
+                modifier = Modifier.padding(vertical = SelloTheme.spacing.xs)
             )
             Text(
                 stringResource(R.string.usd_rate_caption, day),
@@ -128,7 +129,9 @@ private fun Current(
         SelloButton(
             stringResource(R.string.usd_rate_change),
             { onAction(UsdRateAction.Change) },
-            Modifier.fillMaxWidth().padding(top = 12.dp).testTag(USD_RATE_CHANGE_TAG),
+            Modifier.fillMaxWidth()
+                .padding(top = SelloTheme.spacing.md)
+                .testTag(USD_RATE_CHANGE_TAG),
             kind = ButtonKind.Outlined,
             icon = SelloIcon.Autorenew
         )

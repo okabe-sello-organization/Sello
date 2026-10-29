@@ -122,7 +122,7 @@ fun SchedulesScreen(
                             stringResource(R.string.schedules_footnote),
                             style = MaterialTheme.typography.bodySmall,
                             color = SelloTheme.colors.inkSoft,
-                            modifier = Modifier.padding(horizontal = 4.dp)
+                            modifier = Modifier.padding(horizontal = SelloTheme.spacing.xs)
                         )
                     }
                 }
@@ -162,7 +162,7 @@ private fun Summary(
             ),
             { onAdd(tab) },
             Modifier.testTag("schedules.add"),
-            minHeight = 48.dp
+            minHeight = SelloTheme.spacing.minTouchTarget
         )
     }
 }
@@ -193,7 +193,7 @@ private fun Nothing(plan: ScheduleMonthPlan?, income: Boolean, month: YearMonth)
             it.total,
             color = colors.inkSoft,
             textStyle = MaterialTheme.typography.displaySmall,
-            modifier = Modifier.padding(top = 4.dp)
+            modifier = Modifier.padding(top = SelloTheme.spacing.xs)
         )
     }
     Text(
@@ -225,7 +225,7 @@ private fun Figures(plan: ScheduleMonthPlan, income: Boolean) {
         plan.total,
         color = if (income) colors.semantic.gain else colors.ink,
         textStyle = MaterialTheme.typography.displaySmall,
-        modifier = Modifier.padding(top = 4.dp)
+        modifier = Modifier.padding(top = SelloTheme.spacing.xs)
     )
     SplitBar(
         listOf(
@@ -273,7 +273,7 @@ private fun Part(label: String, amount: MoneyTextValue, dot: Color) {
             label,
             style = MaterialTheme.typography.bodySmall,
             color = SelloTheme.colors.inkSoft,
-            modifier = Modifier.padding(start = 5.dp, end = 4.dp)
+            modifier = Modifier.padding(start = 5.dp, end = SelloTheme.spacing.xs)
         )
         MoneyText(
             amount,

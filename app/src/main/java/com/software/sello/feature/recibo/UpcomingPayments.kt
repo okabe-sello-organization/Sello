@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -241,7 +240,7 @@ fun UpcomingPaymentsScreen(
                         stringResource(R.string.upcoming_footnote),
                         style = MaterialTheme.typography.bodySmall,
                         color = SelloTheme.colors.inkSoft,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        modifier = Modifier.padding(horizontal = SelloTheme.spacing.xs)
                     )
                 }
                 item {

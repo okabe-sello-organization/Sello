@@ -187,7 +187,7 @@ private fun CategoriesSlip(state: AdjustBudgetState.Ready, onOpen: (AdjustRow) -
             stringResource(R.string.adjust_categories_caption, month),
             style = MaterialTheme.typography.bodySmall,
             color = SelloTheme.colors.inkSoft,
-            modifier = Modifier.padding(bottom = 4.dp)
+            modifier = Modifier.padding(bottom = SelloTheme.spacing.xs)
         )
         state.limited.forEach { CategoryRow(it, onOpen) }
         if (state.open.isNotEmpty()) {
@@ -196,7 +196,7 @@ private fun CategoriesSlip(state: AdjustBudgetState.Ready, onOpen: (AdjustRow) -
                 style = MaterialTheme.typography.titleSmall,
                 color = SelloTheme.colors.inkSoft,
                 modifier = Modifier
-                    .padding(top = 12.dp)
+                    .padding(top = SelloTheme.spacing.md)
                     .semantics { heading() }
             )
             state.open.forEach { CategoryRow(it, onOpen) }
@@ -207,7 +207,7 @@ private fun CategoriesSlip(state: AdjustBudgetState.Ready, onOpen: (AdjustRow) -
                 style = MaterialTheme.typography.titleSmall,
                 color = SelloTheme.colors.inkSoft,
                 modifier = Modifier
-                    .padding(top = 12.dp)
+                    .padding(top = SelloTheme.spacing.md)
                     .semantics { heading() }
             )
             state.archived.forEach { CategoryRow(it, onOpen) }
@@ -313,7 +313,7 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             selectedIndex = sheet.scope.ordinal,
             onSelect = { onSheet(LimitSheetAction.Scope(LimitScope.entries[it])) },
             enabled = !locked,
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = SelloTheme.spacing.sm)
         )
         Text(
             stringResource(
@@ -332,7 +332,7 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             Modifier
                 .fillMaxWidth()
                 .background(colors.paperAlt, SelloTheme.shapes.control)
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .padding(horizontal = SelloTheme.spacing.md, vertical = SelloTheme.spacing.sm)
         ) {
             Row {
                 Text(
@@ -355,7 +355,7 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier
-                    .padding(top = 8.dp)
+                    .padding(top = SelloTheme.spacing.sm)
                     .horizontalScroll(rememberScrollState())
             ) {
                 sheet.chips.forEach { chip ->
@@ -374,7 +374,7 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             FactLine(
                 AnnotatedString(shown),
                 Modifier
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = SelloTheme.spacing.sm)
                     .semantics { contentDescription = spoken }
             )
         }
@@ -383,7 +383,7 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
                 errorText(error, sheet),
                 color = colors.semantic.loss,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 4.dp)
+                modifier = Modifier.padding(vertical = SelloTheme.spacing.xs)
             )
             if (error == LimitSheetError.Conflict || error == LimitSheetError.DataChanged) {
                 SelloButton(
@@ -412,7 +412,7 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             loading = sheet.busy,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
+                .padding(vertical = SelloTheme.spacing.sm)
         )
         AmountKeypad(
             onDigit = { onSheet(LimitSheetAction.Digit(it)) },

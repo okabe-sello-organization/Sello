@@ -97,7 +97,7 @@ internal fun CategoryCell(
     var menuOpen by remember { mutableStateOf(false) }
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
         modifier = modifier
             .combinedClickable(
                 role = Role.Button,
@@ -177,9 +177,9 @@ internal fun <T> CategoryGrid(
     val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val columns = categoryColumns(maxWidth, fontScale)
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
             items.withIndex().chunked(columns).forEach { row ->
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
                     row.forEach { (index, item) ->
                         Box(modifier = Modifier.weight(1f)) { cell(index, item) }
                     }
@@ -406,7 +406,7 @@ internal fun KeyValue(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
         ) {
             if (icon != null) {
                 Icon(

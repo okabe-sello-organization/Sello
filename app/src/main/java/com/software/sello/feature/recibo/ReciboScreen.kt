@@ -220,7 +220,7 @@ internal fun ShortfallNote(shortfall: ReciboShortfall) {
         style = MaterialTheme.typography.bodyMedium,
         color = SelloTheme.colors.inkSoft,
         modifier = Modifier
-            .padding(top = 8.dp)
+            .padding(top = SelloTheme.spacing.sm)
             .testTag(RECIBO_SHORTFALL_TAG)
             .clearAndSetSemantics { contentDescription = spoken }
     )
@@ -256,7 +256,7 @@ private fun AdjustBudgetLink(onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .padding(top = 4.dp)
+            .padding(top = SelloTheme.spacing.xs)
             .heightIn(min = SelloTheme.spacing.minTouchTarget)
             .clickable(role = Role.Button, onClick = onClick)
             // Before the clear: a tag after it would be cleared with everything else.
@@ -310,7 +310,7 @@ private fun PerDayFigure(perDay: ReciboPerDay, over: Boolean) {
                 text = stringResource(R.string.recibo_per_day_unit),
                 style = MaterialTheme.typography.bodyLarge,
                 color = SelloTheme.colors.inkSoft,
-                modifier = Modifier.padding(bottom = 4.dp)
+                modifier = Modifier.padding(bottom = SelloTheme.spacing.xs)
             )
         }
         Text(
@@ -341,7 +341,7 @@ private fun ClosedMonthNote(closed: ReciboClosedMonth) {
         style = MaterialTheme.typography.bodyMedium,
         color = SelloTheme.colors.inkSoft,
         modifier = Modifier
-            .padding(top = 8.dp)
+            .padding(top = SelloTheme.spacing.sm)
             .testTag(RECIBO_CLOSED_TAG)
             .semantics { contentDescription = spoken }
     )

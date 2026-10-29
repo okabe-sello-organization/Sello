@@ -98,7 +98,9 @@ private fun Answer(
         SelloButton(
             stringResource(R.string.investment_record_value),
             { onAction(InvestmentDetailAction.RecordValue) },
-            Modifier.fillMaxWidth().padding(top = 12.dp).testTag(INVESTMENT_RECORD_VALUE_TAG),
+            Modifier.fillMaxWidth()
+                .padding(top = SelloTheme.spacing.md)
+                .testTag(INVESTMENT_RECORD_VALUE_TAG),
             kind = ButtonKind.Outlined,
             icon = SelloIcon.Insights,
             tone = ButtonTone.Ink
@@ -185,7 +187,7 @@ private fun Chart(
         Text(
             stringResource(R.string.investment_chart_title),
             style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.semantics { heading() }.padding(bottom = 4.dp)
+            modifier = Modifier.semantics { heading() }.padding(bottom = SelloTheme.spacing.xs)
         )
         val start = dates.monthShortYear(chart.start)
         val end = dates.monthShortYear(chart.end)

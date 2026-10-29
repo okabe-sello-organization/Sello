@@ -271,7 +271,7 @@ private fun HeaderSlip(
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs),
                 modifier = Modifier.testTag(CATEGORY_DETAIL_SPENT_TAG)
             ) {
                 Text(
@@ -282,7 +282,7 @@ private fun HeaderSlip(
                 MoneyText(category.spent, textStyle = MaterialTheme.typography.labelMedium)
             }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs),
                 modifier = Modifier.testTag(CATEGORY_DETAIL_LIMIT_TAG)
             ) {
                 category.limit?.let {
