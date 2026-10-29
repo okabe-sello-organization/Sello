@@ -19,7 +19,8 @@ The Gradle part of G1, kept identical to `scripts/quality/gates.py` by a test:
 ```bash
 ./gradlew ktlintCheck --continue
 ./gradlew :domain:test :data:testDebugUnitTest :design-system:testDebugUnitTest :app:testDebugUnitTest \
-  :app:verifyRoborazziDebug lintDebug :app:assembleDebug :app:assembleRelease --continue
+  :app:verifyRoborazziDebug :design-system:verifyRoborazziDebug lintDebug :app:assembleDebug \
+  :app:assembleRelease --continue
 ```
 
 A ticket's `Gate` field is advisory: what the ticket expects to need. Nothing enforces
@@ -32,7 +33,7 @@ Which layer tests what ([ADR 0022](../decisions/0022-jvm-screen-and-screenshot-t
 | Layer | Tests | Where |
 | --- | --- | --- |
 | JVM | Domain rules, view models, and screens rendered from state given by hand: what each state shows, what each control reports, layout geometry, font scale | `<module>/src/test/`, Robolectric |
-| JVM screenshots | What a screen looks like, per ink, light or dark and font scale | `app/src/test/`, Roborazzi; baselines in `app/src/test/screenshots/` |
+| JVM screenshots | What a screen looks like, per ink, light or dark and font scale; what each group of components looks like | `app/src/test/` and `design-system/src/test/`, Roborazzi; baselines in `<module>/src/test/screenshots/` |
 | Device | Storage on real Room, platform contracts (system keyboard, insets, backup, launcher) and user journeys through the real app | `<module>/src/androidTest*/` |
 
 A JVM screen test runs with `@RunWith(AndroidJUnit4::class)` and `createComposeRule()`
@@ -41,7 +42,7 @@ Robolectric gives it API 37 and the hosted emulator's 320x640 dp screen
 (`app/src/test/resources/robolectric.properties`), a plain `Application` and no network:
 the Android framework jar is a locked Gradle dependency read in offline mode.
 
-The host gate runs `:app:verifyRoborazziDebug`: every capture must match its committed
+The host gate runs `:app:verifyRoborazziDebug` and `:design-system:verifyRoborazziDebug`: every capture must match its committed
 baseline, and a capture without one fails. A visual change re-records the baselines in
 the same pull request, and the image diff in the pull request is how the change is
 reviewed:

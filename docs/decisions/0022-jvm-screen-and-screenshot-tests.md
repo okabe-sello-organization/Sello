@@ -47,7 +47,9 @@ at all beyond a person looking.
 - The release runtime classpath does not change; only unit-test classpaths and the
   framework jar's configuration are added to `app/gradle.lockfile`.
 - The expense entry screen and geometry tests (41) moved from the device to the JVM
-  unchanged in their assertions. `design-system` gets the same wiring when its screen
-  tests move.
+  unchanged in their assertions. `design-system` has the same wiring and its
+  component tests moved too; only the system keyboard's insets and the device's real
+  animation setting stay on the device. Its baselines, one image per group of
+  components, are in `design-system/src/test/screenshots/`.
 - Rendering may differ between operating systems; baselines are recorded on Linux,
   as CI runs.
