@@ -23,6 +23,7 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.CategoryInMonth
 import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.policy.MonthlyBudgetPolicy
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CommittedIncome
 import com.software.sello.domain.port.CreateExpense
@@ -297,13 +298,13 @@ class HandIncomeCommands : IncomeCommands {
     val restored = mutableListOf<RestoreIncome>()
     val looked = mutableListOf<OperationId>()
     var createAnswer: (CreateIncome) -> IncomeCommandOutcome =
-        { IncomeCommandOutcome.Committed(committed(it.operationId, incomeId(900)), false) }
+        { CommandOutcome.Committed(committed(it.operationId, incomeId(900)), false) }
     var editAnswer: (EditIncome) -> IncomeCommandOutcome =
-        { IncomeCommandOutcome.Committed(committed(it.operationId, it.incomeId), false) }
+        { CommandOutcome.Committed(committed(it.operationId, it.incomeId), false) }
     var deleteAnswer: (DeleteIncome) -> IncomeCommandOutcome =
-        { IncomeCommandOutcome.Committed(committed(it.operationId, it.incomeId), false) }
+        { CommandOutcome.Committed(committed(it.operationId, it.incomeId), false) }
     var restoreAnswer: (RestoreIncome) -> IncomeCommandOutcome =
-        { IncomeCommandOutcome.Committed(committed(it.operationId, incomeId(900)), false) }
+        { CommandOutcome.Committed(committed(it.operationId, incomeId(900)), false) }
     var found: (
         OperationId
     ) -> Outcome<CommittedIncome?, StorageFailure> = { Outcome.Success(null) }

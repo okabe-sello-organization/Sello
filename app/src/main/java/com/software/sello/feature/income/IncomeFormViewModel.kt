@@ -17,6 +17,9 @@ import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.AmountDraftError
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteIncome
@@ -507,21 +510,28 @@ class IncomeFormViewModel(
 
     private suspend fun settle(outcome: IncomeCommandOutcome) {
         when (outcome) {
-            is IncomeCommandOutcome.Committed -> committed(outcome.income.incomeId)
+            is CommandOutcome.Committed -> committed(outcome.value.incomeId)
 
-            is IncomeCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is IncomeCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 saved[OPERATION] = null
                 // Asked again unless the following incomes already changed.
                 if (saved.get<Boolean>(FOLLOWING_SAVED) != true) saved[FOLLOWING] = null
-                val error = when (outcome.reason) {
-                    is IncomeRejection.FutureDate -> IncomeFormError.FutureDate
-                    IncomeRejection.InvalidDate -> IncomeFormError.InvalidDate
-                    is IncomeRejection.StaleGeneration -> IncomeFormError.DataChanged
-                    IncomeRejection.IncomeMissing -> IncomeFormError.IncomeGone
-                    is IncomeRejection.VersionConflict -> IncomeFormError.IncomeChanged
-                    else -> IncomeFormError.NotSaved
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
+
+                    is CommandRejection.VersionConflict -> IncomeFormError.IncomeChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.StorageFailed -> IncomeFormError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        is IncomeRejection.FutureDate -> IncomeFormError.FutureDate
+                        IncomeRejection.InvalidDate -> IncomeFormError.InvalidDate
+                        IncomeRejection.IncomeMissing -> IncomeFormError.IncomeGone
+                        else -> IncomeFormError.NotSaved
+                    }
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }
@@ -722,19 +732,19 @@ class IncomeFormViewModel(
                     DeleteIncome(operation, generation, id, original.version)
                 )
             ) {
-                is IncomeCommandOutcome.Committed -> {
+                is CommandOutcome.Committed -> {
                     saved[OPERATION] = null
                     progress.update { it.copy(busy = false, closed = true) }
                 }
 
-                is IncomeCommandOutcome.OutcomeUnknown -> recover()
+                is CommandOutcome.OutcomeUnknown -> recover()
 
-                is IncomeCommandOutcome.Rejected -> {
+                is CommandOutcome.Rejected -> {
                     saved[OPERATION] = null
                     val error = when (result.reason) {
-                        IncomeRejection.IncomeMissing -> IncomeFormError.IncomeGone
-                        is IncomeRejection.VersionConflict -> IncomeFormError.IncomeChanged
-                        is IncomeRejection.StaleGeneration -> IncomeFormError.DataChanged
+                        Specific(IncomeRejection.IncomeMissing) -> IncomeFormError.IncomeGone
+                        is CommandRejection.VersionConflict -> IncomeFormError.IncomeChanged
+                        is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
                         else -> IncomeFormError.NotDeleted
                     }
                     progress.update { it.copy(busy = false, error = error) }

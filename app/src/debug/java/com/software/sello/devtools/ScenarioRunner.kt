@@ -50,6 +50,8 @@ import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.ChangeGoalTarget
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
@@ -321,9 +323,9 @@ class ScenarioRunner(
                     )
                 )
             ) {
-                is IncomeCommandOutcome.Committed -> null
-                is IncomeCommandOutcome.Rejected -> rejected(outcome.reason)
-                is IncomeCommandOutcome.OutcomeUnknown -> UNKNOWN
+                is CommandOutcome.Committed -> null
+                is CommandOutcome.Rejected -> rejected(outcome.reason)
+                is CommandOutcome.OutcomeUnknown -> UNKNOWN
             }
 
             is Goal -> goal(
@@ -592,7 +594,8 @@ class ScenarioRunner(
         rate.on ?: today
     )
 
-    private fun rejected(reason: Any) = "rechazado: ${name(reason)}"
+    private fun rejected(reason: Any) =
+        "rechazado: ${name((reason as? CommandRejection.Specific<*>)?.reason ?: reason)}"
 
     private fun name(reason: Any): String = reason::class.simpleName ?: reason.toString()
 

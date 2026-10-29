@@ -8,6 +8,9 @@ import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteInvestmentMovement
@@ -510,12 +513,12 @@ class ExpenseCorrectionsTest {
         advanceTimeBy(1)
         runCurrent()
         val after = notice
-        incomes.restoreAnswer = { IncomeCommandOutcome.Rejected(IncomeRejection.UndoExpired) }
+        incomes.restoreAnswer = { CommandOutcome.Rejected(Specific(IncomeRejection.UndoExpired)) }
         deleteIncome()
         corrections.undo()
         runCurrent()
         val late = notice
-        incomes.restoreAnswer = { IncomeCommandOutcome.Rejected(IncomeRejection.UndoConflict) }
+        incomes.restoreAnswer = { CommandOutcome.Rejected(Specific(IncomeRejection.UndoConflict)) }
         deleteIncome()
         corrections.undo()
         runCurrent()
@@ -543,14 +546,14 @@ class ExpenseCorrectionsTest {
     @Test
     fun aRefusedIncomeDeletionSaysWhyAndASavedIncomeEditIsSaidForAMoment() = test {
         val answers = listOf(
-            IncomeRejection.IncomeMissing to DeleteResult.Gone,
-            IncomeRejection.VersionConflict(current = 4) to DeleteResult.Changed,
-            IncomeRejection.StaleGeneration(current = 8) to DeleteResult.DataChanged,
-            IncomeRejection.StorageFailed(StorageFailure.Unavailable("x")) to DeleteResult.Failed
+            Specific(IncomeRejection.IncomeMissing) to DeleteResult.Gone,
+            CommandRejection.VersionConflict(current = 4) to DeleteResult.Changed,
+            CommandRejection.StaleGeneration(current = 8) to DeleteResult.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to DeleteResult.Failed
         )
 
         val results = answers.map { (reason, _) ->
-            incomes.deleteAnswer = { IncomeCommandOutcome.Rejected(reason) }
+            incomes.deleteAnswer = { CommandOutcome.Rejected(reason) }
             deleteIncome() to notice
         }
         corrections.incomeUpdated()

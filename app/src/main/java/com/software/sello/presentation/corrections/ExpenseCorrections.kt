@@ -9,6 +9,9 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteGoalMovement
@@ -345,7 +348,7 @@ class ExpenseCorrections(
     /** The same for an income. */
     suspend fun deleteIncome(command: DeleteIncome): IncomeCommandOutcome = scope.async {
         val outcome = incomes.delete(command)
-        if (outcome is IncomeCommandOutcome.Committed) incomeDeleted(outcome.income.receipt)
+        if (outcome is CommandOutcome.Committed) incomeDeleted(outcome.value.receipt)
         outcome
     }.await()
 
@@ -362,15 +365,15 @@ class ExpenseCorrections(
         val operation = operation()
         val command = DeleteIncome(operation, generation, incomeId, expectedVersion)
         val committed = when (val outcome = incomes.delete(command)) {
-            is IncomeCommandOutcome.Committed -> true
+            is CommandOutcome.Committed -> true
 
-            is IncomeCommandOutcome.OutcomeUnknown ->
+            is CommandOutcome.OutcomeUnknown ->
                 (incomes.find(operation) as? Outcome.Success)?.value != null
 
-            is IncomeCommandOutcome.Rejected -> return@async when (outcome.reason) {
-                IncomeRejection.IncomeMissing -> DeleteResult.Gone
-                is IncomeRejection.VersionConflict -> DeleteResult.Changed
-                is IncomeRejection.StaleGeneration -> DeleteResult.DataChanged
+            is CommandOutcome.Rejected -> return@async when (outcome.reason) {
+                Specific(IncomeRejection.IncomeMissing) -> DeleteResult.Gone
+                is CommandRejection.VersionConflict -> DeleteResult.Changed
+                is CommandRejection.StaleGeneration -> DeleteResult.DataChanged
                 else -> DeleteResult.Failed
             }
         }
@@ -442,16 +445,19 @@ class ExpenseCorrections(
     private suspend fun restoreIncome(offered: Pending): Undone {
         val command = RestoreIncome(offered.undoOperation, offered.generation, offered.deletionId)
         return when (val outcome = incomes.restore(command)) {
-            is IncomeCommandOutcome.Committed -> Undone.Restored
+            is CommandOutcome.Committed -> Undone.Restored
 
-            is IncomeCommandOutcome.OutcomeUnknown -> {
+            is CommandOutcome.OutcomeUnknown -> {
                 val found = (incomes.find(offered.undoOperation) as? Outcome.Success)?.value
                 if (found != null) Undone.Restored else Undone.Retry
             }
 
-            is IncomeCommandOutcome.Rejected -> when (outcome.reason) {
-                IncomeRejection.UndoExpired -> Undone.TooLate
-                IncomeRejection.UndoConflict, is IncomeRejection.StaleGeneration -> Undone.Blocked
+            is CommandOutcome.Rejected -> when (outcome.reason) {
+                Specific(IncomeRejection.UndoExpired) -> Undone.TooLate
+
+                Specific(IncomeRejection.UndoConflict),
+                is CommandRejection.StaleGeneration -> Undone.Blocked
+
                 else -> Undone.Retry
             }
         }

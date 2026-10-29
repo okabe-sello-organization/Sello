@@ -13,6 +13,7 @@ import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CommittedGoal
@@ -172,13 +173,13 @@ class LedgerIncomes(private val ledger: Ledger) : IncomeCommands {
             OperationKind.CreateIncome,
             command.date
         )?.let { (receipt, id, replayed) ->
-            IncomeCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedIncome(receipt, IncomeId.of(id).value()),
                 replayed
             )
         } ?: error("unused")
     } catch (_: Ledger.Unknown) {
-        IncomeCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(

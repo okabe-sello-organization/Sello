@@ -4,6 +4,7 @@ import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteExpense
@@ -66,7 +67,7 @@ class FencedIncomeCommands(
     override suspend fun restore(command: RestoreIncome) = run { commands.restore(command) }
 
     private suspend fun run(block: suspend () -> IncomeCommandOutcome) = fence.write(block).also {
-        if (it is IncomeCommandOutcome.Committed && !it.replayed) saved()
+        if (it is CommandOutcome.Committed && !it.replayed) saved()
     }
 }
 

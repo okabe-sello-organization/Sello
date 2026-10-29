@@ -18,15 +18,17 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.EffectiveDateError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.AuditClock
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedIncome
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.IncomeCommandOutcome
-import com.software.sello.domain.port.IncomeCommandOutcome.Committed
-import com.software.sello.domain.port.IncomeCommandOutcome.OutcomeUnknown
-import com.software.sello.domain.port.IncomeCommandOutcome.Rejected
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.IncomeUndoOffer
@@ -88,7 +90,7 @@ class RoomIncomeCommands internal constructor(
         CommandRun.Unknown -> OutcomeUnknown(operationId)
     }
 
-    private fun failed(failure: StorageFailure) = Rejected(IncomeRejection.StorageFailed(failure))
+    private fun failed(failure: StorageFailure) = Rejected(CommandRejection.StorageFailed(failure))
 
     private fun StoredReceipt.committedIncome() =
         CommittedIncome(receipt, checkNotNull(incomeId) { "Not an income receipt" })
@@ -103,9 +105,9 @@ class RoomIncomeCommands internal constructor(
     ): IncomeCommandOutcome =
         when (val start = database.startCommand(operationId, generation, kind, digest)) {
             is CommandStart.Proceed -> proceed(start.profile)
-            is CommandStart.Stale -> Rejected(IncomeRejection.StaleGeneration(start.current))
+            is CommandStart.Stale -> Rejected(CommandRejection.StaleGeneration(start.current))
             is CommandStart.Replay -> Committed(start.original.committedIncome(), true)
-            CommandStart.Conflict -> Rejected(IncomeRejection.OperationConflict)
+            CommandStart.Conflict -> Rejected(CommandRejection.OperationConflict)
             is CommandStart.Damaged -> failed(start.failure)
         }
 
@@ -130,7 +132,7 @@ class RoomIncomeCommands internal constructor(
         val kind = OperationKind.CreateIncome
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
-            dateRejection(command.date)?.let { return Rejected(it) }
+            dateRejection(command.date)?.let { return Rejected(Specific(it)) }
 
             val now = audit.now()
             val incomeId = when (val id = IncomeId.of(ids.next())) {
@@ -177,21 +179,21 @@ class RoomIncomeCommands internal constructor(
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             val row = database.incomeDao().byId(command.incomeId.value)
-                ?: return Rejected(IncomeRejection.IncomeMissing)
+                ?: return Rejected(Specific(IncomeRejection.IncomeMissing))
             val current = when (val stored = row.toDomain()) {
                 is Outcome.Success -> stored.value
                 is Outcome.Failure -> return failed(stored.error)
             }
             if (current.version != command.expectedVersion) {
-                return Rejected(IncomeRejection.VersionConflict(current.version))
+                return Rejected(CommandRejection.VersionConflict(current.version))
             }
             val same = current.amount == command.amount &&
                 current.source == command.source &&
                 current.date == command.date &&
                 current.note == command.note
-            if (same) return Rejected(IncomeRejection.Unchanged)
+            if (same) return Rejected(Specific(IncomeRejection.Unchanged))
             if (command.date != current.date) {
-                dateRejection(command.date)?.let { return Rejected(it) }
+                dateRejection(command.date)?.let { return Rejected(Specific(it)) }
             }
 
             val now = audit.now()
@@ -224,9 +226,9 @@ class RoomIncomeCommands internal constructor(
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             val row = database.incomeDao().byId(command.incomeId.value)
-                ?: return Rejected(IncomeRejection.IncomeMissing)
+                ?: return Rejected(Specific(IncomeRejection.IncomeMissing))
             if (row.version != command.expectedVersion) {
-                return Rejected(IncomeRejection.VersionConflict(row.version))
+                return Rejected(CommandRejection.VersionConflict(row.version))
             }
 
             val now = audit.now()
@@ -271,14 +273,14 @@ class RoomIncomeCommands internal constructor(
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             val inTime = undo.offered(UndoWindow.Kind.Income)?.deletionId == command.deletionId
-            if (!inTime) return Rejected(IncomeRejection.UndoExpired)
+            if (!inTime) return Rejected(Specific(IncomeRejection.UndoExpired))
             val kept = database.deletedIncomeDao().find(command.deletionId.value)
-                ?: return Rejected(IncomeRejection.UndoExpired)
+                ?: return Rejected(Specific(IncomeRejection.UndoExpired))
             val taken = kept.generation != profile.generation ||
                 database.incomeDao().byId(kept.incomeId) != null ||
                 database.incomeDao().countAtSequence(kept.sequence) != 0 ||
                 kept.originTaken()
-            if (taken) return Rejected(IncomeRejection.UndoConflict)
+            if (taken) return Rejected(Specific(IncomeRejection.UndoConflict))
 
             database.incomeDao().insert(
                 IncomeEntity(

@@ -10,6 +10,7 @@ import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
@@ -68,7 +69,7 @@ class ResumenSnapshotContractTest {
                     LocalDate.parse(date),
                     null
                 )
-            ) is IncomeCommandOutcome.Committed
+            ) is CommandOutcome.Committed
         )
     }
 
@@ -411,7 +412,7 @@ class ResumenSnapshotContractTest {
                         LocalDate.of(2026, 10, 1),
                         null
                     )
-                ) is IncomeCommandOutcome.Committed
+                ) is CommandOutcome.Committed
             )
             assertEquals(Money.cop(150_000), first.ready(1).income)
             assertEquals(Money.cop(150_000), second.ready(1).income)

@@ -11,6 +11,7 @@ import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpBatch
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteIncome
@@ -274,7 +275,7 @@ class ScheduleCatchUpContractTest {
 
         val undone = ledger.incomes.restore(RestoreIncome(ledger.operation(), 1, deletion))
 
-        assertTrue("$undone", undone is IncomeCommandOutcome.Committed)
+        assertTrue("$undone", undone is CommandOutcome.Committed)
         assertEquals(
             listOf("2026-10-15|1|1000000|${salary.value}"),
             ledger.rows(

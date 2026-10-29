@@ -18,6 +18,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
@@ -235,6 +236,6 @@ object TestCommands {
                 Note.of(null).value()
             )
         )
-        assertTrue("$outcome", outcome is IncomeCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 }

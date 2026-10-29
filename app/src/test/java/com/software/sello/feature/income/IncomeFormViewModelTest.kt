@@ -19,10 +19,13 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.IncomeCommandOutcome
-import com.software.sello.domain.port.IncomeCommandOutcome.Rejected
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.ResumenSnapshotState
@@ -397,10 +400,11 @@ class IncomeFormViewModelTest {
     @Test
     fun aRefusedIncomeKeepsTheDraftAndSaysWhy() {
         val refusals = listOf(
-            IncomeRejection.FutureDate(LocalDate.of(2026, 10, 22)) to IncomeFormError.FutureDate,
-            IncomeRejection.InvalidDate to IncomeFormError.InvalidDate,
-            IncomeRejection.StaleGeneration(8) to IncomeFormError.DataChanged,
-            IncomeRejection.StorageFailed(StorageFailure.Unavailable("x")) to
+            Specific(IncomeRejection.FutureDate(LocalDate.of(2026, 10, 22))) to
+                IncomeFormError.FutureDate,
+            Specific(IncomeRejection.InvalidDate) to IncomeFormError.InvalidDate,
+            CommandRejection.StaleGeneration(8) to IncomeFormError.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to
                 IncomeFormError.NotSaved
         )
 
@@ -417,7 +421,7 @@ class IncomeFormViewModelTest {
 
     @Test
     fun anUnknownSaveCannotBeDiscardedAndLoseTheOperationNeededForRecovery() {
-        commands.createAnswer = { IncomeCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.createAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = ready()
         form.type("5000")
@@ -435,7 +439,7 @@ class IncomeFormViewModelTest {
 
     @Test
     fun anUnknownOutcomeIsLookedUpAndNeverSentAgain() {
-        commands.createAnswer = { IncomeCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.createAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = ready()
         form.type("5000")
@@ -608,10 +612,10 @@ class IncomeFormViewModelTest {
     @Test
     fun aRefusedCorrectionKeepsWhatWasTypedAndOnceItChangedUnderneathNothingMoreIsSent() {
         val refusals = listOf(
-            IncomeRejection.VersionConflict(4) to IncomeFormError.IncomeChanged,
-            IncomeRejection.IncomeMissing to IncomeFormError.IncomeGone,
-            IncomeRejection.StaleGeneration(8) to IncomeFormError.DataChanged,
-            IncomeRejection.StorageFailed(StorageFailure.Unavailable("x")) to
+            CommandRejection.VersionConflict(4) to IncomeFormError.IncomeChanged,
+            Specific(IncomeRejection.IncomeMissing) to IncomeFormError.IncomeGone,
+            CommandRejection.StaleGeneration(8) to IncomeFormError.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to
                 IncomeFormError.NotSaved
         )
 
@@ -659,7 +663,7 @@ class IncomeFormViewModelTest {
 
     @Test
     fun anUncertainDeletionIsRecoveredAsThatDeletionWithoutAnotherWriteOrEditNotice() {
-        commands.deleteAnswer = { IncomeCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = opened()
         form.onAction(IncomeFormAction.Delete)
@@ -678,7 +682,7 @@ class IncomeFormViewModelTest {
     fun deletingFromTheFormDeletesTheVersionReadAndClosesAndARefusalKeepsItOpen() {
         val form = opened()
         form.onAction(IncomeFormAction.Delete)
-        commands.deleteAnswer = { Rejected(IncomeRejection.VersionConflict(4)) }
+        commands.deleteAnswer = { Rejected(CommandRejection.VersionConflict(4)) }
         val refused = opened()
         refused.onAction(IncomeFormAction.Delete)
 
