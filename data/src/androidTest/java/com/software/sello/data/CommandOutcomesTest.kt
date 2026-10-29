@@ -37,7 +37,9 @@ class CommandOutcomesTest {
     private val database get() = ledger.database
 
     @Before
-    fun setUp() = ledger.start()
+    fun setUp() {
+        ledger.start()
+    }
 
     // ---- runOutcome ----
 
