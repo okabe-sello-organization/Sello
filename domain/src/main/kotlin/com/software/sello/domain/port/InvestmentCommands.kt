@@ -132,18 +132,11 @@ data class SetUsdRate(
     val date: LocalDate
 ) : InvestmentCommand
 
-/** Why nothing was written. Each of these is certain: nothing changed. */
+/** Why an investment command wrote nothing, beyond the reasons every [CommandRejection] has. */
 sealed interface InvestmentRejection {
-    data class StaleGeneration(val current: Long) : InvestmentRejection
-
-    data object OperationConflict : InvestmentRejection
-
     data object InvestmentMissing : InvestmentRejection
 
     data object MovementMissing : InvestmentRejection
-
-    /** The investment or the movement changed since the caller read it. */
-    data class VersionConflict(val current: Long) : InvestmentRejection
 
     /** The change asks for exactly what is recorded. */
     data object Unchanged : InvestmentRejection
@@ -186,22 +179,12 @@ sealed interface InvestmentRejection {
 
     /** Undoing would contradict what is recorded now. */
     data object UndoConflict : InvestmentRejection
-
-    data class StorageFailed(val failure: StorageFailure) : InvestmentRejection
 }
 
 /** A committed change and its receipt; [investmentId] is null for [SetUsdRate]. */
 data class CommittedInvestment(val receipt: OperationReceipt, val investmentId: InvestmentId?)
 
-sealed interface InvestmentCommandOutcome {
-    data class Committed(val change: CommittedInvestment, val replayed: Boolean) :
-        InvestmentCommandOutcome
-
-    data class Rejected(val reason: InvestmentRejection) : InvestmentCommandOutcome
-
-    /** Not known whether it was saved: ask [InvestmentCommands.find] or submit the same command. */
-    data class OutcomeUnknown(val operationId: OperationId) : InvestmentCommandOutcome
-}
+typealias InvestmentCommandOutcome = CommandOutcome<CommittedInvestment, InvestmentRejection>
 
 /** The deleted movement that can still be put back. */
 data class InvestmentUndoOffer(
@@ -241,14 +224,7 @@ data class InvestmentBoard(
 )
 
 /** The board as [InvestmentReads.observeBoard] sees it. A failed read keeps the last good board. */
-sealed interface InvestmentBoardState {
-    data object Loading : InvestmentBoardState
-
-    data class Ready(val board: InvestmentBoard) : InvestmentBoardState
-
-    data class Failed(val failure: StorageFailure, val lastGood: InvestmentBoard?) :
-        InvestmentBoardState
-}
+typealias InvestmentBoardState = ReadState<InvestmentBoard, StorageFailure>
 
 interface InvestmentReads {
     /** One damaged investment or rate fails the read: it is never left out. */

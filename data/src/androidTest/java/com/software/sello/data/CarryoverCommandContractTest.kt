@@ -14,9 +14,12 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommandOutcome
-import com.software.sello.domain.port.CategoryCommandOutcome.Committed
-import com.software.sello.domain.port.CategoryCommandOutcome.Rejected
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DisableCarry
@@ -179,15 +182,23 @@ class CarryoverCommandContractTest {
 
         assertEquals(
             listOf(
-                Rejected(CategoryRejection.CarryRefused(CarryEnableRefusal.AlreadyOn)),
-                Rejected(CategoryRejection.CarryRefused(CarryEnableRefusal.UnlimitedThisMonth)),
-                Rejected(CategoryRejection.CarryRefused(CarryEnableRefusal.Archived)),
+                Rejected(Specific(CategoryRejection.CarryRefused(CarryEnableRefusal.AlreadyOn))),
                 Rejected(
-                    CategoryRejection.CarryRefused(
-                        CarryEnableRefusal.BaseAboveLimit(cop(1_000_000_000_000))
+                    Specific(CategoryRejection.CarryRefused(CarryEnableRefusal.UnlimitedThisMonth))
+                ),
+                Rejected(Specific(CategoryRejection.CarryRefused(CarryEnableRefusal.Archived))),
+                Rejected(
+                    Specific(
+                        CategoryRejection.CarryRefused(
+                            CarryEnableRefusal.BaseAboveLimit(cop(1_000_000_000_000))
+                        )
                     )
                 ),
-                Rejected(CategoryRejection.CarryRefused(CarryEnableRefusal.DefaultAfterNotFinite))
+                Rejected(
+                    Specific(
+                        CategoryRejection.CarryRefused(CarryEnableRefusal.DefaultAfterNotFinite)
+                    )
+                )
             ),
             refused
         )
@@ -231,15 +242,17 @@ class CarryoverCommandContractTest {
         // feb spent nothing: mar K 100.000, C 200.000 → 100.000.
         assertEquals(
             Rejected(
-                CategoryRejection.DropUnconfirmed(
-                    DropPreview(
-                        month("2027-03"),
-                        carryIn = cop(100_000),
-                        base = cop(100_000),
-                        capacityBefore = cop(200_000),
-                        capacityAfter = cop(100_000),
-                        remainingBefore = cop(200_000),
-                        remainingAfter = cop(100_000)
+                Specific(
+                    CategoryRejection.DropUnconfirmed(
+                        DropPreview(
+                            month("2027-03"),
+                            carryIn = cop(100_000),
+                            base = cop(100_000),
+                            capacityBefore = cop(200_000),
+                            capacityAfter = cop(100_000),
+                            remainingBefore = cop(200_000),
+                            remainingAfter = cop(100_000)
+                        )
                     )
                 )
             ),
@@ -269,15 +282,17 @@ class CarryoverCommandContractTest {
         )
 
         val preview = Rejected(
-            CategoryRejection.DropUnconfirmed(
-                DropPreview(
-                    month("2027-02"),
-                    carryIn = cop(-20_000),
-                    base = cop(100_000),
-                    capacityBefore = cop(80_000),
-                    capacityAfter = cop(100_000),
-                    remainingBefore = cop(50_000),
-                    remainingAfter = cop(70_000)
+            Specific(
+                CategoryRejection.DropUnconfirmed(
+                    DropPreview(
+                        month("2027-02"),
+                        carryIn = cop(-20_000),
+                        base = cop(100_000),
+                        capacityBefore = cop(80_000),
+                        capacityAfter = cop(100_000),
+                        remainingBefore = cop(50_000),
+                        remainingAfter = cop(70_000)
+                    )
                 )
             )
         )
@@ -361,7 +376,7 @@ class CarryoverCommandContractTest {
             history(ocio, "2027-02").replay.months.map { it.text() }
         )
         assertEquals(
-            Rejected(CategoryRejection.NotCarrying),
+            Rejected(Specific(CategoryRejection.NotCarrying)),
             ledger.categories.submit(disable(comida, 3))
         )
     }
@@ -383,15 +398,17 @@ class CarryoverCommandContractTest {
 
         assertEquals(
             Rejected(
-                CategoryRejection.DropUnconfirmed(
-                    DropPreview(
-                        month("2027-02"),
-                        carryIn = cop(-20_000),
-                        base = cop(100_000),
-                        capacityBefore = cop(80_000),
-                        capacityAfter = cop(100_000),
-                        remainingBefore = cop(80_000),
-                        remainingAfter = cop(100_000)
+                Specific(
+                    CategoryRejection.DropUnconfirmed(
+                        DropPreview(
+                            month("2027-02"),
+                            carryIn = cop(-20_000),
+                            base = cop(100_000),
+                            capacityBefore = cop(80_000),
+                            capacityAfter = cop(100_000),
+                            remainingBefore = cop(80_000),
+                            remainingAfter = cop(100_000)
+                        )
                     )
                 )
             ),
@@ -478,8 +495,8 @@ class CarryoverCommandContractTest {
             )
         )
 
-        assertEquals(Rejected(CategoryRejection.DropUnconfirmed(surplus)), defaultAsked)
-        assertEquals(Rejected(CategoryRejection.DropUnconfirmed(surplus)), monthAsked)
+        assertEquals(Rejected(Specific(CategoryRejection.DropUnconfirmed(surplus))), defaultAsked)
+        assertEquals(Rejected(Specific(CategoryRejection.DropUnconfirmed(surplus))), monthAsked)
         assertEquals(before, unchanged)
         assertTrue("$defaultConfirmed", defaultConfirmed is Committed)
         assertTrue("$monthConfirmed", monthConfirmed is Committed)
@@ -517,7 +534,9 @@ class CarryoverCommandContractTest {
             SetMonthLimit(ledger.operation(), 1, id, 3, month("2027-03"), finite(150_000))
         )
         val unchanged = state()
-        val correction = ((asked as Rejected).reason as CategoryRejection.CorrectionUnconfirmed)
+        val correction =
+            ((asked as Rejected).reason as Specific).reason
+                as CategoryRejection.CorrectionUnconfirmed
         val confirmed = ledger.categories.submit(
             SetMonthLimit(
                 ledger.operation(),
@@ -530,7 +549,10 @@ class CarryoverCommandContractTest {
             )
         )
 
-        assertEquals(Rejected(CategoryRejection.ChainMonthUnlimited(month("2027-03"))), unlimited)
+        assertEquals(
+            Rejected(Specific(CategoryRejection.ChainMonthUnlimited(month("2027-03")))),
+            unlimited
+        )
         assertEquals(revision, correction.confirmation.revision)
         // mar's carry-in does not change, so no later month of the chain is listed; the
         // balance the chain settled in abr is.
@@ -589,7 +611,9 @@ class CarryoverCommandContractTest {
         )
 
         assertEquals(
-            List(3) { Rejected(CategoryRejection.ChainBaseAboveLimit(cop(1_000_000_000_000))) },
+            List(3) {
+                Rejected(Specific(CategoryRejection.ChainBaseAboveLimit(cop(1_000_000_000_000))))
+            },
             refused
         )
         assertEquals(before, unchanged)
@@ -647,7 +671,7 @@ class CarryoverCommandContractTest {
         assertEquals(first.confirmation.change, second.confirmation.change)
         assertEquals(listed, second.correction.listed())
         assertEquals(before, unchanged)
-        assertTrue("$saved", saved is ExpenseCommandOutcome.Committed)
+        assertTrue("$saved", saved is CommandOutcome.Committed)
         assertEquals(revision + 2, ledger.revision())
         assertEquals(
             listOf(
@@ -676,9 +700,9 @@ class CarryoverCommandContractTest {
         val beforeTheChain = ledger.expenses.create(ledger.createExpense(100, "2026-12-05", 30_000))
         val noCarry = ledger.expenses.create(ledger.createExpense(ocio, "2027-01-15", 30_000))
 
-        assertTrue("$thisMonth", thisMonth is ExpenseCommandOutcome.Committed)
-        assertTrue("$beforeTheChain", beforeTheChain is ExpenseCommandOutcome.Committed)
-        assertTrue("$noCarry", noCarry is ExpenseCommandOutcome.Committed)
+        assertTrue("$thisMonth", thisMonth is CommandOutcome.Committed)
+        assertTrue("$beforeTheChain", beforeTheChain is CommandOutcome.Committed)
+        assertTrue("$noCarry", noCarry is CommandOutcome.Committed)
         assertEquals(
             "2027-04|K -40000|C 60000|S 15000|R 45000|OnTrack",
             history(100, "2027-04").replay.months.last().text()
@@ -731,7 +755,7 @@ class CarryoverCommandContractTest {
             correction.edited.map { it.text() }
         )
         assertEquals(emptyMap<YearMonth, Money>(), correction.overallCapacityChange)
-        assertTrue("$saved", saved is ExpenseCommandOutcome.Committed)
+        assertTrue("$saved", saved is CommandOutcome.Committed)
         assertEquals(
             listOf("${uuid(february)}|${uuid(transporte)}"),
             ledger.rows("expense", "id", "category_id").filter { it.startsWith(uuid(february)) }
@@ -773,13 +797,15 @@ class CarryoverCommandContractTest {
         )
 
         assertEquals(
-            ExpenseCommandOutcome.Rejected(
-                ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable)
+            CommandOutcome.Rejected(
+                Specific(ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable))
             ),
             deleted
         )
         assertEquals(
-            Rejected(CategoryRejection.CarryUnavailable(CarryoverFailure.Unrepresentable)),
+            Rejected(
+                Specific(CategoryRejection.CarryUnavailable(CarryoverFailure.Unrepresentable))
+            ),
             corrected
         )
         assertEquals(before, state())
@@ -813,7 +839,7 @@ class CarryoverCommandContractTest {
         assertEquals(Committed(enabled, false), first)
         assertEquals(Committed(disabled, false), dropped)
         assertEquals(Committed(enabled, true), again)
-        assertEquals(Rejected(CategoryRejection.OperationConflict), conflict)
+        assertEquals(Rejected(CommandRejection.OperationConflict), conflict)
         assertEquals(listOf(Committed(enabled, true), Committed(disabled, true)), afterReopening)
         assertEquals(stored, state())
         assertEquals(listOf("${uuid(comida)}|2027-01|2027-02"), ledger.chainRows())
@@ -827,8 +853,8 @@ class CarryoverCommandContractTest {
         val replaced = ledger.categories.submit(enable(comida, 1, generation = 2))
         val stale = ledger.categories.submit(enable(comida, 7))
 
-        assertEquals(Rejected(CategoryRejection.StaleGeneration(current = 1)), replaced)
-        assertEquals(Rejected(CategoryRejection.VersionConflict(current = 1)), stale)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 1)), replaced)
+        assertEquals(Rejected(CommandRejection.VersionConflict(current = 1)), stale)
         assertEquals(before, state())
     }
 
@@ -847,7 +873,7 @@ class CarryoverCommandContractTest {
 
         assertEquals(1, outcomes.count { it is Committed })
         assertEquals(
-            List(7) { Rejected(CategoryRejection.VersionConflict(current = 2)) },
+            List(7) { Rejected(CommandRejection.VersionConflict(current = 2)) },
             outcomes.filter { it !is Committed }
         )
         assertEquals(listOf("${uuid(comida)}|2027-01|null"), ledger.chainRows())
@@ -868,7 +894,7 @@ class CarryoverCommandContractTest {
 
         assertEquals(
             Rejected(
-                CategoryRejection.StorageFailed(
+                CommandRejection.StorageFailed(
                     StorageFailure.Unavailable("SQLiteConstraintException")
                 )
             ),
@@ -952,10 +978,10 @@ class CarryoverCommandContractTest {
             brokenRead
         )
         assertEquals(
-            ExpenseCommandOutcome.Rejected(ExpenseRejection.CarryUnavailable(broken)),
+            CommandOutcome.Rejected(Specific(ExpenseRejection.CarryUnavailable(broken))),
             stillBroken
         )
-        assertEquals(Rejected(CategoryRejection.CarryUnavailable(broken)), drop)
+        assertEquals(Rejected(Specific(CategoryRejection.CarryUnavailable(broken))), drop)
         assertEquals(before, unchanged)
         assertTrue("$repaired", repaired is Committed)
         // SC01 again: abr K −40.000, C 60.000.
@@ -994,12 +1020,12 @@ class CarryoverCommandContractTest {
             ),
             brokenBefore
         )
-        assertTrue("$repaired", repaired is ExpenseCommandOutcome.Committed)
+        assertTrue("$repaired", repaired is CommandOutcome.Committed)
         // ene R 9.223.372.036.854.425.807; feb C …525.807; mar …625.807; abr C …725.807.
         assertEquals(cop(9_223_372_036_854_725_807), budget(comida, "2027-04").budget?.limit)
         assertEquals(
-            ExpenseCommandOutcome.Rejected(
-                ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable)
+            CommandOutcome.Rejected(
+                Specific(ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable))
             ),
             undone
         )
@@ -1043,7 +1069,7 @@ class CarryoverCommandContractTest {
             other.listedCorrection().months.map { it.text() }
         )
         assertEquals(expenses, unchanged)
-        assertTrue("$ownList", ownList is ExpenseCommandOutcome.Committed)
+        assertTrue("$ownList", ownList is CommandOutcome.Committed)
         assertEquals(revision + 1, ledger.revision())
     }
 }

@@ -17,6 +17,9 @@ import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.AmountDraftError
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteIncome
@@ -27,6 +30,7 @@ import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.IncomeRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleCommands
@@ -135,7 +139,7 @@ class IncomeFormViewModel(
         draft.map { YearMonth.from(it.date) }.distinctUntilChanged(),
         progress.map { it.attempt }.distinctUntilChanged()
     ) { month, _ -> month }.flatMapLatest(reads::observeMonth)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, IncomeMonthState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     /** What the composer is writing and its text; kept in [saved] so a restart reopens it. */
     private val composer: StateFlow<Pair<IncomeComposer, String>?> = combine(
@@ -183,11 +187,11 @@ class IncomeFormViewModel(
         }
         viewModelScope.launch {
             month.collect { state ->
-                if (state is IncomeMonthState.Ready) {
+                if (state is ReadState.Ready) {
                     val generation = saved.get<Long>(GENERATION)
                     if (generation == null) {
-                        saved[GENERATION] = state.month.generation
-                    } else if (generation != state.month.generation) {
+                        saved[GENERATION] = state.value.generation
+                    } else if (generation != state.value.generation) {
                         progress.update {
                             it.copy(error = IncomeFormError.DataChanged, generationChanged = true)
                         }
@@ -507,21 +511,28 @@ class IncomeFormViewModel(
 
     private suspend fun settle(outcome: IncomeCommandOutcome) {
         when (outcome) {
-            is IncomeCommandOutcome.Committed -> committed(outcome.income.incomeId)
+            is CommandOutcome.Committed -> committed(outcome.value.incomeId)
 
-            is IncomeCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is IncomeCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 saved[OPERATION] = null
                 // Asked again unless the following incomes already changed.
                 if (saved.get<Boolean>(FOLLOWING_SAVED) != true) saved[FOLLOWING] = null
-                val error = when (outcome.reason) {
-                    is IncomeRejection.FutureDate -> IncomeFormError.FutureDate
-                    IncomeRejection.InvalidDate -> IncomeFormError.InvalidDate
-                    is IncomeRejection.StaleGeneration -> IncomeFormError.DataChanged
-                    IncomeRejection.IncomeMissing -> IncomeFormError.IncomeGone
-                    is IncomeRejection.VersionConflict -> IncomeFormError.IncomeChanged
-                    else -> IncomeFormError.NotSaved
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
+
+                    is CommandRejection.VersionConflict -> IncomeFormError.IncomeChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.StorageFailed -> IncomeFormError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        is IncomeRejection.FutureDate -> IncomeFormError.FutureDate
+                        IncomeRejection.InvalidDate -> IncomeFormError.InvalidDate
+                        IncomeRejection.IncomeMissing -> IncomeFormError.IncomeGone
+                        else -> IncomeFormError.NotSaved
+                    }
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }
@@ -559,11 +570,11 @@ class IncomeFormViewModel(
                     )
                 )
             ) {
-                is ScheduleCommandOutcome.Committed -> followingSaved()
+                is CommandOutcome.Committed -> followingSaved()
 
-                is ScheduleCommandOutcome.OutcomeUnknown -> recover()
+                is CommandOutcome.OutcomeUnknown -> recover()
 
-                is ScheduleCommandOutcome.Rejected -> {
+                is CommandOutcome.Rejected -> {
                     saved[OPERATION] = null
                     saved[OPERATION_SCHEDULE] = null
                     saved[FOLLOWING] = null
@@ -586,18 +597,25 @@ class IncomeFormViewModel(
 
     private suspend fun settleSchedule(outcome: ScheduleCommandOutcome) {
         when (outcome) {
-            is ScheduleCommandOutcome.Committed -> scheduleSaved(outcome.schedule.scheduleId)
+            is CommandOutcome.Committed -> scheduleSaved(outcome.value.scheduleId)
 
-            is ScheduleCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is ScheduleCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 saved[OPERATION] = null
                 saved[OPERATION_SCHEDULE] = null
-                val error = when (outcome.reason) {
-                    is ScheduleRejection.StartTooEarly -> IncomeFormError.StartTooEarly
-                    is ScheduleRejection.EndTooEarly -> IncomeFormError.EndTooEarly
-                    is ScheduleRejection.StaleGeneration -> IncomeFormError.DataChanged
-                    else -> IncomeFormError.NotSaved
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.VersionConflict,
+                    is CommandRejection.StorageFailed -> IncomeFormError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        is ScheduleRejection.StartTooEarly -> IncomeFormError.StartTooEarly
+                        is ScheduleRejection.EndTooEarly -> IncomeFormError.EndTooEarly
+                        else -> IncomeFormError.NotSaved
+                    }
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }
@@ -722,19 +740,19 @@ class IncomeFormViewModel(
                     DeleteIncome(operation, generation, id, original.version)
                 )
             ) {
-                is IncomeCommandOutcome.Committed -> {
+                is CommandOutcome.Committed -> {
                     saved[OPERATION] = null
                     progress.update { it.copy(busy = false, closed = true) }
                 }
 
-                is IncomeCommandOutcome.OutcomeUnknown -> recover()
+                is CommandOutcome.OutcomeUnknown -> recover()
 
-                is IncomeCommandOutcome.Rejected -> {
+                is CommandOutcome.Rejected -> {
                     saved[OPERATION] = null
                     val error = when (result.reason) {
-                        IncomeRejection.IncomeMissing -> IncomeFormError.IncomeGone
-                        is IncomeRejection.VersionConflict -> IncomeFormError.IncomeChanged
-                        is IncomeRejection.StaleGeneration -> IncomeFormError.DataChanged
+                        Specific(IncomeRejection.IncomeMissing) -> IncomeFormError.IncomeGone
+                        is CommandRejection.VersionConflict -> IncomeFormError.IncomeChanged
+                        is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
                         else -> IncomeFormError.NotDeleted
                     }
                     progress.update { it.copy(busy = false, error = error) }
@@ -784,10 +802,10 @@ class IncomeFormViewModel(
         return IncomeFormState(
             loading =
                 progress.recorded == null && !progress.loadFailed &&
-                    (month is IncomeMonthState.Loading || waiting),
+                    (month is ReadState.Loading || waiting),
             loadFailed =
                 progress.recorded == null &&
-                    (month is IncomeMonthState.Failed || progress.loadFailed),
+                    (month is ReadState.Failed || progress.loadFailed),
             amount = amount?.let { money.format(it.money) },
             amountText = (draft.amount as? AmountDraft.Rejected)?.original,
             amountProblem = if (draft.amount is AmountDraft.Rejected) {

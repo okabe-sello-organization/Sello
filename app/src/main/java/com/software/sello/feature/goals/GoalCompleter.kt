@@ -6,6 +6,7 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.GoalCommandOutcome
@@ -93,7 +94,7 @@ class GoalCompleter(
             val command =
                 CompleteGoal(operation, target.generation, goalId, target.version, undoFor)
             when (val outcome = corrections.completeGoal(command, target.name)) {
-                is GoalCommandOutcome.Committed -> {
+                is CommandOutcome.Committed -> {
                     saved[OPERATION] = null
                     mutable.value = CompletionState.Celebrating(
                         LogradaPlate(
@@ -107,10 +108,10 @@ class GoalCompleter(
                     )
                 }
 
-                is GoalCommandOutcome.OutcomeUnknown -> recover()
+                is CommandOutcome.OutcomeUnknown -> recover()
 
                 // Certain: nothing was written, so this attempt is over.
-                is GoalCommandOutcome.Rejected -> {
+                is CommandOutcome.Rejected -> {
                     saved[OPERATION] = null
                     mutable.value = CompletionState.Failed(GoalDetailError.NotSaved)
                 }

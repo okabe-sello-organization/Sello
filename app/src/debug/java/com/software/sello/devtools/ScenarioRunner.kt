@@ -50,6 +50,8 @@ import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.ChangeGoalTarget
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
@@ -321,9 +323,9 @@ class ScenarioRunner(
                     )
                 )
             ) {
-                is IncomeCommandOutcome.Committed -> null
-                is IncomeCommandOutcome.Rejected -> rejected(outcome.reason)
-                is IncomeCommandOutcome.OutcomeUnknown -> UNKNOWN
+                is CommandOutcome.Committed -> null
+                is CommandOutcome.Rejected -> rejected(outcome.reason)
+                is CommandOutcome.OutcomeUnknown -> UNKNOWN
             }
 
             is Goal -> goal(
@@ -471,9 +473,9 @@ class ScenarioRunner(
         outcome: CategoryCommandOutcome,
         made: (CategoryId) -> Unit = {}
     ): String? = when (outcome) {
-        is CategoryCommandOutcome.Committed -> null.also { made(outcome.change.categoryId) }
-        is CategoryCommandOutcome.Rejected -> rejected(outcome.reason)
-        is CategoryCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.Committed -> null.also { made(outcome.value.categoryId) }
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private suspend fun categoryChange(
@@ -486,15 +488,15 @@ class ScenarioRunner(
     }
 
     private fun expense(outcome: ExpenseCommandOutcome): String? = when (outcome) {
-        is ExpenseCommandOutcome.Committed -> null
-        is ExpenseCommandOutcome.Rejected -> rejected(outcome.reason)
-        is ExpenseCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.Committed -> null
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private fun goal(outcome: GoalCommandOutcome): String? = when (outcome) {
-        is GoalCommandOutcome.Committed -> null
-        is GoalCommandOutcome.Rejected -> rejected(outcome.reason)
-        is GoalCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.Committed -> null
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private suspend fun goalCommand(
@@ -510,9 +512,9 @@ class ScenarioRunner(
         outcome: ScheduleCommandOutcome,
         made: (ScheduleId) -> Unit = {}
     ): String? = when (outcome) {
-        is ScheduleCommandOutcome.Committed -> null.also { made(outcome.schedule.scheduleId) }
-        is ScheduleCommandOutcome.Rejected -> rejected(outcome.reason)
-        is ScheduleCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.Committed -> null.also { made(outcome.value.scheduleId) }
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private suspend fun scheduleCommand(
@@ -550,12 +552,12 @@ class ScenarioRunner(
         outcome: InvestmentCommandOutcome,
         made: (InvestmentId) -> Unit = {}
     ): String? = when (outcome) {
-        is InvestmentCommandOutcome.Committed ->
-            null.also { outcome.change.investmentId?.let(made) }
+        is CommandOutcome.Committed ->
+            null.also { outcome.value.investmentId?.let(made) }
 
-        is InvestmentCommandOutcome.Rejected -> rejected(outcome.reason)
+        is CommandOutcome.Rejected -> rejected(outcome.reason)
 
-        is InvestmentCommandOutcome.OutcomeUnknown -> UNKNOWN
+        is CommandOutcome.OutcomeUnknown -> UNKNOWN
     }
 
     private suspend fun investmentCommand(
@@ -592,7 +594,8 @@ class ScenarioRunner(
         rate.on ?: today
     )
 
-    private fun rejected(reason: Any) = "rechazado: ${name(reason)}"
+    private fun rejected(reason: Any) =
+        "rechazado: ${name((reason as? CommandRejection.Specific<*>)?.reason ?: reason)}"
 
     private fun name(reason: Any): String = reason::class.simpleName ?: reason.toString()
 

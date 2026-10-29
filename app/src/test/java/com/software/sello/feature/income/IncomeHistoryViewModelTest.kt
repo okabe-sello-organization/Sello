@@ -17,6 +17,7 @@ import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomePage
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBook
@@ -66,7 +67,7 @@ class IncomeHistoryViewModelTest {
     private val summaries = mutableMapOf<YearMonth, MutableStateFlow<ResumenSnapshotState>>()
 
     private fun summary(month: YearMonth) =
-        summaries.getOrPut(month) { MutableStateFlow(ResumenSnapshotState.Loading) }
+        summaries.getOrPut(month) { MutableStateFlow(ReadState.Loading) }
 
     private val snapshots = object : ResumenSnapshots {
         override suspend fun read(month: YearMonth) = error("The history observes")
@@ -75,7 +76,7 @@ class IncomeHistoryViewModelTest {
     }
 
     /** The schedules, as the history observes them. */
-    private val book = MutableStateFlow<ScheduleBookState>(ScheduleBookState.Loading)
+    private val book = MutableStateFlow<ScheduleBookState>(ReadState.Loading)
 
     private val schedules = object : ScheduleReads {
         override suspend fun book() = error("The history observes")
@@ -199,7 +200,7 @@ class IncomeHistoryViewModelTest {
         val model = history()
         reads.publish(october)
         assertEquals(1, (model.state.value as IncomeHistoryState.Ready).lines.size)
-        reads.of(october).value = IncomeMonthState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.of(october).value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         assertEquals(IncomeHistoryState.Failed, model.state.value)
         val september = YearMonth.of(2026, 9)
         session.select(september)
@@ -214,7 +215,7 @@ class IncomeHistoryViewModelTest {
     fun whatCameInIsSplitIntoCategoryBudgetsAndUnassignedFromTheMonthsSummary() {
         val model = history()
         // 150.000 came in; the limits add up to 100.000.
-        summary(october).value = ResumenSnapshotState.Ready(resumenSnapshot(income = 150_000))
+        summary(october).value = ReadState.Ready(resumenSnapshot(income = 150_000))
 
         val split = model.split.value!!
         assertEquals("100.000 pesos", split.allocated.spoken)
@@ -227,7 +228,7 @@ class IncomeHistoryViewModelTest {
     fun moreBudgetedThanCameInIsSignedSaysBothFactsAndDrawsNoNegativeSegment() {
         val model = history()
         // 60.000 came in against 100.000 of limits: 40.000 short.
-        summary(october).value = ResumenSnapshotState.Ready(resumenSnapshot(income = 60_000))
+        summary(october).value = ReadState.Ready(resumenSnapshot(income = 60_000))
 
         val split = model.split.value!!
         assertEquals("menos 40.000 pesos", split.unallocated.spoken)
@@ -239,10 +240,10 @@ class IncomeHistoryViewModelTest {
     @Test
     fun withNothingInNothingIsSharedAndAFailedSummaryShowsNoFigures() {
         val model = history()
-        summary(october).value = ResumenSnapshotState.Ready(resumenSnapshot(income = 0))
+        summary(october).value = ReadState.Ready(resumenSnapshot(income = 0))
         val nothing = model.split.value!!.allocatedShare
 
-        summary(october).value = ResumenSnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        summary(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
 
         assertEquals(0f, nothing)
         // Never zero for a read that failed: there is simply no split to show.
@@ -252,12 +253,12 @@ class IncomeHistoryViewModelTest {
     @Test
     fun theSplitFollowsTheSelectedMonth() {
         val model = history()
-        summary(october).value = ResumenSnapshotState.Ready(resumenSnapshot(income = 150_000))
+        summary(october).value = ReadState.Ready(resumenSnapshot(income = 150_000))
         val september = YearMonth.of(2026, 9)
 
         session.select(september)
         val loading = model.split.value
-        summary(september).value = ResumenSnapshotState.Ready(resumenSnapshot(income = 300_000))
+        summary(september).value = ReadState.Ready(resumenSnapshot(income = 300_000))
 
         assertNull(loading)
         assertEquals("200.000 pesos", model.split.value!!.unallocated.spoken)
@@ -293,11 +294,11 @@ class IncomeHistoryViewModelTest {
     )
 
     private fun book(revision: Long, vararg stored: StoredSchedule) =
-        ScheduleBookState.Ready(ScheduleBook(1, revision, stored.toList()))
+        ReadState.Ready(ScheduleBook(1, revision, stored.toList()))
 
     /** The month's summary at [revision]: [income] came in, budgets take [allocated]. */
     private fun summary(revision: Long, income: Long, allocated: Long = 2_800_000) =
-        ResumenSnapshotState.Ready(
+        ReadState.Ready(
             resumenSnapshot(income = income).let {
                 it.copy(
                     budget = it.budget.copy(revision = revision),
@@ -394,11 +395,11 @@ class IncomeHistoryViewModelTest {
     fun aFailedReadIsAFailedPlanNeverNoneAndRetryReadsAgain() {
         val model = history()
         summary(october).value = summary(revision = 7, income = 2_000_000)
-        book.value = ScheduleBookState.Failed(StorageFailure.Unavailable("x"), null)
+        book.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val schedulesFailed = model.plan.value
 
         book.value = book(7, salary())
-        summary(october).value = ResumenSnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        summary(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
         val summaryFailed = model.plan.value
 
         summary(october).value = summary(revision = 7, income = 2_000_000)

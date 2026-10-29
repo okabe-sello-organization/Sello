@@ -78,16 +78,9 @@ data class DeleteSchedule(
     override val expectedVersion: Long
 ) : ScheduleEdit
 
-/** Why nothing was written. Each of these is certain: nothing changed. */
+/** Why a schedule command wrote nothing, beyond the reasons every [CommandRejection] has. */
 sealed interface ScheduleRejection {
-    data class StaleGeneration(val current: Long) : ScheduleRejection
-
-    data object OperationConflict : ScheduleRejection
-
     data object ScheduleMissing : ScheduleRejection
-
-    /** The schedule changed since the caller read it; [current] is its version now. */
-    data class VersionConflict(val current: Long) : ScheduleRejection
 
     /** The change asks for exactly what is stored. */
     data object Unchanged : ScheduleRejection
@@ -117,22 +110,12 @@ sealed interface ScheduleRejection {
      * deleting now would record them with other terms or lose them. Catch up first.
      */
     data object CatchUpPending : ScheduleRejection
-
-    data class StorageFailed(val failure: StorageFailure) : ScheduleRejection
 }
 
 /** A committed schedule change and its receipt. */
 data class CommittedSchedule(val receipt: OperationReceipt, val scheduleId: ScheduleId)
 
-sealed interface ScheduleCommandOutcome {
-    data class Committed(val schedule: CommittedSchedule, val replayed: Boolean) :
-        ScheduleCommandOutcome
-
-    data class Rejected(val reason: ScheduleRejection) : ScheduleCommandOutcome
-
-    /** Not known whether it was saved: ask [ScheduleCommands.find] or submit the same command. */
-    data class OutcomeUnknown(val operationId: OperationId) : ScheduleCommandOutcome
-}
+typealias ScheduleCommandOutcome = CommandOutcome<CommittedSchedule, ScheduleRejection>
 
 /**
  * Changes to schedules, with the guarantees of [ExpenseCommands]: one operation writes

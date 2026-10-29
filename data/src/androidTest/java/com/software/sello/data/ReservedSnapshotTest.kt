@@ -10,6 +10,7 @@ import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpBatch
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ScheduleCommandOutcome
@@ -59,13 +60,13 @@ class ReservedSnapshotTest {
                 null
             )
         )
-        assertTrue(created is ScheduleCommandOutcome.Committed)
+        assertTrue(created is CommandOutcome.Committed)
 
         // RE25 on 22 October: R 600.000, Q 200.000, M 400.000, 40.000 per day for ten days.
         ledger.goTo("2026-10-22")
         assertTrue(
             ledger.expenses.create(ledger.createExpense(100, "2026-10-05", 400_000)) is
-                ExpenseCommandOutcome.Committed
+                CommandOutcome.Committed
         )
         val reserved = limited()
         assertEquals(Money.cop(600_000), reserved.budget.remaining)

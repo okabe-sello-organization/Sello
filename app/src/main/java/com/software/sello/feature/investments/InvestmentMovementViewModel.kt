@@ -21,6 +21,8 @@ import com.software.sello.domain.model.TextError
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.EditInvestmentMovement
 import com.software.sello.domain.port.FinancialClock
@@ -31,6 +33,7 @@ import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -131,7 +134,7 @@ class InvestmentMovementViewModel(
     )
     private val progress = MutableStateFlow(Progress())
     private val board = reads.observeBoard()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, InvestmentBoardState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
     private val composer = combine(
         saved.getStateFlow(COMPOSER, false),
         saved.getStateFlow(COMPOSER_TEXT, "")
@@ -396,9 +399,9 @@ class InvestmentMovementViewModel(
 
     /** The board to work from: the last one read, also after a failed refresh. */
     private fun readable(state: InvestmentBoardState): InvestmentBoard? = when (state) {
-        InvestmentBoardState.Loading -> null
-        is InvestmentBoardState.Ready -> state.board
-        is InvestmentBoardState.Failed -> state.lastGood
+        ReadState.Loading -> null
+        is ReadState.Ready -> state.value
+        is ReadState.Failed -> state.lastGood
     }
 
     private fun summary(board: InvestmentBoard?, id: String?): InvestmentSummary? =
@@ -580,10 +583,10 @@ class InvestmentMovementViewModel(
             summary?.let { retiroOf(it.history, id, available) }
         }
         return InvestmentMovementState(
-            loading = board is InvestmentBoardState.Loading || (
+            loading = board is ReadState.Loading || (
                 editing && read != null && original == null && saved.get<Boolean>(DRAFTED) != true
                 ),
-            loadFailed = board is InvestmentBoardState.Failed && read == null,
+            loadFailed = board is ReadState.Failed && read == null,
             editing = editing,
             kind = draft.kind,
             amount = shown(draft, currency, amount),
@@ -704,12 +707,12 @@ class InvestmentMovementViewModel(
     private suspend fun settle(step: String, outcome: InvestmentCommandOutcome) {
         when (outcome) {
             // A deletion was already offered to undo by [corrections].
-            is InvestmentCommandOutcome.Committed ->
-                committed(step, outcome.change.receipt, announced = true)
+            is CommandOutcome.Committed ->
+                committed(step, outcome.value.receipt, announced = true)
 
-            is InvestmentCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is InvestmentCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written, so this attempt is over.
                 saved[OPERATION] = null
                 rejected(step, outcome.reason)
@@ -717,49 +720,60 @@ class InvestmentMovementViewModel(
         }
     }
 
-    private fun rejected(step: String, reason: InvestmentRejection) {
+    private fun rejected(step: String, reason: CommandRejection<InvestmentRejection>) {
         val deleting = step == STEP_DELETE
-        when (reason) {
-            // A deletion names the retiro it would leave short. A new movement's own id is
-            // not known here: the investment changed, and the board read again says how.
-            is InvestmentRejection.AboveValue -> if (deleting) {
-                return blocked(reason.withdrawal, reason.available)
-            }
-
-            is InvestmentRejection.NoValue -> if (deleting) return blocked(reason.withdrawal, null)
-
-            is InvestmentRejection.BeforeFirstContribution -> {
-                progress.update {
-                    it.copy(busy = false, firstContribution = reason.firstContribution)
-                }
-                return
-            }
-
-            else -> Unit
-        }
         val error = when (reason) {
-            is InvestmentRejection.FutureDate, InvestmentRejection.InvalidDate ->
-                InvestmentMovementError.FutureDate
+            is CommandRejection.StaleGeneration -> InvestmentMovementError.DataChanged
 
-            is InvestmentRejection.StaleGeneration -> InvestmentMovementError.DataChanged
+            is CommandRejection.VersionConflict -> InvestmentMovementError.Changed
 
-            InvestmentRejection.InvestmentMissing, InvestmentRejection.MovementMissing ->
-                InvestmentMovementError.Gone
+            CommandRejection.OperationConflict, is CommandRejection.StorageFailed -> null
 
-            is InvestmentRejection.VersionConflict, is InvestmentRejection.AboveValue,
-            is InvestmentRejection.NoValue -> InvestmentMovementError.Changed
+            is CommandRejection.Specific -> {
+                val specific = reason.reason
+                when (specific) {
+                    // A deletion names the retiro it would leave short. A new movement's own
+                    // id is not known here: the investment changed, and the board read again
+                    // says how.
+                    is InvestmentRejection.AboveValue -> if (deleting) {
+                        return blocked(specific.withdrawal, specific.available)
+                    }
 
-            InvestmentRejection.CurrencyMismatch -> InvestmentMovementError.CurrencyMismatch
+                    is InvestmentRejection.NoValue ->
+                        if (deleting) return blocked(specific.withdrawal, null)
 
-            InvestmentRejection.Unchanged -> InvestmentMovementError.Unchanged
+                    is InvestmentRejection.BeforeFirstContribution -> {
+                        progress.update {
+                            it.copy(busy = false, firstContribution = specific.firstContribution)
+                        }
+                        return
+                    }
 
-            InvestmentRejection.LastContribution -> InvestmentMovementError.LastContribution
+                    else -> Unit
+                }
+                when (specific) {
+                    is InvestmentRejection.FutureDate, InvestmentRejection.InvalidDate ->
+                        InvestmentMovementError.FutureDate
 
-            else -> if (deleting) {
-                InvestmentMovementError.NotDeleted
-            } else {
-                InvestmentMovementError.NotSaved
+                    InvestmentRejection.InvestmentMissing, InvestmentRejection.MovementMissing ->
+                        InvestmentMovementError.Gone
+
+                    is InvestmentRejection.AboveValue, is InvestmentRejection.NoValue ->
+                        InvestmentMovementError.Changed
+
+                    InvestmentRejection.CurrencyMismatch -> InvestmentMovementError.CurrencyMismatch
+
+                    InvestmentRejection.Unchanged -> InvestmentMovementError.Unchanged
+
+                    InvestmentRejection.LastContribution -> InvestmentMovementError.LastContribution
+
+                    else -> null
+                }
             }
+        } ?: if (deleting) {
+            InvestmentMovementError.NotDeleted
+        } else {
+            InvestmentMovementError.NotSaved
         }
         progress.update { it.copy(busy = false, error = error) }
     }

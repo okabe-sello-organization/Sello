@@ -23,6 +23,8 @@ import com.software.sello.domain.port.CarryReadFailure
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DisableCarry
@@ -153,7 +155,7 @@ class CarryoverReadContractTest {
         go.complete(Unit)
         val seen = reads.awaitAll()
 
-        assertTrue("${saved.await()}", saved.await() is ExpenseCommandOutcome.Committed)
+        assertTrue("${saved.await()}", saved.await() is CommandOutcome.Committed)
         // SC25's figures before the deletion, or after it; never some of each.
         assertTrue(
             "$seen",
@@ -243,7 +245,7 @@ class CarryoverReadContractTest {
                     asked.refusedCorrection().confirmation
                 )
             )
-        assertTrue("$deleted", deleted is ExpenseCommandOutcome.Committed)
+        assertTrue("$deleted", deleted is CommandOutcome.Committed)
         assertEquals(
             emptyList<Any>(),
             ledger.carry.catchUpNotice(listOf(recorded)).valueOrFail().categories
@@ -367,22 +369,24 @@ class CarryoverReadContractTest {
             may.carry
         )
         assertEquals(
-            CategoryCommandOutcome.Rejected(
-                CategoryRejection.DropUnconfirmed(
-                    DropPreview(
-                        month("2027-05"),
-                        carryIn = cop(70_000),
-                        base = cop(100_000),
-                        capacityBefore = cop(170_000),
-                        capacityAfter = cop(100_000),
-                        remainingBefore = cop(170_000),
-                        remainingAfter = cop(100_000)
+            CommandOutcome.Rejected(
+                Specific(
+                    CategoryRejection.DropUnconfirmed(
+                        DropPreview(
+                            month("2027-05"),
+                            carryIn = cop(70_000),
+                            base = cop(100_000),
+                            capacityBefore = cop(170_000),
+                            capacityAfter = cop(100_000),
+                            remainingBefore = cop(170_000),
+                            remainingAfter = cop(100_000)
+                        )
                     )
                 )
             ),
             asked
         )
-        assertTrue("$dropped", dropped is CategoryCommandOutcome.Committed)
+        assertTrue("$dropped", dropped is CommandOutcome.Committed)
         assertEquals(
             listOf("${uuid(comida)}|2027-01|2027-02", "${uuid(comida)}|2027-04|2027-05"),
             ledger.chainRows()

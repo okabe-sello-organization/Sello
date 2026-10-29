@@ -11,6 +11,7 @@ import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.navigation.MonthSession
 import com.software.sello.platform.ScreenReader
@@ -50,7 +51,7 @@ class ReciboGoalViewModel(
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
-            GoalBoardState.Loading
+            ReadState.Loading
         )
 
     val state: StateFlow<ReciboGoalState> = combine(
@@ -60,9 +61,9 @@ class ReciboGoalViewModel(
         completer.state
     ) { board, selected, current, completion ->
         val read = when (board) {
-            GoalBoardState.Loading -> null
-            is GoalBoardState.Ready -> board.board
-            is GoalBoardState.Failed -> board.lastGood ?: return@combine ReciboGoalState.Failed
+            ReadState.Loading -> null
+            is ReadState.Ready -> board.value
+            is ReadState.Failed -> board.lastGood ?: return@combine ReciboGoalState.Failed
         }
         val pill = read?.takeIf { selected == current }?.let(::pill)
         val reached = read?.takeIf { selected == current }?.let { reached(it, pill?.id) }
@@ -87,7 +88,7 @@ class ReciboGoalViewModel(
             }
 
             is ReciboGoalAction.MarkComplete -> {
-                val read = (board.value as? GoalBoardState.Ready)?.board ?: return
+                val read = (board.value as? ReadState.Ready)?.value ?: return
                 val shown = state.value as? ReciboGoalState.Shown
                 val waiting = shown?.reached?.id == action.id ||
                     shown?.pill?.takeIf { it.reached }?.id == action.id

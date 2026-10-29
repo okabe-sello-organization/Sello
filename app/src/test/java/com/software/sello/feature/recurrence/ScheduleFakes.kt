@@ -8,8 +8,10 @@ import com.software.sello.domain.model.Recurrence
 import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommittedSchedule
 import com.software.sello.domain.port.CreateSchedule
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleCommand
@@ -33,7 +35,7 @@ class HandScheduleCommands(private val book: HandScheduleReads? = null) : Schedu
     val looked = mutableListOf<OperationId>()
     var answer: (ScheduleCommand) -> ScheduleCommandOutcome = { command ->
         if (command is CreateSchedule) book?.keep(command, scheduleId(700))
-        ScheduleCommandOutcome.Committed(committed(command.operationId), replayed = false)
+        CommandOutcome.Committed(committed(command.operationId), replayed = false)
     }
     var found: (OperationId) -> Outcome<CommittedSchedule?, StorageFailure> =
         { Outcome.Success(null) }
@@ -61,7 +63,7 @@ class HandScheduleCommands(private val book: HandScheduleReads? = null) : Schedu
 class HandScheduleReads : ScheduleReads {
     val schedules = mutableListOf<StoredSchedule>()
     var failing = false
-    val state = MutableStateFlow<ScheduleBookState>(ScheduleBookState.Loading)
+    val state = MutableStateFlow<ScheduleBookState>(ReadState.Loading)
 
     fun keep(command: CreateSchedule, id: ScheduleId) {
         val recurrence =

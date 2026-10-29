@@ -22,6 +22,7 @@ import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
@@ -139,7 +140,7 @@ class GoalsRenderModelTest {
 
     @Test
     fun metasOrdersActiveGoalsByCompletionAndPutsCompletedGoalsLast() {
-        val state = ready(GoalBoardState.Ready(board(celular(), vacunas(), viaje())))
+        val state = ready(ReadState.Ready(board(celular(), vacunas(), viaje())))
 
         assertEquals(listOf("Viaje a la costa", "Celular nuevo"), state.goals.map { it.name })
         val viaje = state.goals.first()
@@ -175,7 +176,7 @@ class GoalsRenderModelTest {
 
     @Test
     fun theBandAddsActiveGoalsAndThisMonthsAportesOnly() {
-        val band = ready(GoalBoardState.Ready(board(celular(), vacunas(), viaje()))).band!!
+        val band = ready(ReadState.Ready(board(celular(), vacunas(), viaje()))).band!!
 
         // 1.710.000 + 450.000; aportes dated in October: 960.000 + 450.000.
         assertEquals("2.160.000", band.saved.digits)
@@ -188,7 +189,7 @@ class GoalsRenderModelTest {
     fun withoutAportesThisMonthTheBandHasNoSecondLine() {
         val quiet = Goals(4, "Fondo", 1_000_000, day(8, 1)).apply { aporte(100_000, day(8, 2)) }
 
-        val band = ready(GoalBoardState.Ready(board(quiet))).band!!
+        val band = ready(ReadState.Ready(board(quiet))).band!!
 
         assertEquals("100.000", band.saved.digits)
         assertNull(band.contributed)
@@ -196,7 +197,7 @@ class GoalsRenderModelTest {
 
     @Test
     fun noGoalsIsTheTrueEmptyStateWithoutABand() {
-        val state = ready(GoalBoardState.Ready(board()))
+        val state = ready(ReadState.Ready(board()))
 
         assertTrue(state.empty)
         assertNull(state.band)
@@ -204,17 +205,17 @@ class GoalsRenderModelTest {
 
     @Test
     fun loadingAndAFailedFirstReadAreNeverNoGoals() {
-        assertEquals(MetasState.Loading, render.metas(GoalBoardState.Loading, today))
+        assertEquals(MetasState.Loading, render.metas(ReadState.Loading, today))
         assertEquals(
             MetasState.Failed,
-            render.metas(GoalBoardState.Failed(StorageFailure.Unavailable("x"), null), today)
+            render.metas(ReadState.Failed(StorageFailure.Unavailable("x"), null), today)
         )
     }
 
     @Test
     fun aFailedRefreshKeepsTheLastGoodGoalsMarkedStale() {
         val state = ready(
-            GoalBoardState.Failed(StorageFailure.Unavailable("x"), board(viaje()))
+            ReadState.Failed(StorageFailure.Unavailable("x"), board(viaje()))
         )
 
         assertTrue(state.stale)
@@ -223,7 +224,7 @@ class GoalsRenderModelTest {
 
     private fun detail(goal: Goals, vararg others: Goals, featured: String? = null) = (
         render.detail(
-            GoalBoardState.Ready(board(goal, *others, featured = featured)),
+            ReadState.Ready(board(goal, *others, featured = featured)),
             goal.id,
             today
         ) as GoalDetailState.Ready
@@ -321,19 +322,19 @@ class GoalsRenderModelTest {
     fun aGoalThatIsNotOnTheBoardIsMissingNotEmpty() {
         assertEquals(
             GoalDetailState.Missing,
-            render.detail(GoalBoardState.Ready(board(viaje())), celular().id, today)
+            render.detail(ReadState.Ready(board(viaje())), celular().id, today)
         )
         assertEquals(
             GoalDetailState.Failed,
             render.detail(
-                GoalBoardState.Failed(StorageFailure.Unavailable("x"), null),
+                ReadState.Failed(StorageFailure.Unavailable("x"), null),
                 celular().id,
                 today
             )
         )
         assertEquals(
             GoalDetailState.Loading,
-            render.detail(GoalBoardState.Loading, celular().id, today)
+            render.detail(ReadState.Loading, celular().id, today)
         )
     }
 }

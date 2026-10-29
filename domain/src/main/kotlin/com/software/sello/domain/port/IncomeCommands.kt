@@ -65,25 +65,16 @@ data class RestoreIncome(
  */
 data class IncomeUndoOffer(val deletionId: OperationId, val incomeId: IncomeId, val until: Duration)
 
-/** Why nothing was written. Each of these is certain: nothing changed. */
+/** Why an income command wrote nothing, beyond the reasons every [CommandRejection] has. */
 sealed interface IncomeRejection {
-    /** The history was replaced (restore or reset) since the command was prepared. */
-    data class StaleGeneration(val current: Long) : IncomeRejection
-
     /** The date is after the financial current date. */
     data class FutureDate(val today: LocalDate) : IncomeRejection
 
     /** The date cannot be stored and read back. */
     data object InvalidDate : IncomeRejection
 
-    /** This operation already committed with different input. */
-    data object OperationConflict : IncomeRejection
-
     /** There is no income with that identifier: never recorded, or deleted. */
     data object IncomeMissing : IncomeRejection
-
-    /** The income was changed since the caller read it; [current] is its version now. */
-    data class VersionConflict(val current: Long) : IncomeRejection
 
     /** The edit asks for exactly what is recorded, so there is nothing to save. */
     data object Unchanged : IncomeRejection
@@ -96,9 +87,6 @@ sealed interface IncomeRejection {
      * history was replaced, or its place has been taken. Nothing was restored.
      */
     data object UndoConflict : IncomeRejection
-
-    /** Storage failed and the write was rolled back. */
-    data class StorageFailed(val failure: StorageFailure) : IncomeRejection
 }
 
 /**
@@ -108,14 +96,7 @@ sealed interface IncomeRejection {
  */
 data class CommittedIncome(val receipt: OperationReceipt, val incomeId: IncomeId)
 
-sealed interface IncomeCommandOutcome {
-    data class Committed(val income: CommittedIncome, val replayed: Boolean) : IncomeCommandOutcome
-
-    data class Rejected(val reason: IncomeRejection) : IncomeCommandOutcome
-
-    /** Not known whether it was saved: ask [IncomeCommands.find] or submit the same command. */
-    data class OutcomeUnknown(val operationId: OperationId) : IncomeCommandOutcome
-}
+typealias IncomeCommandOutcome = CommandOutcome<CommittedIncome, IncomeRejection>
 
 /**
  * Changes to recorded income, with the same guarantees as [ExpenseCommands]: one

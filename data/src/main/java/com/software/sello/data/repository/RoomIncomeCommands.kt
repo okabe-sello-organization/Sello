@@ -18,15 +18,17 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.EffectiveDateError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.AuditClock
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedIncome
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.IncomeCommandOutcome
-import com.software.sello.domain.port.IncomeCommandOutcome.Committed
-import com.software.sello.domain.port.IncomeCommandOutcome.OutcomeUnknown
-import com.software.sello.domain.port.IncomeCommandOutcome.Rejected
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.IncomeUndoOffer
@@ -59,13 +61,13 @@ class RoomIncomeCommands internal constructor(
         }
 
     override suspend fun create(command: CreateIncome): IncomeCommandOutcome =
-        run(command.operationId) { decide(command) }
+        database.runOutcome(command.operationId) { decide(command) }
 
     override suspend fun edit(command: EditIncome): IncomeCommandOutcome =
-        run(command.operationId) { decide(command) }
+        database.runOutcome(command.operationId) { decide(command) }
 
     override suspend fun delete(command: DeleteIncome): IncomeCommandOutcome = undo.changing {
-        val outcome = run(command.operationId) { decide(command) }
+        val outcome = database.runOutcome(command.operationId) { decide(command) }
         // A replay is the original deletion, so it never starts the time again.
         if (outcome is Committed && !outcome.replayed) {
             undo.opened(UndoWindow.Kind.Income, command.operationId, command.incomeId.value)
@@ -74,21 +76,10 @@ class RoomIncomeCommands internal constructor(
     }
 
     override suspend fun restore(command: RestoreIncome): IncomeCommandOutcome = undo.changing {
-        val outcome = run(command.operationId) { decide(command) }
+        val outcome = database.runOutcome(command.operationId) { decide(command) }
         if (outcome is Committed && !outcome.replayed) undo.closed()
         outcome
     }
-
-    private suspend fun run(
-        operationId: OperationId,
-        decide: suspend () -> IncomeCommandOutcome
-    ): IncomeCommandOutcome = when (val run = database.runCommand(decide)) {
-        is CommandRun.Finished -> run.value
-        is CommandRun.RolledBack -> failed(run.failure)
-        CommandRun.Unknown -> OutcomeUnknown(operationId)
-    }
-
-    private fun failed(failure: StorageFailure) = Rejected(IncomeRejection.StorageFailed(failure))
 
     private fun StoredReceipt.committedIncome() =
         CommittedIncome(receipt, checkNotNull(incomeId) { "Not an income receipt" })
@@ -100,14 +91,11 @@ class RoomIncomeCommands internal constructor(
         kind: OperationKind,
         digest: String,
         proceed: (FinancialProfile) -> IncomeCommandOutcome
-    ): IncomeCommandOutcome =
-        when (val start = database.startCommand(operationId, generation, kind, digest)) {
-            is CommandStart.Proceed -> proceed(start.profile)
-            is CommandStart.Stale -> Rejected(IncomeRejection.StaleGeneration(start.current))
-            is CommandStart.Replay -> Committed(start.original.committedIncome(), true)
-            CommandStart.Conflict -> Rejected(IncomeRejection.OperationConflict)
-            is CommandStart.Damaged -> failed(start.failure)
+    ): IncomeCommandOutcome = proceed(
+        database.proceedOr(operationId, generation, kind, digest, { it.committedIncome() }) {
+            return it
         }
+    )
 
     /** Why [date] cannot be an income's date today, or null when it can. */
     private fun dateRejection(date: LocalDate): IncomeRejection? {
@@ -130,7 +118,7 @@ class RoomIncomeCommands internal constructor(
         val kind = OperationKind.CreateIncome
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
-            dateRejection(command.date)?.let { return Rejected(it) }
+            dateRejection(command.date)?.let { return Rejected(Specific(it)) }
 
             val now = audit.now()
             val incomeId = when (val id = IncomeId.of(ids.next())) {
@@ -177,21 +165,21 @@ class RoomIncomeCommands internal constructor(
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             val row = database.incomeDao().byId(command.incomeId.value)
-                ?: return Rejected(IncomeRejection.IncomeMissing)
+                ?: return Rejected(Specific(IncomeRejection.IncomeMissing))
             val current = when (val stored = row.toDomain()) {
                 is Outcome.Success -> stored.value
-                is Outcome.Failure -> return failed(stored.error)
+                is Outcome.Failure -> return storageFailed(stored.error)
             }
             if (current.version != command.expectedVersion) {
-                return Rejected(IncomeRejection.VersionConflict(current.version))
+                return Rejected(CommandRejection.VersionConflict(current.version))
             }
             val same = current.amount == command.amount &&
                 current.source == command.source &&
                 current.date == command.date &&
                 current.note == command.note
-            if (same) return Rejected(IncomeRejection.Unchanged)
+            if (same) return Rejected(Specific(IncomeRejection.Unchanged))
             if (command.date != current.date) {
-                dateRejection(command.date)?.let { return Rejected(it) }
+                dateRejection(command.date)?.let { return Rejected(Specific(it)) }
             }
 
             val now = audit.now()
@@ -224,9 +212,9 @@ class RoomIncomeCommands internal constructor(
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             val row = database.incomeDao().byId(command.incomeId.value)
-                ?: return Rejected(IncomeRejection.IncomeMissing)
+                ?: return Rejected(Specific(IncomeRejection.IncomeMissing))
             if (row.version != command.expectedVersion) {
-                return Rejected(IncomeRejection.VersionConflict(row.version))
+                return Rejected(CommandRejection.VersionConflict(row.version))
             }
 
             val now = audit.now()
@@ -271,14 +259,14 @@ class RoomIncomeCommands internal constructor(
         val digest = inputDigest(command)
         return starting(command.operationId, command.generation, kind, digest) { profile ->
             val inTime = undo.offered(UndoWindow.Kind.Income)?.deletionId == command.deletionId
-            if (!inTime) return Rejected(IncomeRejection.UndoExpired)
+            if (!inTime) return Rejected(Specific(IncomeRejection.UndoExpired))
             val kept = database.deletedIncomeDao().find(command.deletionId.value)
-                ?: return Rejected(IncomeRejection.UndoExpired)
+                ?: return Rejected(Specific(IncomeRejection.UndoExpired))
             val taken = kept.generation != profile.generation ||
                 database.incomeDao().byId(kept.incomeId) != null ||
                 database.incomeDao().countAtSequence(kept.sequence) != 0 ||
                 kept.originTaken()
-            if (taken) return Rejected(IncomeRejection.UndoConflict)
+            if (taken) return Rejected(Specific(IncomeRejection.UndoConflict))
 
             database.incomeDao().insert(
                 IncomeEntity(

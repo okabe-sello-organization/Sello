@@ -11,6 +11,7 @@ import com.software.sello.domain.model.ReservedStanding
 import com.software.sello.domain.model.Verdict
 import com.software.sello.domain.policy.CategoryOrderPolicy
 import com.software.sello.domain.policy.MonthBudgetState
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.presentation.money.MoneyFormatter
 
@@ -24,11 +25,11 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
         state: SnapshotState,
         ordering: CategoryOrderingPreference = CategoryOrderingPreference()
     ): ReciboState = when (state) {
-        SnapshotState.Loading -> ReciboState.Loading
+        ReadState.Loading -> ReciboState.Loading
 
-        is SnapshotState.Ready -> month(state.snapshot, stale = false, ordering)
+        is ReadState.Ready -> month(state.value, stale = false, ordering)
 
-        is SnapshotState.Failed -> state.lastGood?.let { month(it, stale = true, ordering) }
+        is ReadState.Failed -> state.lastGood?.let { month(it, stale = true, ordering) }
             ?: ReciboState.Failed
     }
 

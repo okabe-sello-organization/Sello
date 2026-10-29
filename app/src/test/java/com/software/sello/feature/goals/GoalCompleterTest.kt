@@ -9,6 +9,8 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.GoalCommandOutcome
@@ -157,7 +159,7 @@ class GoalCompleterTest {
         completer.complete(viaje)
         completer.complete(viaje)
         assertEquals(CompletionState.Busy, completer.state.value)
-        commands.release(GoalCommandOutcome.Committed(receipt(), replayed = false))
+        commands.release(CommandOutcome.Committed(receipt(), replayed = false))
 
         assertEquals(1, commands.sent.size)
         assertTrue(completer.state.value is CompletionState.Celebrating)
@@ -167,7 +169,7 @@ class GoalCompleterTest {
     fun anUnknownOutcomeIsAskedAboutAndAFoundCompletionIsNotCelebratedAgain() = runTest {
         val completer = completer()
         commands.next =
-            GoalCommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
+            CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
 
         completer.complete(viaje)
@@ -190,7 +192,7 @@ class GoalCompleterTest {
     @Test
     fun aRefusedCompletionSaysItWasNotSaved() = runTest {
         val completer = completer()
-        commands.queue += GoalCommandOutcome.Rejected(GoalRejection.VersionConflict(10))
+        commands.queue += CommandOutcome.Rejected(CommandRejection.VersionConflict(10))
 
         completer.complete(viaje)
 
@@ -201,7 +203,7 @@ class GoalCompleterTest {
     fun afterProcessDeathACompletionInFlightIsFoundNotSentAgain() = runTest {
         val saved = SavedStateHandle()
         commands.next =
-            GoalCommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
+            CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         completer(saved).complete(viaje)
 

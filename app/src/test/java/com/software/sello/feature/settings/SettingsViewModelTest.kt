@@ -16,6 +16,7 @@ import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.feature.investments.HandInvestmentPreferences
 import com.software.sello.feature.investments.HandInvestmentReads
 import com.software.sello.feature.investments.rateEntry
@@ -50,7 +51,7 @@ class SettingsViewModelTest {
     @After
     fun resetMain() = Dispatchers.resetMain()
 
-    private val investments = HandInvestmentReads(InvestmentBoardState.Loading)
+    private val investments = HandInvestmentReads(ReadState.Loading)
     private val investmentSettings = HandInvestmentPreferences()
 
     private fun settings() = SettingsViewModel(
@@ -68,19 +69,19 @@ class SettingsViewModelTest {
         runCurrent()
         assertEquals(RateLine.Loading, model.state.value.rate)
 
-        investments.board.value = InvestmentBoardState.Ready(ratesBoard())
+        investments.board.value = ReadState.Ready(ratesBoard())
         runCurrent()
         assertEquals(RateLine.None, model.state.value.rate)
 
         // IN31: 4.000,00 on 24 oct stays current after 3.900,00 dated 22 oct is entered.
-        investments.board.value = InvestmentBoardState.Ready(
+        investments.board.value = ReadState.Ready(
             ratesBoard(rateEntry(400_000, "2026-10-24", 1), rateEntry(390_000, "2026-10-22", 2))
         )
         runCurrent()
         assertEquals(RateLine.Read("4.000,00", LocalDate.of(2026, 10, 24)), model.state.value.rate)
 
         investments.board.value =
-            InvestmentBoardState.Failed(StorageFailure.Unavailable("hand"), null)
+            ReadState.Failed(StorageFailure.Unavailable("hand"), null)
         runCurrent()
         assertEquals(RateLine.Unreadable, model.state.value.rate)
     }

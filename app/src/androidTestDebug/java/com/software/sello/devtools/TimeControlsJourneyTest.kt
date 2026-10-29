@@ -35,6 +35,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.DeleteExpense
@@ -42,6 +43,7 @@ import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
@@ -128,17 +130,17 @@ class TimeControlsJourneyTest {
                 IconKey.of("home").value(),
                 BudgetLimit.Unlimited
             )
-        ) as CategoryCommandOutcome.Committed
+        ) as CommandOutcome.Committed
         graph.koin.get<ExpenseCommands>().create(
             CreateExpense(
                 operation(),
                 1,
-                created.change.categoryId,
+                created.value.categoryId,
                 TransactionAmount.of(Money.cop(48_700)).value(),
                 date,
                 null
             )
-        ) as ExpenseCommandOutcome.Committed
+        ) as CommandOutcome.Committed
     }
 
     @Test
@@ -152,9 +154,9 @@ class TimeControlsJourneyTest {
         assertEquals(LocalDate.of(2026, 11, 1), graph.koin.get<FinancialClock>().today.value.date)
         assertEquals(YearMonth.of(2026, 11), withTimeout(5_000) { session.currentMonth.first() })
         val november = withTimeout(5_000) {
-            snapshots.observe(YearMonth.of(2026, 11)).first { it is SnapshotState.Ready }
-        } as SnapshotState.Ready
-        assertEquals(LocalDate.of(2026, 11, 1), november.snapshot.asOf)
+            snapshots.observe(YearMonth.of(2026, 11)).first { it is ReadState.Ready }
+        } as ReadState.Ready
+        assertEquals(LocalDate.of(2026, 11, 1), november.value.asOf)
         assertEquals(LocalDate.of(2026, 11, 1), store.session.date)
     }
 
@@ -162,17 +164,17 @@ class TimeControlsJourneyTest {
     @NightlyOnly
     @Test
     fun aYearOfFinancialTimeLaterUndoStillHasItsSixRealSeconds() = runBlocking {
-        val expense = expenseIn("Comida", october31).expense
+        val expense = expenseIn("Comida", october31).value
         val commands = graph.koin.get<ExpenseCommands>()
         val deletion = operation()
         val deleted = commands.delete(DeleteExpense(deletion, 1, expense.expenseId, 1))
-        assertTrue("$deleted", deleted is ExpenseCommandOutcome.Committed)
+        assertTrue("$deleted", deleted is CommandOutcome.Committed)
 
         time.advanceMonths(12)
 
         assertNotNull(commands.undoOffer())
         val undone = commands.restore(RestoreExpense(operation(), 1, deletion))
-        assertTrue("$undone", undone is ExpenseCommandOutcome.Committed)
+        assertTrue("$undone", undone is CommandOutcome.Committed)
         assertEquals(LocalDate.of(2027, 10, 31), graph.koin.get<FinancialClock>().today.value.date)
     }
 

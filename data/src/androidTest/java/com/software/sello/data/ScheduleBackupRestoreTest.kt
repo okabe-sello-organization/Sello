@@ -24,6 +24,7 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.PauseSchedule
@@ -108,7 +109,7 @@ class ScheduleBackupRestoreTest {
     ): ScheduleId {
         goTo(start)
         val created = schedules.submit(CreateSchedule(operation(), 1, entry, rule, d(start), null))
-        return (created as ScheduleCommandOutcome.Committed).schedule.scheduleId
+        return (created as CommandOutcome.Committed).value.scheduleId
     }
 
     /** Everything due up to [today], in as many batches as it takes. */
@@ -158,7 +159,7 @@ class ScheduleBackupRestoreTest {
         assertTrue(
             ledger.schedules.submit(
                 PauseSchedule(ledger.operation(), 1, bus, version)
-            ) is ScheduleCommandOutcome.Committed
+            ) is CommandOutcome.Committed
         )
     }
 

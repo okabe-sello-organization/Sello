@@ -17,6 +17,8 @@ import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.AmountDraftError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.EditExpense
@@ -26,6 +28,7 @@ import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleCommands
@@ -163,7 +166,7 @@ class ExpenseEntryViewModel(
             progress.map { it.attempt }.distinctUntilChanged()
         ) { month, _ -> month }
             .flatMapLatest(snapshots::observe)
-            .stateIn(viewModelScope, SharingStarted.Eagerly, SnapshotState.Loading)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     /** The note being written in its composer; kept in [saved] so a restart reopens it. */
     private val noteDraft: StateFlow<String?> = saved.getStateFlow(KEY_NOTE_DRAFT, null)
@@ -193,7 +196,7 @@ class ExpenseEntryViewModel(
     init {
         viewModelScope.launch {
             month.collect { state ->
-                if (state is SnapshotState.Ready) chooseCategoryOnce(state.snapshot)
+                if (state is ReadState.Ready) chooseCategoryOnce(state.value)
             }
         }
         // A saved expense or a save in flight from before the process stopped.
@@ -412,8 +415,8 @@ class ExpenseEntryViewModel(
             is ExpenseEntryAction.CategoryCreated -> if (!editing) {
                 viewModelScope.launch {
                     month.first { read ->
-                        read is SnapshotState.Ready &&
-                            eligible(read.snapshot).any { it.id.value == action.id }
+                        read is ReadState.Ready &&
+                            eligible(read.value).any { it.id.value == action.id }
                     }
                     if (state.value.editable) setCategory(action.id)
                 }
@@ -507,7 +510,7 @@ class ExpenseEntryViewModel(
     private fun delete() {
         val id = editedExpense ?: return
         val original = progress.value.original ?: return
-        val snapshot = (month.value as? SnapshotState.Ready)?.snapshot ?: return
+        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
             val error = when (corrections.delete(id, original.version, snapshot.generation)) {
@@ -549,7 +552,7 @@ class ExpenseEntryViewModel(
             return submitFollowing()
         }
         val draft = draft.value
-        val snapshot = (month.value as? SnapshotState.Ready)?.snapshot ?: return
+        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         val amount = (draft.amount.toTransactionAmount() as? Outcome.Success)?.value ?: return
         // The category as the form shows it chosen: one that is offered, or none.
         val chosen = state.value.categoryId
@@ -614,33 +617,38 @@ class ExpenseEntryViewModel(
 
     private suspend fun settle(outcome: ExpenseCommandOutcome) {
         when (outcome) {
-            is ExpenseCommandOutcome.Committed -> saved(outcome.expense.expenseId)
+            is CommandOutcome.Committed -> saved(outcome.value.expenseId)
 
-            is ExpenseCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is ExpenseCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written, so this attempt is over. The draft stays,
                 // and Solo este or Este y los siguientes is asked again unless the
                 // following payments already changed.
                 saved[KEY_OPERATION] = null
                 if (saved.get<Boolean>(KEY_FOLLOWING_SAVED) != true) saved[KEY_FOLLOWING] = null
-                val error = when (outcome.reason) {
-                    ExpenseRejection.CategoryMissing, ExpenseRejection.CategoryArchived -> {
-                        setCategory(null)
-                        EntryError.CategoryGone
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> EntryError.DataChanged
+
+                    is CommandRejection.VersionConflict -> EntryError.ExpenseChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.StorageFailed -> EntryError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        ExpenseRejection.CategoryMissing, ExpenseRejection.CategoryArchived -> {
+                            setCategory(null)
+                            EntryError.CategoryGone
+                        }
+
+                        is ExpenseRejection.FutureDate -> EntryError.FutureDate
+
+                        ExpenseRejection.InvalidDate -> EntryError.InvalidDate
+
+                        ExpenseRejection.ExpenseMissing -> EntryError.ExpenseGone
+
+                        else -> EntryError.NotSaved
                     }
-
-                    is ExpenseRejection.FutureDate -> EntryError.FutureDate
-
-                    ExpenseRejection.InvalidDate -> EntryError.InvalidDate
-
-                    is ExpenseRejection.StaleGeneration -> EntryError.DataChanged
-
-                    ExpenseRejection.ExpenseMissing -> EntryError.ExpenseGone
-
-                    is ExpenseRejection.VersionConflict -> EntryError.ExpenseChanged
-
-                    else -> EntryError.NotSaved
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }
@@ -653,7 +661,7 @@ class ExpenseEntryViewModel(
      */
     private fun submitFollowing() {
         val following = progress.value.following ?: return
-        val snapshot = (month.value as? SnapshotState.Ready)?.snapshot ?: return
+        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         val draft = draft.value
         val amount = (draft.amount.toTransactionAmount() as? Outcome.Success)?.value ?: return
         val category = (state.value.categoryId?.let(CategoryId::of) as? Outcome.Success)?.value
@@ -679,11 +687,11 @@ class ExpenseEntryViewModel(
                     )
                 )
             ) {
-                is ScheduleCommandOutcome.Committed -> followingSaved()
+                is CommandOutcome.Committed -> followingSaved()
 
-                is ScheduleCommandOutcome.OutcomeUnknown -> recover()
+                is CommandOutcome.OutcomeUnknown -> recover()
 
-                is ScheduleCommandOutcome.Rejected -> {
+                is CommandOutcome.Rejected -> {
                     saved[KEY_OPERATION] = null
                     saved[KEY_OPERATION_SCHEDULE] = null
                     saved[KEY_FOLLOWING] = null
@@ -706,27 +714,33 @@ class ExpenseEntryViewModel(
 
     private suspend fun settleSchedule(outcome: ScheduleCommandOutcome) {
         when (outcome) {
-            is ScheduleCommandOutcome.Committed -> scheduleSaved(outcome.schedule.scheduleId)
+            is CommandOutcome.Committed -> scheduleSaved(outcome.value.scheduleId)
 
-            is ScheduleCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is ScheduleCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written. The draft and the choice stay.
                 saved[KEY_OPERATION] = null
                 saved[KEY_OPERATION_SCHEDULE] = null
-                val error = when (outcome.reason) {
-                    ScheduleRejection.CategoryMissing, ScheduleRejection.CategoryArchived -> {
-                        setCategory(null)
-                        EntryError.CategoryGone
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> EntryError.DataChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.VersionConflict,
+                    is CommandRejection.StorageFailed -> EntryError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        ScheduleRejection.CategoryMissing, ScheduleRejection.CategoryArchived -> {
+                            setCategory(null)
+                            EntryError.CategoryGone
+                        }
+
+                        is ScheduleRejection.StartTooEarly -> EntryError.StartTooEarly
+
+                        is ScheduleRejection.EndTooEarly -> EntryError.EndTooEarly
+
+                        else -> EntryError.NotSaved
                     }
-
-                    is ScheduleRejection.StartTooEarly -> EntryError.StartTooEarly
-
-                    is ScheduleRejection.EndTooEarly -> EntryError.EndTooEarly
-
-                    is ScheduleRejection.StaleGeneration -> EntryError.DataChanged
-
-                    else -> EntryError.NotSaved
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }
@@ -749,10 +763,10 @@ class ExpenseEntryViewModel(
         progress.update { it.copy(busy = true, error = null, recorded = id) }
         val stored = (scheduleReads.book() as? Outcome.Success)?.value?.schedules
             ?.firstOrNull { it.schedule.id.value == id }?.schedule
-        val read = month.first { it !is SnapshotState.Loading }
+        val read = month.first { it !is ReadState.Loading }
         val payment = stored?.entry as? ScheduledEntry.Payment
         val category = payment?.let {
-            (read as? SnapshotState.Ready)?.snapshot?.categories
+            (read as? ReadState.Ready)?.value?.categories
                 ?.firstOrNull { line -> line.category.id == it.categoryId }?.category
         }
         corrections.scheduleSaved(
@@ -840,9 +854,9 @@ class ExpenseEntryViewModel(
         val id = (ExpenseId.of(expenseId) as? Outcome.Success)?.value
         val expense = (id?.let { reads.byId(it) } as? Outcome.Success)?.value
         // The category's name comes from the same read the form uses; wait for it once.
-        val read = month.first { it !is SnapshotState.Loading }
+        val read = month.first { it !is ReadState.Loading }
         val category = expense?.let {
-            (read as? SnapshotState.Ready)?.snapshot?.categories
+            (read as? ReadState.Ready)?.value?.categories
                 ?.firstOrNull { line -> line.category.id == it.categoryId }?.category
         }
         corrections.recorded(
@@ -861,7 +875,7 @@ class ExpenseEntryViewModel(
         today: LocalDate,
         writing: String?
     ): ExpenseEntryState {
-        val snapshot = (month as? SnapshotState.Ready)?.snapshot
+        val snapshot = (month as? ReadState.Ready)?.value
         val original = progress.original
         val categories = snapshot?.let { eligible(it, original?.categoryId) }.orEmpty()
             .map { EntryCategory(it.id.value, it.name.value, it.icon.value) }
@@ -874,9 +888,9 @@ class ExpenseEntryViewModel(
         val repeating = if (editing) RepeatUi() else repeat.ui(draft.date)
         return ExpenseEntryState(
             loading = progress.recorded == null && !progress.originalUnreadable &&
-                (month is SnapshotState.Loading || waitingForOriginal),
+                (month is ReadState.Loading || waitingForOriginal),
             loadFailed = progress.recorded == null &&
-                (month is SnapshotState.Failed || progress.originalUnreadable),
+                (month is ReadState.Failed || progress.originalUnreadable),
             amount = amount?.let { money.format(it.money) },
             amountText = (draft.amount as? AmountDraft.Rejected)?.original,
             amountProblem = (draft.amount as? AmountDraft.Rejected)?.let { problem(it.error) },

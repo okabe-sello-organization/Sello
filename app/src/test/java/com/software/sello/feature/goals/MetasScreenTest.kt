@@ -61,6 +61,7 @@ import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
@@ -199,7 +200,7 @@ class MetasScreenTest {
                 val commands = HandGoalCommands()
                 MetasViewModel(
                     SavedStateHandle(),
-                    Reads(GoalBoardState.Ready(board)),
+                    Reads(ReadState.Ready(board)),
                     commands,
                     clock,
                     money,
@@ -293,9 +294,9 @@ class MetasScreenTest {
     @Config(qualifiers = "w900dp-h900dp-mdpi")
     fun metasAndTheDetailKeepEveryFigureWholeInEveryThemeSizeAndWindow() {
         val render = GoalsRenderModel(money)
-        val metas = render.metas(GoalBoardState.Ready(board), today)
+        val metas = render.metas(ReadState.Ready(board), today)
         val detail = render.detail(
-            GoalBoardState.Ready(board),
+            ReadState.Ready(board),
             board.goals[1].history.goal.id.value,
             today
         )
@@ -359,7 +360,7 @@ class MetasScreenTest {
     }
 
     private fun showDetail(summary: GoalSummary) {
-        val ready = GoalBoardState.Ready(GoalBoard(1, 1, listOf(summary), null))
+        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(summary), null))
         val detail = GoalsRenderModel(money).detail(ready, summary.history.goal.id.value, today)
         rule.showSello(Look(density = 1f)) {
             GoalDetailScreen(detail, {}, dateLabels(), monthNames(), PaddingValues(16.dp))

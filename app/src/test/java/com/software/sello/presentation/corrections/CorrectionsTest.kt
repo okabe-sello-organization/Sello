@@ -8,12 +8,15 @@ import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.ExpenseCommandOutcome
-import com.software.sello.domain.port.ExpenseCommandOutcome.OutcomeUnknown
-import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalRejection
@@ -80,7 +83,7 @@ class CorrectionsTest {
         )
 
     private val storageFailed =
-        Rejected(ExpenseRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")))
+        Rejected(CommandRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")))
 
     init {
         // As the real commands do: a committed deletion is on offer for six seconds.
@@ -130,9 +133,9 @@ class CorrectionsTest {
     @Test
     fun aDeletionThatWasRefusedSaysWhyAndOffersNothing() = test {
         val answers = listOf(
-            Rejected(ExpenseRejection.ExpenseMissing) to DeleteResult.Gone,
-            Rejected(ExpenseRejection.VersionConflict(current = 4)) to DeleteResult.Changed,
-            Rejected(ExpenseRejection.StaleGeneration(current = 8)) to DeleteResult.DataChanged,
+            Rejected(Specific(ExpenseRejection.ExpenseMissing)) to DeleteResult.Gone,
+            Rejected(CommandRejection.VersionConflict(current = 4)) to DeleteResult.Changed,
+            Rejected(CommandRejection.StaleGeneration(current = 8)) to DeleteResult.DataChanged,
             storageFailed to DeleteResult.Failed
         )
 
@@ -287,17 +290,17 @@ class CorrectionsTest {
 
     @Test
     fun anUndoThatCameTooLateOrIsBlockedSaysSoAndRestoresNothing() = test {
-        commands.restoreAnswer = { Rejected(ExpenseRejection.UndoExpired) }
+        commands.restoreAnswer = { Rejected(Specific(ExpenseRejection.UndoExpired)) }
         delete()
         corrections.undo()
         runCurrent()
         val late = notice
-        commands.restoreAnswer = { Rejected(ExpenseRejection.UndoConflict) }
+        commands.restoreAnswer = { Rejected(Specific(ExpenseRejection.UndoConflict)) }
         delete()
         corrections.undo()
         runCurrent()
         val conflict = notice
-        commands.restoreAnswer = { Rejected(ExpenseRejection.StaleGeneration(current = 9)) }
+        commands.restoreAnswer = { Rejected(CommandRejection.StaleGeneration(current = 9)) }
         delete()
         corrections.undo()
         runCurrent()
@@ -316,7 +319,7 @@ class CorrectionsTest {
         val failed = notice
         commands.restoreAnswer =
             {
-                ExpenseCommandOutcome.Committed(
+                CommandOutcome.Committed(
                     commands.committed(it.operationId),
                     replayed = false
                 )
@@ -510,12 +513,12 @@ class CorrectionsTest {
         advanceTimeBy(1)
         runCurrent()
         val after = notice
-        incomes.restoreAnswer = { IncomeCommandOutcome.Rejected(IncomeRejection.UndoExpired) }
+        incomes.restoreAnswer = { CommandOutcome.Rejected(Specific(IncomeRejection.UndoExpired)) }
         deleteIncome()
         corrections.undo()
         runCurrent()
         val late = notice
-        incomes.restoreAnswer = { IncomeCommandOutcome.Rejected(IncomeRejection.UndoConflict) }
+        incomes.restoreAnswer = { CommandOutcome.Rejected(Specific(IncomeRejection.UndoConflict)) }
         deleteIncome()
         corrections.undo()
         runCurrent()
@@ -543,14 +546,14 @@ class CorrectionsTest {
     @Test
     fun aRefusedIncomeDeletionSaysWhyAndASavedIncomeEditIsSaidForAMoment() = test {
         val answers = listOf(
-            IncomeRejection.IncomeMissing to DeleteResult.Gone,
-            IncomeRejection.VersionConflict(current = 4) to DeleteResult.Changed,
-            IncomeRejection.StaleGeneration(current = 8) to DeleteResult.DataChanged,
-            IncomeRejection.StorageFailed(StorageFailure.Unavailable("x")) to DeleteResult.Failed
+            Specific(IncomeRejection.IncomeMissing) to DeleteResult.Gone,
+            CommandRejection.VersionConflict(current = 4) to DeleteResult.Changed,
+            CommandRejection.StaleGeneration(current = 8) to DeleteResult.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to DeleteResult.Failed
         )
 
         val results = answers.map { (reason, _) ->
-            incomes.deleteAnswer = { IncomeCommandOutcome.Rejected(reason) }
+            incomes.deleteAnswer = { CommandOutcome.Rejected(reason) }
             deleteIncome() to notice
         }
         corrections.incomeUpdated()
@@ -589,7 +592,7 @@ class CorrectionsTest {
         corrections.undo()
         runCurrent()
 
-        assertEquals(true, outcome is InvestmentCommandOutcome.Committed)
+        assertEquals(true, outcome is CommandOutcome.Committed)
         assertEquals(CorrectionNotice.InvestmentMovementDeleted(canUndo = true), offered)
         val sent = investments.sent.last() as RestoreInvestmentMovement
         assertEquals(
@@ -612,12 +615,12 @@ class CorrectionsTest {
         runCurrent()
         val after = notice
         deleteInvestmentMovement()
-        investments.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.UndoExpired)
+        investments.answers += CommandOutcome.Rejected(Specific(InvestmentRejection.UndoExpired))
         corrections.undo()
         runCurrent()
         val late = notice
         deleteInvestmentMovement()
-        investments.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.UndoConflict)
+        investments.answers += CommandOutcome.Rejected(Specific(InvestmentRejection.UndoConflict))
         corrections.undo()
         runCurrent()
 
@@ -630,7 +633,7 @@ class CorrectionsTest {
     @Test
     fun anUnknownUndoOfAnInvestmentMovementIsAskedWithTheSameOperationNeverSentAgain() = test {
         deleteInvestmentMovement()
-        investments.answers += InvestmentCommandOutcome.OutcomeUnknown(
+        investments.answers += CommandOutcome.OutcomeUnknown(
             (OperationId.of(uuid(500)) as Outcome.Success).value
         )
         investments.found = Outcome.Failure(StorageFailure.Unavailable("x"))
@@ -650,13 +653,13 @@ class CorrectionsTest {
     @Test
     fun aRefusedInvestmentMovementDeletionOffersNothing() = test {
         investments.answers +=
-            InvestmentCommandOutcome.Rejected(InvestmentRejection.LastContribution)
+            CommandOutcome.Rejected(Specific(InvestmentRejection.LastContribution))
 
         val outcome = deleteInvestmentMovement()
         val afterRefusal = notice
         corrections.investmentMovementUpdated()
 
-        assertEquals(true, outcome is InvestmentCommandOutcome.Rejected)
+        assertEquals(true, outcome is CommandOutcome.Rejected)
         assertNull(afterRefusal)
         assertEquals(CorrectionNotice.InvestmentMovementUpdated, notice)
     }
@@ -686,7 +689,7 @@ class CorrectionsTest {
     fun deletingAGoalMovementOffersUndoInItsOwnWords() = test {
         val outcome = deleteMovement()
 
-        assertEquals(true, outcome is GoalCommandOutcome.Committed)
+        assertEquals(true, outcome is CommandOutcome.Committed)
         assertEquals(listOf<Any>(movementDeletion()), goals.sent)
         assertEquals(CorrectionNotice.GoalMovementDeleted(canUndo = true), notice)
         assertEquals(emptyList<Any>(), commands.deleted)
@@ -720,12 +723,12 @@ class CorrectionsTest {
         runCurrent()
         val after = notice
         deleteMovement()
-        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.UndoExpired)
+        goals.queue += CommandOutcome.Rejected(Specific(GoalRejection.UndoExpired))
         corrections.undo()
         runCurrent()
         val late = notice
         deleteMovement()
-        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.UndoConflict)
+        goals.queue += CommandOutcome.Rejected(Specific(GoalRejection.UndoConflict))
         corrections.undo()
         runCurrent()
 
@@ -751,13 +754,13 @@ class CorrectionsTest {
 
     @Test
     fun aRefusedMovementDeletionOffersNothingAndASavedMovementIsSaidForAMoment() = test {
-        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.MovementMissing)
+        goals.queue += CommandOutcome.Rejected(Specific(GoalRejection.MovementMissing))
 
         val outcome = deleteMovement()
         val afterRefusal = notice
         corrections.goalMovementUpdated()
 
-        assertEquals(true, outcome is GoalCommandOutcome.Rejected)
+        assertEquals(true, outcome is CommandOutcome.Rejected)
         assertNull(afterRefusal)
         assertEquals(CorrectionNotice.GoalMovementUpdated, notice)
     }
@@ -816,7 +819,7 @@ class CorrectionsTest {
     fun aCompletedGoalOffersDeshacerInItsNameForTheTimeAsked() = test {
         val outcome = complete(undoFor = 14.seconds)
 
-        assertEquals(true, outcome is GoalCommandOutcome.Committed)
+        assertEquals(true, outcome is CommandOutcome.Committed)
         assertEquals(listOf<Any>(completion(14.seconds)), goals.sent)
         assertEquals(CorrectionNotice.GoalCompleted("Celular nuevo", canUndo = true), notice)
         advanceTimeBy(13_999)
@@ -846,7 +849,7 @@ class CorrectionsTest {
     @Test
     fun mt25ADeshacerTooLateLeavesTheGoalFinal() = test {
         complete()
-        goals.queue += GoalCommandOutcome.Rejected(GoalRejection.UndoExpired)
+        goals.queue += CommandOutcome.Rejected(Specific(GoalRejection.UndoExpired))
 
         corrections.undo()
         runCurrent()

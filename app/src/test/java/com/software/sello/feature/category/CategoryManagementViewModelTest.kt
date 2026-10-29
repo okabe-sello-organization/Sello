@@ -22,6 +22,9 @@ import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryEdit
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeCategoryIcon
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.SetDefaultLimit
@@ -108,12 +111,13 @@ class CategoryManagementViewModelTest {
     )
 
     private fun committed(operation: OperationId) =
-        CategoryCommandOutcome.Committed(change(operation), replayed = false)
+        CommandOutcome.Committed(change(operation), replayed = false)
 
-    private fun rejected(reason: CategoryRejection) = CategoryCommandOutcome.Rejected(reason)
+    private fun rejected(reason: CommandRejection<CategoryRejection>) =
+        CommandOutcome.Rejected(reason)
 
     private val storageFailed =
-        rejected(CategoryRejection.StorageFailed(StorageFailure.Unavailable("x")))
+        rejected(CommandRejection.StorageFailed(StorageFailure.Unavailable("x")))
 
     private val commands = HandCommands()
 
@@ -471,7 +475,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun aCategoryChangedMeanwhileStopsTheFormUntilThePersonChooses() {
-        commands.answer = { rejected(CategoryRejection.VersionConflict(current = 6)) }
+        commands.answer = { rejected(CommandRejection.VersionConflict(current = 6)) }
         val form = form()
         form.name("Cafetería")
 
@@ -487,7 +491,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun keepingTheDraftReadsTheCategoryAgainAndSavesOverItsNewVersion() {
-        commands.answer = { rejected(CategoryRejection.VersionConflict(current = 6)) }
+        commands.answer = { rejected(CommandRejection.VersionConflict(current = 6)) }
         val form = form()
         form.name("Cafetería")
         form.save()
@@ -507,7 +511,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun discardingTheDraftStartsAgainFromWhatTheCategoryIsNow() {
-        commands.answer = { rejected(CategoryRejection.VersionConflict(current = 6)) }
+        commands.answer = { rejected(CommandRejection.VersionConflict(current = 6)) }
         val form = form()
         form.name("Cafetería")
         form.save()
@@ -523,10 +527,10 @@ class CategoryManagementViewModelTest {
     @Test
     fun otherRefusalsKeepTheDraftAndSayWhatHappened() {
         val refusals = listOf(
-            CategoryRejection.CategoryMissing to SaveError.CategoryGone,
-            CategoryRejection.StaleGeneration(8) to SaveError.DataChanged,
-            CategoryRejection.StorageFailed(StorageFailure.Unavailable("x")) to SaveError.NotSaved,
-            CategoryRejection.AlreadyArchived to SaveError.Conflict
+            Specific(CategoryRejection.CategoryMissing) to SaveError.CategoryGone,
+            CommandRejection.StaleGeneration(8) to SaveError.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to SaveError.NotSaved,
+            Specific(CategoryRejection.AlreadyArchived) to SaveError.Conflict
         )
 
         val seen = refusals.map { (reason, _) ->
@@ -543,7 +547,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun aNameTakenMeanwhileIsShownOnTheNameAndNothingIsSaved() {
-        commands.answer = { rejected(CategoryRejection.NameTaken) }
+        commands.answer = { rejected(Specific(CategoryRejection.NameTaken)) }
         val form = form()
         form.name("Nueva")
 
@@ -558,7 +562,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun anUnknownOutcomeIsLookedUpAndNeverSentAgain() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = form()
         form.name("Cafetería")
@@ -578,7 +582,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun anUnknownOutcomeThatDidNotCommitLeavesTheChangeReadyToSendAgain() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         val form = form()
         form.name("Cafetería")
 
@@ -677,7 +681,7 @@ class CategoryManagementViewModelTest {
             if (answers++ ==
                 0
             ) {
-                rejected(CategoryRejection.SchedulesPending)
+                rejected(Specific(CategoryRejection.SchedulesPending))
             } else {
                 committed(it.operationId)
             }
@@ -697,7 +701,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun aCatchUpThatStopsArchivesNothingAndSaysWhy() {
-        commands.answer = { rejected(CategoryRejection.SchedulesPending) }
+        commands.answer = { rejected(Specific(CategoryRejection.SchedulesPending)) }
         caughtUp = CatchUpResult(
             emptyList(),
             CatchUpStop.Failed(StorageFailure.Unavailable("SQLException"))
@@ -715,7 +719,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun aPaymentStillDueAfterCatchUpIsAskedOnceThenSaid() {
-        commands.answer = { rejected(CategoryRejection.SchedulesPending) }
+        commands.answer = { rejected(Specific(CategoryRejection.SchedulesPending)) }
         val form = form()
         form.onAction(CategoryEditorAction.Archive)
 
@@ -778,7 +782,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun anArchiveThatWasRefusedKeepsTheFormOpenAndSaysWhy() {
-        commands.answer = { rejected(CategoryRejection.VersionConflict(6)) }
+        commands.answer = { rejected(CommandRejection.VersionConflict(6)) }
         val form = form()
         form.onAction(CategoryEditorAction.Archive)
 

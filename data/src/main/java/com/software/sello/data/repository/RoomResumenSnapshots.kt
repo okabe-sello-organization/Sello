@@ -1,6 +1,5 @@
 package com.software.sello.data.repository
 
-import android.database.SQLException
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.domain.model.Income
@@ -17,10 +16,8 @@ import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import java.time.YearMonth
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
@@ -91,32 +88,8 @@ class RoomResumenSnapshots(
         return Outcome.Success(Rows(selected.generation, selected.revision, months, incomes))
     }
 
-    override fun observe(month: YearMonth): Flow<ResumenSnapshotState> = flow {
-        emit(ResumenSnapshotState.Loading)
-        var lastGood: ResumenSnapshot? = null
-        try {
-            combine(clock.today, database.profileDao().changes()) { today, _ -> today }
-                .conflate().collect { today ->
-                    when (val read = readAsOf(month, today)) {
-                        is Outcome.Success -> {
-                            lastGood = read.value
-                            emit(ResumenSnapshotState.Ready(read.value))
-                        }
-
-                        is Outcome.Failure -> emit(
-                            ResumenSnapshotState.Failed(read.error, lastGood)
-                        )
-                    }
-                }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (failure: SQLException) {
-            emit(ResumenSnapshotState.Failed(unavailable(failure), lastGood))
-        } catch (failure: IllegalStateException) {
-            emit(ResumenSnapshotState.Failed(unavailable(failure), lastGood))
-        }
-    }
-
-    private fun unavailable(failure: Exception) =
-        SnapshotFailure.Storage(StorageFailure.Unavailable(failure.javaClass.simpleName))
+    override fun observe(month: YearMonth): Flow<ResumenSnapshotState> = observeOn(
+        combine(clock.today, database.profileDao().changes()) { today, _ -> today },
+        SnapshotFailure::Storage
+    ) { today -> readAsOf(month, today) }
 }

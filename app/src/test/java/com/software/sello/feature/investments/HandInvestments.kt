@@ -25,6 +25,7 @@ import com.software.sello.domain.model.UsdRateBook
 import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.model.UsdRateId
 import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
@@ -38,6 +39,7 @@ import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.InvestmentUndoOffer
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import java.time.Instant
@@ -77,14 +79,13 @@ fun ratesBoard(vararg rates: UsdRateEntry) = InvestmentBoard(
 )
 
 /** The board as a test sets it. */
-class HandInvestmentReads(
-    initial: InvestmentBoardState = InvestmentBoardState.Ready(ratesBoard())
-) : InvestmentReads {
+class HandInvestmentReads(initial: InvestmentBoardState = ReadState.Ready(ratesBoard())) :
+    InvestmentReads {
     val board = MutableStateFlow(initial)
 
     override suspend fun board(): Outcome<InvestmentBoard, StorageFailure> =
         when (val state = board.value) {
-            is InvestmentBoardState.Ready -> Outcome.Success(state.board)
+            is ReadState.Ready -> Outcome.Success(state.value)
             else -> Outcome.Failure(StorageFailure.Unavailable("hand"))
         }
 
@@ -109,7 +110,7 @@ class HandInvestmentCommands : InvestmentCommands {
 
     override suspend fun submit(command: InvestmentCommand): InvestmentCommandOutcome {
         sent += command
-        return answers.removeFirstOrNull() ?: InvestmentCommandOutcome.Committed(
+        return answers.removeFirstOrNull() ?: CommandOutcome.Committed(
             CommittedInvestment(
                 OperationReceipt(
                     command.operationId,
@@ -186,7 +187,7 @@ fun investmentsBoard(
 
 /** A receipt for [operation], naming [investmentId] when the change has one. */
 fun committedInvestment(operation: OperationId, kind: OperationKind, investmentId: String?) =
-    InvestmentCommandOutcome.Committed(
+    CommandOutcome.Committed(
         CommittedInvestment(
             OperationReceipt(operation, kind, 1, 2, Instant.EPOCH),
             investmentId?.let { (InvestmentId.of(it) as Outcome.Success).value }

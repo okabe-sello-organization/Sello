@@ -22,6 +22,8 @@ import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.EditInvestmentMovement
@@ -32,6 +34,7 @@ import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.InvestmentUndoOffer
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RestoreInvestmentMovement
@@ -187,7 +190,7 @@ class InvestmentMovementViewModelTest {
 
     private fun board(vararg investments: InvestmentSummary): InvestmentBoardState {
         val rate = rateEntry(415_025, "2026-10-20")
-        return InvestmentBoardState.Ready(
+        return ReadState.Ready(
             InvestmentBoard(
                 generation = 3,
                 revision = 9,
@@ -399,8 +402,8 @@ class InvestmentMovementViewModelTest {
             )
         )
         val model = model(investment = prueba, movement = movementId(34).value)
-        commands.answers += InvestmentCommandOutcome.Rejected(
-            InvestmentRejection.AboveValue(movementId(36), Money.cop(5_000_000))
+        commands.answers += CommandOutcome.Rejected(
+            Specific(InvestmentRejection.AboveValue(movementId(36), Money.cop(5_000_000)))
         )
 
         model.onAction(InvestmentMovementAction.Delete)
@@ -417,7 +420,7 @@ class InvestmentMovementViewModelTest {
     @Test
     fun in22TheOnlyAporteCannotBeDeletedAndTheFormSaysWhy() = runTest {
         val model = model(investment = cripto, movement = movementId(41).value)
-        commands.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.LastContribution)
+        commands.answers += CommandOutcome.Rejected(Specific(InvestmentRejection.LastContribution))
 
         model.onAction(InvestmentMovementAction.Delete)
 
@@ -443,8 +446,8 @@ class InvestmentMovementViewModelTest {
     fun in25TheCommandsRefusalBeforeTheFirstAporteIsShownWithItsDate() = runTest {
         val model = model(investment = fondo, kind = InvestmentMovementViewModel.KIND_DIVIDEND)
         model.keys("1", "000")
-        commands.answers += InvestmentCommandOutcome.Rejected(
-            InvestmentRejection.BeforeFirstContribution(day("2025-05-03"))
+        commands.answers += CommandOutcome.Rejected(
+            Specific(InvestmentRejection.BeforeFirstContribution(day("2025-05-03")))
         )
 
         model.onAction(InvestmentMovementAction.Submit)
@@ -526,7 +529,7 @@ class InvestmentMovementViewModelTest {
         val model = model(investment = ecopetrol)
         model.keys("5", "000")
         commands.answers +=
-            InvestmentCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+            CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
 
         model.onAction(InvestmentMovementAction.Submit)
@@ -562,7 +565,7 @@ class InvestmentMovementViewModelTest {
         val first = model(saved = saved)
         first.keys("5", "000")
         commands.answers +=
-            InvestmentCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+            CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         first.onAction(InvestmentMovementAction.Submit)
         val operation = commands.sent.single().operationId
@@ -647,7 +650,7 @@ class InvestmentMovementViewModelTest {
 
     @Test
     fun aFailedReadIsNotNoInvestments() = runTest {
-        reads.board.value = InvestmentBoardState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val model = model()
 
         assertTrue(model.now.loadFailed)

@@ -9,6 +9,9 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteGoalMovement
@@ -326,16 +329,16 @@ class Corrections(
         val operation = operation()
         val command = DeleteExpense(operation, generation, expenseId, expectedVersion)
         val committed = when (val outcome = commands.delete(command)) {
-            is ExpenseCommandOutcome.Committed -> true
+            is CommandOutcome.Committed -> true
 
             // Asked, never sent again: only a receipt says it was deleted.
-            is ExpenseCommandOutcome.OutcomeUnknown ->
+            is CommandOutcome.OutcomeUnknown ->
                 (commands.find(operation) as? Outcome.Success)?.value != null
 
-            is ExpenseCommandOutcome.Rejected -> return@async when (outcome.reason) {
-                ExpenseRejection.ExpenseMissing -> DeleteResult.Gone
-                is ExpenseRejection.VersionConflict -> DeleteResult.Changed
-                is ExpenseRejection.StaleGeneration -> DeleteResult.DataChanged
+            is CommandOutcome.Rejected -> return@async when (outcome.reason) {
+                Specific(ExpenseRejection.ExpenseMissing) -> DeleteResult.Gone
+                is CommandRejection.VersionConflict -> DeleteResult.Changed
+                is CommandRejection.StaleGeneration -> DeleteResult.DataChanged
                 else -> DeleteResult.Failed
             }
         }
@@ -347,7 +350,7 @@ class Corrections(
     /** The same for an income. */
     suspend fun deleteIncome(command: DeleteIncome): IncomeCommandOutcome = scope.async {
         val outcome = incomes.delete(command)
-        if (outcome is IncomeCommandOutcome.Committed) incomeDeleted(outcome.income.receipt)
+        if (outcome is CommandOutcome.Committed) incomeDeleted(outcome.value.receipt)
         outcome
     }.await()
 
@@ -364,15 +367,15 @@ class Corrections(
         val operation = operation()
         val command = DeleteIncome(operation, generation, incomeId, expectedVersion)
         val committed = when (val outcome = incomes.delete(command)) {
-            is IncomeCommandOutcome.Committed -> true
+            is CommandOutcome.Committed -> true
 
-            is IncomeCommandOutcome.OutcomeUnknown ->
+            is CommandOutcome.OutcomeUnknown ->
                 (incomes.find(operation) as? Outcome.Success)?.value != null
 
-            is IncomeCommandOutcome.Rejected -> return@async when (outcome.reason) {
-                IncomeRejection.IncomeMissing -> DeleteResult.Gone
-                is IncomeRejection.VersionConflict -> DeleteResult.Changed
-                is IncomeRejection.StaleGeneration -> DeleteResult.DataChanged
+            is CommandOutcome.Rejected -> return@async when (outcome.reason) {
+                Specific(IncomeRejection.IncomeMissing) -> DeleteResult.Gone
+                is CommandRejection.VersionConflict -> DeleteResult.Changed
+                is CommandRejection.StaleGeneration -> DeleteResult.DataChanged
                 else -> DeleteResult.Failed
             }
         }
@@ -420,28 +423,32 @@ class Corrections(
     private fun restorer(kind: Kind) = when (kind) {
         Kind.Expense -> Restorer(
             { operation, generation, deletion ->
-                commands.restore(RestoreExpense(operation, generation, deletion)).sent()
+                commands.restore(RestoreExpense(operation, generation, deletion))
+                    .sent(ExpenseRejection.UndoExpired, ExpenseRejection.UndoConflict)
             },
             { (commands.find(it) as? Outcome.Success)?.value != null }
         )
 
         Kind.Income -> Restorer(
             { operation, generation, deletion ->
-                incomes.restore(RestoreIncome(operation, generation, deletion)).sent()
+                incomes.restore(RestoreIncome(operation, generation, deletion))
+                    .sent(IncomeRejection.UndoExpired, IncomeRejection.UndoConflict)
             },
             { (incomes.find(it) as? Outcome.Success)?.value != null }
         )
 
         Kind.GoalMovement -> Restorer(
             { operation, generation, deletion ->
-                goals.submit(RestoreGoalMovement(operation, generation, deletion)).sent()
+                goals.submit(RestoreGoalMovement(operation, generation, deletion))
+                    .sent(GoalRejection.UndoExpired, GoalRejection.UndoConflict)
             },
             { (goals.find(it) as? Outcome.Success)?.value != null }
         )
 
         Kind.GoalCompletion -> Restorer(
             { operation, generation, deletion ->
-                goals.submit(UndoGoalCompletion(operation, generation, deletion)).sent()
+                goals.submit(UndoGoalCompletion(operation, generation, deletion))
+                    .sent(GoalRejection.UndoExpired, GoalRejection.UndoConflict)
             },
             { (goals.find(it) as? Outcome.Success)?.value != null }
         )
@@ -449,7 +456,7 @@ class Corrections(
         Kind.InvestmentMovement -> Restorer(
             { operation, generation, deletion ->
                 investments.submit(RestoreInvestmentMovement(operation, generation, deletion))
-                    .sent()
+                    .sent(InvestmentRejection.UndoExpired, InvestmentRejection.UndoConflict)
             },
             { (investments.find(it) as? Outcome.Success)?.value != null }
         )
@@ -475,53 +482,18 @@ class Corrections(
         }
     }
 
-    private fun ExpenseCommandOutcome.sent() = when (this) {
-        is ExpenseCommandOutcome.Committed -> Sent.Committed
+    /**
+     * How a restore command ended, the same for every kind: [expired] and [conflict] are
+     * that kind's own reasons for "too late" and "blocked"; a replaced history is blocked too.
+     */
+    private fun <F> CommandOutcome<*, F>.sent(expired: F, conflict: F): Sent = when (this) {
+        is CommandOutcome.Committed -> Sent.Committed
 
-        is ExpenseCommandOutcome.OutcomeUnknown -> Sent.Unknown
+        is CommandOutcome.OutcomeUnknown -> Sent.Unknown
 
-        is ExpenseCommandOutcome.Rejected -> when (reason) {
-            ExpenseRejection.UndoExpired -> Sent.Expired
-            ExpenseRejection.UndoConflict, is ExpenseRejection.StaleGeneration -> Sent.Conflict
-            else -> Sent.Other
-        }
-    }
-
-    private fun IncomeCommandOutcome.sent() = when (this) {
-        is IncomeCommandOutcome.Committed -> Sent.Committed
-
-        is IncomeCommandOutcome.OutcomeUnknown -> Sent.Unknown
-
-        is IncomeCommandOutcome.Rejected -> when (reason) {
-            IncomeRejection.UndoExpired -> Sent.Expired
-            IncomeRejection.UndoConflict, is IncomeRejection.StaleGeneration -> Sent.Conflict
-            else -> Sent.Other
-        }
-    }
-
-    private fun GoalCommandOutcome.sent() = when (this) {
-        is GoalCommandOutcome.Committed -> Sent.Committed
-
-        is GoalCommandOutcome.OutcomeUnknown -> Sent.Unknown
-
-        is GoalCommandOutcome.Rejected -> when (reason) {
-            GoalRejection.UndoExpired -> Sent.Expired
-            GoalRejection.UndoConflict, is GoalRejection.StaleGeneration -> Sent.Conflict
-            else -> Sent.Other
-        }
-    }
-
-    private fun InvestmentCommandOutcome.sent() = when (this) {
-        is InvestmentCommandOutcome.Committed -> Sent.Committed
-
-        is InvestmentCommandOutcome.OutcomeUnknown -> Sent.Unknown
-
-        is InvestmentCommandOutcome.Rejected -> when (reason) {
-            InvestmentRejection.UndoExpired -> Sent.Expired
-
-            InvestmentRejection.UndoConflict, is InvestmentRejection.StaleGeneration ->
-                Sent.Conflict
-
+        is CommandOutcome.Rejected -> when (reason) {
+            Specific(expired) -> Sent.Expired
+            Specific(conflict), is CommandRejection.StaleGeneration -> Sent.Conflict
             else -> Sent.Other
         }
     }
@@ -577,7 +549,7 @@ class Corrections(
      */
     suspend fun deleteGoalMovement(command: DeleteGoalMovement): GoalCommandOutcome = scope.async {
         val outcome = goals.submit(command)
-        if (outcome is GoalCommandOutcome.Committed) goalMovementDeleted(outcome.goal.receipt)
+        if (outcome is CommandOutcome.Committed) goalMovementDeleted(outcome.value.receipt)
         outcome
     }.await()
 
@@ -596,8 +568,8 @@ class Corrections(
         command: DeleteInvestmentMovement
     ): InvestmentCommandOutcome = scope.async {
         val outcome = investments.submit(command)
-        if (outcome is InvestmentCommandOutcome.Committed) {
-            investmentMovementDeleted(outcome.change.receipt)
+        if (outcome is CommandOutcome.Committed) {
+            investmentMovementDeleted(outcome.value.receipt)
         }
         outcome
     }.await()
@@ -623,8 +595,8 @@ class Corrections(
     suspend fun completeGoal(command: CompleteGoal, goalName: String): GoalCommandOutcome =
         scope.async {
             val outcome = goals.submit(command)
-            if (outcome is GoalCommandOutcome.Committed) {
-                goalCompleted(outcome.goal.receipt, goalName)
+            if (outcome is CommandOutcome.Committed) {
+                goalCompleted(outcome.value.receipt, goalName)
             }
             outcome
         }.await()

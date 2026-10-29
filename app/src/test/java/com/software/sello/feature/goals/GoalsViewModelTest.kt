@@ -19,6 +19,8 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteGoal
@@ -32,6 +34,7 @@ import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.GoalUndoOffer
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandIncomeCommands
@@ -135,7 +138,7 @@ class GoalsViewModelTest {
             GoalSummary(history, GoalPolicy.progress(history).value())
         }
 
-    private fun board(vararg goals: GoalSummary, featured: String? = null) = GoalBoardState.Ready(
+    private fun board(vararg goals: GoalSummary, featured: String? = null) = ReadState.Ready(
         GoalBoard(3, 9, goals.toList(), featured?.let { GoalId.of(it).value() })
     )
 
@@ -157,7 +160,7 @@ class GoalsViewModelTest {
                 false
             }
         watch(model)
-        reads.board.value = GoalBoardState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         assertEquals(MetasState.Failed, model.state.value)
 
         model.onAction(MetasAction.Retry)
@@ -213,7 +216,7 @@ class GoalsViewModelTest {
         reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000), featured = celularId)
         val model = detail()
         watch(model)
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
 
         model.onAction(GoalDetailAction.Feature)
@@ -237,7 +240,7 @@ class GoalsViewModelTest {
         reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000), featured = celularId)
         val model = detail()
         watch(model)
-        commands.next = GoalCommandOutcome.Rejected(GoalRejection.StaleGeneration(4))
+        commands.next = CommandOutcome.Rejected(CommandRejection.StaleGeneration(4))
 
         model.onAction(GoalDetailAction.Feature)
 
@@ -282,7 +285,7 @@ class GoalsViewModelTest {
             summary(viajeId, 400_000, 400_000, completedOn = LocalDate.of(2026, 9, 30))
         )
         val saved = SavedStateHandle(mapOf("goalId" to viajeId))
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         val first = detail(saved)
         watch(first)
@@ -290,7 +293,7 @@ class GoalsViewModelTest {
         first.onAction(GoalDetailAction.Delete)
         val operation = commands.sent.single().operationId
 
-        commands.found = Outcome.Success(committed().goal)
+        commands.found = Outcome.Success(committed().value)
         val restored = detail(saved)
         watch(restored)
 
@@ -347,7 +350,7 @@ class GoalsViewModelTest {
         assertEquals(emptyList<GoalCommand>(), commands.sent)
     }
 
-    private fun committed() = GoalCommandOutcome.Committed(
+    private fun committed() = CommandOutcome.Committed(
         CommittedGoal(
             OperationReceipt(
                 OperationId.of(ids.next()).value(),
@@ -365,7 +368,7 @@ class GoalsViewModelTest {
 
 /** The board a test sets by hand; [started] counts observations. */
 class HandGoalReads : GoalReads {
-    val board = MutableStateFlow<GoalBoardState>(GoalBoardState.Loading)
+    val board = MutableStateFlow<GoalBoardState>(ReadState.Loading)
     var started = 0
 
     /** What a one-off read returns; [reads] counts them. */
@@ -411,7 +414,7 @@ class HandGoalCommands : GoalCommands {
             return deferred.await()
         }
         queue.removeFirstOrNull()?.let { return it }
-        return next?.also { next = null } ?: GoalCommandOutcome.Committed(
+        return next?.also { next = null } ?: CommandOutcome.Committed(
             CommittedGoal(
                 OperationReceipt(
                     command.operationId,

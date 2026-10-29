@@ -14,6 +14,7 @@ import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.policy.InvestmentOrderPolicy
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth
@@ -29,11 +30,11 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
         today: LocalDate,
         order: InvestmentOrder = InvestmentOrder.LargestValue
     ): InversionesState = when (board) {
-        InvestmentBoardState.Loading -> InversionesState.Loading
+        ReadState.Loading -> InversionesState.Loading
 
-        is InvestmentBoardState.Ready -> overview(board.board, today, order, stale = false)
+        is ReadState.Ready -> overview(board.value, today, order, stale = false)
 
-        is InvestmentBoardState.Failed -> board.lastGood?.let {
+        is ReadState.Failed -> board.lastGood?.let {
             overview(it, today, order, stale = true)
         } ?: InversionesState.Failed
     }
@@ -41,11 +42,11 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
     /** One investment's detail from the board, or why it cannot be shown. */
     fun detail(board: InvestmentBoardState, id: String, today: LocalDate): InvestmentDetailState =
         when (board) {
-            InvestmentBoardState.Loading -> InvestmentDetailState.Loading
+            ReadState.Loading -> InvestmentDetailState.Loading
 
-            is InvestmentBoardState.Ready -> detail(board.board, id, today, stale = false)
+            is ReadState.Ready -> detail(board.value, id, today, stale = false)
 
-            is InvestmentBoardState.Failed -> board.lastGood?.let {
+            is ReadState.Failed -> board.lastGood?.let {
                 detail(it, id, today, stale = true)
             } ?: InvestmentDetailState.Failed
         }

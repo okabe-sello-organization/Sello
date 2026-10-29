@@ -3,6 +3,7 @@ package com.software.sello.devtools
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.UsdRate
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.SetUsdRate
 import java.time.LocalDate
@@ -44,8 +45,8 @@ class InvestmentSandboxPortsTest {
         own.answer = Ledger.Next.Refuse
         commands.submit(rate(2))
 
-        assertFalse((first as InvestmentCommandOutcome.Committed).replayed)
-        assertTrue((replay as InvestmentCommandOutcome.Committed).replayed)
+        assertFalse((first as CommandOutcome.Committed).replayed)
+        assertTrue((replay as CommandOutcome.Committed).replayed)
         assertEquals(1, saved)
     }
 

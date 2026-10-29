@@ -13,6 +13,9 @@ import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.ResumeSchedule
@@ -249,10 +252,10 @@ class ScheduleEditorViewModelTest {
     fun aRefusalSaysWhyAndAChangedScheduleCannotBeSentOver() {
         val editor = opened()
         editor.type("1000000")
-        commands.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.CatchUpPending) }
+        commands.answer = { CommandOutcome.Rejected(Specific(ScheduleRejection.CatchUpPending)) }
         editor.onAction(ScheduleEditorAction.Save)
         val pending = editor.now
-        commands.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.VersionConflict(4)) }
+        commands.answer = { CommandOutcome.Rejected(CommandRejection.VersionConflict(4)) }
         editor.onAction(ScheduleEditorAction.Save)
 
         assertEquals(ScheduleEditorError.CatchUpPending, pending.error)
@@ -267,7 +270,7 @@ class ScheduleEditorViewModelTest {
         val saved =
             SavedStateHandle(mapOf(ScheduleEditorViewModel.KEY_SCHEDULE to scheduleId(1).value))
         val editor = opened(saved = saved)
-        commands.answer = { ScheduleCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         editor.onAction(ScheduleEditorAction.Pause)
         val unknown = editor.now

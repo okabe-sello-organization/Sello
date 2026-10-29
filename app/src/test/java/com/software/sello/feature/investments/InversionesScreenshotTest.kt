@@ -28,6 +28,7 @@ import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
@@ -156,7 +157,7 @@ class InversionesScreenshotTest {
         )
     }
     private val shown =
-        InvestmentsRenderModel(money).overview(InvestmentBoardState.Ready(board), today)
+        InvestmentsRenderModel(money).overview(ReadState.Ready(board), today)
 
     private fun capture(look: Look) {
         rule.showSello(look) {

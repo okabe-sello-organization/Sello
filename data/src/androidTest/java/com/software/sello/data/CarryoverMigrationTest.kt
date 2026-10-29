@@ -21,6 +21,7 @@ import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.PastVerdict
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CategoryCommandOutcome
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.EnableCarry
@@ -271,7 +272,7 @@ class CarryoverMigrationTest {
         assertEquals(emptyList<Any>(), history.replay.months)
         // The receipt version 6 committed still answers the same command, unchanged.
         assertEquals(
-            ExpenseCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedExpense(
                     OperationReceipt(
                         operationIdOf(9),
@@ -287,7 +288,7 @@ class CarryoverMigrationTest {
             replayed
         )
         // CP2: turned on in abr, the chain starts there at 0, whatever came before.
-        assertTrue("$enabled", enabled is CategoryCommandOutcome.Committed)
+        assertTrue("$enabled", enabled is CommandOutcome.Committed)
         assertEquals(listOf("$comida|2027-04|null"), chains)
         assertEquals(Money.cop(0), afterEnabling.categories.single().budget?.carry?.carryIn)
         assertEquals(Money.cop(100_000), afterEnabling.categories.single().budget?.limit)

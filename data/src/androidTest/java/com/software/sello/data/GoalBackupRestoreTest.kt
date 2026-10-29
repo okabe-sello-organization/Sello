@@ -19,6 +19,7 @@ import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.DispatcherProvider
@@ -99,7 +100,7 @@ class GoalBackupRestoreTest {
     private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
 
     private suspend fun TestLedger.submit(command: GoalCommand) =
-        goals.submit(command).also { assertTrue("$it", it is GoalCommandOutcome.Committed) }
+        goals.submit(command).also { assertTrue("$it", it is CommandOutcome.Committed) }
 
     private suspend fun TestLedger.board(): GoalBoard = goalReads.board().valueOrFail()
 
@@ -116,8 +117,8 @@ class GoalBackupRestoreTest {
                 pesos(target),
                 YearMonth.of(2026, 12)
             )
-        ) as GoalCommandOutcome.Committed
-        return created.goal.goalId
+        ) as CommandOutcome.Committed
+        return created.value.goalId
     }
 
     private suspend fun TestLedger.move(goal: GoalId, kind: GoalMovementKind, amount: Long) =

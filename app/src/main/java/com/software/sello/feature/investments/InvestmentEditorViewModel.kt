@@ -17,6 +17,8 @@ import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.DatedUsdRate
 import com.software.sello.domain.port.DeleteInvestment
@@ -32,6 +34,7 @@ import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
@@ -79,7 +82,7 @@ class InvestmentEditorViewModel(
         Progress(result = saved.get<String>(KEY_RESULT)?.let(::result))
     )
     private val board = reads.observeBoard()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, InvestmentBoardState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     /**
      * The currency a new investment starts in, chosen in Configuración, until another is
@@ -229,9 +232,9 @@ class InvestmentEditorViewModel(
 
     private fun readable(state: InvestmentBoardState = board.value): InvestmentBoard? =
         when (state) {
-            InvestmentBoardState.Loading -> null
-            is InvestmentBoardState.Ready -> state.board
-            is InvestmentBoardState.Failed -> state.lastGood
+            ReadState.Loading -> null
+            is ReadState.Ready -> state.value
+            is ReadState.Failed -> state.lastGood
         }
 
     private fun stored(read: InvestmentBoard? = readable()): InvestmentSummary? =
@@ -488,9 +491,9 @@ class InvestmentEditorViewModel(
             read.rates.current == null
         val sameValue = saved[KEY_SAME] ?: true
         return InvestmentEditorState(
-            loading = (read == null && board !is InvestmentBoardState.Failed) ||
+            loading = (read == null && board !is ReadState.Failed) ||
                 (editing && read != null && saved.get<Boolean>(KEY_DRAFTED) != true),
-            loadFailed = board is InvestmentBoardState.Failed && read == null,
+            loadFailed = board is ReadState.Failed && read == null,
             editing = editing,
             name = text,
             nameLength = length(text),
@@ -619,29 +622,34 @@ class InvestmentEditorViewModel(
         outcome: InvestmentCommandOutcome
     ) {
         when (outcome) {
-            is InvestmentCommandOutcome.Committed -> committed(step, outcome.change.investmentId)
+            is CommandOutcome.Committed -> committed(step, outcome.value.investmentId)
 
-            is InvestmentCommandOutcome.OutcomeUnknown -> ask(step, operation)
+            is CommandOutcome.OutcomeUnknown -> ask(step, operation)
 
-            is InvestmentCommandOutcome.Rejected -> notSaved(
-                when (outcome.reason) {
-                    is InvestmentRejection.StaleGeneration,
-                    is InvestmentRejection.VersionConflict,
-                    InvestmentRejection.InvestmentMissing,
-                    InvestmentRejection.OperationConflict -> InvestmentSaveError.Changed
+            is CommandOutcome.Rejected -> notSaved(
+                when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration,
+                    is CommandRejection.VersionConflict,
+                    CommandRejection.OperationConflict -> InvestmentSaveError.Changed
 
-                    is InvestmentRejection.FutureDate -> InvestmentSaveError.FutureDate
+                    is CommandRejection.StorageFailed -> InvestmentSaveError.NotSaved
 
-                    InvestmentRejection.InvalidAmount,
-                    InvestmentRejection.InvalidDate,
-                    InvestmentRejection.CurrencyMismatch,
-                    InvestmentRejection.Unrepresentable -> InvestmentSaveError.Invalid
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        InvestmentRejection.InvestmentMissing -> InvestmentSaveError.Changed
 
-                    InvestmentRejection.RateRequired -> InvestmentSaveError.RateRequired
+                        is InvestmentRejection.FutureDate -> InvestmentSaveError.FutureDate
 
-                    InvestmentRejection.Unchanged -> InvestmentSaveError.Unchanged
+                        InvestmentRejection.InvalidAmount,
+                        InvestmentRejection.InvalidDate,
+                        InvestmentRejection.CurrencyMismatch,
+                        InvestmentRejection.Unrepresentable -> InvestmentSaveError.Invalid
 
-                    else -> InvestmentSaveError.NotSaved
+                        InvestmentRejection.RateRequired -> InvestmentSaveError.RateRequired
+
+                        InvestmentRejection.Unchanged -> InvestmentSaveError.Unchanged
+
+                        else -> InvestmentSaveError.NotSaved
+                    }
                 }
             )
         }

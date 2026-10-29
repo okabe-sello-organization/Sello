@@ -20,6 +20,7 @@ import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.presentation.money.MoneyFormatter
@@ -110,12 +111,12 @@ class SettingsViewModel(
 
     private val scheduleCount = retry.flatMapLatest { schedules.observe() }.map { read ->
         when (read) {
-            ScheduleBookState.Loading -> ScheduleCountLine.Loading
+            ReadState.Loading -> ScheduleCountLine.Loading
 
-            is ScheduleBookState.Failed -> ScheduleCountLine.Unreadable
+            is ReadState.Failed -> ScheduleCountLine.Unreadable
 
-            is ScheduleBookState.Ready -> {
-                val all = read.book.schedules.map { it.schedule.entry }
+            is ReadState.Ready -> {
+                val all = read.value.schedules.map { it.schedule.entry }
                 ScheduleCountLine.Read(
                     payments = all.count { it is ScheduledEntry.Payment },
                     incomes = all.count { it is ScheduledEntry.Income }
@@ -126,11 +127,11 @@ class SettingsViewModel(
 
     private val rateLine = retry.flatMapLatest { investments.observeBoard() }.map { read ->
         when (read) {
-            InvestmentBoardState.Loading -> RateLine.Loading
+            ReadState.Loading -> RateLine.Loading
 
-            is InvestmentBoardState.Failed -> RateLine.Unreadable
+            is ReadState.Failed -> RateLine.Unreadable
 
-            is InvestmentBoardState.Ready -> read.board.rates.current?.let {
+            is ReadState.Ready -> read.value.rates.current?.let {
                 RateLine.Read(money.decimal(it.rate.hundredths, RATE_SCALE), it.date)
             } ?: RateLine.None
         }

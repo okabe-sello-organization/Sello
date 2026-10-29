@@ -28,13 +28,15 @@ import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
-import com.software.sello.domain.port.CategoryCommandOutcome.Committed
-import com.software.sello.domain.port.CategoryCommandOutcome.OutcomeUnknown
-import com.software.sello.domain.port.CategoryCommandOutcome.Rejected
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryEdit
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeCategoryIcon
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.DisableCarry
@@ -65,13 +67,7 @@ class RoomCategoryCommands(
     private val ids: RecordIdSource
 ) : CategoryCommands {
     override suspend fun submit(command: CategoryCommand): CategoryCommandOutcome =
-        when (val run = database.runCommand { decide(command) }) {
-            is CommandRun.Finished -> run.value
-            is CommandRun.RolledBack -> Rejected(CategoryRejection.StorageFailed(run.failure))
-            CommandRun.Unknown -> OutcomeUnknown(command.operationId)
-        }
-
-    private fun failed(failure: StorageFailure) = Rejected(CategoryRejection.StorageFailed(failure))
+        database.runOutcome(command.operationId) { decide(command) }
 
     private fun StoredReceipt.change() =
         CommittedCategoryChange(receipt, checkNotNull(categoryId) { "Not a category receipt" })
@@ -79,21 +75,13 @@ class RoomCategoryCommands(
     /** Runs inside the transaction. Every rejection returns before the first write. */
     private suspend fun decide(command: CategoryCommand): CategoryCommandOutcome {
         val digest = inputDigest(command)
-        val start =
-            database.startCommand(command.operationId, command.generation, command.kind, digest)
-        val profile = when (start) {
-            is CommandStart.Proceed -> start.profile
-
-            is CommandStart.Stale -> return Rejected(
-                CategoryRejection.StaleGeneration(start.current)
-            )
-
-            is CommandStart.Replay -> return Committed(start.original.change(), replayed = true)
-
-            CommandStart.Conflict -> return Rejected(CategoryRejection.OperationConflict)
-
-            is CommandStart.Damaged -> return failed(start.failure)
-        }
+        val profile = database.proceedOr(
+            command.operationId,
+            command.generation,
+            command.kind,
+            digest,
+            { it.change() }
+        ) { return it }
         val month = YearMonth.from(clock.today.value.date)
         val now = audit.now()
         val categoryId = when (command) {
@@ -119,10 +107,11 @@ class RoomCategoryCommands(
     private sealed interface Written {
         data class Done(val categoryId: CategoryId) : Written
 
-        data class Refused(val outcome: Rejected) : Written
+        data class Refused(val outcome: Rejected<CategoryRejection>) : Written
     }
 
-    private fun refused(reason: CategoryRejection) = Written.Refused(Rejected(reason))
+    private fun refused(reason: CommandRejection<CategoryRejection>) =
+        Written.Refused(Rejected(reason))
 
     /** The chains [this] decided, null when they stay as they are; [refuse] otherwise. */
     private inline fun CarryDecision.chainsOr(
@@ -143,14 +132,14 @@ class RoomCategoryCommands(
         val schedules = database.scheduleDao().ofCategory(categoryId).map { row ->
             when (val stored = row.toStored(database.scheduleDao().pauses(row.id))) {
                 is Outcome.Success -> row to stored.value
-                is Outcome.Failure -> return Written.Refused(failed(stored.error))
+                is Outcome.Failure -> return Written.Refused(storageFailed(stored.error))
             }
         }
         val pending = schedules.any { (_, stored) ->
             SchedulePolicy.due(stored.schedule.recurrence, stored.handled, today, limit = 1)
                 .isNotEmpty()
         }
-        if (pending) return refused(CategoryRejection.SchedulesPending)
+        if (pending) return refused(Specific(CategoryRejection.SchedulesPending))
         for ((row, stored) in schedules) {
             val recurrence = stored.schedule.recurrence
             val alreadyPaused = recurrence.pauses.lastOrNull()?.let { it.until == null } == true
@@ -172,7 +161,7 @@ class RoomCategoryCommands(
 
     private suspend fun create(command: CreateCategory, month: YearMonth, now: Instant): Written {
         if (database.categoryDao().byNameKey(command.name.uniquenessKey) != null) {
-            return refused(CategoryRejection.NameTaken)
+            return refused(Specific(CategoryRejection.NameTaken))
         }
         val id = when (val id = CategoryId.of(ids.next())) {
             is Outcome.Success -> id.value
@@ -194,13 +183,13 @@ class RoomCategoryCommands(
     ): Written {
         val id = command.categoryId
         val row = database.categoryDao().byId(id.value)
-            ?: return refused(CategoryRejection.CategoryMissing)
+            ?: return refused(Specific(CategoryRejection.CategoryMissing))
         val category = when (val stored = row.toDomain()) {
             is Outcome.Success -> stored.value
-            is Outcome.Failure -> return Written.Refused(failed(stored.error))
+            is Outcome.Failure -> return Written.Refused(storageFailed(stored.error))
         }
         if (category.version != command.expectedVersion) {
-            return refused(CategoryRejection.VersionConflict(category.version))
+            return refused(CommandRejection.VersionConflict(category.version))
         }
         val next = category.copy(
             version = nextCounter(category.version, CategoryEntity.TABLE, id.value, "version"),
@@ -212,7 +201,7 @@ class RoomCategoryCommands(
             is RenameCategory -> {
                 val holder = database.categoryDao().byNameKey(command.name.uniquenessKey)
                 if (holder != null && holder.id != id.value) {
-                    return refused(CategoryRejection.NameTaken)
+                    return refused(Specific(CategoryRejection.NameTaken))
                 }
                 next.copy(name = command.name)
             }
@@ -220,7 +209,7 @@ class RoomCategoryCommands(
             is ChangeCategoryIcon -> next.copy(icon = command.icon)
 
             is ArchiveCategory -> {
-                if (category.archived) return refused(CategoryRejection.AlreadyArchived)
+                if (category.archived) return refused(Specific(CategoryRejection.AlreadyArchived))
                 // CP11: archiving drops the balance carried into this month.
                 val dropped = carry.drop(command.confirmedCarryIn).chainsOr { return it }
                 pauseSchedules(id.value, now)?.let { return it }
@@ -232,10 +221,10 @@ class RoomCategoryCommands(
 
             // CP11: never turns carry back on; the person turns it on again.
             is UnarchiveCategory -> {
-                if (!category.archived) return refused(CategoryRejection.NotArchived)
+                if (!category.archived) return refused(Specific(CategoryRejection.NotArchived))
                 val history = when (val stored = database.defaultHistory(id.value)) {
                     is Outcome.Success -> stored.value
-                    is Outcome.Failure -> return Written.Refused(failed(stored.error))
+                    is Outcome.Failure -> return Written.Refused(storageFailed(stored.error))
                 }
                 val change = CategoryBudgetPolicy.unarchive(month, history)
                 change.remove.forEach { limits.removeDefault(id.value, it.toString()) }
@@ -244,7 +233,7 @@ class RoomCategoryCommands(
             }
 
             is SetDefaultLimit -> {
-                if (category.archived) return refused(CategoryRejection.CategoryArchived)
+                if (category.archived) return refused(Specific(CategoryRejection.CategoryArchived))
                 val dropped = when (val limit = command.limit) {
                     // CP11: an unlimited default drops the balance carried into this month.
                     BudgetLimit.Unlimited -> carry.drop(command.confirmedCarryIn)
@@ -259,10 +248,14 @@ class RoomCategoryCommands(
             }
 
             is SetMonthLimit -> {
-                if (command.month > month) return refused(CategoryRejection.FutureMonth(month))
+                if (command.month >
+                    month
+                ) {
+                    return refused(Specific(CategoryRejection.FutureMonth(month)))
+                }
                 // Refused before the write: once stored it could not be read back.
                 if (!EffectiveDates.isStorable(command.month)) {
-                    return refused(CategoryRejection.InvalidMonth)
+                    return refused(Specific(CategoryRejection.InvalidMonth))
                 }
                 val unlimitedNow = command.month == month && command.limit == BudgetLimit.Unlimited
                 val dropped = if (unlimitedNow) {
@@ -294,7 +287,7 @@ class RoomCategoryCommands(
 
             is DisableCarry -> {
                 val chains = carry.drop(command.confirmedCarryIn).chainsOr { return it }
-                    ?: return refused(CategoryRejection.NotCarrying)
+                    ?: return refused(Specific(CategoryRejection.NotCarrying))
                 carry.write(chains)
                 next
             }

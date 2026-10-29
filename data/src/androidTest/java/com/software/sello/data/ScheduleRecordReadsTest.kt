@@ -13,9 +13,9 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordedOccurrence
 import com.software.sello.domain.port.ScheduleRecord
-import com.software.sello.domain.port.ScheduleRecordsState
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
@@ -143,16 +143,16 @@ class ScheduleRecordReadsTest {
         ledger.goTo("2026-10-24")
         val observed = reads.observeRecordedAfter(null)
 
-        assertEquals(ScheduleRecordsState.Loading, observed.first())
+        assertEquals(ReadState.Loading, observed.first())
         assertEquals(
-            ScheduleRecordsState.Ready(emptyList()),
+            ReadState.Ready(emptyList<ScheduleRecord>()),
             observed.take(2).toList().last()
         )
         catchUp("2026-10-24")
-        val after = observed.take(2).toList().last() as ScheduleRecordsState.Ready
+        val after = observed.take(2).toList().last() as ReadState.Ready
         assertEquals(
             listOf("income|2026-10-02|3000000", "expense|2026-10-05|950000"),
-            summary(after.records)
+            summary(after.value)
         )
     }
 }

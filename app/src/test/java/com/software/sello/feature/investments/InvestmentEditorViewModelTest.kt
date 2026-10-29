@@ -7,12 +7,16 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.DeleteInvestment
 import com.software.sello.domain.port.EditInvestment
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.category.CategoryIcons
@@ -248,7 +252,7 @@ class InvestmentEditorViewModelTest {
 
     @Test
     fun dollarsWithARateNameItAndSendNoNewOne() = runTest {
-        reads.board.value = InvestmentBoardState.Ready(ratesBoard(rateEntry(415_025, "2026-10-20")))
+        reads.board.value = ReadState.Ready(ratesBoard(rateEntry(415_025, "2026-10-20")))
         created()
         val model = editor()
         model.identity(name = "Acciones EE. UU.", description = "ETF", icon = "trending_up")
@@ -332,7 +336,7 @@ class InvestmentEditorViewModelTest {
 
     @Test
     fun editingSendsNameDescriptionAndIconOnlyAtTheVersionRead() = runTest {
-        reads.board.value = InvestmentBoardState.Ready(investmentsBoard(listOf(ecopetrol())))
+        reads.board.value = ReadState.Ready(investmentsBoard(listOf(ecopetrol())))
         commands.answers +=
             committedInvestment(operation(1), OperationKind.EditInvestment, ecopetrolId)
         val model = editing()
@@ -366,7 +370,7 @@ class InvestmentEditorViewModelTest {
 
     @Test
     fun anUnchangedEditSaysSoAndSendsNothing() = runTest {
-        reads.board.value = InvestmentBoardState.Ready(investmentsBoard(listOf(ecopetrol())))
+        reads.board.value = ReadState.Ready(investmentsBoard(listOf(ecopetrol())))
         val model = editing()
         model.onAction(InvestmentEditorAction.Submit)
 
@@ -374,7 +378,7 @@ class InvestmentEditorViewModelTest {
         assertEquals(InvestmentSaveError.Unchanged, model.state.value.saveError)
 
         // The command's own Unchanged says the same.
-        commands.answers += InvestmentCommandOutcome.Rejected(InvestmentRejection.Unchanged)
+        commands.answers += CommandOutcome.Rejected(Specific(InvestmentRejection.Unchanged))
         model.onAction(InvestmentEditorAction.NameChanged("Ecopetrol "))
         model.onAction(InvestmentEditorAction.NameChanged("Ecopetrol S.A."))
         model.onAction(InvestmentEditorAction.Submit)
@@ -385,7 +389,7 @@ class InvestmentEditorViewModelTest {
 
     @Test
     fun deletingAsksFirstCountingTheMovementsThenSendsDeleteInvestment() = runTest {
-        reads.board.value = InvestmentBoardState.Ready(investmentsBoard(listOf(ecopetrol())))
+        reads.board.value = ReadState.Ready(investmentsBoard(listOf(ecopetrol())))
         commands.answers +=
             committedInvestment(operation(1), OperationKind.DeleteInvestment, ecopetrolId)
         val model = editing()
@@ -406,14 +410,14 @@ class InvestmentEditorViewModelTest {
         assertEquals(ecopetrolId, sent.investmentId.value)
         assertEquals(3L, sent.expectedVersion)
         // The board no longer holds it: the form ends as deleted, not discarded.
-        reads.board.value = InvestmentBoardState.Ready(investmentsBoard(emptyList()))
+        reads.board.value = ReadState.Ready(investmentsBoard(emptyList()))
         assertEquals(InvestmentEditorResult.Deleted, model.state.value.result)
     }
 
     @Test
     fun anUnknownOutcomeIsAskedAboutWithTheSameIdBeforeAnythingElse() = runTest {
         val unknown = operation(1)
-        commands.answers += InvestmentCommandOutcome.OutcomeUnknown(unknown)
+        commands.answers += CommandOutcome.OutcomeUnknown(unknown)
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         val model = editor()
         model.identity()
@@ -429,7 +433,7 @@ class InvestmentEditorViewModelTest {
         assertEquals(1, commands.sent.size)
 
         commands.found = Outcome.Success(
-            committedInvestment(unknown, OperationKind.CreateInvestment, createdId).change
+            committedInvestment(unknown, OperationKind.CreateInvestment, createdId).value
         )
         model.onAction(InvestmentEditorAction.Retry)
         assertEquals(listOf(unknown, unknown), commands.asked)
@@ -439,7 +443,7 @@ class InvestmentEditorViewModelTest {
 
     @Test
     fun anUnknownOutcomeFoundNotSavedLetsThePersonTryAgain() = runTest {
-        commands.answers += InvestmentCommandOutcome.OutcomeUnknown(operation(1))
+        commands.answers += CommandOutcome.OutcomeUnknown(operation(1))
         commands.found = Outcome.Success(null)
         val model = editor()
         model.identity()
@@ -455,16 +459,16 @@ class InvestmentEditorViewModelTest {
     @Test
     fun certainRejectionsSayWhy() = runTest {
         val cases = listOf(
-            InvestmentRejection.RateRequired to InvestmentSaveError.RateRequired,
-            InvestmentRejection.FutureDate(LocalDate.of(2026, 10, 25)) to
+            Specific(InvestmentRejection.RateRequired) to InvestmentSaveError.RateRequired,
+            Specific(InvestmentRejection.FutureDate(LocalDate.of(2026, 10, 25))) to
                 InvestmentSaveError.FutureDate,
-            InvestmentRejection.InvalidAmount to InvestmentSaveError.Invalid,
-            InvestmentRejection.InvalidDate to InvestmentSaveError.Invalid,
-            InvestmentRejection.StaleGeneration(2) to InvestmentSaveError.Changed,
-            InvestmentRejection.VersionConflict(4) to InvestmentSaveError.Changed
+            Specific(InvestmentRejection.InvalidAmount) to InvestmentSaveError.Invalid,
+            Specific(InvestmentRejection.InvalidDate) to InvestmentSaveError.Invalid,
+            CommandRejection.StaleGeneration(2) to InvestmentSaveError.Changed,
+            CommandRejection.VersionConflict(4) to InvestmentSaveError.Changed
         )
         for ((reason, error) in cases) {
-            commands.answers += InvestmentCommandOutcome.Rejected(reason)
+            commands.answers += CommandOutcome.Rejected(reason)
             val model = editor()
             model.identity()
             model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
@@ -479,14 +483,14 @@ class InvestmentEditorViewModelTest {
     @Test
     fun aStaleGenerationTakesTheNewOneForTheNextAttempt() = runTest {
         commands.answers +=
-            InvestmentCommandOutcome.Rejected(InvestmentRejection.StaleGeneration(2))
+            CommandOutcome.Rejected(CommandRejection.StaleGeneration(2))
         created()
         val model = editor()
         model.identity()
         model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
         model.type("1000")
         reads.board.value =
-            InvestmentBoardState.Ready(investmentsBoard(emptyList(), generation = 2))
+            ReadState.Ready(investmentsBoard(emptyList(), generation = 2))
         model.onAction(InvestmentEditorAction.Submit)
         model.onAction(InvestmentEditorAction.Submit)
 
@@ -529,7 +533,7 @@ class InvestmentEditorViewModelTest {
     @Test
     fun anOperationInFlightWhenTheProcessDiedIsAskedAboutFirst() = runTest {
         val saved = SavedStateHandle()
-        commands.answers += InvestmentCommandOutcome.OutcomeUnknown(operation(1))
+        commands.answers += CommandOutcome.OutcomeUnknown(operation(1))
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         val before = editor(saved)
         before.identity()
@@ -539,7 +543,7 @@ class InvestmentEditorViewModelTest {
         assertEquals(InvestmentSaveError.Unknown, before.state.value.saveError)
 
         commands.found = Outcome.Success(
-            committedInvestment(operation(1), OperationKind.CreateInvestment, createdId).change
+            committedInvestment(operation(1), OperationKind.CreateInvestment, createdId).value
         )
         val after = editor(SavedStateHandle(saved.keys().associateWith { saved.get<Any>(it) }))
         assertEquals(listOf(operation(1), operation(1)), commands.asked)
@@ -578,7 +582,7 @@ class InvestmentEditorViewModelTest {
 
     @Test
     fun editingKeepsTheInvestmentsOwnCurrencyWhateverIsChosen() = runTest {
-        reads.board.value = InvestmentBoardState.Ready(investmentsBoard(listOf(ecopetrol())))
+        reads.board.value = ReadState.Ready(investmentsBoard(listOf(ecopetrol())))
         settings.setNewInvestmentCurrency(Currency.USD)
 
         assertEquals(Currency.COP, editing().state.value.currency)
@@ -604,12 +608,12 @@ class InvestmentEditorViewModelTest {
 
     @Test
     fun aFailedReadIsNeverAnEmptyFormAndADateAfterTodayIsRefused() = runTest {
-        reads.board.value = InvestmentBoardState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val failed = editing()
         assertTrue(failed.state.value.loadFailed)
         assertFalse(failed.state.value.canSubmit)
 
-        reads.board.value = InvestmentBoardState.Ready(ratesBoard())
+        reads.board.value = ReadState.Ready(ratesBoard())
         val model = editor()
         model.onAction(InvestmentEditorAction.OpenDatePicker(InvestmentField.First))
         model.onAction(InvestmentEditorAction.DatePicked(LocalDate.of(2026, 10, 26)))
@@ -641,7 +645,7 @@ class InvestmentEditorViewModelTest {
 
     @Test
     fun anInvestmentBeingChangedHasNoPad() = runTest {
-        reads.board.value = InvestmentBoardState.Ready(investmentsBoard(listOf(ecopetrol())))
+        reads.board.value = ReadState.Ready(investmentsBoard(listOf(ecopetrol())))
         val model = editing()
 
         assertTrue(model.state.value.editing)

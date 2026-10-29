@@ -3,6 +3,7 @@ package com.software.sello.devtools
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommandOutcome
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -41,8 +42,8 @@ class GoalSandboxPortsTest {
         ledger.answer = Ledger.Next.Refuse
         commands.submit(feature(2))
 
-        assertFalse((first as GoalCommandOutcome.Committed).replayed)
-        assertTrue((replay as GoalCommandOutcome.Committed).replayed)
+        assertFalse((first as CommandOutcome.Committed).replayed)
+        assertTrue((replay as CommandOutcome.Committed).replayed)
         assertEquals(1, saved)
     }
 

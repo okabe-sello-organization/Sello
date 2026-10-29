@@ -14,6 +14,9 @@ import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.MonthBudget
 import com.software.sello.domain.port.RecordIdSource
@@ -252,18 +255,18 @@ class CategoryEditorViewModel(
 
     private suspend fun settle(outcome: CategoryCommandOutcome) {
         when (outcome) {
-            is CategoryCommandOutcome.Committed -> created(outcome.change.categoryId.value)
+            is CommandOutcome.Committed -> created(outcome.value.categoryId.value)
 
-            is CategoryCommandOutcome.OutcomeUnknown -> recoverNow()
+            is CommandOutcome.OutcomeUnknown -> recoverNow()
 
-            is CategoryCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written, so this attempt is over.
                 saved[KEY_OPERATION] = null
                 when (outcome.reason) {
-                    CategoryRejection.NameTaken ->
+                    Specific(CategoryRejection.NameTaken) ->
                         mutable.update { it.copy(busy = false, nameError = NameError.Taken) }
 
-                    is CategoryRejection.StaleGeneration -> {
+                    is CommandRejection.StaleGeneration -> {
                         generation = null
                         mutable.update { it.copy(busy = false, saveError = SaveError.DataChanged) }
                         load()

@@ -16,6 +16,8 @@ import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.EditGoalMovement
 import com.software.sello.domain.port.FinancialClock
@@ -26,6 +28,7 @@ import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -93,7 +96,7 @@ class GoalMovementViewModel(
     )
     private val progress = MutableStateFlow(Progress())
     private val board = reads.observeBoard()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, GoalBoardState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
     private val composer = combine(
         saved.getStateFlow(COMPOSER, false),
         saved.getStateFlow(COMPOSER_TEXT, "")
@@ -270,9 +273,9 @@ class GoalMovementViewModel(
 
     /** The board to work from: the last one read, also after a failed refresh. */
     private fun readable(state: GoalBoardState): GoalBoard? = when (state) {
-        GoalBoardState.Loading -> null
-        is GoalBoardState.Ready -> state.board
-        is GoalBoardState.Failed -> state.lastGood
+        ReadState.Loading -> null
+        is ReadState.Ready -> state.value
+        is ReadState.Failed -> state.lastGood
     }
 
     private fun summary(board: GoalBoard?, id: String?): GoalSummary? =
@@ -342,11 +345,11 @@ class GoalMovementViewModel(
         val note = (Note.of(draft.note) as? Outcome.Success)?.value
         return GoalMovementState(
             loading =
-                board is GoalBoardState.Loading || (
+                board is ReadState.Loading || (
                     editing && read != null && original == null &&
                         saved.get<Boolean>(DRAFTED) != true
                     ),
-            loadFailed = board is GoalBoardState.Failed && read == null,
+            loadFailed = board is ReadState.Failed && read == null,
             editing = editing,
             withdrawal = draft.withdrawal,
             amount = amount?.let { money.format(it.money) },
@@ -471,47 +474,52 @@ class GoalMovementViewModel(
     private suspend fun settle(step: String, outcome: GoalCommandOutcome) {
         when (outcome) {
             // A deletion was already offered to undo by [corrections].
-            is GoalCommandOutcome.Committed -> committed(
+            is CommandOutcome.Committed -> committed(
                 step,
-                outcome.goal.receipt,
+                outcome.value.receipt,
                 announced = true,
-                change = outcome.goal.change
+                change = outcome.value.change
             )
 
-            is GoalCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is GoalCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written, so this attempt is over.
                 saved[OPERATION] = null
                 val reason = outcome.reason
-                if (reason is GoalRejection.AboveSaved) {
+                val specific = (reason as? CommandRejection.Specific)?.reason
+                if (specific is GoalRejection.AboveSaved) {
                     progress.update {
                         it.copy(
                             busy = false,
-                            deleteBlockedBy = reason.withdrawal.takeIf { step == STEP_DELETE },
+                            deleteBlockedBy = specific.withdrawal.takeIf { step == STEP_DELETE },
                             error = GoalMovementError.Changed.takeIf { step != STEP_DELETE }
                         )
                     }
                     return
                 }
                 val error = when (reason) {
-                    is GoalRejection.FutureDate, GoalRejection.InvalidDate ->
-                        GoalMovementError.FutureDate
+                    is CommandRejection.StaleGeneration -> GoalMovementError.DataChanged
 
-                    is GoalRejection.StaleGeneration -> GoalMovementError.DataChanged
+                    is CommandRejection.VersionConflict -> GoalMovementError.Changed
 
-                    GoalRejection.GoalMissing, GoalRejection.MovementMissing ->
-                        GoalMovementError.Gone
+                    CommandRejection.OperationConflict, is CommandRejection.StorageFailed -> null
 
-                    is GoalRejection.VersionConflict -> GoalMovementError.Changed
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        is GoalRejection.FutureDate, GoalRejection.InvalidDate ->
+                            GoalMovementError.FutureDate
 
-                    GoalRejection.Completed -> GoalMovementError.Completed
+                        GoalRejection.GoalMissing, GoalRejection.MovementMissing ->
+                            GoalMovementError.Gone
 
-                    else -> if (step == STEP_DELETE) {
-                        GoalMovementError.NotDeleted
-                    } else {
-                        GoalMovementError.NotSaved
+                        GoalRejection.Completed -> GoalMovementError.Completed
+
+                        else -> null
                     }
+                } ?: if (step == STEP_DELETE) {
+                    GoalMovementError.NotDeleted
+                } else {
+                    GoalMovementError.NotSaved
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }

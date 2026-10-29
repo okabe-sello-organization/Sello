@@ -8,6 +8,8 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
@@ -15,6 +17,7 @@ import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SetUsdRate
 import com.software.sello.presentation.money.MoneyFormatter
@@ -56,7 +59,7 @@ class UsdRateEntryViewModel(
     )
     private val progress = MutableStateFlow(Progress())
     private val board = reads.observeBoard()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, InvestmentBoardState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     val state: StateFlow<UsdRateEntryState> =
         combine(draft, date, progress, board, clock.today) { draft, date, progress, board, today ->
@@ -140,9 +143,9 @@ class UsdRateEntryViewModel(
     }
 
     private fun readable(state: InvestmentBoardState): InvestmentBoard? = when (state) {
-        InvestmentBoardState.Loading -> null
-        is InvestmentBoardState.Ready -> state.board
-        is InvestmentBoardState.Failed -> state.lastGood
+        ReadState.Loading -> null
+        is ReadState.Ready -> state.value
+        is ReadState.Failed -> state.lastGood
     }
 
     /** The draft as the pad wrote it: "4.180,7". */
@@ -163,8 +166,8 @@ class UsdRateEntryViewModel(
         val read = readable(board)
         val hundredths = draft.hundredths()
         return UsdRateEntryState(
-            loading = board is InvestmentBoardState.Loading,
-            loadFailed = board is InvestmentBoardState.Failed && read == null,
+            loading = board is ReadState.Loading,
+            loadFailed = board is ReadState.Failed && read == null,
             rate = text(draft),
             problem = when {
                 hundredths == null -> null
@@ -198,17 +201,24 @@ class UsdRateEntryViewModel(
 
     private suspend fun settle(outcome: InvestmentCommandOutcome) {
         when (outcome) {
-            is InvestmentCommandOutcome.Committed -> committed()
+            is CommandOutcome.Committed -> committed()
 
-            is InvestmentCommandOutcome.OutcomeUnknown -> recover()
+            is CommandOutcome.OutcomeUnknown -> recover()
 
-            is InvestmentCommandOutcome.Rejected -> {
+            is CommandOutcome.Rejected -> {
                 // Certain: nothing was written, so this attempt is over.
                 saved[OPERATION] = null
-                val error = when (outcome.reason) {
-                    is InvestmentRejection.FutureDate -> RateEntryError.FutureDate
-                    is InvestmentRejection.StaleGeneration -> RateEntryError.DataChanged
-                    else -> RateEntryError.NotSaved
+                val error = when (val reason = outcome.reason) {
+                    is CommandRejection.StaleGeneration -> RateEntryError.DataChanged
+
+                    CommandRejection.OperationConflict,
+                    is CommandRejection.VersionConflict,
+                    is CommandRejection.StorageFailed -> RateEntryError.NotSaved
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        is InvestmentRejection.FutureDate -> RateEntryError.FutureDate
+                        else -> RateEntryError.NotSaved
+                    }
                 }
                 progress.update { it.copy(busy = false, error = error) }
             }

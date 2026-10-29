@@ -13,6 +13,9 @@ import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CommittedGoal
@@ -115,16 +118,16 @@ class LedgerCategories(private val ledger: Ledger) : CategoryCommands {
             OperationKind.CreateCategory,
             null
         )?.let { (receipt, id, replayed) ->
-            CategoryCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedCategoryChange(receipt, CategoryId.of(id).value()),
                 replayed
             )
         }
-            ?: CategoryCommandOutcome.Rejected(
-                com.software.sello.domain.port.CategoryRejection.NameTaken
+            ?: CommandOutcome.Rejected(
+                Specific(com.software.sello.domain.port.CategoryRejection.NameTaken)
             )
     } catch (_: Ledger.Unknown) {
-        CategoryCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
@@ -141,13 +144,13 @@ class LedgerExpenses(private val ledger: Ledger) : ExpenseCommands {
             OperationKind.CreateExpense,
             command.date
         )?.let { (receipt, id, replayed) ->
-            ExpenseCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedExpense(receipt, ExpenseId.of(id).value()),
                 replayed
             )
-        } ?: ExpenseCommandOutcome.Rejected(ExpenseRejection.CategoryMissing)
+        } ?: CommandOutcome.Rejected(Specific(ExpenseRejection.CategoryMissing))
     } catch (_: Ledger.Unknown) {
-        ExpenseCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
@@ -172,13 +175,13 @@ class LedgerIncomes(private val ledger: Ledger) : IncomeCommands {
             OperationKind.CreateIncome,
             command.date
         )?.let { (receipt, id, replayed) ->
-            IncomeCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedIncome(receipt, IncomeId.of(id).value()),
                 replayed
             )
         } ?: error("unused")
     } catch (_: Ledger.Unknown) {
-        IncomeCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
@@ -204,13 +207,13 @@ class LedgerGoals(private val ledger: Ledger) : GoalCommands {
         sent += command
         ledger.write(command.operationId, OperationKind.CreateGoal, null)
             ?.let { (receipt, id, replayed) ->
-                GoalCommandOutcome.Committed(
+                CommandOutcome.Committed(
                     CommittedGoal(receipt, GoalId.of(id).value(), null),
                     replayed
                 )
-            } ?: GoalCommandOutcome.Rejected(GoalRejection.VersionConflict(0))
+            } ?: CommandOutcome.Rejected(CommandRejection.VersionConflict(0))
     } catch (_: Ledger.Unknown) {
-        GoalCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
@@ -238,7 +241,7 @@ class LedgerInvestments(private val ledger: Ledger) : InvestmentCommands {
         sent += command
         refuseNext?.let {
             refuseNext = null
-            return InvestmentCommandOutcome.Rejected(it)
+            return CommandOutcome.Rejected(Specific(it))
         }
         val subject = (command as? InvestmentEdit)?.investmentId
         try {
@@ -252,13 +255,13 @@ class LedgerInvestments(private val ledger: Ledger) : InvestmentCommands {
                 )
             }
         }?.let { (receipt, _, replayed) ->
-            InvestmentCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedInvestment(receipt, subjects[command.operationId.value]),
                 replayed
             )
-        } ?: InvestmentCommandOutcome.Rejected(InvestmentRejection.VersionConflict(0))
+        } ?: CommandOutcome.Rejected(CommandRejection.VersionConflict(0))
     } catch (_: Ledger.Unknown) {
-        InvestmentCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     /** What each committed operation changed: the investment it made or named; none for a rate. */
@@ -281,13 +284,13 @@ class LedgerSchedules(private val ledger: Ledger) : ScheduleCommands {
         sent += command
         ledger.write(command.operationId, OperationKind.PauseSchedule, null)
             ?.let { (receipt, id, replayed) ->
-                ScheduleCommandOutcome.Committed(
+                CommandOutcome.Committed(
                     CommittedSchedule(receipt, ScheduleId.of(id).value()),
                     replayed
                 )
-            } ?: ScheduleCommandOutcome.Rejected(ScheduleRejection.Unchanged)
+            } ?: CommandOutcome.Rejected(Specific(ScheduleRejection.Unchanged))
     } catch (_: Ledger.Unknown) {
-        ScheduleCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(

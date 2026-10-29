@@ -20,7 +20,11 @@ import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.SnapshotState
@@ -111,7 +115,7 @@ class LimitSheetViewModelTest {
     )
 
     private fun committed(operation: OperationId) =
-        CategoryCommandOutcome.Committed(change(operation), replayed = false)
+        CommandOutcome.Committed(change(operation), replayed = false)
 
     private fun finite(pesos: Long) =
         (BudgetLimit.finite(Money.cop(pesos)) as Outcome.Success).value
@@ -290,7 +294,7 @@ class LimitSheetViewModelTest {
     fun anUnknownOutcomeIsAskedNotResent() {
         val sheet = opened()
         sheet.type(150_000)
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
 
         sheet.onAction(LimitSheetAction.Save)
@@ -352,16 +356,16 @@ class LimitSheetViewModelTest {
     @Test
     fun rejectionsBecomeTheirErrors() {
         val cases = listOf(
-            CategoryRejection.VersionConflict(6) to LimitSheetError.Conflict,
-            CategoryRejection.StaleGeneration(8) to LimitSheetError.DataChanged,
-            CategoryRejection.CategoryMissing to LimitSheetError.CategoryGone,
-            CategoryRejection.CategoryArchived to LimitSheetError.Archived,
-            CategoryRejection.StorageFailed(StorageFailure.Unavailable("x")) to
+            CommandRejection.VersionConflict(6) to LimitSheetError.Conflict,
+            CommandRejection.StaleGeneration(8) to LimitSheetError.DataChanged,
+            Specific(CategoryRejection.CategoryMissing) to LimitSheetError.CategoryGone,
+            Specific(CategoryRejection.CategoryArchived) to LimitSheetError.Archived,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to
                 LimitSheetError.NotSaved
         )
 
         val seen = cases.map { (reason, _) ->
-            commands.answer = { CategoryCommandOutcome.Rejected(reason) }
+            commands.answer = { CommandOutcome.Rejected(reason) }
             val sheet = opened()
             sheet.type(150_000)
             sheet.onAction(LimitSheetAction.Save)
@@ -397,7 +401,7 @@ class LimitSheetViewModelTest {
         val sheet = opened()
         sheet.type(150_000)
 
-        snapshots.of(october).value = SnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
 
         val state = sheet.state.value
         assertEquals(emptyList<LimitChip>(), state.chips)

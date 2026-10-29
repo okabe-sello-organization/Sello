@@ -8,6 +8,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CatchUpBatch
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.RecordedOccurrence
 import com.software.sello.domain.port.ScheduleCatchUpStore
@@ -52,8 +53,8 @@ class ScheduleSandboxPortsTest {
         ledger.answer = Ledger.Next.Refuse
         commands.submit(pause(2))
 
-        assertFalse((first as ScheduleCommandOutcome.Committed).replayed)
-        assertTrue((replay as ScheduleCommandOutcome.Committed).replayed)
+        assertFalse((first as CommandOutcome.Committed).replayed)
+        assertTrue((replay as CommandOutcome.Committed).replayed)
         assertEquals(1, saved)
     }
 

@@ -10,6 +10,7 @@ import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.policy.LimitAdjustmentPolicy
 import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.money.MoneyFormatter
@@ -61,11 +62,11 @@ class AdjustBudgetViewModel(
     }
 
     private fun render(state: SnapshotState): AdjustBudgetState = when (state) {
-        SnapshotState.Loading -> AdjustBudgetState.Loading
+        ReadState.Loading -> AdjustBudgetState.Loading
 
-        is SnapshotState.Ready -> ready(state.snapshot, stale = false)
+        is ReadState.Ready -> ready(state.value, stale = false)
 
-        is SnapshotState.Failed ->
+        is ReadState.Failed ->
             state.lastGood?.let { ready(it, stale = true) } ?: AdjustBudgetState.Failed
     }
 

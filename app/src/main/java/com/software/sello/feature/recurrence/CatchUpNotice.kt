@@ -43,6 +43,7 @@ import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.ScheduleRecordReads
 import com.software.sello.domain.port.ScheduleRecordsState
@@ -149,9 +150,9 @@ class CatchUpNoticeViewModel(
 
     private suspend fun render(read: ScheduleRecordsState, today: LocalDate): CatchUpNoticeState {
         val records = when (read) {
-            ScheduleRecordsState.Loading -> return CatchUpNoticeState.Loading
-            is ScheduleRecordsState.Failed -> return CatchUpNoticeState.Failed
-            is ScheduleRecordsState.Ready -> read.records
+            ReadState.Loading -> return CatchUpNoticeState.Loading
+            is ReadState.Failed -> return CatchUpNoticeState.Failed
+            is ReadState.Ready -> read.value
         }
         if (records.isEmpty()) return CatchUpNoticeState.Ready(emptyList(), today)
         // Archived categories included: an entry may still be in one.

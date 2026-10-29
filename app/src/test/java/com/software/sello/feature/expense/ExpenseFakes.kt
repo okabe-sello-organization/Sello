@@ -23,6 +23,7 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.CategoryInMonth
 import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.policy.MonthlyBudgetPolicy
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CommittedIncome
 import com.software.sello.domain.port.CreateExpense
@@ -46,6 +47,7 @@ import com.software.sello.domain.port.IncomePage
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.IncomeUndoOffer
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
 import com.software.sello.domain.port.SnapshotState
@@ -127,16 +129,16 @@ class HandSnapshots : MonthlySnapshots {
     val observed = mutableListOf<YearMonth>()
     private val states = mutableMapOf<YearMonth, MutableStateFlow<SnapshotState>>()
 
-    fun of(month: YearMonth) = states.getOrPut(month) { MutableStateFlow(SnapshotState.Loading) }
+    fun of(month: YearMonth) = states.getOrPut(month) { MutableStateFlow(ReadState.Loading) }
 
     fun ready(snapshot: MonthlySnapshot) {
-        of(snapshot.month).value = SnapshotState.Ready(snapshot)
+        of(snapshot.month).value = ReadState.Ready(snapshot)
     }
 
     /** One read: the month as it was last published, or a failure when it never was. */
     override suspend fun read(month: YearMonth): Outcome<MonthlySnapshot, SnapshotFailure> =
         when (val state = of(month).value) {
-            is SnapshotState.Ready -> Outcome.Success(state.snapshot)
+            is ReadState.Ready -> Outcome.Success(state.value)
             else -> Outcome.Failure(SnapshotFailure.Storage(StorageFailure.Unavailable("unread")))
         }
 
@@ -155,21 +157,21 @@ class HandExpenseCommands : ExpenseCommands {
     val restored = mutableListOf<RestoreExpense>()
     val looked = mutableListOf<OperationId>()
     var answer: (CreateExpense) -> ExpenseCommandOutcome =
-        { ExpenseCommandOutcome.Committed(committed(it.operationId), replayed = false) }
+        { CommandOutcome.Committed(committed(it.operationId), replayed = false) }
     var editAnswer: (EditExpense) -> ExpenseCommandOutcome = {
-        ExpenseCommandOutcome.Committed(
+        CommandOutcome.Committed(
             committed(it.operationId, it.expenseId, OperationKind.EditExpense),
             replayed = false
         )
     }
     var deleteAnswer: (DeleteExpense) -> ExpenseCommandOutcome = {
-        ExpenseCommandOutcome.Committed(
+        CommandOutcome.Committed(
             committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
             replayed = false
         )
     }
     var restoreAnswer: (RestoreExpense) -> ExpenseCommandOutcome = {
-        ExpenseCommandOutcome.Committed(
+        CommandOutcome.Committed(
             committed(it.operationId, expenseId(900), OperationKind.RestoreExpense),
             replayed = false
         )
@@ -297,13 +299,13 @@ class HandIncomeCommands : IncomeCommands {
     val restored = mutableListOf<RestoreIncome>()
     val looked = mutableListOf<OperationId>()
     var createAnswer: (CreateIncome) -> IncomeCommandOutcome =
-        { IncomeCommandOutcome.Committed(committed(it.operationId, incomeId(900)), false) }
+        { CommandOutcome.Committed(committed(it.operationId, incomeId(900)), false) }
     var editAnswer: (EditIncome) -> IncomeCommandOutcome =
-        { IncomeCommandOutcome.Committed(committed(it.operationId, it.incomeId), false) }
+        { CommandOutcome.Committed(committed(it.operationId, it.incomeId), false) }
     var deleteAnswer: (DeleteIncome) -> IncomeCommandOutcome =
-        { IncomeCommandOutcome.Committed(committed(it.operationId, it.incomeId), false) }
+        { CommandOutcome.Committed(committed(it.operationId, it.incomeId), false) }
     var restoreAnswer: (RestoreIncome) -> IncomeCommandOutcome =
-        { IncomeCommandOutcome.Committed(committed(it.operationId, incomeId(900)), false) }
+        { CommandOutcome.Committed(committed(it.operationId, incomeId(900)), false) }
     var found: (
         OperationId
     ) -> Outcome<CommittedIncome?, StorageFailure> = { Outcome.Success(null) }
@@ -355,12 +357,12 @@ class HandIncomeReads : IncomeReads {
     val observed = mutableListOf<YearMonth>()
     private val months = mutableMapOf<YearMonth, MutableStateFlow<IncomeMonthState>>()
 
-    fun of(month: YearMonth) = months.getOrPut(month) { MutableStateFlow(IncomeMonthState.Loading) }
+    fun of(month: YearMonth) = months.getOrPut(month) { MutableStateFlow(ReadState.Loading) }
 
     /** Publishes [month] as storage would after a change: the exact total of what is stored. */
     fun publish(month: YearMonth, generation: Long = 1, revision: Long = 1) {
         val incomes = stored.values.filter { YearMonth.from(it.date) == month }
-        of(month).value = IncomeMonthState.Ready(
+        of(month).value = ReadState.Ready(
             IncomeMonth(
                 month,
                 generation,
@@ -395,7 +397,7 @@ class HandIncomeReads : IncomeReads {
 
     override suspend fun month(month: YearMonth): Outcome<IncomeMonth, StorageFailure> =
         when (val state = of(month).value) {
-            is IncomeMonthState.Ready -> Outcome.Success(state.month)
+            is ReadState.Ready -> Outcome.Success(state.value)
             else -> Outcome.Failure(StorageFailure.Unavailable("unread"))
         }
 

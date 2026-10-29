@@ -9,6 +9,7 @@ import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.MonthlyBudgetPolicy
 import com.software.sello.domain.port.FinancialDay
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryId
@@ -97,7 +98,7 @@ class UpcomingPaymentsViewModelTest {
         val model = UpcomingPaymentsViewModel(snapshots, clock, money)
         publish()
         val empty = model.state.value
-        snapshots.of(october).value = SnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
 
         assertEquals(UpcomingState.Empty(october), empty)
         assertEquals(UpcomingState.Failed, model.state.value)

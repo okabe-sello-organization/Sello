@@ -20,6 +20,10 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PortfolioError
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.DatedUsdRate
 import com.software.sello.domain.port.DeleteExpense
@@ -28,8 +32,6 @@ import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.EditInvestment
 import com.software.sello.domain.port.EditInvestmentMovement
 import com.software.sello.domain.port.InvestmentCommandOutcome
-import com.software.sello.domain.port.InvestmentCommandOutcome.Committed
-import com.software.sello.domain.port.InvestmentCommandOutcome.Rejected
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RestoreInvestmentMovement
@@ -87,7 +89,7 @@ class InvestmentCommandContractTest {
     private fun receipts() = ledger.rows("operation_receipt", "revision", "kind", "subject_id")
 
     private fun committed(outcome: InvestmentCommandOutcome): CommittedInvestment =
-        (outcome as? Committed)?.change ?: throw AssertionError("not committed: $outcome")
+        (outcome as? Committed)?.value ?: throw AssertionError("not committed: $outcome")
 
     private suspend fun figures(id: InvestmentId = first) = ledger.summary(id).figures
 
@@ -219,7 +221,7 @@ class InvestmentCommandContractTest {
             ledger.createInvestment("Acciones", cents(100_000), "2026-10-20")
         )
 
-        assertEquals(Rejected(InvestmentRejection.RateRequired), outcome)
+        assertEquals(Rejected(Specific(InvestmentRejection.RateRequired)), outcome)
         assertEquals(emptyList<String>(), ledger.rows("investment", "id"))
         assertEquals(0L, ledger.revision())
 
@@ -250,8 +252,8 @@ class InvestmentCommandContractTest {
         )
 
         assertEquals(Committed(committed(firstTime), replayed = true), again)
-        assertEquals(Rejected(InvestmentRejection.OperationConflict), other)
-        assertEquals(Rejected(InvestmentRejection.StaleGeneration(current = 1)), stale)
+        assertEquals(Rejected(CommandRejection.OperationConflict), other)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 1)), stale)
         assertEquals(1, ledger.rows("investment", "id").size)
         assertEquals(1L, ledger.revision())
     }
@@ -271,8 +273,8 @@ class InvestmentCommandContractTest {
 
         val usdIntoCop = ledger.movement(first, Contribution, cents(100), "2026-10-02")
 
-        assertEquals(Rejected(InvestmentRejection.CurrencyMismatch), mixed)
-        assertEquals(Rejected(InvestmentRejection.CurrencyMismatch), usdIntoCop)
+        assertEquals(Rejected(Specific(InvestmentRejection.CurrencyMismatch)), mixed)
+        assertEquals(Rejected(Specific(InvestmentRejection.CurrencyMismatch)), usdIntoCop)
         assertEquals(2, movements().size)
     }
 
@@ -286,9 +288,9 @@ class InvestmentCommandContractTest {
         val movement = ledger.movement(first, Contribution, pesos(1), "2026-10-26")
         val rate = ledger.setRate(400_000, "2026-10-26")
 
-        assertEquals(Rejected(InvestmentRejection.FutureDate(today)), future)
-        assertEquals(Rejected(InvestmentRejection.FutureDate(today)), movement)
-        assertEquals(Rejected(InvestmentRejection.FutureDate(today)), rate)
+        assertEquals(Rejected(Specific(InvestmentRejection.FutureDate(today))), future)
+        assertEquals(Rejected(Specific(InvestmentRejection.FutureDate(today))), movement)
+        assertEquals(Rejected(Specific(InvestmentRejection.FutureDate(today))), rate)
         assertEquals(emptyList<String>(), ledger.rows("usd_rate", "id"))
     }
 
@@ -304,8 +306,8 @@ class InvestmentCommandContractTest {
             LocalDate.of(-1, 1, 1).toString()
         )
 
-        assertEquals(Rejected(InvestmentRejection.InvalidAmount), zero)
-        assertEquals(Rejected(InvestmentRejection.InvalidDate), ancient)
+        assertEquals(Rejected(Specific(InvestmentRejection.InvalidAmount)), zero)
+        assertEquals(Rejected(Specific(InvestmentRejection.InvalidDate)), ancient)
         assertEquals(2, movements().size)
     }
 
@@ -315,7 +317,7 @@ class InvestmentCommandContractTest {
 
         val value = ledger.movement(first, Valuation, pesosValue(3_000_000), "2025-05-01")
         assertEquals(
-            Rejected(InvestmentRejection.BeforeFirstContribution(day("2025-05-03"))),
+            Rejected(Specific(InvestmentRejection.BeforeFirstContribution(day("2025-05-03")))),
             value
         )
 
@@ -351,7 +353,9 @@ class InvestmentCommandContractTest {
 
         // The refused retiro took record 106; nothing was written.
         assertEquals(
-            Rejected(InvestmentRejection.AboveValue(movementId(106), Money.cop(4_000_000))),
+            Rejected(
+                Specific(InvestmentRejection.AboveValue(movementId(106), Money.cop(4_000_000)))
+            ),
             above
         )
         assertEquals(before, movements())
@@ -371,7 +375,7 @@ class InvestmentCommandContractTest {
         // IN17: Sin valor; IN18: the retiro waits.
         assertNull(figures().value)
         assertNull(figures().gain)
-        assertEquals(Rejected(InvestmentRejection.NoValue(movementId(103))), retiro)
+        assertEquals(Rejected(Specific(InvestmentRejection.NoValue(movementId(103)))), retiro)
     }
 
     @Test
@@ -403,7 +407,9 @@ class InvestmentCommandContractTest {
         )
 
         assertEquals(
-            Rejected(InvestmentRejection.AboveValue(movementId(105), Money.cop(6_000_000))),
+            Rejected(
+                Specific(InvestmentRejection.AboveValue(movementId(105), Money.cop(6_000_000)))
+            ),
             outcome
         )
         assertEquals(before, movements())
@@ -475,13 +481,13 @@ class InvestmentCommandContractTest {
             )
         )
 
-        assertEquals(Rejected(InvestmentRejection.Unchanged), same)
+        assertEquals(Rejected(Specific(InvestmentRejection.Unchanged)), same)
         assertEquals(
-            Rejected(InvestmentRejection.VersionConflict(current = version)),
+            Rejected(CommandRejection.VersionConflict(current = version)),
             oldInvestment
         )
-        assertEquals(Rejected(InvestmentRejection.VersionConflict(current = 1)), oldMovement)
-        assertEquals(Rejected(InvestmentRejection.MovementMissing), missing)
+        assertEquals(Rejected(CommandRejection.VersionConflict(current = 1)), oldMovement)
+        assertEquals(Rejected(Specific(InvestmentRejection.MovementMissing)), missing)
     }
 
     @Test
@@ -502,7 +508,7 @@ class InvestmentCommandContractTest {
         val same = ledger.invest(edit(ledger.investmentVersion(first)))
 
         assertTrue("$renamed", renamed is Committed)
-        assertEquals(Rejected(InvestmentRejection.Unchanged), same)
+        assertEquals(Rejected(Specific(InvestmentRejection.Unchanged)), same)
         assertEquals(before, figures())
         val investment = ledger.summary(first).history.investment
         assertEquals(
@@ -521,7 +527,9 @@ class InvestmentCommandContractTest {
         val outcome = delete(104)
 
         assertEquals(
-            Rejected(InvestmentRejection.AboveValue(movementId(105), Money.cop(5_000_000))),
+            Rejected(
+                Specific(InvestmentRejection.AboveValue(movementId(105), Money.cop(5_000_000)))
+            ),
             outcome
         )
         assertEquals(before, movements())
@@ -534,7 +542,7 @@ class InvestmentCommandContractTest {
 
         val outcome = delete(101)
 
-        assertEquals(Rejected(InvestmentRejection.LastContribution), outcome)
+        assertEquals(Rejected(Specific(InvestmentRejection.LastContribution)), outcome)
         assertEquals(2, movements().size)
     }
 
@@ -571,7 +579,7 @@ class InvestmentCommandContractTest {
         delete(105, again)
         ledger.elapsed += 6.seconds
         assertEquals(
-            Rejected(InvestmentRejection.UndoExpired),
+            Rejected(Specific(InvestmentRejection.UndoExpired)),
             ledger.invest(RestoreInvestmentMovement(ledger.operation(), 1, again))
         )
         assertEquals(Money.cop(0), figures().withdrawn)
@@ -659,10 +667,10 @@ class InvestmentCommandContractTest {
 
         val outcome = ledger.invest(DeleteInvestment(ledger.operation(), 1, first, 1))
 
-        assertEquals(Rejected(InvestmentRejection.VersionConflict(current = 3)), outcome)
+        assertEquals(Rejected(CommandRejection.VersionConflict(current = 3)), outcome)
         assertEquals(4, movements().size)
         assertEquals(
-            Rejected(InvestmentRejection.InvestmentMissing),
+            Rejected(Specific(InvestmentRejection.InvestmentMissing)),
             ledger.invest(DeleteInvestment(ledger.operation(), 1, investmentId(999), 1))
         )
     }

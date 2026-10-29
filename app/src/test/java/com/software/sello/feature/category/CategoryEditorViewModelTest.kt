@@ -15,6 +15,9 @@ import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.navigation.HandCategoryReads
@@ -75,9 +78,10 @@ class CategoryEditorViewModelTest {
     )
 
     private fun committed(operation: OperationId) =
-        CategoryCommandOutcome.Committed(change(operation), replayed = false)
+        CommandOutcome.Committed(change(operation), replayed = false)
 
-    private fun rejected(reason: CategoryRejection) = CategoryCommandOutcome.Rejected(reason)
+    private fun rejected(reason: CommandRejection<CategoryRejection>) =
+        CommandOutcome.Rejected(reason)
 
     private val commands = HandCommands()
     private val reads = HandCategoryReads()
@@ -370,7 +374,7 @@ class CategoryEditorViewModelTest {
 
     @Test
     fun aTakenNameIsShownOnTheFieldAndTheNextAttemptIsANewOperation() {
-        commands.answer = { rejected(CategoryRejection.NameTaken) }
+        commands.answer = { rejected(Specific(CategoryRejection.NameTaken)) }
         val editor = editor()
         editor.withNoLimit("mercado")
 
@@ -392,7 +396,7 @@ class CategoryEditorViewModelTest {
         commands.answer = {
             // The history is replaced between the form opening and the save.
             reads.generation = 2
-            rejected(CategoryRejection.StaleGeneration(current = 2))
+            rejected(CommandRejection.StaleGeneration(current = 2))
         }
         val editor = editor()
         editor.withNoLimit("Mercado")
@@ -410,7 +414,7 @@ class CategoryEditorViewModelTest {
     @Test
     fun aStorageFailureSaysNothingWasSavedAndKeepsTheDraft() {
         commands.answer = {
-            rejected(CategoryRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")))
+            rejected(CommandRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")))
         }
         val editor = editor()
         editor.type("Mercado")
@@ -427,7 +431,7 @@ class CategoryEditorViewModelTest {
 
     @Test
     fun anUnknownOutcomeIsSettledByAskingAboutTheSameOperationNotBySendingAgain() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Success(change(it)) }
         val editor = editor()
         editor.withNoLimit("Mercado")
@@ -441,7 +445,7 @@ class CategoryEditorViewModelTest {
 
     @Test
     fun anUnknownOutcomeThatTurnsOutNotSavedReturnsToTheFormWithNothingCreated() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         val editor = editor()
         editor.type("Mercado")
 
@@ -455,7 +459,7 @@ class CategoryEditorViewModelTest {
 
     @Test
     fun whileTheOutcomeCannotBeReadTheFormStaysLockedAndRetryOnlyAsksAgain() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("SQLiteException")) }
         val editor = editor()
         editor.withNoLimit("Mercado")

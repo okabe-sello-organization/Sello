@@ -1,6 +1,5 @@
 package com.software.sello.data.repository
 
-import android.database.SQLException
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.domain.model.CategoryId
@@ -20,10 +19,8 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import java.time.YearMonth
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 
@@ -105,32 +102,8 @@ class RoomCategoryInsightsSnapshots(
     }
 
     override fun observe(categoryId: CategoryId, month: YearMonth): Flow<CategoryInsightsState> =
-        flow {
-            emit(CategoryInsightsState.Loading)
-            var lastGood: CategoryInsights? = null
-            try {
-                combine(clock.today, database.profileDao().changes()) { today, _ -> today }
-                    .conflate().collect { today ->
-                        when (val read = readAsOf(categoryId, month, today)) {
-                            is Outcome.Success -> {
-                                lastGood = read.value
-                                emit(CategoryInsightsState.Ready(read.value))
-                            }
-
-                            is Outcome.Failure -> emit(
-                                CategoryInsightsState.Failed(read.error, lastGood)
-                            )
-                        }
-                    }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (failure: SQLException) {
-                emit(CategoryInsightsState.Failed(unavailable(failure), lastGood))
-            } catch (failure: IllegalStateException) {
-                emit(CategoryInsightsState.Failed(unavailable(failure), lastGood))
-            }
-        }
-
-    private fun unavailable(failure: Exception) =
-        SnapshotFailure.Storage(StorageFailure.Unavailable(failure.javaClass.simpleName))
+        observeOn(
+            combine(clock.today, database.profileDao().changes()) { today, _ -> today },
+            SnapshotFailure::Storage
+        ) { today -> readAsOf(categoryId, month, today) }
 }

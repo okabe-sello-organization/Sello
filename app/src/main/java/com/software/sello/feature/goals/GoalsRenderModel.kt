@@ -12,6 +12,7 @@ import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth
@@ -22,21 +23,21 @@ import java.time.YearMonth
  */
 class GoalsRenderModel(private val money: MoneyFormatter) {
     fun metas(board: GoalBoardState, today: LocalDate): MetasState = when (board) {
-        GoalBoardState.Loading -> MetasState.Loading
+        ReadState.Loading -> MetasState.Loading
 
-        is GoalBoardState.Ready -> metas(board.board, today, stale = false)
+        is ReadState.Ready -> metas(board.value, today, stale = false)
 
-        is GoalBoardState.Failed ->
+        is ReadState.Failed ->
             board.lastGood?.let { metas(it, today, stale = true) } ?: MetasState.Failed
     }
 
     fun detail(board: GoalBoardState, id: String, today: LocalDate): GoalDetailState =
         when (board) {
-            GoalBoardState.Loading -> GoalDetailState.Loading
+            ReadState.Loading -> GoalDetailState.Loading
 
-            is GoalBoardState.Ready -> detail(board.board, id, today, stale = false)
+            is ReadState.Ready -> detail(board.value, id, today, stale = false)
 
-            is GoalBoardState.Failed -> board.lastGood?.let { detail(it, id, today, stale = true) }
+            is ReadState.Failed -> board.lastGood?.let { detail(it, id, today, stale = true) }
                 ?: GoalDetailState.Failed
         }
 

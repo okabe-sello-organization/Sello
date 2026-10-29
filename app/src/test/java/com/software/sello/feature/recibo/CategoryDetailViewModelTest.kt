@@ -6,9 +6,12 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandExpenseReads
@@ -135,27 +138,27 @@ class CategoryDetailViewModelTest {
             null, null, null, emptyList(), null, emptyList()
         )
         insights.state.value =
-            com.software.sello.domain.port.CategoryInsightsState.Ready(
+            com.software.sello.domain.port.ReadState.Ready(
                 raw.copy(budget = budget.copy(revision = 2))
             )
         assertEquals(DetailInsightsState.Loading, vm.ready.insights)
         insights.state.value =
-            com.software.sello.domain.port.CategoryInsightsState.Ready(
+            com.software.sello.domain.port.ReadState.Ready(
                 raw.copy(budget = budget.copy(generation = 2))
             )
         assertEquals(DetailInsightsState.Loading, vm.ready.insights)
         insights.state.value =
-            com.software.sello.domain.port.CategoryInsightsState.Ready(
+            com.software.sello.domain.port.ReadState.Ready(
                 raw.copy(budget = budget.copy(asOf = budget.asOf.minusDays(1)))
             )
         assertEquals(DetailInsightsState.Loading, vm.ready.insights)
-        insights.state.value = com.software.sello.domain.port.CategoryInsightsState.Ready(raw)
+        insights.state.value = com.software.sello.domain.port.ReadState.Ready(raw)
         assertEquals(
             plain("1.000"),
             (vm.ready.insights as DetailInsightsState.Ready).figures.averageExpense
         )
         insights.state.value =
-            com.software.sello.domain.port.CategoryInsightsState.Failed(
+            com.software.sello.domain.port.ReadState.Failed(
                 SnapshotFailure.Unrepresentable,
                 raw
             )
@@ -390,13 +393,13 @@ class CategoryDetailViewModelTest {
         show(viewModel, 1)
         val loading = viewModel.state.value
 
-        snapshots.of(october).value = SnapshotState.Failed(failure, lastGood = null)
+        snapshots.of(october).value = ReadState.Failed(failure, lastGood = null)
         val failed = viewModel.state.value
         viewModel.onAction(CategoryDetailAction.Retry)
         commit(many(2))
         val read = viewModel.ready
         snapshots.of(october).value =
-            SnapshotState.Failed(failure, lastGood = monthOf("2026-10-23", listOf(food), many(2)))
+            ReadState.Failed(failure, lastGood = monthOf("2026-10-23", listOf(food), many(2)))
 
         assertEquals(CategoryDetailState.Loading, loading)
         assertEquals(CategoryDetailState.Failed, failed)
@@ -674,10 +677,10 @@ class CategoryDetailViewModelTest {
         commit(many(2))
         show(viewModel, 1)
         val refusals = listOf(
-            ExpenseRejection.ExpenseMissing to DeleteProblem.Gone,
-            ExpenseRejection.VersionConflict(current = 2) to DeleteProblem.Changed,
-            ExpenseRejection.StaleGeneration(current = 2) to DeleteProblem.DataChanged,
-            ExpenseRejection.StorageFailed(StorageFailure.Unavailable("x")) to DeleteProblem.Failed
+            Specific(ExpenseRejection.ExpenseMissing) to DeleteProblem.Gone,
+            CommandRejection.VersionConflict(current = 2) to DeleteProblem.Changed,
+            CommandRejection.StaleGeneration(current = 2) to DeleteProblem.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to DeleteProblem.Failed
         )
 
         val said = refusals.map { (reason, _) ->

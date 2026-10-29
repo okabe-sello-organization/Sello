@@ -9,6 +9,7 @@ import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.ScheduleRecordReads
 import com.software.sello.domain.port.ScheduleRecordsState
@@ -73,8 +74,8 @@ private class HandRecords : ScheduleRecordReads {
         asked += since
         if (slowAfterListo && since != null) return flow { awaitCancellation() }
         return entries.map { all ->
-            failure?.let { ScheduleRecordsState.Failed(it) }
-                ?: ScheduleRecordsState.Ready(
+            failure?.let { ReadState.Failed(it, null) }
+                ?: ReadState.Ready(
                     all.filter { since == null || created(it) > since }
                 )
         }

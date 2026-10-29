@@ -33,6 +33,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.dateLabels
@@ -103,9 +104,9 @@ class UpcomingPaymentsViewModel(
 
     private fun render(state: SnapshotState, today: LocalDate): UpcomingState {
         val snapshot = when (state) {
-            SnapshotState.Loading -> return UpcomingState.Loading
-            is SnapshotState.Failed -> return UpcomingState.Failed
-            is SnapshotState.Ready -> state.snapshot
+            ReadState.Loading -> return UpcomingState.Loading
+            is ReadState.Failed -> return UpcomingState.Failed
+            is ReadState.Ready -> state.value
         }
         val reservation = (snapshot.overall as? OverallBudget.Limited)?.reservation
             ?: return UpcomingState.Empty(snapshot.month)

@@ -6,6 +6,7 @@ import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.mapper.profileFrom
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
@@ -37,30 +38,5 @@ class RoomScheduleReads(private val database: SelloDatabase) : ScheduleReads {
         }
     }
 
-    override fun observe(): Flow<ScheduleBookState> = flow {
-        emit(ScheduleBookState.Loading)
-        var lastGood: ScheduleBook? = null
-        try {
-            // Every command moves the profile's revision in its transaction.
-            database.profileDao().changes().conflate().collect {
-                when (val read = book()) {
-                    is Outcome.Success -> {
-                        lastGood = read.value
-                        emit(ScheduleBookState.Ready(read.value))
-                    }
-
-                    is Outcome.Failure -> emit(ScheduleBookState.Failed(read.error, lastGood))
-                }
-            }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (failure: SQLException) {
-            emit(ScheduleBookState.Failed(unavailable(failure), lastGood))
-        } catch (failure: IllegalStateException) {
-            emit(ScheduleBookState.Failed(unavailable(failure), lastGood))
-        }
-    }
-
-    private fun unavailable(failure: Exception) =
-        StorageFailure.Unavailable(failure.javaClass.simpleName)
+    override fun observe(): Flow<ScheduleBookState> = database.observeOnRevision { book() }
 }

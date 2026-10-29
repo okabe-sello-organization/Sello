@@ -5,6 +5,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleCatchUpStore
@@ -34,7 +35,7 @@ class CatchUpRunnerTest {
     private val clock = object : FinancialClock {
         override val today = day
     }
-    private val book = MutableStateFlow<ScheduleBookState>(ScheduleBookState.Loading)
+    private val book = MutableStateFlow<ScheduleBookState>(ReadState.Loading)
     private val reads = object : ScheduleReads {
         override suspend fun book(): Outcome<ScheduleBook, StorageFailure> = error("not read here")
 
@@ -48,8 +49,7 @@ class CatchUpRunnerTest {
         CatchUpBatch.Recorded(emptyList())
     }
 
-    private fun ready(revision: Long) =
-        ScheduleBookState.Ready(ScheduleBook(1, revision, emptyList()))
+    private fun ready(revision: Long) = ReadState.Ready(ScheduleBook(1, revision, emptyList()))
 
     @Test
     fun itRunsOnStartOnceTheScheduleBookIsRead() = runTest {
@@ -115,7 +115,7 @@ class CatchUpRunnerTest {
     fun anUnreadableScheduleBookStartsNothing() = runTest {
         CatchUpRunner(CatchUpSchedules(store, clock), clock, reads, backgroundScope)
 
-        book.value = ScheduleBookState.Failed(StorageFailure.Unavailable("SQLiteException"), null)
+        book.value = ReadState.Failed(StorageFailure.Unavailable("SQLiteException"), null)
         runCurrent()
 
         assertEquals(emptyList<LocalDate>(), asked)

@@ -3,6 +3,7 @@ package com.software.sello.feature.recibo
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.SnapshotFailure
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryIn
@@ -114,10 +115,10 @@ class AdjustBudgetViewModelTest {
     fun aFailedReadWithLastGoodIsStaleAndWithoutIsFailed() {
         val model = model()
         snapshots.of(october).value =
-            SnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+            ReadState.Failed(SnapshotFailure.Unrepresentable, null)
         val failed = model.state.value
         snapshots.of(october).value =
-            SnapshotState.Failed(SnapshotFailure.Unrepresentable, month)
+            ReadState.Failed(SnapshotFailure.Unrepresentable, month)
 
         assertEquals(AdjustBudgetState.Failed, failed)
         assertTrue((model.state.value as AdjustBudgetState.Ready).stale)
