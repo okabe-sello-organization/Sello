@@ -69,3 +69,18 @@ Resumen, Metas, Inversiones) with the Anotar dock above them; its
 - Charts are at least 130dp tall and take at most one `ChartReference`. A period that
   has not happened is `ChartPeriod.Upcoming` and is drawn as an outline. Short figures
   such as `86 mil` are allowed only as `valueLabel` and in a reference label.
+
+## Themes
+
+A theme is an ink with a light and a dark palette; `SelloInk` is the one list of them.
+Adding one, say Verde:
+
+1. `design-system/.../theme/VerdePalette.kt`: `VerdeLight` and `VerdeDark`, usually a
+   `CobaltoLight.copy(...)`/`CobaltoDark.copy(...)` that changes only brand, paper and
+   line colours. Gain, loss, warn and the category colours stay the base ink's.
+2. Register it: a `SelloInk.Verde({ VerdeLight }, { VerdeDark })` entry; an
+   `InkPreference.Verde("verde")` entry with an id never used before (preferences and
+   backups write it, so ids are never changed or reused); an `InkChoices` entry in
+   `presentation/appearance` with its `settings_ink_verde` name.
+3. Its two rows of reference colours in `SelloPaletteTest`, which checks every palette's
+   values and contrast. Component tests run in the base ink only.

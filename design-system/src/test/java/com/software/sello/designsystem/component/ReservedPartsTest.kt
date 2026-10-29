@@ -58,7 +58,7 @@ class ReservedPartsTest {
             assertTrue("$scheme: $said", "Incluye 200.000 separado para 1 pago previsto" in said)
             rule.onNodeWithTag("footnote").performClick()
         }
-        assertEquals(4, opened)
+        assertEquals(2, opened)
     }
 
     @Test

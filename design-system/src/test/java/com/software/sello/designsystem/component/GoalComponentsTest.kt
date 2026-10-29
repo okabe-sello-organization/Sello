@@ -25,8 +25,8 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * The goal parts that had no device test (gap list, SELLO-085): `GoalPill`,
- * `MovementRow`, `StampTicket` and `GoalPinPill`, in each of the four
- * colour schemes. What a screen reader hears, what each control does and that every
+ * `MovementRow`, `StampTicket` and `GoalPinPill`, in light and dark. What a screen
+ * reader hears, what each control does and that every
  * target is at least 48dp.
  */
 @RunWith(AndroidJUnit4::class)

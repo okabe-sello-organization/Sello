@@ -218,11 +218,8 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
             "dark" -> ThemePreference.Dark
             else -> return Decoded.Invalid
         }
-        val ink = when (stored[INK] ?: InkPreference.Cobalto.stored) {
-            "cobalto" -> InkPreference.Cobalto
-            "violeta" -> InkPreference.Violeta
-            else -> return Decoded.Invalid
-        }
+        val ink = InkPreference.fromId(stored[INK] ?: InkPreference.Cobalto.stored)
+            ?: return Decoded.Invalid
         return Decoded.Value(AppearancePreference(theme, ink))
     }
 
@@ -347,10 +344,7 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
             }
 
         val InkPreference.stored: String
-            get() = when (this) {
-                InkPreference.Cobalto -> "cobalto"
-                InkPreference.Violeta -> "violeta"
-            }
+            get() = id
 
         val CategoryOrder.stored: String
             get() = when (this) {

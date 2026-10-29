@@ -349,6 +349,37 @@ class DataStoreUserPreferencesTest {
     }
 
     @Test
+    fun everyInkIsStoredAsTheIdItHasAlwaysHad() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        for ((ink, id) in listOf(
+            InkPreference.Violeta to "violeta",
+            InkPreference.Cobalto to "cobalto"
+        )) {
+            assertEquals(PreferenceWrite.Saved, preferences.setInk(ink))
+            assertEquals(id, data.data.first()[stringPreferencesKey("appearance_ink_v1")])
+            val written = mutablePreferencesOf(stringPreferencesKey("appearance_ink_v1") to id)
+            assertEquals(
+                PreferenceRead.Ready(AppearancePreference(ink = ink)),
+                DataStoreUserPreferences(HandDataStore(written)).observeAppearance().first()
+            )
+        }
+    }
+
+    @Test
+    fun anUnknownStoredInkIsVisibleAndIsNotSilentlyRewritten() = runTest {
+        val raw = mutablePreferencesOf(stringPreferencesKey("appearance_ink_v1") to "purpura")
+        val data = HandDataStore(raw)
+        val preferences = DataStoreUserPreferences(data)
+
+        assertEquals(
+            PreferenceRead.Failed<AppearancePreference>(PreferenceFailure.InvalidValue, null),
+            preferences.observeAppearance().first()
+        )
+        assertEquals("purpura", data.data.first()[stringPreferencesKey("appearance_ink_v1")])
+    }
+
+    @Test
     fun anUnknownStoredCodeIsVisibleAndIsNotSilentlyRewritten() = runTest {
         val raw = mutablePreferencesOf(stringPreferencesKey("appearance_theme_v1") to "neon")
         val preferences = DataStoreUserPreferences(HandDataStore(raw))

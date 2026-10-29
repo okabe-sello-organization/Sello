@@ -59,7 +59,7 @@ class ShellBarsContractsTest {
                 } >= 47.9.dp
             )
         }
-        assertEquals(4, returns)
+        assertEquals(2, returns)
     }
 
     @Test
@@ -134,7 +134,7 @@ class ShellBarsContractsTest {
                 } >= 47.9.dp
             )
         }
-        assertEquals(4, added)
+        assertEquals(2, added)
     }
 
     @Test
@@ -158,7 +158,7 @@ class ShellBarsContractsTest {
                 with(node.layoutInfo.density) { node.touchBoundsInRoot.height.toDp() } >= 47.9.dp
             )
         }
-        assertEquals(4, added)
+        assertEquals(2, added)
     }
 
     @Test
@@ -183,6 +183,6 @@ class ShellBarsContractsTest {
             val round = plus.getUnclippedBoundsInRoot()
             assertTrue("title $title, chip $round", title.right <= round.left + 0.5.dp)
         }
-        assertEquals(4, added)
+        assertEquals(2, added)
     }
 }

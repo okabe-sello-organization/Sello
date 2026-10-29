@@ -83,7 +83,7 @@ class ComponentContractsTest {
                 it()
             }
         }
-        assertEquals(4, cleared)
+        assertEquals(2, cleared)
     }
 
     @Test
@@ -370,7 +370,7 @@ class ComponentContractsTest {
                 } >= 47.9.dp
             )
         }
-        assertEquals(4, added)
+        assertEquals(2, added)
     }
 
     @Test

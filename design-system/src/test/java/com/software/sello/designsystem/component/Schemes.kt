@@ -16,11 +16,15 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
 
-private val schemes = SelloInk.entries.flatMap { ink -> listOf(false, true).map { ink to it } }
+/**
+ * The base ink, light then dark. Inks only change colours, and every registered palette's
+ * colours and contrast are checked once in `SelloPaletteTest`, so components need not be.
+ */
+private val schemes = listOf(false, true).map { SelloInk.Cobalto to it }
 
 /**
- * Shows [content] in a fixed-width stage and runs [check] once in each of the four
- * colour schemes. [reset] runs before each scheme after the first. [densityScale] shrinks
+ * Shows [content] in a fixed-width stage and runs [check] once in each colour scheme of
+ * the base ink, light and dark. [reset] runs before each scheme after the first. [densityScale] shrinks
  * every dp so a stage wider than the test screen still fits on it.
  */
 fun ComposeContentTestRule.inEveryScheme(
