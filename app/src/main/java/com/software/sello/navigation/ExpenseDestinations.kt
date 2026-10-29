@@ -48,8 +48,8 @@ internal fun NavGraphBuilder.expenseDestinations(
         }
     }
     // The same form: the route's identifier makes it correct that expense.
-    val announcementState by announcementsState
     composable<ExpenseEditRoute> {
+        val announcementState by announcementsState
         ExpenseEntryRoot(
             viewModels = viewModels,
             announcements = announcementState,
