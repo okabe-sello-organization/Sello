@@ -16,7 +16,6 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:label="@string/app_name"
             android:theme="@style/Theme.Sello"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

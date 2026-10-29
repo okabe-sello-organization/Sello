@@ -23,6 +23,12 @@ android {
     buildFeatures {
         compose = true
     }
+    // Lint stays at zero warnings. The version-update notices depend on the network, so they
+    // would turn the gate red whenever upstream publishes; dependency updates are decided by hand.
+    lint {
+        warningsAsErrors = true
+        disable += setOf("GradleDependency", "NewerVersionAvailable", "AndroidGradlePluginVersion")
+    }
 }
 
 dependencies {

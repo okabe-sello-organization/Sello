@@ -36,15 +36,12 @@ from pathlib import Path
 
 NAMESPACE = "com.software.sello"
 # Top-level package segment owned by each library module; everything else belongs to :app.
-OWNERS = {"domain": "domain", "data": "data", "designsystem": "design-system", "catalog": "catalog", "prototype": "prototype"}
+OWNERS = {"domain": "domain", "data": "data", "designsystem": "design-system"}
 ALLOWED_EDGES = {
     "domain": set(),
     "data": {"domain"},
     "design-system": set(),
     "app": {"domain", "design-system", "data"},
-    "catalog": {"design-system"},
-    # Throwaway navigable husk of the design reference; never merged or shipped.
-    "prototype": {"design-system"},
 }
 FORBIDDEN_IN_DOMAIN = re.compile(
     r"(?<![\w.])(android|androidx|com\.google\.android|org\.koin|javax\.inject|dagger|io\.ktor|okhttp3|retrofit2)\."
@@ -162,9 +159,7 @@ def source_violations(module, source_set, relative, text):
             if owner != module and owner not in ALLOWED_EDGES[module]:
                 report(match.start(), "module-boundary", f":{module} must not reference :{owner} ({match.group(0)})")
             continue
-        if owner == "catalog":
-            report(match.start(), "module-boundary", ":app must not reference :catalog")
-        elif owner == "data" and not is_test and not in_composition:
+        if owner == "data" and not is_test and not in_composition:
             report(match.start(), "data-composition-only", ":data may only be referenced from the composition package and directory")
         elif segment == "devtools" and source_set not in DEBUG_SOURCE_SETS:
             report(match.start(), "debug-tools-in-release", f"source set '{source_set}' references developer tools")

@@ -10,10 +10,9 @@ def write(root, relative, text):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
 
-SETTINGS = 'include(":app")\ninclude(":catalog")\ninclude(":data")\ninclude(":design-system")\ninclude(":domain")\n'
+SETTINGS = 'include(":app")\ninclude(":data")\ninclude(":design-system")\ninclude(":domain")\n'
 BUILDS = {
     "app": 'dependencies {\n    implementation(project(":domain"))\n    implementation(project(":design-system"))\n    implementation(project(":data"))\n}\n',
-    "catalog": 'dependencies {\n    implementation(project(":design-system"))\n}\n',
     "data": 'dependencies {\n    implementation(project(":domain"))\n}\n',
     "design-system": "dependencies {\n}\n",
     "domain": "dependencies {\n}\n",
@@ -41,8 +40,6 @@ class ArchitectureTests(unittest.TestCase):
               "package com.software.sello.feature.expense\n\nimport com.software.sello.domain.model.Money\nimport com.software.sello.designsystem.theme.SelloTheme\n")
         write(self.root, "app/src/debug/java/com/software/sello/devtools/Sandbox.kt",
               "package com.software.sello.devtools\n\nimport com.software.sello.feature.expense.ExpenseScreen\n")
-        write(self.root, "catalog/src/main/java/com/software/sello/catalog/CatalogActivity.kt",
-              "package com.software.sello.catalog\n\nimport com.software.sello.designsystem.theme.SelloTheme\n")
 
     def found(self):
         return [str(violation) for violation in architecture.violations(self.root)]
@@ -81,11 +78,6 @@ class ArchitectureTests(unittest.TestCase):
     def test_design_system_cannot_reference_domain(self):
         path = "design-system/src/main/java/com/software/sello/designsystem/money/Amount.kt"
         write(self.root, path, "package com.software.sello.designsystem.money\n\nimport com.software.sello.domain.model.Money\n")
-        self.assert_violation("module-boundary", f"{path}:3")
-
-    def test_catalog_cannot_reference_app_or_domain(self):
-        path = "catalog/src/main/java/com/software/sello/catalog/Bad.kt"
-        write(self.root, path, "package com.software.sello.catalog\n\nimport com.software.sello.feature.expense.ExpenseScreen\n")
         self.assert_violation("module-boundary", f"{path}:3")
 
     def test_feature_cannot_import_data(self):
@@ -135,11 +127,6 @@ class ArchitectureTests(unittest.TestCase):
               "package com.software.sello.feature.expense.form\n\nimport com.software.sello.feature.expense.ExpenseScreen\n")
         self.assertEqual([], self.found())
 
-    def test_customer_app_cannot_reference_catalog(self):
-        path = f"{APP}/navigation/Bad.kt"
-        write(self.root, path, "package com.software.sello.navigation\n\nimport com.software.sello.catalog.CatalogActivity\n")
-        self.assert_violation("module-boundary", f"{path}:3")
-
     def test_release_sources_cannot_reference_debug_tools(self):
         path = f"{APP}/navigation/Bad.kt"
         write(self.root, path, "package com.software.sello.navigation\n\nimport com.software.sello.devtools.Sandbox\n")
@@ -150,8 +137,8 @@ class ArchitectureTests(unittest.TestCase):
         write(self.root, path, "package com.software.sello.devtools\n\nclass Leaked\n")
         self.assert_violation("debug-tools-in-release", f"{path}:1")
 
-    def test_app_cannot_depend_on_catalog_module(self):
-        write(self.root, "app/build.gradle.kts", BUILDS["app"].replace("}\n", '    implementation(project(":catalog"))\n}\n'))
+    def test_app_cannot_depend_on_a_module_without_an_edge(self):
+        write(self.root, "app/build.gradle.kts", BUILDS["app"].replace("}\n", '    implementation(project(":dev-tools"))\n}\n'))
         self.assert_violation("module-edge", "app/build.gradle.kts:5")
 
     def test_design_system_cannot_depend_on_domain_module(self):
@@ -167,12 +154,12 @@ class ArchitectureTests(unittest.TestCase):
         self.assertEqual([], self.found())
 
     def test_typesafe_project_accessor_is_rejected_as_unreadable(self):
-        write(self.root, "catalog/build.gradle.kts", "dependencies {\n    implementation(projects.app)\n}\n")
-        self.assert_violation("module-edge", "catalog/build.gradle.kts:2")
+        write(self.root, "data/build.gradle.kts", "dependencies {\n    implementation(projects.domain)\n}\n")
+        self.assert_violation("module-edge", "data/build.gradle.kts:2")
 
     def test_new_module_needs_an_explicit_rule(self):
         write(self.root, "settings.gradle.kts", SETTINGS + 'include(":dev-tools")\n')
-        self.assert_violation("unknown-module", "settings.gradle.kts:6")
+        self.assert_violation("unknown-module", "settings.gradle.kts:5")
 
     def test_wall_clock_reads_are_only_allowed_in_the_platform_package(self):
         reads = ("Instant.now()", "LocalDate.now()", "YearMonth.now(zone)", "System.currentTimeMillis()",

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import check
 
-SETTINGS = "".join(f'include(":{module}")\n' for module in ("app", "catalog", "data", "design-system", "domain", "prototype"))
+SETTINGS = "".join(f'include(":{module}")\n' for module in ("app", "data", "design-system", "domain"))
 SUITE = ('<testsuite name="{name}" tests="{tests}" failures="{failures}" errors="0" skipped="{skipped}">'
          '{cases}</testsuite>')
 FAILING_CASE = '<testcase name="breaks" classname="com.software.sello.{name}"><failure message="boom">trace</failure></testcase>'
@@ -38,7 +38,7 @@ class Fake:
         self.serial = environment.get("ANDROID_SERIAL")
         if ":domain:test" in argv and self.host_tests:
             self.write("domain/build/test-results/test/TEST-host.xml", self.host_tests, self.host_failures, name="HostTest")
-        for module in ("data", "design-system", "app", "catalog"):
+        for module in ("data", "design-system", "app"):
             if f":{module}:connectedDebugAndroidTest" in argv and module not in self.missing_device_modules:
                 self.write(f"{module}/build/outputs/androidTest-results/connected/debug/TEST-device.xml",
                            skipped=int(module in self.skipped_device_modules), name=f"{module}DeviceTest")
@@ -176,24 +176,24 @@ class CheckTests(unittest.TestCase):
                           "-Pandroid.testInstrumentationRunnerArguments.shardIndex=1"], self.fake.names())
         self.assertEqual("emulator-5580", self.fake.serial)
         self.fake.ran.clear()
-        self.assertEqual(0, self.check("--device", "support", "--modules", "catalog", environ=environ))
-        self.assertEqual(":catalog:connectedDebugAndroidTest", self.fake.names()[-1])
-        self.assertEqual(2, self.check("--device", "app-1", "--modules", "catalog", environ=environ))
+        self.assertEqual(0, self.check("--device", "support", "--modules", "design-system", environ=environ))
+        self.assertEqual(":design-system:connectedDebugAndroidTest", self.fake.names()[-1])
+        self.assertEqual(2, self.check("--device", "app-1", "--modules", "design-system", environ=environ))
 
     def test_locally_every_suite_runs_whole_on_one_emulator(self):
         self.assertEqual(0, self.check("--device", environ={"ANDROID_SERIAL": "emulator-5580"}))
         self.assertEqual(":data:connectedDebugAndroidTest :design-system:connectedDebugAndroidTest "
-                         ":app:connectedDebugAndroidTest :catalog:connectedDebugAndroidTest", self.fake.names()[-1])
+                         ":app:connectedDebugAndroidTest", self.fake.names()[-1])
 
     def test_a_selected_suite_without_fresh_results_or_with_skips_fails(self):
         environ = {"ANDROID_SERIAL": "emulator-5580"}
-        self.fake.write("catalog/build/outputs/androidTest-results/connected/debug/TEST-device.xml")
-        stale = self.root / "catalog/build/outputs/androidTest-results/connected/debug/TEST-device.xml"
+        self.fake.write("design-system/build/outputs/androidTest-results/connected/debug/TEST-device.xml")
+        stale = self.root / "design-system/build/outputs/androidTest-results/connected/debug/TEST-device.xml"
         old = time.time_ns() - 60_000_000_000
         os.utime(stale, ns=(old, old))
-        self.fake.missing_device_modules = {"catalog"}
+        self.fake.missing_device_modules = {"design-system"}
         self.assertEqual(1, self.check("--device", "support", environ=environ))
-        self.assertIn("catalog produced no fresh device test results", self.out.getvalue())
+        self.assertIn("design-system produced no fresh device test results", self.out.getvalue())
         self.fake.missing_device_modules, self.fake.skipped_device_modules = set(), {"data"}
         self.assertEqual(1, self.check("--device", "support", environ=environ))
         self.assertIn("data skipped 1 device tests", self.out.getvalue())
@@ -210,7 +210,7 @@ class CheckTests(unittest.TestCase):
         self.assertEqual("ktlintCheck", names[6])
         self.assertTrue(names[7].startswith(":domain:test"))
         self.assertEqual("ktlintCheck :data:assembleDebugAndroidTest :design-system:assembleDebugAndroidTest "
-                         ":app:assembleDebugAndroidTest :catalog:assembleDebugAndroidTest", names[8])
+                         ":app:assembleDebugAndroidTest", names[8])
         self.assertIn(":app:connectedDebugAndroidTest", names[9])
         self.assertNotIn("numShards", names[9])
         self.assertEqual(["licenses.py", "release.py", "release.py"], names[10:])

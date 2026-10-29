@@ -108,4 +108,4 @@ Recurrence lifecycle details, including expected income, are deferred beyond MVP
 Check its purpose, main answer and obvious next action. Review keyboard-open,
 large-font and constrained layouts, plus loading, empty, failed, stale, busy and
 restored states. Confirm exact financial meaning, supported suggestions and
-accessible controls. Extend real catalog examples when shared components change.
+accessible controls.
