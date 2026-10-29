@@ -43,6 +43,7 @@ import java.util.UUID
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
+import org.koin.core.Koin
 import org.koin.core.context.GlobalContext
 
 /**
@@ -51,7 +52,21 @@ import org.koin.core.context.GlobalContext
  * hears of each change as it would of its own; nothing is written around them.
  */
 object TestCommands {
-    private val koin get() = GlobalContext.get()
+    private var graph: Koin? = null
+
+    private val koin get() = graph ?: GlobalContext.get()
+
+    /**
+     * Runs the commands below on [graph], a test's own graph, instead of the installed
+     * app's. A test that does this ends it again with [useInstalledApp].
+     */
+    fun use(graph: Koin) {
+        this.graph = graph
+    }
+
+    fun useInstalledApp() {
+        graph = null
+    }
 
     val today: LocalDate get() = koin.get<FinancialClock>().today.value.date
 
