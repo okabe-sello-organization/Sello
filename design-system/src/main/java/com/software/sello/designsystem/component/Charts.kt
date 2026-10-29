@@ -36,7 +36,11 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
@@ -53,6 +57,9 @@ enum class ChartPeriod { Past, Current, Over, Upcoming }
  * @param value used only to size the mark. It may be drawn imprecisely.
  * @param spoken the mark in words with its exact amount, such as "sábado, 86.000 pesos".
  * @param valueLabel a short figure above the mark, for the few that carry one.
+ * @param shortAxisLabel what the axis shows instead of [axisLabel] when, at the text size
+ * in use, a column is too narrow to hold [axisLabel] whole, such as "2" for "sem 2". It
+ * is never spoken: [spoken] says everything.
  */
 @Immutable
 data class ChartPoint(
@@ -65,7 +72,8 @@ data class ChartPoint(
     /** Solid recorded part below this value, striped planning part above it. Geometry only. */
     val stripedFromValue: Long? = null,
     /** Optional reference for this period, such as a historical monthly limit. */
-    val referenceValue: Long? = null
+    val referenceValue: Long? = null,
+    val shortAxisLabel: String? = null
 )
 
 /**
@@ -362,20 +370,46 @@ private fun ChartFrame(
                 )
             }
         }
-        Row(modifier = Modifier.fillMaxWidth().clearAndSetSemantics {}) {
-            points.forEach { point ->
-                Text(
-                    text = point.axisLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.inkSoft,
-                    textAlign = TextAlign.Center,
-                    // Large text on a narrow column wraps "sem 2" rather than cutting it.
-                    maxLines = 2,
-                    modifier = Modifier.weight(1f).padding(top = 4.dp)
-                )
+        val axis = Modifier.fillMaxWidth().clearAndSetSemantics {}
+        if (points.any { it.shortAxisLabel != null }) {
+            val measurer = rememberTextMeasurer()
+            val style = MaterialTheme.typography.labelSmall
+            BoxWithConstraints(axis) {
+                val column = constraints.maxWidth / points.size
+                // One decision for the whole axis, so its labels never mix long and short.
+                val short = points.any {
+                    it.shortAxisLabel != null && !measurer.fitsWhole(it.axisLabel, style, column)
+                }
+                AxisLabels(points, short)
             }
+        } else {
+            AxisLabels(points, short = false, modifier = axis)
         }
     }
+}
+
+@Composable
+private fun AxisLabels(points: List<ChartPoint>, short: Boolean, modifier: Modifier = Modifier) {
+    Row(modifier) {
+        points.forEach { point ->
+            Text(
+                text = if (short) point.shortAxisLabel ?: point.axisLabel else point.axisLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = SelloTheme.colors.inkSoft,
+                textAlign = TextAlign.Center,
+                // Large text on a narrow column wraps "sem 2" rather than cutting it.
+                maxLines = 2,
+                modifier = Modifier.weight(1f).padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+/** Whether [text] fits a column [width] pixels wide in two lines without breaking a word. */
+private fun TextMeasurer.fitsWhole(text: String, style: TextStyle, width: Int): Boolean {
+    val wrapped = measure(text, style, maxLines = 2, constraints = Constraints(maxWidth = width))
+    return !wrapped.multiParagraph.didExceedMaxLines &&
+        text.split(' ').all { measure(it, style).size.width <= width }
 }
 
 private val LabelRoom = 18.dp

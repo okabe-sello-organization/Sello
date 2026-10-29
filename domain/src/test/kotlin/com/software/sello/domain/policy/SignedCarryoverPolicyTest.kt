@@ -41,6 +41,8 @@ import org.junit.Test
  * The signed carryover calculation by ADR 0020 and docs/testing/signed-carryover-examples.md
  * (SC01–SC07, SC23, SC24, SC40, SC41, SC46 and the refusals of SC08). Every expected figure
  * is copied from there, where it was worked out by hand: `B`, `K`, `C`, `S`, `R` in pesos.
+ * The exceptions are the review round 1 tests (`r1*`, `r4*`), whose values are worked out by
+ * hand from SC19's chains and `C = B + K`, `R = C − S`; the arithmetic is in each test.
  */
 class SignedCarryoverPolicyTest {
     /** Comida on from ene 2027, base 100.000, replayed to [through] with [current] in progress. */
@@ -775,6 +777,115 @@ class SignedCarryoverPolicyTest {
                 it.month >=
                     feb
             }
+        )
+    }
+
+    // --- Review round 1: R1 (a later chain needs only its own history) and R4 (own defaults) ---
+
+    /** SC19 shape: ene–feb ended, then abr on; spending was read from abr only. */
+    private fun laterChainOnly() = comidaInput(
+        listOf(chain(ene, feb), chain(abr)),
+        abr,
+        m(2027, 5),
+        "2027-05-10",
+        listOf("2027-04-10" to 30_000L)
+    )
+
+    @Test
+    fun r1AMonthOfALaterChainNeedsOnlyThatChainsHistory() {
+        // Hand-worked on SC19's chains, not in the corpus. abr starts the chain, so K 0 and
+        // C 100.000; spent 30.000, so R = 100.000 - 30.000 = 70.000, and may's K is that 70.000.
+        val may = m(2027, 5)
+
+        val entry = SignedCarryoverPolicy.carryIn(laterChainOnly(), may, may).valueOrFail()!!
+        val start = SignedCarryoverPolicy.carryIn(laterChainOnly(), abr, may).valueOrFail()!!
+
+        assertEquals(cop(70_000), entry.carryIn)
+        assertEquals(abr, entry.chainStart)
+        assertEquals(cop(0), start.carryIn)
+    }
+
+    @Test
+    fun r1DroppingInALaterChainNeedsOnlyThatChainsHistory() {
+        // Hand-worked, not in the corpus: may K 70.000 (abr: 100.000 - 30.000), B 100.000, nothing
+        // spent in may. C before = 100.000 + 70.000 = 170.000, R before = 170.000 - 0 = 170.000.
+        // After the drop C = B = 100.000 and R = 100.000 - 0 = 100.000.
+        val may = m(2027, 5)
+
+        val unconfirmed = SignedCarryoverPolicy.drop(laterChainOnly(), may, null).valueOrFail()
+        val confirmed = SignedCarryoverPolicy.drop(laterChainOnly(), may, cop(70_000)).valueOrFail()
+
+        assertEquals(
+            DropDecision.ConfirmationRequired(
+                DropPreview(
+                    may,
+                    cop(70_000),
+                    cop(100_000),
+                    cop(170_000),
+                    cop(100_000),
+                    cop(170_000),
+                    cop(100_000)
+                )
+            ),
+            unconfirmed
+        )
+        assertEquals(
+            DropDecision.Dropped(listOf(chain(ene, feb), chain(abr, may)), cop(70_000)),
+            confirmed
+        )
+    }
+
+    @Test
+    fun r1AFullReplayStillNeedsEveryChainsHistoryAndTheCoveringChainStillFailsOnAGap() {
+        // No figures: only which month is reported unread. The chains are SC19's (ene-feb, abr on).
+        val may = m(2027, 5)
+        val gap =
+            comidaInput(listOf(chain(ene, feb), chain(abr)), mar, mar, "2027-05-10", emptyList())
+
+        assertEquals(
+            CarryoverFailure.MissingHistory(ene),
+            SignedCarryoverPolicy.replay(laterChainOnly(), may, may).errorOrFail()
+        )
+        // The covering chain begins in abr, but the history ends in mar: its first month is unread.
+        assertEquals(
+            CarryoverFailure.MissingHistory(abr),
+            SignedCarryoverPolicy.carryIn(gap, may, may).errorOrFail()
+        )
+    }
+
+    @Test
+    fun r4AnotherCategorysDefaultNeverDecidesWhetherCarryCanBeTurnedOn() {
+        // Not in the corpus: the SC08 and SC46 refusals, with a second category's defaults added.
+        val otherUnlimited = Carry.unlimitedFrom(ene, Carry.transporte)
+        val otherLater = Carry.unlimitedFrom(feb, Carry.transporte)
+        val otherPaused = Carry.pausedFrom(ene, Carry.transporte)
+
+        // Comida's own default is finite; the other category's unlimited one is not Comida's.
+        assertEquals(
+            listOf(chain(feb)),
+            enable(defaults = listOf(monthly(ene, 100_000), otherUnlimited)).valueOrFail()
+        )
+        assertEquals(
+            listOf(chain(feb)),
+            enable(defaults = listOf(monthly(ene, 100_000), otherLater, otherPaused)).valueOrFail()
+        )
+        // And the other way: Comida's unlimited default is refused whatever another category has.
+        assertEquals(
+            CarryEnableRefusal.UnlimitedThisMonth,
+            enable(
+                defaults = listOf(Carry.unlimitedFrom(ene), monthly(ene, 100_000, Carry.transporte))
+            ).errorOrFail()
+        )
+        // Comida's default after this month is judged on Comida's entries only.
+        assertEquals(
+            CarryEnableRefusal.DefaultAfterNotFinite,
+            enable(
+                defaults = listOf(
+                    monthly(ene, 100_000),
+                    Carry.unlimitedFrom(mar),
+                    monthly(mar, 100_000, Carry.transporte)
+                )
+            ).errorOrFail()
         )
     }
 }
