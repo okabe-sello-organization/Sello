@@ -36,7 +36,7 @@ fun ComposeContentTestRule.captureStill(path: String) {
 
 /**
  * The fewest colours a real screen has. Text alone is anti-aliased into hundreds; the
- * sparsest baseline, a one-line bar, has over 400. A blank capture has one or two.
+ * sparsest baseline, a one-line bar, has over 300. A blank capture has one or two.
  */
 const val FEWEST_COLOURS = 32
 
