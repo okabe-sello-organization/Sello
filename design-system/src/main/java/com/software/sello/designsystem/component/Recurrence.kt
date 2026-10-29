@@ -53,7 +53,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 /**
  * The sheet that says how something repeats, over the screen it belongs to: a scrim that
  * closes it when tapped, and paper docked at the bottom with [title] as its heading and
- * [content] under it, scrolling when it is taller than the screen, as at large text. It
+ * [content] under it, scrolling when it is taller than the screen. It
  * keeps clear of the system bars. Back is the screen's to handle, as is what lies behind.
  */
 @Composable

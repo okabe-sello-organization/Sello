@@ -56,7 +56,7 @@ enum class SettingTone { Normal, Loss }
  * [value] at the end. With [onClick] the whole row is one button and a chevron says it
  * leads somewhere, unless it is the [SettingTone.Loss] row, which is red instead. A dashed
  * rule above separates it from the row before; the first row under a heading has none.
- * At large text the title and value share the width and each wraps.
+ * When they don't fit on one line, the title and value share the width and each wraps.
  */
 @Composable
 fun SettingRow(
@@ -136,7 +136,7 @@ private const val DISABLED_ROW_ALPHA = 0.38f
  * Choosing one of a few [options], such as the order of the categories: a dialog slip
  * with [title], one radio row per option with [selectedIndex] marked, and Cancelar. A
  * choice is reported with [onSelect]; Back, a tap outside and Cancelar are [onDismiss].
- * The rows scroll when they do not fit, as at large text.
+ * The rows scroll when they do not fit.
  */
 @Composable
 fun OptionSlip(
