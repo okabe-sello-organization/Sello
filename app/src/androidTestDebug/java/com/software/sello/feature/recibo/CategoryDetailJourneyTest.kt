@@ -24,8 +24,10 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.devtools.JourneySetups
 import com.software.sello.devtools.SandboxGraph
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryReads
+import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.navigation.SelloAppRoot
 import java.io.File
 import java.time.YearMonth
@@ -56,17 +58,21 @@ class CategoryDetailJourneyTest {
             // Each step persists its checkpoint before the next one is requested.
         }
         assertTrue(runner.state.value.finished)
-        // ADR 0015 by hand: October 40.000 + 30.000 + 15.000 + 10.000 + 5.000; September,
-        // a month with a limit, nothing.
-        assertEquals(listOf("100000"), graph.spentIn("2026-10"))
-        assertEquals(listOf("0"), graph.spentIn("2026-09"))
+        // ADR 0015 by hand, through the app's own month read: October 40.000 + 30.000 +
+        // 15.000 + 10.000 + 5.000 spent, 200.000 − 100.000 left; September, a month with a
+        // limit, nothing spent.
+        val october = graph.month(YearMonth.of(2026, 10))
+        assertEquals(100_000L, october.spent.minorUnits)
+        assertEquals(
+            100_000L,
+            (october.overall as OverallBudget.Limited).budget.remaining.minorUnits
+        )
+        assertEquals(0L, graph.month(YearMonth.of(2026, 9)).spent.minorUnits)
         return graph
     }
 
-    private fun SandboxGraph.spentIn(month: String) = rows(
-        "SELECT IFNULL(SUM(amount_minor), 0) FROM expense " +
-            "WHERE effective_date BETWEEN '$month-01' AND '$month-31'"
-    )
+    private suspend fun SandboxGraph.month(month: YearMonth) =
+        (koin.get<MonthlySnapshots>().read(month) as Outcome.Success).value
 
     @Test
     fun realCategoryInsightsAndTheSearchableExpenseBrowserSurviveReopening() = runBlocking {

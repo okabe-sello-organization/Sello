@@ -238,8 +238,14 @@ navigation bar, no hardware keyboard), two cores, `-no-window -gpu swiftshader_i
 scales at zero. A test of `scripts/quality/test_emulator.py` keeps it equal to the
 workflow. Do not make the AVD another way: a phone profile such as `-d pixel` adds an
 on-screen navigation bar even with its screen edited to 320x640, the window loses
-48 dp, and journeys that pass on CI fail (#224). `stop` refuses a serial it did not
-start, so it never touches someone else's emulator; it never restarts the adb server.
+48 dp, and journeys that pass on CI fail (#224).
+
+Agents can start emulators at once: a lock on the script's record makes them choose
+different ports. `stop` refuses a serial it did not start, and stops one it did only
+while both the emulator on that port and the recorded process still run that AVD; after
+a crash the port or process may be someone else's, so then it only deletes the record
+and the AVD. A boot that fails ends only the process it started. It never restarts the
+adb server.
 
 To look at the app by hand on it:
 
