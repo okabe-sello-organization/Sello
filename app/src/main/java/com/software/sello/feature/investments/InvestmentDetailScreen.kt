@@ -28,8 +28,6 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MovementRow
-import com.software.sello.designsystem.component.RecordedMark
-import com.software.sello.designsystem.component.RecordedValuesChart
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton

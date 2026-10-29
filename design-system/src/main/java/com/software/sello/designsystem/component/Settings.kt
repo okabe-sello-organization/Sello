@@ -46,9 +46,7 @@ import androidx.compose.ui.window.DialogWindowProvider
 import com.software.sello.designsystem.R
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
-import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.designsystem.theme.selloColors
 
 /** Whether a [SettingRow] is ordinary or the one that deletes everything. */
 enum class SettingTone { Normal, Loss }
@@ -131,71 +129,8 @@ fun SettingRow(
 
 /** The value may take up to this share of the row beside a title that takes the rest. */
 private const val VALUE_WEIGHT = 0.8f
+
 private const val DISABLED_ROW_ALPHA = 0.38f
-
-/**
- * The ink choice: one round swatch per ink in its own colour, named under it, with a
- * ring around the chosen one. Each swatch is a radio button.
- */
-@Composable
-fun InkSwatches(
-    inks: List<Pair<SelloInk, String>>,
-    selected: SelloInk,
-    onSelect: (SelloInk) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    val colors = SelloTheme.colors
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg),
-        modifier = modifier.selectableGroup()
-    ) {
-        inks.forEach { (ink, label) ->
-            val chosen = ink == selected
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier
-                    .selectable(
-                        selected = chosen,
-                        enabled = enabled,
-                        role = Role.RadioButton
-                    ) { onSelect(ink) }
-                    .alpha(if (enabled) 1f else DISABLED_ROW_ALPHA)
-                    .padding(4.dp)
-            ) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(SwatchRing)
-                        .border(
-                            width = 2.5.dp,
-                            color = if (chosen) colors.ink else colors.paper,
-                            shape = CircleShape
-                        )
-                ) {
-                    // The ink as its light band shows it, the same in both themes.
-                    Box(
-                        Modifier
-                            .size(SwatchSize)
-                            .background(selloColors(ink, isDark = false).band, CircleShape)
-                    )
-                }
-                Text(
-                    label,
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = if (chosen) FontWeight.W700 else FontWeight.W600
-                    ),
-                    color = if (chosen) colors.ink else colors.inkSoft,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
-
-private val SwatchSize = 44.dp
-private val SwatchRing = 56.dp
 
 /**
  * Choosing one of a few [options], such as the order of the categories: a dialog slip

@@ -9,7 +9,6 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import com.software.sello.R
-import com.software.sello.designsystem.component.CelebrationOverlay
 import com.software.sello.designsystem.component.StampTicket
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.presentation.corrections.GoalCelebration

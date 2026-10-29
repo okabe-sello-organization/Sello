@@ -23,8 +23,8 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
-/** One filled button per screen; Destructive only inside a confirmation. */
-enum class ButtonKind { Filled, Outlined, Text, Destructive }
+/** One filled button per screen; the Loss tone only inside a confirmation. */
+enum class ButtonKind { Filled, Outlined, Text }
 
 /** Optional v2 action ink; the default preserves existing consumers. */
 enum class ButtonTone { Brand, Gain, Ink, Loss }
@@ -46,16 +46,14 @@ fun SelloButton(
     tone: ButtonTone = ButtonTone.Brand,
     contentPadding: PaddingValues = ButtonDefaults.ContentPadding
 ) {
-    val colors = SelloTheme.colors
     val (toneInk, onTone) = tone.inks()
     val (container, content) = when (kind) {
         ButtonKind.Filled -> toneInk to onTone
-        ButtonKind.Destructive -> colors.semantic.loss to colors.semantic.onLoss
         ButtonKind.Outlined, ButtonKind.Text -> Color.Transparent to toneInk
     }
     // A loading button stays at full strength; a disabled one fades to 38 %.
     val fade = if (loading) 1f else DISABLED_ALPHA
-    val isFilled = kind == ButtonKind.Filled || kind == ButtonKind.Destructive
+    val isFilled = kind == ButtonKind.Filled
     Button(
         onClick = onClick,
         enabled = enabled && !loading,

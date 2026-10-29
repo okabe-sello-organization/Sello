@@ -40,8 +40,9 @@ Resumen, Metas, Inversiones) with the Anotar dock above them; its
   selection, including the current tab again; the app owns back stacks and what a
   reselect does. `SelloDock` is the same action for the dock and for the rail's "+".
 - `MonthSwitcher` is a title that reports a tap; tabs use `MonthBar` through the
-  scaffold's `topBar` slot. An optional `ribbon` sits on the band under the month bar or
-  the titled bar. `MonthGrid` draws the cells it is
+  scaffold's `topBar` slot. Both, `TitleBar` and `PastMonthRibbon` belong to the shell
+  (`app/.../navigation/ShellBars.kt`). An optional `ribbon` sits on the band under the
+  month bar or the titled bar. `MonthGrid` draws the cells it is
   given; the app decides which months are enabled (never a future one), have data or
   are current, using `EffectiveDates.forSelection`.
 
@@ -49,7 +50,9 @@ Resumen, Metas, Inversiones) with the Anotar dock above them; its
 
 - A category is known by its icon and name in brand ink. There is no per-category
   colour in any API.
-- `CategoryCircle` clamps only what it draws. `CategoryCell` shows the exact amount
+- `CategoryCircle` (design system) clamps only what it draws. `CategoryCell` and
+  `CategoryGrid` belong to Recibo (`app/.../feature/recibo/ReciboComponents.kt`).
+  `CategoryCell` shows the exact amount
   the app formatted and speaks the full `description` the app wrote, so an overspend
   far beyond the limit still reads exactly. `CategoryGrid` uses two columns, three from
   560dp, one from font scale 1.3.

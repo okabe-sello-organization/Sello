@@ -54,6 +54,8 @@ at all beyond a person looking.
   unchanged in their assertions. `design-system` has the same wiring and its
   component tests moved too; only the system keyboard's insets and the device's real
   animation setting stay on the device. Its baselines, one image per group of
-  components, are in `design-system/src/test/screenshots/`.
+  components, are in `design-system/src/test/screenshots/`; the groups whose components moved
+  into their features (categories, goals and investments, bars and keypad) are in
+  `app/src/test/screenshots/`, unchanged.
 - Rendering may differ between operating systems; baselines are recorded on Linux,
   as CI runs.

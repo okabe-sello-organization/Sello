@@ -26,7 +26,6 @@ import com.software.sello.TestData
 import com.software.sello.await
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
-import com.software.sello.designsystem.component.ACTION_LINE_MENU_TAG
 import com.software.sello.feature.expense.ENTRY_KEYPAD_TAG
 import com.software.sello.feature.expense.ENTRY_SUBMIT_TAG
 import com.software.sello.hideKeyboard

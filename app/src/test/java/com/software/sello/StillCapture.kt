@@ -3,8 +3,13 @@ package com.software.sello
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.ViewRootForTest
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.unit.IntRect
 import com.github.takahirom.roborazzi.captureRoboImage
 
 /**
@@ -55,4 +60,33 @@ fun requireDrawn(bitmap: Bitmap, path: String) {
         "$path is blank: ${seen.size} distinct colours in ${bitmap.width}x${bitmap.height} px, " +
             "fewer than $FEWEST_COLOURS. The screen was not drawn; nothing is recorded or compared."
     )
+}
+
+/**
+ * The node cut out of its window as a bitmap, for a group of components that is as tall as it
+ * needs rather than a whole screen. Compose's own `captureToImage` waits for a frame that
+ * Robolectric's paused main looper never delivers. Needs `@GraphicsMode(GraphicsMode.Mode.NATIVE)`.
+ */
+fun SemanticsNodeInteraction.drawnBitmap(): Bitmap {
+    val node = fetchSemanticsNode()
+    val view = (node.root as ViewRootForTest).view
+    val whole = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+    view.draw(Canvas(whole))
+    val bounds = node.boundsInRoot
+    val area = IntRect(
+        bounds.left.toInt(),
+        bounds.top.toInt(),
+        bounds.right.toInt(),
+        bounds.bottom.toInt()
+    )
+    return Bitmap.createBitmap(whole, area.left, area.top, area.width, area.height)
+}
+
+/** The node's pixels, drawn as [drawnBitmap] does. */
+fun SemanticsNodeInteraction.captureToImage(): ImageBitmap = drawnBitmap().asImageBitmap()
+
+/** Saves this bitmap as a Roborazzi image, after [requireDrawn]. */
+fun Bitmap.captureBaseline(path: String) {
+    requireDrawn(this, path)
+    captureRoboImage(path)
 }

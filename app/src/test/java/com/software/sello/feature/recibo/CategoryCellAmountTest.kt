@@ -1,4 +1,4 @@
-package com.software.sello.designsystem.component
+package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
@@ -10,7 +10,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.component.MoneySign
+import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.inEveryScheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

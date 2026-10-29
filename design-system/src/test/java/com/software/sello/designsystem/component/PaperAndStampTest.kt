@@ -26,7 +26,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
@@ -101,41 +100,6 @@ class PaperAndStampTest {
     }
 
     @Test
-    fun receiptLinesReadAsLabelThenValue() {
-        rule.inEveryScheme(
-            content = {
-                Slip {
-                    LeaderLine("Uber", Modifier.testTag("leader"), caption = "Transporte") {
-                        MoneyText(MoneyTextValue(MoneySign.None, "", "18.400", "18.400 pesos"))
-                    }
-                    LeaderLine("Fecha", "jue 22 oct", Modifier.testTag("plain"))
-                    LeaderLine("Abrir", "Detalle", Modifier.testTag("action"), onClick = {})
-                    TotalLine("Total", Modifier.testTag("total")) {
-                        MoneyText(
-                            MoneyTextValue(MoneySign.None, "", "126.000", "126.000 pesos"),
-                            style = MoneyStyle.Title
-                        )
-                    }
-                    KeyValue("Límite", "Sin límite", Modifier.testTag("kv"), caption = "este mes")
-                }
-            }
-        ) {
-            rule.onNodeWithTag("leader").assertTextContains("Uber")
-            rule.onNodeWithTag("leader").assertTextContains("Transporte")
-            rule.onNodeWithTag("leader").assertContentDescriptionEquals("18.400 pesos")
-            rule.onNodeWithTag("plain").assertTextContains("Fecha")
-            rule.onNodeWithTag("plain").assertTextContains("jue 22 oct")
-            rule.onNodeWithTag("total").assertTextContains("Total")
-            rule.onNodeWithTag("total").assertContentDescriptionEquals("126.000 pesos")
-            rule.onNodeWithTag("kv").assertTextContains("Límite")
-            rule.onNodeWithTag("kv").assertTextContains("Sin límite")
-            rule.onNodeWithTag("action").assert(isButton)
-            val action = rule.onNodeWithTag("action").getUnclippedBoundsInRoot().height
-            assertTrue("$it action line is $action", action >= 48.dp)
-        }
-    }
-
-    @Test
     fun leaderAndAmountSitOnTheLabelsFirstLineNotTheMiddleOfTheRow() = leaderOnLabel(1f)
 
     @Test
@@ -178,10 +142,15 @@ private fun ComposeContentTestRule.assertLeaderOnLabel(
 ) {
     fun inRow(matcher: SemanticsMatcher) =
         onNode(matcher and hasAnyAncestor(hasTestTag(row)), useUnmergedTree = true)
+
     val labelBaseline = inRow(hasText(label)).baselineInRoot()
+
     val valueBaseline = inRow(value()).baselineInRoot()
+
     val dots = inRow(hasTestTag(LEADER_DOTS_TAG)).getUnclippedBoundsInRoot()
+
     val dotsCentre = (dots.top + dots.bottom) / 2
+
     assertNear("$scheme $row amount baseline", labelBaseline, valueBaseline)
     assertNear("$scheme $row dots", labelBaseline - 5.dp, dotsCentre)
 }

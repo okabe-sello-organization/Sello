@@ -40,7 +40,6 @@ import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.LeaderLine
-import com.software.sello.designsystem.component.LimitRow
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.RepeatSheet

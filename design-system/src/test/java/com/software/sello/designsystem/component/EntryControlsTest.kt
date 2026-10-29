@@ -31,8 +31,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
-import androidx.compose.ui.test.assertIsOff
-import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -67,7 +65,6 @@ class EntryControlsTest {
     val rule = createComposeRule()
 
     private val isButton = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button)
-    private val isSwitch = SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch)
 
     /** The area that accepts a touch, which may be larger than what is drawn. */
     private fun tall(tag: String, label: String) {
@@ -351,31 +348,6 @@ class EntryControlsTest {
         rule.onNodeWithContentDescription("Nota").performTextInput("Almuerzo")
         rule.onNodeWithContentDescription("Nota").assertIsDisplayed()
         assertEquals("Almuerzo", value)
-    }
-
-    // ---- Switches ----
-
-    @Test
-    fun theWholeSwitchRowTogglesOncePerPress() {
-        var checked by mutableStateOf(false)
-        var changes = 0
-        rule.inEveryScheme(
-            reset = {
-                checked = false
-                changes = 0
-            },
-            content = {
-                SwitchRow("Avisarme", checked, {
-                    checked = it
-                    changes++
-                }, Modifier.testTag("row"))
-            }
-        ) {
-            rule.onNodeWithTag("row").assert(isSwitch).assertIsOff().performClick()
-            rule.onNodeWithTag("row").assertIsOn()
-            assertEquals(it, 1, changes)
-            tall("row", it)
-        }
     }
 
     @Test

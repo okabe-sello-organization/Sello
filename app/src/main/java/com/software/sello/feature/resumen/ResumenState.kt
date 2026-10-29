@@ -2,7 +2,6 @@ package com.software.sello.feature.resumen
 
 import androidx.compose.runtime.Immutable
 import com.software.sello.designsystem.component.ChartPoint
-import com.software.sello.designsystem.component.ComparisonBar
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.SpendingDirection
 import java.time.LocalDate

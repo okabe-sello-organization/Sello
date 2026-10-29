@@ -30,7 +30,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.ErrorSlip
-import com.software.sello.designsystem.component.InkSwatches
 import com.software.sello.designsystem.component.OptionSlip
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SettingRow

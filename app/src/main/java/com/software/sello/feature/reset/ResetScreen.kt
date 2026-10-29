@@ -208,7 +208,7 @@ private fun Word(state: ResetState, erasing: Boolean, onAction: (ResetAction) ->
         SelloButton(
             text = stringResource(if (erasing) R.string.reset_erasing else R.string.reset_confirm),
             onClick = { onAction(ResetAction.Confirm) },
-            kind = ButtonKind.Destructive,
+            tone = ButtonTone.Loss,
             loading = erasing,
             enabled = !erasing && state.canConfirm,
             modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md)
