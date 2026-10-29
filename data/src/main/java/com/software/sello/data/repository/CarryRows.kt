@@ -95,17 +95,37 @@ internal class CarryRows(
         }
 }
 
+/** The chain of these that carries into [month], or null when none does. */
+internal fun List<CarryChain>.covering(month: YearMonth): CarryChain? =
+    firstOrNull { it.covers(month) }
+
 /**
- * The rows [chains] of [categoryId] need for every month up to [through], or null when none
- * of them starts by then: no month read can have carry. Must run inside a transaction.
+ * The rows a carry-in of [month] needs (a snapshot): only the chain that covers it, from its
+ * start through the month before (SELLO-038 consumer boundary, "history needed"). Earlier
+ * chains start again from 0, so they are not read. Null when no chain covers [month].
+ */
+internal suspend fun SelloDatabase.carryInRows(
+    categoryId: CategoryId,
+    chains: List<CarryChain>,
+    month: YearMonth
+): Outcome<CarryRows?, StorageFailure.Integrity> {
+    val chain = chains.covering(month) ?: return Outcome.Success(null)
+    // A history covers at least one month: in its start month a chain reads that month alone.
+    val through = maxOf(chain.start, month.minusMonths(1))
+    return carryRows(categoryId, chains, chain.start, through)
+}
+
+/**
+ * The rows [chains] of [categoryId] need from [from] through [through]: the whole default
+ * history, the own month limits and the expenses of that range. The caller picks the range
+ * the calculation it asks for needs, no wider. Must run inside a transaction.
  */
 internal suspend fun SelloDatabase.carryRows(
     categoryId: CategoryId,
     chains: List<CarryChain>,
+    from: YearMonth,
     through: YearMonth
-): Outcome<CarryRows?, StorageFailure.Integrity> {
-    val from = chains.filter { it.start <= through }.minOfOrNull { it.start }
-        ?: return Outcome.Success(null)
+): Outcome<CarryRows, StorageFailure.Integrity> {
     val defaults = when (val read = defaultHistory(categoryId.value)) {
         is Outcome.Success -> read.value
         is Outcome.Failure -> return read

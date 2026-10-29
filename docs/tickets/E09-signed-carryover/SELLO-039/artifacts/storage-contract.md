@@ -22,10 +22,14 @@ carry on: nothing in `:app` submits the new commands or reads the new port.
 ## Derived on read, not cached
 
 Carry is replayed by `SignedCarryoverPolicy` on every read, from rows read in one
-transaction: the category's chains, its whole default history, its own month limits from
-its first chain's start, and its expenses in that range. There is no cache, so no stale
+transaction: the category's chains, its whole default history, and its own month limits
+and expenses over only the range the call needs (SELLO-038 consumer boundary, "history
+needed"). A snapshot reads the chain covering the month, from its start through the
+month before; a drop reads the chain covering this month through this month; a limit
+check or correction reads the chains holding the months it touches; the history and the
+catch-up notice read every chain they show. There is no cache, so no stale
 cache needs fencing: a read is of exactly one revision, and the next read reads again.
-Cost is one indexed range read per carrying category, linear in its months and expenses
+Cost is one indexed range read per carrying category, linear in the months and expenses of that range
 (a decade of 100 expenses a month is about 12.000 rows, paged by 500). Categories without a
 chain cost one primary-key lookup in a command and nothing in a snapshot. A cache can be
 added later if a measurement asks for it; it would need the profile revision as its key.

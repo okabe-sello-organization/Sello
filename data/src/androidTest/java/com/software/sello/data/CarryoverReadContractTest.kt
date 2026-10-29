@@ -6,6 +6,7 @@ import com.software.sello.domain.model.BudgetStanding
 import com.software.sello.domain.model.CarryBreakdown
 import com.software.sello.domain.model.CarryChain
 import com.software.sello.domain.model.CarryoverFailure
+import com.software.sello.domain.model.DropPreview
 import com.software.sello.domain.model.LimitedBudget
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
@@ -20,8 +21,11 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CarryHistory
 import com.software.sello.domain.port.CarryReadFailure
 import com.software.sello.domain.port.CatchUpBatch
+import com.software.sello.domain.port.CategoryCommandOutcome
+import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.RecordedOccurrence
@@ -284,6 +288,92 @@ class CarryoverReadContractTest {
         assertEquals(
             Outcome.Failure(CarryReadFailure.Storage(damaged)),
             history(100, "2027-04")
+        )
+    }
+
+    /**
+     * SC19's shape: Comida carried ene–feb, was turned off with −20.000 and on again from abr.
+     * A month's carry-in and its drop read only the chain covering it (SELLO-038 consumer
+     * boundary): with ene's rows damaged, may's snapshot and the drop in may still work,
+     * while the replay of every chain, which must read ene, fails.
+     */
+    @Test
+    fun aMonthOfTheLatestChainNeedsNoHistoryOfAnEarlierChain() = runBlocking {
+        val comida = histories.category("Comida", 100_000, "2027-01-05")
+        histories.enable(comida, version = 1)
+        histories.spend(comida, "2027-01-10", 120_000)
+        ledger.goTo("2027-02-10")
+        ledger.categories.submit(
+            DisableCarry(ledger.operation(), 1, ledger.categoryId(comida), 2, cop(-20_000))
+        )
+        ledger.goTo("2027-04-03")
+        histories.enable(comida, version = 3)
+        histories.spend(comida, "2027-04-05", 30_000)
+        ledger.goTo("2027-05-10")
+        // Damage only in ene, the earlier chain: an expense of 0 and an unlimited own limit.
+        ledger.database.insertRaw(
+            "expense",
+            "id" to uuid(900),
+            "category_id" to uuid(comida),
+            "effective_date" to "2027-01-15",
+            "sequence" to 900L,
+            "amount_minor" to 0L,
+            "currency" to "COP",
+            "note" to null,
+            "version" to 1L,
+            "created_at" to 0L,
+            "updated_at" to 0L,
+            "origin_schedule_id" to null,
+            "origin_date" to null,
+            "origin_slot" to null
+        )
+        ledger.database.insertRaw(
+            "month_limit",
+            "category_id" to uuid(comida),
+            "month" to "2027-01",
+            "kind" to "unlimited",
+            "limit_minor" to null,
+            "currency" to "COP"
+        )
+
+        val may = snapshot("2027-05").valueOrFail().categories.single().budget!!
+        val asked = ledger.categories.submit(
+            DisableCarry(ledger.operation(), 1, ledger.categoryId(comida), 4)
+        )
+        val dropped = ledger.categories.submit(
+            DisableCarry(ledger.operation(), 1, ledger.categoryId(comida), 4, cop(70_000))
+        )
+        val everyChain = history(comida, "2027-05")
+
+        // abr: K 0, C 100.000, spent 30.000, R 70.000; may: K 70.000, C 170.000.
+        assertEquals(
+            CarryBreakdown(cop(100_000), cop(70_000), cop(170_000), month("2027-04")),
+            may.carry
+        )
+        assertEquals(
+            CategoryCommandOutcome.Rejected(
+                CategoryRejection.DropUnconfirmed(
+                    DropPreview(
+                        month("2027-05"),
+                        carryIn = cop(70_000),
+                        base = cop(100_000),
+                        capacityBefore = cop(170_000),
+                        capacityAfter = cop(100_000),
+                        remainingBefore = cop(170_000),
+                        remainingAfter = cop(100_000)
+                    )
+                )
+            ),
+            asked
+        )
+        assertTrue("$dropped", dropped is CategoryCommandOutcome.Committed)
+        assertEquals(
+            listOf("${uuid(comida)}|2027-01|2027-02", "${uuid(comida)}|2027-04|2027-05"),
+            ledger.chainRows()
+        )
+        assertTrue(
+            "$everyChain",
+            (everyChain as? Outcome.Failure)?.error is CarryReadFailure.Storage
         )
     }
 }

@@ -52,15 +52,13 @@ internal class CategoryCarry(
     private val month: YearMonth,
     private val today: LocalDate
 ) {
-    private class Loaded(val chains: List<CarryChain>, val rows: CarryRows?)
+    private var loaded: Outcome<List<CarryChain>, CategoryRejection>? = null
 
-    private var loaded: Outcome<Loaded, CategoryRejection>? = null
+    /** The category's chains, read once. */
+    private suspend fun load(): Outcome<List<CarryChain>, CategoryRejection> =
+        loaded ?: read().also { loaded = it }
 
-    private suspend fun load(): Outcome<Loaded, CategoryRejection> = loaded ?: read().also {
-        loaded = it
-    }
-
-    private suspend fun read(): Outcome<Loaded, CategoryRejection> {
+    private suspend fun read(): Outcome<List<CarryChain>, CategoryRejection> {
         val chains = when (val stored = database.carryChains(categoryId.value)) {
             is Outcome.Success -> stored.value
 
@@ -73,15 +71,21 @@ internal class CategoryCarry(
         if (chains.any { it.start > month }) {
             return Outcome.Failure(unavailable(CarryoverFailure.FutureMonth(month)))
         }
-        val rows = when (val stored = database.carryRows(categoryId, chains, month)) {
-            is Outcome.Success -> stored.value
-
-            is Outcome.Failure -> return Outcome.Failure(
-                CategoryRejection.StorageFailed(stored.error)
-            )
-        }
-        return Outcome.Success(Loaded(chains, rows))
+        return Outcome.Success(chains)
     }
+
+    /**
+     * The rows of [chains] from [from] through this month: only what the calculation asked
+     * for reads (SELLO-038 consumer boundary, "history needed").
+     */
+    private suspend fun rows(
+        chains: List<CarryChain>,
+        from: YearMonth
+    ): Outcome<CarryRows, CategoryRejection> =
+        when (val stored = database.carryRows(categoryId, chains, from, month)) {
+            is Outcome.Success -> stored
+            is Outcome.Failure -> Outcome.Failure(CategoryRejection.StorageFailed(stored.error))
+        }
 
     private fun unavailable(failure: CarryoverFailure) = CategoryRejection.CarryUnavailable(failure)
 
@@ -94,7 +98,7 @@ internal class CategoryCarry(
             is Outcome.Failure -> Outcome.Failure(unavailable(input.error))
         }
 
-    /** Whether every month up to this one can still be calculated (CP8, CP23). */
+    /** Whether every month of [input]'s chains up to this one can still be calculated (CP8, CP23). */
     private fun replays(input: CategoryCarryInput): CategoryRejection? =
         when (val replayed = SignedCarryoverPolicy.replay(input, month, month)) {
             is Outcome.Success -> null
@@ -107,11 +111,16 @@ internal class CategoryCarry(
      * is not zero must be exactly [confirmed]. [Unchanged] when no chain covers this month.
      */
     suspend fun drop(confirmed: Money?): CarryDecision {
-        val loaded = when (val read = load()) {
+        val chains = when (val read = load()) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }
-        val rows = loaded.rows ?: return CarryDecision.Unchanged
+        // Only the covering chain is replayed; every chain is passed, as the drop returns them all.
+        val covering = chains.covering(month) ?: return CarryDecision.Unchanged
+        val rows = when (val read = rows(chains, covering.start)) {
+            is Outcome.Success -> read.value
+            is Outcome.Failure -> return CarryDecision.Refused(read.error)
+        }
         val input = when (val read = rows.inputOrRefuse()) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return CarryDecision.Refused(read.error)
@@ -132,7 +141,7 @@ internal class CategoryCarry(
 
     /** Turning carry on in this month (CP2–CP4, CP25), for a category [archived] or not. */
     suspend fun enable(archived: Boolean): CarryDecision {
-        val loaded = when (val read = load()) {
+        val chains = when (val read = load()) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }
@@ -154,35 +163,24 @@ internal class CategoryCarry(
                 CategoryRejection.StorageFailed(read.error)
             )
         }
-        val chains = when (
+        return when (
             val decided = SignedCarryoverPolicy.enable(
                 categoryId,
                 archived,
                 month,
-                loaded.chains,
+                chains,
                 defaults,
                 own
             )
         ) {
-            is Outcome.Success -> decided.value
+            // The new chain starts now at 0 on a capped finite base, so its capacity fits;
+            // the chains before it ended earlier and are not changed (CP4).
+            is Outcome.Success -> CarryDecision.Chains(decided.value)
 
-            is Outcome.Failure ->
-                return CarryDecision.Refused(CategoryRejection.CarryRefused(decided.error))
-        }
-        // The chains as they will be must still calculate, earlier ones included.
-        val rows = when (val read = database.carryRows(categoryId, chains, month)) {
-            is Outcome.Success -> checkNotNull(read.value) { "A chain starting now was not read" }
-
-            is Outcome.Failure -> return CarryDecision.Refused(
-                CategoryRejection.StorageFailed(read.error)
+            is Outcome.Failure -> CarryDecision.Refused(
+                CategoryRejection.CarryRefused(decided.error)
             )
         }
-        val input = when (val read = rows.inputOrRefuse()) {
-            is Outcome.Success -> read.value
-            is Outcome.Failure -> return CarryDecision.Refused(read.error)
-        }
-        replays(input)?.let { return CarryDecision.Refused(it) }
-        return CarryDecision.Chains(chains)
     }
 
     /**
@@ -191,13 +189,18 @@ internal class CategoryCarry(
      * way to it, as the command does.
      */
     suspend fun finiteDefault(limit: BudgetLimit.Finite): CarryDecision {
-        val loaded = when (val read = load()) {
+        val chains = when (val read = load()) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }
-        val rows = loaded.rows ?: return CarryDecision.Unchanged
-        if (loaded.chains.any { it.covers(month) } && limit.amount.minorUnits > MAX_CHAIN_BASE) {
+        // A default from this month on reaches only the chain open in it.
+        val covering = chains.covering(month) ?: return CarryDecision.Unchanged
+        if (limit.amount.minorUnits > MAX_CHAIN_BASE) {
             return CarryDecision.Refused(CategoryRejection.ChainBaseAboveLimit(limit.amount))
+        }
+        val rows = when (val read = rows(listOf(covering), covering.start)) {
+            is Outcome.Success -> read.value
+            is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }
         val default = DefaultLimit(categoryId, month, AutomaticBudget.Limit(limit))
         val input = when (
@@ -225,12 +228,13 @@ internal class CategoryCarry(
         revision: Long,
         confirmedRevision: Long?
     ): CarryDecision {
-        val loaded = when (val read = load()) {
+        val chains = when (val read = load()) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }
-        val rows = loaded.rows ?: return CarryDecision.Unchanged
-        if (loaded.chains.none { it.covers(limitMonth) }) return CarryDecision.Unchanged
+        // A month's base reaches only the chain it is in: earlier chains end before it and
+        // later ones start again from 0 (CP4).
+        val covering = chains.covering(limitMonth) ?: return CarryDecision.Unchanged
         val finite = when (limit) {
             BudgetLimit.Unlimited ->
                 return CarryDecision.Refused(CategoryRejection.ChainMonthUnlimited(limitMonth))
@@ -239,6 +243,10 @@ internal class CategoryCarry(
         }
         if (finite.amount.minorUnits > MAX_CHAIN_BASE) {
             return CarryDecision.Refused(CategoryRejection.ChainBaseAboveLimit(finite.amount))
+        }
+        val rows = when (val read = rows(listOf(covering), covering.start)) {
+            is Outcome.Success -> read.value
+            is Outcome.Failure -> return CarryDecision.Refused(read.error)
         }
         val before = when (val read = rows.inputOrRefuse()) {
             is Outcome.Success -> read.value
@@ -303,10 +311,6 @@ internal suspend fun SelloDatabase.expenseCarry(
             return ExpenseRejection.CarryUnavailable(CarryoverFailure.FutureMonth(month))
         }
         val id = chains.first().categoryId
-        val rows = when (val stored = carryRows(id, chains, month)) {
-            is Outcome.Success -> stored.value ?: continue
-            is Outcome.Failure -> return ExpenseRejection.StorageFailed(stored.error)
-        }
         val (gone, put) = listOf(removed, added).map { candidate ->
             candidate?.takeIf { it.categoryId == category }?.let { row ->
                 when (val decoded = row.toDomain()) {
@@ -315,8 +319,16 @@ internal suspend fun SelloDatabase.expenseCarry(
                 }
             }
         }
-        // A change dated only before the first chain reaches no month of it (SC33).
-        if (listOfNotNull(gone, put).none { YearMonth.from(it.date) >= rows.from }) continue
+        // Only the chains holding the months the change touches can change: from the
+        // earliest of them through this month (SELLO-038 consumer boundary). A change in no
+        // chain month, such as one before the first chain, reaches none (SC33).
+        val touched = listOfNotNull(gone, put).map { YearMonth.from(it.date) }
+        val reached = chains.filter { chain -> touched.any { chain.covers(it) } }
+        val from = reached.minOfOrNull { it.start } ?: continue
+        val rows = when (val stored = carryRows(id, reached, from, month)) {
+            is Outcome.Success -> stored.value
+            is Outcome.Failure -> return ExpenseRejection.StorageFailed(stored.error)
+        }
         val before = when (val input = rows.input(today)) {
             is Outcome.Success -> input.value
             is Outcome.Failure -> return ExpenseRejection.CarryUnavailable(input.error)
