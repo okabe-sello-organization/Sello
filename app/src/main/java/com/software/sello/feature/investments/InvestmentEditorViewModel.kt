@@ -417,7 +417,7 @@ class InvestmentEditorViewModel(
         }
     }
 
-    /** The pesos typed for [field]: Primer aporte, or Otro valor for the rate too. */
+    /** The pesos typed for [field]: Primer aporte or Otro valor. */
     private fun cop(field: InvestmentField): String? =
         if (field == InvestmentField.First) form.copFirst else form.copValue
 
