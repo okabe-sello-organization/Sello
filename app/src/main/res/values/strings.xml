@@ -732,6 +732,7 @@
     <string name="backup_goals">Metas</string>
     <string name="backup_schedules">Pagos e ingresos fijos</string>
     <string name="backup_investments">Inversiones</string>
+    <string name="backup_carry_chains">Arrastres</string>
     <string name="backup_size">Archivo</string>
     <string name="backup_moment">%1$s, %2$s</string>
     <string name="backup_record_failed">No pudimos leer cuándo fue tu último respaldo. Puedes crear uno igual.</string>
@@ -767,6 +768,7 @@
     <string name="restore_rejected_newer">Lo hizo una versión más nueva de Sello. Actualiza Sello e inténtalo de nuevo. Tus datos no cambiaron.</string>
     <string name="restore_rejected_damaged">El archivo está incompleto o dañado. Tus datos no cambiaron.</string>
     <string name="restore_rejected_content">Tiene datos que Sello no acepta, como un monto fuera de rango. Tus datos no cambiaron.</string>
+    <string name="restore_rejected_carry">Usa el arrastre entre meses, que esta versión de Sello todavía no puede mostrar. Tus datos no cambiaron.</string>
     <string name="restore_choose_other">Elegir otro archivo</string>
     <string name="restore_preview_title">¿Reemplazar tus datos?</string>
     <string name="restore_preview_date">Respaldo del %1$s</string>
@@ -848,6 +850,10 @@
     <plurals name="restore_investments">
         <item quantity="one">%s inversión</item>
         <item quantity="other">%s inversiones</item>
+    </plurals>
+    <plurals name="restore_carry_chains">
+        <item quantity="one">%s arrastre entre meses</item>
+        <item quantity="other">%s arrastres entre meses</item>
     </plurals>
     <!-- Joins what a backup holds: "2 categorías, 3 gastos y 1 ingreso". -->
     <string name="restore_list_two">%1$s y %2$s</string>

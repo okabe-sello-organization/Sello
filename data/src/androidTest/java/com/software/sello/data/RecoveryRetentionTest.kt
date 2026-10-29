@@ -17,6 +17,8 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
@@ -24,9 +26,11 @@ import com.software.sello.domain.port.ResetOutcome
 import com.software.sello.domain.port.RestoreOutcome
 import java.io.File
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -263,9 +267,20 @@ class RecoveryRetentionTest {
         assertEquals("America/Lima|3", profile(old))
 
         // 2. Its backup holds exactly that history and the person's preferences.
-        val prepared = upgraded.backupExports(chosen, chosen, HandInvestmentPreferences(), {
-            at
-        }, dispatchers).prepare()
+        val financialDay =
+            MutableStateFlow(FinancialDay(LocalDate.of(2026, 10, 22), ZoneId.of("America/Lima")))
+        val prepared = upgraded.backupExports(
+            chosen,
+            chosen,
+            HandInvestmentPreferences(),
+            {
+                at
+            },
+            object : FinancialClock {
+                override val today = financialDay
+            },
+            dispatchers
+        ).prepare()
             .valueOrFail()
         assertEquals(
             BackupSummary(categories = 3, expenses = 5, incomes = 2, 0, 0),

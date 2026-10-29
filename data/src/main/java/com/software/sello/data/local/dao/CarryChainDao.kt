@@ -22,6 +22,9 @@ interface CarryChainDao {
     )
     suspend fun all(afterCategoryId: String, afterStart: String, limit: Int): List<CarryChainEntity>
 
+    @Query("SELECT COUNT(*) FROM carry_chain")
+    suspend fun count(): Int
+
     @Insert
     suspend fun insertAll(chains: List<CarryChainEntity>)
 

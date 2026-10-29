@@ -137,6 +137,7 @@ class RestoreCommandContractTest {
     private fun g01(preferences: PortablePreferences? = wanted) = BackupCodec().encode(
         BackupContents(
             exportedAt = Instant.parse("2026-10-22T14:30:00Z"),
+            financialMonth = YearMonth.of(2026, 10),
             financial = FinancialSnapshot(
                 zone = lima,
                 revision = 9,
@@ -159,7 +160,8 @@ class RestoreCommandContractTest {
                 featuredGoal = null,
                 schedules = emptyList(),
                 investments = emptyList(),
-                usdRates = emptyList()
+                usdRates = emptyList(),
+                carryChains = emptyList()
             ),
             preferences = preferences
         )
@@ -331,7 +333,7 @@ class RestoreCommandContractTest {
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
         val newer = restores().stage(
-            String(bytes).replaceFirst("\"version\": 5", "\"version\": 6").toByteArray()
+            String(bytes).replaceFirst("\"version\": 6", "\"version\": 7").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)

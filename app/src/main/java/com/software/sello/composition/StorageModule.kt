@@ -116,7 +116,7 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<ScheduleReads> { storage.scheduleReads }
     single<ScheduleRecordReads> { storage.scheduleRecordReads }
     single<ScheduleCatchUpStore> { storage.scheduleCatchUp(get(), get()) }
-    single<BackupExports> { storage.backupExports(get(), get(), get(), get(), get()) }
+    single<BackupExports> { storage.backupExports(get(), get(), get(), get(), get(), get()) }
     single<DataExports> { storage.dataExports(get(), get()) }
     single<Restores> { storage.restores(get(), get(), get(), get(), get(), get(), get()) }
     // A new history after an erase takes the device's zone, read when the erase commits.
