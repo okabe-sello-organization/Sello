@@ -258,8 +258,9 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   Features map domain models to presentation primitives for design-system APIs.
   **SHOULD** reuse a design-system component when one fits; otherwise build it inside
   the feature, and promote it to `:design-system` when a second feature needs it.
-- **MUST** handle loading, empty, error, busy, restored drafts and 2× font scale on
-  every new or changed screen. Reduced motion and adaptive layouts
+- **MUST** handle loading, empty, error, busy and restored drafts on every new or
+  changed screen. Screens use one layout at every font size: large text (font scale
+  above 1.0) is not supported and gets no layout of its own. Reduced motion and adaptive layouts
   (landscape/medium/expanded) are delivered as their own tasks unless a ticket says
   otherwise.
 - **MUST** apply the [design philosophy](docs/design/philosophy.md): lead home with

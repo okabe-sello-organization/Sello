@@ -111,8 +111,8 @@ and `CommandRunTest.kt`; a feature's contract test (`GoalCommandContractTest`) c
   field, and Root reacts to it (`LaunchedEffect(state.closed) { if (state.closed) onClosed() }`).
   Local `remember` state is for ephemeral visuals only.
 - **Required states.** Loading, empty, error (nothing ever loaded) and stale (failed
-  read with last good figures), busy (controls held while saving), restored drafts, and
-  2× font. A screen test and a screenshot at font scale 2 cover the last.
+  read with last good figures), busy (controls held while saving) and restored drafts.
+  Screens have one layout at every font size; large text is not supported.
 - **Copy** is in `app/src/main/res/values/strings.xml`, never a literal in code.
   Amounts use `MoneyFormatter` and `MoneyTextValue`; keep the full exact amount.
 - **Components.** Reuse a design-system component when one fits. Otherwise build it in the
@@ -120,8 +120,8 @@ and `CommandRunTest.kt`; a feature's contract test (`GoalCommandContractTest`) c
   with its own screenshot test.
 - **Themes.** A theme is data. To add one, follow the recipe in
   [layout-and-charts](layout-and-charts.md#themes); never branch on a theme in a screen.
-- **Look and layout.** A visible change gets a mock for approval first (AGENTS.md).
-  Design is [Sello v2](../design/v2/README.md). Reduced motion and tablet/landscape are
+- **Look and layout.** Follow the design, [Sello v2](../design/v2/README.md); a mock
+  for approval only when the design doesn't cover the change (AGENTS.md). Reduced motion and tablet/landscape are
   separate tasks unless the ticket asks.
 
 ## 6. Schema changes
@@ -144,7 +144,7 @@ Test at the cheapest layer that proves it ([quality gates](quality-gates.md)).
 | Domain policy | `domain/src/test/kotlin/…/policy/` (`GoalPolicyTest`) | JVM. Expected money is a literal worked by hand, ideally from the examples in `docs/testing/` |
 | ViewModel | `app/src/test/…/feature/<name>/` (`GoalMovementViewModelTest`) | JVM with hand-written fakes and a controlled clock; assert State after each Action |
 | Screen | same folder (`GoalMovementScreenTest`) | JVM, Robolectric: `@RunWith(AndroidJUnit4::class)`, `createComposeRule()`, `rule.showSello(Look(…)) { Screen(state) {} }`, from State given by hand |
-| Screenshot | same folder (`GoalMovementScreenshotTest`) | Roborazzi: `rule.captureStill("src/test/screenshots/<name>-${look.label}.png")`, Cobalto light, Cobalto dark at font 2, Violeta light |
+| Screenshot | same folder (`GoalMovementScreenshotTest`) | Roborazzi: `rule.captureStill("src/test/screenshots/<name>-${look.label}.png")`, Cobalto light, Cobalto dark, Violeta light |
 | Storage | `data/src/androidTest/…/data/` (`GoalCommandContractTest`, `GoalStorageTest`) | Real Room on a device: atomicity, replay, rollback, restore |
 | Device journey | `app/src/androidTestDebug/` | Critical paths only. A feature adds none by default; open a task for it |
 
@@ -185,7 +185,7 @@ outside `src/debug`. See [sandbox](sandbox.md).
       `scripts/check --fast` passes (tickets, links, architecture).
 - [ ] Money, storage or recovery change: the checklist in section 3 is covered, or the pull
       request says which items do not apply.
-- [ ] Visible change: screenshots re-recorded, and the mock was approved.
+- [ ] Visible change: matches the design, or its mock was approved; screenshots re-recorded.
 - [ ] Schema change: migration, exported schema, retention test and backup check (section 6).
 - [ ] Review category: money rules, storage or schema, backup, recovery, privacy, CI or gates
       get an adversarial review by a separate agent ([orchestration](orchestration.md)); other

@@ -17,7 +17,9 @@ approved by the owner: propose a change in your report, never make it inside oth
   real, whether to fix it, the effort from 0 to 10, and challenges the proposed fix. A
   feature brief gives the gist, old versus new, the approach, and each pitfall with how
   to avoid it.
-- **Changes to how something looks or is laid out:** show a mock for approval first.
+- **Changes to how something looks or is laid out:** follow the approved design
+  ([Sello v2](docs/design/v2/README.md)); a visual bug is often a screen that drifted
+  from it. Show a mock for approval only when the design doesn't cover the change.
 - **Decisions the ticket leaves open:** ask only about money, privacy, data-deleting
   behaviour or conflicting requirements. Decide the rest yourself and record the
   choice in the pull request.
@@ -61,9 +63,10 @@ ARCHITECTURE §4–§5 have the detail. The short version:
   Constructor-inject collaborators, clocks, dispatchers and scopes.
 - Screens use an immutable State, Actions in, durable results kept in State (no event
   channels), a ViewModel, and a Root/Screen split.
-- Every new or changed screen handles loading, empty, error and busy states, restored
-  drafts and 2× font. Reduced motion and tablet/landscape layouts are separate tasks
-  unless the ticket asks for them.
+- Every new or changed screen handles loading, empty, error and busy states and
+  restored drafts. Screens use one layout at every font size; large text is not
+  supported. Reduced motion and tablet/landscape layouts are separate tasks unless the
+  ticket asks for them.
 - Reuse a design-system component when one fits; otherwise build it in the feature and
   move it to `:design-system` when a second feature needs it.
 - Add a sandbox scenario only when it helps the owner test a new flow or failure by
