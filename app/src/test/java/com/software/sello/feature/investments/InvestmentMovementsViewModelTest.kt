@@ -51,6 +51,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -697,12 +698,18 @@ class InvestmentMovementsViewModelTest {
         first.act(InvestmentMovementsAction.Submit)
         gate.completeExceptionally(CancellationException("process ending"))
 
+        // Cancelled is not an answer: the first screen stays busy, with no error.
+        assertTrue(first.now.busy)
+        assertNull(first.now.error)
+        val operation = saved.get<String>("investment.movements.operation")
+        assertNotNull(operation)
+
         hand.found = Outcome.Success(null)
         val restored = model(saved = saved)
 
         // It is only asked about, with its own operation, and never sent again by itself.
         assertTrue(sent.isEmpty())
-        assertEquals(1, hand.asked.size)
+        assertEquals(listOf(operation), hand.asked.map { it.value })
         assertEquals(InvestmentMovementsError.NotSaved, restored.now.error)
         assertEquals(3, restored.now.counted)
         assertTrue(restored.now.canSubmit)
