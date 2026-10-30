@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -258,17 +261,28 @@ private fun Movements(
                 }
             )
         }
-        if (!state.allMovements && state.movements.size > SHORT_LIST) {
+        // The foot (v2 *Anotar varios*): Varios movimientos, and Ver los N while some are hidden.
+        Row(verticalAlignment = Alignment.CenterVertically) {
             SelloButton(
-                pluralStringResource(
-                    R.plurals.investment_movements_all,
-                    state.movements.size,
-                    state.movements.size
-                ),
-                { onAction(InvestmentDetailAction.ShowAllMovements) },
-                Modifier.testTag("investment.showAll"),
-                kind = ButtonKind.Text
+                stringResource(R.string.investment_movements_title),
+                { onAction(InvestmentDetailAction.RecordSeveral) },
+                Modifier.testTag(INVESTMENT_RECORD_SEVERAL_TAG),
+                kind = ButtonKind.Text,
+                icon = SelloIcon.ReceiptLong
             )
+            Spacer(Modifier.weight(1f))
+            if (!state.allMovements && state.movements.size > SHORT_LIST) {
+                SelloButton(
+                    pluralStringResource(
+                        R.plurals.investment_movements_all,
+                        state.movements.size,
+                        state.movements.size
+                    ),
+                    { onAction(InvestmentDetailAction.ShowAllMovements) },
+                    Modifier.testTag("investment.showAll"),
+                    kind = ButtonKind.Text
+                )
+            }
         }
     }
 }
@@ -277,3 +291,4 @@ private const val SHORT_LIST = 4
 
 const val INVESTMENT_DETAIL_TAG = "investment.detail"
 const val INVESTMENT_RECORD_VALUE_TAG = "investment.recordValue"
+const val INVESTMENT_RECORD_SEVERAL_TAG = "investment.recordSeveral"

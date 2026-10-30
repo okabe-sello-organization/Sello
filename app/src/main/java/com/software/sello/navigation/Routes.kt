@@ -42,6 +42,10 @@ data class InvestmentMovementRoute(
     val movementId: String? = null
 )
 
+/** Varios movimientos: several movements of [investmentId] on one receipt. */
+@Serializable
+data class InvestmentMovementsRoute(val investmentId: String)
+
 /** Dólar: the current USD rate and the earlier ones, from Configuración or Inversiones. */
 @Serializable
 data object UsdRateRoute

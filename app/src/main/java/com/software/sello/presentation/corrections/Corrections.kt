@@ -221,6 +221,13 @@ sealed interface CorrectionNotice {
         val kind: InvestmentMovementKind,
         val amount: MoneyTextValue?
     ) : InvestmentMovementNotice
+
+    /**
+     * A receipt of [count] movements storage confirmed (SELLO-134): "3 movimientos
+     * anotados en Ecopetrol". [investmentName] is null when it could not be read back.
+     */
+    data class InvestmentMovementsRecorded(val count: Int, val investmentName: String?) :
+        InvestmentMovementNotice
 }
 
 /** What is said about an investment's movement (SELLO-110), drawn in its own words. */
@@ -873,6 +880,10 @@ class Corrections(
     /** A screen reports a new investment movement its receipt confirmed. */
     fun investmentMovementRecorded(notice: CorrectionNotice.InvestmentMovementRecorded) =
         said(notice)
+
+    /** A screen reports a receipt of several investment movements its receipt confirmed. */
+    fun investmentMovementsRecorded(count: Int, investmentName: String?) =
+        said(CorrectionNotice.InvestmentMovementsRecorded(count, investmentName))
 
     /**
      * Marks a goal lograda and offers Deshacer, in its name, for the time [command] asked.

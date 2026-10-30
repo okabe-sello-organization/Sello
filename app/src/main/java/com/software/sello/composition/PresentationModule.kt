@@ -33,6 +33,7 @@ import com.software.sello.feature.investments.InversionesViewModel
 import com.software.sello.feature.investments.InvestmentDetailViewModel
 import com.software.sello.feature.investments.InvestmentEditorViewModel
 import com.software.sello.feature.investments.InvestmentMovementViewModel
+import com.software.sello.feature.investments.InvestmentMovementsViewModel
 import com.software.sello.feature.investments.UsdRateEntryViewModel
 import com.software.sello.feature.investments.UsdRateViewModel
 import com.software.sello.feature.recibo.AdjustBudgetViewModel
@@ -121,6 +122,7 @@ private fun Module.viewModels() {
     factoryOf(::InvestmentDetailViewModel)
     factoryOf(::InvestmentEditorViewModel)
     factoryOf(::InvestmentMovementViewModel)
+    factoryOf(::InvestmentMovementsViewModel)
     factoryOf(::UsdRateEntryViewModel)
     factoryOf(::MetasViewModel)
     factoryOf(::GoalEditorViewModel)
