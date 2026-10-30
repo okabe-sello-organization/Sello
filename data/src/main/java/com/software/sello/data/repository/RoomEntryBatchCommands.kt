@@ -8,6 +8,7 @@ import com.software.sello.data.mapper.StoredReceipt
 import com.software.sello.data.mapper.toDomain
 import com.software.sello.data.mapper.toEntity
 import com.software.sello.data.mapper.toStored
+import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.ExactTotal
 import com.software.sello.domain.model.Expense
@@ -33,10 +34,12 @@ import com.software.sello.domain.port.CreateIncomes
 import com.software.sello.domain.port.ExpenseBatchCommands
 import com.software.sello.domain.port.ExpenseBatchOutcome
 import com.software.sello.domain.port.ExpenseBatchRejection
+import com.software.sello.domain.port.ExpenseLine
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.IncomeBatchCommands
 import com.software.sello.domain.port.IncomeBatchOutcome
 import com.software.sello.domain.port.IncomeBatchRejection
+import com.software.sello.domain.port.IncomeLine
 import com.software.sello.domain.port.LineRefusal
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RefusedLine
@@ -83,14 +86,19 @@ class RoomExpenseBatchCommands internal constructor(
             return Rejected(Specific(ExpenseBatchRejection.LineCount(command.lines.size)))
         }
         val today = clock.today.value.date
-        val refused = dateRefusal(command.date, today)
-            ?.let { reason -> command.lines.indices.associateWith { reason } }
-            ?: when (val checked = lineRefusals(command)) {
-                is Outcome.Success -> checked.value
-                is Outcome.Failure -> return storageFailed(checked.error)
-            }
+        val refused = when (
+            val checked = expenseLineRefusals(
+                command.date,
+                today,
+                command.lines,
+                ::categoryRefusal
+            ) { month -> database.monthExpenses(month).amounts { it.amount.money } }
+        ) {
+            is Outcome.Success -> checked.value
+            is Outcome.Failure -> return storageFailed(checked.error)
+        }
         if (refused.isNotEmpty()) {
-            return Rejected(Specific(ExpenseBatchRejection.Lines(refusedLines(refused))))
+            return Rejected(Specific(ExpenseBatchRejection.Lines(refused)))
         }
 
         val now = audit.now()
@@ -151,41 +159,17 @@ class RoomExpenseBatchCommands internal constructor(
         return Committed(committed(receipt), replayed = false)
     }
 
-    /**
-     * Each line's category, then the month's total, by position. A category is read once
-     * however many lines name it; one that cannot be read fails the command.
-     */
-    private suspend fun lineRefusals(
-        command: CreateExpenses
-    ): Outcome<Map<Int, LineRefusal>, StorageFailure> {
-        val categories = mutableMapOf<String, LineRefusal?>()
-        val refused = mutableMapOf<Int, LineRefusal>()
-        command.lines.forEachIndexed { position, line ->
-            val key = line.categoryId.value
-            val reason = if (key in categories) {
-                categories[key]
-            } else {
-                val row = database.categoryDao().byId(key)
-                val found = when (val stored = row?.toDomain()) {
-                    null -> LineRefusal.CategoryMissing
+    /** Why no line can go into [id], or null when every line can; read once per receipt. */
+    private suspend fun categoryRefusal(id: CategoryId): Outcome<LineRefusal?, StorageFailure> =
+        when (val stored = database.categoryDao().byId(id.value)?.toDomain()) {
+            null -> Outcome.Success(LineRefusal.CategoryMissing)
 
-                    is Outcome.Failure -> return stored
+            is Outcome.Failure -> stored
 
-                    is Outcome.Success ->
-                        LineRefusal.CategoryArchived.takeIf { stored.value.archived }
-                }
-                found.also { categories[key] = it }
-            }
-            if (reason != null) refused[position] = reason
+            is Outcome.Success -> Outcome.Success(
+                LineRefusal.CategoryArchived.takeIf { stored.value.archived }
+            )
         }
-        val recorded = when (val month = database.monthExpenses(YearMonth.from(command.date))) {
-            is Outcome.Success -> month.value.map { it.amount.money }
-            is Outcome.Failure -> return month
-        }
-        monthTotalRefusals(recorded, command.lines.map { it.amount.money })
-            .forEach { refused.putIfAbsent(it, LineRefusal.MonthTotalFull) }
-        return Outcome.Success(refused)
-    }
 
     override suspend fun find(
         operationId: OperationId
@@ -231,18 +215,18 @@ class RoomIncomeBatchCommands internal constructor(
         if (!EntryBatchPolicy.holds(command.lines.size)) {
             return Rejected(Specific(IncomeBatchRejection.LineCount(command.lines.size)))
         }
-        val refused = dateRefusal(command.date, clock.today.value.date)
-            ?.let { reason -> command.lines.indices.associateWith { reason } }
-            ?: when (val month = database.monthIncomes(YearMonth.from(command.date))) {
-                is Outcome.Failure -> return storageFailed(month.error)
-
-                is Outcome.Success -> monthTotalRefusals(
-                    month.value.map { it.amount.money },
-                    command.lines.map { it.amount.money }
-                ).associateWith { LineRefusal.MonthTotalFull }
-            }
+        val refused = when (
+            val checked = incomeLineRefusals(
+                command.date,
+                clock.today.value.date,
+                command.lines
+            ) { month -> database.monthIncomes(month).amounts { it.amount.money } }
+        ) {
+            is Outcome.Success -> checked.value
+            is Outcome.Failure -> return storageFailed(checked.error)
+        }
         if (refused.isNotEmpty()) {
-            return Rejected(Specific(IncomeBatchRejection.Lines(refusedLines(refused))))
+            return Rejected(Specific(IncomeBatchRejection.Lines(refused)))
         }
 
         val now = audit.now()
@@ -295,6 +279,81 @@ class RoomIncomeBatchCommands internal constructor(
         CommittedIncomes(stored.receipt, stored.incomeIds)
 }
 
+/**
+ * Every line of a receipt of expenses dated [date] that cannot be recorded on [today], in
+ * line order. A date no line can have refuses every line and reads nothing. Otherwise a line
+ * is refused for its category, which [category] judges once however many lines name it, and
+ * then for the total of the receipt's month, whose recorded amounts [recordedIn] gives.
+ */
+internal suspend fun expenseLineRefusals(
+    date: LocalDate,
+    today: LocalDate,
+    lines: List<ExpenseLine>,
+    category: suspend (CategoryId) -> Outcome<LineRefusal?, StorageFailure>,
+    recordedIn: suspend (YearMonth) -> Outcome<List<Money>, StorageFailure>
+): Outcome<List<RefusedLine>, StorageFailure> {
+    dateRefusal(date, today)?.let { reason -> return everyLine(lines.size, reason) }
+    val judged = mutableMapOf<CategoryId, LineRefusal?>()
+    val refused = mutableMapOf<Int, LineRefusal>()
+    lines.forEachIndexed { position, line ->
+        val reason = if (line.categoryId in judged) {
+            judged[line.categoryId]
+        } else {
+            when (val read = category(line.categoryId)) {
+                is Outcome.Failure -> return read
+                is Outcome.Success -> read.value.also { judged[line.categoryId] = it }
+            }
+        }
+        if (reason != null) refused[position] = reason
+    }
+    return withMonthTotal(date, lines.map { it.amount.money }, refused, recordedIn)
+}
+
+/**
+ * Every line of a receipt of incomes that cannot be recorded, in line order, as
+ * [expenseLineRefusals] has them for expenses, with no category.
+ */
+internal suspend fun incomeLineRefusals(
+    date: LocalDate,
+    today: LocalDate,
+    lines: List<IncomeLine>,
+    recordedIn: suspend (YearMonth) -> Outcome<List<Money>, StorageFailure>
+): Outcome<List<RefusedLine>, StorageFailure> {
+    dateRefusal(date, today)?.let { reason -> return everyLine(lines.size, reason) }
+    return withMonthTotal(date, lines.map { it.amount.money }, emptyMap(), recordedIn)
+}
+
+private fun everyLine(count: Int, reason: LineRefusal) =
+    Outcome.Success(List(count) { RefusedLine(it, reason) })
+
+/**
+ * [refused] in line order, with every other line the month of [date] cannot take in (COP, as
+ * recorded) refused for its total. A line already refused keeps its first reason.
+ */
+private suspend fun withMonthTotal(
+    date: LocalDate,
+    amounts: List<Money>,
+    refused: Map<Int, LineRefusal>,
+    recordedIn: suspend (YearMonth) -> Outcome<List<Money>, StorageFailure>
+): Outcome<List<RefusedLine>, StorageFailure> {
+    val recorded = when (val month = recordedIn(YearMonth.from(date))) {
+        is Outcome.Success -> month.value
+        is Outcome.Failure -> return month
+    }
+    val all = refused.toMutableMap()
+    EntryBatchPolicy.overflowing(ExactTotal.of(Currency.COP, recorded), amounts)
+        .forEach { all.putIfAbsent(it, LineRefusal.MonthTotalFull) }
+    return Outcome.Success(all.entries.sortedBy { it.key }.map { RefusedLine(it.key, it.value) })
+}
+
+/** The amounts of the records [this] read, or its failure. */
+private inline fun <T> Outcome<List<T>, StorageFailure>.amounts(
+    amount: (T) -> Money
+): Outcome<List<Money>, StorageFailure> = when (this) {
+    is Outcome.Success -> Outcome.Success(value.map(amount))
+    is Outcome.Failure -> this
+}
+
 /** Why no line can be dated [date] on [today], or null when every line can. */
 private fun dateRefusal(date: LocalDate, today: LocalDate): LineRefusal? =
     when (val checked = EffectiveDates.forManualEntry(date, today)) {
@@ -308,10 +367,3 @@ private fun dateRefusal(date: LocalDate, today: LocalDate): LineRefusal? =
             is EffectiveDateError.Malformed -> LineRefusal.InvalidDate
         }
     }
-
-/** The positions of [lines] the month holding [recorded] cannot take in (COP, as recorded). */
-private fun monthTotalRefusals(recorded: List<Money>, lines: List<Money>): List<Int> =
-    EntryBatchPolicy.overflowing(ExactTotal.of(Currency.COP, recorded), lines)
-
-private fun refusedLines(refused: Map<Int, LineRefusal>): List<RefusedLine> =
-    refused.entries.sortedBy { it.key }.map { RefusedLine(it.key, it.value) }

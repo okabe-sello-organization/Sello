@@ -62,16 +62,18 @@ class EntryBatchReceiptTest {
     }
 
     @Test
-    fun thirtyRecordsAreHeldAndThirtyOneAreDamage() {
-        val thirty = (100 until 130).joinToString(",") { id(it) }
+    fun aStoredReceiptReadsWithMoreRecordsThanACommandMayHold() {
+        // 45 records, beyond the command limit of 30: a stored receipt is never re-judged by it.
+        val records = (100 until 145).map { id(it) }
+        val subject = records.joinToString(",")
 
         assertEquals(
-            30,
-            receipt(OperationKind.CreateExpenses, thirty).toStored().value().expenseIds.size
+            records.map { ExpenseId.of(it).value() },
+            receipt(OperationKind.CreateExpenses, subject).toStored().value().expenseIds
         )
         assertEquals(
-            damaged,
-            receipt(OperationKind.CreateExpenses, "$thirty,${id(130)}").toStored()
+            records.map { IncomeId.of(it).value() },
+            receipt(OperationKind.CreateIncomes, subject).toStored().value().incomeIds
         )
     }
 

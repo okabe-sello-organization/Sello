@@ -13,7 +13,6 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.UsdRateId
-import com.software.sello.domain.policy.EntryBatchPolicy
 import java.time.Instant
 
 /**
@@ -42,13 +41,13 @@ private val sha256Hex = Regex("[0-9a-f]{64}")
 
 /**
  * The subjects of a receipt of several entries, as its command stores them: each
- * identifier in line order, joined by [SUBJECT_SEPARATOR], from one to
- * [EntryBatchPolicy.MAX_LINES] of them, none twice.
+ * identifier in line order, joined by [SUBJECT_SEPARATOR], one or more, none twice. The
+ * command's line limit is not checked here: a receipt stored under a higher limit must
+ * still read, or its outcome could never be found.
  */
 private fun <T> RowDecoder.subjects(subject: String, id: (String) -> Outcome<T, *>): List<T> {
-    val parts = subject.split(SUBJECT_SEPARATOR)
-    check("subject_id", EntryBatchPolicy.holds(parts.size))
-    val ids = parts.map { valid("subject_id", id(it)) }
+    // An empty subject splits into one empty identifier, which is not valid.
+    val ids = subject.split(SUBJECT_SEPARATOR).map { valid("subject_id", id(it)) }
     check("subject_id", ids.toSet().size == ids.size)
     return ids
 }

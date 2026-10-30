@@ -25,6 +25,7 @@ import com.software.sello.domain.port.CreateIncomes
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.EditExpense
+import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.ExpenseBatchOutcome
 import com.software.sello.domain.port.ExpenseBatchRejection
 import com.software.sello.domain.port.ExpenseLine
@@ -702,25 +703,52 @@ class EntryBatchCommandContractTest {
     }
 
     @Test
-    fun aReceiptOfIncomesSurvivesARestartAndConflictsWithOtherInput() = runBlocking {
-        ledger.start()
-        ledger.incomeBatches.create(incomes())
-
-        ledger.reopen()
-
-        assertEquals(
-            Outcome.Success(committedIncomes(1, 100, 101)),
-            ledger.incomeBatches.find(incomeOp)
-        )
-        assertEquals(
-            Committed(committedIncomes(1, 100, 101), replayed = true),
+    fun aReceiptOfIncomesSurvivesARestartAndItsIncomesAreEditedAndDeletedLikeAnyOther() =
+        runBlocking {
+            ledger.start()
             ledger.incomeBatches.create(incomes())
-        )
-        assertEquals(
-            Rejected(CommandRejection.OperationConflict),
-            ledger.incomeBatches.create(incomes(lines = listOf(venta, salary(3_000_000))))
-        )
-        assertEquals(2, incomeRows().size)
-        assertEquals(1, ledger.revision())
-    }
+
+            ledger.reopen()
+
+            assertEquals(
+                Outcome.Success(committedIncomes(1, 100, 101)),
+                ledger.incomeBatches.find(incomeOp)
+            )
+            val edited = ledger.incomes.edit(
+                EditIncome(
+                    ledger.operation(),
+                    1,
+                    IncomeId.of(uuid(100)).valueOrFail(),
+                    1,
+                    transactionPesos(2_900_000),
+                    IncomeSource.Salary,
+                    LocalDate.parse("2026-10-01"),
+                    Note.of("Prima").valueOrFail()
+                )
+            )
+            val deleted = ledger.incomes.delete(
+                DeleteIncome(ledger.operation(), 1, IncomeId.of(uuid(101)).valueOrFail(), 1)
+            )
+            val month = ledger.incomeReads.month(YearMonth.of(2026, 10)).valueOrFail()
+
+            assertTrue("$edited", edited is Committed)
+            assertTrue("$deleted", deleted is Committed)
+            assertEquals(
+                listOf("${uuid(100)}|2026-10-01|1|2900000|COP|salary|null|Prima"),
+                incomeRows()
+            )
+            // 2.900.000 in one income: the edit counts, the deleted 50.000 does not.
+            assertEquals(Money.cop(2_900_000) to 1, month.total to month.count)
+            // A replay still names the receipt's own incomes, whatever happened to them since.
+            assertEquals(
+                Committed(committedIncomes(1, 100, 101), replayed = true),
+                ledger.incomeBatches.create(incomes())
+            )
+            assertEquals(
+                Rejected(CommandRejection.OperationConflict),
+                ledger.incomeBatches.create(incomes(lines = listOf(venta, salary(3_000_000))))
+            )
+            assertEquals(1, incomeRows().size)
+            assertEquals(3, ledger.revision())
+        }
 }
