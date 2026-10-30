@@ -254,6 +254,107 @@ class HistoryLoadTest {
     }
 
     @Test
+    fun sixMonthsOfEverything() {
+        val six = load(Scenarios.SixMonths)
+
+        // October to the 24th: rent 1.200.000, the gym 120.000 on the 15th, the bus on 7,
+        // 14 and 21 October, Luna 90.000 on the 14th, Mercado 460.000 + 290.000, Salidas
+        // 230.000 and Farmacia 45.000, against 1.500.000 + 900.000 + 250.000 + 300.000 +
+        // 150.000 + 200.000 + 200.000; Salud has no limit and Ocio is archived.
+        val october = six.month(2026, 10)
+        assertEquals(pesos(2_525_000), october.spent)
+        assertEquals(pesos(3_500_000), october.limited().budget.limit)
+        assertEquals(pesos(975_000), october.limited().budget.remaining)
+        // Still due: internet 95.000 and the bus 30.000 on the 28th.
+        val reservation = checkNotNull(october.limited().reservation)
+        assertEquals(pesos(125_000), reservation.total)
+        assertEquals(pesos(850_000), reservation.margin)
+        // The quincena of the 15th and 150.000 of passive income; the 30th still expected.
+        val summary = six.summary(2026, 10)
+        assertEquals(pesos(2_350_000), summary.income)
+        assertEquals(pesos(-175_000), summary.netFlow)
+        assertEquals(pesos(-1_150_000), summary.unallocated)
+        val book = runBlocking { six.koin.get<ScheduleReads>().book().value() }
+        val plan = IncomePlanPolicy.plan(
+            summary.income,
+            summary.allocated,
+            IncomePlanPolicy.expected(book.schedules, YearMonth.of(2026, 10))
+        ).value()
+        assertEquals(pesos(2_200_000), plan?.expected)
+        assertEquals(pesos(4_550_000), plan?.planned)
+        assertEquals(pesos(1_050_000), plan?.unassigned)
+
+        // August: Salidas 600.000 that month only, the gym paused, Ocio archived on the 1st
+        // but keeping its 150.000 that month (ADR 0001). Rent, internet, four buses, Luna,
+        // the phone, Mercado 780.000, Salidas 540.000 and Farmacia 45.000.
+        val august = six.month(2026, 8)
+        assertEquals(pesos(3_020_000), august.spent)
+        assertEquals(pesos(3_950_000), august.limited().budget.limit)
+        assertEquals(pesos(930_000), august.limited().budget.remaining)
+        assertEquals(pesos(60_000), august.category("Salidas").budget?.remaining)
+        // Two quincenas and 650.000 freelance.
+        assertEquals(pesos(5_050_000), six.summary(2026, 8).income)
+        // September: the duplicated meal deleted and 350.000 corrected to 305.000.
+        val september = six.month(2026, 9)
+        assertEquals(pesos(2_820_000), september.spent)
+        assertEquals(pesos(680_000), september.limited().budget.remaining)
+        assertEquals(
+            listOf("Ocio|1"),
+            six.rows("SELECT name, archived FROM category WHERE archived = 1")
+        )
+        // Paused on 1 July, resumed on 1 September: no gym in July or August.
+        assertEquals(
+            listOf("2026-04-15", "2026-05-15", "2026-06-15", "2026-09-15", "2026-10-15"),
+            six.rows("SELECT effective_date FROM expense WHERE note = 'Gimnasio' ORDER BY 1")
+        )
+        // Six instalments, the last on its end date.
+        assertEquals(
+            listOf(
+                "2026-04-20",
+                "2026-05-20",
+                "2026-06-20",
+                "2026-07-20",
+                "2026-08-20",
+                "2026-09-20"
+            ),
+            six.rows(
+                "SELECT effective_date FROM expense WHERE note = 'Cuota del celular' ORDER BY 1"
+            )
+        )
+
+        // Goals: 6 × 300.000 − 400.000; 7 × 500.000 on Recibo; 4 × 150.000 lograda.
+        val goals: GoalBoard = runBlocking { six.koin.get<GoalReads>().board().value() }
+        fun goal(name: String) = goals.goals.single { it.history.goal.name.value == name }
+        assertEquals(pesos(1_400_000), goal("Viaje a Cartagena").progress.saved)
+        assertEquals(pesos(3_500_000), goal("Fondo de emergencia").progress.saved)
+        assertEquals(goal("Fondo de emergencia").history.goal.id, goals.featured)
+        assertEquals(pesos(600_000), goal("Regalo de Navidad").progress.saved)
+        assertTrue(goal("Regalo de Navidad").progress.completed)
+
+        // Investments: CDT 5.180.000 on 5.000.000, +3,6 %; Fondo 2.820.000 + 300.000
+        // withdrawn on 3.000.000, +4,0 %; Acciones USD 765,00 + 4,20 on USD 700,00.
+        val board: InvestmentBoard =
+            runBlocking { six.koin.get<InvestmentReads>().board().value() }
+        fun figures(name: String) =
+            board.investments.single { it.history.investment.name.value == name }.figures
+        val cdt = figures("CDT Banco")
+        assertEquals(pesos(5_180_000), cdt.value?.amount)
+        assertEquals(pesos(180_000), cdt.gain)
+        assertEquals(GainDirection.Gain to 36L, cdt.`return`?.direction to cdt.`return`?.tenths)
+        val fondo = figures("Fondo de inversión")
+        assertEquals(pesos(2_820_000), fondo.value?.amount)
+        assertEquals(LocalDate.of(2026, 10, 12), fondo.value?.valuedOn)
+        assertEquals(pesos(120_000), fondo.gain)
+        assertEquals(GainDirection.Gain to 40L, fondo.`return`?.direction to fondo.`return`?.tenths)
+        val acciones = figures("Acciones EE. UU.")
+        assertEquals(76_500L, acciones.value?.amount?.minorUnits)
+        assertEquals(6_920L, acciones.gain?.minorUnits)
+        val rate = board.overview.value().rate
+        assertEquals(405_050L, rate?.rate?.hundredths)
+        assertEquals(LocalDate.of(2026, 10, 24), rate?.date)
+    }
+
+    @Test
     fun aLoadCutShortAfterACommitWhoseCheckpointWasLostEndsTheSame() {
         Scenarios.all.forEach { scenario ->
             val fresh = load(scenario)
