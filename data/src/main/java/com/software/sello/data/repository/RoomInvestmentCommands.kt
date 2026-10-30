@@ -668,8 +668,13 @@ class RoomInvestmentCommands internal constructor(
     ): Outcome<CommittedInvestment?, StorageFailure> = reading {
         when (val receipt = database.operationReceiptDao().find(operationId.value)?.toStored()) {
             null -> Outcome.Success(null)
+
             is Outcome.Failure -> receipt
-            is Outcome.Success -> Outcome.Success(receipt.value.committedOrNull())
+
+            // A receipt does not keep its lines, so which movements it wrote is not known.
+            is Outcome.Success -> Outcome.Success(
+                receipt.value.committedOrNull()?.copy(movementIds = null)
+            )
         }
     }
 }
@@ -689,7 +694,7 @@ private fun lineMovementId(operation: OperationId, position: Int): InvestmentMov
 }
 
 /** A batch's history refusal, naming its line; a total that does not fit names none. */
-private fun InvestmentLineError.toRejection(): InvestmentRejection {
+internal fun InvestmentLineError.toRejection(): InvestmentRejection {
     val reason = error.toRejection()
     return position?.let {
         InvestmentRejection.LinesRefused(listOf(RefusedInvestmentLine(it, reason)))

@@ -554,7 +554,9 @@ class InvestmentMovementViewModelTest {
                     10,
                     Instant.EPOCH
                 ),
-                InvestmentId.of(ecopetrol).value()
+                InvestmentId.of(ecopetrol).value(),
+                // A found receipt does not know its movements.
+                movementIds = null
             )
         )
         model.onAction(InvestmentMovementAction.Retry)

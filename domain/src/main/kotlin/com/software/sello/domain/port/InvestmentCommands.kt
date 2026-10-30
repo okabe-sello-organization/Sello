@@ -230,14 +230,14 @@ data class RefusedInvestmentLine(val position: Int, val reason: InvestmentReject
 /**
  * A committed change and its receipt; [investmentId] is null for [SetUsdRate].
  * [movementIds] are the movements a [RecordInvestmentMovements] wrote, in line order, on
- * its commit and on every replay of it. It is empty for any other change and from
- * [InvestmentCommands.find], which has only the receipt: submit the same command again
- * for the movements.
+ * its commit and on every replay of it, and empty for every other change. They are null
+ * for a receipt found by [InvestmentCommands.find]: its lines are not kept with it, so
+ * which movements it wrote is not known there; submit the same command again for them.
  */
 data class CommittedInvestment(
     val receipt: OperationReceipt,
     val investmentId: InvestmentId?,
-    val movementIds: List<InvestmentMovementId> = emptyList()
+    val movementIds: List<InvestmentMovementId>? = emptyList()
 )
 
 typealias InvestmentCommandOutcome = CommandOutcome<CommittedInvestment, InvestmentRejection>

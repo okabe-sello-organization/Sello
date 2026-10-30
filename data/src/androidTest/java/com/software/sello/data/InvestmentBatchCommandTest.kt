@@ -36,7 +36,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -143,7 +142,7 @@ class InvestmentBatchCommandTest {
 
         assertEquals(OperationKind.RecordInvestmentMovements, saved.receipt.kind)
         assertEquals(first, saved.investmentId)
-        val ids = saved.movementIds.map { it.value }
+        val ids = saved.movementIds!!.map { it.value }
         assertEquals(3, ids.toSet().size)
         // The next three recording positions, in line order.
         assertEquals(
@@ -198,7 +197,7 @@ class InvestmentBatchCommandTest {
         val reason = named.reason as InvestmentRejection.AboveValue
         assertEquals(Money.cop(1_000_000), reason.available)
         // The retiro the refusal named is the line itself, never written then.
-        assertEquals(committed(withValue).movementIds[0], reason.withdrawal)
+        assertEquals(committed(withValue).movementIds!![0], reason.withdrawal)
         // The value of 5 oct replays first: 1.500.000 − 1.200.000 = 300.000.
         assertEquals(Money.cop(300_000), figures().value!!.amount)
     }
@@ -354,7 +353,7 @@ class InvestmentBatchCommandTest {
 
         val saved = committed(submit(batch(*Array(30) { largest })))
 
-        assertEquals(30, saved.movementIds.toSet().size)
+        assertEquals(30, saved.movementIds!!.toSet().size)
         assertEquals(listOf("32|2"), investmentRow())
         assertEquals(32L, ledger.database.count("investment_movement"))
         // 1.000.000 + 30 × 999.999.999.999 = 1.000.000 + 29.999.999.999.970.
@@ -398,7 +397,7 @@ class InvestmentBatchCommandTest {
             )
         )
 
-        val ids = saved.movementIds.map { it.value }
+        val ids = saved.movementIds!!.map { it.value }
         assertEquals(
             listOf(
                 "2|${ids[0]}|contribution|25050|USD|2026-10-21|null",
@@ -439,9 +438,10 @@ class InvestmentBatchCommandTest {
         assertEquals(Rejected(CommandRejection.StaleGeneration(current = 1)), stale)
         assertEquals(Committed(original, replayed = true), afterRestart)
         assertEquals(after, state())
-        // The receipt alone names no movements: submitting again gives them.
+        assertEquals(2, original.movementIds!!.size)
+        // The receipt alone does not know its movements: submitting again gives them.
         assertEquals(
-            Outcome.Success(CommittedInvestment(original.receipt, first)),
+            Outcome.Success(CommittedInvestment(original.receipt, first, movementIds = null)),
             ledger.investments.find(operation)
         )
     }
@@ -505,12 +505,12 @@ class InvestmentBatchCommandTest {
         val outcome = submit(command)
 
         assertEquals(CommandOutcome.OutcomeUnknown(command.operationId), outcome)
-        // The refused commit leaves this handle's transaction open; a restart clears it.
+        // The refused commit leaves this handle's transaction open (#281); a restart clears it.
         ledger.reopen()
         assertEquals(Outcome.Success(null), ledger.investments.find(command.operationId))
         assertEquals(before, state())
         val saved = committed(submit(command))
-        assertFalse(saved.movementIds.isEmpty())
+        assertEquals(2, saved.movementIds!!.toSet().size)
         // 1.000.000 + 100.000 + 200.000.
         assertEquals(Money.cop(1_300_000), figures().contributed)
     }
@@ -543,10 +543,11 @@ class InvestmentBatchCommandTest {
         // The transaction ran to its end: 1.000.000 + 750.000.
         assertEquals(Money.cop(1_750_000), figures().contributed)
         val found = ledger.investments.find(command.operationId).valueOrFail()!!
+        assertNull(found.movementIds)
         val replay = committed(submit(command))
         assertEquals(found.receipt, replay.receipt)
         assertEquals(
-            replay.movementIds.map { it.value },
+            replay.movementIds!!.map { it.value },
             movements().drop(2).map { it.split("|")[1] }
         )
         assertEquals(Money.cop(1_750_000), figures().contributed)
