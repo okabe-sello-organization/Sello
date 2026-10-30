@@ -7,7 +7,9 @@ import com.software.sello.devtools.ScenarioStep.CatchUp
 import com.software.sello.devtools.ScenarioStep.Category
 import com.software.sello.devtools.ScenarioStep.ChooseForRecibo
 import com.software.sello.devtools.ScenarioStep.DeleteExpense
+import com.software.sello.devtools.ScenarioStep.DisableCarry
 import com.software.sello.devtools.ScenarioStep.EditExpense
+import com.software.sello.devtools.ScenarioStep.EnableCarry
 import com.software.sello.devtools.ScenarioStep.Expense
 import com.software.sello.devtools.ScenarioStep.Goal
 import com.software.sello.devtools.ScenarioStep.GoalTarget
@@ -61,9 +63,12 @@ import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DatedUsdRate
 import com.software.sello.domain.port.DeleteExpense as DeleteExpenseCommand
+import com.software.sello.domain.port.DisableCarry as DisableCarryCommand
 import com.software.sello.domain.port.EditExpense as EditExpenseCommand
+import com.software.sello.domain.port.EnableCarry as EnableCarryCommand
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
+import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommandOutcome
@@ -248,18 +253,19 @@ class ScenarioRunner(
             is Expense -> {
                 val category = categoryId(loaded, step.category)
                     ?: return "no existe la categoría «${step.category}»"
-                expense(
-                    expenses.create(
-                        CreateExpense(
-                            operation,
-                            generation,
-                            category,
-                            pesos(step.pesos),
-                            step.on ?: today,
-                            Note.of(step.note).value()
-                        )
-                    )
+                val create = CreateExpense(
+                    operation,
+                    generation,
+                    category,
+                    pesos(step.pesos),
+                    step.on ?: today,
+                    Note.of(step.note).value()
                 )
+                if (step.confirmsCorrection) {
+                    confirmedExpense(operation, create)
+                } else {
+                    expense(expenses.create(create))
+                }
             }
 
             is EditExpense -> {
@@ -293,7 +299,14 @@ class ScenarioRunner(
             }
 
             is SetDefaultLimit -> categoryChange(loaded, step.category) { id ->
-                SetDefaultLimitCommand(operation, generation, id, step.version, limit(step.pesos))
+                SetDefaultLimitCommand(
+                    operation,
+                    generation,
+                    id,
+                    step.version,
+                    limit(step.pesos),
+                    carryIn(step.confirmedCarryIn)
+                )
             }
 
             is SetMonthLimit -> categoryChange(loaded, step.category) { id ->
@@ -308,7 +321,27 @@ class ScenarioRunner(
             }
 
             is Archive -> categoryChange(loaded, step.category) { id ->
-                ArchiveCategory(operation, generation, id, step.version)
+                ArchiveCategory(
+                    operation,
+                    generation,
+                    id,
+                    step.version,
+                    carryIn(step.confirmedCarryIn)
+                )
+            }
+
+            is EnableCarry -> categoryChange(loaded, step.category) { id ->
+                EnableCarryCommand(operation, generation, id, step.version)
+            }
+
+            is DisableCarry -> categoryChange(loaded, step.category) { id ->
+                DisableCarryCommand(
+                    operation,
+                    generation,
+                    id,
+                    step.version,
+                    carryIn(step.confirmedCarryIn)
+                )
             }
 
             is Income -> when (
@@ -466,6 +499,8 @@ class ScenarioRunner(
     private fun pesos(amount: Long): TransactionAmount =
         TransactionAmount.of(Money.cop(amount)).value()
 
+    private fun carryIn(pesos: Long?): Money? = pesos?.let { Money.cop(it) }
+
     private fun limit(pesos: Long?): BudgetLimit =
         pesos?.let { BudgetLimit.finite(Money.cop(it)).value() } ?: BudgetLimit.Unlimited
 
@@ -491,6 +526,23 @@ class ScenarioRunner(
         is CommandOutcome.Committed -> null
         is CommandOutcome.Rejected -> rejected(outcome.reason)
         is CommandOutcome.OutcomeUnknown -> UNKNOWN
+    }
+
+    /**
+     * A correction that reaches a closed month of a carry chain: the real command lists the
+     * later months it changes and refuses until it comes back with that list's confirmation,
+     * as the screen does. A step that already committed, in an earlier process, is found by
+     * its receipt, because the same operation with another confirmation would conflict.
+     */
+    private suspend fun confirmedExpense(operation: OperationId, create: CreateExpense): String? {
+        if ((expenses.find(operation) as? Outcome.Success)?.value != null) {
+            return null
+        }
+        val first = expenses.create(create)
+        val listed = ((first as? CommandOutcome.Rejected)?.reason as? CommandRejection.Specific)
+            ?.reason as? ExpenseRejection.CorrectionUnconfirmed
+            ?: return expense(first)
+        return expense(expenses.create(create.copy(confirmation = listed.confirmation)))
     }
 
     private fun goal(outcome: GoalCommandOutcome): String? = when (outcome) {

@@ -79,6 +79,10 @@ class ScenarioDefinitionTest {
 
                     is ScenarioStep.Archive -> step.category in categories
 
+                    is ScenarioStep.EnableCarry -> step.category in categories
+
+                    is ScenarioStep.DisableCarry -> step.category in categories
+
                     is ScenarioStep.Goal -> goals.add(step.key)
 
                     is ScenarioStep.Aporte -> step.goal in goals
@@ -150,7 +154,7 @@ class ScenarioDefinitionTest {
 
     @Test
     fun scriptedCategoryVersionsFollowTheChangesBeforeThem() {
-        // A category starts at version 1 and each limit change or archive adds one.
+        // A category starts at version 1 and each limit change, archive or carry change adds one.
         Scenarios.all.forEach { scenario ->
             val versions = mutableMapOf<String, Long>()
             fun changed(category: String, version: Long, step: ScenarioStep) {
@@ -163,6 +167,8 @@ class ScenarioDefinitionTest {
                     is ScenarioStep.SetDefaultLimit -> changed(step.category, step.version, step)
                     is ScenarioStep.SetMonthLimit -> changed(step.category, step.version, step)
                     is ScenarioStep.Archive -> changed(step.category, step.version, step)
+                    is ScenarioStep.EnableCarry -> changed(step.category, step.version, step)
+                    is ScenarioStep.DisableCarry -> changed(step.category, step.version, step)
                     else -> Unit
                 }
             }

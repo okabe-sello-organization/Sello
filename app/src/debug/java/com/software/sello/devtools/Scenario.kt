@@ -99,7 +99,8 @@ sealed interface ScenarioStep {
         val category: String,
         val pesos: Long,
         val note: String? = null,
-        val on: LocalDate? = null
+        val on: LocalDate? = null,
+        val confirmsCorrection: Boolean = false
     ) : ScenarioStep
 
     /** Changes the expense step [of] recorded to [pesos], as read at [version]. */
@@ -108,9 +109,17 @@ sealed interface ScenarioStep {
     /** Deletes the expense step [of] recorded, as read at [version]. */
     data class DeleteExpense(val of: Int, val version: Long) : ScenarioStep
 
-    /** The category's default limit from the sandbox's month on, as read at [version]; null is none. */
-    data class SetDefaultLimit(val category: String, val pesos: Long?, val version: Long) :
-        ScenarioStep
+    /**
+     * The category's default limit from the sandbox's month on, as read at [version]; null is
+     * none. Making it unlimited while a balance is carried needs [confirmedCarryIn], the
+     * pesos the person saw and agreed to drop (ADR 0020 CP9, CP11).
+     */
+    data class SetDefaultLimit(
+        val category: String,
+        val pesos: Long?,
+        val version: Long,
+        val confirmedCarryIn: Long? = null
+    ) : ScenarioStep
 
     /** The limit of [month] only, as read at [version]; null is none. */
     data class SetMonthLimit(
@@ -120,7 +129,25 @@ sealed interface ScenarioStep {
         val version: Long
     ) : ScenarioStep
 
-    data class Archive(val category: String, val version: Long) : ScenarioStep
+    /** Archives the category; [confirmedCarryIn] as for [SetDefaultLimit]. */
+    data class Archive(
+        val category: String,
+        val version: Long,
+        val confirmedCarryIn: Long? = null
+    ) : ScenarioStep
+
+    /** Turns carry on for the category from the sandbox's month, as read at [version] (CP1–CP4). */
+    data class EnableCarry(val category: String, val version: Long) : ScenarioStep
+
+    /**
+     * Turns carry off in the sandbox's month, as read at [version]. While a balance is
+     * carried, [confirmedCarryIn] must be exactly it (CP9, CP10).
+     */
+    data class DisableCarry(
+        val category: String,
+        val version: Long,
+        val confirmedCarryIn: Long? = null
+    ) : ScenarioStep
 
     /** [source] is a stored income source key, such as `salary`. */
     data class Income(val pesos: Long, val source: String, val on: LocalDate? = null) :
