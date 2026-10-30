@@ -1,6 +1,6 @@
 # SELLO-E16 — Finish Sello v2 on today's screens
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** Add the parts of the approved v2 Recibo, Resumen and income screens that the MVP left out, which need no new kind of data.
 - **Exit:** Resumen leads with the same-days comparison and shows the average month, the weekday answer and one suggestion; income history suggests assigning unassigned income; Recibo invites a look at the month just closed.
