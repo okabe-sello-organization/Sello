@@ -51,6 +51,7 @@ import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RecordInvestmentMovement
+import com.software.sello.domain.port.RecordInvestmentMovements
 import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreGoalMovement
@@ -411,6 +412,7 @@ internal val InvestmentCommand.kind: OperationKind
         is CreateInvestment -> OperationKind.CreateInvestment
         is EditInvestment -> OperationKind.EditInvestment
         is RecordInvestmentMovement -> OperationKind.RecordInvestmentMovement
+        is RecordInvestmentMovements -> OperationKind.RecordInvestmentMovements
         is EditInvestmentMovement -> OperationKind.EditInvestmentMovement
         is DeleteInvestmentMovement -> OperationKind.DeleteInvestmentMovement
         is RestoreInvestmentMovement -> OperationKind.RestoreInvestmentMovement
@@ -453,6 +455,13 @@ internal fun inputDigest(command: InvestmentCommand): String {
         is RecordInvestmentMovement ->
             listOf(command.kind.storedKey, command.date.toString()) +
                 command.amount.fields + command.note.fields
+
+        // The count first, then each line in order: the same lines in another order differ.
+        is RecordInvestmentMovements ->
+            listOf(command.lines.size.toString()) + command.lines.flatMap { line ->
+                listOf(line.kind.storedKey, line.date.toString()) +
+                    line.amount.fields + line.note.fields
+            }
 
         is EditInvestmentMovement -> listOf(
             command.movementId.value,

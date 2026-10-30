@@ -269,7 +269,8 @@ class LedgerInvestments(private val ledger: Ledger) : InvestmentCommands {
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
         ledger.receipts[operationId.value]?.let { (receipt, _) ->
-            CommittedInvestment(receipt, subjects[operationId.value])
+            // As the store answers: a found receipt does not know its movements.
+            CommittedInvestment(receipt, subjects[operationId.value], movementIds = null)
         }
     )
 

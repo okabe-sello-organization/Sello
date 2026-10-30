@@ -435,6 +435,7 @@ class InvestmentEditorViewModelTest {
 
         commands.found = Outcome.Success(
             committedInvestment(unknown, OperationKind.CreateInvestment, createdId).value
+                .copy(movementIds = null)
         )
         model.onAction(InvestmentEditorAction.Retry)
         assertEquals(listOf(unknown, unknown), commands.asked)
@@ -545,6 +546,7 @@ class InvestmentEditorViewModelTest {
 
         commands.found = Outcome.Success(
             committedInvestment(operation(1), OperationKind.CreateInvestment, createdId).value
+                .copy(movementIds = null)
         )
         val after = editor(SavedStateHandle(saved.keys().associateWith { saved.get<Any>(it) }))
         assertEquals(listOf(operation(1), operation(1)), commands.asked)

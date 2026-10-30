@@ -86,6 +86,34 @@ data class RecordInvestmentMovement(
     val note: Note?
 ) : InvestmentEdit
 
+/** One line of [RecordInvestmentMovements]: what [RecordInvestmentMovement] records. */
+data class InvestmentMovementLine(
+    val kind: InvestmentMovementKind,
+    val amount: InvestmentAmount,
+    val date: LocalDate,
+    val note: Note?
+)
+
+/**
+ * Several movements of one investment as one operation (SELLO-129): every line is
+ * written, with one revision and one receipt, or none is. Amounts are in the
+ * investment's currency, never converted. The lines are checked as if recorded after the
+ * history, in line order: by date, and on a shared date after what is recorded and after
+ * the lines before them, so a line may rely on an earlier-dated line of the same receipt.
+ */
+data class RecordInvestmentMovements(
+    override val operationId: OperationId,
+    override val generation: Long,
+    override val investmentId: InvestmentId,
+    override val expectedVersion: Long,
+    val lines: List<InvestmentMovementLine>
+) : InvestmentEdit {
+    companion object {
+        /** The most lines one receipt holds. */
+        const val MAX_LINES = 30
+    }
+}
+
 /** A correction in place (rule 9): the movement keeps its kind and recording position. */
 data class EditInvestmentMovement(
     override val operationId: OperationId,
@@ -179,10 +207,38 @@ sealed interface InvestmentRejection {
 
     /** Undoing would contradict what is recorded now. */
     data object UndoConflict : InvestmentRejection
+
+    /** A [RecordInvestmentMovements] with no line or more than its most. */
+    data class LineCount(val lines: Int) : InvestmentRejection
+
+    /**
+     * Lines of a [RecordInvestmentMovements] that may not be written, so none was. Each
+     * line's own amount and date are checked first, and every refused one is named; only
+     * when all pass is the history checked, and the one line at fault named.
+     */
+    data class LinesRefused(val lines: List<RefusedInvestmentLine>) : InvestmentRejection
 }
 
-/** A committed change and its receipt; [investmentId] is null for [SetUsdRate]. */
-data class CommittedInvestment(val receipt: OperationReceipt, val investmentId: InvestmentId?)
+/**
+ * The line at 0-based [position] of the lines submitted, and why it was refused: a
+ * single movement's reason. [InvestmentRejection.AboveValue] and
+ * [InvestmentRejection.NoValue] may name a recorded retiro the line leaves short; when
+ * they name the line's own retiro, that id was never written.
+ */
+data class RefusedInvestmentLine(val position: Int, val reason: InvestmentRejection)
+
+/**
+ * A committed change and its receipt; [investmentId] is null for [SetUsdRate].
+ * [movementIds] are the movements a [RecordInvestmentMovements] wrote, in line order, on
+ * its commit and on every replay of it, and empty for every other change. They are null
+ * for a receipt found by [InvestmentCommands.find]: its lines are not kept with it, so
+ * which movements it wrote is not known there; submit the same command again for them.
+ */
+data class CommittedInvestment(
+    val receipt: OperationReceipt,
+    val investmentId: InvestmentId?,
+    val movementIds: List<InvestmentMovementId>? = emptyList()
+)
 
 typealias InvestmentCommandOutcome = CommandOutcome<CommittedInvestment, InvestmentRejection>
 
