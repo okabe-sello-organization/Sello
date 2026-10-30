@@ -17,6 +17,7 @@ import com.software.sello.domain.port.ExpensePage
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SnapshotState
@@ -222,6 +223,8 @@ class CategoryDetailViewModel(
             stale = stale,
             canRecord = !line.archived && snapshot.month == YearMonth.from(snapshot.asOf),
             carryProblem = problem,
+            generation = snapshot.generation,
+            revision = snapshot.revision,
             upcoming = snapshot.categories.firstOrNull { it.category.id == id }?.upcoming.orEmpty()
                 .map { payment ->
                     DetailUpcomingPayment(
@@ -276,26 +279,41 @@ class CategoryDetailViewModel(
     }
 
     /**
+     * The last schedules read and the last slip shown, so a failed read, or a retry whose
+     * read fails again, keeps what was listed, marked as older (never "none").
+     */
+    private var keptBook: ScheduleBook? = null
+    private var keptFixed: Pair<String, DetailFixedState.Ready>? = null
+
+    /**
      * Pagos fijos: what the snapshot still reserves for the category, then its other
-     * payments that repeat, not ended. Only in the month in progress. A failed read keeps
-     * the schedules read before; with none, it says so and is never "none".
+     * payments that repeat, not ended. Only in the month in progress, and only from
+     * schedules read at the snapshot's own revision, so the list and the hero agree.
      */
     private fun fixed(state: CategoryDetailState.Ready, book: ScheduleBookState): DetailFixedState {
         if (state.month != YearMonth.from(state.today)) return DetailFixedState.Hidden
-        val stored = when (book) {
-            ReadState.Loading -> return if (state.upcoming.isEmpty()) {
-                DetailFixedState.Hidden
-            } else {
-                DetailFixedState.Loading
+        val failed = book is ReadState.Failed
+        val read = when (book) {
+            ReadState.Loading -> null
+            is ReadState.Ready -> book.value.also { keptBook = it }
+            is ReadState.Failed -> book.lastGood ?: keptBook
+        }?.takeIf { it.generation == state.generation }
+        val before = keptFixed?.takeIf { it.first == state.category.id }?.second
+        if (read == null || read.revision != state.revision) {
+            return when {
+                failed -> before?.copy(stale = true) ?: DetailFixedState.Failed
+
+                before != null -> before
+
+                // Nothing reserved: no skeleton for a category that may have no schedules.
+                state.upcoming.isEmpty() -> DetailFixedState.Hidden
+
+                else -> DetailFixedState.Loading
             }
-
-            is ReadState.Ready -> book.value.schedules
-
-            is ReadState.Failed -> book.lastGood?.schedules ?: return DetailFixedState.Failed
         }
         val coming = state.upcoming.map { it.scheduleId }.toSet()
         val later = ScheduleListPolicy.lines(
-            stored.filter {
+            read.schedules.filter {
                 (it.schedule.entry as? ScheduledEntry.Payment)?.categoryId?.value ==
                     state.category.id
             },
@@ -316,11 +334,10 @@ class CategoryDetailViewModel(
                     amount = money.format(schedule.entry.amount.money)
                 )
             }
-        return if (state.upcoming.isEmpty() && later.isEmpty()) {
-            DetailFixedState.Hidden
-        } else {
-            DetailFixedState.Ready(state.upcoming, later)
-        }
+        if (state.upcoming.isEmpty() && later.isEmpty()) return DetailFixedState.Hidden
+        val shown = DetailFixedState.Ready(state.upcoming, later, stale = failed)
+        keptFixed = state.category.id to shown
+        return shown
     }
 
     /**

@@ -30,6 +30,9 @@ sealed interface CategoryDetailState {
         val insights: DetailInsightsState = DetailInsightsState.Loading,
         /** Why the latest read failed, when a carry figure cannot be calculated (CP8). */
         val carryProblem: CarryProblem? = null,
+        /** The history and revision [category] was read at; Pagos fijos waits for the same. */
+        val generation: Long = 0,
+        val revision: Long = 0,
         /** Its payments still to come this month, from the same snapshot as [category]. */
         val upcoming: List<DetailUpcomingPayment> = emptyList(),
         /** The Pagos fijos slip (SELLO-135). */
@@ -77,8 +80,12 @@ sealed interface DetailFixedState {
     /** The schedules could not be read and none was read before: never shown as none. */
     data object Failed : DetailFixedState
 
-    data class Ready(val upcoming: List<DetailUpcomingPayment>, val later: List<DetailSchedule>) :
-        DetailFixedState
+    /** With [stale] the latest read failed: this is the list read before it. */
+    data class Ready(
+        val upcoming: List<DetailUpcomingPayment>,
+        val later: List<DetailSchedule>,
+        val stale: Boolean = false
+    ) : DetailFixedState
 }
 
 /** Why an expense was not deleted. In every case it is still recorded, or was already gone. */

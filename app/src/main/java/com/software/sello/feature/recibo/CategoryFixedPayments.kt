@@ -62,6 +62,21 @@ internal fun CategoryFixedPayments(
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() }
             )
+            if (fixed.stale) {
+                Text(
+                    stringResource(R.string.category_detail_fixed_stale),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = SelloTheme.colors.semantic.warn,
+                    modifier = Modifier
+                        .padding(top = SelloTheme.spacing.xs)
+                        .testTag(CATEGORY_DETAIL_FIXED_STALE_TAG)
+                )
+                SelloButton(
+                    text = stringResource(R.string.recibo_stale_retry),
+                    onClick = { onAction(CategoryDetailAction.Retry) },
+                    kind = ButtonKind.Text
+                )
+            }
             Group(stringResource(R.string.category_detail_fixed_coming, month), first = true)
             if (fixed.upcoming.isEmpty()) {
                 Text(
@@ -158,3 +173,4 @@ const val CATEGORY_DETAIL_FIXED_LOADING_TAG = "detail:fixed-loading"
 const val CATEGORY_DETAIL_FIXED_FAILED_TAG = "detail:fixed-failed"
 const val CATEGORY_DETAIL_FIXED_NONE_LEFT_TAG = "detail:fixed-none-left"
 const val CATEGORY_DETAIL_FIXED_ALL_TAG = "detail:fixed-all"
+const val CATEGORY_DETAIL_FIXED_STALE_TAG = "detail:fixed-stale"

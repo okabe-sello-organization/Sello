@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
@@ -122,6 +123,23 @@ class CategoryFixedScreenTest {
         rule.onNodeWithTag(RECIBO_ADJUST_TAG).performClick()
 
         assertEquals(1, adjusted)
+    }
+
+    @Test
+    fun tomorrowsPaymentSaysSo() {
+        show(ready)
+
+        rule.onNodeWithText("Mañana, vie 23 oct", useUnmergedTree = true).assertExists()
+    }
+
+    @Test
+    fun aListReadBeforeAFailedReadSaysItIsOlderAndOffersToReadAgain() {
+        show(ready.copy(stale = true))
+
+        rule.onNodeWithTag(CATEGORY_DETAIL_FIXED_STALE_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Reintentar").performScrollTo().performClick()
+
+        assertEquals(listOf<CategoryDetailAction>(CategoryDetailAction.Retry), actions)
     }
 
     @Test

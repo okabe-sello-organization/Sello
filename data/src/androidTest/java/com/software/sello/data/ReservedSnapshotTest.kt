@@ -134,7 +134,7 @@ class ReservedSnapshotTest {
         assertEquals(line.reservation, month.categories.single().reservation)
         assertEquals(month.revision, insights.budget.revision)
 
-        // Recorded by catch-up: nothing reserved, 400.000 left, the same 40.000 per day.
+        // 28 Oct, recorded by catch-up: nothing reserved, 400.000 over four days, 100.000.
         ledger.goTo("2026-10-28")
         val batch = RoomScheduleCatchUp(ledger.database, {
             ledger.audit

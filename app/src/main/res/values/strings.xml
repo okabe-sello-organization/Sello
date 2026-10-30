@@ -234,6 +234,7 @@
     <string name="category_detail_fixed_title">Pagos fijos</string>
     <string name="category_detail_fixed_coming">Por venir en %1$s</string>
     <string name="category_detail_fixed_later">Más adelante</string>
+    <string name="category_detail_fixed_stale">No pudimos leer tus pagos fijos de nuevo: esta es la última lista que se leyó.</string>
     <string name="category_detail_fixed_none_left">Ya no queda nada por venir en %1$s: Al día no separa nada.</string>
     <string name="category_detail_fixed_failed">Al día ya descuenta los de %1$s; esta lista no se pudo leer. Vuelve a intentarlo.</string>
     <string name="category_detail_spent">Gastado</string>

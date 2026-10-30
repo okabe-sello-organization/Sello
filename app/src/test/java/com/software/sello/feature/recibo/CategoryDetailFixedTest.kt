@@ -350,7 +350,54 @@ class CategoryDetailFixedTest {
             ScheduleBook(1, 1, book)
         )
 
-        assertEquals(before, viewModel.ready.fixed)
+        assertEquals((before as DetailFixedState.Ready).copy(stale = true), viewModel.ready.fixed)
+    }
+
+    /** A retry starts a new read; when it fails too, what was listed stays, marked older. */
+    @Test
+    fun aRetryWhoseReadFailsAgainKeepsTheListReadBefore() = runTest {
+        val viewModel = started()
+        publish(950_000)
+        schedules.state.value = ReadState.Ready(ScheduleBook(1, 1, book))
+        viewModel.show(1)
+        val before = viewModel.ready.fixed as DetailFixedState.Ready
+
+        viewModel.onAction(CategoryDetailAction.Retry)
+        schedules.state.value = ReadState.Failed(StorageFailure.Unavailable("hand"), null)
+
+        assertEquals(before.copy(stale = true), viewModel.ready.fixed)
+    }
+
+    /** Schedules read at another revision than the hero wait: the two always agree. */
+    @Test
+    fun schedulesOfAnotherRevisionThanTheHeroAreNotListed() = runTest {
+        val viewModel = started()
+        publish(950_000)
+        schedules.state.value = ReadState.Ready(ScheduleBook(1, 2, book))
+        viewModel.show(1)
+
+        assertEquals(DetailFixedState.Loading, viewModel.ready.fixed)
+    }
+
+    @Test
+    fun aCategoryWithoutALimitListsItsPaymentsAndReservesNothing() = runTest {
+        val viewModel = started()
+        publish(950_000)
+        schedules.state.value = ReadState.Ready(ScheduleBook(1, 1, book))
+        viewModel.show(2)
+
+        assertNull(viewModel.ready.category.reserved)
+        assertEquals(
+            listOf(
+                DetailUpcomingPayment(
+                    uuid(5),
+                    "Suscripción",
+                    LocalDate.parse("2026-10-25"),
+                    plain("20.000")
+                )
+            ),
+            (viewModel.ready.fixed as DetailFixedState.Ready).upcoming
+        )
     }
 
     @Test
