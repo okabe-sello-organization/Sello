@@ -17,6 +17,8 @@ import com.software.sello.domain.model.MAX_CHAIN_BASE
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.policy.CarryoverCorrectionReplay
 import com.software.sello.domain.policy.CategoryCorrection
 import com.software.sello.domain.policy.SignedCarryoverPolicy
@@ -322,43 +324,90 @@ internal suspend fun SelloDatabase.expenseCarry(
     revision: Long,
     change: String,
     confirmation: CorrectionConfirmation?
-): CommandRejection<ExpenseRejection>? {
-    val categories = listOfNotNull(removed?.categoryId, added?.categoryId).distinct()
+): CommandRejection<ExpenseRejection>? = when (
+    val carry = expensesCarry(
+        removed,
+        listOfNotNull(added),
+        month,
+        today,
+        revision,
+        change,
+        confirmation
+    )
+) {
+    null -> null
+
+    is ExpensesCarry.Failed -> CommandRejection.StorageFailed(carry.failure)
+
+    is ExpensesCarry.Unavailable -> Specific(ExpenseRejection.CarryUnavailable(carry.failure))
+
+    is ExpensesCarry.Unconfirmed ->
+        Specific(ExpenseRejection.CorrectionUnconfirmed(carry.confirmation, carry.correction))
+}
+
+/** Why a change of expenses cannot commit for carry; each command words it as its own. */
+internal sealed interface ExpensesCarry {
+    data class Failed(val failure: StorageFailure) : ExpensesCarry
+
+    data class Unavailable(val failure: CarryoverFailure) : ExpensesCarry
+
+    data class Unconfirmed(
+        val confirmation: CorrectionConfirmation,
+        val correction: CarryCorrection
+    ) : ExpensesCarry
+}
+
+/**
+ * [expenseCarry] for a change that removes [removed], if any, and adds every row of [added],
+ * such as a receipt of several expenses: one list of later months covers them all, and one
+ * confirmation of this very [change] lets them all through. Null when the change may go ahead.
+ */
+internal suspend fun SelloDatabase.expensesCarry(
+    removed: ExpenseEntity?,
+    added: List<ExpenseEntity>,
+    month: YearMonth,
+    today: LocalDate,
+    revision: Long,
+    change: String,
+    confirmation: CorrectionConfirmation?
+): ExpensesCarry? {
+    val categories = (listOfNotNull(removed?.categoryId) + added.map { it.categoryId }).distinct()
     val corrections = ArrayList<CategoryCorrection>(categories.size)
     for (category in categories) {
         val chains = when (val stored = carryChains(category)) {
             is Outcome.Success -> stored.value
-            is Outcome.Failure -> return CommandRejection.StorageFailed(stored.error)
+            is Outcome.Failure -> return ExpensesCarry.Failed(stored.error)
         }
         if (chains.isEmpty()) continue
         if (chains.any { it.start > month }) {
-            return Specific(ExpenseRejection.CarryUnavailable(CarryoverFailure.FutureMonth(month)))
+            return ExpensesCarry.Unavailable(CarryoverFailure.FutureMonth(month))
         }
         val id = chains.first().categoryId
-        val (gone, put) = listOf(removed, added).map { candidate ->
-            candidate?.takeIf { it.categoryId == category }?.let { row ->
+        val (gone, put) = listOf(listOfNotNull(removed), added).map { candidates ->
+            candidates.filter { it.categoryId == category }.map { row ->
                 when (val decoded = row.toDomain()) {
                     is Outcome.Success -> decoded.value
-                    is Outcome.Failure -> return CommandRejection.StorageFailed(decoded.error)
+                    is Outcome.Failure -> return ExpensesCarry.Failed(decoded.error)
                 }
             }
         }
         // Only the chains holding the months the change touches can change: from the
         // earliest of them through this month (SELLO-038 consumer boundary). A change in no
         // chain month, such as one before the first chain, reaches none (SC33).
-        val touched = listOfNotNull(gone, put).map { YearMonth.from(it.date) }
+        val touched = (gone + put).map { YearMonth.from(it.date) }
         val reached = chains.filter { chain -> touched.any { chain.covers(it) } }
         val from = reached.minOfOrNull { it.start } ?: continue
         val rows = when (val stored = carryRows(id, reached, from, month)) {
             is Outcome.Success -> stored.value
-            is Outcome.Failure -> return CommandRejection.StorageFailed(stored.error)
+            is Outcome.Failure -> return ExpensesCarry.Failed(stored.error)
         }
-        val expenses = rows.expenses.filterNot { it.id == gone?.id } + listOfNotNull(put)
+        val goneIds = gone.map { it.id }.toSet()
+        val expenses = rows.expenses.filterNot { it.id in goneIds } + put
         val after = when (val input = rows.input(today, expenses = expenses)) {
             is Outcome.Success -> input.value
-            is Outcome.Failure -> return Specific(ExpenseRejection.CarryUnavailable(input.error))
+            is Outcome.Failure -> return ExpensesCarry.Unavailable(input.error)
         }
-        replayFailure(after, month)?.let { return Specific(ExpenseRejection.CarryUnavailable(it)) }
+        replayFailure(after, month)?.let { return ExpensesCarry.Unavailable(it) }
         val before = (rows.input(today) as? Outcome.Success)?.value
             ?.takeIf { replayFailure(it, month) == null }
             ?: continue
@@ -367,9 +416,9 @@ internal suspend fun SelloDatabase.expenseCarry(
     if (corrections.isEmpty()) return null
     val correction = when (val previewed = CarryoverCorrectionReplay.preview(month, corrections)) {
         is Outcome.Success -> previewed.value
-        is Outcome.Failure -> return Specific(ExpenseRejection.CarryUnavailable(previewed.error))
+        is Outcome.Failure -> return ExpensesCarry.Unavailable(previewed.error)
     }
     val expected = CorrectionConfirmation(revision, change)
     if (correction.isEmpty || confirmation == expected) return null
-    return Specific(ExpenseRejection.CorrectionUnconfirmed(expected, correction))
+    return ExpensesCarry.Unconfirmed(expected, correction)
 }

@@ -16,11 +16,13 @@ import com.software.sello.data.repository.RoomCategoryCommands
 import com.software.sello.data.repository.RoomCategoryExpenseSearch
 import com.software.sello.data.repository.RoomCategoryInsightsSnapshots
 import com.software.sello.data.repository.RoomCategoryReads
+import com.software.sello.data.repository.RoomExpenseBatchCommands
 import com.software.sello.data.repository.RoomExpenseCommands
 import com.software.sello.data.repository.RoomExpenseReads
 import com.software.sello.data.repository.RoomFinancialProfileStore
 import com.software.sello.data.repository.RoomGoalCommands
 import com.software.sello.data.repository.RoomGoalReads
+import com.software.sello.data.repository.RoomIncomeBatchCommands
 import com.software.sello.data.repository.RoomIncomeCommands
 import com.software.sello.data.repository.RoomIncomeReads
 import com.software.sello.data.repository.RoomInvestmentCommands
@@ -49,12 +51,14 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.DataExports
 import com.software.sello.domain.port.DispatcherProvider
+import com.software.sello.domain.port.ExpenseBatchCommands
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialProfileStore
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
+import com.software.sello.domain.port.IncomeBatchCommands
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.InvestmentCommands
@@ -110,6 +114,20 @@ class FinancialStorage internal constructor(
     ): IncomeCommands = RoomIncomeCommands(database, audit, clock, ids, undoWindow(monotonic))
 
     val incomeReads: IncomeReads = RoomIncomeReads(database)
+
+    /** Several expenses on one receipt, every line or none. Nothing of it can be undone. */
+    fun expenseBatchCommands(
+        audit: AuditClock,
+        clock: FinancialClock,
+        ids: RecordIdSource
+    ): ExpenseBatchCommands = RoomExpenseBatchCommands(database, audit, clock, ids)
+
+    /** Several incomes on one receipt, every line or none. Nothing of it can be undone. */
+    fun incomeBatchCommands(
+        audit: AuditClock,
+        clock: FinancialClock,
+        ids: RecordIdSource
+    ): IncomeBatchCommands = RoomIncomeBatchCommands(database, audit, clock, ids)
 
     /** Goals. A deleted movement shares the one offer to undo with expenses and income. */
     fun goalCommands(

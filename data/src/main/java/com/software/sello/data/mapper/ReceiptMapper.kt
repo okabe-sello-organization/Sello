@@ -13,6 +13,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.UsdRateId
+import com.software.sello.domain.policy.EntryBatchPolicy
 import java.time.Instant
 
 /**
@@ -20,7 +21,8 @@ import java.time.Instant
  * expense for the four expense kinds, an income for the four income kinds, a goal for
  * the goal kinds, a schedule for the schedule kinds, an investment for the investment
  * kinds, the rate entered for a new USD rate, none for a restore or reset of the whole
- * history, a category for every other kind.
+ * history, a category for every other kind. A receipt of several expenses or incomes has
+ * them all, in line order, in [expenseIds] or [incomeIds].
  */
 internal class StoredReceipt(
     val receipt: OperationReceipt,
@@ -31,10 +33,28 @@ internal class StoredReceipt(
     val goalId: GoalId? = null,
     val scheduleId: ScheduleId? = null,
     val investmentId: InvestmentId? = null,
-    val usdRateId: UsdRateId? = null
+    val usdRateId: UsdRateId? = null,
+    val expenseIds: List<ExpenseId> = emptyList(),
+    val incomeIds: List<IncomeId> = emptyList()
 )
 
 private val sha256Hex = Regex("[0-9a-f]{64}")
+
+/**
+ * The subjects of a receipt of several entries, as its command stores them: each
+ * identifier in line order, joined by [SUBJECT_SEPARATOR], from one to
+ * [EntryBatchPolicy.MAX_LINES] of them, none twice.
+ */
+private fun <T> RowDecoder.subjects(subject: String, id: (String) -> Outcome<T, *>): List<T> {
+    val parts = subject.split(SUBJECT_SEPARATOR)
+    check("subject_id", EntryBatchPolicy.holds(parts.size))
+    val ids = parts.map { valid("subject_id", id(it)) }
+    check("subject_id", ids.toSet().size == ids.size)
+    return ids
+}
+
+/** Between the identifiers of a receipt of several entries; never part of one. */
+internal const val SUBJECT_SEPARATOR = ","
 
 /** The kinds whose subject is an expense. Every other kind is about a category. */
 private val ExpenseKinds = setOf(
@@ -86,6 +106,20 @@ internal fun OperationReceiptEntity.toStored(): Outcome<StoredReceipt, StorageFa
                     receipt,
                     inputDigest,
                     expenseId = valid("subject_id", ExpenseId.of(subject))
+                )
+
+            OperationKind.CreateExpenses ->
+                StoredReceipt(
+                    receipt,
+                    inputDigest,
+                    expenseIds = subjects(subject, ExpenseId::of)
+                )
+
+            OperationKind.CreateIncomes ->
+                StoredReceipt(
+                    receipt,
+                    inputDigest,
+                    incomeIds = subjects(subject, IncomeId::of)
                 )
 
             OperationKind.RestoreHistory,
