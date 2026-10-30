@@ -21,6 +21,7 @@ import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StageFailure
+import com.software.sello.domain.port.StagedLookup
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -256,7 +257,7 @@ class LegacyImportRestoreTest {
         restores().stage(legacy.toByteArray()).valueOrFail()
 
         ledger.reopen()
-        val resumed = restores().staged()
+        val resumed = (restores().staged() as? StagedLookup.Waiting)?.staged
 
         assertEquals(report, resumed?.legacy)
         assertEquals(BackupSummary(2, 2, 1, 1, 1, 1), resumed?.replacement)

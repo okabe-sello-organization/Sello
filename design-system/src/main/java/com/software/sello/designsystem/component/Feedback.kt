@@ -362,7 +362,7 @@ fun EmptySlip(
 /**
  * A slip whose content could not be read. [message] says what failed in plain words.
  * It never shows a figure: a failed read has no amount, not a zero. It is centred under
- * a large decorative [icon].
+ * a large decorative [icon]. While [loading], the retry runs and cannot be pressed again.
  */
 @Composable
 fun ErrorSlip(
@@ -371,7 +371,8 @@ fun ErrorSlip(
     modifier: Modifier = Modifier,
     title: String = stringResource(R.string.sello_error_title),
     retryLabel: String = stringResource(R.string.sello_retry),
-    icon: SelloIcon = SelloIcon.Error
+    icon: SelloIcon = SelloIcon.Error,
+    loading: Boolean = false
 ) {
     Slip(modifier = modifier.fillMaxWidth()) {
         StateLayout(icon) {
@@ -380,7 +381,12 @@ fun ErrorSlip(
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
             ) { StateText(title, message) }
             Spacer(Modifier.height(SelloTheme.spacing.lg))
-            SelloButton(text = retryLabel, onClick = onRetry, kind = ButtonKind.Outlined)
+            SelloButton(
+                text = retryLabel,
+                onClick = onRetry,
+                kind = ButtonKind.Outlined,
+                loading = loading
+            )
         }
     }
 }

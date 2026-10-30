@@ -172,6 +172,27 @@ sealed interface RestoreOutcome {
     data class OutcomeUnknown(val operationId: OperationId) : RestoreOutcome
 }
 
+/** What a look for a staged file found. Only [Waiting] can be confirmed. */
+sealed interface StagedLookup {
+    /** No file is staged. */
+    data object None : StagedLookup
+
+    /** A file not replaced yet and still valid for the current history. */
+    data class Waiting(val staged: StagedRestore) : StagedLookup
+
+    /**
+     * A file whose replacement did not commit and that cannot be offered now: it
+     * expired, the history moved on, or it or the current history could not be read.
+     */
+    data class NotReplaced(val operationId: OperationId) : StagedLookup
+
+    /** Its replacement had committed; [Restores.pending] has it now. */
+    data class Replaced(val operationId: OperationId) : StagedLookup
+
+    /** Whether its replacement committed could not be read. The file is kept to look again. */
+    data class Unknown(val operationId: OperationId) : StagedLookup
+}
+
 /**
  * Replacing the whole financial history with a backup. Staging, preview and
  * replacement never merge; preferences are applied after the replacement and kept
@@ -181,8 +202,11 @@ interface Restores {
     /** Checks [bytes] completely and keeps them privately; nothing financial changes. */
     suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure>
 
-    /** A file staged earlier, still unconfirmed and still valid for the current history. */
-    suspend fun staged(): StagedRestore?
+    /**
+     * A file staged earlier and what became of it, read again from its operation's
+     * receipt each time. It is never replaced from here.
+     */
+    suspend fun staged(): StagedLookup
 
     /** Forgets an unconfirmed staged file. A replaced history keeps its pending file. */
     suspend fun discard()

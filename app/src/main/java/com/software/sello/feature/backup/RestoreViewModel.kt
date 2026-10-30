@@ -67,6 +67,8 @@ class RestoreViewModel(
 
             RestoreAction.Confirm -> session.confirm()
 
+            RestoreAction.Check -> session.check()
+
             RestoreAction.Cancel -> session.cancel()
 
             RestoreAction.Dismiss -> session.dismiss()
@@ -96,6 +98,9 @@ sealed interface RestoreAction {
 
     data object Confirm : RestoreAction
 
+    /** Comprobar, after an unknown outcome. */
+    data object Check : RestoreAction
+
     data object Cancel : RestoreAction
 
     data object Dismiss : RestoreAction
@@ -112,7 +117,8 @@ data class RestoreState(
     val zone: ZoneId? = null
 ) {
     val busy: Boolean
-        get() = pickerRequest || step == RestoreStep.Checking || step is RestoreStep.Replacing
+        get() = pickerRequest || step == RestoreStep.Checking || step is RestoreStep.Replacing ||
+            (step as? RestoreStep.Unknown)?.checking == true
 
     /** Once the history is or may be replaced, every way out starts the app again. */
     val replaced: Boolean get() = step is RestoreStep.Restored || step is RestoreStep.Unknown

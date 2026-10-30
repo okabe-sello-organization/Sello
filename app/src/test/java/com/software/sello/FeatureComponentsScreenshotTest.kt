@@ -18,6 +18,14 @@ import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MilestoneState
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.domain.model.OperationId
+import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.port.BackupSummary
+import com.software.sello.domain.port.StagedRestore
+import com.software.sello.feature.backup.RestoreSection
+import com.software.sello.feature.backup.RestoreState
+import com.software.sello.feature.backup.RestoreStep
+import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.CompletedGoalRow
 import com.software.sello.feature.goals.GoalCard
 import com.software.sello.feature.investments.InvestmentRow
@@ -27,6 +35,8 @@ import com.software.sello.feature.recibo.CategoryGrid
 import com.software.sello.navigation.MonthBar
 import com.software.sello.navigation.TitleBar
 import com.software.sello.testing.pesos
+import java.time.Instant
+import java.time.ZoneId
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -133,5 +143,25 @@ class FeatureComponentsScreenshotTest {
         TitleBar("Inversiones")
         MonthBar("Octubre", "2026", {})
         AmountKeypad({}, {}, {}, {})
+    }
+
+    /** Respaldo after an unknown restore outcome: named, then a check found it not replaced. */
+    @Test
+    fun restoreUnknown() = capture("restore-unknown") {
+        val operation = (OperationId.of(uuid(5_000)) as Outcome.Success).value
+        val staged = StagedRestore(
+            operationId = operation,
+            backupAt = Instant.parse("2026-10-22T14:30:00Z"),
+            current = BackupSummary(1, 2, 0, 0, 0),
+            replacement = BackupSummary(2, 3, 1, 0, 0),
+            generation = 1,
+            revision = 4
+        )
+        val zone = ZoneId.of("America/Bogota")
+        RestoreSection(RestoreState(RestoreStep.Unknown(operation), zone = zone), onAction = {})
+        RestoreSection(
+            RestoreState(RestoreStep.Previewing(staged, notReplaced = true), zone = zone),
+            onAction = {}
+        )
     }
 }
