@@ -21,8 +21,10 @@ import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
+import com.software.sello.domain.port.CreateExpenses
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.CreateIncome
+import com.software.sello.domain.port.CreateIncomes
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
@@ -189,6 +191,43 @@ internal fun inputDigest(command: RestoreIncome): String = digest(
     "1",
     command.generation.toString(),
     command.deletionId.value
+)
+
+/** The date, the number of lines, then each line in order with a fixed number of fields. */
+internal fun inputDigest(command: CreateExpenses): String = digestWith(
+    OperationKind.CreateExpenses,
+    command.generation,
+    listOf(command.date.toString(), command.lines.size.toString()) +
+        command.lines.flatMap { line ->
+            listOf(
+                line.categoryId.value,
+                line.amount.money.minorUnits.toString(),
+                line.amount.money.currency.code,
+                if (line.note == null) "0" else "1",
+                line.note?.value.orEmpty()
+            )
+        },
+    confirmation(null, command.confirmation)
+)
+
+internal fun inputDigest(command: CreateIncomes): String = digest(
+    *(
+        listOf(
+            OperationKind.CreateIncomes.key,
+            "1",
+            command.generation.toString(),
+            command.date.toString(),
+            command.lines.size.toString()
+        ) +
+            command.lines.flatMap { line ->
+                listOf(
+                    line.amount.money.minorUnits.toString(),
+                    line.amount.money.currency.code
+                ) +
+                    line.source.fields +
+                    listOf(if (line.note == null) "0" else "1", line.note?.value.orEmpty())
+            }
+        ).toTypedArray()
 )
 
 internal val CategoryCommand.kind: OperationKind
@@ -463,6 +502,9 @@ internal fun correctionIdentity(command: DeleteExpense) =
     inputDigest(command.copy(confirmation = null))
 
 internal fun correctionIdentity(command: RestoreExpense) =
+    inputDigest(command.copy(confirmation = null))
+
+internal fun correctionIdentity(command: CreateExpenses) =
     inputDigest(command.copy(confirmation = null))
 
 internal fun correctionIdentity(command: SetMonthLimit) =

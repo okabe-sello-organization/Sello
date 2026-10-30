@@ -6,11 +6,13 @@ import com.software.sello.data.repository.RoomCategoryCommands
 import com.software.sello.data.repository.RoomCategoryExpenseSearch
 import com.software.sello.data.repository.RoomCategoryInsightsSnapshots
 import com.software.sello.data.repository.RoomCategoryReads
+import com.software.sello.data.repository.RoomExpenseBatchCommands
 import com.software.sello.data.repository.RoomExpenseCommands
 import com.software.sello.data.repository.RoomExpenseReads
 import com.software.sello.data.repository.RoomFinancialProfileStore
 import com.software.sello.data.repository.RoomGoalCommands
 import com.software.sello.data.repository.RoomGoalReads
+import com.software.sello.data.repository.RoomIncomeBatchCommands
 import com.software.sello.data.repository.RoomIncomeCommands
 import com.software.sello.data.repository.RoomIncomeReads
 import com.software.sello.data.repository.RoomInvestmentCommands
@@ -39,12 +41,14 @@ import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
+import com.software.sello.domain.port.ExpenseBatchCommands
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
+import com.software.sello.domain.port.IncomeBatchCommands
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.InvestmentCommands
@@ -120,6 +124,8 @@ class TestLedger(
     lateinit var investments: InvestmentCommands
     lateinit var investmentReads: InvestmentReads
     lateinit var carry: CarryoverReads
+    lateinit var expenseBatches: ExpenseBatchCommands
+    lateinit var incomeBatches: IncomeBatchCommands
 
     /** A fresh handle on the same file, as after a process restart. */
     fun open() {
@@ -143,6 +149,8 @@ class TestLedger(
         categoryInsights = RoomCategoryInsightsSnapshots(database, clock, computation)
         categoryExpenseSearch = RoomCategoryExpenseSearch(database)
         carry = RoomCarryoverReads(database, clock, computation)
+        expenseBatches = RoomExpenseBatchCommands(database, auditClock, clock, ids)
+        incomeBatches = RoomIncomeBatchCommands(database, auditClock, clock, ids)
     }
 
     /** The storage as the app's composition gets it, on the same file. */

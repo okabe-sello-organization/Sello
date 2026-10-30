@@ -8,10 +8,16 @@ enum class OperationKind(val key: String) {
     EditExpense("expense.edit"),
     DeleteExpense("expense.delete"),
     RestoreExpense("expense.restore"),
+
+    /** Several expenses recorded on one receipt. Its subjects are the new expenses. */
+    CreateExpenses("expense.create_batch"),
     CreateIncome("income.create"),
     EditIncome("income.edit"),
     DeleteIncome("income.delete"),
     RestoreIncome("income.restore"),
+
+    /** Several incomes recorded on one receipt. Its subjects are the new incomes. */
+    CreateIncomes("income.create_batch"),
     CreateCategory("category.create"),
     RenameCategory("category.rename"),
     ChangeCategoryIcon("category.change_icon"),
