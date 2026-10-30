@@ -11,6 +11,7 @@ import com.software.sello.data.local.keptFiles
 import com.software.sello.data.local.openSelloDatabase
 import com.software.sello.data.local.setAside
 import com.software.sello.data.preferences.PREFERENCES_FILE
+import com.software.sello.data.repository.RoomCarryoverReads
 import com.software.sello.data.repository.RoomCategoryCommands
 import com.software.sello.data.repository.RoomCategoryExpenseSearch
 import com.software.sello.data.repository.RoomCategoryInsightsSnapshots
@@ -39,6 +40,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.BackupExports
+import com.software.sello.domain.port.CarryoverReads
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryExpenseSearch
@@ -174,11 +176,11 @@ class FinancialStorage internal constructor(
         computation: CoroutineContext
     ): CategoryInsightsSnapshots = RoomCategoryInsightsSnapshots(database, clock, computation)
 
-    /**
-     * Restores into this storage, staged in its own private folder. The default [codec]
-     * refuses a backup in which categories carry their balance, as the customer app does
-     * until SELLO-041; a test or developer path passes one that accepts it.
-     */
+    /** Signed carry, derived on every read at [clock]'s financial day (ADR 0020 CP7). */
+    fun carryoverReads(clock: FinancialClock, computation: CoroutineContext): CarryoverReads =
+        RoomCarryoverReads(database, clock, computation)
+
+    /** Restores into this storage, staged in its own private folder. */
     fun restores(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
@@ -224,9 +226,7 @@ class FinancialStorage internal constructor(
 
     /**
      * Backup files of this storage, with the portable preferences beside it. [clock] is the
-     * financial clock whose month the file says it was made in. A [codec]
-     * that refuses carry, the default, makes no file for a history in which a category
-     * carries its balance, as it could not restore it either.
+     * financial clock whose month the file says it was made in.
      */
     fun backupExports(
         appearance: AppearancePreferences,

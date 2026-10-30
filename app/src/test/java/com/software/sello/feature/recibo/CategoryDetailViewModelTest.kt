@@ -3,8 +3,10 @@ package com.software.sello.feature.recibo
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
@@ -20,6 +22,7 @@ import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
@@ -74,7 +77,9 @@ class CategoryDetailViewModelTest {
             // The clock moves with the test's own time, so a notice shown ends when it should.
             { testScheduler.currentTime.milliseconds },
             { uuid(nextOperation++) },
-            CoroutineScope(Dispatchers.Main)
+            CoroutineScope(Dispatchers.Main),
+            HandCategoryReads(),
+            testMoney()
         )
         val viewModel =
             CategoryDetailViewModel(
@@ -684,5 +689,18 @@ class CategoryDetailViewModelTest {
         assertEquals(refusals.map { it.second }, said)
         assertEquals(null, viewModel.ready.deleteProblem)
         assertEquals(2, viewModel.rows.rows.size)
+    }
+
+    @Test
+    fun aDeletionWhoseOutcomeCannotBeFoundIsUnknownNeverFailed() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+
+        assertEquals(DeleteProblem.Unknown, viewModel.ready.deleteProblem)
     }
 }

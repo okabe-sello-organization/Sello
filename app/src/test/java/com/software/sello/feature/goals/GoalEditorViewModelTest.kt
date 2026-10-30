@@ -35,11 +35,13 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
+import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -90,7 +92,9 @@ class GoalEditorViewModelTest {
             HandInvestmentCommands(),
             { 5.hours + scheduler.currentTime.milliseconds },
             ids,
-            CoroutineScope(Dispatchers.Main)
+            CoroutineScope(Dispatchers.Main),
+            HandCategoryReads(),
+            testMoney()
         )
         reads.read = Outcome.Success(GoalBoard(3, 9, emptyList(), null))
     }

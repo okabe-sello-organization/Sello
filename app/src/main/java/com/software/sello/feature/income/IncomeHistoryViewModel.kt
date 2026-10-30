@@ -51,7 +51,9 @@ data class IncomeSplit(
     val allocated: MoneyTextValue,
     val unallocated: MoneyTextValue,
     val over: Boolean,
-    val allocatedShare: Float
+    val allocatedShare: Float,
+    /** A category carries this month: Sin asignar still counts base limits only (CP17). */
+    val carrying: Boolean = false
 )
 
 data class IncomeLine(
@@ -149,7 +151,8 @@ class IncomeHistoryViewModel(
             allocated = money.format(summary.allocated),
             unallocated = money.format(summary.unallocated),
             over = summary.unallocated.minorUnits < 0,
-            allocatedShare = share
+            allocatedShare = share,
+            carrying = summary.budget.categories.any { it.budget?.carry != null }
         )
     }
 

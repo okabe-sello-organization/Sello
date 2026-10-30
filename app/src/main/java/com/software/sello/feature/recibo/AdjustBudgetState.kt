@@ -1,6 +1,7 @@
 package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.presentation.carry.CarryFigures
 import java.time.YearMonth
 
 /** What "Ajustar presupuesto" shows. A failed read is its own state; it is never zero. */
@@ -25,7 +26,9 @@ sealed interface AdjustBudgetState {
         val open: List<AdjustRow>,
         val stale: Boolean,
         /** Archived categories, last and apart, in the same order as above. */
-        val archived: List<AdjustRow> = emptyList()
+        val archived: List<AdjustRow> = emptyList(),
+        /** While a category carries: [limit] is the capacity, with its base and carry (CP27). */
+        val carry: CarryFigures? = null
     ) : AdjustBudgetState
 }
 
@@ -46,7 +49,9 @@ data class AdjustRow(
     val over: Boolean,
     val archived: Boolean,
     /** No limit on purpose ("Sin límite"), not one never set or paused by archiving. */
-    val unlimited: Boolean = false
+    val unlimited: Boolean = false,
+    /** It carries: [limit] is its limit with carry, said as such. */
+    val carried: Boolean = false
 )
 
 sealed interface AdjustBudgetAction {

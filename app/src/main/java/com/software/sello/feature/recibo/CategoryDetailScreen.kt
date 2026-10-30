@@ -49,6 +49,9 @@ import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.presentation.carry.CarryBreakdownSection
+import com.software.sello.presentation.carry.CarryProblemSlip
+import com.software.sello.presentation.carry.categoryCarryFootnote
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.DateLabels
@@ -77,7 +80,8 @@ fun CategoryDetailScreen(
     onDismissPastLimitAnnouncement: () -> Unit = {},
     announcementBusy: Boolean = false,
     announcementFailed: Boolean = false,
-    onShowAllExpenses: () -> Unit = {}
+    onShowAllExpenses: () -> Unit = {},
+    onSetMonthLimit: (categoryId: String, month: YearMonth) -> Unit = { _, _ -> }
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
@@ -100,6 +104,12 @@ fun CategoryDetailScreen(
                 modifier = Modifier.testTag(CATEGORY_DETAIL_FAILED_TAG)
             )
 
+            is CategoryDetailState.CarryFailed -> CarryProblemSlip(
+                state.problem,
+                onRetry = { onAction(CategoryDetailAction.Retry) },
+                onSetLimit = onSetMonthLimit
+            )
+
             CategoryDetailState.Gone -> EmptySlip(
                 title = stringResource(R.string.category_detail_gone_title),
                 body = stringResource(R.string.category_detail_gone_body),
@@ -108,6 +118,9 @@ fun CategoryDetailScreen(
             )
 
             is CategoryDetailState.Ready -> {
+                state.carryProblem?.let {
+                    CarryProblemSlip(it, { onAction(CategoryDetailAction.Retry) }, onSetMonthLimit)
+                }
                 if (state.stale) {
                     StaleSlip(
                         { onAction(CategoryDetailAction.Retry) },
@@ -265,8 +278,14 @@ private fun HeaderSlip(
                 }
             }
         }
+        category.why?.let { CarryWhyNote(it) }
         Spacer(Modifier.height(SelloTheme.spacing.sm))
-        FlowRow(
+        // With carry the limit is the capacity: it is shown with its base and carry, never
+        // alone as "de 180.000" (ADR 0020 CP27).
+        category.carry?.let { carry ->
+            TearLine()
+            CarryBreakdownSection(carry, categoryCarryFootnote(carry))
+        } ?: FlowRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -325,6 +344,7 @@ private fun HeaderSlip(
                         MoneyText(perDay.amount, textStyle = MaterialTheme.typography.titleMedium)
                     }
                 }
+
                 figures.comparison?.let { comparison ->
                     KeyValue(
                         stringResource(
@@ -348,9 +368,20 @@ private fun HeaderSlip(
                     }
                 }
             }
+            // A zero allowance never hides the deficit (CP15).
+            figures.allowanceDeficit?.let { deficit ->
+                Text(
+                    stringResource(R.string.carry_per_day_deficit, deficit.digits),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SelloTheme.colors.inkSoft,
+                    modifier = Modifier.padding(top = 4.dp).testTag(CATEGORY_DETAIL_DEFICIT_TAG)
+                )
+            }
         }
     }
 }
+
+const val CATEGORY_DETAIL_DEFICIT_TAG = "detail:deficit"
 
 @Composable
 private fun Expenses(
@@ -483,6 +514,7 @@ internal fun DeleteProblem.text() = when (this) {
     DeleteProblem.Changed -> R.string.category_detail_delete_changed
     DeleteProblem.DataChanged -> R.string.category_detail_delete_data_changed
     DeleteProblem.Failed -> R.string.category_detail_delete_failed
+    DeleteProblem.Unknown -> R.string.correction_delete_unknown
 }
 
 @Composable

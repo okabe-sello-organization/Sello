@@ -122,6 +122,11 @@ internal fun NavGraphBuilder.reciboDestinations(
                 navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString())) {
                     launchSingleTop = true
                 }
+            },
+            onSetMonthLimit = { id, month ->
+                navigation.navigate(CategoryEditRoute(id, month.toString())) {
+                    launchSingleTop = true
+                }
             }
         ) { navigation.navigate(CategoryEditorRoute()) }
     }
@@ -243,6 +248,7 @@ private fun ReciboDestination(
     onOpenReserved: () -> Unit,
     onAdjustBudget: () -> Unit,
     onOpenClosedMonth: (YearMonth) -> Unit,
+    onSetMonthLimit: (String, YearMonth) -> Unit,
     onCreateCategory: () -> Unit
 ) {
     val recibo: ReciboViewModel = viewModel(factory = viewModels)
@@ -307,6 +313,7 @@ private fun ReciboDestination(
                         onEditExpense = onEditExpense,
                         onEditCategory = { onEditCategory(id) },
                         onShowAllExpenses = { onShowAllExpenses(id) },
+                        onSetMonthLimit = onSetMonthLimit,
                         showPastLimitAnnouncement = !announcements.loading &&
                             !announcements.preference.pastLimitSeen,
                         onDismissPastLimitAnnouncement = onDismissPastLimit,
@@ -321,13 +328,23 @@ private fun ReciboDestination(
                 onAction = { action ->
                     when (action) {
                         ReciboAction.CreateCategory -> onCreateCategory()
+
                         is ReciboAction.OpenCategory -> onShell(ShellAction.OpenCategory(action.id))
+
                         is ReciboAction.EditCategory -> onEditCategory(action.id)
+
                         ReciboAction.Retry -> Unit
+
                         ReciboAction.OpenReserved -> onOpenReserved()
+
                         ReciboAction.AdjustBudget -> onAdjustBudget()
+
                         is ReciboAction.OpenInvitation -> onOpenClosedMonth(action.month)
+
                         is ReciboAction.DismissInvitation -> Unit
+
+                        is ReciboAction.SetMonthLimit ->
+                            onSetMonthLimit(action.categoryId, action.month)
                     }
                     recibo.onAction(action)
                 },

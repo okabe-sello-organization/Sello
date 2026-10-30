@@ -14,6 +14,13 @@ class CorrectionsViewModel(private val corrections: Corrections) : ViewModel() {
 
     fun undo() = corrections.undo()
 
+    /** A list of later months waiting to be confirmed before a deletion, or its undoing. */
+    val question: StateFlow<CorrectionQuestion?> = corrections.question
+
+    fun confirmQuestion() = corrections.confirmQuestion()
+
+    fun dismissQuestion() = corrections.dismissQuestion()
+
     /** Whether a celebration's stamps come down now: once per save. */
     fun lands(celebration: GoalCelebration): Boolean = corrections.lands(celebration)
 

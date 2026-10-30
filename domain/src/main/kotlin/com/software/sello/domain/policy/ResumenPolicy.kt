@@ -121,7 +121,8 @@ object ResumenPolicy {
                         snapshot.spent,
                         overall?.budget?.limit,
                         (overall?.budget?.standing as? BudgetStanding.Current)?.forecast,
-                        snapshot.categories.sumOf { it.expenseCount }
+                        snapshot.categories.sumOf { it.expenseCount },
+                        overall?.budget?.carry
                     )
                 },
                 incomes.count { YearMonth.from(it.date) == month && it.date > today.date },

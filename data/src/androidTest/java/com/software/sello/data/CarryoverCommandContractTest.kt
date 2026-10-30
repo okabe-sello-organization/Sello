@@ -970,7 +970,7 @@ class CarryoverCommandContractTest {
 
         assertEquals(
             Outcome.Failure(
-                SnapshotFailure.Carryover(broken)
+                SnapshotFailure.Carryover(broken, ledger.categoryId(100))
             ),
             brokenRead
         )

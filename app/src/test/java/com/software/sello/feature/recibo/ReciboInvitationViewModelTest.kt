@@ -17,6 +17,7 @@ import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
@@ -68,7 +69,8 @@ class ReciboInvitationViewModelTest {
             HandOrderings(),
             testMoney(),
             invitations,
-            clock
+            clock,
+            HandCategoryReads()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -276,7 +278,8 @@ class ReciboInvitationViewModelTest {
             HandOrderings(),
             testMoney(),
             NeverRead(),
-            clock
+            clock,
+            HandCategoryReads()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             silent.state.collect {}

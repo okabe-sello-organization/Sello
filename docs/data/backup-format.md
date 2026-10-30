@@ -241,12 +241,6 @@ problem, rejecting the whole file with a `BackupRejection` that names where it i
    history worked out with the investment rules; every carry chain against its category's
    base history (see Carry chains above). Investments, movements, rates and chains count
    toward the 100,000 array elements like any other record.
-6. **Carry gate:** a file that passed every check above and holds a chain is refused with
-   `CarryNotSupported` by a codec made with `CarryChainSupport.Refused`, the default and
-   the only one the customer app builds, until SELLO-041 can show carry. Only files that
-   are otherwise valid get this answer; one broken in another way says so. Chains of any
-   kind are refused, open or ended: an ended chain still changes the figures of its
-   months. Test and developer paths make a codec with `CarryChainSupport.Accepted`.
 
 The result is a `BackupPlan`: the validated contents and their counts, with every
 record and goal at version 1. Restoring it is SELLO-030.
@@ -255,9 +249,7 @@ record and goal at version 1. Restoring it is SELLO-030.
 
 `BackupExport.create` reads every financial row in one Room transaction, then the
 preferences, encodes, and reads its own output back with the same rules, so the app
-never hands out a file it would refuse: with the customer codec, a history in which a
-category carries is not exported at all, as it could not be restored. It returns the name,
-bytes and counts. A
+never hands out a file it would refuse. It returns the name, bytes and counts. A
 refusal for size (bytes, records or default-limit entries) tells the person their data
 is more than a backup holds; any other refusal is a fault in Sello and says so.
 
@@ -288,9 +280,8 @@ Carry chains are replaced with the rest, inserted after the categories they refe
 and before the generation advances: a restore of a file with no chains, or of a file of
 versions 1 to 5, leaves every category off, and the figures of a restored chain are worked
 out again from the restored records and base history, so they match the history the
-backup was made from (SC43). The customer app stages and restores with the default codec,
-so a file with a chain is refused as `RestoreRejection.CarryNotSupported` before anything
-is kept or changed, on the same path as the start-up check. Inside one transaction a
+backup was made from (SC43). Since SELLO-041 the app shows carry, so no path refuses a
+file for holding a chain. Inside one transaction a
 receipt for the same operation means it already happened, so asking again after an unknown
 outcome or a crash replays instead of replacing twice. Afterwards the backup's appearance and order are applied; a group
 that fails stays pending, with the file, and is retried at start-up and on request.

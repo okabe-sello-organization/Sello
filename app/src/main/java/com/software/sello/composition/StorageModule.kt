@@ -13,6 +13,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.BackupExports
+import com.software.sello.domain.port.CarryoverReads
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.CategoryInsightsSnapshots
@@ -111,6 +112,7 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<CategoryInsightsSnapshots> {
         storage.categoryInsights(get(), get<DispatcherProvider>().default)
     }
+    single<CarryoverReads> { storage.carryoverReads(get(), get<DispatcherProvider>().default) }
     single<CategoryExpenseSearch> { storage.categoryExpenseSearch }
     single<MonthlySnapshots> {
         storage.monthlySnapshots(get(), get<DispatcherProvider>().default)

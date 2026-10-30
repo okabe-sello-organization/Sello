@@ -18,6 +18,7 @@ import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CommittedSchedule
+import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.EditExpense
@@ -33,6 +34,7 @@ import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.domain.port.StoredSchedule
+import com.software.sello.presentation.carry.CarryCorrectionText
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.DeleteResult
@@ -97,6 +99,11 @@ class ExpenseEntryViewModel(
     private val schedules: ScheduleCommands,
     private val scheduleReads: ScheduleReads
 ) : ViewModel() {
+    private val correctionText = CarryCorrectionText(money)
+
+    /** What came with the list of later months, sent with the change it was shown for (CP20). */
+    private var confirmation: CorrectionConfirmation? = null
+
     @Serializable
     private data class Draft(
         @Serializable(with = AmountDraftSerializer::class) val amount: AmountDraft,
@@ -123,7 +130,9 @@ class ExpenseEntryViewModel(
         /** The schedule that recorded the expense being corrected, while it still exists. */
         val following: StoredSchedule? = null,
         /** Saving waits for Solo este or Este y los siguientes. */
-        val askFollowing: Boolean = false
+        val askFollowing: Boolean = false,
+        /** Saving waits for the list of later months to be confirmed (CP20). */
+        val correction: EntryCorrection? = null
     )
 
     /** The recorded expense as the form first read it. Notes are compared as stored. */
@@ -162,6 +171,19 @@ class ExpenseEntryViewModel(
     private val repeat = RepeatDraft(saved, "expense")
 
     init {
+        // A deletion asked here can be confirmed on the list shown above every screen. Only
+        // one confirmed after this form opened closes it: an earlier one, since undone or
+        // replaced by a restore, is what the form found, not its answer.
+        val openedAfter = corrections.confirmedDeletion.value
+        viewModelScope.launch {
+            corrections.confirmedDeletion.collect { deleted ->
+                if (deleted != null && deleted != openedAfter &&
+                    deleted.expenseId == editedExpense
+                ) {
+                    progress.update { it.copy(busy = false, closed = true) }
+                }
+            }
+        }
         // "Today" is fixed when the form opens, so a draft restored tomorrow is still
         // dated the day it was started unless the person changes it.
         if (drafts.read() == null) drafts.write(draft.value)
@@ -442,6 +464,17 @@ class ExpenseEntryViewModel(
                 it.copy(askFollowing = false)
             }
 
+            ExpenseEntryAction.CorrectionConfirmed ->
+                if (now.correction != null && !now.busy) {
+                    progress.update { it.copy(correction = null) }
+                    submit()
+                }
+
+            ExpenseEntryAction.CorrectionDismissed -> if (!now.busy) {
+                confirmation = null
+                progress.update { it.copy(correction = null) }
+            }
+
             is ExpenseEntryAction.Repeat -> if (now.editable && !editing) {
                 repeat.onAction(action.action, draft.value.date)
                 keepDateFitting(now.today)
@@ -507,6 +540,13 @@ class ExpenseEntryViewModel(
                 DeleteResult.DataChanged -> EntryError.DataChanged
 
                 DeleteResult.Failed -> EntryError.NotDeleted
+
+                DeleteResult.Unknown -> EntryError.DeleteUnknown
+
+                // The list of later months is shown above the form; it stays open (CP20).
+                DeleteResult.AwaitsConfirmation -> return@launch progress.update {
+                    it.copy(busy = false)
+                }
             }
             progress.update { it.copy(busy = false, error = error) }
         }
@@ -575,7 +615,8 @@ class ExpenseEntryViewModel(
                             category,
                             amount,
                             draft.date,
-                            note
+                            note,
+                            confirmation
                         )
                     )
                 } else {
@@ -586,7 +627,8 @@ class ExpenseEntryViewModel(
                             category,
                             amount,
                             draft.date,
-                            note
+                            note,
+                            confirmation
                         )
                     )
                 }
@@ -601,7 +643,10 @@ class ExpenseEntryViewModel(
             null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
             // Only a receipt counts as saved.
-            is Settled.Committed -> saved(settled.value.expenseId)
+            is Settled.Committed -> {
+                confirmation = null
+                saved(settled.value.expenseId)
+            }
 
             is Settled.Unknown -> progress.update {
                 it.copy(busy = false, error = EntryError.Unknown)
@@ -622,7 +667,7 @@ class ExpenseEntryViewModel(
                     CommandRejection.OperationConflict,
                     is CommandRejection.StorageFailed -> EntryError.NotSaved
 
-                    is CommandRejection.Specific -> when (reason.reason) {
+                    is CommandRejection.Specific -> when (val specific = reason.reason) {
                         ExpenseRejection.CategoryMissing, ExpenseRejection.CategoryArchived -> {
                             setCategory(null)
                             EntryError.CategoryGone
@@ -633,6 +678,26 @@ class ExpenseEntryViewModel(
                         ExpenseRejection.InvalidDate -> EntryError.InvalidDate
 
                         ExpenseRejection.ExpenseMissing -> EntryError.ExpenseGone
+
+                        // It reaches a closed month of a carry chain: the list first, then
+                        // the same change with what came with it (CP20, SC34).
+                        is ExpenseRejection.CorrectionUnconfirmed -> {
+                            val changed = confirmation != null
+                            confirmation = specific.confirmation
+                            val names = (month.value as? ReadState.Ready)?.value?.categories
+                                .orEmpty().associate { it.category.id to it.category }
+                            return progress.update {
+                                it.copy(
+                                    busy = false,
+                                    correction = EntryCorrection(
+                                        correctionText.list(specific.correction, names),
+                                        changed
+                                    )
+                                )
+                            }
+                        }
+
+                        is ExpenseRejection.CarryUnavailable -> EntryError.CarryUnavailable
 
                         else -> EntryError.NotSaved
                     }
@@ -867,6 +932,7 @@ class ExpenseEntryViewModel(
             editing = editing,
             repeat = repeating,
             askFollowing = progress.askFollowing,
+            correction = progress.correction,
             following = progress.following?.let { following ->
                 val payment = following.schedule.entry as? ScheduledEntry.Payment
                 FollowingSchedule(

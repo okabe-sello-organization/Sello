@@ -21,6 +21,7 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
@@ -62,6 +63,8 @@ class ReciboViewModelTest {
     private val snapshots = ObserveOnlySnapshots()
     private val orderings = HandOrderings()
 
+    private val categoryReads = HandCategoryReads()
+
     @Before
     fun mainDispatcher() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -75,7 +78,8 @@ class ReciboViewModelTest {
             orderings,
             testMoney(),
             HandInvitations(),
-            clock
+            clock,
+            categoryReads
         )
         // Something has to be watching for the state to be kept up to date.
         val watching =

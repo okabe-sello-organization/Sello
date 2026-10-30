@@ -291,6 +291,14 @@ private fun CameIn(state: IncomeHistoryState.Ready, split: IncomeSplit?, month: 
                     modifier = Modifier.testTag("income.overBasis")
                 )
             }
+            if (split.carrying) {
+                Text(
+                    stringResource(R.string.income_carry_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.inkSoft,
+                    modifier = Modifier.padding(top = 4.dp).testTag("income.carryNote")
+                )
+            }
         }
     }
 }
