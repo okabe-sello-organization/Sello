@@ -41,6 +41,7 @@ import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.StageFailure
+import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.StagedRestore
 import java.io.File
 import java.io.FileOutputStream
@@ -166,29 +167,33 @@ class RoomRestores(
         return Outcome.Success(position.preview(operation, contents, report))
     }
 
-    override suspend fun staged(): StagedRestore? {
-        val manifest = readManifest() ?: return null
+    override suspend fun staged(): StagedLookup {
+        val manifest = readManifest() ?: return StagedLookup.None
         when (committed(manifest.operation)) {
             // A crash came between the commit and the rename that follows it.
             true -> {
                 io { staged.renameTo(restored) }
-                return null
+                return StagedLookup.Replaced(manifest.operation)
             }
 
-            // Unknown: neither offer it again nor treat it as committed.
-            null -> return null
+            // Neither offer it again nor treat it as committed; keep it to look again.
+            null -> return StagedLookup.Unknown(manifest.operation)
 
             false -> Unit
         }
-        val position = (position() as? Outcome.Success)?.value ?: return null
+        val position = (position() as? Outcome.Success)?.value ?: return StagedLookup.NotReplaced
         val expired = audit.now().isAfter(manifest.stagedAt.plus(STAGING_LIFETIME))
         if (position.generation != manifest.generation || expired) {
             discard()
-            return null
+            return StagedLookup.NotReplaced
         }
-        val bytes = io { staged.takeIf { it.exists() }?.readBytes() } ?: return null
-        val plan = codec.read(bytes) as? Outcome.Success ?: return null.also { discard() }
-        return position.preview(manifest.operation, plan.value.contents, manifest.report)
+        val bytes = io { staged.takeIf { it.exists() }?.readBytes() }
+            ?: return StagedLookup.NotReplaced
+        val plan = codec.read(bytes) as? Outcome.Success
+            ?: return StagedLookup.NotReplaced.also { discard() }
+        return StagedLookup.Waiting(
+            position.preview(manifest.operation, plan.value.contents, manifest.report)
+        )
     }
 
     override suspend fun discard() {

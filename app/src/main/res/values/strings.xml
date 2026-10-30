@@ -814,6 +814,7 @@
     <string name="restore_legacy_withdrawal">retiro mayor que el valor</string>
     <string name="restore_legacy_no_contribution">sin aportes</string>
     <string name="restore_legacy_not_yet">aún no se importan</string>
+    <string name="restore_preview_not_replaced">No se restauró: tus datos no cambiaron. Si aún quieres, confírmalo de nuevo.</string>
     <string name="restore_preview_refreshed">Tus datos cambiaron mientras revisabas. Estas son las cifras de ahora.</string>
     <string name="restore_confirm">Reemplazar con el respaldo</string>
     <string name="restore_cancel">Cancelar</string>
@@ -824,6 +825,7 @@
     <string name="restore_unknown_title">No sabemos si se restauró</string>
     <string name="restore_unknown_body">Sello no pudo confirmar si reemplazó tus datos. Compruébalo antes de seguir; no se reemplazará dos veces.</string>
     <string name="restore_unknown_action">Comprobar</string>
+    <string name="restore_unknown_checking">Comprobando…</string>
     <string name="restore_done_title">Tus datos</string>
     <string name="restore_done_stamp">Restaurado</string>
     <string name="restore_done_body">Se restauró el respaldo: %1$s.</string>

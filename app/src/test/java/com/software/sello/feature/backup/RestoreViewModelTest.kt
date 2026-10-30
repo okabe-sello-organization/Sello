@@ -13,9 +13,11 @@ import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StageFailure
+import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.StagedRestore
 import com.software.sello.navigation.HandFinancialClock
 import java.time.Instant
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -187,7 +189,7 @@ class RestoreViewModelTest {
         val fresh = staged.copy(current = BackupSummary(1, 3, 0, 0, 0), revision = 5)
         restores.stageAnswer = Outcome.Success(staged)
         restores.replaceAnswer = RestoreOutcome.Stale
-        restores.stagedAnswer = fresh
+        restores.stagedAnswer = StagedLookup.Waiting(fresh)
         val (model) = model()
         choose(model)
 
@@ -207,16 +209,19 @@ class RestoreViewModelTest {
         model.onAction(RestoreAction.Confirm)
         runCurrent()
 
-        assertEquals(RestoreStep.Unknown(staged), model.state.value.step)
+        assertEquals(RestoreStep.Unknown(operation), model.state.value.step)
         assertTrue(model.state.value.replaced)
 
-        restores.replaceAnswer = done
+        // Confirm does nothing here; Comprobar reads the receipt and never replaces.
         model.onAction(RestoreAction.Confirm)
+        restores.stagedAnswer = StagedLookup.Replaced(operation)
+        restores.applyAnswer = done
+        model.onAction(RestoreAction.Check)
         runCurrent()
 
         assertEquals(RestoreStep.Restored(done), model.state.value.step)
         assertEquals(1, restores.staged.size)
-        assertEquals(2, restores.replaced)
+        assertEquals(1, restores.replaced)
     }
 
     @Test
@@ -258,7 +263,7 @@ class RestoreViewModelTest {
 
     @Test
     fun aFileStagedBeforeARestartIsPreviewedAgain() = runTest {
-        restores.stagedAnswer = staged
+        restores.stagedAnswer = StagedLookup.Waiting(staged)
 
         val (model) = model()
 
@@ -342,7 +347,7 @@ class RestoreViewModelTest {
         assertEquals(RestoreStep.Previewing(staged), model.state.value.step)
 
         // The staging expired or the history moved on: nothing waits any more.
-        restores.stagedAnswer = null
+        restores.stagedAnswer = StagedLookup.NotReplaced
         val restored = afterProcessDeath(handle, process)
 
         assertEquals(RestoreStep.Idle, restored.state.value.step)
@@ -397,7 +402,7 @@ class RestoreViewModelTest {
         choose(model)
         assertEquals(RestoreStep.Previewing(staged), model.state.value.step)
 
-        restores.stagedAnswer = staged
+        restores.stagedAnswer = StagedLookup.Waiting(staged)
         val restored = afterProcessDeath(handle, process)
 
         assertEquals(RestoreStep.Previewing(staged), restored.state.value.step)
@@ -429,8 +434,8 @@ class RestoreViewModelTest {
         assertEquals(RestoreStep.Restored(done), restored.state.value.step)
     }
 
-    @Test
-    fun aConfirmedReplacementIsNeverOfferedAgainFromTheFileAfterTheRestart() = runTest {
+    /** The process dies while replacing; after the restart the receipt cannot be read. */
+    private fun TestScope.unknownAfterTheRestart(): RestoreViewModel {
         val handle = SavedStateHandle()
         val process = CoroutineScope(backgroundScope.coroutineContext + Job())
         restores.stageAnswer = Outcome.Success(staged)
@@ -441,12 +446,163 @@ class RestoreViewModelTest {
         runCurrent()
         assertEquals(RestoreStep.Replacing(staged), model.state.value.step)
 
-        // Its outcome is unknown, so the staging is not offered either (RoomRestores).
-        restores.stagedAnswer = null
+        restores.stagedAnswer = StagedLookup.Unknown(operation)
+        return afterProcessDeath(handle, process)
+    }
+
+    @Test
+    fun aReplacementWhoseOutcomeIsUnknownAfterTheRestartIsNamedNotHidden() = runTest {
+        val restored = unknownAfterTheRestart()
+
+        assertEquals(RestoreStep.Unknown(operation), restored.state.value.step)
+        assertTrue(restored.state.value.replaced)
+        // Neither offered again from the file nor replaced again.
+        assertEquals(1, read.size)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun checkingAgainFindsItRestoredAndAppliesItsPreferences() = runTest {
+        val restored = unknownAfterTheRestart()
+
+        restores.stagedAnswer = StagedLookup.Replaced(operation)
+        restores.applyAnswer = done
+        restored.onAction(RestoreAction.Check)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done), restored.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun checkingAgainFindsItNotReplacedAndOffersTheSameFileToConfirmAgain() = runTest {
+        val restored = unknownAfterTheRestart()
+
+        restores.stagedAnswer = StagedLookup.Waiting(staged)
+        restored.onAction(RestoreAction.Check)
+        runCurrent()
+
+        assertEquals(
+            RestoreStep.Previewing(staged, notReplaced = true),
+            restored.state.value.step
+        )
+        assertFalse(restored.state.value.replaced)
+        assertEquals(0, restores.replaced)
+
+        restores.replaceGate = null
+        restores.replaceAnswer = done
+        restored.onAction(RestoreAction.Confirm)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done), restored.state.value.step)
+        assertEquals(1, restores.replaced)
+        assertEquals(1, read.size)
+    }
+
+    @Test
+    fun checkingAgainFindsItNotReplacedAndNoLongerOfferedAndSaysNothingChanged() = runTest {
+        val restored = unknownAfterTheRestart()
+
+        restores.stagedAnswer = StagedLookup.NotReplaced
+        restored.onAction(RestoreAction.Check)
+        runCurrent()
+
+        assertEquals(RestoreStep.Failed, restored.state.value.step)
+        assertEquals(0, restores.replaced)
+        assertEquals(0, restores.discarded)
+    }
+
+    @Test
+    fun anOutcomeStillUnknownIsNamedAgainAndCanBeCheckedAgain() = runTest {
+        val restored = unknownAfterTheRestart()
+        val before = restores.looked
+
+        restored.onAction(RestoreAction.Check)
+        runCurrent()
+        assertEquals(RestoreStep.Unknown(operation), restored.state.value.step)
+
+        // Nothing left to read is not taken as nothing attempted.
+        restores.stagedAnswer = StagedLookup.None
+        restored.onAction(RestoreAction.Check)
+        runCurrent()
+
+        assertEquals(RestoreStep.Unknown(operation), restored.state.value.step)
+        assertEquals(before + 2, restores.looked)
+        assertEquals(0, restores.replaced)
+        assertEquals(0, restores.discarded)
+    }
+
+    @Test
+    fun checkingTwiceInARowReadsOnce() = runTest {
+        val restored = unknownAfterTheRestart()
+        val before = restores.looked
+        restores.stagedGate = CompletableDeferred()
+
+        restored.onAction(RestoreAction.Check)
+        restored.onAction(RestoreAction.Check)
+        runCurrent()
+        assertEquals(RestoreStep.Unknown(operation, checking = true), restored.state.value.step)
+        assertTrue(restored.state.value.busy)
+        restores.stagedAnswer = StagedLookup.Replaced(operation)
+        restores.applyAnswer = done
+        restores.stagedGate!!.complete(Unit)
+        runCurrent()
+
+        assertEquals(before + 1, restores.looked)
+        assertEquals(RestoreStep.Restored(done), restored.state.value.step)
+    }
+
+    @Test
+    fun aCancelledCheckStaysUnknownAndCanBeCheckedAgain() = runTest {
+        val restored = unknownAfterTheRestart()
+        val gate = CompletableDeferred<Unit>()
+        restores.stagedGate = gate
+
+        restored.onAction(RestoreAction.Check)
+        runCurrent()
+        gate.completeExceptionally(CancellationException("cancelled"))
+        runCurrent()
+
+        assertEquals(RestoreStep.Unknown(operation), restored.state.value.step)
+        assertFalse(restored.state.value.busy)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun aReplacementThatCommittedBeforeTheProcessDiedIsShownRestored() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        restores.stageAnswer = Outcome.Success(staged)
+        restores.replaceGate = CompletableDeferred()
+        val (model) = model(handle, process)
+        choose(model)
+        model.onAction(RestoreAction.Confirm)
+        runCurrent()
+
+        restores.stagedAnswer = StagedLookup.Replaced(operation)
+        restores.applyAnswer = done
         val restored = afterProcessDeath(handle, process)
 
-        assertEquals(RestoreStep.Idle, restored.state.value.step)
-        assertEquals(1, read.size)
+        assertEquals(RestoreStep.Restored(done), restored.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun theProcessDyingWhileCheckingNamesTheUnknownOutcomeAgain() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        restores.stagedAnswer = StagedLookup.Unknown(operation)
+        val (model) = model(handle, process)
+        restores.stagedGate = CompletableDeferred()
+        model.onAction(RestoreAction.Check)
+        runCurrent()
+        assertEquals(RestoreStep.Unknown(operation, checking = true), model.state.value.step)
+
+        restores.stagedGate = null
+        val restored = afterProcessDeath(handle, process)
+
+        assertEquals(RestoreStep.Unknown(operation), restored.state.value.step)
+        assertEquals(0, restores.replaced)
     }
 
     @Test

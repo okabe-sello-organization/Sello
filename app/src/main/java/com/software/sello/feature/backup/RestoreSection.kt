@@ -99,15 +99,22 @@ fun RestoreSection(state: RestoreState, onAction: (RestoreAction) -> Unit) {
             modifier = Modifier.testTag(RESTORE_FAILED_TAG)
         )
 
-        is RestoreStep.Previewing -> Preview(state, step.staged, step.refreshed, false, onAction)
+        is RestoreStep.Previewing -> Preview(state, step.staged, step.note(), false, onAction)
 
-        is RestoreStep.Replacing -> Preview(state, step.staged, false, true, onAction)
+        is RestoreStep.Replacing -> Preview(state, step.staged, null, true, onAction)
 
         is RestoreStep.Unknown -> ErrorSlip(
             title = stringResource(R.string.restore_unknown_title),
             message = stringResource(R.string.restore_unknown_body),
-            retryLabel = stringResource(R.string.restore_unknown_action),
-            onRetry = { onAction(RestoreAction.Confirm) },
+            retryLabel = stringResource(
+                if (step.checking) {
+                    R.string.restore_unknown_checking
+                } else {
+                    R.string.restore_unknown_action
+                }
+            ),
+            onRetry = { onAction(RestoreAction.Check) },
+            loading = step.checking,
             modifier = Modifier.testTag(RESTORE_UNKNOWN_TAG)
         )
 
@@ -120,11 +127,18 @@ fun RestoreSection(state: RestoreState, onAction: (RestoreAction) -> Unit) {
     }
 }
 
+/** Why a preview is shown again, if it is. */
+private fun RestoreStep.Previewing.note(): Int? = when {
+    notReplaced -> R.string.restore_preview_not_replaced
+    refreshed -> R.string.restore_preview_refreshed
+    else -> null
+}
+
 @Composable
 private fun Preview(
     state: RestoreState,
     staged: StagedRestore,
-    refreshed: Boolean,
+    note: Int?,
     replacing: Boolean,
     onAction: (RestoreAction) -> Unit
 ) {
@@ -145,9 +159,9 @@ private fun Preview(
                 )
             )
         }
-        if (refreshed) {
+        note?.let {
             Text(
-                text = stringResource(R.string.restore_preview_refreshed),
+                text = stringResource(it),
                 style = MaterialTheme.typography.bodyMedium,
                 color = SelloTheme.colors.semantic.loss,
                 modifier = Modifier.padding(top = SelloTheme.spacing.sm)

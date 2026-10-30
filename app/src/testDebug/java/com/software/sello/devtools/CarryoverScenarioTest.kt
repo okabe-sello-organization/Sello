@@ -49,6 +49,7 @@ import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.SetMonthLimit
+import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.UndoOffer
 import com.software.sello.domain.usecase.CatchUpNow
 import java.time.LocalDate
@@ -924,7 +925,7 @@ class CarryoverScenarioTest {
         // The process ends with the file staged and not yet confirmed.
         original.open()
         val restores = original.koin.get<Restores>()
-        val staged = checkNotNull(runBlocking { restores.staged() })
+        val staged = (runBlocking { restores.staged() } as StagedLookup.Waiting).staged
         val restored = runBlocking { restores.replace(staged) }
 
         assertTrue("$restored", restored is RestoreOutcome.Restored)

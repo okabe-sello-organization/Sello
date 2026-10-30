@@ -17,6 +17,7 @@ import com.software.sello.domain.port.PreparedBackup
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.StageFailure
+import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.StagedRestore
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
@@ -89,14 +90,16 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
     var stageAnswer: Outcome<StagedRestore, StageFailure> =
         Outcome.Failure(StageFailure.Storage)
     var replaceAnswer: RestoreOutcome = RestoreOutcome.Failed
-    var stagedAnswer: StagedRestore? = null
+    var stagedAnswer: StagedLookup = StagedLookup.None
     var pendingAnswer: RestoreOutcome.Restored? = null
     var applyAnswer: RestoreOutcome.Restored? = null
     var replaceGate: CompletableDeferred<Unit>? = null
+    var stagedGate: CompletableDeferred<Unit>? = null
     val staged = mutableListOf<Int>()
     var replaced = 0
     var discarded = 0
     var applied = 0
+    var looked = 0
 
     override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
         events?.add("stage ${bytes.toList()}")
@@ -104,7 +107,11 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
         return stageAnswer
     }
 
-    override suspend fun staged(): StagedRestore? = stagedAnswer
+    override suspend fun staged(): StagedLookup {
+        looked++
+        stagedGate?.await()
+        return stagedAnswer
+    }
 
     override suspend fun discard() {
         discarded++

@@ -1,5 +1,6 @@
 package com.software.sello.feature.backup
 
+import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.DocumentRead
 import com.software.sello.domain.port.DocumentReader
@@ -8,6 +9,7 @@ import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.StageFailure
+import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.StagedRestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,16 +27,26 @@ sealed interface RestoreStep {
 
     data class Rejected(val reason: RestoreRejection) : RestoreStep
 
-    /** Waiting for the person to confirm. [refreshed]: the history changed and this is a new count. */
-    data class Previewing(val staged: StagedRestore, val refreshed: Boolean = false) : RestoreStep
+    /**
+     * Waiting for the person to confirm. [refreshed]: the history changed and this is a
+     * new count. [notReplaced]: a check after an unknown outcome found it did not happen.
+     */
+    data class Previewing(
+        val staged: StagedRestore,
+        val refreshed: Boolean = false,
+        val notReplaced: Boolean = false
+    ) : RestoreStep
 
     data class Replacing(val staged: StagedRestore) : RestoreStep
 
     /** Nothing was replaced. */
     data object Failed : RestoreStep
 
-    /** The replacement may have committed; asking again with the same staging finds out. */
-    data class Unknown(val staged: StagedRestore) : RestoreStep
+    /**
+     * The replacement under [operationId] may have committed. Checking reads its receipt
+     * again, never replaces; [checking] while that runs.
+     */
+    data class Unknown(val operationId: OperationId, val checking: Boolean = false) : RestoreStep
 
     /** Replaced. Preferences that are not done yet are named in [outcome]. */
     data class Restored(val outcome: RestoreOutcome.Restored, val applying: Boolean = false) :
@@ -65,18 +77,21 @@ class RestoreSession(
     }
 
     /**
-     * On opening the screen: a replacement still pending, or a staged file still
-     * waiting. Failing both, [chosen], a file an earlier process was given but had not
-     * finished with, is checked again; it is never replaced without a confirmation.
+     * On opening the screen: a replacement still pending, one an earlier process died
+     * in the middle of (restored, or not known yet), or a staged file still waiting.
+     * Failing all, [chosen], a file an earlier process was given but had not finished
+     * with, is checked again; it is never replaced without a confirmation.
      */
     fun resume(chosen: DocumentSource? = null) {
         if (state.value != RestoreStep.Idle) return
         scope.launch {
-            val pending = restores.pending()
-            val next = when {
-                pending != null -> RestoreStep.Restored(pending)
-                else -> restores.staged()?.let { RestoreStep.Previewing(it) }
-            }
+            val next = restores.pending()?.let { RestoreStep.Restored(it) }
+                ?: when (val found = restores.staged()) {
+                    is StagedLookup.Waiting -> RestoreStep.Previewing(found.staged)
+                    is StagedLookup.Replaced -> replaced(found.operationId)
+                    is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
+                    StagedLookup.None, StagedLookup.NotReplaced -> null
+                }
             when {
                 next != null -> state.compareAndSet(RestoreStep.Idle, next)
                 chosen != null -> choose(chosen)
@@ -102,28 +117,65 @@ class RestoreSession(
     }
 
     fun confirm() {
-        val staged = when (val current = state.value) {
-            is RestoreStep.Previewing -> current.staged
-            is RestoreStep.Unknown -> current.staged
-            else -> return
-        }
-        val confirmable = { step: RestoreStep ->
-            step is RestoreStep.Previewing || step is RestoreStep.Unknown
-        }
-        begin(RestoreStep.Replacing(staged), from = confirmable) {
+        val staged = (state.value as? RestoreStep.Previewing)?.staged ?: return
+        begin(RestoreStep.Replacing(staged), from = { it is RestoreStep.Previewing }) {
             when (val outcome = restores.replace(staged)) {
                 is RestoreOutcome.Restored -> RestoreStep.Restored(outcome)
 
                 RestoreOutcome.Failed -> RestoreStep.Failed
 
-                is RestoreOutcome.OutcomeUnknown -> RestoreStep.Unknown(staged)
+                is RestoreOutcome.OutcomeUnknown -> RestoreStep.Unknown(outcome.operationId)
 
-                RestoreOutcome.Stale ->
-                    restores.staged()?.let { RestoreStep.Previewing(it, refreshed = true) }
-                        ?: RestoreStep.Failed
+                RestoreOutcome.Stale -> when (val found = restores.staged()) {
+                    is StagedLookup.Waiting -> RestoreStep.Previewing(
+                        found.staged,
+                        refreshed = true
+                    )
+
+                    else -> RestoreStep.Failed
+                }
             }
         }
     }
+
+    /**
+     * After an unknown outcome, reads again what became of it: restored, or not, and
+     * then its file is previewed to confirm again if it still can be; it is never
+     * replaced from here. Still unknown, it says so again. Cancelled, it stays unknown
+     * and can be checked again.
+     */
+    fun check() {
+        val current = state.value as? RestoreStep.Unknown ?: return
+        val checking = current.copy(checking = true)
+        if (current.checking || !state.compareAndSet(current, checking)) return
+        scope.launch {
+            try {
+                state.compareAndSet(checking, checked(current.operationId))
+            } finally {
+                state.compareAndSet(checking, current)
+            }
+        }
+    }
+
+    private suspend fun checked(operation: OperationId): RestoreStep {
+        restores.pending()?.let { return RestoreStep.Restored(it) }
+        return when (val found = restores.staged()) {
+            is StagedLookup.Waiting -> RestoreStep.Previewing(found.staged, notReplaced = true)
+
+            is StagedLookup.Replaced -> replaced(found.operationId)
+
+            is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
+
+            StagedLookup.NotReplaced -> RestoreStep.Failed
+
+            // Nothing is left to read: it stays unknown rather than look like nothing happened.
+            StagedLookup.None -> RestoreStep.Unknown(operation)
+        }
+    }
+
+    /** Committed before a crash: its preferences are applied now and it is shown restored. */
+    private suspend fun replaced(operation: OperationId): RestoreStep =
+        restores.applyPending()?.let { RestoreStep.Restored(it) } ?: RestoreStep.Unknown(operation)
 
     /** Cancels a preview: the file is forgotten and nothing changes. */
     fun cancel() = begin(RestoreStep.Idle, from = { it is RestoreStep.Previewing }) {

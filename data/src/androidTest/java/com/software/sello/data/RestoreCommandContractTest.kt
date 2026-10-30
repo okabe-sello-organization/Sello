@@ -39,6 +39,7 @@ import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StageFailure
+import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.StagedRestore
 import java.io.File
 import java.time.Instant
@@ -350,7 +351,7 @@ class RestoreCommandContractTest {
 
         assertEquals(before, everyRow())
         assertEquals(emptyList<String>(), stagingFiles())
-        assertNull(restores().staged())
+        assertEquals(StagedLookup.None, restores().staged())
     }
 
     @Test
@@ -361,7 +362,7 @@ class RestoreCommandContractTest {
         ledger.reopen()
         val again = restores().staged()
 
-        assertEquals(staged, again)
+        assertEquals(StagedLookup.Waiting(staged), again)
     }
 
     @Test
@@ -374,7 +375,7 @@ class RestoreCommandContractTest {
         assertEquals(RestoreOutcome.Stale, restores().replace(staged))
         assertEquals(before, everyRow())
 
-        val fresh = restores().staged()!!
+        val fresh = (restores().staged() as StagedLookup.Waiting).staged
         assertEquals(BackupSummary(1, 3, 0, 0, 1, investments = 1), fresh.current)
         assertTrue(restores().replace(fresh) is RestoreOutcome.Restored)
     }
@@ -461,7 +462,7 @@ class RestoreCommandContractTest {
 
         // After a restart the history is not replaced again; only the order is pending.
         ledger.reopen()
-        assertNull(restores().staged())
+        assertEquals(StagedLookup.None, restores().staged())
         assertEquals(outcome, restores().pending())
         assertEquals(outcome, restores().replace(staged))
         assertEquals(history, everyRow())
@@ -535,11 +536,37 @@ class RestoreCommandContractTest {
 
         assertTrue("$cancelled", cancelled is CancellationException)
         assertEquals("America/Lima|2|${ledger.revision()}", everyRow().last().single())
-        // The staged file now belongs to a committed replacement: it is never offered
-        // again, and asking with the same staging replays instead of replacing twice.
-        assertNull(restores().staged())
+        // The staged file now belongs to a committed replacement: it is found replaced,
+        // never offered again, and asking with the same staging replays, not replaces twice.
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertTrue(restores().pending() is RestoreOutcome.Restored)
         assertTrue(restores().replace(staged) is RestoreOutcome.Restored)
         assertEquals(1, ledger.rows("operation_receipt", "kind").count { it == "history.restore" })
+    }
+
+    @Test
+    fun aReceiptThatCannotBeReadLeavesTheOutcomeUnknownAndTheFileInPlace() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val before = everyRow()
+        val kept = stagingFiles()
+        val receipts = ledger.database.openHelper.writableDatabase
+        receipts.execSQL("ALTER TABLE operation_receipt RENAME TO operation_receipt_away")
+
+        ledger.reopen()
+        val unknown = restores().staged()
+
+        assertEquals(StagedLookup.Unknown(staged.operationId), unknown)
+        assertEquals(kept, stagingFiles())
+        assertNull(restores().pending())
+
+        // Once the receipts read again, it is found not replaced and offered as it was.
+        ledger.database.openHelper.writableDatabase
+            .execSQL("ALTER TABLE operation_receipt_away RENAME TO operation_receipt")
+        ledger.reopen()
+
+        assertEquals(StagedLookup.Waiting(staged), restores().staged())
+        assertEquals(before, everyRow())
     }
 
     @Test
@@ -549,7 +576,7 @@ class RestoreCommandContractTest {
 
         now = now.plusSeconds(24 * 60 * 60 + 1)
 
-        assertNull(restores().staged())
+        assertEquals(StagedLookup.NotReplaced, restores().staged())
         assertEquals(emptyList<String>(), stagingFiles())
     }
 

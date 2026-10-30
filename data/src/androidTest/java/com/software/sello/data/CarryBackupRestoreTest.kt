@@ -31,6 +31,7 @@ import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.domain.port.StageFailure
+import com.software.sello.domain.port.StagedLookup
 import java.io.File
 import java.time.Instant
 import java.time.YearMonth
@@ -461,7 +462,7 @@ class CarryBackupRestoreTest {
             assertEquals(before, everyRow(other))
             assertEquals(emptyList<String>(), stagingFiles(fresh))
         }
-        assertNull(restores.staged())
+        assertEquals(StagedLookup.None, restores.staged())
     }
 
     // Replacement: fencing, one commit, resumable settings.
