@@ -170,10 +170,15 @@ class RoomRestores(
     override suspend fun staged(): StagedLookup {
         val manifest = readManifest() ?: return StagedLookup.None
         when (committed(manifest.operation)) {
-            // A crash came between the commit and the rename that follows it.
+            // A crash came between the commit and the rename that follows it. Replaced
+            // only once [pending] can read it; otherwise it stays to look at again.
             true -> {
-                io { staged.renameTo(restored) }
-                return StagedLookup.Replaced(manifest.operation)
+                val moved = io { staged.renameTo(restored) && restored.isFile }
+                return if (moved) {
+                    StagedLookup.Replaced(manifest.operation)
+                } else {
+                    StagedLookup.Unknown(manifest.operation)
+                }
             }
 
             // Neither offer it again nor treat it as committed; keep it to look again.
@@ -181,16 +186,17 @@ class RoomRestores(
 
             false -> Unit
         }
-        val position = (position() as? Outcome.Success)?.value ?: return StagedLookup.NotReplaced
+        val position = (position() as? Outcome.Success)?.value
+            ?: return StagedLookup.NotReplaced(manifest.operation)
         val expired = audit.now().isAfter(manifest.stagedAt.plus(STAGING_LIFETIME))
         if (position.generation != manifest.generation || expired) {
             discard()
-            return StagedLookup.NotReplaced
+            return StagedLookup.NotReplaced(manifest.operation)
         }
         val bytes = io { staged.takeIf { it.exists() }?.readBytes() }
-            ?: return StagedLookup.NotReplaced
+            ?: return StagedLookup.NotReplaced(manifest.operation)
         val plan = codec.read(bytes) as? Outcome.Success
-            ?: return StagedLookup.NotReplaced.also { discard() }
+            ?: return StagedLookup.NotReplaced(manifest.operation).also { discard() }
         return StagedLookup.Waiting(
             position.preview(manifest.operation, plan.value.contents, manifest.report)
         )

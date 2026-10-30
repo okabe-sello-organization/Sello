@@ -184,7 +184,7 @@ sealed interface StagedLookup {
      * A file whose replacement did not commit and that cannot be offered now: it
      * expired, the history moved on, or it or the current history could not be read.
      */
-    data object NotReplaced : StagedLookup
+    data class NotReplaced(val operationId: OperationId) : StagedLookup
 
     /** Its replacement had committed; [Restores.pending] has it now. */
     data class Replaced(val operationId: OperationId) : StagedLookup

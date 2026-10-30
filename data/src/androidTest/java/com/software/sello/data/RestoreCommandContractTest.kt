@@ -545,6 +545,52 @@ class RestoreCommandContractTest {
     }
 
     @Test
+    fun aCommittedReplacementWhoseFileCannotBeMovedStaysUnknownUntilItCan() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val replacing = async(Dispatchers.Default) { restores().replace(staged) }
+        whenStamped = { replacing.cancel() }
+        runCatching { replacing.await() }
+        whenStamped = {}
+        // Something already sits where the file would move to, so the rename fails.
+        val blocker = File(files.restoreFolder, "restored.json").apply { mkdirs() }
+        File(blocker, "in-the-way").writeText("x")
+        val kept = stagingFiles()
+
+        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
+        assertEquals(kept, stagingFiles())
+
+        blocker.deleteRecursively()
+
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertTrue(restores().pending() is RestoreOutcome.Restored)
+    }
+
+    @Test
+    fun anExpiredOrMovedStagingIsKeptWhileItsReceiptCannotBeRead() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val kept = stagingFiles()
+        val database = ledger.database.openHelper.writableDatabase
+        database.execSQL("UPDATE profile SET generation = generation + 1")
+        database.execSQL("ALTER TABLE operation_receipt RENAME TO operation_receipt_away")
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+
+        ledger.reopen()
+
+        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
+        assertEquals(kept, stagingFiles())
+
+        // Once the receipts read again it is known not replaced, and only then forgotten.
+        ledger.database.openHelper.writableDatabase
+            .execSQL("ALTER TABLE operation_receipt_away RENAME TO operation_receipt")
+        ledger.reopen()
+
+        assertEquals(StagedLookup.NotReplaced(staged.operationId), restores().staged())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
     fun aReceiptThatCannotBeReadLeavesTheOutcomeUnknownAndTheFileInPlace() = runBlocking {
         currentHistory()
         val staged = stage()
@@ -572,11 +618,11 @@ class RestoreCommandContractTest {
     @Test
     fun anUnconfirmedFileExpiresAfterADay() = runBlocking {
         currentHistory()
-        stage()
+        val staged = stage()
 
         now = now.plusSeconds(24 * 60 * 60 + 1)
 
-        assertEquals(StagedLookup.NotReplaced, restores().staged())
+        assertEquals(StagedLookup.NotReplaced(staged.operationId), restores().staged())
         assertEquals(emptyList<String>(), stagingFiles())
     }
 

@@ -90,7 +90,7 @@ class RestoreSession(
                     is StagedLookup.Waiting -> RestoreStep.Previewing(found.staged)
                     is StagedLookup.Replaced -> replaced(found.operationId)
                     is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
-                    StagedLookup.None, StagedLookup.NotReplaced -> null
+                    StagedLookup.None, is StagedLookup.NotReplaced -> null
                 }
             when {
                 next != null -> state.compareAndSet(RestoreStep.Idle, next)
@@ -157,20 +157,29 @@ class RestoreSession(
         }
     }
 
+    /**
+     * A pending replacement can only be this one: no other file is staged while one is.
+     * Otherwise only what is read about [operation] itself answers it; nothing left to
+     * read, or another operation, leaves it unknown rather than look like nothing happened.
+     */
     private suspend fun checked(operation: OperationId): RestoreStep {
         restores.pending()?.let { return RestoreStep.Restored(it) }
-        return when (val found = restores.staged()) {
+        val found = restores.staged()
+        if (found.operationId() != operation) return RestoreStep.Unknown(operation)
+        return when (found) {
             is StagedLookup.Waiting -> RestoreStep.Previewing(found.staged, notReplaced = true)
-
-            is StagedLookup.Replaced -> replaced(found.operationId)
-
-            is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
-
-            StagedLookup.NotReplaced -> RestoreStep.Failed
-
-            // Nothing is left to read: it stays unknown rather than look like nothing happened.
-            StagedLookup.None -> RestoreStep.Unknown(operation)
+            is StagedLookup.Replaced -> replaced(operation)
+            is StagedLookup.NotReplaced -> RestoreStep.Failed
+            is StagedLookup.Unknown, StagedLookup.None -> RestoreStep.Unknown(operation)
         }
+    }
+
+    private fun StagedLookup.operationId(): OperationId? = when (this) {
+        StagedLookup.None -> null
+        is StagedLookup.Waiting -> staged.operationId
+        is StagedLookup.NotReplaced -> operationId
+        is StagedLookup.Replaced -> operationId
+        is StagedLookup.Unknown -> operationId
     }
 
     /** Committed before a crash: its preferences are applied now and it is shown restored. */

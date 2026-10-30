@@ -42,6 +42,8 @@ import org.junit.Test
 class RestoreViewModelTest {
     private val operation = OperationId.of("00000000-0000-4000-8000-000000005000")
         .let { (it as Outcome.Success).value }
+    private val otherOperation = OperationId.of("00000000-0000-4000-8000-000000005001")
+        .let { (it as Outcome.Success).value }
     private val staged = StagedRestore(
         operationId = operation,
         backupAt = Instant.parse("2026-10-22T14:30:00Z"),
@@ -214,12 +216,29 @@ class RestoreViewModelTest {
 
         // Confirm does nothing here; Comprobar reads the receipt and never replaces.
         model.onAction(RestoreAction.Confirm)
-        restores.stagedAnswer = StagedLookup.Replaced(operation)
         restores.applyAnswer = done
+        val applied = restores.applied
+
+        // What is read about any other operation does not answer this one.
+        for (other in listOf(
+            StagedLookup.Replaced(otherOperation),
+            StagedLookup.Waiting(staged.copy(operationId = otherOperation)),
+            StagedLookup.NotReplaced(otherOperation),
+            StagedLookup.Unknown(otherOperation)
+        )) {
+            restores.stagedAnswer = other
+            model.onAction(RestoreAction.Check)
+            runCurrent()
+            assertEquals("$other", RestoreStep.Unknown(operation), model.state.value.step)
+        }
+        assertEquals(applied, restores.applied)
+
+        restores.stagedAnswer = StagedLookup.Replaced(operation)
         model.onAction(RestoreAction.Check)
         runCurrent()
 
         assertEquals(RestoreStep.Restored(done), model.state.value.step)
+        assertEquals(applied + 1, restores.applied)
         assertEquals(1, restores.staged.size)
         assertEquals(1, restores.replaced)
     }
@@ -347,7 +366,7 @@ class RestoreViewModelTest {
         assertEquals(RestoreStep.Previewing(staged), model.state.value.step)
 
         // The staging expired or the history moved on: nothing waits any more.
-        restores.stagedAnswer = StagedLookup.NotReplaced
+        restores.stagedAnswer = StagedLookup.NotReplaced(operation)
         val restored = afterProcessDeath(handle, process)
 
         assertEquals(RestoreStep.Idle, restored.state.value.step)
@@ -464,6 +483,7 @@ class RestoreViewModelTest {
     @Test
     fun checkingAgainFindsItRestoredAndAppliesItsPreferences() = runTest {
         val restored = unknownAfterTheRestart()
+        val applied = restores.applied
 
         restores.stagedAnswer = StagedLookup.Replaced(operation)
         restores.applyAnswer = done
@@ -471,6 +491,7 @@ class RestoreViewModelTest {
         runCurrent()
 
         assertEquals(RestoreStep.Restored(done), restored.state.value.step)
+        assertEquals(applied + 1, restores.applied)
         assertEquals(0, restores.replaced)
     }
 
@@ -503,7 +524,7 @@ class RestoreViewModelTest {
     fun checkingAgainFindsItNotReplacedAndNoLongerOfferedAndSaysNothingChanged() = runTest {
         val restored = unknownAfterTheRestart()
 
-        restores.stagedAnswer = StagedLookup.NotReplaced
+        restores.stagedAnswer = StagedLookup.NotReplaced(operation)
         restored.onAction(RestoreAction.Check)
         runCurrent()
 
@@ -536,6 +557,7 @@ class RestoreViewModelTest {
     fun checkingTwiceInARowReadsOnce() = runTest {
         val restored = unknownAfterTheRestart()
         val before = restores.looked
+        val applied = restores.applied
         restores.stagedGate = CompletableDeferred()
 
         restored.onAction(RestoreAction.Check)
@@ -549,6 +571,7 @@ class RestoreViewModelTest {
         runCurrent()
 
         assertEquals(before + 1, restores.looked)
+        assertEquals(applied + 1, restores.applied)
         assertEquals(RestoreStep.Restored(done), restored.state.value.step)
     }
 
@@ -565,6 +588,14 @@ class RestoreViewModelTest {
 
         assertEquals(RestoreStep.Unknown(operation), restored.state.value.step)
         assertFalse(restored.state.value.busy)
+
+        restores.stagedGate = null
+        restores.stagedAnswer = StagedLookup.Replaced(operation)
+        restores.applyAnswer = done
+        restored.onAction(RestoreAction.Check)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done), restored.state.value.step)
         assertEquals(0, restores.replaced)
     }
 
@@ -581,9 +612,12 @@ class RestoreViewModelTest {
 
         restores.stagedAnswer = StagedLookup.Replaced(operation)
         restores.applyAnswer = done
+        val applied = restores.applied
         val restored = afterProcessDeath(handle, process)
 
         assertEquals(RestoreStep.Restored(done), restored.state.value.step)
+        // Once as the new process starts, once for the replacement it found.
+        assertEquals(applied + 2, restores.applied)
         assertEquals(0, restores.replaced)
     }
 
