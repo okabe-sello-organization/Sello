@@ -147,34 +147,49 @@ class RestoreSession(
      * not replaced, the chosen file is staged once more; the earlier file is never
      * previewed in answer to this choice.
      */
-    fun choose(source: DocumentSource) = begin(RestoreStep.Checking, from = ::choosable) {
-        when (val read = reader.read(source, maxBytes)) {
-            DocumentRead.Failed -> RestoreStep.Rejected(RestoreRejection.Unreadable)
+    fun choose(source: DocumentSource) = begin(RestoreStep.Checking, from = ::choosable) { before ->
+        val read = reader.read(source, maxBytes)
+        resuming.withLock {
+            when (read) {
+                DocumentRead.Failed ->
+                    RestoreStep.Rejected(RestoreRejection.Unreadable).also { forget(before) }
 
-            is DocumentRead.TooLarge -> RestoreStep.Rejected(RestoreRejection.TooLarge)
+                is DocumentRead.TooLarge ->
+                    RestoreStep.Rejected(RestoreRejection.TooLarge).also { forget(before) }
 
-            is DocumentRead.Read -> resuming.withLock {
                 // A look that found it may have lost its turn to this choice.
-                restores.pending()?.let { RestoreStep.Restored(it, chosenSetAside = true) }
-                    ?: stage(read.bytes, again = true)
+                is DocumentRead.Read ->
+                    restores.pending()?.let { RestoreStep.Restored(it, chosenSetAside = true) }
+                        ?: stage(read.bytes, again = true, over = before)
             }
         }
     }
 
+    /**
+     * A file chosen over a preview that did not stage: the previewed file is forgotten,
+     * so it never comes back after another was picked. Called with [resuming] held.
+     */
+    private suspend fun forget(before: RestoreStep) {
+        if (before is RestoreStep.Previewing) restores.discard()
+    }
+
     /** Called with [resuming] held. */
-    private suspend fun stage(bytes: ByteArray, again: Boolean): RestoreStep =
+    private suspend fun stage(bytes: ByteArray, again: Boolean, over: RestoreStep): RestoreStep =
         when (val staged = restores.stage(bytes)) {
             is Outcome.Success -> RestoreStep.Previewing(staged.value)
 
             is Outcome.Failure -> when (val failure = staged.error) {
-                is StageFailure.Rejected -> RestoreStep.Rejected(failure.reason)
+                is StageFailure.Rejected -> RestoreStep.Rejected(failure.reason).also {
+                    forget(over)
+                }
 
-                StageFailure.Storage -> RestoreStep.Failed
+                StageFailure.Storage -> RestoreStep.Failed.also { forget(over) }
 
+                // Nothing is forgotten here: the file staged may have replaced the history.
                 StageFailure.Unsettled -> when (val earlier = look(chosen = null)) {
                     is RestoreStep.Restored -> earlier.copy(chosenSetAside = true)
                     is RestoreStep.Unknown -> earlier.copy(chosenSetAside = true)
-                    else -> if (again) stage(bytes, again = false) else RestoreStep.Failed
+                    else -> if (again) stage(bytes, again = false, over) else RestoreStep.Failed
                 }
             }
         }
@@ -305,7 +320,7 @@ class RestoreSession(
     private fun begin(
         busy: RestoreStep,
         from: (RestoreStep) -> Boolean,
-        work: suspend () -> RestoreStep
+        work: suspend (before: RestoreStep) -> RestoreStep
     ) {
         var before: RestoreStep? = null
         state.update { current ->
@@ -317,7 +332,7 @@ class RestoreSession(
                 current
             }
         }
-        before?.let { afterStartUp(busy, before = it) { state.value = work() } }
+        before?.let { from -> afterStartUp(busy, before = from) { state.value = work(from) } }
     }
 
     /**

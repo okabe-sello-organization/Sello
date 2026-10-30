@@ -1071,11 +1071,11 @@ class RestoreCommandContractTest {
     @Test
     fun aManifestThatCannotBeReadWholeIsKeptWhileItsReplacementCommitted() = runBlocking {
         currentHistory()
-        committedBeforeTheRename()
+        val staged = committedBeforeTheRename()
         manifestCutShort()
         val kept = stagingFiles()
 
-        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
         assertEquals(kept, stagingFiles())
     }
 
@@ -1115,14 +1115,14 @@ class RestoreCommandContractTest {
     @Test
     fun aManifestThatCannotBeReadWholeIsKeptWhileItsReceiptCannotBeRead() = runBlocking {
         currentHistory()
-        stage()
+        val staged = stage()
         manifestCutShort()
         val kept = stagingFiles()
         ledger.database.openHelper.writableDatabase
             .execSQL("ALTER TABLE operation_receipt RENAME TO operation_receipt_away")
         ledger.reopen()
 
-        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
         assertEquals(kept, stagingFiles())
     }
 

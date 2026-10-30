@@ -196,7 +196,7 @@ class RoomRestores(
     }
 
     override suspend fun staged(): StagedLookup {
-        val manifest = readManifest() ?: return StagedLookup.None.also { clearLeftovers() }
+        val manifest = readManifest() ?: return withoutStaging()
         when (committed(manifest.operation)) {
             // A crash came between the commit and the rename that follows it. Replaced
             // only once [pending] can read it; otherwise it stays to look at again.
@@ -254,13 +254,13 @@ class RoomRestores(
      * With no replacement pending and no usable staging, what is in the folder is what a
      * stage, discard or clean-up cut short left: a file without its manifest or the
      * reverse, an `applied` list, temporary copies. None says what became of a replacement.
-     * A manifest beside its file that cannot be read whole is not a leftover: it is kept
-     * unless the operation it names is known not to have committed.
+     * A manifest beside its file that cannot be read whole is not a leftover: it is kept,
+     * and its replacement is unknown, unless the operation it names did not commit.
      */
-    private suspend fun clearLeftovers() {
+    private suspend fun withoutStaging(): StagedLookup {
         if (io { manifest.exists() && staged.exists() }) {
-            val operation = io { manifestOperation() } ?: return
-            if (committed(operation) != false) return
+            val operation = io { manifestOperation() } ?: return StagedLookup.None
+            if (committed(operation) != false) return StagedLookup.Unknown(operation)
         }
         io {
             if (!restored.exists()) {
@@ -269,6 +269,7 @@ class RoomRestores(
                 clear(applied)
             }
         }
+        return StagedLookup.None
     }
 
     override suspend fun replace(staged: StagedRestore): RestoreOutcome {

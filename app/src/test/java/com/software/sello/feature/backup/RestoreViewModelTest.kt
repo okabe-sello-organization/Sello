@@ -678,6 +678,67 @@ class RestoreViewModelTest {
     }
 
     @Test
+    fun aFileChosenOverAPreviewThatCannotBeRestoredForgetsThePreviewedOne() = runTest {
+        for (failure in listOf(
+            StageFailure.Rejected(RestoreRejection.NotABackup),
+            StageFailure.Storage
+        )) {
+            restores.stageAnswer = Outcome.Success(staged)
+            val (model) = model()
+            choose(model)
+            val discarded = restores.discarded
+
+            restores.stageAnswer = Outcome.Failure(failure)
+            choose(model)
+
+            assertTrue(model.state.value.step !is RestoreStep.Previewing)
+            assertEquals(discarded + 1, restores.discarded)
+        }
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun aFileChosenOverAPreviewThatCannotBeReadForgetsThePreviewedOne() = runTest {
+        restores.stageAnswer = Outcome.Success(staged)
+        val (model) = model()
+        choose(model)
+
+        document = DocumentRead.Failed
+        choose(model)
+
+        assertEquals(RestoreStep.Rejected(RestoreRejection.Unreadable), model.state.value.step)
+        assertEquals(1, restores.discarded)
+    }
+
+    @Test
+    fun aFileThatCannotBeRestoredWithNoPreviewForgetsNothing() = runTest {
+        restores.stageAnswer = Outcome.Failure(StageFailure.Rejected(RestoreRejection.NotABackup))
+        val (model) = model()
+
+        choose(model)
+
+        assertEquals(RestoreStep.Rejected(RestoreRejection.NotABackup), model.state.value.step)
+        assertEquals(0, restores.discarded)
+    }
+
+    @Test
+    fun aFileChosenOverAPreviewAndRefusedForAnUnsettledOneForgetsNothing() = runTest {
+        restores.stageAnswer = Outcome.Success(staged)
+        val (model) = model()
+        choose(model)
+
+        restores.stageAnswer = Outcome.Failure(StageFailure.Unsettled)
+        restores.stagedAnswer = StagedLookup.Unknown(operation)
+        choose(model)
+
+        assertEquals(
+            RestoreStep.Unknown(operation, chosenSetAside = true),
+            model.state.value.step
+        )
+        assertEquals(0, restores.discarded)
+    }
+
+    @Test
     fun aPreviewNeverConfirmedBeforeTheProcessDiedComesBackWithoutANote() = runTest {
         val handle = SavedStateHandle()
         val process = CoroutineScope(backgroundScope.coroutineContext + Job())
