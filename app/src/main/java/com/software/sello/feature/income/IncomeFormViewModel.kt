@@ -86,7 +86,9 @@ class IncomeFormViewModel(
         val source: String,
         val other: String,
         @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
-        val note: String
+        val note: String,
+        /** The person picked [source]; the preselected Salario alone is not a choice. */
+        val picked: Boolean = false
     )
 
     @Serializable
@@ -238,7 +240,7 @@ class IncomeFormViewModel(
             is IncomeFormAction.SourcePicked -> if (now.editable &&
                 action.key in IncomeSource.keys
             ) {
-                change(draft.value.copy(source = action.key))
+                change(draft.value.copy(source = action.key, picked = true))
             }
 
             IncomeFormAction.Several -> if (now.canOpenSeveral && !now.loading) {
@@ -247,7 +249,7 @@ class IncomeFormViewModel(
                     it.copy(
                         several = IncomeSeveral(
                             amount = (typed.amount as? AmountDraft.Digits)?.digits,
-                            sourceKey = typed.source,
+                            sourceKey = typed.source.takeIf { typed.picked },
                             otherName = typed.other.takeIf { name ->
                                 typed.source == IncomeSource.Other.KEY && name.isNotBlank()
                             },

@@ -60,11 +60,12 @@ enum class IncomeFormError {
 
 /**
  * What is typed so far, handed to Anotar varios to become its line one: the amount's
- * digits, the source with Otro's name, the note and the date. Each may be missing.
+ * digits, the source the person picked with Otro's name, the note and the date. Each
+ * may be missing.
  */
 data class IncomeSeveral(
     val amount: String?,
-    val sourceKey: String,
+    val sourceKey: String?,
     val otherName: String?,
     val note: String?,
     val date: LocalDate

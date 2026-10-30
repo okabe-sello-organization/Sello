@@ -37,6 +37,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -824,6 +825,32 @@ class BulkIncomesViewModelTest {
         val notice = said as CorrectionNotice.IncomesRecorded
         assertEquals(3, notice.count)
         assertEquals("1.420.000", notice.total.digits)
+        assertTrue(restored.now.closed)
+    }
+
+    @Test
+    fun anIncomeSaveCancelledMidwayStaysPendingAndAfterARestartIsCheckedNotSentAgain() {
+        val saved = SavedStateHandle(mapOf("income" to true))
+        val gate = CompletableDeferred<Unit>()
+        incomes.hold = gate
+        val bulk = incomeSheet(saved)
+        bulk.threeIncomes()
+        bulk.submit()
+        val operation = incomes.created.single().operationId
+        gate.completeExceptionally(CancellationException("process ending"))
+
+        // Cancelled is not an answer: the sheet stays busy, with no error and nothing looked up.
+        assertTrue(bulk.now.busy)
+        assertNull(bulk.now.error)
+        assertTrue(incomes.looked.isEmpty())
+
+        incomes.hold = null
+        incomes.found = { Outcome.Success(incomes.committed(it, 3)) }
+        val restored = sheet(saved.afterProcessDeath())
+
+        assertEquals(1, incomes.created.size)
+        assertEquals(listOf(operation), incomes.looked)
+        assertEquals(3, (said as CorrectionNotice.IncomesRecorded).count)
         assertTrue(restored.now.closed)
     }
 
