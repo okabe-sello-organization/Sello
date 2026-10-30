@@ -23,7 +23,7 @@ synthetic.
 | --- | --- |
 | [Recibo / Home](home.html) | Locked 2026-10-15 (past-month state added with Resumen) |
 | [Expense and income entry](entry.html) | Locked 2026-10-15 |
-| [Anotar varios](varios.html) | Pending the owner's approval (SELLO-126, E23): the bulk receipt for expenses, incomes, one goal and one investment, and where it opens from |
+| [Anotar varios](varios.html) | Locked 2026-10-30 by the owner (SELLO-126, E23): the bulk receipt for expenses, incomes, one goal and one investment, and where it opens from |
 | [Resumen](resumen.html) | Locked 2026-10-15 |
 | [Income](income.html) | Locked 2026-10-15 |
 | [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16; + Nueva meta moved to the band by the owner 2026-10-26; Nueva meta and Nueva categoría made alike by the owner 2026-10-26 (see below) |
@@ -153,10 +153,10 @@ paper-slip note dialog, and placing the note beside the date or under the amount
 
 ## Anotar varios
 
-**Pending the owner's approval** (SELLO-126, [varios.html](varios.html)). One receipt for several
+**Locked 2026-10-30 by the owner** (SELLO-126, [varios.html](varios.html)). One receipt for several
 expenses, incomes, goal movements or investment movements, saved whole or not at all. It is
 the entry sheet's language redrawn from v1.1's [Anotar varios and Varios
-movimientos](../sello-spec.html#s-varios), and no screen is built before the owner approves it.
+movimientos](../sello-spec.html#s-varios). The owner approved it as drawn, including every choice the page lists for them.
 
 **Order, top to bottom:** ✕ and the Gasto/Ingreso switch (a title and the goal's or
 investment's name instead, for those two) → the **receipt**, a pinked slip that takes the free
