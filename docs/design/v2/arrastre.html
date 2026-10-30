@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sello v2 · Arrastre</title>
+  <link rel="stylesheet" href="sello.css">
+  <style>
+    .carry{margin-top:10px}
+    /* A caption under a label wraps instead of pushing the amount out of the line. */
+    .app .leader>span:first-child{flex:0 1 auto;min-width:0}
+    .app .leader small{white-space:normal}
+    /* Large text: the amount moves under its label rather than being cut. */
+    .app.large .leader{flex-wrap:wrap}
+    .app.large .leader .dots{display:none}
+    .app.large .leader b{margin-left:auto}
+    .carry .leader.strong b{font-size:1.15em}
+    .src{display:block;font-size:.8em;color:var(--soft);margin:4px 0 0}
+    .why{margin:8px 0 0;color:var(--soft);font-size:.93em;line-height:1.4}
+    .why b{color:var(--ink)}
+    .dt-hero{display:flex;align-items:center;gap:14px;margin:8px 0 2px}
+    .dt-hero .circle{width:64px;height:64px;min-width:64px}.dt-hero .circle .icon{width:30px;height:30px}
+    .dt-hero .hero{margin:0;font-size:3.4em}
+    .per-row{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-top:10px}
+    .per-row span{display:grid;color:var(--soft);font-size:.93em}
+    .per-row b{color:var(--ink);font-size:1.25em;font-weight:900}
+    .per-row small{grid-column:1/-1;color:var(--soft);font-size:.86em}
+    .carry-card h2{margin:0 0 4px;font-size:1.05em;font-weight:800}
+    .carry-card p{margin:0 0 12px;color:var(--soft);font-size:.9em;line-height:1.4}
+    .carry-card p b{color:var(--ink)}
+    .carry-card .state{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 10px;font-weight:800}
+    .carry-card .state small{color:var(--soft);font-weight:600}
+    .refusal{border-left:4px solid var(--warn);background:var(--alt);border-radius:8px;padding:8px 10px;margin:0 0 10px;font-size:.9em;line-height:1.4}
+    .refusal b{display:block}
+    .carry-card .done{color:var(--gain);font-weight:700;margin:0 0 10px;font-size:.9em}
+    .outline-btn:disabled{border-color:var(--dim);color:var(--outline)}
+    .confirm.list{max-height:calc(100% - 28px);display:flex;flex-direction:column;margin:14px 12px}
+    .confirm.list .scroll{overflow:auto;min-height:0;scrollbar-width:none}
+    .confirm .lead{font-weight:800;color:var(--ink);margin:12px 0 2px}
+    .confirm .what{font-size:.93em}
+    .ba{margin:10px 0 0}
+    .ba div{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:5px 0;border-top:1px dotted var(--rule);font-size:.93em}
+    .ba div span{color:var(--soft)}
+    .ba div b{white-space:nowrap}
+    .ba div.same b{color:var(--soft);font-weight:600}
+    .cl-cat{display:flex;align-items:center;gap:8px;font-weight:800;margin:12px 0 2px}
+    .cl-cat .circle{width:26px;height:26px;min-width:26px;border-width:2px}.cl-cat .circle .icon{width:15px;height:15px}
+    .cl-row{display:grid;grid-template-columns:auto 1fr;gap:0 10px;padding:6px 0;border-top:1px dotted var(--rule);font-size:.93em}
+    .cl-row .m{font-weight:800}
+    .cl-row .v{text-align:right;font-weight:700}
+    .cl-row small{grid-column:2;text-align:right;color:var(--soft);font-size:.9em}
+    .cl-row small.flip{color:var(--ink);font-weight:700}
+    .changed{border-left:4px solid var(--warn);background:var(--alt);border-radius:8px;padding:8px 10px;margin:0 0 10px;font-size:.9em}
+    .save-line{margin:0 2px 6px;font-size:.9em;color:var(--loss);font-weight:600}
+    .fx-ic{display:grid;place-items:center}
+    .app.large .dt-hero{flex-wrap:wrap}
+    .app.large .per-row{grid-template-columns:1fr}
+    .app.large .confirm.list{margin:8px}
+    .app.large .ba div{flex-wrap:wrap}
+    .app.large .ba div b{margin-left:auto}
+    /* The limit sheet, as on ajustar.html. */
+    .adj-cap{font-size:.8em;color:var(--soft);font-weight:500}
+    .rank-main small{display:block}
+    .limit-sheet{padding:12px 0 0;display:flex;flex-direction:column}
+    .ls-head{display:flex;align-items:center;gap:10px;padding:0 12px 10px}
+    .ls-head .circle{width:40px;height:40px;min-width:40px}.ls-head .circle .icon{width:20px;height:20px}
+    .ls-head>span.ls-title{flex:1;display:grid}.ls-head b{font-size:1.1em;font-weight:800}.ls-head small{color:var(--soft);font-size:.86em}
+    .ls-body{padding:0 12px}
+    .limit-sheet .seg{max-width:none;margin:0 0 6px}
+    .ls-scope{margin:0 2px 10px;font-size:.84em;color:var(--soft)}
+    .ls-amount{background:var(--alt);border-radius:12px;padding:8px 12px;margin-bottom:8px}
+    .ls-amount .amount-meta{font-size:.86em}
+    .ls-amount .amount-value{font-size:2.4em}
+    .limit-sheet .chips{grid-template-rows:auto;margin:0 -12px 8px}
+    .ls-fact{display:flex;gap:8px;align-items:flex-start;margin:2px 2px 10px;font-size:.9em;color:var(--soft)}
+    .ls-fact b{color:var(--ink)}.ls-fact .icon{width:1.3em;height:1.3em;color:var(--brand);flex:none}
+    .limit-sheet .entry-action{background:var(--paper);padding:0 12px 8px}
+    .limit-sheet .pad{background:var(--desk);padding-top:8px}
+    .ls-unknown{background:var(--warnsoft);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:.9em}
+    .ls-unknown b{display:block;margin-bottom:2px}
+    .open-head{margin:14px 0 4px;font-size:.93em;font-weight:800;color:var(--soft)}
+  </style>
+</head>
+<body class="review">
+  <script src="icons.js?v=4"></script>
+  <header>
+    <h1><small>Sello v2 · E09 · proposed 2026-10-28 (SELLO-041), not locked</small>Arrastre</h1>
+    <form class="controls" onsubmit="return false" aria-label="Review controls">
+      <label>Ink<select id="ink"><option value="cobalt">Cobalto</option><option value="violet">Violeta</option></select></label>
+      <label>Theme<select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <label>Text<select id="scale"><option value="1">100%</option><option value="2">200%</option></select></label>
+    </form>
+  </header>
+  <div class="section">
+    <p class="lede">Signed carry-over, per category and opt-in (<a href="../../decisions/0020-signed-carryover-policy.md">ADR 0020</a>). Every figure is one of the <a href="../../testing/signed-carryover-examples.md">SC examples</a>, cited in each frame; the wording is ADR 0020's. A person who never turns carry on sees the locked screens unchanged. Carry is a planning figure, never a balance, income or expense. Synthetic data.</p>
+    <h2>1 · Turning carry on, in Editar categoría</h2>
+    <div class="frames" id="enable"></div>
+    <h2>2 · The breakdown on Recibo</h2>
+    <div class="frames" id="recibo"></div>
+    <h2>3 · The breakdown in category detail</h2>
+    <div class="frames" id="detail"></div>
+    <h2>4 · Dropping a balance</h2>
+    <div class="frames" id="drop"></div>
+    <h2>5 · Correcting the past</h2>
+    <div class="frames" id="correct"></div>
+    <h2>6 · What Sello recorded on opening (designed; not built in SELLO-041 phase 1b: it needs a CarryoverReads binding in :data, pending a ruling)</h2>
+    <div class="frames" id="catchup"></div>
+    <h2>7 · When carry cannot be calculated</h2>
+    <div class="frames" id="unavailable"></div>
+    <h2>8 · Resumen, income and Ajustar presupuesto</h2>
+    <div class="frames" id="resumen"></div>
+  </div>
+  <script src="kit.js"></script>
+  <script src="arrastre.js"></script>
+</body>
+</html>

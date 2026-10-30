@@ -247,15 +247,24 @@ private fun CategoryHistory(categoryId: String, figures: DetailInsights) {
             }
             val spentSpoken =
                 stringResource(R.string.category_detail_history_spoken, period, entry.spent.spoken)
-            val spoken =
-                entry.limit?.let {
-                    stringResource(
-                        R.string.category_detail_history_limit_spoken,
-                        spentSpoken,
-                        it.spoken
-                    )
-                }
-                    ?: spentSpoken
+            val carry = entry.carry
+            val spoken = when {
+                entry.limit != null && carry != null -> stringResource(
+                    R.string.category_detail_history_carry_spoken,
+                    spentSpoken,
+                    entry.limit.spoken,
+                    carry.base.spoken,
+                    carry.carry.spoken
+                )
+
+                entry.limit != null -> stringResource(
+                    R.string.category_detail_history_limit_spoken,
+                    spentSpoken,
+                    entry.limit.spoken
+                )
+
+                else -> spentSpoken
+            }
             ChartPoint(
                 entry.month.toString(),
                 entry.month.format(AxisMonth),
@@ -293,12 +302,28 @@ private fun CategoryHistory(categoryId: String, figures: DetailInsights) {
             }
         ) {
             Spacer(Modifier.height(SelloTheme.spacing.sm))
-            ChartDetail(stringResource(R.string.category_detail_history_limit_legend))
+            ChartDetail(
+                stringResource(
+                    if (figures.history.any { it.carry != null }) {
+                        R.string.category_detail_history_carry_legend
+                    } else {
+                        R.string.category_detail_history_limit_legend
+                    }
+                )
+            )
         }
         figures.history.firstOrNull { it.month.toString() == selected }?.let { entry ->
             LeaderLine(entry.month.format(HistoryMonth)) { MoneyText(entry.spent) }
-            entry.limit?.let { value ->
-                LeaderLine(stringResource(R.string.category_detail_limit)) { MoneyText(value) }
+            val carry = entry.carry
+            if (entry.limit != null && carry != null) {
+                // Never the capacity alone: base and carry beside it (CP27).
+                LeaderLine(stringResource(R.string.carry_base)) { MoneyText(carry.base) }
+                LeaderLine(stringResource(R.string.carry_in)) { MoneyText(carry.carry) }
+                LeaderLine(stringResource(R.string.carry_capacity)) { MoneyText(entry.limit) }
+            } else {
+                entry.limit?.let { value ->
+                    LeaderLine(stringResource(R.string.category_detail_limit)) { MoneyText(value) }
+                }
             }
         }
     }

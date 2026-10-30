@@ -15,6 +15,7 @@ import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.MonthLimit
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SpendingHistory
 import com.software.sello.domain.model.StorageFailure
 import java.time.LocalDate
@@ -93,6 +94,24 @@ internal class CarryRows(
 
             is Outcome.Failure -> spending
         }
+}
+
+/**
+ * [input] for a snapshot: a figure that does not fit is the snapshot's unrepresentable
+ * failure; any other names this category, so the screens can point at the repair (CP8).
+ */
+internal fun CarryRows.snapshotInput(
+    asOf: LocalDate
+): Outcome<CategoryCarryInput, SnapshotFailure> = when (val read = input(asOf)) {
+    is Outcome.Success -> read
+
+    is Outcome.Failure -> Outcome.Failure(
+        if (read.error == CarryoverFailure.Unrepresentable) {
+            SnapshotFailure.Unrepresentable
+        } else {
+            SnapshotFailure.Carryover(read.error, categoryId)
+        }
+    )
 }
 
 /** The chain of these that carries into [month], or null when none does. */

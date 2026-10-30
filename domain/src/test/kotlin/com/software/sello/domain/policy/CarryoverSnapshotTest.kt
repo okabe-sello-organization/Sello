@@ -665,7 +665,7 @@ class CarryoverSnapshotTest {
             read("2027-03-10", listOf(line(comida, "Comida", 100_000)), emptyList(), listOf(unread))
 
         assertEquals(
-            SnapshotFailure.Carryover(CarryoverFailure.MissingHistory(feb)),
+            SnapshotFailure.Carryover(CarryoverFailure.MissingHistory(feb), comida),
             failure.errorOrFail()
         )
     }
@@ -698,7 +698,7 @@ class CarryoverSnapshotTest {
             read("2027-02-10", listOf(line(comida, "Comida", null)), emptyList(), listOf(input))
 
         assertEquals(
-            SnapshotFailure.Carryover(CarryoverFailure.NoFiniteBase(feb)),
+            SnapshotFailure.Carryover(CarryoverFailure.NoFiniteBase(feb), comida),
             failure.errorOrFail()
         )
     }

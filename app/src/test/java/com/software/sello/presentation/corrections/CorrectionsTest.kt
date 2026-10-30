@@ -39,6 +39,10 @@ import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.income.incomeId
 import com.software.sello.feature.investments.HandInvestmentCommands
+import com.software.sello.navigation.HandCategoryReads
+import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.testing.TestMoneyLabels
+import com.software.sello.testing.testMoney
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
@@ -79,7 +83,9 @@ class CorrectionsTest {
             investments,
             monotonic,
             { uuid(nextId++) },
-            scope.backgroundScope
+            scope.backgroundScope,
+            HandCategoryReads(),
+            testMoney()
         )
 
     private val storageFailed =
@@ -160,8 +166,9 @@ class CorrectionsTest {
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("SQLiteException")) }
         val unreadable = delete()
 
+        // A lookup that fails says nothing either way: unknown, never "not deleted".
         assertEquals(
-            listOf(DeleteResult.Failed, DeleteResult.Deleted, DeleteResult.Failed),
+            listOf(DeleteResult.Failed, DeleteResult.Deleted, DeleteResult.Unknown),
             listOf(notSaved, saved, unreadable)
         )
         assertEquals(CorrectionNotice.Deleted(canUndo = false), savedNotice)

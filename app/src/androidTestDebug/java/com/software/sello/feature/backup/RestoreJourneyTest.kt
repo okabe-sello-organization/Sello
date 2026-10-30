@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Instrumentation
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -19,7 +20,6 @@ import com.software.sello.TestData
 import com.software.sello.awaitTag
 import com.software.sello.data.backup.BackupCodec
 import com.software.sello.data.backup.BackupContents
-import com.software.sello.data.backup.CarryChainSupport
 import com.software.sello.data.backup.FinancialSnapshot
 import com.software.sello.data.backup.PortablePreferences
 import com.software.sello.domain.model.AppearancePreference
@@ -53,6 +53,7 @@ import com.software.sello.feature.settings.SETTINGS_TAG
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.platform.ProcessAppRestart
 import com.software.sello.platform.TestDocuments
+import com.software.sello.presentation.carry.CARRY_BREAKDOWN_TAG
 import com.software.sello.presentation.restore.RESTORE_DONE_TAG
 import com.software.sello.presentation.restore.RESTORE_LEAVE_TAG
 import java.io.File
@@ -133,7 +134,7 @@ class RestoreJourneyTest {
     private fun amount(pesos: Long) = TransactionAmount.of(Money.cop(pesos)).value()
 
     /** G01 in the stored zone, dark violet and alphabetical; written by the real encoder. */
-    private fun backup(withCarry: Boolean = false): ByteArray {
+    private fun backup(carrying: Boolean = false): ByteArray {
         val day = TestCommands.today
         val at = Instant.parse("2026-10-22T14:30:00Z")
         val comida = CategoryId.of(id(1)).value()
@@ -141,12 +142,12 @@ class RestoreJourneyTest {
             ExpenseId.of(id(number)).value(), comida, day.minusDays(daysAgo), number.toLong(),
             amount(pesos), null, 1, at, at
         )
-        val chains = if (withCarry) {
+        val chains = if (carrying) {
             listOf(CarryChain.of(comida, YearMonth.from(day)).value())
         } else {
             emptyList()
         }
-        return BackupCodec(carryChains = CarryChainSupport.Accepted).encode(
+        return BackupCodec().encode(
             BackupContents(
                 exportedAt = at,
                 financialMonth = YearMonth.from(day),
@@ -281,6 +282,47 @@ class RestoreJourneyTest {
         assertEquals(1, restarts)
     }
 
+    /**
+     * SELLO-041 replaces SELLO-040's customer refusal: a file in which a category carries
+     * is previewed and restored like any other, never refused for its chain, and Recibo
+     * then shows the month with its carry (ADR 0020 CP26, CP27).
+     */
+    @Test
+    fun aFileWithACarryChainIsRestoredAndReciboShowsTheCarry() {
+        val file = backup(carrying = true)
+        answerWith(file)
+        openRespaldoAndChoose()
+        rule.awaitTag(RESTORE_PREVIEW_TAG)
+        assertEquals(
+            0,
+            rule.onAllNodes(hasTestTag(RESTORE_REJECTED_TAG)).fetchSemanticsNodes().size
+        )
+
+        rule.onNodeWithTag(RESTORE_CONFIRM_TAG).performScrollTo().performClick()
+        rule.awaitTag(RESTORE_DONE_TAG)
+
+        assertEquals(
+            listOf("${id(1)}|${YearMonth.from(TestCommands.today)}|null"),
+            TestData.rows(
+                "SELECT category_id || '|' || start_month || '|' || IFNULL(end_month, 'null') FROM carry_chain"
+            )
+        )
+        rule.onNodeWithTag(RESTORE_LEAVE_TAG).performScrollTo().performClick()
+        rule.waitForIdle()
+        scenario?.close()
+        scenario = ActivityScenario.launch(Intent(context, MainActivity::class.java))
+        rule.awaitTag(RECIBO_SUMMARY_TAG)
+        rule.onNodeWithTag(
+            CARRY_BREAKDOWN_TAG,
+            useUnmergedTree = true
+        ).performScrollTo().assertExists()
+        rule.onNodeWithText(
+            "Límite con arrastre",
+            substring = true,
+            useUnmergedTree = true
+        ).assertExists()
+    }
+
     @Test
     fun aFileThatIsNotABackupChangesNothing() {
         answerWith("{\"not\": \"a backup\"}".toByteArray())
@@ -291,24 +333,6 @@ class RestoreJourneyTest {
         rule.onNodeWithText("No es un respaldo de Sello ni de FinanceTracker.", substring = true)
             .assertExists()
         assertEquals(before, financialRows())
-        assertEquals(0, restarts)
-    }
-
-    /** CP26: until carry can be shown, a backup that uses it is refused before anything changes. */
-    @Test
-    fun aBackupWithCarryIsRefusedInPlainWordsAndChangesNothing() {
-        answerWith(backup(withCarry = true))
-        val before = financialRows()
-        openRespaldoAndChoose()
-        rule.awaitTag(RESTORE_REJECTED_TAG)
-
-        rule.onNodeWithText(
-            "Usa el arrastre entre meses, que esta versión de Sello todavía no puede mostrar. " +
-                "Tus datos no cambiaron.",
-            substring = true
-        ).assertExists()
-        assertEquals(before, financialRows())
-        assertEquals(0, TestData.rows("SELECT COUNT(*) FROM carry_chain").single().toInt())
         assertEquals(0, restarts)
     }
 

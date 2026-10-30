@@ -54,13 +54,8 @@ object BackupFormat {
 /**
  * Writes version 6 backups and reads versions 1 to 6. Reading never touches storage:
  * a file either becomes a [BackupPlan] or is rejected whole with the first problem found.
- * A file whose categories carry their balance is valid, but until SELLO-041 only a codec
- * made with [CarryChainSupport.Accepted] takes it; the default refuses it.
  */
-class BackupCodec(
-    private val bounds: BackupBounds = BackupBounds(),
-    private val carryChains: CarryChainSupport = CarryChainSupport.Refused
-) {
+class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
     /**
      * The file for [contents], read back before it is returned, so the app never hands
      * out a backup it would itself refuse to restore.
@@ -123,17 +118,7 @@ class BackupCodec(
             return Outcome.Failure(BackupRejection.Malformed(pathOf(failure)))
         }
         return when (val contents = validate(file)) {
-            is Outcome.Success ->
-                if (carryChains == CarryChainSupport.Refused &&
-                    contents.value.financial.carryChains.isNotEmpty()
-                ) {
-                    // Only a file that is otherwise valid gets this answer, and nothing
-                    // has been written: the check is part of reading.
-                    Outcome.Failure(BackupRejection.CarryNotSupported)
-                } else {
-                    Outcome.Success(BackupPlan(contents.value))
-                }
-
+            is Outcome.Success -> Outcome.Success(BackupPlan(contents.value))
             is Outcome.Failure -> contents
         }
     }

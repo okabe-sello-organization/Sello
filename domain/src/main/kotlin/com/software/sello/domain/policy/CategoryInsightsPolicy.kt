@@ -1,5 +1,6 @@
 package com.software.sello.domain.policy
 
+import com.software.sello.domain.model.CategoryCarryInput
 import com.software.sello.domain.model.CategoryComparison
 import com.software.sello.domain.model.CategoryHistoryMonth
 import com.software.sello.domain.model.CategoryId
@@ -15,10 +16,16 @@ import java.math.BigInteger
 import java.math.RoundingMode
 import java.time.YearMonth
 
+/**
+ * One month of a category's history. [carryover] is the category's carry input when a chain
+ * covers [month] (ADR 0020 CP19: the remaining week and day figures use `C` and `R`); null
+ * when it does not carry then.
+ */
 data class CategoryHistoryInput(
     val month: YearMonth,
     val category: CategoryInMonth?,
-    val expenses: List<Expense>
+    val expenses: List<Expense>,
+    val carryover: CategoryCarryInput? = null
 )
 
 /** Exact category actuals and bounded planning figures, under ADR 0015. */
@@ -47,7 +54,8 @@ object CategoryInsightsPolicy {
                     generation,
                     revision,
                     listOfNotNull(input.category),
-                    input.expenses.filter { it.categoryId == id }
+                    input.expenses.filter { it.categoryId == id },
+                    carryover = listOfNotNull(input.carryover)
                 )
             ) {
                 is Outcome.Failure -> return result
@@ -134,11 +142,19 @@ object CategoryInsightsPolicy {
             ) {
                 return Outcome.Failure(SnapshotFailure.Unrepresentable)
             }
-            val finite = (
+            // A month a chain covers is judged on base + carry, as its own snapshot is (CP14).
+            val carried = budgets[inputs.indexOf(input)].categories.singleOrNull()?.budget
+                ?.takeIf { it.carry != null }
+            val finite = carried?.limit ?: (
                 (input.category.state as? MonthBudgetState.Limited)?.limit as?
                     com.software.sello.domain.model.BudgetLimit.Finite
                 )?.amount
-            history += CategoryHistoryMonth(input.month, Money.cop(total.toLong()), finite)
+            history += CategoryHistoryMonth(
+                input.month,
+                Money.cop(total.toLong()),
+                finite,
+                carried?.carry
+            )
         }
         val weekday = counted.groupBy { it.date.dayOfWeek }.entries
             .sortedBy { it.key.value }.maxByOrNull { sum(it.value) }?.key

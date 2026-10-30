@@ -40,11 +40,13 @@ import com.software.sello.feature.recurrence.HandScheduleCommands
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.feature.resumen.resumenSnapshot
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -98,7 +100,9 @@ class IncomeFormViewModelTest {
             HandInvestmentCommands(),
             { Duration.ZERO },
             { uuid(nextId++) },
-            CoroutineScope(Dispatchers.Main)
+            CoroutineScope(Dispatchers.Main),
+            HandCategoryReads(),
+            testMoney()
         )
     }
 

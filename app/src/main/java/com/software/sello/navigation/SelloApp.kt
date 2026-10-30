@@ -34,6 +34,11 @@ fun SelloAppRoot(viewModels: ViewModelProvider.Factory) {
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { shell.onAction(ShellAction.EnteredBackground) }
     val corrections: CorrectionsViewModel = viewModel(factory = viewModels)
     val noticeState = corrections.notice.collectAsStateWithLifecycle()
+    val correctionQuestion by corrections.question.collectAsStateWithLifecycle()
+    // Above every screen: a deletion, or its undoing, that changes later months (CP20).
+    correctionQuestion?.let {
+        CorrectionQuestionSlip(it, corrections::confirmQuestion, corrections::dismissQuestion)
+    }
     val announcements: CorrectionAnnouncementsViewModel = viewModel(factory = viewModels)
     val announcementsState = announcements.state.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_START) {

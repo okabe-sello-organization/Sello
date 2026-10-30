@@ -29,6 +29,7 @@ synthetic.
 | [Inversiones](inversiones.html) | Locked 2026-10-16; USD and the rate added 2026-10-25 by owner delegation (SELLO-106) |
 | [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice; the list redesigned by the owner 2026-10-26 (SELLO-122) |
 | [Ajustar presupuesto](ajustar.html) | Locked 2026-10-26 by the owner: the screen behind Recibo's **Ajustar presupuesto ›** and its limit sheet |
+| [Arrastre](arrastre.html) | Delegated by the owner 2026-10-28 for SELLO-041 (E09, signed carry-over); approved by merging it: turning carry on, the breakdowns, dropping a balance, corrections, the catch-up lines, an uncomputable carry, Resumen |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
 
 ## Recibo / Home
@@ -553,6 +554,42 @@ the AJ examples in the [financial examples](../../testing/mvp-financial-examples
 whole screen, opening the full category editor from each row, reserved amounts inside
 categories, a shortcut that raises later months silently, and naming next month's limit
 in the scope line (it would need a read of a month that has not started).
+
+## Arrastre
+
+Delegated by the owner 2026-10-28 for SELLO-041; merging its pull request approves it. The page
+is the concept; where it differs, the app's screenshots (`app/src/test/screenshots/carry-*`)
+are what ships. Large text and reduced motion are out of scope (owner, 2026-10-29). Rules and wording are
+[ADR 0020](../../decisions/0020-signed-carryover-policy.md); every figure is an
+[SC example](../../testing/signed-carryover-examples.md). A person who never turns carry on
+sees every locked screen unchanged.
+
+- **Turning on:** its own card, **Arrastrar al mes siguiente**, under Límite mensual in
+  Editar categoría, with its own command (never saved with the form). **Activar desde
+  {mes}** asks once: carry starts at 0 and the whole month counts from day 1. A refusal
+  (CP3, CP25) comes back from the command and is said in the card, with what to do.
+- **Breakdowns:** Recibo, category detail and Resumen's selected month give **Límite base**,
+  signed **Arrastre** with its words, **Límite con arrastre** and **Gastado** as receipt
+  lines, plus the month it comes from, the chain's start and the day read (CP27). A
+  carrying category's cell says "con arrastre". A negative capacity is Excedido with one
+  sentence why; 0 por día sits beside the signed deficit (CP14, CP15).
+- **Dropping:** turning off, archiving (after its own slip) or Sin límite with arrastre ≠ 0
+  asks "¿Dejar de arrastrar −20.000?" with this month's capacity and remaining before and
+  after, as the command answered them; a moved arrastre brings the slip back with the new
+  figures. Arrastre 0 asks nothing.
+- **Corrections:** a change reaching a closed chain month (including delete and Deshacer)
+  first lists each later month as "mar 2027: 210.000 → 230.000 (+20.000)" with its remaining
+  and any verdict that flips, grouped by category, and any dropped balance it changes. The
+  change in brackets is worked out by the domain, never on screen. A stale list is refused
+  and shown again.
+- **Catch-up:** the notice bar names the carry change; Lo que Sello anotó lists the lines
+  under "Al registrar tus pagos pendientes cambió el límite con arrastre", with no question,
+  and says so when they cannot be worked out (CP18).
+- **Cannot calculate:** never 0 or the base alone; the slip names the category and offers
+  the repair that works: the editor on a chain month without a base, Reintentar for a
+  failed read, a restore for a damaged chain.
+- **Resumen:** the chart's line is the month's Límite con arrastre; Sin asignar uses base
+  limits only and says why.
 
 ## Pagos e ingresos fijos
 

@@ -60,8 +60,10 @@ import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.Footnote
+import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
@@ -71,7 +73,11 @@ import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.presentation.carry.CarryBreakdownSection
+import com.software.sello.presentation.carry.CarryProblemSlip
+import com.software.sello.presentation.carry.overallCarryFootnote
 import com.software.sello.presentation.category.CategoryIcons
+import com.software.sello.presentation.month.monthNames
 import kotlinx.coroutines.launch
 
 /**
@@ -122,6 +128,15 @@ fun ReciboScreen(
             }
 
             is ReciboState.Month -> {
+                state.carryProblem?.let { problem ->
+                    CarryProblemSlip(
+                        problem,
+                        onRetry = { onAction(ReciboAction.Retry) },
+                        onSetLimit = { id, month ->
+                            onAction(ReciboAction.SetMonthLimit(id, month))
+                        }
+                    )
+                }
                 if (state.stale) {
                     StaleSlip({ onAction(ReciboAction.Retry) }, Modifier.testTag(RECIBO_STALE_TAG))
                 }
@@ -137,6 +152,12 @@ fun ReciboScreen(
                     onAction
                 )
             }
+
+            is ReciboState.CarryFailed -> CarryProblemSlip(
+                state.problem,
+                onRetry = { onAction(ReciboAction.Retry) },
+                onSetLimit = { id, month -> onAction(ReciboAction.SetMonthLimit(id, month)) }
+            )
 
             ReciboState.Failed -> ErrorSlip(
                 message = stringResource(R.string.recibo_failed),
@@ -190,9 +211,18 @@ private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved
         )
     ) {
         summary.closed?.let { ClosedMonthNote(it) }
+        summary.carry?.why?.let { CarryWhyNote(it) }
         // Revisar's two facts under the big number, before the tear line (v2 Recibo).
         summary.shortfall?.let { ShortfallNote(it) }
         summary.perDay?.let { PerDayFigure(it, over = summary.stamp == ReciboStamp.Over) }
+        // Under the per-day line, only while a category carries (docs/design/v2/arrastre.html).
+        summary.carry?.let { carry ->
+            CarryBreakdownSection(
+                carry.figures,
+                overallCarryFootnote(carry.categories.map { it.name to it.since }, carry.asOf),
+                prefix = carry.categories.singleOrNull()?.name
+            )
+        }
         summary.reserved?.let { ReservedFootnote(it, onReserved) }
         if (summary.adjustable) AdjustBudgetLink(onAdjust)
     }
@@ -327,15 +357,19 @@ private fun PerDayFigure(perDay: ReciboPerDay, over: Boolean) {
 @Composable
 private fun ClosedMonthNote(closed: ReciboClosedMonth) {
     val spoken = stringResource(
-        R.string.recibo_month_closed_description,
+        if (closed.carried) {
+            R.string.carry_closed_description
+        } else {
+            R.string.recibo_month_closed_description
+        },
         closed.spent.spoken,
         closed.limit.spoken
     )
     Text(
         text = stringResource(
-            R.string.recibo_month_closed,
+            if (closed.carried) R.string.carry_closed else R.string.recibo_month_closed,
             closed.spent.digits,
-            closed.limit.digits
+            closed.limit.text()
         ),
         style = MaterialTheme.typography.bodyMedium,
         color = SelloTheme.colors.inkSoft,
@@ -399,6 +433,7 @@ private fun CategoriesSlip(
                 amountCaption = when {
                     category.unlimited -> stringResource(R.string.recibo_cell_unlimited_caption)
                     category.limit == null -> stringResource(R.string.recibo_cell_spent_caption)
+                    category.carry != null -> stringResource(R.string.carry_cell)
                     else -> null
                 },
                 staggerIndex = index,
@@ -430,7 +465,13 @@ internal fun categoryDescription(category: ReciboCategory): String {
     val amount = category.figure.amount.spoken
     val sentence = if (category.limit != null) {
         stringResource(
-            R.string.recibo_cell_limited,
+            if (category.carry !=
+                null
+            ) {
+                R.string.recibo_cell_limited_carry
+            } else {
+                R.string.recibo_cell_limited
+            },
             category.name,
             headline,
             amount,
@@ -500,3 +541,48 @@ const val RECIBO_LOADING_TAG = "recibo:loading"
 const val RECIBO_FIRST_RUN_TAG = "recibo:first-run"
 const val RECIBO_STALE_TAG = "recibo:stale"
 const val RECIBO_FAILED_TAG = "recibo:failed"
+
+/** A figure as a sentence writes it: grouped, with a true minus when negative. */
+internal fun MoneyTextValue.text(): String = (if (sign == MoneySign.Minus) "−" else "") + digits
+
+/**
+ * Why the verdict is Excedido when an earlier deficit made it so (CP14): "Tu límite con
+ * arrastre es 400.000: Comida trae −150.000 de meses anteriores.", or, when the capacity is
+ * not above zero, "Te pasaste 150.000 en meses anteriores y tu límite base es 100.000:
+ * febrero empezó en −50.000."
+ */
+@Composable
+internal fun CarryWhyNote(why: CarryWhy, modifier: Modifier = Modifier) {
+    val names = monthNames()
+    val text = when {
+        why.base != null && why.month != null -> stringResource(
+            R.string.carry_why_category,
+            why.carryMagnitude.digits,
+            why.base.digits,
+            names.inSentence(why.month),
+            why.capacity.text()
+        )
+
+        why.category != null ->
+            stringResource(
+                R.string.carry_why_overall,
+                why.capacity.text(),
+                why.category,
+                why.carry.text()
+            )
+
+        else -> stringResource(
+            R.string.carry_why_overall_many,
+            why.capacity.text(),
+            why.carry.text()
+        )
+    }
+    Text(
+        text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = SelloTheme.colors.inkSoft,
+        modifier = modifier.padding(top = 8.dp).testTag(RECIBO_CARRY_WHY_TAG)
+    )
+}
+
+const val RECIBO_CARRY_WHY_TAG = "recibo:carry.why"

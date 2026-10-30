@@ -1,9 +1,24 @@
 package com.software.sello.feature.recurrence
 
+import com.software.sello.designsystem.component.MoneySign
+import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.CarryMonth
+import com.software.sello.domain.model.CarryVerdict
+import com.software.sello.domain.model.CarryoverFailure
+import com.software.sello.domain.model.CategoryId
+import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.PastVerdict
 import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.model.Verdict
+import com.software.sello.domain.policy.CarryCorrection
+import com.software.sello.domain.policy.CarryMonthChange
+import com.software.sello.domain.port.CarryCatchUpNotice
+import com.software.sello.domain.port.CarryReadFailure
+import com.software.sello.domain.port.CarryoverReads
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
@@ -12,13 +27,17 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.ScheduleRecordReads
 import com.software.sello.domain.port.ScheduleRecordsState
+import com.software.sello.feature.expense.categoryId
+import com.software.sello.feature.expense.expenseId
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.income.storedIncome
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.presentation.carry.ChangeKind
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
@@ -80,6 +99,21 @@ private class HandRecords : ScheduleRecordReads {
     }
 }
 
+/** What recording the listed payments did to carry chains (ADR 0020 CP18). */
+private class HandCarry : CarryoverReads {
+    var notice: Outcome<CarryCatchUpNotice, CarryReadFailure> = Outcome.Success(
+        CarryCatchUpNotice(1, 1, LocalDate.parse("2026-10-22"), emptyList())
+    )
+    val asked = mutableListOf<List<ExpenseId>>()
+
+    override suspend fun history(categoryId: CategoryId, through: YearMonth) =
+        error("The notice reads no history")
+
+    override suspend fun catchUpNotice(recorded: List<ExpenseId>) = notice.also {
+        asked += recorded
+    }
+}
+
 /**
  * The notice after catching up on jue 22 oct 2026 (recurrence-examples rule 14,
  * docs/design/v2/fijos.html): everything recorded since the last Listo, named by note,
@@ -95,6 +129,7 @@ class CatchUpNoticeViewModelTest {
     private val clock = HandFinancialClock("2026-10-22")
     private var auditNow = Instant.parse("2026-10-22T15:00:00Z")
     private val money = testMoney()
+    private val carry = HandCarry()
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -103,7 +138,7 @@ class CatchUpNoticeViewModelTest {
     fun reset() = Dispatchers.resetMain()
 
     private fun model() =
-        CatchUpNoticeViewModel(preferences, records, categories, clock, { auditNow }, money)
+        CatchUpNoticeViewModel(preferences, records, categories, clock, { auditNow }, money, carry)
 
     private fun rent(createdAt: String) = ScheduleRecord.Payment(
         storedExpense(50, 1, "2026-10-05", 950_000, "Arriendo")
@@ -278,5 +313,162 @@ class CatchUpNoticeViewModelTest {
         preferences.seen.value =
             PreferenceRead.Failed(PreferenceFailure.Unavailable, null)
         assertEquals(CatchUpNoticeState.Failed, model.state.value)
+    }
+
+    private fun cop(pesos: Long) = Money.cop(pesos)
+
+    /** SC47's Hogar (base 1.000.000, on from ene 2027): feb and mar, before or after. */
+    private fun hogar(month: String, k: Long, c: Long, s: Long, r: Long, verdict: CarryVerdict) =
+        CarryMonth(
+            YearMonth.parse(month),
+            YearMonth.parse("2027-01"),
+            cop(1_000_000),
+            cop(k),
+            cop(c),
+            cop(s),
+            cop(r),
+            verdict
+        )
+
+    /** SC47: catch-up records feb's 300.000 rent; feb R 200.000 → −100.000, mar C 1.200.000 → 900.000. */
+    private val sc47 = CarryCorrection(
+        months = listOf(
+            CarryMonthChange(
+                categoryId(1),
+                YearMonth.parse("2027-03"),
+                hogar(
+                    "2027-03",
+                    200_000,
+                    1_200_000,
+                    500_000,
+                    700_000,
+                    CarryVerdict.InProgress(Verdict.OnTrack)
+                ),
+                hogar(
+                    "2027-03",
+                    -100_000,
+                    900_000,
+                    500_000,
+                    400_000,
+                    CarryVerdict.InProgress(Verdict.OnTrack)
+                ),
+                cop(-300_000)
+            )
+        ),
+        edited = listOf(
+            CarryMonthChange(
+                categoryId(1),
+                YearMonth.parse("2027-02"),
+                hogar(
+                    "2027-02",
+                    0,
+                    1_000_000,
+                    800_000,
+                    200_000,
+                    CarryVerdict.Closed(PastVerdict.WithinLimit)
+                ),
+                hogar(
+                    "2027-02",
+                    0,
+                    1_000_000,
+                    1_100_000,
+                    -100_000,
+                    CarryVerdict.Closed(PastVerdict.Over)
+                ),
+                cop(0)
+            )
+        ),
+        settled = emptyList(),
+        firstAffected = YearMonth.parse("2027-02"),
+        overallCapacityChange = mapOf(YearMonth.parse("2027-03") to cop(-300_000))
+    )
+
+    private fun MoneyTextValue.text() = (
+        if (sign == MoneySign.Minus) {
+            "-"
+        } else if (sign == MoneySign.Plus) {
+            "+"
+        } else {
+            ""
+        }
+        ) + digits
+
+    @Test
+    fun sc47ThePaymentsThatReachAChainNameEachMonthTheyMovedAndByHowMuch() {
+        records.entries.value =
+            listOf(rent("2026-10-22T14:00:00Z"), freelance("2026-10-22T14:00:00Z"))
+        carry.notice = Outcome.Success(
+            CarryCatchUpNotice(1, 1, LocalDate.parse("2026-10-22"), listOf(sc47))
+        )
+
+        val ready = model().state.value as CatchUpNoticeState.Ready
+
+        // Only the recorded payment is asked about; the income never carries.
+        assertEquals(listOf(listOf(expenseId(50))), carry.asked)
+        val list = (ready.carry as CatchUpCarry.Changed).list
+        assertEquals(1, list.months)
+        assertEquals(listOf("Hogar"), list.groups.map { it.name })
+        assertEquals(
+            listOf(
+                listOf("2027-02", "Edited", "200.000", "-100.000", "WithinLimit", "Over"),
+                listOf("2027-03", "Later", "1.200.000", "900.000", "-300.000", "700.000", "400.000")
+            ),
+            list.groups.single().rows.map { row ->
+                if (row.kind == ChangeKind.Edited) {
+                    listOf(
+                        row.month.toString(),
+                        row.kind.name,
+                        row.remainingBefore!!.text(),
+                        row.remainingAfter!!.text(),
+                        row.verdictBefore!!.name,
+                        row.verdictAfter!!.name
+                    )
+                } else {
+                    listOf(
+                        row.month.toString(),
+                        row.kind.name,
+                        row.before.text(),
+                        row.after.text(),
+                        row.change.text(),
+                        row.remainingBefore!!.text(),
+                        row.remainingAfter!!.text()
+                    )
+                }
+            }
+        )
+    }
+
+    @Test
+    fun paymentsThatReachNoChainSayNothingAboutCarry() {
+        records.entries.value = listOf(rent("2026-10-22T14:00:00Z"))
+
+        val ready = model().state.value as CatchUpNoticeState.Ready
+
+        assertEquals(null, ready.carry)
+        assertEquals(1, ready.items.size)
+    }
+
+    @Test
+    fun onlyIncomesAreNeverAskedAboutCarry() {
+        records.entries.value = listOf(freelance("2026-10-22T14:00:00Z"))
+
+        val ready = model().state.value as CatchUpNoticeState.Ready
+
+        assertEquals(null, ready.carry)
+        assertEquals(emptyList<List<ExpenseId>>(), carry.asked)
+    }
+
+    @Test
+    fun aCarryReadThatFailsIsSaidAndTheRecordedPaymentsStillShow() {
+        records.entries.value = listOf(rent("2026-10-22T14:00:00Z"))
+        carry.notice = Outcome.Failure(
+            CarryReadFailure.Carryover(CarryoverFailure.MissingHistory(YearMonth.parse("2027-02")))
+        )
+
+        val ready = model().state.value as CatchUpNoticeState.Ready
+
+        // Never no change: the failure is its own state (CP8).
+        assertEquals(CatchUpCarry.Failed, ready.carry)
+        assertEquals(listOf("Arriendo"), ready.items.map { it.note })
     }
 }

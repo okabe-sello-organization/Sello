@@ -6,8 +6,12 @@ import java.time.YearMonth
 /** Which months a new limit is for. "Solo" is the default. */
 enum class LimitScope { ThisMonth, FromThisMonth }
 
-/** What a shortcut covers: what the category spent, the month's overrun, or reserved payments. */
-enum class ChipKind { Spent, CoverMonth, CoverPayments }
+/**
+ * What a shortcut covers: what the category spent, the month's overrun, or reserved payments.
+ * [CoverSpent] is the base that covers what was spent once the category's carry counts
+ * (S − K), never called "Lo gastado".
+ */
+enum class ChipKind { Spent, CoverMonth, CoverPayments, CoverSpent }
 
 /** A limit offered in one tap: drawn as [amount], typed as [pesos]. */
 data class LimitChip(val kind: ChipKind, val amount: MoneyTextValue, val pesos: Long)
@@ -23,7 +27,9 @@ data class LimitFact(
     val total: MoneyTextValue,
     val left: MoneyTextValue,
     val outcome: FactOutcome,
-    val afterPayments: Boolean
+    val afterPayments: Boolean,
+    /** While a category carries: the month's limit with carry it would have (CP16). */
+    val capacity: MoneyTextValue? = null
 )
 
 /** Why the sheet cannot save, or did not. */
@@ -46,7 +52,13 @@ enum class LimitSheetError {
     Archived,
 
     /** The month the screen was opened on is over; nothing was written. */
-    MonthEnded
+    MonthEnded,
+
+    /** While it carries, a base is at most 999.999.999.999 (ADR 0020 CP25). */
+    LimitAboveCap,
+
+    /** The change would leave a month whose carry cannot be calculated (CP23). */
+    CarryUnavailable
 }
 
 /**
@@ -70,7 +82,9 @@ data class LimitSheetState(
     val loadFailed: Boolean = false,
     val busy: Boolean = false,
     val canSave: Boolean = false,
-    val error: LimitSheetError? = null
+    val error: LimitSheetError? = null,
+    /** While it carries: its carry into the month, signed; the sheet edits the base. */
+    val carry: MoneyTextValue? = null
 )
 
 sealed interface LimitSheetAction {

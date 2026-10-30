@@ -7,12 +7,17 @@ import java.time.YearMonth
 
 data class DailySpending(val date: LocalDate, val spent: Money, val cumulative: Money)
 
+/**
+ * One month of Resumen's history. [limit] is the month's overall limit; while categories
+ * carry then it is the capacity `Σ B + Σ K` and [carry] splits it (ADR 0020 CP16, CP27).
+ */
 data class SpendingMonth(
     val month: YearMonth,
     val spent: Money,
     val limit: Money?,
     val forecast: Forecast?,
-    val expenseCount: Int
+    val expenseCount: Int,
+    val carry: CarryBreakdown? = null
 )
 
 data class ResumenSnapshot(

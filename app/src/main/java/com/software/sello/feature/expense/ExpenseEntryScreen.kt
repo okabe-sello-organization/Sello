@@ -87,6 +87,7 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Note
+import com.software.sello.presentation.carry.CarryCorrectionContent
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.date.DateLabels
@@ -298,6 +299,27 @@ fun ExpenseEntryScreen(
     state.noteDraft?.let { NoteSheet(state, it, onAction) }
     RepeatChoiceSheet(state.repeat, state.date, state.today, dates) {
         onAction(ExpenseEntryAction.Repeat(it))
+    }
+    state.correction?.let { correction ->
+        ConfirmSlip(
+            title = stringResource(
+                if (state.editing) {
+                    R.string.carry_correct_save_title
+                } else {
+                    R.string.carry_correct_create_title
+                }
+            ),
+            confirmLabel = stringResource(
+                if (state.editing) R.string.carry_correct_save else R.string.carry_correct_create
+            ),
+            onConfirm = { onAction(ExpenseEntryAction.CorrectionConfirmed) },
+            onDismiss = { onAction(ExpenseEntryAction.CorrectionDismissed) },
+            modifier = Modifier.testTag(ENTRY_CORRECTION_TAG),
+            destructive = false,
+            busy = state.busy
+        ) {
+            CarryCorrectionContent(correction.list, correction.changed)
+        }
     }
     val following = state.following
     if (state.askFollowing && following != null) {
@@ -695,12 +717,18 @@ private fun EntryError.text(editing: Boolean) = when (this) {
 
     EntryError.NotDeleted -> R.string.expense_edit_not_deleted
 
+    EntryError.DeleteUnknown -> R.string.correction_delete_unknown
+
     EntryError.StartTooEarly -> R.string.repeat_start_too_early
 
     EntryError.EndTooEarly -> R.string.repeat_end_too_early
 
     EntryError.FollowingNotSaved -> R.string.following_not_saved
+
+    EntryError.CarryUnavailable -> R.string.carry_unavailable_save_any
 }
+
+const val ENTRY_CORRECTION_TAG = "expense-entry:correction"
 
 const val ENTRY_LOADING_TAG = "expense-entry:loading"
 const val ENTRY_LOAD_FAILED_TAG = "expense-entry:load-failed"

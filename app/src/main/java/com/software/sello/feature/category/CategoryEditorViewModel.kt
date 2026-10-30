@@ -156,7 +156,11 @@ class CategoryEditorViewModel(
             CategoryEditorAction.ArchiveConfirmed,
             CategoryEditorAction.ArchiveDismissed,
             CategoryEditorAction.ReloadDiscardingDraft,
-            CategoryEditorAction.ReloadKeepingDraft -> Unit
+            CategoryEditorAction.ReloadKeepingDraft,
+            CategoryEditorAction.EnableCarry,
+            CategoryEditorAction.DisableCarry,
+            CategoryEditorAction.CarryConfirmed,
+            CategoryEditorAction.CarryDismissed -> Unit
         }
     }
 

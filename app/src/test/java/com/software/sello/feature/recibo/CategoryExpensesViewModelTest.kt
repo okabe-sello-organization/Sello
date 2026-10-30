@@ -5,6 +5,7 @@ import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CategoryExpenseSearch
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseSearchPage
 import com.software.sello.feature.expense.HandExpenseCommands
@@ -15,6 +16,7 @@ import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
@@ -100,7 +102,9 @@ class CategoryExpensesViewModelTest {
                     testScheduler.currentTime.milliseconds
                 },
                 { uuid(nextOperation++) },
-                CoroutineScope(Dispatchers.Main)
+                CoroutineScope(Dispatchers.Main),
+                HandCategoryReads(),
+                testMoney()
             )
         val model =
             CategoryExpensesViewModel(
@@ -236,5 +240,20 @@ class CategoryExpensesViewModelTest {
         assertEquals(1L, commands.deleted.single().generation)
         assertEquals(1L, commands.deleted.single().expectedVersion)
         assertEquals(uuid(100), commands.deleted.single().expenseId.value)
+    }
+
+    @Test
+    fun aDeletionWhoseOutcomeCannotBeFoundIsUnknownNeverFailed() = runTest {
+        val model = started()
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+
+        model.onAction(CategoryExpensesAction.Delete(uuid(100)))
+        runCurrent()
+
+        assertEquals(
+            DeleteProblem.Unknown,
+            (model.state.value as CategoryExpensesState.Ready).problem
+        )
     }
 }

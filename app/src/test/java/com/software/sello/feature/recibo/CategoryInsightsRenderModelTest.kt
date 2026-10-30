@@ -1,5 +1,7 @@
 package com.software.sello.feature.recibo
 
+import com.software.sello.designsystem.component.MoneySign
+import com.software.sello.domain.model.CarryBreakdown
 import com.software.sello.domain.model.CategoryComparison
 import com.software.sello.domain.model.CategoryHistoryMonth
 import com.software.sello.domain.model.CategoryInsights
@@ -105,5 +107,41 @@ class CategoryInsightsRenderModelTest {
         )
         assertEquals("10.000", shown.historicalAverage!!.digits)
         assertEquals(false, shown.history.any { it.current })
+    }
+
+    @Test
+    fun aCompletedMonthThatCarriedIsDrawnAgainstBasePlusCarryWithItsParts() {
+        // SC09's feb, seen from mar: base 100.000, carry +80.000, capacity 180.000, 30.000
+        // spent: within, never over the 100.000 base alone.
+        val feb = YearMonth.of(2027, 2)
+        val carried = withHistory().copy(
+            history = listOf(
+                CategoryHistoryMonth(
+                    feb,
+                    Money.cop(30_000),
+                    Money.cop(180_000),
+                    CarryBreakdown(
+                        Money.cop(100_000),
+                        Money.cop(80_000),
+                        Money.cop(180_000),
+                        YearMonth.of(2027, 1)
+                    )
+                )
+            )
+        )
+
+        val month = render.render(carried).history.first()
+
+        assertEquals(180_000L, month.limitValue)
+        assertEquals("180.000", month.limit!!.digits)
+        assertEquals(
+            listOf("100.000", "80.000", "180.000"),
+            listOf(
+                month.carry!!.base.digits,
+                month.carry!!.carry.digits,
+                month.carry!!.capacity.digits
+            )
+        )
+        assertEquals(MoneySign.Plus, month.carry!!.carry.sign)
     }
 }

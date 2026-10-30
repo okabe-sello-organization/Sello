@@ -41,6 +41,7 @@ import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.YearMonth
@@ -145,7 +146,9 @@ class LimitSheetViewModelTest {
             HandInvestmentCommands(),
             { Duration.ZERO },
             { uuid(nextId++) },
-            CoroutineScope(Dispatchers.Main)
+            CoroutineScope(Dispatchers.Main),
+            HandCategoryReads(),
+            testMoney()
         )
         reads.categories = listOf(
             CategoryBudget(

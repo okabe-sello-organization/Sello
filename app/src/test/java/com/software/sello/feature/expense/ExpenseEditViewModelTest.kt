@@ -3,8 +3,13 @@ package com.software.sello.feature.expense
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.CarryMonth
+import com.software.sello.domain.model.CarryVerdict
+import com.software.sello.domain.model.CarryoverFailure
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.OperationId
@@ -15,33 +20,42 @@ import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.model.Verdict
+import com.software.sello.domain.policy.CarryCorrection
+import com.software.sello.domain.policy.CarryMonthChange
 import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
+import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.StoredSchedule
+import com.software.sello.domain.port.UndoOffer
 import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.feature.recurrence.HandScheduleCommands
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.presentation.corrections.CorrectionKind
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -89,7 +103,9 @@ class ExpenseEditViewModelTest {
             HandInvestmentCommands(),
             { Duration.ZERO },
             { uuid(nextId++) },
-            CoroutineScope(Dispatchers.Main)
+            CoroutineScope(Dispatchers.Main),
+            HandCategoryReads(),
+            testMoney()
         )
     }
 
@@ -616,5 +632,211 @@ class ExpenseEditViewModelTest {
         assertEquals(1, schedules.submitted.size)
         assertEquals(2, commands.edited.size)
         assertTrue(form.now.closed)
+    }
+
+    // --- Carry: a change that reaches a closed month of a chain (ADR 0020 CP20, CP21, CP23) ---
+
+    private val carryConfirmation = CorrectionConfirmation(41, "edit-100")
+
+    /** One later month, Alimentación's nov: C 900.000 → 951.300, as a list shows it. */
+    private fun carryList(): CarryCorrection {
+        val nov = YearMonth.of(2026, 11)
+        fun month(c: Long) = CarryMonth(
+            nov,
+            YearMonth.of(2026, 9),
+            Money.cop(900_000),
+            Money.cop(c - 900_000),
+            Money.cop(c),
+            Money.cop(0),
+            Money.cop(c),
+            CarryVerdict.InProgress(Verdict.OnTrack)
+        )
+        return CarryCorrection(
+            listOf(
+                CarryMonthChange(
+                    food.category.id,
+                    nov,
+                    month(900_000),
+                    month(951_300),
+                    Money.cop(51_300)
+                )
+            ),
+            emptyList(),
+            emptyList(),
+            nov,
+            mapOf(nov to Money.cop(51_300))
+        )
+    }
+
+    private fun refusedForList(confirmation: CorrectionConfirmation = carryConfirmation) =
+        CommandOutcome.Rejected(
+            Specific(ExpenseRejection.CorrectionUnconfirmed(confirmation, carryList()))
+        )
+
+    @Test
+    fun aChangeThatMovesLaterMonthsShowsThemAndSavesNothingYet() {
+        commands.editAnswer = { refusedForList() }
+        val form = opened()
+
+        form.retype("10000")
+        form.onAction(ExpenseEntryAction.Submit)
+
+        val correction = form.now.correction!!
+        assertEquals(1, correction.list.months)
+        assertEquals("Alimentación", correction.list.groups.single().name)
+        assertEquals(shown("900.000"), correction.list.groups.single().rows.single().before)
+        assertEquals(shown("951.300"), correction.list.groups.single().rows.single().after)
+        assertFalse(correction.changed)
+        assertFalse(form.now.busy || form.now.closed)
+        assertNull(commands.edited.single().confirmation)
+    }
+
+    @Test
+    fun confirmingTheListSavesTheSameChangeWithWhatCameWithIt() {
+        commands.editAnswer = { refusedForList() }
+        val form = opened()
+        form.retype("10000")
+        form.onAction(ExpenseEntryAction.Submit)
+        commands.editAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.EditExpense),
+                replayed = false
+            )
+        }
+
+        form.onAction(ExpenseEntryAction.CorrectionConfirmed)
+
+        assertEquals(2, commands.edited.size)
+        assertEquals(carryConfirmation, commands.edited.last().confirmation)
+        assertEquals(commands.edited.first().amount, commands.edited.last().amount)
+        assertNull(form.now.correction)
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun sc34AListThatMovedIsShownAgainAsChanged() {
+        commands.editAnswer = { refusedForList() }
+        val form = opened()
+        form.retype("10000")
+        form.onAction(ExpenseEntryAction.Submit)
+        commands.editAnswer = { refusedForList(CorrectionConfirmation(42, "edit-100")) }
+
+        form.onAction(ExpenseEntryAction.CorrectionConfirmed)
+
+        assertTrue(form.now.correction!!.changed)
+        assertFalse(form.now.closed)
+    }
+
+    @Test
+    fun notConfirmingKeepsTheDraftAndSavesNothing() {
+        commands.editAnswer = { refusedForList() }
+        val form = opened()
+        form.retype("10000")
+        form.onAction(ExpenseEntryAction.Submit)
+
+        form.onAction(ExpenseEntryAction.CorrectionDismissed)
+
+        assertNull(form.now.correction)
+        assertEquals(shown("10.000"), form.now.amount)
+        assertEquals(1, commands.edited.size)
+    }
+
+    @Test
+    fun aChangeThatWouldLeaveCarryUncomputableIsRefusedInWords() {
+        commands.editAnswer = {
+            CommandOutcome.Rejected(
+                Specific(ExpenseRejection.CarryUnavailable(CarryoverFailure.Unrepresentable))
+            )
+        }
+        val form = opened()
+        form.retype("10000")
+
+        form.onAction(ExpenseEntryAction.Submit)
+
+        assertEquals(EntryError.CarryUnavailable, form.now.error)
+        assertEquals(shown("10.000"), form.now.amount)
+    }
+
+    @Test
+    fun deletingAnExpenseWhoseListIsConfirmedClosesTheForm() {
+        commands.deleteAnswer = { refusedForList() }
+        val form = opened()
+
+        form.onAction(ExpenseEntryAction.Delete)
+        assertFalse(form.now.closed)
+        assertEquals(CorrectionKind.Delete, corrections.question.value?.kind)
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
+                replayed = false
+            )
+        }
+
+        corrections.confirmQuestion()
+
+        assertEquals(carryConfirmation, commands.deleted.last().confirmation)
+        assertTrue(form.now.closed)
+    }
+
+    /** Deletes [bread] from its form once its list is confirmed; the deletion can be undone. */
+    private fun deleteBreadAfterItsList() {
+        commands.deleteAnswer = { refusedForList() }
+        commands.offer = {
+            commands.deleted.lastOrNull()?.let {
+                UndoOffer(it.operationId, it.expenseId, 6.seconds)
+            }
+        }
+        val form = opened()
+        form.onAction(ExpenseEntryAction.Delete)
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
+                replayed = false
+            )
+        }
+        corrections.confirmQuestion()
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun aFormOpenedAfterTheConfirmedDeletionWasUndoneStaysOpen() {
+        deleteBreadAfterItsList()
+        commands.restoreAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, bread.id, OperationKind.RestoreExpense),
+                replayed = false
+            )
+        }
+
+        corrections.undo()
+
+        assertEquals(CorrectionNotice.Restored, corrections.notice.value)
+        assertNull(corrections.confirmedDeletion.value)
+        val again = opened()
+        assertFalse(again.now.closed)
+        assertTrue(again.now.canDelete)
+    }
+
+    @Test
+    fun aFormOpenedAfterTheExpenseCameBackByARestoreStaysOpen() {
+        deleteBreadAfterItsList()
+        // A backup restore puts the same expense back without telling the corrections.
+
+        val again = opened()
+
+        assertFalse(again.now.closed)
+    }
+
+    @Test
+    fun aDeletionWhoseOutcomeCannotBeFoundIsSaidToBeUnknown() {
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        val form = opened()
+
+        form.onAction(ExpenseEntryAction.Delete)
+
+        assertEquals(EntryError.DeleteUnknown, form.now.error)
+        assertFalse(form.now.closed)
+        assertEquals(1, commands.deleted.size)
     }
 }
