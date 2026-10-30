@@ -63,13 +63,23 @@ internal fun nextCounter(current: Long, record: String, key: String?, field: Str
  * starts and after it ends; in between the transaction always runs to its end, so a
  * cancellation can never stop it halfway. A cancelled caller is told so instead of
  * being handed a result it may never see; the receipt is already durable by then.
+ * Never call it from inside another transaction: it commits its own, which would commit
+ * the outer one's writes too, so it fails at once instead.
  */
 internal suspend fun <T> SelloDatabase.runCommand(decide: suspend () -> T): CommandRun<T> {
+    check(!inTransaction()) { "A command runs in its own transaction, never inside another" }
     currentCoroutineContext().ensureActive()
     var everyStatementRan = false
     val run = try {
         withContext(NonCancellable) {
-            CommandRun.Finished(withTransaction { decide().also { everyStatementRan = true } })
+            CommandRun.Finished(
+                withTransaction {
+                    decide().also {
+                        everyStatementRan = true
+                        commitWhileHeld()
+                    }
+                }
+            )
         }
     } catch (cancelled: CancellationException) {
         throw cancelled
@@ -78,12 +88,41 @@ internal suspend fun <T> SelloDatabase.runCommand(decide: suspend () -> T): Comm
         // this is caught: any other arithmetic fault is a bug and stays one.
         CommandRun.RolledBack(exhausted.failure)
     } catch (failure: SQLiteException) {
-        if (everyStatementRan) CommandRun.Unknown else rolledBack(failure)
+        if (everyStatementRan) unknown() else rolledBack(failure)
     } catch (failure: IllegalStateException) {
-        if (everyStatementRan) CommandRun.Unknown else rolledBack(failure)
+        if (everyStatementRan) unknown() else rolledBack(failure)
     }
     currentCoroutineContext().ensureActive()
     return run
+}
+
+/**
+ * Commits the transaction while it still holds its connection, then opens an empty one
+ * for Room to end. Android sends Room's own COMMIT and hands the connection back even
+ * when the COMMIT fails, and SQLite can keep a refused transaction open: every later
+ * write on that connection would then fail, and a read on it could see the refused rows.
+ * Committed here instead, a refusal throws inside the transaction, so Android's ROLLBACK
+ * ends it on the same connection before handing that back. If SQLite had already ended
+ * it, that ROLLBACK fails too; either way nothing stays open, and the outcome stays unknown.
+ *
+ * Android runs BEGIN, COMMIT and ROLLBACK itself instead of passing them to SQLite; the
+ * leading ";" is an empty statement to SQLite and makes Android pass the rest through.
+ */
+private fun SelloDatabase.commitWhileHeld() {
+    val sqlite = openHelper.writableDatabase
+    sqlite.execSQL(";COMMIT")
+    sqlite.execSQL(";BEGIN")
+}
+
+/**
+ * The commit may have taken effect. Room tells its observers about a write only when the
+ * transaction ends cleanly, and this one did not: if the commit went through and the empty
+ * transaction after it failed, observers would miss the write until the next one. Asking
+ * Room to look for changed tables costs nothing when nothing was committed.
+ */
+private fun SelloDatabase.unknown(): CommandRun.Unknown {
+    invalidationTracker.refreshAsync()
+    return CommandRun.Unknown
 }
 
 private fun rolledBack(failure: Exception) =

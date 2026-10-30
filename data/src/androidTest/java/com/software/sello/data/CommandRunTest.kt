@@ -1,5 +1,6 @@
 package com.software.sello.data
 
+import androidx.room.withTransaction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.data.mapper.toEntity
 import com.software.sello.data.repository.CommandRun
@@ -9,7 +10,9 @@ import com.software.sello.data.repository.runCommand
 import com.software.sello.domain.model.StorageFailure
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -48,6 +51,42 @@ class CommandRunTest {
         }
 
         assertEquals(CommandRun.RolledBack(exhausted), run)
+        assertEquals(0, database.count("category"))
+    }
+
+    @Test
+    fun aRefusedCommitIsUnknownAndTheNextCommandOnTheSameHandleIsSaved() = runBlocking {
+        val database = files.open()
+
+        val refused = database.runCommand {
+            // A deferred check refuses the transaction only when it commits.
+            database.openHelper.writableDatabase.execSQL("PRAGMA defer_foreign_keys = ON")
+            database.expenseDao().insert(expense(100, 1, "2026-10-09", 1, 5_000).toEntity())
+        }
+        val next = database.runCommand {
+            database.categoryDao().insert(category(1, "Mercado").toEntity())
+        }
+
+        assertEquals(CommandRun.Unknown, refused)
+        assertEquals(CommandRun.Finished(Unit), next)
+        assertEquals(1, database.count("category"))
+        assertEquals(0, database.count("expense"))
+    }
+
+    @Test
+    fun aCommandInsideAnotherTransactionFailsAtOnceAndNothingIsSaved() = runBlocking {
+        val database = files.open()
+        var decided = false
+
+        val failure = runCatching {
+            database.withTransaction {
+                database.categoryDao().insert(category(1, "Mercado").toEntity())
+                database.runCommand { decided = true }
+            }
+        }.exceptionOrNull()
+
+        assertTrue(failure is IllegalStateException)
+        assertFalse(decided)
         assertEquals(0, database.count("category"))
     }
 
