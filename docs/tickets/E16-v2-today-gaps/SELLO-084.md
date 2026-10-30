@@ -3,7 +3,7 @@
 - **Type:** Task
 - **Priority:** P2
 - **Status:** Backlog
-- **Depends on:** SELLO-079, SELLO-004
+- **Depends on:** SELLO-004
 - **Gate:** G2
 
 ### Outcome
