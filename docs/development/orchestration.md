@@ -20,12 +20,15 @@ run only, the delegation, branches, pull requests, comments and merges described
   `main`, it opens an issue, dispatches a fix pull request and tells the owner. It may
   start a successor ticket early on its predecessor's branch; that pull request waits
   until the predecessor merges.
-- **Implementer** (the model the owner picks; own worktree; branch from `origin/main`
-  unless stacked): delivers one ticket, opens the pull request, tells the orchestrator,
+- **Implementer** (the model the owner picks: Claude Sonnet 5.5 at high effort, or
+  Claude Opus 5.5 at high effort for money, storage, recovery or other hard tickets;
+  own worktree; branch from `origin/main` unless stacked): delivers one ticket, opens the pull request, tells the orchestrator,
   then looks after it: answers every finding and comment with a fix or a reason, fixes
   red checks, and merges as below. It owns its branch and ticket file only, starts no
   subagents and never counts its own review as approval.
-- **Adversarial reviewer** (Claude Opus 5.5, medium effort, read-only): below.
+- **Reviewer** (Claude Opus 5.5, read-only): high effort for the adversarial review
+  below, medium for the lighter review [AGENTS.md](../../AGENTS.md#pull-requests-and-merging)
+  asks of other code. Every agent is started with its model and effort set explicitly.
 
 ### Merging in a run
 
