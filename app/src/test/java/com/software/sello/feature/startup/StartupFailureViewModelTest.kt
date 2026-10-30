@@ -34,13 +34,18 @@ class StartupFailureViewModelTest {
         var retries = 0
         var setAsides = 0
 
-        override fun retry(): Boolean {
+        /** While set, a retry or a move waits for it, as a slow disk makes it. */
+        var diskGate: CompletableDeferred<Unit>? = null
+
+        override suspend fun retry(): Boolean {
             retries++
+            diskGate?.await()
             return opens
         }
 
-        override fun setAside(): Boolean {
+        override suspend fun setAside(): Boolean {
             setAsides++
+            diskGate?.await()
             return moves
         }
 
@@ -147,6 +152,44 @@ class StartupFailureViewModelTest {
 
         assertEquals(1, recovery.retries)
         assertFalse(viewModel.state.value.stillFailing)
+    }
+
+    @Test
+    fun whileTryingAgainItIsBusyAndAnotherPressOpensNothingMore() {
+        recovery.diskGate = CompletableDeferred()
+        recovery.opens = true
+        val viewModel = viewModel()
+
+        viewModel.onAction(StartupFailureAction.Retry)
+        viewModel.onAction(StartupFailureAction.Retry)
+        viewModel.onAction(StartupFailureAction.StartOver)
+
+        assertTrue(viewModel.state.value.busy)
+        assertFalse(viewModel.state.value.confirming)
+        assertEquals(1, recovery.retries)
+
+        recovery.diskGate!!.complete(Unit)
+        assertFalse(viewModel.state.value.busy)
+        assertFalse(viewModel.state.value.stillFailing)
+    }
+
+    @Test
+    fun whileTheDataIsSetAsideAnotherConfirmMovesNothingMore() {
+        recovery.diskGate = CompletableDeferred()
+        val viewModel = viewModel()
+
+        viewModel.confirmWith("BORRAR")
+        viewModel.onAction(StartupFailureAction.Confirm)
+        viewModel.onAction(StartupFailureAction.Retry)
+
+        assertTrue(viewModel.state.value.busy)
+        assertFalse(viewModel.state.value.startedOver)
+        assertEquals(1, recovery.setAsides)
+        assertEquals(0, recovery.retries)
+
+        recovery.diskGate!!.complete(Unit)
+        assertFalse(viewModel.state.value.busy)
+        assertTrue(viewModel.state.value.startedOver)
     }
 
     @Test

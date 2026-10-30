@@ -79,7 +79,7 @@ import kotlin.coroutines.CoroutineContext
  * Closing it closes the database.
  */
 class FinancialStorage internal constructor(
-    private val database: SelloDatabase,
+    internal val database: SelloDatabase,
     val profiles: FinancialProfileStore,
     private val restoreFolder: File,
     private val resetFolder: File,

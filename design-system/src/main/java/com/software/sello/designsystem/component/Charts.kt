@@ -189,59 +189,6 @@ fun ColumnsChart(
     }
 }
 
-/**
- * One series as a line, for values over time. Selection and speech work as in
- * [ColumnsChart]: each point is its own selectable item.
- */
-@Composable
-fun LineChart(
-    points: List<ChartPoint>,
-    summary: String,
-    modifier: Modifier = Modifier,
-    selectedId: String? = null,
-    onSelect: ((String) -> Unit)? = null,
-    reference: ChartReference? = null,
-    height: Dp = 150.dp,
-    emptyText: String? = null
-) {
-    val colors = SelloTheme.colors
-    val max = scaleMax(points, reference)
-    ChartFrame(
-        points = points,
-        summary = summary,
-        modifier = modifier,
-        selectedId = selectedId,
-        onSelect = onSelect,
-        reference = reference,
-        height = height,
-        emptyText = emptyText,
-        // Clear of the point's own dot.
-        labelGap = 9.dp,
-        behind = { labelRoom ->
-            Canvas(Modifier.fillMaxSize()) {
-                val area = size.height - labelRoom.toPx()
-                val step = size.width / points.size
-                val line = Path()
-                points.forEachIndexed { index, point ->
-                    val x = step * (index + 0.5f)
-                    val y = labelRoom.toPx() + area * (1f - chartFraction(point.value, max))
-                    if (index == 0) line.moveTo(x, y) else line.lineTo(x, y)
-                }
-                drawPath(line, colors.brand, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
-            }
-        }
-    ) { _, fraction, selected, _, barArea ->
-        // The mark sits where the line passes; the invisible column under it is the target.
-        Box(modifier = Modifier.height((barArea * fraction).coerceAtLeast(0.dp)).fillMaxWidth()) {
-            val radius = if (selected) 6.dp else 3.5.dp
-            Canvas(Modifier.align(Alignment.TopCenter).offset(y = -radius)) {
-                drawCircle(colors.paper, (radius + 1.5.dp).toPx())
-                drawCircle(if (selected) colors.ink else colors.brand, radius.toPx())
-            }
-        }
-    }
-}
-
 private fun scaleMax(points: List<ChartPoint>, reference: ChartReference?): Long = maxOf(
     points.maxOfOrNull { maxOf(it.value, it.referenceValue ?: 0) } ?: 0L,
     reference?.value ?: 0L
@@ -397,7 +344,7 @@ private fun AxisLabels(points: List<ChartPoint>, short: Boolean, modifier: Modif
                 style = MaterialTheme.typography.labelSmall,
                 color = SelloTheme.colors.inkSoft,
                 textAlign = TextAlign.Center,
-                // Large text on a narrow column wraps "sem 2" rather than cutting it.
+                // On a narrow column "sem 2" wraps rather than being cut.
                 maxLines = 2,
                 modifier = Modifier.weight(1f).padding(top = 4.dp)
             )
@@ -416,19 +363,3 @@ private val LabelRoom = 18.dp
 private val AxisRoom = 20.dp
 private const val COLUMN_WIDTH_SHARE = 0.62f
 private const val DIMMED_ALPHA = 0.5f
-
-/**
- * The heading of a slip that holds a chart: a small question and a large answer. A
- * chart's selected value belongs here, as its exact formatted amount.
- */
-@Composable
-fun SlipHeading(question: String, modifier: Modifier = Modifier, answer: @Composable () -> Unit) {
-    Column(modifier = modifier.semantics(mergeDescendants = true) { heading() }) {
-        Text(
-            text = question,
-            style = MaterialTheme.typography.labelMedium,
-            color = SelloTheme.colors.inkSoft
-        )
-        answer()
-    }
-}

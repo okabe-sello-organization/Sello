@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,6 +33,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.dateLabels
@@ -104,9 +104,9 @@ class UpcomingPaymentsViewModel(
 
     private fun render(state: SnapshotState, today: LocalDate): UpcomingState {
         val snapshot = when (state) {
-            SnapshotState.Loading -> return UpcomingState.Loading
-            is SnapshotState.Failed -> return UpcomingState.Failed
-            is SnapshotState.Ready -> state.snapshot
+            ReadState.Loading -> return UpcomingState.Loading
+            is ReadState.Failed -> return UpcomingState.Failed
+            is ReadState.Ready -> state.value
         }
         val reservation = (snapshot.overall as? OverallBudget.Limited)?.reservation
             ?: return UpcomingState.Empty(snapshot.month)
@@ -241,7 +241,7 @@ fun UpcomingPaymentsScreen(
                         stringResource(R.string.upcoming_footnote),
                         style = MaterialTheme.typography.bodySmall,
                         color = SelloTheme.colors.inkSoft,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        modifier = Modifier.padding(horizontal = SelloTheme.spacing.xs)
                     )
                 }
                 item {

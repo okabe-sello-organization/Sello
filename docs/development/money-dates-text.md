@@ -55,8 +55,7 @@ Formatting and drawing have different owners:
   through `ResourceMoneyLabels`. It never abbreviates; short forms such as `3,53 M`
   are for chart axes only.
 - `MoneyText` in `:design-system` only draws a `MoneyTextValue`. It does not know
-  `Money`, compute or round. `CountingMoneyText` animates between two amounts but always
-  announces, and ends on, the exact target; with reduced motion it does not count.
+  `Money`, compute or round.
 - A failed read has no `MoneyTextValue`. Show `ErrorSlip`, never a zero.
 
 ## Entering an amount

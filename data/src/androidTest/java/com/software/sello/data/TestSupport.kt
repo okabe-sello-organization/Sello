@@ -24,6 +24,7 @@ import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpNoticePreferences
+import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
@@ -65,6 +66,16 @@ class DatabaseFiles : ExternalResource() {
 fun <T> Outcome<T, *>.valueOrFail(): T = when (this) {
     is Outcome.Success -> value
     is Outcome.Failure -> throw AssertionError("expected a value, got failure $error")
+}
+
+/** A whole-peso amount as a record carries it. */
+fun transactionPesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
+
+/** Real threads for storage under test; "main" is a worker too, so no looper is needed. */
+val realDispatchers: DispatcherProvider = object : DispatcherProvider {
+    override val main = Dispatchers.Default
+    override val default = Dispatchers.Default
+    override val io = Dispatchers.IO
 }
 
 /** Writes a row exactly as given, bypassing every mapper, the way damage or a bug would. */

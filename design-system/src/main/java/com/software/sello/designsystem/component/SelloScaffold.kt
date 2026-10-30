@@ -278,8 +278,8 @@ fun SelloScaffold(
 }
 
 /**
- * The title row: navigation icon, title and actions on one line. When large text leaves
- * the title no room beside the actions, even on two lines, the title moves under them
+ * The title row: navigation icon, title and actions on one line. When a long title has
+ * no room beside the actions, even on two lines, the title moves under them
  * and takes the whole width, so it is never cut short.
  */
 @Composable
@@ -321,7 +321,7 @@ private fun TopBar(
                 if (titleContent != null) {
                     titleContent()
                 } else {
-                    // A second line before an ellipsis: large text must not cut a title short.
+                    // A second line before an ellipsis, so a long title is not cut short.
                     Text(
                         text = title,
                         style = titleStyle,
@@ -375,6 +375,6 @@ const val SCAFFOLD_BAND_TAG = "sello:scaffold:band"
 const val SCAFFOLD_RAIL_TAG = "sello:scaffold:rail"
 const val SCAFFOLD_BAR_TAG = "sello:scaffold:bar"
 const val SCAFFOLD_DOCK_TAG = "sello:scaffold:dock"
-const val SCAFFOLD_NOTICE_TAG = "sello:scaffold:notice"
+internal const val SCAFFOLD_NOTICE_TAG = "sello:scaffold:notice"
 const val SCAFFOLD_PRIMARY_TAG = "sello:scaffold:primary"
 const val SCAFFOLD_SECONDARY_TAG = "sello:scaffold:secondary"

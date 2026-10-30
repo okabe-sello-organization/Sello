@@ -6,8 +6,9 @@
 - **Exit:** Expense and income entry, income history and Resumen match their v2 designs for today's scope; superseded v1 components are gone from the app and catalog.
 
 Read [ADR 0013](../../decisions/0013-sello-v2-design.md), the
-[v2 README](../../design/v2/README.md), the [current app inventory](../../development/current-app-experience.md)
-and [E12](../E12-v2-recibo/README.md), which brings Recibo and the shared frame to v2 first.
+[v2 README](../../design/v2/README.md) and [E12](../E12-v2-recibo/README.md), which brings Recibo and the shared frame to v2 first.
+
+## Decisions
 
 **Owner direction (2026-10-17):** make today's functionality look and work correctly
 in v2 before adding features. Goals, investments, reservations and recurrence stay

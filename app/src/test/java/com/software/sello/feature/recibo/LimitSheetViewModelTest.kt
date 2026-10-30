@@ -5,7 +5,6 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
@@ -20,27 +19,29 @@ import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
-import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -73,12 +74,8 @@ class LimitSheetViewModelTest {
     private val snapshots = HandSnapshots()
     private val reads = HandCategoryReads().apply { generation = 7 }
     private var nextId = 500
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
-    private lateinit var notices: ExpenseCorrections
+    private val money = testMoney()
+    private lateinit var notices: Corrections
 
     /** Commands a test scripts. Unless told otherwise every command commits. */
     private inner class HandCommands : CategoryCommands {
@@ -111,7 +108,7 @@ class LimitSheetViewModelTest {
     )
 
     private fun committed(operation: OperationId) =
-        CategoryCommandOutcome.Committed(change(operation), replayed = false)
+        CommandOutcome.Committed(change(operation), replayed = false)
 
     private fun finite(pesos: Long) =
         (BudgetLimit.finite(Money.cop(pesos)) as Outcome.Success).value
@@ -141,7 +138,7 @@ class LimitSheetViewModelTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        notices = ExpenseCorrections(
+        notices = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             HandGoalCommands(),
@@ -290,7 +287,7 @@ class LimitSheetViewModelTest {
     fun anUnknownOutcomeIsAskedNotResent() {
         val sheet = opened()
         sheet.type(150_000)
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
 
         sheet.onAction(LimitSheetAction.Save)
@@ -352,16 +349,16 @@ class LimitSheetViewModelTest {
     @Test
     fun rejectionsBecomeTheirErrors() {
         val cases = listOf(
-            CategoryRejection.VersionConflict(6) to LimitSheetError.Conflict,
-            CategoryRejection.StaleGeneration(8) to LimitSheetError.DataChanged,
-            CategoryRejection.CategoryMissing to LimitSheetError.CategoryGone,
-            CategoryRejection.CategoryArchived to LimitSheetError.Archived,
-            CategoryRejection.StorageFailed(StorageFailure.Unavailable("x")) to
+            CommandRejection.VersionConflict(6) to LimitSheetError.Conflict,
+            CommandRejection.StaleGeneration(8) to LimitSheetError.DataChanged,
+            Specific(CategoryRejection.CategoryMissing) to LimitSheetError.CategoryGone,
+            Specific(CategoryRejection.CategoryArchived) to LimitSheetError.Archived,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to
                 LimitSheetError.NotSaved
         )
 
         val seen = cases.map { (reason, _) ->
-            commands.answer = { CategoryCommandOutcome.Rejected(reason) }
+            commands.answer = { CommandOutcome.Rejected(reason) }
             val sheet = opened()
             sheet.type(150_000)
             sheet.onAction(LimitSheetAction.Save)
@@ -397,7 +394,7 @@ class LimitSheetViewModelTest {
         val sheet = opened()
         sheet.type(150_000)
 
-        snapshots.of(october).value = SnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
 
         val state = sheet.state.value
         assertEquals(emptyList<LimitChip>(), state.chips)

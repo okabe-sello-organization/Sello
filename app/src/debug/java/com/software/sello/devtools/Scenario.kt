@@ -1,25 +1,23 @@
 package com.software.sello.devtools
 
 import com.software.sello.domain.model.Currency
-import com.software.sello.domain.model.GainDirection
-import com.software.sello.domain.model.Occurrence
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.UUID
-import kotlin.time.Duration
 
 /**
- * A synthetic history to replay in the sandbox, one step at a time, through the app's
- * own commands. [id] and [version] name it; change [version] whenever its steps
- * change, because the operation of each step is derived from them, the [seed] and the
- * step's place. The same scenario therefore always writes the same operations, and a
- * step run twice is recognised rather than recorded twice.
+ * A synthetic history the sandbox loads in one go, through the app's own commands. [id]
+ * and [version] name it; change [version] whenever its steps change, because the
+ * operation of each step is derived from them, the [seed] and the step's place. The same
+ * history therefore always writes the same operations, and a step run again after the
+ * process ended is recognised rather than recorded twice.
  *
- * It starts in a new sandbox at [start] in [zone]. A scheduled entry is never a step of
- * its own: a [ScenarioStep.Schedule] step saves the schedule, and the app's own catch-up
- * records its occurrences when a [ScenarioStep.CatchUp] step runs it after a date step,
- * exactly as Sello does on opening and when the financial day changes.
+ * It starts in a new sandbox at [start] in [zone] and ends with the financial clock on
+ * [today], the day its last date step sets. A scheduled entry is never a step of its own:
+ * a [ScenarioStep.Schedule] step saves the schedule, and the app's own catch-up records
+ * its occurrences when a [ScenarioStep.CatchUp] step runs it after a date step, exactly
+ * as Sello does on opening and when the financial day changes.
  */
 data class Scenario(
     val id: String,
@@ -27,6 +25,7 @@ data class Scenario(
     val seed: Long,
     val zone: ZoneId,
     val start: LocalDate,
+    val today: LocalDate,
     val title: String,
     val summary: String,
     val steps: List<ScenarioStep>
@@ -38,86 +37,6 @@ data class Scenario(
         UUID.nameUUIDFromBytes("sello-scenario:$id:$version:$seed:$index".toByteArray())
             .toString()
 }
-
-/**
- * What a step must lead to for the scenario to go on. A rejection the step expects is
- * a pass, so edge cases can be scripted; anything else stops the run and says why.
- */
-sealed interface Expect {
-    /** Committed, now or by an earlier try of the same operation. */
-    data object Saved : Expect
-
-    /** Committed by an earlier submission of the same operation; nothing new written. */
-    data object AlreadySaved : Expect
-
-    /** Refused by the command with this reason, such as `VersionConflict`. */
-    data class Rejected(val reason: String) : Expect
-
-    /** Refused by input validation, so no command was sent at all. */
-    data object InvalidInput : Expect
-}
-
-/** A figure the month snapshots report, as Recibo and Resumen show it. */
-enum class Figure(val label: String) {
-    Spent("gastado"),
-    Limit("límite"),
-    Remaining("restante"),
-
-    /** No category has a finite limit that month: no budget at all, not a zero one. */
-    NoLimit("sin límite"),
-    Income("ingresos"),
-    NetFlow("ingresos menos gastos"),
-    Unallocated("sin asignar"),
-
-    /** What the month in progress sets aside for payments still due (rule 11): 0 if none. */
-    Reserved("separado"),
-
-    /** Recibo's headline: what is left after what is set aside, below 0 when short. */
-    Margin("margen"),
-
-    /** Recibo's daily figure, from the margin while something is set aside. */
-    PerDay("por día"),
-
-    /** Plan del mes (rule 13): income still expected this month, `F`; 0 when none. */
-    Expected("esperado"),
-
-    /** Plan del mes: recorded plus expected income, `I + F`. */
-    Planned("planeado"),
-
-    /** Plan del mes: planned income less the category budgets, `I + F − A`. */
-    PlanUnassigned("sin asignar en el plan")
-}
-
-/** [pesos] in [month] for [figure], as given by [source]: an approved example ID or a hand derivation. */
-data class Check(val month: YearMonth, val figure: Figure, val pesos: Long, val source: String)
-
-/** How one of a goal's four stamp places stands, as its page draws it (rules 4, 5 and 8). */
-enum class Stamp(val label: String) {
-    Empty("vacío"),
-    Earned("ganado"),
-
-    /** Earned, no longer reached: shown faded. */
-    Kept("guardado"),
-
-    /** Meta only: the target is reached, waiting for Marcar como lograda. */
-    Waiting("esperando")
-}
-
-/**
- * The goal the step named [goal] made, as Metas reads it: [saved] pesos, the rounded-down
- * [percentage], its [stamps] at 25 %, 50 %, 75 % and the Meta, whether it is [completed]
- * and whether it is Recibo's goal ([onRecibo], unchecked when null). [source] is the
- * approved example the values come from; none is computed by the code being checked.
- */
-data class GoalCheck(
-    val goal: String,
-    val saved: Long,
-    val percentage: Long,
-    val stamps: List<Stamp>,
-    val source: String,
-    val completed: Boolean = false,
-    val onRecibo: Boolean? = null
-)
 
 /** How a schedule repeats, as the schedule form offers it (recurrence rule 2). */
 sealed interface Every {
@@ -134,10 +53,7 @@ sealed interface Every {
     data class Weeks(val weeks: Int) : Every
 }
 
-/**
- * What each occurrence of a schedule records (rule 1). [note] is unique within a
- * scenario: a history restored from a backup has no receipts, so it is found by it.
- */
+/** What each occurrence of a schedule records (rule 1), with its [note]. */
 sealed interface Scheduled {
     val pesos: Long
     val note: String
@@ -151,118 +67,26 @@ sealed interface Scheduled {
         Scheduled
 }
 
-/** An entry a schedule recorded: its occurrence's [date] and [slot] (rule 4), and its [pesos]. */
-data class Recorded(val date: LocalDate, val pesos: Long, val slot: Int = 1)
-
-/**
- * What the schedule the step named [schedule] made has recorded from [from] to [to], both
- * included: exactly [entries], by date and slot, each an expense or income dated on its
- * occurrence and carrying that occurrence as its origin. A manual entry is never one of
- * them (rule 5). [source] is the recurrence example the values come from.
- */
-data class OccurrenceCheck(
-    val schedule: String,
-    val from: LocalDate,
-    val to: LocalDate,
-    val entries: List<Recorded>,
-    val source: String
-)
-
-/**
- * How the schedule the step named [schedule] made stands, as Sello stores it: [handled]
- * is its checkpoint, the last occurrence catch-up dealt with (null before the first),
- * and [pausedFrom] the first day of a pause still open (null while it is active). Once it
- * is deleted it is not [present], and nothing else is read.
- */
-data class ScheduleCheck(
-    val schedule: String,
-    val handled: Occurrence?,
-    val source: String,
-    val pausedFrom: LocalDate? = null,
-    val present: Boolean = true
-)
-
-/**
- * A return as Inversiones shows it (investment rule 6): its [direction], the sign of the
- * gain, and its magnitude in [tenths] of a percent, rounded half up (7,46 % is 75).
- */
-data class Yield(val direction: GainDirection, val tenths: Long)
-
-/** An investment's value carried forward (rule 5): [amount] from the value of [on]. */
-data class Worth(val amount: Long, val on: LocalDate, val gain: Long, val yield: Yield)
-
-/**
- * The investment the step named [investment] made, as Inversiones reads it, in its own
- * currency's minor units (pesos, or USD cents): [contributed], [withdrawn], [dividends]
- * and its [worth], null when it has no value (Sin valor, rule 7). [since] and
- * [movements] are compared only when given. Once deleted it is not [present], and
- * nothing else is read. [source] is the approved example the values come from
- * (IN01–IN36) or a hand derivation; none is computed by the code being checked.
- */
-data class InvestmentCheck(
-    val investment: String,
-    val contributed: Long,
-    val worth: Worth?,
-    val source: String,
-    val withdrawn: Long = 0,
-    val dividends: Long = 0,
-    val since: YearMonth? = null,
-    val movements: Int? = null,
-    val present: Boolean = true
-) {
-    companion object {
-        /** The investment the step named [investment] made is deleted. */
-        fun gone(investment: String, source: String) =
-            InvestmentCheck(investment, 0, null, source, present = false)
-    }
-}
-
-/** The current USD rate, as the overview names it: [hundredths] of a peso, dated [on]. */
-data class RateCheck(val hundredths: Long, val on: LocalDate)
-
-/** The overview of Inversiones (rules 13 and 14), in pesos. */
-sealed interface PortfolioCheck {
-    val source: String
-
-    /**
-     * The total over the investments with a value: USD sums converted once at [rate],
-     * which is null when no USD investment with a value is in it (no rate line).
-     */
-    data class Total(
-        val value: Long,
-        val contributed: Long,
-        val withdrawn: Long,
-        val dividends: Long,
-        val gain: Long,
-        val yield: Yield,
-        val since: YearMonth,
-        val valuedFrom: LocalDate,
-        val valuedTo: LocalDate,
-        val rate: RateCheck?,
-        override val source: String
-    ) : PortfolioCheck
-
-    /** Investments exist and none has a value: "Todavía no hay valores anotados" (IN35). */
-    data class NoValues(override val source: String) : PortfolioCheck
-}
-
 /** An investment movement's kind, as the movement sheet offers it (rule 2). */
-enum class Move(val label: String) {
-    Aporte("aporte"),
-    Retiro("retiro"),
-    Dividendo("dividendo"),
-    Valor("valor")
+enum class Move {
+    Aporte,
+    Retiro,
+    Dividendo,
+    Valor
 }
 
 /** A USD rate of [hundredths] of a peso per dollar, dated [on]; by default the sandbox's day. */
 data class Rate(val hundredths: Long, val on: LocalDate? = null)
 
-/** One action of a scenario. Amounts are whole pesos; entries are dated on the sandbox's day. */
+/**
+ * One action of a history. Amounts are whole pesos, or an investment's minor units;
+ * entries are dated on the sandbox's day unless [on] dates them earlier. Every step must
+ * be saved: a refusal stops the load and says why. Versions are those a screen would
+ * have read at that point, so a step tried again sends exactly the same command.
+ */
 sealed interface ScenarioStep {
-    val expect: Expect get() = Expect.Saved
-
-    /** Whether the step submits an operation; a date step, a catch-up or a check does not. */
-    val writes: Boolean get() = this !is AdvanceTo && this !is Verify && this !is CatchUp
+    /** Whether the step submits an operation; a date step or a catch-up does not. */
+    val writes: Boolean get() = this !is AdvanceTo && this !is CatchUp
 
     /** Moves the sandbox's date forward to [date]. */
     data class AdvanceTo(val date: LocalDate) : ScenarioStep
@@ -271,17 +95,18 @@ sealed interface ScenarioStep {
     data class Category(val key: String, val name: String, val icon: String, val limit: Long?) :
         ScenarioStep
 
-    /**
-     * [pesos] may be beyond what an entry allows, to script [Expect.InvalidInput]. [on]
-     * dates it earlier than the sandbox's day, a backdated entry; by default it is today.
-     */
     data class Expense(
         val category: String,
         val pesos: Long,
         val note: String? = null,
-        override val expect: Expect = Expect.Saved,
         val on: LocalDate? = null
     ) : ScenarioStep
+
+    /** Changes the expense step [of] recorded to [pesos], as read at [version]. */
+    data class EditExpense(val of: Int, val pesos: Long, val version: Long) : ScenarioStep
+
+    /** Deletes the expense step [of] recorded, as read at [version]. */
+    data class DeleteExpense(val of: Int, val version: Long) : ScenarioStep
 
     /** The category's default limit from the sandbox's month on, as read at [version]; null is none. */
     data class SetDefaultLimit(val category: String, val pesos: Long?, val version: Long) :
@@ -297,101 +122,33 @@ sealed interface ScenarioStep {
 
     data class Archive(val category: String, val version: Long) : ScenarioStep
 
-    /**
-     * Reads the real month snapshots, goal board, schedules, recorded entries and
-     * investment board and compares each of [checks], [goals], [occurrences],
-     * [schedules], [investments] and the [portfolio]. Every expected value names where
-     * it comes from; none is computed by the code being checked.
-     */
-    data class Verify(
-        val checks: List<Check>,
-        val goals: List<GoalCheck> = emptyList(),
-        val occurrences: List<OccurrenceCheck> = emptyList(),
-        val schedules: List<ScheduleCheck> = emptyList(),
-        val investments: List<InvestmentCheck> = emptyList(),
-        val portfolio: PortfolioCheck? = null
-    ) : ScenarioStep {
-        val figures: Int
-            get() = checks.size + goals.size + occurrences.size + schedules.size +
-                investments.size + (if (portfolio == null) 0 else 1)
-    }
-
     /** [source] is a stored income source key, such as `salary`. */
-    data class Income(val pesos: Long, val source: String) : ScenarioStep
-
-    /** Submits step [of] again: the same operation and input, as a double tap would. */
-    data class Repeat(val of: Int, override val expect: Expect = Expect.AlreadySaved) :
+    data class Income(val pesos: Long, val source: String, val on: LocalDate? = null) :
         ScenarioStep
-
-    /** Changes the expense step [of] recorded to [pesos], as read at [version]. */
-    data class EditExpense(
-        val of: Int,
-        val pesos: Long,
-        val version: Long,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
-
-    /** Deletes the expense step [of] recorded, as read at [version]. */
-    data class DeleteExpense(
-        val of: Int,
-        val version: Long,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
-
-    /** Undoes the deletion made by step [of]. */
-    data class UndoDelete(val of: Int, override val expect: Expect = Expect.Saved) : ScenarioStep
 
     /** A goal the later steps call [key], with a [target] of pesos and no month. */
     data class Goal(val key: String, val name: String, val icon: String, val target: Long) :
         ScenarioStep
 
-    /**
-     * An aporte of [pesos] to [goal], read at [version]; [on] dates it earlier than the
-     * sandbox's day.
-     */
+    /** An aporte of [pesos] to [goal], read at [version]. */
     data class Aporte(
         val goal: String,
         val pesos: Long,
         val version: Long,
-        override val expect: Expect = Expect.Saved,
         val on: LocalDate? = null
     ) : ScenarioStep
 
     /** A retiro of [pesos] from [goal], read at [version]. */
-    data class Retiro(
-        val goal: String,
-        val pesos: Long,
-        val version: Long,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
+    data class Retiro(val goal: String, val pesos: Long, val version: Long) : ScenarioStep
 
     /** [goal]'s new target, read at [version]. */
-    data class GoalTarget(
-        val goal: String,
-        val pesos: Long,
-        val version: Long,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
+    data class GoalTarget(val goal: String, val pesos: Long, val version: Long) : ScenarioStep
 
-    /**
-     * Marcar como lograda on [goal], read at [version]. [undoFor] is how long Deshacer is
-     * offered, in real elapsed time; null is the longest the app offers. Zero makes the
-     * window over at once, so a later Deshacer is too late (MT25) without any waiting.
-     */
-    data class MarkLograda(
-        val goal: String,
-        val version: Long,
-        override val expect: Expect = Expect.Saved,
-        val undoFor: Duration? = null
-    ) : ScenarioStep
-
-    /** Deshacer the completion step [of] made, while it is on offer. */
-    data class UndoLograda(val of: Int, override val expect: Expect = Expect.Saved) :
-        ScenarioStep
+    /** Marcar como lograda on [goal], read at [version]. */
+    data class MarkLograda(val goal: String, val version: Long) : ScenarioStep
 
     /** [goal] chosen for Recibo, as "Mostrar en Recibo" does. */
-    data class ChooseForRecibo(val goal: String, override val expect: Expect = Expect.Saved) :
-        ScenarioStep
+    data class ChooseForRecibo(val goal: String) : ScenarioStep
 
     /**
      * A schedule the later steps call [key], from [start] (by default the sandbox's day)
@@ -402,66 +159,20 @@ sealed interface ScenarioStep {
         val entry: Scheduled,
         val every: Every,
         val start: LocalDate? = null,
-        val end: LocalDate? = null,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
-
-    /**
-     * New terms for [schedule] after today, as read at [version] (rule 7): [pesos], or
-     * [every] from [start], which must be after today. What is not given stays as the
-     * earlier steps left it.
-     */
-    data class ChangeSchedule(
-        val schedule: String,
-        val version: Long,
-        val pesos: Long? = null,
-        val every: Every? = null,
-        val start: LocalDate? = null,
-        override val expect: Expect = Expect.Saved
+        val end: LocalDate? = null
     ) : ScenarioStep
 
     /** Pauses [schedule] from today, as read at [version] (rule 8). */
-    data class PauseSchedule(
-        val schedule: String,
-        val version: Long,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
+    data class PauseSchedule(val schedule: String, val version: Long) : ScenarioStep
 
     /** Resumes [schedule] from today, which counts, as read at [version] (rule 8). */
-    data class ResumeSchedule(
-        val schedule: String,
-        val version: Long,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
-
-    /** Deletes [schedule], as read at [version]; what it recorded stays (rule 10). */
-    data class DeleteSchedule(
-        val schedule: String,
-        val version: Long,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
-
-    /** Unarchives the category, as read at [version]; its schedules stay paused (rule 9). */
-    data class Unarchive(val category: String, val version: Long) : ScenarioStep
-
-    /**
-     * Deletes the entry [schedule] recorded for its occurrence on [date] in [slot], as
-     * read at [version]. Its origin stays handled: it is never recorded again (rule 4).
-     */
-    data class DeleteOccurrence(
-        val schedule: String,
-        val date: LocalDate,
-        val slot: Int = 1,
-        val version: Long = 1,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
+    data class ResumeSchedule(val schedule: String, val version: Long) : ScenarioStep
 
     /**
      * Agregar inversión: an investment the later steps call [key], in [currency], with a
      * first aporte of [contribution] minor units and a first value of [value] (Otro
      * valor), or the aporte itself when null (Lo mismo que aporté), both dated [on], by
-     * default the sandbox's day. [rate] is a USD rate entered with it (rule 12). Only
-     * one saved step makes each key; a refused one may share it.
+     * default the sandbox's day. [rate] is a USD rate entered with it (rule 12).
      */
     data class Investment(
         val key: String,
@@ -471,71 +182,25 @@ sealed interface ScenarioStep {
         val contribution: Long,
         val value: Long? = null,
         val rate: Rate? = null,
-        val on: LocalDate? = null,
-        override val expect: Expect = Expect.Saved
+        val on: LocalDate? = null
     ) : ScenarioStep
 
-    /**
-     * A movement of [minor] units of [kind] in [investment], read at [version]; [on]
-     * dates it earlier than the sandbox's day, or later to script a refusal.
-     */
+    /** A movement of [minor] units of [kind] in [investment], read at [version]. */
     data class Movement(
         val investment: String,
         val kind: Move,
         val minor: Long,
         val version: Long,
-        val on: LocalDate? = null,
-        override val expect: Expect = Expect.Saved
+        val on: LocalDate? = null
     ) : ScenarioStep
 
-    /**
-     * Corrects the movement step [of] recorded to [minor] units, and to [on] when given,
-     * with the investment read at [version] and the movement at [movementVersion]. When
-     * [of] is an [Investment] step, it is that step's first aporte, or its first value
-     * when [firstValue].
-     */
-    data class EditMovement(
-        val of: Int,
-        val minor: Long,
-        val version: Long,
-        val movementVersion: Long = 1,
-        val firstValue: Boolean = false,
-        val on: LocalDate? = null,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
-
-    /** Deletes the movement step [of] recorded, chosen as in [EditMovement]. */
-    data class DeleteMovement(
-        val of: Int,
-        val version: Long,
-        val movementVersion: Long = 1,
-        val firstValue: Boolean = false,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
-
-    /**
-     * Deshacer the movement deletion step [of] made, while it is on offer: six real
-     * seconds, gone with the process that deleted it.
-     */
-    data class UndoMovementDelete(val of: Int, override val expect: Expect = Expect.Saved) :
-        ScenarioStep
-
-    /** Deletes [investment] and all its movements, read at [version]; no undo (rule 9). */
-    data class DeleteInvestment(
-        val investment: String,
-        val version: Long,
-        override val expect: Expect = Expect.Saved
-    ) : ScenarioStep
-
-    /** A new dated USD rate (rule 11). A rate outside its bounds is never sent. */
-    data class SetRate(val rate: Rate, override val expect: Expect = Expect.Saved) :
-        ScenarioStep
+    /** A new dated USD rate (rule 11). */
+    data class SetRate(val rate: Rate) : ScenarioStep
 
     /**
      * Runs the app's catch-up, the one Sello runs when it opens and when the financial
-     * day changes, after any run already under way, and waits for it. It passes once
-     * everything due up to the sandbox's day is recorded; a failed or unknown batch
-     * stops the scenario, and the next try runs catch-up again.
+     * day changes, after any run already under way, and waits for it. A failed or
+     * unknown batch stops the load, and the next try runs catch-up again.
      */
     data object CatchUp : ScenarioStep
 }

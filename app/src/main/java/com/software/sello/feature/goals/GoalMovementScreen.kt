@@ -3,21 +3,10 @@ package com.software.sello.feature.goals
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,7 +19,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -39,29 +27,28 @@ import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
-import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
-import com.software.sello.designsystem.component.EntryLine
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.MoneySign
-import com.software.sello.designsystem.component.NoteComposer
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.domain.model.Note
 import com.software.sello.presentation.date.dateLabels
-import java.time.Instant
-import java.time.ZoneOffset
+import com.software.sello.presentation.movement.MovementCloseButton
+import com.software.sello.presentation.movement.MovementDatePicker
+import com.software.sello.presentation.movement.MovementDiscardSlip
+import com.software.sello.presentation.movement.MovementNoteComposer
+import com.software.sello.presentation.movement.MovementNoteLine
+import com.software.sello.presentation.movement.MovementPane
 
 @Composable
 fun GoalMovementRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit) {
@@ -90,12 +77,10 @@ fun GoalMovementScreen(state: GoalMovementState, onAction: (GoalMovementAction) 
             }
         ),
         navigationIcon = {
-            IconButton(
-                onClick = { onAction(GoalMovementAction.Back) },
-                modifier = Modifier.testTag(GOAL_MOVEMENT_CLOSE_TAG)
-            ) {
-                Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
-            }
+            MovementCloseButton(
+                { onAction(GoalMovementAction.Back) },
+                Modifier.testTag(GOAL_MOVEMENT_CLOSE_TAG)
+            )
         },
         actions = {
             if (state.editing) {
@@ -110,11 +95,11 @@ fun GoalMovementScreen(state: GoalMovementState, onAction: (GoalMovementAction) 
         }
     ) { padding ->
         when {
-            state.loading -> Pane(padding) {
+            state.loading -> MovementPane(padding) {
                 SlipSkeleton(Modifier.testTag("goal.movement.loading"))
             }
 
-            state.loadFailed -> Pane(padding) {
+            state.loadFailed -> MovementPane(padding) {
                 ErrorSlip(
                     stringResource(R.string.goal_failed_body),
                     { onAction(GoalMovementAction.Retry) },
@@ -157,25 +142,21 @@ fun GoalMovementScreen(state: GoalMovementState, onAction: (GoalMovementAction) 
         }
     }
     if (state.confirmDiscard) {
-        ConfirmSlip(
-            title = stringResource(R.string.goal_movement_discard_title),
-            message = AnnotatedString(stringResource(R.string.expense_entry_discard_message)),
-            confirmLabel = stringResource(R.string.expense_entry_discard_confirm),
-            onConfirm = { onAction(GoalMovementAction.DiscardConfirmed) },
-            onDismiss = { onAction(GoalMovementAction.KeepEditing) }
+        MovementDiscardSlip(
+            stringResource(R.string.goal_movement_discard_title),
+            { onAction(GoalMovementAction.DiscardConfirmed) },
+            { onAction(GoalMovementAction.KeepEditing) }
         )
     }
-    if (state.datePickerOpen) MovementDatePicker(state, onAction)
+    if (state.datePickerOpen) {
+        MovementDatePicker(
+            state.date,
+            state.today,
+            { onAction(GoalMovementAction.DatePicked(it)) },
+            { onAction(GoalMovementAction.CloseDatePicker) }
+        )
+    }
     if (state.composerOpen) Composer(state, onAction)
-}
-
-@Composable
-private fun Pane(padding: PaddingValues, content: @Composable () -> Unit) {
-    Column(
-        Modifier.fillMaxSize().padding(padding)
-            .verticalScroll(rememberScrollState()).padding(SelloTheme.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
-    ) { content() }
 }
 
 /** "Aporte en pesos" and the green "+" amount, or "Retiro en pesos" and the ink "−". */
@@ -265,14 +246,11 @@ private fun Choices(state: GoalMovementState, onAction: (GoalMovementAction) -> 
             Modifier.testTag("goal.movement.saved")
         )
     }
-    EntryLine(
-        text = state.note.ifBlank { stringResource(R.string.expense_entry_add_note) },
-        icon = SelloIcon.EditNote,
-        onClick = { onAction(GoalMovementAction.OpenComposer) },
-        modifier = Modifier.testTag(GOAL_MOVEMENT_NOTE_TAG),
-        action = stringResource(R.string.expense_entry_edit_note),
-        placeholder = state.note.isBlank(),
-        enabled = state.editable
+    MovementNoteLine(
+        state.note,
+        state.editable,
+        { onAction(GoalMovementAction.OpenComposer) },
+        Modifier.testTag(GOAL_MOVEMENT_NOTE_TAG)
     )
 }
 
@@ -348,72 +326,25 @@ private fun Action(state: GoalMovementState, onAction: (GoalMovementAction) -> U
 
 @Composable
 private fun Composer(state: GoalMovementState, onAction: (GoalMovementAction) -> Unit) {
-    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)
-    val kind = stringResource(
-        if (state.withdrawal) R.string.goal_movement_withdraw else R.string.goal_movement_contribute
-    )
-    NoteComposer(
-        context = buildAnnotatedString {
-            append(kind)
-            state.amount?.let {
-                append(" · ")
-                withStyle(facts) { append((if (state.withdrawal) "−" else "+") + it.digits) }
+    MovementNoteComposer(
+        kind = stringResource(
+            if (state.withdrawal) {
+                R.string.goal_movement_withdraw
+            } else {
+                R.string.goal_movement_contribute
             }
-        },
-        value = state.composerDraft,
-        onValueChange = { onAction(GoalMovementAction.ComposerChanged(it)) },
-        counter = stringResource(
-            R.string.expense_entry_note_counter,
-            state.composerLength,
-            Note.MAX_CODE_POINTS
         ),
-        hint = stringResource(R.string.expense_entry_note_optional),
-        error = when (state.composerProblem) {
-            GoalNoteProblem.TooLong -> stringResource(R.string.expense_entry_note_composer_too_long)
-            GoalNoteProblem.NotAllowed -> stringResource(R.string.income_text_not_allowed)
-            null -> null
-        },
-        doneLabel = stringResource(R.string.expense_entry_note_done),
-        cancelLabel = stringResource(R.string.expense_entry_note_cancel),
+        figure = state.amount?.let { (if (state.withdrawal) "−" else "+") + it.digits },
+        draft = state.composerDraft,
+        length = state.composerLength,
+        problem = state.composerProblem,
+        icon = state.goal?.let { goalIcon(it.iconKey) } ?: SelloIcon.Flag,
+        spoken = stringResource(R.string.goal_movement_note_spoken),
+        amountSpoken = state.amount?.spoken,
+        onChange = { onAction(GoalMovementAction.ComposerChanged(it)) },
         onDone = { onAction(GoalMovementAction.ComposerDone) },
-        onCancel = { onAction(GoalMovementAction.ComposerCancelled) },
-        contextIcon = state.goal?.let { goalIcon(it.iconKey) } ?: SelloIcon.Flag,
-        contextDescription = listOfNotNull(
-            stringResource(R.string.goal_movement_note_spoken),
-            state.amount?.spoken
-        ).joinToString(", ")
+        onCancel = { onAction(GoalMovementAction.ComposerCancelled) }
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MovementDatePicker(state: GoalMovementState, onAction: (GoalMovementAction) -> Unit) {
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis = state.date.atStartOfDay(
-            ZoneOffset.UTC
-        ).toInstant().toEpochMilli(),
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) =
-                !Instant.ofEpochMilli(utcTimeMillis)
-                    .atZone(ZoneOffset.UTC).toLocalDate().isAfter(state.today)
-
-            override fun isSelectableYear(year: Int) = year <= state.today.year
-        }
-    )
-    DatePickerDialog(
-        onDismissRequest = { onAction(GoalMovementAction.CloseDatePicker) },
-        confirmButton = {
-            SelloButton(stringResource(R.string.expense_entry_date_confirm), {
-                picker.selectedDateMillis?.let {
-                    onAction(
-                        GoalMovementAction.DatePicked(
-                            Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
-                        )
-                    )
-                } ?: onAction(GoalMovementAction.CloseDatePicker)
-            })
-        }
-    ) { DatePicker(picker) }
 }
 
 const val GOAL_MOVEMENT_CLOSE_TAG = "goal.movement.close"

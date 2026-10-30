@@ -13,6 +13,9 @@ import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CommittedGoal
@@ -47,12 +50,15 @@ import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.SetUsdRate
+import com.software.sello.domain.usecase.CatchUpNow
+import com.software.sello.domain.usecase.CatchUpResult
+import com.software.sello.domain.usecase.CatchUpStop
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.util.UUID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -112,16 +118,16 @@ class LedgerCategories(private val ledger: Ledger) : CategoryCommands {
             OperationKind.CreateCategory,
             null
         )?.let { (receipt, id, replayed) ->
-            CategoryCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedCategoryChange(receipt, CategoryId.of(id).value()),
                 replayed
             )
         }
-            ?: CategoryCommandOutcome.Rejected(
-                com.software.sello.domain.port.CategoryRejection.NameTaken
+            ?: CommandOutcome.Rejected(
+                Specific(com.software.sello.domain.port.CategoryRejection.NameTaken)
             )
     } catch (_: Ledger.Unknown) {
-        CategoryCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
@@ -138,13 +144,13 @@ class LedgerExpenses(private val ledger: Ledger) : ExpenseCommands {
             OperationKind.CreateExpense,
             command.date
         )?.let { (receipt, id, replayed) ->
-            ExpenseCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedExpense(receipt, ExpenseId.of(id).value()),
                 replayed
             )
-        } ?: ExpenseCommandOutcome.Rejected(ExpenseRejection.CategoryMissing)
+        } ?: CommandOutcome.Rejected(Specific(ExpenseRejection.CategoryMissing))
     } catch (_: Ledger.Unknown) {
-        ExpenseCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
@@ -169,13 +175,13 @@ class LedgerIncomes(private val ledger: Ledger) : IncomeCommands {
             OperationKind.CreateIncome,
             command.date
         )?.let { (receipt, id, replayed) ->
-            IncomeCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedIncome(receipt, IncomeId.of(id).value()),
                 replayed
             )
         } ?: error("unused")
     } catch (_: Ledger.Unknown) {
-        IncomeCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
@@ -201,13 +207,13 @@ class LedgerGoals(private val ledger: Ledger) : GoalCommands {
         sent += command
         ledger.write(command.operationId, OperationKind.CreateGoal, null)
             ?.let { (receipt, id, replayed) ->
-                GoalCommandOutcome.Committed(
+                CommandOutcome.Committed(
                     CommittedGoal(receipt, GoalId.of(id).value(), null),
                     replayed
                 )
-            } ?: GoalCommandOutcome.Rejected(GoalRejection.VersionConflict(0))
+            } ?: CommandOutcome.Rejected(CommandRejection.VersionConflict(0))
     } catch (_: Ledger.Unknown) {
-        GoalCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
@@ -235,7 +241,7 @@ class LedgerInvestments(private val ledger: Ledger) : InvestmentCommands {
         sent += command
         refuseNext?.let {
             refuseNext = null
-            return InvestmentCommandOutcome.Rejected(it)
+            return CommandOutcome.Rejected(Specific(it))
         }
         val subject = (command as? InvestmentEdit)?.investmentId
         try {
@@ -249,13 +255,13 @@ class LedgerInvestments(private val ledger: Ledger) : InvestmentCommands {
                 )
             }
         }?.let { (receipt, _, replayed) ->
-            InvestmentCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 CommittedInvestment(receipt, subjects[command.operationId.value]),
                 replayed
             )
-        } ?: InvestmentCommandOutcome.Rejected(InvestmentRejection.VersionConflict(0))
+        } ?: CommandOutcome.Rejected(CommandRejection.VersionConflict(0))
     } catch (_: Ledger.Unknown) {
-        InvestmentCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     /** What each committed operation changed: the investment it made or named; none for a rate. */
@@ -278,13 +284,13 @@ class LedgerSchedules(private val ledger: Ledger) : ScheduleCommands {
         sent += command
         ledger.write(command.operationId, OperationKind.PauseSchedule, null)
             ?.let { (receipt, id, replayed) ->
-                ScheduleCommandOutcome.Committed(
+                CommandOutcome.Committed(
                     CommittedSchedule(receipt, ScheduleId.of(id).value()),
                     replayed
                 )
-            } ?: ScheduleCommandOutcome.Rejected(ScheduleRejection.Unchanged)
+            } ?: CommandOutcome.Rejected(Specific(ScheduleRejection.Unchanged))
     } catch (_: Ledger.Unknown) {
-        ScheduleCommandOutcome.OutcomeUnknown(command.operationId)
+        CommandOutcome.OutcomeUnknown(command.operationId)
     }
 
     override suspend fun find(operationId: OperationId) = Outcome.Success(
@@ -294,13 +300,48 @@ class LedgerSchedules(private val ledger: Ledger) : ScheduleCommands {
     )
 }
 
+/** The app's catch-up as the runner sees it, answering each run with [answer]. */
+class ScriptedCatchUpNow(var answer: CatchUpResult = CatchUpResult(emptyList(), null)) :
+    CatchUpNow {
+    var runs = 0
+
+    override suspend fun run(): CatchUpResult = answer.also { runs++ }
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScenarioRunnerTest {
-    // G01's writes without its final check, which reads real snapshots on device.
-    private val scenario = Scenarios.G01.copy(steps = Scenarios.G01.steps.dropLast(1))
+    private val bogota = ZoneId.of("America/Bogota")
+
+    // A short history on ledgers: each write is kept once, as the real commands keep it.
+    private val scenario = Scenario(
+        id = "prueba",
+        version = 1,
+        seed = 1,
+        zone = bogota,
+        start = LocalDate.of(2026, 10, 1),
+        today = LocalDate.of(2026, 10, 3),
+        title = "Prueba",
+        summary = "",
+        steps = listOf(
+            ScenarioStep.Category("comida", "Comida", "restaurant", 100_000),
+            ScenarioStep.Expense("comida", 10_000),
+            ScenarioStep.AdvanceTo(LocalDate.of(2026, 10, 2)),
+            ScenarioStep.Expense("comida", 15_000),
+            ScenarioStep.CatchUp,
+            ScenarioStep.AdvanceTo(LocalDate.of(2026, 10, 3)),
+            ScenarioStep.Income(200_000, "salary"),
+            ScenarioStep.Expense("comida", 5_000, on = LocalDate.of(2026, 10, 1))
+        )
+    )
     private val ledger = Ledger()
+    private val catchUp = ScriptedCatchUpNow()
     private val store = InMemorySessionStore(
-        SandboxSession(active = true, date = scenario.start, scenario = scenario.key)
+        SandboxSession(
+            active = true,
+            date = scenario.start,
+            scenario = scenario.key,
+            loading = true
+        )
     )
 
     /** A process: a clock on the stored date and a runner on the stored progress. */
@@ -318,167 +359,136 @@ class ScenarioRunnerTest {
             LedgerExpenses(ledger),
             LedgerIncomes(ledger),
             LedgerGoals(ledger),
-            NoSnapshots,
-            NoSnapshots,
-            NoGoalReads,
-            noSchedules(time.clock),
-            noInvestments(),
+            ScenarioSchedules(LedgerSchedules(ledger), catchUp),
+            LedgerInvestments(ledger),
             store,
             backgroundScope
         )
     }
 
+    /** The operations of the steps that write, in order. */
+    private fun writes(vararg except: Int) =
+        scenario.steps.indices.filter { scenario.steps[it].writes && it !in except }
+            .map(scenario::operation)
+
     @Test
-    fun aFullRunWritesEachStepOnceOnItsDayAndRecordsEachReceipt() = runTest {
+    fun loadingWritesEachStepOnceOnItsDayAndEndsOnTheHistorysLastDay() = runTest {
         val runner = process()
-        while (runner.step()) Unit
+        runner.load().join()
 
         assertTrue(runner.state.value.finished)
-        assertEquals(5, ledger.writes.size)
+        assertNull(runner.state.value.problem)
+        assertEquals(writes(), ledger.writes)
         assertEquals(
-            listOf(1, 2, 3).map { LocalDate.of(2026, 10, it) },
-            ledger.dates.filterKeys { it != scenario.operation(6) }.values.toList()
+            listOf(1, 2, 3, 1).map { LocalDate.of(2026, 10, it) },
+            listOf(1, 3, 6, 7).map { ledger.dates[scenario.operation(it)] }
         )
-        assertEquals(LocalDate.of(2026, 10, 3), ledger.dates[scenario.operation(6)])
-        assertEquals(7, store.session.nextStep)
-        assertEquals(
-            listOf(1L, 2L, null, 3L, null, 4L, 5L),
-            runner.state.value.log.map {
-                it.revision
-            }
-        )
+        assertEquals(1, catchUp.runs)
+        assertEquals(scenario.today, store.session.date)
+        assertEquals(8, store.session.nextStep)
+        assertFalse(store.session.loading)
     }
 
     @Test
     fun aStepThatCommittedBeforeItsCheckpointIsNotWrittenAgainInTheNextProcess() = runTest {
         val first = process()
-        repeat(3) { first.step() }
-        // Step 4 commits, then the process ends before its checkpoint is written.
-        ledger.answer = Ledger.Next.Commit
-        first.step()
+        repeat(4) { first.step() }
+        // Step 4 committed, then the process ended before its checkpoint was written.
         store.write(store.session.copy(nextStep = 3))
         assertEquals(3, ledger.writes.size)
 
         val second = process()
-        while (second.step()) Unit
+        second.resume()
+        runCurrent()
 
-        assertEquals(5, ledger.writes.size)
-        assertEquals("Ya estaba guardado", second.state.value.log.first { it.index == 3 }.result)
-        assertEquals(
-            scenario.steps.indices.filter {
-                it != 2 && it != 4
-            }.map(scenario::operation),
-            ledger.writes
-        )
+        assertTrue(second.state.value.finished)
+        assertEquals(writes(), ledger.writes)
+        assertFalse(store.session.loading)
     }
 
     @Test
-    fun anUnknownOutcomeStopsTheRunAndTheNextTryUsesTheSameOperation() = runTest {
+    fun anUnknownOutcomeStopsTheLoadAndTryingAgainUsesTheSameOperation() = runTest {
         val runner = process()
+        ledger.answer = Ledger.Next.Refuse
         runner.step()
         ledger.answer = Ledger.Next.CommitButUnknown
+        runner.load().join()
 
-        assertFalse(runner.step())
-        assertEquals(1, runner.state.value.next)
-        assertTrue(runner.state.value.problem!!.startsWith("No se sabe"))
-        assertEquals(1, store.session.nextStep)
+        assertEquals(0, runner.state.value.next)
+        assertTrue(runner.state.value.problem!!.contains("no se sabe si se guardó"))
+        assertEquals(0, store.session.nextStep)
+        assertTrue(store.session.loading)
 
-        assertTrue(runner.step())
-        assertEquals(2, runner.state.value.next)
+        runner.load().join()
+
+        assertTrue(runner.state.value.finished)
         assertNull(runner.state.value.problem)
-        assertEquals("Ya estaba guardado", runner.state.value.log.last().result)
-        assertEquals(2, ledger.writes.size)
+        assertEquals(writes(), ledger.writes)
     }
 
     @Test
-    fun aRefusalStopsPlayingAndLeavesTheStepToTry() = runTest {
+    fun aRefusalStopsTheLoadNamingTheStepAndLeavesItIncomplete() = runTest {
         val runner = process()
         runner.step()
         ledger.answer = Ledger.Next.Refuse
 
-        runner.play()
-        advanceTimeBy(60_000)
+        runner.load().join()
 
-        assertFalse(runner.state.value.playing)
         assertEquals(1, runner.state.value.next)
-        assertTrue(runner.state.value.problem!!.startsWith("Rechazado"))
-    }
-
-    @Test
-    fun playingTakesOneStepEveryTwoSecondsAndPauseKeepsTheProgress() = runTest {
-        val runner = process()
-
-        runner.play()
-        runCurrent()
-        advanceTimeBy(4_001)
-        assertEquals(2, runner.state.value.next)
-        runner.pause()
-        advanceTimeBy(60_000)
-
-        assertEquals(2, runner.state.value.next)
-        assertFalse(runner.state.value.playing)
-        assertEquals(2, store.session.nextStep)
-    }
-
-    @Test
-    fun aNewProcessListsTheStepsAlreadyConfirmedFromTheirReceipts() = runTest {
-        val first = process()
-        repeat(4) { first.step() }
-
-        val second = process()
-        second.recover()
-        runCurrent()
-
+        assertFalse(runner.state.value.finished)
+        assertFalse(runner.state.value.loading)
         assertEquals(
-            first.state.value.log.map {
-                it.revision
-            },
-            second.state.value.log.map { it.revision }
+            "Paso 2 de 8 (Expense): rechazado: CategoryMissing",
+            runner.state.value.problem
         )
-        assertEquals(4, second.state.value.next)
+        assertTrue(store.session.loading)
     }
 
     @Test
-    fun aStepTakenBeforeTheNewProcessHasListedItsHistoryKeepsItsOwnResult() = runTest {
+    fun aFailedCatchUpStopsTheLoadAndTheNextTryRunsItAgain() = runTest {
+        val runner = process()
+        catchUp.answer = CatchUpResult(emptyList(), CatchUpStop.Unknown)
+
+        runner.load().join()
+
+        assertEquals(4, runner.state.value.next)
+        assertTrue(runner.state.value.problem!!.contains("puesta al día"))
+        catchUp.answer = CatchUpResult(emptyList(), null)
+        runner.load().join()
+        assertTrue(runner.state.value.finished)
+        assertEquals(2, catchUp.runs)
+    }
+
+    @Test
+    fun aNewProcessLoadsOnlyWhenALoadWasAskedForAndNotFinished() = runTest {
+        store.session = store.session.copy(loading = false)
+        val idle = process()
+        idle.resume()
+        runCurrent()
+        assertEquals(0, idle.state.value.next)
+        assertTrue(ledger.writes.isEmpty())
+
+        store.session = store.session.copy(loading = true)
+        val loading = process()
+        loading.resume()
+        runCurrent()
+        assertTrue(loading.state.value.finished)
+    }
+
+    @Test
+    fun aLoadIsNotCarriedOnIntoAHistoryTheAppsOwnResetErased() = runTest {
         val first = process()
         repeat(4) { first.step() }
-        // Step 4 committed, but the process ended before its checkpoint.
-        store.session = store.session.copy(nextStep = 3)
+        // The app's own reset erased everything, receipts included.
+        ledger.receipts.clear()
+        val written = ledger.writes.toList()
 
         val second = process()
-        second.recover()
-        second.step()
+        second.resume()
         runCurrent()
 
-        assertEquals(listOf(0, 1, 2, 3), second.state.value.log.map { it.index })
-        assertEquals("Ya estaba guardado", second.state.value.log.last().result)
+        assertEquals(4, second.state.value.next)
+        assertTrue(second.state.value.problem!!.contains("se borró"))
+        assertEquals(written, ledger.writes)
     }
 }
-
-/** Snapshot ports the host runner tests never read. */
-object NoSnapshots :
-    com.software.sello.domain.port.MonthlySnapshots,
-    com.software.sello.domain.port.ResumenSnapshots {
-    override suspend fun read(month: java.time.YearMonth): Nothing = error("unused")
-
-    override fun observe(month: java.time.YearMonth): Nothing = error("unused")
-}
-
-object NoGoalReads : com.software.sello.domain.port.GoalReads {
-    override suspend fun board(): Nothing = error("unused")
-
-    override fun observeBoard(): Nothing = error("unused")
-
-    override suspend fun goal(id: GoalId): Nothing = error("unused")
-}
-
-object NoInvestmentReads : com.software.sello.domain.port.InvestmentReads {
-    override suspend fun board(): Nothing = error("unused")
-
-    override fun observeBoard(): Nothing = error("unused")
-
-    override suspend fun investment(id: InvestmentId): Nothing = error("unused")
-}
-
-/** Investment ports for runner tests whose scenarios have no investment step. */
-fun noInvestments() = ScenarioInvestments(LedgerInvestments(Ledger()), NoInvestmentReads)

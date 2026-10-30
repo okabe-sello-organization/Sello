@@ -44,7 +44,6 @@ import com.software.sello.designsystem.component.DangerSlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FittedMoneyText
-import com.software.sello.designsystem.component.GoalPinPill
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MoneyText
@@ -232,8 +231,8 @@ private fun Hero(
                 fontWeight = FontWeight.W900
             )
         }
-        FittedMoneyText(goal.saved, Modifier.padding(top = 4.dp), startSize = 40)
-        Row(Modifier.fillMaxWidth().padding(top = 2.dp, bottom = 8.dp)) {
+        FittedMoneyText(goal.saved, Modifier.padding(top = SelloTheme.spacing.xs), startSize = 40)
+        Row(Modifier.fillMaxWidth().padding(top = 2.dp, bottom = SelloTheme.spacing.sm)) {
             Text(
                 stringResource(R.string.goal_target_of, goal.target.digits),
                 Modifier.weight(1f),
@@ -318,7 +317,9 @@ private fun Hero(
             SelloButton(
                 stringResource(R.string.goal_mark_complete),
                 { onAction(GoalDetailAction.MarkComplete) },
-                Modifier.fillMaxWidth().padding(top = 8.dp).testTag(GOAL_MARK_COMPLETE_TAG),
+                Modifier.fillMaxWidth()
+                    .padding(top = SelloTheme.spacing.sm)
+                    .testTag(GOAL_MARK_COMPLETE_TAG),
                 icon = SelloIcon.Check,
                 enabled = !state.busy,
                 loading = state.completion == CompletionState.Busy,
@@ -470,7 +471,7 @@ private fun Movements(
 @Composable
 fun GoalPin(state: GoalDetailState.Ready, onAction: (GoalDetailAction) -> Unit) {
     val featured = state.goal.featured
-    Box(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
+    Box(Modifier.fillMaxWidth().padding(bottom = SelloTheme.spacing.xs)) {
         GoalPinPill(
             label = stringResource(if (featured) R.string.goal_pin_on else R.string.goal_pin_off),
             selected = featured,

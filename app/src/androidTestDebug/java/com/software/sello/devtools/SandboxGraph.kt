@@ -24,8 +24,9 @@ import org.koin.dsl.koinApplication
  * The debug app's graph on the sandbox's own data, built as a new process builds it:
  * the stored [session], real Room, the production modules and the debug composition.
  * Each [open] is a new process; [close] ends it. The installed app's graph is not used.
+ * A test's own [setups] are found by their key before the tools' histories.
  */
-class SandboxGraph(var session: SandboxSession) {
+class SandboxGraph(var session: SandboxSession, private val setups: List<Scenario> = emptyList()) {
     val context: Context = InstrumentationRegistry.getInstrumentation().targetContext
     val store = MemoryStore(session)
     var tools: SandboxTools? = null
@@ -37,14 +38,20 @@ class SandboxGraph(var session: SandboxSession) {
 
     fun open(): SandboxGraph {
         close()
-        val composition = DebugComposition(store, {}) { tools = it }
-        val opened = openStorage(
-            context,
-            composition.newDataZone ?: ZoneId.of("America/Bogota"),
-            SystemDispatcherProvider(),
-            SystemAuditClock(),
-            SandboxNames
-        ) as Outcome.Success
+        val composition = DebugComposition(
+            store,
+            {},
+            { key -> setups.firstOrNull { it.key == key } ?: Scenarios.find(key) }
+        ) { tools = it }
+        val opened = runBlocking {
+            openStorage(
+                context,
+                composition.newDataZone ?: ZoneId.of("America/Bogota"),
+                SystemDispatcherProvider(),
+                SystemAuditClock(),
+                SandboxNames
+            )
+        } as Outcome.Success
         val zone = ProcessFinancialZone().apply { initialize(opened.value.profile.zone) }
         graph = koinApplication {
             allowOverride(true)

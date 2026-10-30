@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,7 +22,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -32,19 +29,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -56,30 +47,20 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.error
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.software.sello.designsystem.icon.SelloIcon
@@ -186,112 +167,6 @@ fun SelloNavigationBar(navigation: SelloNavigation, modifier: Modifier = Modifie
 }
 
 /**
- * The tab's top bar on the band: the month, its year and a chevron form one button that
- * opens the month picker; [actions] (settings, add) sit at the trailing edge as round
- * 48dp icon buttons. From font scale 1.3 the year is left out so the month keeps its room;
- * [description] still says it. [buttonModifier] goes on the month button itself.
- */
-@Composable
-fun MonthBar(
-    month: String,
-    year: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    description: String = "$month $year",
-    buttonModifier: Modifier = Modifier,
-    actions: @Composable RowScope.() -> Unit = {}
-) {
-    val colors = SelloTheme.colors
-    val large = LocalDensity.current.fontScale >= 1.3f
-    Row(
-        modifier.fillMaxWidth().background(colors.band).heightIn(min = 56.dp)
-            .padding(start = 16.dp, end = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            buttonModifier
-                .heightIn(min = 48.dp)
-                .clickable(role = Role.Button, onClick = onClick)
-                .clearAndSetSemantics {
-                    contentDescription = description
-                    role = Role.Button
-                    onClick {
-                        onClick()
-                        true
-                    }
-                },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Text(
-                month,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontSize = if (large) 19.sp else 24.sp,
-                    fontWeight = FontWeight.W800,
-                    letterSpacing = (-0.02).em
-                ),
-                color = colors.onBand
-            )
-            if (!large) {
-                Text(
-                    year,
-                    Modifier.padding(start = 6.dp),
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W600),
-                    color = colors.onBand.copy(alpha = 0.8f)
-                )
-            }
-            Icon(SelloIcon.KeyboardArrowDown.painter(), null, tint = colors.onBand)
-        }
-        Spacer(Modifier.weight(1f))
-        CompositionLocalProvider(LocalContentColor provides colors.onBand) { actions() }
-    }
-}
-
-/**
- * A tab's top bar on the band when it has a title instead of a month, as on Metas and
- * Inversiones: the [title] as a heading, then a [chip] such as **+ Nueva meta** (a
- * [BandChip]), told to be compact when its label would push the title off its line, and
- * any [actions] as round 48dp icon buttons at the trailing edge.
- */
-@Composable
-fun TitleBar(
-    title: String,
-    modifier: Modifier = Modifier,
-    chip: (@Composable (compact: Boolean) -> Unit)? = null,
-    actions: @Composable RowScope.() -> Unit = {}
-) {
-    val colors = SelloTheme.colors
-    val scale = LocalDensity.current.fontScale
-    val width = LocalWindowInfo.current.containerSize.width
-    // The chip keeps its label while the title fits on its line beside it; when it
-    // would not, as at large text or on a narrow window, it is the round + alone.
-    var compact by remember(title, scale, width) { mutableStateOf(false) }
-    Row(
-        modifier.fillMaxWidth().background(colors.band).heightIn(min = 56.dp)
-            .padding(start = 16.dp, end = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            title,
-            Modifier.weight(1f).semantics { heading() },
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontSize = if (scale >= 1.3f) 19.sp else 24.sp,
-                fontWeight = FontWeight.W800,
-                letterSpacing = (-0.02).em
-            ),
-            color = colors.onBand,
-            maxLines = 1,
-            softWrap = false,
-            onTextLayout = { if (chip != null && it.hasVisualOverflow) compact = true }
-        )
-        if (chip != null) {
-            Box(Modifier.padding(start = 8.dp, end = if (compact) 0.dp else 6.dp)) { chip(compact) }
-        }
-        CompositionLocalProvider(LocalContentColor provides colors.onBand) { actions() }
-    }
-}
-
-/**
  * A secondary action on the band, as Metas' **+ Nueva meta** beside its title: a paper
  * pill with a plus, the same paper on band as [PastMonthRibbon]'s return, so it stands
  * out without competing with the dock. Its touch target is 48dp; the pill itself is 36dp.
@@ -352,104 +227,9 @@ fun BandChip(
             color = content,
             fontWeight = FontWeight.W800,
             style = MaterialTheme.typography.bodyMedium,
-            // On a narrow slip at large text the label wraps rather than being cut.
+            // On a narrow slip the label wraps rather than being cut.
             maxLines = if (onPaper) 2 else 1
         )
-    }
-}
-
-/**
- * Says which past month is shown and goes back in one tap. A translucent pill meant to
- * sit on the band, under the [MonthBar]. Bold spans in [message] name the month. Plain
- * presentation data only; no selected-month or clock logic. At large text the return
- * goes under the message, which keeps the width; beside it the message would be
- * squeezed into a column of letters.
- */
-@Composable
-fun PastMonthRibbon(
-    message: AnnotatedString,
-    returnLabel: String,
-    onReturn: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colors = SelloTheme.colors
-    val stacked = LocalDensity.current.fontScale >= 1.3f
-    val info: @Composable (Modifier) -> Unit = { textModifier ->
-        Icon(SelloIcon.Event.painter(), null, Modifier.size(20.dp), tint = colors.onBand)
-        Text(
-            message,
-            color = colors.onBand,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = textModifier.semantics { liveRegion = LiveRegionMode.Polite }
-        )
-    }
-    val back: @Composable (Modifier) -> Unit = { buttonModifier ->
-        Text(
-            returnLabel,
-            modifier = buttonModifier
-                .minimumInteractiveComponentSize()
-                .heightIn(min = 40.dp)
-                .clip(CircleShape)
-                .background(if (colors.isDark) colors.paper else Color.White)
-                .clickable(role = Role.Button, onClick = onReturn)
-                .padding(horizontal = 14.dp)
-                .wrapContentHeight(Alignment.CenterVertically),
-            color = if (colors.isDark) colors.ink else colors.band,
-            fontWeight = FontWeight.W800,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 1
-        )
-    }
-    if (stacked) {
-        Column(
-            modifier.fillMaxWidth()
-                .background(colors.onBand.copy(alpha = 0.16f), RoundedCornerShape(20.dp))
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) { info(Modifier.weight(1f)) }
-            back(Modifier.align(Alignment.End))
-        }
-    } else {
-        Row(
-            modifier.fillMaxWidth()
-                .background(colors.onBand.copy(alpha = 0.16f), CircleShape)
-                .padding(start = 12.dp, top = 4.dp, end = 4.dp, bottom = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            info(Modifier.weight(1f))
-            back(Modifier)
-        }
-    }
-}
-
-@Composable
-fun GoalPinPill(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colors = SelloTheme.colors
-    Row(
-        modifier.clip(
-            CircleShape
-        ).background(if (selected) colors.onBand.copy(alpha = 0.18f) else Color.Transparent)
-            .border(1.5.dp, if (selected) Color.Transparent else colors.onBand, CircleShape)
-            .selectable(
-                selected,
-                role = Role.RadioButton,
-                onClick = onClick
-            ).heightIn(min = 48.dp).padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Icon(SelloIcon.Star.painter(selected), null, tint = colors.onBand)
-        Text(label, color = colors.onBand, fontWeight = FontWeight.W800)
     }
 }
 
@@ -590,8 +370,7 @@ fun NoteComposer(
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }
     // Opening on an existing note puts the cursor after it, ready to keep typing or delete.
-    var field by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
-    if (field.text != value) field = TextFieldValue(value, TextRange(value.length))
+    val edited = rememberEditedText(value)
     Dialog(
         onDismissRequest = onCancel,
         properties = DialogProperties(
@@ -638,11 +417,8 @@ fun NoteComposer(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         BasicTextField(
-                            value = field,
-                            onValueChange = {
-                                field = it
-                                if (it.text != value) onValueChange(it.text)
-                            },
+                            value = edited.field,
+                            onValueChange = { edited.edit(it)?.let(onValueChange) },
                             textStyle = MaterialTheme.typography.bodyLarge.copy(
                                 color = colors.ink,
                                 fontWeight = FontWeight.W600

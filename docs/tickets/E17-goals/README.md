@@ -5,6 +5,8 @@
 - **Goal:** Let a person create goals, record contributions and withdrawals, earn milestone stamps and complete goals, as designed in Sello v2.
 - **Exit:** Metas is a tab with goals, detail, Aportar/Retirar, creation and celebrations; Recibo shows one goal; backups carry goals; the sandbox and catalog cover them.
 
+## Decisions
+
 **Owner direction (2026-10-23):** Metas comes first among the new features and ships with
 recurrence and Inversiones in one release ([E19](../E19-investments/README.md)). Decisions:
 [ADR 0017](../../decisions/0017-goals-recurrence-investments.md), [ADR 0013](../../decisions/0013-sello-v2-design.md) and the

@@ -7,12 +7,7 @@ import com.software.sello.domain.model.SnapshotFailure
 import java.time.YearMonth
 import kotlinx.coroutines.flow.Flow
 
-sealed interface CategoryInsightsState {
-    data object Loading : CategoryInsightsState
-    data class Ready(val snapshot: CategoryInsights) : CategoryInsightsState
-    data class Failed(val failure: SnapshotFailure, val lastGood: CategoryInsights?) :
-        CategoryInsightsState
-}
+typealias CategoryInsightsState = ReadState<CategoryInsights, SnapshotFailure>
 
 interface CategoryInsightsSnapshots {
     suspend fun read(

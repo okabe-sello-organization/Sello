@@ -4,7 +4,7 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Plain Sello stamp in Cobalto; Catalog adds the colour ring, Prototype the dashed sketch. -->
+    <!-- Plain Sello stamp in Cobalto. -->
     <path
         android:pathData="M39.06,42.52L64.66,38.46Q69.64,37.67 70.43,42.65L73.13,59.72Q73.92,64.70 68.94,65.48L43.34,69.54Q38.36,70.33 37.57,65.35L34.87,48.28Q34.08,43.30 39.06,42.52Z"
         android:strokeColor="#FF1F3BE0"

@@ -4,18 +4,16 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.data.repository.RoomScheduleCatchUp
 import com.software.sello.data.repository.RoomScheduleRecordReads
 import com.software.sello.domain.model.IncomeSource
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduledEntry
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordedOccurrence
 import com.software.sello.domain.port.ScheduleRecord
-import com.software.sello.domain.port.ScheduleRecordsState
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
@@ -42,8 +40,6 @@ class ScheduleRecordReadsTest {
 
     private fun d(text: String) = LocalDate.parse(text)
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private suspend fun catchUp(today: String): List<RecordedOccurrence> {
         val store = RoomScheduleCatchUp(ledger.database, { ledger.audit }, {
             uuid(ledger.nextRecord++)
@@ -63,14 +59,14 @@ class ScheduleRecordReadsTest {
             RepeatRule.Monthly.of(5).valueOrFail(),
             ScheduledEntry.Payment(
                 ledger.categoryId(100),
-                pesos(950_000),
+                transactionPesos(950_000),
                 Note.of("Arriendo").valueOrFail()
             )
         )
         schedule(
             "2026-10-01",
             RepeatRule.Monthly.of(2).valueOrFail(),
-            ScheduledEntry.Income(IncomeSource.Salary, pesos(3_000_000), null)
+            ScheduledEntry.Income(IncomeSource.Salary, transactionPesos(3_000_000), null)
         )
     }
 
@@ -143,16 +139,16 @@ class ScheduleRecordReadsTest {
         ledger.goTo("2026-10-24")
         val observed = reads.observeRecordedAfter(null)
 
-        assertEquals(ScheduleRecordsState.Loading, observed.first())
+        assertEquals(ReadState.Loading, observed.first())
         assertEquals(
-            ScheduleRecordsState.Ready(emptyList()),
+            ReadState.Ready(emptyList<ScheduleRecord>()),
             observed.take(2).toList().last()
         )
         catchUp("2026-10-24")
-        val after = observed.take(2).toList().last() as ScheduleRecordsState.Ready
+        val after = observed.take(2).toList().last() as ReadState.Ready
         assertEquals(
             listOf("income|2026-10-02|3000000", "expense|2026-10-05|950000"),
-            summary(after.records)
+            summary(after.value)
         )
     }
 }

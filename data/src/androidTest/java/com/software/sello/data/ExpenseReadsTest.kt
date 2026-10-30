@@ -5,6 +5,7 @@ import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ArchiveCategory
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpensePage
@@ -32,7 +33,7 @@ class ExpenseReadsTest {
     fun aSavedExpenseReadsBackExactlyAsItsReceiptSays() = runBlocking {
         ledger.categories.submit(ledger.createCategory("Mercado"))
         val saved = ledger.expenses.create(ledger.createExpense(100, "2026-10-03", 999_999_999_999))
-        val receipt = (saved as ExpenseCommandOutcome.Committed).expense
+        val receipt = (saved as CommandOutcome.Committed).value
 
         val read = ledger.expenseReads.byId(receipt.expenseId).valueOrFail()!!
 

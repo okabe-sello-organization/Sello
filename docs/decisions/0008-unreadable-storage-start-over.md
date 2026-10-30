@@ -46,5 +46,5 @@ the staged file or receipt shows what happened, and Respaldo can restore again. 
 
 ## Verification
 
-Host: `SetAsideTest`, `StartupTest`, `StartupFailureViewModelTest`.
-Device: `UnreadableFileSetAsideTest`, `RestoreAfterSetAsideTest`, `StartupFailureScreenTest`.
+Host: `SetAsideTest`, `StartupTest`, `StartupFailureViewModelTest`, `StartupFailureScreenTest`.
+Device: `UnreadableFileSetAsideTest`, `RestoreAfterSetAsideTest`.

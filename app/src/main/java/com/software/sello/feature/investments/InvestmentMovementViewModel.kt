@@ -14,28 +14,34 @@ import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
-import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
-import com.software.sello.domain.model.TextError
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.EditInvestmentMovement
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
-import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.movement.SavedNoteComposer
+import com.software.sello.presentation.submission.LocalDateSerializer
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
+import com.software.sello.presentation.submission.typed
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +51,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Anotar movimiento: an Aporte, Valor de hoy, Retiro or Dividendo o renta, and the
@@ -64,7 +71,7 @@ class InvestmentMovementViewModel(
     private val clock: FinancialClock,
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
-    private val corrections: ExpenseCorrections
+    private val corrections: Corrections
 ) : ViewModel() {
     private data class Draft(
         val kind: InvestmentMovementKind,
@@ -72,6 +79,19 @@ class InvestmentMovementViewModel(
         val pesos: AmountDraft,
         val dollars: DecimalDraft,
         val date: LocalDate,
+        val note: String
+    )
+
+    /** [Draft] as text, kept under one key: pesos as typed, dollars digit by digit. */
+    @Serializable
+    private data class Saved(
+        val kind: String,
+        val investmentId: String?,
+        val pesos: String?,
+        val whole: String,
+        val comma: Boolean,
+        val cents: String,
+        @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
         val note: String
     )
 
@@ -100,54 +120,39 @@ class InvestmentMovementViewModel(
     private val movementId: String? = saved[KEY_MOVEMENT]
     private val editing = movementId != null
 
+    private val drafts = SavedDraft(saved, DRAFT, Saved.serializer())
+    private val submission = Submission(saved, OPERATION, ids)
+    private val routeKind = saved.get<String>(KEY_KIND)?.let(::kindOf)
+        ?: InvestmentMovementKind.Contribution
+
     private val draft = MutableStateFlow(
-        Draft(
-            kind = saved.get<String>(KIND)?.let(::kindOf)
-                ?: saved.get<String>(KEY_KIND)?.let(::kindOf)
-                ?: InvestmentMovementKind.Contribution,
-            investmentId = saved[INVESTMENT] ?: saved[KEY_INVESTMENT],
-            pesos =
-                saved.get<String>(PESOS)?.let {
-                    if (it ==
-                        ZERO
-                    ) {
-                        ZeroPesos
-                    } else {
-                        AmountDraft.paste(it)
-                    }
-                }
-                    ?: AmountDraft.Empty,
-            dollars = saved.get<String>(WHOLE)?.let {
-                DecimalDraft(
-                    MAX_WHOLE,
-                    it,
-                    saved.get<Boolean>(COMMA) ?: false,
-                    saved.get<String>(CENTS).orEmpty()
-                )
-            } ?: DecimalDraft(MAX_WHOLE),
-            date = saved.get<String>(DATE)?.let(LocalDate::parse) ?: clock.today.value.date,
-            note = saved[NOTE] ?: ""
+        drafts.read()?.let {
+            Draft(
+                kind = kindOf(it.kind) ?: routeKind,
+                investmentId = it.investmentId ?: saved[KEY_INVESTMENT],
+                pesos = it.pesos?.let { pesos ->
+                    if (pesos == ZERO) ZeroPesos else AmountDraft.paste(pesos)
+                } ?: AmountDraft.Empty,
+                dollars = DecimalDraft(MAX_WHOLE, it.whole, it.comma, it.cents),
+                date = it.date,
+                note = it.note
+            )
+        } ?: Draft(
+            kind = routeKind,
+            investmentId = saved[KEY_INVESTMENT],
+            pesos = AmountDraft.Empty,
+            dollars = DecimalDraft(MAX_WHOLE),
+            date = clock.today.value.date,
+            note = ""
         )
     )
     private val progress = MutableStateFlow(Progress())
     private val board = reads.observeBoard()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, InvestmentBoardState.Loading)
-    private val composer = combine(
-        saved.getStateFlow(COMPOSER, false),
-        saved.getStateFlow(COMPOSER_TEXT, "")
-    ) { open, text -> text.takeIf { open } }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, composerNow())
-
-    private fun composerNow(): String? = if (saved.get<Boolean>(COMPOSER) ==
-        true
-    ) {
-        saved.get<String>(COMPOSER_TEXT).orEmpty()
-    } else {
-        null
-    }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
+    private val composer = SavedNoteComposer(saved, PREFIX, viewModelScope)
 
     val state: StateFlow<InvestmentMovementState> =
-        combine(draft, progress, board, clock.today, composer) {
+        combine(draft, progress, board, clock.today, composer.text) {
                 draft,
                 progress,
                 board,
@@ -158,7 +163,7 @@ class InvestmentMovementViewModel(
         }.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
-            render(draft.value, progress.value, board.value, clock.today.value.date, composerNow())
+            render(draft.value, progress.value, board.value, clock.today.value.date, composer.now())
         )
 
     init {
@@ -193,7 +198,7 @@ class InvestmentMovementViewModel(
                 }
             }
         }
-        if (saved.get<String>(OPERATION) != null) viewModelScope.launch { recover() }
+        if (submission.pending) viewModelScope.launch { recover() }
     }
 
     fun onAction(action: InvestmentMovementAction) {
@@ -270,28 +275,24 @@ class InvestmentMovementViewModel(
                 progress.update { it.copy(datePickerOpen = false) }
             }
 
-            InvestmentMovementAction.OpenComposer -> if (editable) {
-                saved[COMPOSER_TEXT] = draft.value.note
-                saved[COMPOSER] = true
-            }
+            InvestmentMovementAction.OpenComposer -> if (editable) composer.open(draft.value.note)
 
-            is InvestmentMovementAction.ComposerChanged ->
-                if (saved.get<Boolean>(COMPOSER) == true) saved[COMPOSER_TEXT] = action.text
+            is InvestmentMovementAction.ComposerChanged -> composer.write(action.text)
 
             // Over the limit nothing is taken: the composer stays open with the text in it.
-            InvestmentMovementAction.ComposerDone -> composer.value?.let { text ->
-                if (editable && noteProblem(text) == null) {
+            InvestmentMovementAction.ComposerDone -> composer.text.value?.let { text ->
+                if (editable && SavedNoteComposer.problem(text) == null) {
                     change(draft.value.copy(note = text))
-                    closeComposer()
+                    composer.close()
                 }
             }
 
-            InvestmentMovementAction.ComposerCancelled -> closeComposer()
+            InvestmentMovementAction.ComposerCancelled -> composer.close()
 
             InvestmentMovementAction.Submit -> if (now.canSubmit) submit()
 
             InvestmentMovementAction.Retry -> if (!now.busy) {
-                if (saved.get<String>(OPERATION) != null) {
+                if (submission.pending) {
                     viewModelScope.launch { recover() }
                 } else {
                     progress.update { it.copy(error = null) }
@@ -301,7 +302,7 @@ class InvestmentMovementViewModel(
             InvestmentMovementAction.Delete -> if (now.canDelete) delete()
 
             InvestmentMovementAction.Back -> when {
-                now.busy || saved.get<String>(OPERATION) != null -> Unit
+                now.busy || submission.pending -> Unit
                 typed(now) -> progress.update { it.copy(confirmDiscard = true) }
                 else -> progress.update { it.copy(closed = true) }
             }
@@ -322,18 +323,18 @@ class InvestmentMovementViewModel(
         if (next.pesos != current.pesos || next.dollars != current.dollars) {
             progress.update { it.copy(atLimit = false) }
         }
-        saved[KIND] = next.kind.key
-        saved[INVESTMENT] = next.investmentId
-        saved[PESOS] = when (val amount = next.pesos) {
-            AmountDraft.Empty -> null
-            is AmountDraft.Digits -> amount.digits
-            is AmountDraft.Rejected -> amount.original
-        }
-        saved[WHOLE] = next.dollars.whole
-        saved[COMMA] = next.dollars.comma
-        saved[CENTS] = next.dollars.cents
-        saved[DATE] = next.date.toString()
-        saved[NOTE] = next.note
+        drafts.write(
+            Saved(
+                kind = next.kind.key,
+                investmentId = next.investmentId,
+                pesos = next.pesos.typed(),
+                whole = next.dollars.whole,
+                comma = next.dollars.comma,
+                cents = next.dollars.cents,
+                date = next.date,
+                note = next.note
+            )
+        )
         progress.update {
             it.copy(
                 deleteBlockedBy = null,
@@ -375,18 +376,6 @@ class InvestmentMovementViewModel(
         it.copy(limitPulse = it.limitPulse + 1, atLimit = true)
     }
 
-    private fun closeComposer() {
-        saved[COMPOSER] = false
-        saved[COMPOSER_TEXT] = null
-    }
-
-    private fun noteProblem(text: String): InvestmentNoteProblem? =
-        when ((Note.of(text) as? Outcome.Failure)?.error) {
-            null, TextError.Required -> null
-            is TextError.TooLong -> InvestmentNoteProblem.TooLong
-            TextError.ControlCharacter -> InvestmentNoteProblem.NotAllowed
-        }
-
     private fun typed(state: InvestmentMovementState): Boolean = if (editing) {
         state.changed
     } else {
@@ -396,9 +385,9 @@ class InvestmentMovementViewModel(
 
     /** The board to work from: the last one read, also after a failed refresh. */
     private fun readable(state: InvestmentBoardState): InvestmentBoard? = when (state) {
-        InvestmentBoardState.Loading -> null
-        is InvestmentBoardState.Ready -> state.board
-        is InvestmentBoardState.Failed -> state.lastGood
+        ReadState.Loading -> null
+        is ReadState.Ready -> state.value
+        is ReadState.Failed -> state.lastGood
     }
 
     private fun summary(board: InvestmentBoard?, id: String?): InvestmentSummary? =
@@ -580,10 +569,10 @@ class InvestmentMovementViewModel(
             summary?.let { retiroOf(it.history, id, available) }
         }
         return InvestmentMovementState(
-            loading = board is InvestmentBoardState.Loading || (
+            loading = board is ReadState.Loading || (
                 editing && read != null && original == null && saved.get<Boolean>(DRAFTED) != true
                 ),
-            loadFailed = board is InvestmentBoardState.Failed && read == null,
+            loadFailed = board is ReadState.Failed && read == null,
             editing = editing,
             kind = draft.kind,
             amount = shown(draft, currency, amount),
@@ -611,8 +600,8 @@ class InvestmentMovementViewModel(
             note = draft.note,
             composerOpen = writing != null && !progress.closed,
             composerDraft = writing.orEmpty(),
-            composerProblem = writing?.let(::noteProblem),
-            composerLength = writing?.trim()?.let { it.codePointCount(0, it.length) } ?: 0,
+            composerProblem = writing?.let(SavedNoteComposer::problem),
+            composerLength = SavedNoteComposer.length(writing),
             changed = original != null && (
                 amount != original.amount || draft.date != original.date || note != original.note
                 ),
@@ -621,13 +610,6 @@ class InvestmentMovementViewModel(
             confirmDiscard = progress.confirmDiscard,
             closed = progress.closed
         )
-    }
-
-    private fun operation(step: String): OperationId {
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[OPERATION] = operation.value
-        saved[STEP] = step
-        return operation
     }
 
     private fun submit() {
@@ -641,39 +623,41 @@ class InvestmentMovementViewModel(
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
             if (original != null) {
-                val operation = operation(STEP_EDIT)
                 settle(
                     STEP_EDIT,
-                    commands.submit(
-                        EditInvestmentMovement(
-                            operation,
-                            read.generation,
-                            investment.id,
-                            investment.version,
-                            original.id,
-                            original.version,
-                            amount,
-                            current.date,
-                            note
+                    submission.send(commands::find, STEP_EDIT) { operation ->
+                        commands.submit(
+                            EditInvestmentMovement(
+                                operation,
+                                read.generation,
+                                investment.id,
+                                investment.version,
+                                original.id,
+                                original.version,
+                                amount,
+                                current.date,
+                                note
+                            )
                         )
-                    )
+                    }
                 )
             } else {
-                val operation = operation(current.kind.key)
                 settle(
                     current.kind.key,
-                    commands.submit(
-                        RecordInvestmentMovement(
-                            operation,
-                            read.generation,
-                            investment.id,
-                            investment.version,
-                            current.kind,
-                            amount,
-                            current.date,
-                            note
+                    submission.send(commands::find, current.kind.key) { operation ->
+                        commands.submit(
+                            RecordInvestmentMovement(
+                                operation,
+                                read.generation,
+                                investment.id,
+                                investment.version,
+                                current.kind,
+                                amount,
+                                current.date,
+                                note
+                            )
                         )
-                    )
+                    }
                 )
             }
         }
@@ -684,82 +668,106 @@ class InvestmentMovementViewModel(
         val (summary, movement) = original(read) ?: return
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
-            val operation = operation(STEP_DELETE)
             settle(
                 STEP_DELETE,
-                corrections.deleteInvestmentMovement(
-                    DeleteInvestmentMovement(
-                        operation,
-                        read.generation,
-                        summary.history.investment.id,
-                        summary.history.investment.version,
-                        movement.id,
-                        movement.version
+                submission.send(commands::find, STEP_DELETE) { operation ->
+                    corrections.deleteInvestmentMovement(
+                        DeleteInvestmentMovement(
+                            operation,
+                            read.generation,
+                            summary.history.investment.id,
+                            summary.history.investment.version,
+                            movement.id,
+                            movement.version
+                        )
                     )
-                )
+                }
             )
         }
     }
 
-    private suspend fun settle(step: String, outcome: InvestmentCommandOutcome) {
-        when (outcome) {
-            // A deletion was already offered to undo by [corrections].
-            is InvestmentCommandOutcome.Committed ->
-                committed(step, outcome.change.receipt, announced = true)
+    private fun settle(step: String, settled: Settled<CommittedInvestment, InvestmentRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
-            is InvestmentCommandOutcome.OutcomeUnknown -> recover()
+            // A deletion sent from here was already offered to undo by [corrections].
+            is Settled.Committed ->
+                committed(step, settled.value.receipt, announced = !settled.found)
 
-            is InvestmentCommandOutcome.Rejected -> {
-                // Certain: nothing was written, so this attempt is over.
-                saved[OPERATION] = null
-                rejected(step, outcome.reason)
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = InvestmentMovementError.Unknown)
             }
+
+            Settled.NotCommitted -> progress.update {
+                it.copy(
+                    busy = false,
+                    error = if (step == STEP_DELETE) {
+                        InvestmentMovementError.NotDeleted
+                    } else {
+                        InvestmentMovementError.NotSaved
+                    }
+                )
+            }
+
+            is Settled.Rejected -> rejected(step, settled.reason)
         }
     }
 
-    private fun rejected(step: String, reason: InvestmentRejection) {
+    private fun rejected(step: String, reason: CommandRejection<InvestmentRejection>) {
         val deleting = step == STEP_DELETE
-        when (reason) {
-            // A deletion names the retiro it would leave short. A new movement's own id is
-            // not known here: the investment changed, and the board read again says how.
-            is InvestmentRejection.AboveValue -> if (deleting) {
-                return blocked(reason.withdrawal, reason.available)
-            }
-
-            is InvestmentRejection.NoValue -> if (deleting) return blocked(reason.withdrawal, null)
-
-            is InvestmentRejection.BeforeFirstContribution -> {
-                progress.update {
-                    it.copy(busy = false, firstContribution = reason.firstContribution)
-                }
-                return
-            }
-
-            else -> Unit
-        }
         val error = when (reason) {
-            is InvestmentRejection.FutureDate, InvestmentRejection.InvalidDate ->
-                InvestmentMovementError.FutureDate
+            is CommandRejection.StaleGeneration -> InvestmentMovementError.DataChanged
 
-            is InvestmentRejection.StaleGeneration -> InvestmentMovementError.DataChanged
+            is CommandRejection.VersionConflict -> InvestmentMovementError.Changed
 
-            InvestmentRejection.InvestmentMissing, InvestmentRejection.MovementMissing ->
-                InvestmentMovementError.Gone
+            CommandRejection.OperationConflict, is CommandRejection.StorageFailed -> null
 
-            is InvestmentRejection.VersionConflict, is InvestmentRejection.AboveValue,
-            is InvestmentRejection.NoValue -> InvestmentMovementError.Changed
+            is CommandRejection.Specific -> {
+                val specific = reason.reason
+                when (specific) {
+                    // A deletion names the retiro it would leave short. A new movement's own
+                    // id is not known here: the investment changed, and the board read again
+                    // says how.
+                    is InvestmentRejection.AboveValue -> if (deleting) {
+                        return blocked(specific.withdrawal, specific.available)
+                    }
 
-            InvestmentRejection.CurrencyMismatch -> InvestmentMovementError.CurrencyMismatch
+                    is InvestmentRejection.NoValue ->
+                        if (deleting) return blocked(specific.withdrawal, null)
 
-            InvestmentRejection.Unchanged -> InvestmentMovementError.Unchanged
+                    is InvestmentRejection.BeforeFirstContribution -> {
+                        progress.update {
+                            it.copy(busy = false, firstContribution = specific.firstContribution)
+                        }
+                        return
+                    }
 
-            InvestmentRejection.LastContribution -> InvestmentMovementError.LastContribution
+                    else -> Unit
+                }
+                when (specific) {
+                    is InvestmentRejection.FutureDate, InvestmentRejection.InvalidDate ->
+                        InvestmentMovementError.FutureDate
 
-            else -> if (deleting) {
-                InvestmentMovementError.NotDeleted
-            } else {
-                InvestmentMovementError.NotSaved
+                    InvestmentRejection.InvestmentMissing, InvestmentRejection.MovementMissing ->
+                        InvestmentMovementError.Gone
+
+                    is InvestmentRejection.AboveValue, is InvestmentRejection.NoValue ->
+                        InvestmentMovementError.Changed
+
+                    InvestmentRejection.CurrencyMismatch -> InvestmentMovementError.CurrencyMismatch
+
+                    InvestmentRejection.Unchanged -> InvestmentMovementError.Unchanged
+
+                    InvestmentRejection.LastContribution -> InvestmentMovementError.LastContribution
+
+                    else -> null
+                }
             }
+        } ?: if (deleting) {
+            InvestmentMovementError.NotDeleted
+        } else {
+            InvestmentMovementError.NotSaved
         }
         progress.update { it.copy(busy = false, error = error) }
     }
@@ -769,39 +777,13 @@ class InvestmentMovementViewModel(
 
     /** Asks how the saved operation ended, with its own identifier. Only a receipt counts. */
     private suspend fun recover() {
-        val operation =
-            (saved.get<String>(OPERATION)?.let(OperationId::of) as? Outcome.Success)?.value
-                ?: return
-        val step = saved[STEP] ?: InvestmentMovementKind.Contribution.key
+        if (!submission.pending) return
+        val step = submission.step ?: InvestmentMovementKind.Contribution.key
         progress.update { it.copy(busy = true, error = null) }
-        when (val found = commands.find(operation)) {
-            is Outcome.Failure -> progress.update {
-                it.copy(busy = false, error = InvestmentMovementError.Unknown)
-            }
-
-            is Outcome.Success -> {
-                val committed = found.value
-                if (committed != null) {
-                    committed(step, committed.receipt, announced = false)
-                } else {
-                    saved[OPERATION] = null
-                    progress.update {
-                        it.copy(
-                            busy = false,
-                            error = if (step == STEP_DELETE) {
-                                InvestmentMovementError.NotDeleted
-                            } else {
-                                InvestmentMovementError.NotSaved
-                            }
-                        )
-                    }
-                }
-            }
-        }
+        settle(step, submission.recover(commands::find))
     }
 
     private fun committed(step: String, receipt: OperationReceipt, announced: Boolean) {
-        saved[OPERATION] = null
         when (step) {
             STEP_DELETE -> if (!announced) corrections.investmentMovementDeleted(receipt)
 
@@ -871,19 +853,10 @@ class InvestmentMovementViewModel(
         private fun kindOf(key: String): InvestmentMovementKind? =
             InvestmentMovementKind.entries.firstOrNull { it.key == key }
 
-        private const val KIND = "investment.movement.kind"
-        private const val INVESTMENT = "investment.movement.investment"
-        private const val PESOS = "investment.movement.pesos"
-        private const val WHOLE = "investment.movement.whole"
-        private const val COMMA = "investment.movement.comma"
-        private const val CENTS = "investment.movement.cents"
-        private const val DATE = "investment.movement.date"
-        private const val NOTE = "investment.movement.note"
+        private const val DRAFT = "investment.movement.draft"
         private const val DRAFTED = "investment.movement.drafted"
-        private const val COMPOSER = "investment.movement.composer"
-        private const val COMPOSER_TEXT = "investment.movement.composer.text"
+        private const val PREFIX = "investment.movement"
         private const val OPERATION = "investment.movement.operation"
-        private const val STEP = "investment.movement.step"
         private const val STEP_EDIT = "edit"
         private const val STEP_DELETE = "delete"
     }

@@ -16,14 +16,13 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.software.sello.awaitDescription
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.composition.viewModels
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.devtools.JourneySetups
 import com.software.sello.devtools.SandboxGraph
-import com.software.sello.devtools.SandboxSession
-import com.software.sello.devtools.ScenarioStep
-import com.software.sello.devtools.Scenarios
 import com.software.sello.navigation.SelloAppRoot
 import com.software.sello.press
 import java.io.File
@@ -47,23 +46,14 @@ class AdjustBudgetJourneyTest {
         sandbox?.erase()
     }
 
-    /** The scenario up to its first check: four categories and October's expenses. */
+    /** Four categories and October's expenses, 80.000 over. */
     private suspend fun overspentOctober(): SandboxGraph {
-        val scenario = Scenarios.AdjustBudget
-        val graph = SandboxGraph(
-            SandboxSession(
-                active = true,
-                date = scenario.start,
-                zone = scenario.zone,
-                scenario = scenario.key
-            )
-        )
+        val graph = JourneySetups.graph(JourneySetups.OverspentOctober)
         sandbox = graph
         graph.erase()
         graph.open()
         val runner = checkNotNull(graph.tools?.scenarios)
-        val firstCheck = scenario.steps.indexOfFirst { it is ScenarioStep.Verify }
-        repeat(firstCheck + 1) { runner.step() }
+        while (runner.step()) Unit
         return graph
     }
 
@@ -81,8 +71,10 @@ class AdjustBudgetJourneyTest {
         rule.awaitTag(RECIBO_ADJUST_TAG)
         rule.onNodeWithTag(RECIBO_ADJUST_TAG).performScrollTo().press()
         rule.awaitTag(ADJUST_TAG)
-        rule.onNodeWithContentDescription("Restante del presupuesto: menos 80.000 pesos. Excedido.")
-            .assertIsDisplayed()
+        // The screen shows while the month is still being read off the main thread, which
+        // the test framework does not wait for: wait for the answer itself.
+        rule.awaitDescription(OVER)
+        rule.onNodeWithContentDescription(OVER).assertIsDisplayed()
         capture("screen")
         rule.onNode(
             hasText("Café") and hasAnyAncestor(hasTestTag(ADJUST_TAG)),
@@ -98,8 +90,9 @@ class AdjustBudgetJourneyTest {
         rule.onNodeWithText("Guardar solo octubre").performScrollTo().press()
 
         rule.awaitText("Límite de Café para octubre: 150.000")
-        rule.onNodeWithContentDescription("Restante del presupuesto: 20.000 pesos. Al día.")
-            .assertIsDisplayed()
+        // The month's answer is read again after the save, apart from the category's line.
+        rule.awaitDescription(ON_TRACK)
+        rule.onNodeWithContentDescription(ON_TRACK).assertIsDisplayed()
         capture("saved")
         assertEquals(
             listOf("2026-10|150000"),
@@ -123,3 +116,6 @@ class AdjustBudgetJourneyTest {
         }
     }
 }
+
+private const val OVER = "Restante del presupuesto: menos 80.000 pesos. Excedido."
+private const val ON_TRACK = "Restante del presupuesto: 20.000 pesos. Al día."

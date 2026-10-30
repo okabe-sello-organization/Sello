@@ -7,9 +7,10 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.platform.ScreenReader
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,7 @@ class MetasViewModel(
     clock: FinancialClock,
     money: MoneyFormatter,
     ids: RecordIdSource,
-    corrections: ExpenseCorrections,
+    corrections: Corrections,
     screenReader: ScreenReader
 ) : ViewModel() {
     private val render = GoalsRenderModel(money)
@@ -43,7 +44,7 @@ class MetasViewModel(
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
-            GoalBoardState.Loading
+            ReadState.Loading
         )
 
     val state: StateFlow<MetasState> =
@@ -71,7 +72,7 @@ class MetasViewModel(
             is MetasAction.Open -> Unit
 
             is MetasAction.MarkComplete -> {
-                val read = (board.value as? GoalBoardState.Ready)?.board ?: return
+                val read = (board.value as? ReadState.Ready)?.value ?: return
                 val card = (state.value as? MetasState.Ready)?.goals?.firstOrNull {
                     it.id ==
                         action.id

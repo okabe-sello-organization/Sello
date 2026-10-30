@@ -5,7 +5,7 @@ SELLO-105, checked on 2026-10-25 at `main` `c8d0b4c` against the locked v2
 (`components.html`), [ADR 0017](../../../decisions/0017-goals-recurrence-investments.md)
 and the [Inversiones brief](../../screen-briefs/investments.md). Each item was opened in
 the code and, where something is drawn, in the app and the catalog on an API-30 emulator
-([screenshots](../../../tickets/E19-investments/SELLO-105/artifacts)).
+(screenshots removed on 2026-10-29 with the ticket evidence; Git history before commit `02fe99b9` keeps them).
 
 **In short:** most of the drawing exists. The v2 component pass built `PerformanceLine`,
 `InvestmentRow`, `investmentShade`, `RecordedValuesChart`, `SplitBar`, the ink tone for
@@ -33,22 +33,22 @@ Missing = nothing exists.
 | Decimal USD rate with its date | Missing | No rate type; `BigDecimal` appears only in rounding helpers |
 | Room tables, migration, commands, receipts, undo | Missing | Schema 5 has no investment table; `UndoWindow.Kind` has Expense, Income and GoalMovement; SELLO-107 |
 | Backup, restore and erase | Missing | [Backup format](../../../data/backup-format.md) version 3 has none; SELLO-108 |
-| Inversiones tab (fourth of four) | Missing | `ShellTab` has Recibo, Resumen and Metas ([app](../../../tickets/E19-investments/SELLO-105/artifacts/app-three-tabs.png)); `SelloNavigationBar` accepts 2–4 and the catalog already draws four |
+| Inversiones tab (fourth of four) | Missing | `ShellTab` has Recibo, Resumen and Metas ([app](../../../tickets/E19-investments/attachments/SELLO-105-app-three-tabs.png)); `SelloNavigationBar` accepts 2–4 and the catalog already draws four |
 | Sandbox investment scenarios | Missing | No investment step in `ScenarioStep`; SELLO-112 |
 
 ## Overview
 
 | Element | State | Where, or what differs |
 | --- | --- | --- |
-| Top bar "Inversiones", **+**, settings, no month bar | Present | `TitleBar`; `ComponentContractsTest.titleBarNamesTheTabAsAHeadingAndKeepsActionsReachable` (uses "Inversiones"); Metas uses it the same way |
+| Top bar "Inversiones", **+**, settings, no month bar | Present | `TitleBar`; `ShellBarsContractsTest.titleBarNamesTheTabAsAHeadingAndKeepsActionsReachable` (uses "Inversiones"); Metas uses it the same way |
 | Answer slip "Tus inversiones valen", stamp, value as the big number in ink | Partial | `AnswerSlip`; with `StampInk.Over` (Pierde) it draws the big number in loss red, the design keeps it in ink |
 | Gana / Pierde stamps | Present | `Stamp` with `StampInk.Good` / `Over`; `PaperAndStampTest` |
-| Signed return "▲ +5,6 % · +2.066.000 de ganancia" | Partial | `PerformanceLine`; `ComponentContractsTest.returnShowsItsPercentageAndAmountOnOneLine`. The big percentage reads "+5 , 6 %" with gaps around the comma ([catalog](../../../tickets/E19-investments/SELLO-105/artifacts/catalog-return-and-rows.png)); the row's "+7,5 %" does not |
+| Signed return "▲ +5,6 % · +2.066.000 de ganancia" | Partial | `PerformanceLine`; `InvestmentContractsTest.returnShowsItsPercentageAndAmountOnOneLine`. The big percentage reads "+5 , 6 %" with gaps around the comma ([catalog](../../../tickets/E19-investments/attachments/SELLO-105-catalog-return-and-rows.png)); the row's "+7,5 %" does not |
 | "En total, desde mar 2025" | Present | Caption text |
 | Aportaste, Retiraste, Dividendos y rentas, Ganancia (signed, coloured) | Present | `LeaderLine` with a `MoneyText` value; `PaperAndStampTest`, `PlanPartsTest` |
 | Footnote "Valores anotados entre el 12 jun y el 14 oct ›" | Partial | `Footnote` (E18, `ReservedPartsTest`) draws it; the page does not say what it opens |
 | Distribution bar, one shade per investment | Partial | `SplitBar` takes any number of coloured segments, no test; `investmentShade` has four shades, a fifth investment repeats the last; no 2dp gap between segments |
-| Investment row: shaded icon, name, "kind · valor del 12 jun", value, signed % | Present | `InvestmentRow`; `ComponentContractsTest.investmentRowCarriesItsValueAndChangeOnTheRight` |
+| Investment row: shaded icon, name, "kind · valor del 12 jun", value, signed % | Present | `InvestmentRow`; `InvestmentContractsTest.investmentRowCarriesItsValueAndChangeOnTheRight` |
 | Row without a value: **Sin valor**, "aportaste 2.000.000", dashed circle | Partial | `InvestmentRow(value = null)` draws a solid circle, not the dashed one its KDoc and the design describe; at 1.0× on a 411dp screen the caption cuts to "sin valor a…" |
 | Dock **Anotar movimiento** in ink; **Agregar inversión** when empty | Present | `ButtonTone.Ink` in `EntryDock` / `SelloDock`; `DockToneTest` covers Gain and Brand, not Ink |
 | Empty slip without button or chart | Present | `EmptySlip`; `FeedbackInteractionTest` |
@@ -61,7 +61,7 @@ Missing = nothing exists.
 | --- | --- | --- |
 | ← name, edit | Present | The pushed-screen bar Metas' goal detail uses |
 | Slip "Vale", stamp, value, signed return, "Valor anotado el 9 oct · desde mar 2025", breakdown, **Anotar el valor de hoy** | Partial | Same parts as the overview, with the same two differences |
-| Chart of recorded values: dots, thin line, dashed steps for what was put in | Partial | `RecordedValuesChart` draws dots, the line and the steps, with exact rows for TalkBack ([catalog](../../../tickets/E19-investments/SELLO-105/artifacts/catalog-recorded-values.png)); no axis ("mar 25 … oct 26"), no legend ("Valor anotado", "Lo que pusiste"), no test |
+| Chart of recorded values: dots, thin line, dashed steps for what was put in | Partial | `RecordedValuesChart` draws dots, the line and the steps, with exact rows for TalkBack ([catalog](../../../tickets/E19-investments/attachments/SELLO-105-catalog-recorded-values.png)); no axis ("mar 25 … oct 26"), no legend ("Valor anotado", "Lo que pusiste"), no test |
 | Movimientos: Valor de hoy, Dividendo, Aporte, Retiro; **Ver los 9** | Present | `MovementRow`; `GoalComponentsTest`; Metas' movement list is the pattern |
 
 ## Anotar movimiento

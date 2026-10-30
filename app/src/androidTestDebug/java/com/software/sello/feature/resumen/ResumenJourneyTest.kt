@@ -75,8 +75,14 @@ class ResumenJourneyTest {
         rule.onNodeWithTag(ENTRY_SUBMIT_TAG).press()
         rule.awaitText("Gasto anotado: 30.000 en Comida")
         rule.awaitText("Resumen")
+        // Recibo records an expense from its dock.
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assertExists()
+        rule.onNodeWithContentDescription("Anotar un gasto").assertExists()
         rule.onNodeWithText("Resumen").performClick()
         rule.awaitTag("resumen.flow")
+        // Resumen reads the month; it has no Anotar (owner, 2026-10-26).
+        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assertDoesNotExist()
+        rule.onNodeWithContentDescription("Anotar un gasto").assertDoesNotExist()
         rule.onNodeWithTag("resumen.openIncome").performScrollTo().performClick()
         rule.awaitTag("income.history")
         rule.onNodeWithContentDescription("Anotar un ingreso").performClick()
@@ -128,20 +134,5 @@ class ResumenJourneyTest {
         rule.onNodeWithContentDescription("120.000 pesos").performScrollTo().assertIsDisplayed()
         assertEquals(1L, TestData.count("income"))
         assertEquals(1L, TestData.count("expense"))
-    }
-
-    @Test
-    fun resumenHasNoAnotarDockWhileReciboKeepsIt() {
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-        rule.awaitText("Resumen")
-        // Recibo records an expense from its dock.
-        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assertExists()
-        rule.onNodeWithContentDescription("Anotar un gasto").assertExists()
-
-        rule.onNodeWithText("Resumen").performClick()
-        rule.awaitTag("resumen.flow")
-        // Resumen reads the month; it has no Anotar (owner, 2026-10-26).
-        rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assertDoesNotExist()
-        rule.onNodeWithContentDescription("Anotar un gasto").assertDoesNotExist()
     }
 }

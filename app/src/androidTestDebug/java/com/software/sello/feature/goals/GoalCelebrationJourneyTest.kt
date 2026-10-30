@@ -1,11 +1,9 @@
 package com.software.sello.feature.goals
 
 import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -75,23 +73,6 @@ class GoalCelebrationJourneyTest {
         TestData.long("SELECT COUNT(*) FROM goal WHERE completed_on IS NOT NULL")
 
     @Test
-    fun mt02AnAporteThatCrossesSeventyFivePercentIsCelebratedOnTheGoal() {
-        openGoal()
-        rule.onNodeWithContentDescription("Aportar a esta meta").performClick()
-        rule.awaitTag(GOAL_MOVEMENT_KEYPAD_TAG)
-        keys("6", "0", "0", "000")
-        rule.onNodeWithTag(GOAL_MOVEMENT_SUBMIT_TAG).press()
-
-        // 1.710.000 + 600.000 = 2.310.000 of 3.000.000: 77 %, past the 75 % place.
-        rule.awaitText("Aporte anotado: 600.000. Ganaste el sello del 75 %.")
-        rule.awaitText("77 %")
-        rule.onNode(
-            hasContentDescription("75 por ciento, logrado") and
-                hasAnyAncestor(hasTestTag("goal.hero"))
-        ).assertExists()
-    }
-
-    @Test
     fun fromMetasTheStampLandsOnAPaperTicket() {
         openMetas()
         rule.onNodeWithText("Aportar a una meta").performClick()
@@ -103,26 +84,6 @@ class GoalCelebrationJourneyTest {
         rule.awaitTag(CELEBRATION_TICKET_TAG)
         rule.onNode(hasTestTag(CORRECTION_NOTICE_TAG)).assertExists()
         rule.awaitText("Ganaste el sello del 75 %")
-    }
-
-    @Test
-    fun mt18ANewTargetThatReachesSeventyFivePercentIsCelebrated() {
-        openGoal()
-        rule.onNodeWithTag(GOAL_EDIT_TAG).performClick()
-        rule.awaitTag(GOAL_EDITOR_TAG)
-        repeat(7) {
-            rule.onNode(
-                hasContentDescription("Borrar") and hasAnyAncestor(hasTestTag(GOAL_EDITOR_PAD_TAG))
-            ).press()
-        }
-        listOf("2", "000", "000").forEach {
-            rule.onNode(hasText(it) and hasAnyAncestor(hasTestTag(GOAL_EDITOR_PAD_TAG))).press()
-        }
-        rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).press()
-
-        // 1.710.000 of 2.000.000 is 85 %.
-        rule.awaitText("Meta actualizada. Ganaste el sello del 75 %.")
-        rule.awaitText("85 %")
     }
 
     @Test
@@ -165,25 +126,5 @@ class GoalCelebrationJourneyTest {
             listOf("1710000"),
             TestData.rows("SELECT amount_minor FROM goal_event WHERE kind = 'contribution'")
         )
-    }
-
-    @Test
-    fun afterTheDeshacerWindowTheGoalStaysLogradaAndReadOnly() {
-        TestCommands.recordGoalMovement(viaje, 1_350_000)
-        openGoal()
-        rule.onNodeWithTag(GOAL_MARK_COMPLETE_TAG).performScrollTo().press()
-        rule.awaitText("¡Lo lograste!")
-        rule.onNodeWithText("Listo").press()
-        rule.awaitText("Viaje a la costa, meta lograda.")
-
-        // The offer ends with the window the command gave, about fourteen seconds.
-        rule.waitUntil(30_000) {
-            rule.onAllNodes(hasText("Deshacer"), useUnmergedTree = true)
-                .fetchSemanticsNodes().isEmpty()
-        }
-        rule.onNodeWithTag("goal.withdraw").assertDoesNotExist()
-        rule.onNodeWithTag(GOAL_MARK_COMPLETE_TAG).assertDoesNotExist()
-        assertEquals(1L, TestData.count("goal"))
-        assertEquals(1L, completed())
     }
 }

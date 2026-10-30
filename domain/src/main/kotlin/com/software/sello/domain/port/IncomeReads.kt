@@ -33,14 +33,7 @@ data class IncomeMonth(
 )
 
 /** What a screen knows about a month's income at any moment. A failure is never shown as zero. */
-sealed interface IncomeMonthState {
-    data object Loading : IncomeMonthState
-
-    data class Ready(val month: IncomeMonth) : IncomeMonthState
-
-    /** The latest read failed. [lastGood] is the previous successful read of the same month. */
-    data class Failed(val failure: StorageFailure, val lastGood: IncomeMonth?) : IncomeMonthState
-}
+typealias IncomeMonthState = ReadState<IncomeMonth, StorageFailure>
 
 interface IncomeReads {
     /** The stored income, exactly as recorded, or null when there is none with that identifier. */
@@ -59,7 +52,7 @@ interface IncomeReads {
     /** One consistent read of [month]'s total and count. */
     suspend fun month(month: YearMonth): Outcome<IncomeMonth, StorageFailure>
 
-    /** Starts with [IncomeMonthState.Loading], then a fresh state after every committed change. */
+    /** Starts with [ReadState.Loading], then a fresh state after every committed change. */
     fun observeMonth(month: YearMonth): Flow<IncomeMonthState>
 
     companion object {

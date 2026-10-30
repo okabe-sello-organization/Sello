@@ -10,10 +10,12 @@ import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.IncomeCommandOutcome
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
@@ -53,7 +55,7 @@ class ResumenSnapshotContractTest {
     private suspend fun spend(pesos: Long, date: String = "2026-10-01") {
         assertTrue(
             ledger.expenses.create(ledger.createExpense(100, date, pesos))
-                is ExpenseCommandOutcome.Committed
+                is CommandOutcome.Committed
         )
     }
 
@@ -68,7 +70,7 @@ class ResumenSnapshotContractTest {
                     LocalDate.parse(date),
                     null
                 )
-            ) is IncomeCommandOutcome.Committed
+            ) is CommandOutcome.Committed
         )
     }
 
@@ -118,7 +120,7 @@ class ResumenSnapshotContractTest {
                     LocalDate.of(2026, 10, 2),
                     null
                 )
-            ) is ExpenseCommandOutcome.Committed
+            ) is CommandOutcome.Committed
         )
         val corrected = read()
         assertEquals(
@@ -228,17 +230,17 @@ class ResumenSnapshotContractTest {
                 state
             }
         try {
-            assertEquals(ResumenSnapshotState.Loading, states.receive())
+            assertEquals(ReadState.Loading, states.receive())
             val good = (
                 next {
-                    it is ResumenSnapshotState.Ready
-                } as ResumenSnapshotState.Ready
-                ).snapshot
+                    it is ReadState.Ready
+                } as ReadState.Ready
+                ).value
             ledger.database.openHelper.writableDatabase.execSQL(
                 "UPDATE income SET amount_minor = 0"
             )
             ledger.goTo("2026-10-10")
-            val failed = next { it is ResumenSnapshotState.Failed } as ResumenSnapshotState.Failed
+            val failed = next { it is ReadState.Failed } as ReadState.Failed
             assertEquals(good, failed.lastGood)
             assertEquals(
                 SnapshotFailure.Storage(
@@ -254,10 +256,10 @@ class ResumenSnapshotContractTest {
             ledger.goTo("2026-10-11")
             val recovered = (
                 next {
-                    it is ResumenSnapshotState.Ready &&
-                        it.snapshot.budget.asOf == LocalDate.of(2026, 10, 11)
-                } as ResumenSnapshotState.Ready
-                ).snapshot
+                    it is ReadState.Ready &&
+                        it.value.budget.asOf == LocalDate.of(2026, 10, 11)
+                } as ReadState.Ready
+                ).value
             assertEquals(Money.cop(150_000), recovered.income)
             assertEquals(LocalDate.of(2026, 10, 11), recovered.budget.asOf)
         } finally {
@@ -305,7 +307,7 @@ class ResumenSnapshotContractTest {
         } catch (cancelled: CancellationException) {
             assertTrue(cancelled !is TimeoutCancellationException)
         }
-        assertEquals(listOf(ResumenSnapshotState.Loading), states)
+        assertEquals(listOf(ReadState.Loading), states)
     }
 
     @Test
@@ -335,9 +337,9 @@ class ResumenSnapshotContractTest {
         income(150_000)
         ledger.database.openHelper.writableDatabase.execSQL("UPDATE income SET amount_minor = 0")
         val states = withTimeout(15_000) { ledger.resumen.observe(october).take(2).toList() }
-        assertEquals(ResumenSnapshotState.Loading, states.first())
+        assertEquals(ReadState.Loading, states.first())
         assertEquals(
-            ResumenSnapshotState.Failed(
+            ReadState.Failed(
                 SnapshotFailure.Storage(
                     StorageFailure.Integrity("income", uuid(100), "amount_minor")
                 ),
@@ -390,12 +392,12 @@ class ResumenSnapshotContractTest {
         suspend fun Channel<ResumenSnapshotState>.ready(revision: Long): ResumenSnapshot =
             withTimeout(15_000) {
                 var state = receive()
-                while (state !is ResumenSnapshotState.Ready ||
-                    state.snapshot.budget.revision != revision
+                while (state !is ReadState.Ready ||
+                    state.value.budget.revision != revision
                 ) {
                     state = receive()
                 }
-                state.snapshot
+                state.value
             }
         try {
             first.ready(0)
@@ -411,7 +413,7 @@ class ResumenSnapshotContractTest {
                         LocalDate.of(2026, 10, 1),
                         null
                     )
-                ) is IncomeCommandOutcome.Committed
+                ) is CommandOutcome.Committed
             )
             assertEquals(Money.cop(150_000), first.ready(1).income)
             assertEquals(Money.cop(150_000), second.ready(1).income)

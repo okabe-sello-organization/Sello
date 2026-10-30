@@ -59,7 +59,7 @@ Every message says that nothing was recorded.
 
 After `Committed`, the saved expense's identifier is stored in saved state and the
 expense is **read back from storage** (`ExpenseReads.byId`). The form then tells
-`ExpenseCorrections` what storage holds (`CorrectionNotice.ExpenseRecorded`) and
+`Corrections` what storage holds (`CorrectionNotice.ExpenseRecorded`) and
 closes: the screen it was opened from shows **Gasto anotado: 48.700 en Comida** above
 the dock for 4 seconds, in the confirmation look, read aloud politely with the amount
 in pesos, with no undo and nothing to dismiss. Nothing is said before the save is
@@ -99,7 +99,7 @@ titled "Editar gasto", its button is "Guardar cambios" and the top bar has "Borr
   dismissible first-time announcement that past expenses can be corrected also shows.
 - **No preview.** The preview adds the draft to the month, and a recorded expense is
   already in it.
-- **"Borrar" deletes at once**, through `ExpenseCorrections`, and returns to the list,
+- **"Borrar" deletes at once**, through `Corrections`, and returns to the list,
   where it can be undone for six seconds. It does not ask first.
 
 | What happened | What the person sees | Then |
@@ -122,8 +122,7 @@ form without resizing or flipping it.
 **No key moves.** The button sits 8dp above the pad, both held from the bottom, and
 everything the form says (what is missing, why a save failed) is laid out above the
 button. A message appearing or going changes the space above the button, never where
-the button or a key is. At twice the font size the two-line "Comprobar si se guardó"
-button lifts the keys, which are off then.
+the button or a key is.
 
 ## Leaving
 

@@ -2,27 +2,25 @@ package com.software.sello.feature.recibo
 
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.CategoryId
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseSearchPage
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.corrections.ExpenseCorrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.testMoney
 import java.time.YearMonth
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CompletableDeferred
@@ -83,11 +81,6 @@ class CategoryExpensesViewModelTest {
             )
         }
     }
-    private val labels = object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    }
 
     @Before fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -98,7 +91,7 @@ class CategoryExpensesViewModelTest {
     ): CategoryExpensesViewModel {
         snapshots.ready(monthOf("2026-10-22", listOf(categoryIn(1, "Comida", 200_000)), rows))
         val corrections =
-            ExpenseCorrections(
+            Corrections(
                 commands,
                 HandIncomeCommands(),
                 HandGoalCommands(),
@@ -115,7 +108,7 @@ class CategoryExpensesViewModelTest {
                 MonthSession(HandFinancialClock("2026-10-22"), HandMonotonicClock()),
                 snapshots,
                 search,
-                MoneyFormatter(labels),
+                testMoney(),
                 corrections
             )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
@@ -196,7 +189,7 @@ class CategoryExpensesViewModelTest {
         }
 
     @Test
-    fun restoredFiltersAreAppliedToStorageAndOverlongInputIsRejectedWhole() = runTest {
+    fun restoredFiltersAreApplied() = runTest {
         val saved = SavedStateHandle(
             mapOf(
                 "expenseSearch" to "Compra 44",
@@ -206,9 +199,32 @@ class CategoryExpensesViewModelTest {
         val model = started(saved)
         assertEquals(Triple(ExpenseOrder.Name, "Compra 44", 20), requests.last())
         assertEquals(1, model.ready.rows.size)
-        model.onAction(CategoryExpensesAction.Search("x".repeat(61)))
+    }
+
+    @Test
+    fun anOverlongSearchIsCutToItsFirstSixtyCharacters() = runTest {
+        val model = started()
+        val pasted = "abcdefghij".repeat(7)
+
+        model.onAction(CategoryExpensesAction.Search(pasted))
         runCurrent()
-        assertEquals("Compra 44", model.query.value)
+
+        assertEquals(pasted.take(60), model.query.value)
+        assertEquals(60, model.query.value.length)
+        assertEquals(pasted.take(60), requests.last().second)
+    }
+
+    @Test
+    fun theCutNeverSplitsACharacterThatTakesTwoUnits() = runTest {
+        val model = started()
+        // An emoji (two UTF-16 units) sits across the limit: positions 60 and 61.
+        val pasted = "a".repeat(59) + "\uD83D\uDE00" + "bbb"
+
+        model.onAction(CategoryExpensesAction.Search(pasted))
+        runCurrent()
+
+        assertEquals("a".repeat(59), model.query.value)
+        assertEquals("a".repeat(59), requests.last().second)
     }
 
     @Test

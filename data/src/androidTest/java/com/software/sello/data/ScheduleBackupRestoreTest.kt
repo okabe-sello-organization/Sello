@@ -13,19 +13,17 @@ import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InkPreference
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.ThemePreference
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateSchedule
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceReset
@@ -36,7 +34,6 @@ import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.StoredSchedule
 import java.time.Instant
 import java.time.LocalDate
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -62,11 +59,7 @@ class ScheduleBackupRestoreTest {
 
     private val ledger by lazy { TestLedger(files).also { it.start() } }
     private val other by lazy { TestLedger(fresh).also { it.start() } }
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
     private val investments = HandInvestmentPreferences()
     private val preferences = object : AppearancePreferences, CategoryOrderingPreferences {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = flowOf(
@@ -99,8 +92,6 @@ class ScheduleBackupRestoreTest {
 
     private fun d(text: String) = LocalDate.parse(text)
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private suspend fun TestLedger.schedule(
         start: String,
         rule: RepeatRule,
@@ -108,7 +99,7 @@ class ScheduleBackupRestoreTest {
     ): ScheduleId {
         goTo(start)
         val created = schedules.submit(CreateSchedule(operation(), 1, entry, rule, d(start), null))
-        return (created as ScheduleCommandOutcome.Committed).schedule.scheduleId
+        return (created as CommandOutcome.Committed).value.scheduleId
     }
 
     /** Everything due up to [today], in as many batches as it takes. */
@@ -135,19 +126,19 @@ class ScheduleBackupRestoreTest {
             RepeatRule.Monthly.of(5).valueOrFail(),
             ScheduledEntry.Payment(
                 ledger.categoryId(100),
-                pesos(950_000),
+                transactionPesos(950_000),
                 Note.of("Arriendo").valueOrFail()
             )
         )
         val bus = ledger.schedule(
             "2026-09-26",
             RepeatRule.EveryWeeks.of(1).valueOrFail(),
-            ScheduledEntry.Payment(ledger.categoryId(101), pesos(20_000), null)
+            ScheduledEntry.Payment(ledger.categoryId(101), transactionPesos(20_000), null)
         )
         ledger.schedule(
             "2026-10-01",
             RepeatRule.TwiceMonthly.of(15, 30).valueOrFail(),
-            ScheduledEntry.Income(IncomeSource.Salary, pesos(800_000), null)
+            ScheduledEntry.Income(IncomeSource.Salary, transactionPesos(800_000), null)
         )
         ledger.goTo("2026-10-24")
         ledger.catchUp("2026-10-24")
@@ -158,7 +149,7 @@ class ScheduleBackupRestoreTest {
         assertTrue(
             ledger.schedules.submit(
                 PauseSchedule(ledger.operation(), 1, bus, version)
-            ) is ScheduleCommandOutcome.Committed
+            ) is CommandOutcome.Committed
         )
     }
 
@@ -273,7 +264,7 @@ class ScheduleBackupRestoreTest {
         other.schedule(
             "2026-10-24",
             RepeatRule.Monthly.of(28).valueOrFail(),
-            ScheduledEntry.Payment(other.categoryId(100), pesos(99_900), null)
+            ScheduledEntry.Payment(other.categoryId(100), transactionPesos(99_900), null)
         )
 
         val restores = restoresInto(other, fresh)

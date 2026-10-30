@@ -1,3 +1,0 @@
-# The prototype is a throwaway husk; long sample lines are acceptable here.
-[*.{kt,kts}]
-ktlint_standard_max-line-length = disabled

@@ -7,7 +7,7 @@ SELLO-095, checked on 2026-10-24 at `main` `4d16b58` against the locked v2
 and the [v1.1 snapshot](../../sello-spec.html) (*Lo que se repite*), which covers what v2
 does not show. Each item was opened in the code and, where something is drawn, in the
 app (sandbox scenarios `detalle-categoria@1` and `ingresos@1`) and the catalog on an
-API-30 emulator ([screenshots](../../../tickets/E18-recurrence/SELLO-095/artifacts)).
+API-30 emulator (screenshots removed on 2026-10-29 with the ticket evidence; Git history before commit `02fe99b9` keeps them).
 
 **In short:** the reserved states are drawn in the catalog with real components: the
 footnote, the warn ink for Revisar, and the Sin margen and Revisar answer slips. No
@@ -84,7 +84,7 @@ Missing = nothing exists.
 - v1.1 stamps a category **Pagado**; v2 shows no reservation inside categories.
 - v1.1 lets a goal repeat its contribution; v2 says automatic contributions wait for
   recurrence and ADR 0017 does not include them, so E18 does not either.
-- The [scenario corpus](../../../testing/sandbox-scenarios.md#recurrence)
+- The [scenario corpus](../../../testing/sandbox-scenarios.md)
   asks for WorkManager worker tests when recurrence ships; with no background work,
   SELLO-104 covers the catch-up that runs on opening instead.
 

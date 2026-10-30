@@ -22,9 +22,9 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.DatedUsdRate
 import com.software.sello.domain.port.DeleteInvestmentMovement
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.PreferenceRead
@@ -62,11 +62,7 @@ class InvestmentBackupRestoreTest {
     val files = DatabaseFiles()
 
     private val ledger by lazy { TestLedger(files).also { it.start() } }
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
     private val investments = HandInvestmentPreferences()
     private val preferences = object : AppearancePreferences, CategoryOrderingPreferences {
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> = flowOf(
@@ -131,7 +127,7 @@ class InvestmentBackupRestoreTest {
                 mistaken.version
             )
         )
-        assertTrue("$deleted", deleted is InvestmentCommandOutcome.Committed)
+        assertTrue("$deleted", deleted is CommandOutcome.Committed)
         ledger.recorded(fondo, InvestmentMovementKind.Withdrawal, pesos(500_000), "2026-08-03")
         ledger.goTo("2026-10-14")
         ledger.recorded(
@@ -141,7 +137,7 @@ class InvestmentBackupRestoreTest {
             "2026-10-14"
         )
         ledger.goTo("2026-10-15")
-        assertTrue(ledger.setRate(400_000, "2026-10-15") is InvestmentCommandOutcome.Committed)
+        assertTrue(ledger.setRate(400_000, "2026-10-15") is CommandOutcome.Committed)
         ledger.goTo("2026-10-20")
         acciones = ledger.created(
             ledger.createInvestment(
@@ -272,7 +268,7 @@ class InvestmentBackupRestoreTest {
         val undo = ledger.invest(
             RestoreInvestmentMovement(ledger.operation(), ledger.board().generation, deletion)
         )
-        assertTrue("$undo", undo is InvestmentCommandOutcome.Rejected)
+        assertTrue("$undo", undo is CommandOutcome.Rejected)
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM investment_movement WHERE sequence = 3"))
         // The next movement takes the position after the last one.
         val recorded = ledger.invest(
@@ -287,7 +283,7 @@ class InvestmentBackupRestoreTest {
                 null
             )
         )
-        assertTrue("$recorded", recorded is InvestmentCommandOutcome.Committed)
+        assertTrue("$recorded", recorded is CommandOutcome.Committed)
         assertEquals(
             6L,
             ledger.long("SELECT MAX(sequence) FROM investment_movement WHERE kind = 'dividend'")

@@ -41,10 +41,8 @@ These are inputs for later work, not permission to reopen answers already record
 - [ADR 0012](../../decisions/0012-budget-guidance-contract.md) owns the financial
   definitions, [architecture](../../../ARCHITECTURE.md) the safety and technical
   contracts, and the [philosophy](../philosophy.md) the common direction.
-- The [current app](../../development/current-app-experience.md) describes what is
-  built, not the target. The [v1.1 reference](../README.md#preserved-v11-visual-reference)
-  covers only what v2 does not show; the [HTML exploration](../proposals/index.html) is
-  history only.
+- The [v1.1 reference](../README.md#preserved-v11-visual-reference) covers only what
+  v2 does not show.
 - Keep receipt paper, stamps, bold exact numbers, category circles, bundled fonts and
   the Cobalto/Violeta light/dark identity.
 

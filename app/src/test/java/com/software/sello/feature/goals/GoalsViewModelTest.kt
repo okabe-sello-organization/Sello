@@ -1,7 +1,6 @@
 package com.software.sello.feature.goals
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
@@ -19,38 +18,30 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalBoard
-import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommand
-import com.software.sello.domain.port.GoalCommandOutcome
-import com.software.sello.domain.port.GoalCommands
-import com.software.sello.domain.port.GoalReads
-import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
-import com.software.sello.domain.port.GoalUndoOffer
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
-import com.software.sello.presentation.corrections.ExpenseCorrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
@@ -67,11 +58,7 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GoalsViewModelTest {
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
     private val clock = HandFinancialClock("2026-10-23")
     private val reads = HandGoalReads()
     private val commands = HandGoalCommands()
@@ -83,12 +70,12 @@ class GoalsViewModelTest {
 
     /** The test's virtual time, which the notices' clock follows so they end when they should. */
     private val scheduler = TestCoroutineScheduler()
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     @Before
     fun main() {
         Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             commands,
@@ -135,7 +122,7 @@ class GoalsViewModelTest {
             GoalSummary(history, GoalPolicy.progress(history).value())
         }
 
-    private fun board(vararg goals: GoalSummary, featured: String? = null) = GoalBoardState.Ready(
+    private fun board(vararg goals: GoalSummary, featured: String? = null) = ReadState.Ready(
         GoalBoard(3, 9, goals.toList(), featured?.let { GoalId.of(it).value() })
     )
 
@@ -157,7 +144,7 @@ class GoalsViewModelTest {
                 false
             }
         watch(model)
-        reads.board.value = GoalBoardState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         assertEquals(MetasState.Failed, model.state.value)
 
         model.onAction(MetasAction.Retry)
@@ -213,7 +200,7 @@ class GoalsViewModelTest {
         reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000), featured = celularId)
         val model = detail()
         watch(model)
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
 
         model.onAction(GoalDetailAction.Feature)
@@ -237,7 +224,7 @@ class GoalsViewModelTest {
         reads.board.value = board(summary(viajeId, 1_710_000, 3_000_000), featured = celularId)
         val model = detail()
         watch(model)
-        commands.next = GoalCommandOutcome.Rejected(GoalRejection.StaleGeneration(4))
+        commands.next = CommandOutcome.Rejected(CommandRejection.StaleGeneration(4))
 
         model.onAction(GoalDetailAction.Feature)
 
@@ -282,7 +269,7 @@ class GoalsViewModelTest {
             summary(viajeId, 400_000, 400_000, completedOn = LocalDate.of(2026, 9, 30))
         )
         val saved = SavedStateHandle(mapOf("goalId" to viajeId))
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         val first = detail(saved)
         watch(first)
@@ -290,7 +277,7 @@ class GoalsViewModelTest {
         first.onAction(GoalDetailAction.Delete)
         val operation = commands.sent.single().operationId
 
-        commands.found = Outcome.Success(committed().goal)
+        commands.found = Outcome.Success(committed().value)
         val restored = detail(saved)
         watch(restored)
 
@@ -347,7 +334,7 @@ class GoalsViewModelTest {
         assertEquals(emptyList<GoalCommand>(), commands.sent)
     }
 
-    private fun committed() = GoalCommandOutcome.Committed(
+    private fun committed() = CommandOutcome.Committed(
         CommittedGoal(
             OperationReceipt(
                 OperationId.of(ids.next()).value(),
@@ -361,84 +348,4 @@ class GoalsViewModelTest {
         ),
         replayed = false
     )
-}
-
-/** The board a test sets by hand; [started] counts observations. */
-class HandGoalReads : GoalReads {
-    val board = MutableStateFlow<GoalBoardState>(GoalBoardState.Loading)
-    var started = 0
-
-    /** What a one-off read returns; [reads] counts them. */
-    var read: Outcome<GoalBoard, StorageFailure> =
-        Outcome.Failure(StorageFailure.Unavailable("not used"))
-    var reads = 0
-
-    override suspend fun board(): Outcome<GoalBoard, StorageFailure> {
-        reads++
-        return read
-    }
-
-    override fun observeBoard(): Flow<GoalBoardState> = board.onStart { started++ }
-
-    override suspend fun goal(id: GoalId): Outcome<GoalSummary?, StorageFailure> =
-        Outcome.Failure(StorageFailure.Unavailable("not used"))
-}
-
-/**
- * Commands a test answers by hand: [next] once, or committed. With [pause] a command
- * waits for [release]. [found] answers [find], and [asked] records what was asked.
- */
-class HandGoalCommands : GoalCommands {
-    val sent = mutableListOf<GoalCommand>()
-    val asked = mutableListOf<OperationId>()
-    var next: GoalCommandOutcome? = null
-
-    /** Answers in order, before [next]. */
-    val queue = ArrayDeque<GoalCommandOutcome>()
-    var found: Outcome<CommittedGoal?, StorageFailure> = Outcome.Success(null)
-    var pause = false
-    private var waiting: CompletableDeferred<GoalCommandOutcome>? = null
-
-    fun release(outcome: GoalCommandOutcome) {
-        waiting?.complete(outcome)
-    }
-
-    override suspend fun submit(command: GoalCommand): GoalCommandOutcome {
-        sent += command
-        if (pause) {
-            val deferred = CompletableDeferred<GoalCommandOutcome>()
-            waiting = deferred
-            return deferred.await()
-        }
-        queue.removeFirstOrNull()?.let { return it }
-        return next?.also { next = null } ?: GoalCommandOutcome.Committed(
-            CommittedGoal(
-                OperationReceipt(
-                    command.operationId,
-                    OperationKind.DeleteGoal,
-                    command.generation,
-                    10,
-                    Instant.EPOCH
-                ),
-                (GoalId.of("00000000-0000-4000-9000-000000000001") as Outcome.Success).value,
-                null
-            ),
-            replayed = false
-        )
-    }
-
-    /** What [movementUndoOffer] says is on offer. */
-    var undoOffer: () -> GoalUndoOffer? = { null }
-
-    override fun movementUndoOffer(): GoalUndoOffer? = undoOffer()
-
-    /** What [completionUndoOffer] says is on offer. */
-    var completionOffer: () -> GoalUndoOffer? = { null }
-
-    override fun completionUndoOffer(): GoalUndoOffer? = completionOffer()
-
-    override suspend fun find(operationId: OperationId): Outcome<CommittedGoal?, StorageFailure> {
-        asked += operationId
-        return found
-    }
 }

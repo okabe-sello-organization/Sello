@@ -15,8 +15,11 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PlaceState
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.ChangeGoalTarget
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.CreateIncome
@@ -27,8 +30,6 @@ import com.software.sello.domain.port.EditGoal
 import com.software.sello.domain.port.EditGoalMovement
 import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommandOutcome
-import com.software.sello.domain.port.GoalCommandOutcome.Committed
-import com.software.sello.domain.port.GoalCommandOutcome.Rejected
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordGoalMovement
@@ -67,8 +68,6 @@ class GoalCommandContractTest {
     private val today = LocalDate.of(2026, 10, 9)
     private val viaje = GoalId.of(uuid(100)).valueOrFail()
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private fun movement(number: Int) = GoalMovementId.of(uuid(number)).valueOrFail()
 
     private fun events() =
@@ -89,7 +88,7 @@ class GoalCommandContractTest {
         generation,
         GoalName.of(name).valueOrFail(),
         IconKey.of("flight").valueOrFail(),
-        pesos(target),
+        transactionPesos(target),
         YearMonth.of(2026, 12)
     )
 
@@ -105,7 +104,16 @@ class GoalCommandContractTest {
         goal: GoalId = viaje,
         operation: OperationId = ledger.operation()
     ) = submit(
-        RecordGoalMovement(operation, 1, goal, version(goal), kind, pesos(pesos), date, null)
+        RecordGoalMovement(
+            operation,
+            1,
+            goal,
+            version(goal),
+            kind,
+            transactionPesos(pesos),
+            date,
+            null
+        )
     )
 
     private suspend fun aporte(pesos: Long, goal: GoalId = viaje) = record(pesos, goal = goal)
@@ -116,7 +124,7 @@ class GoalCommandContractTest {
     private suspend fun delete(number: Int, operation: OperationId = ledger.operation()) =
         submit(DeleteGoalMovement(operation, 1, viaje, version(), movement(number), 1))
 
-    private fun committed(outcome: GoalCommandOutcome) = (outcome as Committed).goal
+    private fun committed(outcome: GoalCommandOutcome) = (outcome as Committed).value
 
     private suspend fun started(target: Long = 3_000_000) {
         assertTrue(submit(create(target)) is Committed)
@@ -163,8 +171,8 @@ class GoalCommandContractTest {
         val stale = submit(create(generation = 2))
 
         assertEquals(Committed(committed(first).copy(change = null), replayed = true), again)
-        assertEquals(Rejected(GoalRejection.OperationConflict), other)
-        assertEquals(Rejected(GoalRejection.StaleGeneration(current = 1)), stale)
+        assertEquals(Rejected(CommandRejection.OperationConflict), other)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 1)), stale)
         assertEquals(1, ledger.rows("goal", "id").size)
         assertEquals(1L, ledger.revision())
     }
@@ -200,7 +208,7 @@ class GoalCommandContractTest {
         val outcome = retiro(1_710_001)
 
         assertEquals(
-            Rejected(GoalRejection.AboveSaved(movement(103), Money.cop(1_710_000))),
+            Rejected(Specific(GoalRejection.AboveSaved(movement(103), Money.cop(1_710_000)))),
             outcome
         )
         assertEquals(before, events())
@@ -226,7 +234,7 @@ class GoalCommandContractTest {
 
         val outcome = record(1, date = LocalDate.of(2026, 10, 10))
 
-        assertEquals(Rejected(GoalRejection.FutureDate(today)), outcome)
+        assertEquals(Rejected(Specific(GoalRejection.FutureDate(today))), outcome)
     }
 
     @Test
@@ -241,13 +249,13 @@ class GoalCommandContractTest {
                 viaje,
                 1,
                 GoalMovementKind.Contribution,
-                pesos(1),
+                transactionPesos(1),
                 today,
                 null
             )
         )
 
-        assertEquals(Rejected(GoalRejection.VersionConflict(current = 2)), outcome)
+        assertEquals(Rejected(CommandRejection.VersionConflict(current = 2)), outcome)
     }
 
     // ---- Corrections and undo ----
@@ -266,7 +274,7 @@ class GoalCommandContractTest {
                 version(),
                 movement(103),
                 1,
-                pesos(900_000),
+                transactionPesos(900_000),
                 today,
                 Note.of("Prima").valueOrFail()
             )
@@ -289,7 +297,10 @@ class GoalCommandContractTest {
 
         val outcome = delete(102)
 
-        assertEquals(Rejected(GoalRejection.AboveSaved(movement(103), Money.cop(0))), outcome)
+        assertEquals(
+            Rejected(Specific(GoalRejection.AboveSaved(movement(103), Money.cop(0)))),
+            outcome
+        )
         assertEquals(before, events())
     }
 
@@ -319,7 +330,7 @@ class GoalCommandContractTest {
         delete(103, again)
         ledger.elapsed += 6.seconds
         assertEquals(
-            Rejected(GoalRejection.UndoExpired),
+            Rejected(Specific(GoalRejection.UndoExpired)),
             submit(RestoreGoalMovement(ledger.operation(), 1, again))
         )
     }
@@ -332,7 +343,7 @@ class GoalCommandContractTest {
             CreateIncome(
                 ledger.operation(),
                 1,
-                pesos(150_000),
+                transactionPesos(150_000),
                 IncomeSource.of("salary", null).valueOrFail(),
                 today,
                 null
@@ -357,7 +368,15 @@ class GoalCommandContractTest {
         aporte(1_710_000)
 
         val outcome =
-            submit(ChangeGoalTarget(ledger.operation(), 1, viaje, version(), pesos(2_000_000)))
+            submit(
+                ChangeGoalTarget(
+                    ledger.operation(),
+                    1,
+                    viaje,
+                    version(),
+                    transactionPesos(2_000_000)
+                )
+            )
 
         assertEquals(listOf(GoalPlace.ThreeQuarters), committed(outcome).change?.earned)
         assertEquals(85L, summary().progress.percentage)
@@ -369,7 +388,9 @@ class GoalCommandContractTest {
         started()
         aporte(1_710_000)
 
-        submit(ChangeGoalTarget(ledger.operation(), 1, viaje, version(), pesos(4_000_000)))
+        submit(
+            ChangeGoalTarget(ledger.operation(), 1, viaje, version(), transactionPesos(4_000_000))
+        )
 
         val progress = summary().progress
         assertEquals(42L, progress.percentage)
@@ -406,7 +427,7 @@ class GoalCommandContractTest {
         )
 
         assertTrue(renamed is Committed)
-        assertEquals(Rejected(GoalRejection.Unchanged), same)
+        assertEquals(Rejected(Specific(GoalRejection.Unchanged)), same)
         assertEquals(before, summary().progress)
         assertEquals("Costa", summary().history.goal.name.value)
     }
@@ -425,7 +446,7 @@ class GoalCommandContractTest {
         assertEquals(listOf(GoalPlace.Meta), committed(outcome).change?.earned)
         assertTrue(summary().progress.completed)
         assertEquals(today.toString(), ledger.rows("goal", "completed_on").single())
-        assertEquals(Rejected(GoalRejection.Completed), aporte(1))
+        assertEquals(Rejected(Specific(GoalRejection.Completed)), aporte(1))
         assertEquals(completion, ledger.goals.completionUndoOffer()?.operationId)
     }
 
@@ -448,7 +469,7 @@ class GoalCommandContractTest {
         submit(CompleteGoal(second, 1, viaje, version(), 10.seconds))
         ledger.elapsed += 10.seconds
         assertEquals(
-            Rejected(GoalRejection.UndoExpired),
+            Rejected(Specific(GoalRejection.UndoExpired)),
             submit(UndoGoalCompletion(ledger.operation(), 1, second))
         )
         assertTrue(summary().progress.completed)
@@ -465,7 +486,7 @@ class GoalCommandContractTest {
 
         assertNull(ledger.goals.completionUndoOffer())
         assertEquals(
-            Rejected(GoalRejection.UndoExpired),
+            Rejected(Specific(GoalRejection.UndoExpired)),
             submit(UndoGoalCompletion(ledger.operation(), 1, completion))
         )
     }
@@ -526,7 +547,7 @@ class GoalCommandContractTest {
             viaje,
             version(),
             GoalMovementKind.Contribution,
-            pesos(750_000),
+            transactionPesos(750_000),
             today,
             null
         )

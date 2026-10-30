@@ -104,7 +104,7 @@ internal object WireNames {
         ThemePreference.Light to "light",
         ThemePreference.Dark to "dark"
     )
-    val inks = mapOf(InkPreference.Cobalto to "cobalto", InkPreference.Violeta to "violeta")
+    val inks = InkPreference.entries.associateWith { it.id }
     val orders = mapOf(
         CategoryOrder.MostUsed to "most_used",
         CategoryOrder.Alphabetical to "alphabetical",

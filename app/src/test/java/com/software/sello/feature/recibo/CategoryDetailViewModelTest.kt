@@ -2,30 +2,30 @@ package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpenseRejection
-import com.software.sello.domain.port.SnapshotState
+import com.software.sello.domain.port.ReadState
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandExpenseReads
-import com.software.sello.feature.expense.HandIncomeCommands
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.corrections.ExpenseCorrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration.Companion.milliseconds
@@ -54,13 +54,6 @@ class CategoryDetailViewModelTest {
     private val insights = HandCategoryInsights()
     private val commands = HandExpenseCommands()
     private var nextOperation = 700
-    private val labels = object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-
-        override fun negative(amount: String) = "menos $amount"
-
-        override fun positive(amount: String) = "más $amount"
-    }
     private val food = categoryIn(1, "Alimentación", 900_000)
     private val coffee = categoryIn(2, "Café", null)
 
@@ -73,7 +66,7 @@ class CategoryDetailViewModelTest {
     private fun plain(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
     private fun TestScope.started(): CategoryDetailViewModel {
-        val corrections = ExpenseCorrections(
+        val corrections = Corrections(
             commands,
             HandIncomeCommands(),
             HandGoalCommands(),
@@ -88,7 +81,7 @@ class CategoryDetailViewModelTest {
                 session,
                 snapshots,
                 reads,
-                MoneyFormatter(labels),
+                testMoney(),
                 corrections,
                 insights
             )
@@ -135,27 +128,27 @@ class CategoryDetailViewModelTest {
             null, null, null, emptyList(), null, emptyList()
         )
         insights.state.value =
-            com.software.sello.domain.port.CategoryInsightsState.Ready(
+            com.software.sello.domain.port.ReadState.Ready(
                 raw.copy(budget = budget.copy(revision = 2))
             )
         assertEquals(DetailInsightsState.Loading, vm.ready.insights)
         insights.state.value =
-            com.software.sello.domain.port.CategoryInsightsState.Ready(
+            com.software.sello.domain.port.ReadState.Ready(
                 raw.copy(budget = budget.copy(generation = 2))
             )
         assertEquals(DetailInsightsState.Loading, vm.ready.insights)
         insights.state.value =
-            com.software.sello.domain.port.CategoryInsightsState.Ready(
+            com.software.sello.domain.port.ReadState.Ready(
                 raw.copy(budget = budget.copy(asOf = budget.asOf.minusDays(1)))
             )
         assertEquals(DetailInsightsState.Loading, vm.ready.insights)
-        insights.state.value = com.software.sello.domain.port.CategoryInsightsState.Ready(raw)
+        insights.state.value = com.software.sello.domain.port.ReadState.Ready(raw)
         assertEquals(
             plain("1.000"),
             (vm.ready.insights as DetailInsightsState.Ready).figures.averageExpense
         )
         insights.state.value =
-            com.software.sello.domain.port.CategoryInsightsState.Failed(
+            com.software.sello.domain.port.ReadState.Failed(
                 SnapshotFailure.Unrepresentable,
                 raw
             )
@@ -390,13 +383,13 @@ class CategoryDetailViewModelTest {
         show(viewModel, 1)
         val loading = viewModel.state.value
 
-        snapshots.of(october).value = SnapshotState.Failed(failure, lastGood = null)
+        snapshots.of(october).value = ReadState.Failed(failure, lastGood = null)
         val failed = viewModel.state.value
         viewModel.onAction(CategoryDetailAction.Retry)
         commit(many(2))
         val read = viewModel.ready
         snapshots.of(october).value =
-            SnapshotState.Failed(failure, lastGood = monthOf("2026-10-23", listOf(food), many(2)))
+            ReadState.Failed(failure, lastGood = monthOf("2026-10-23", listOf(food), many(2)))
 
         assertEquals(CategoryDetailState.Loading, loading)
         assertEquals(CategoryDetailState.Failed, failed)
@@ -674,10 +667,10 @@ class CategoryDetailViewModelTest {
         commit(many(2))
         show(viewModel, 1)
         val refusals = listOf(
-            ExpenseRejection.ExpenseMissing to DeleteProblem.Gone,
-            ExpenseRejection.VersionConflict(current = 2) to DeleteProblem.Changed,
-            ExpenseRejection.StaleGeneration(current = 2) to DeleteProblem.DataChanged,
-            ExpenseRejection.StorageFailed(StorageFailure.Unavailable("x")) to DeleteProblem.Failed
+            Specific(ExpenseRejection.ExpenseMissing) to DeleteProblem.Gone,
+            CommandRejection.VersionConflict(current = 2) to DeleteProblem.Changed,
+            CommandRejection.StaleGeneration(current = 2) to DeleteProblem.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to DeleteProblem.Failed
         )
 
         val said = refusals.map { (reason, _) ->

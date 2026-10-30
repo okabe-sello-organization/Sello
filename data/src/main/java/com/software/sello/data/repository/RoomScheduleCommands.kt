@@ -20,6 +20,11 @@ import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.SchedulePolicy
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedSchedule
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteSchedule
@@ -29,9 +34,6 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ResumeSchedule
 import com.software.sello.domain.port.ScheduleCommand
 import com.software.sello.domain.port.ScheduleCommandOutcome
-import com.software.sello.domain.port.ScheduleCommandOutcome.Committed
-import com.software.sello.domain.port.ScheduleCommandOutcome.OutcomeUnknown
-import com.software.sello.domain.port.ScheduleCommandOutcome.Rejected
 import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.ScheduleEdit
 import com.software.sello.domain.port.ScheduleRejection
@@ -52,13 +54,7 @@ class RoomScheduleCommands internal constructor(
     private val ids: RecordIdSource
 ) : ScheduleCommands {
     override suspend fun submit(command: ScheduleCommand): ScheduleCommandOutcome =
-        when (val run = database.runCommand { decide(command) }) {
-            is CommandRun.Finished -> run.value
-            is CommandRun.RolledBack -> failed(run.failure)
-            CommandRun.Unknown -> OutcomeUnknown(command.operationId)
-        }
-
-    private fun failed(failure: StorageFailure) = Rejected(ScheduleRejection.StorageFailed(failure))
+        database.runOutcome(command.operationId) { decide(command) }
 
     private fun StoredReceipt.committed() =
         CommittedSchedule(receipt, checkNotNull(scheduleId) { "Not a schedule receipt" })
@@ -66,22 +62,13 @@ class RoomScheduleCommands internal constructor(
     /** Runs inside the transaction. Every rejection returns before the first write. */
     private suspend fun decide(command: ScheduleCommand): ScheduleCommandOutcome {
         val digest = inputDigest(command)
-        val profile = when (
-            val start =
-                database.startCommand(command.operationId, command.generation, command.kind, digest)
-        ) {
-            is CommandStart.Proceed -> start.profile
-
-            is CommandStart.Stale -> return Rejected(
-                ScheduleRejection.StaleGeneration(start.current)
-            )
-
-            is CommandStart.Replay -> return Committed(start.original.committed(), replayed = true)
-
-            CommandStart.Conflict -> return Rejected(ScheduleRejection.OperationConflict)
-
-            is CommandStart.Damaged -> return failed(start.failure)
-        }
+        val profile = database.proceedOr(
+            command.operationId,
+            command.generation,
+            command.kind,
+            digest,
+            { it.committed() }
+        ) { return it }
         val today = clock.today.value.date
         val now = audit.now()
         val written = when (command) {
@@ -119,7 +106,7 @@ class RoomScheduleCommands internal constructor(
         data class Refused(val outcome: ScheduleCommandOutcome) : Written
     }
 
-    private fun refused(reason: ScheduleRejection) = Written.Refused(Rejected(reason))
+    private fun refused(reason: ScheduleRejection) = Written.Refused(Rejected(Specific(reason)))
 
     /** A schedule as stored, read inside the transaction. */
     private class Loaded(val row: ScheduleEntity, val stored: StoredSchedule) {
@@ -143,13 +130,13 @@ class RoomScheduleCommands internal constructor(
 
     private suspend fun load(command: ScheduleEdit): Load {
         val row = database.scheduleDao().byId(command.scheduleId.value)
-            ?: return Load.Refused(Rejected(ScheduleRejection.ScheduleMissing))
+            ?: return Load.Refused(Rejected(Specific(ScheduleRejection.ScheduleMissing)))
         if (row.version != command.expectedVersion) {
-            return Load.Refused(Rejected(ScheduleRejection.VersionConflict(row.version)))
+            return Load.Refused(Rejected(CommandRejection.VersionConflict(row.version)))
         }
         return when (val stored = row.toStored(database.scheduleDao().pauses(row.id))) {
             is Outcome.Success -> Load.Found(Loaded(row, stored.value))
-            is Outcome.Failure -> Load.Refused(failed(stored.error))
+            is Outcome.Failure -> Load.Refused(storageFailed(stored.error))
         }
     }
 

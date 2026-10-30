@@ -6,6 +6,7 @@ import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.ExactTotal
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.Money
@@ -110,6 +111,40 @@ class BackupRoundTripTest {
             assertEquals(
                 to,
                 BackupRejection.InvalidValue(path),
+                (codec.read(changed.toByteArray()) as Outcome.Failure).error
+            )
+        }
+    }
+
+    @Test
+    fun `every ink is written as the id it has always had, and reads back`() {
+        val file = String(resource("valid-g01-v6.json"))
+        for ((ink, id) in listOf(
+            InkPreference.Cobalto to "cobalto",
+            InkPreference.Violeta to "violeta"
+        )) {
+            val contents = g01InDollars().let {
+                it.copy(
+                    preferences = it.preferences!!.copy(
+                        appearance = it.preferences.appearance.copy(ink = ink)
+                    )
+                )
+            }
+            val written = String(codec.encode(contents).value())
+            assertEquals(file.replace("\"ink\": \"violeta\"", "\"ink\": \"$id\""), written)
+            assertEquals(contents, codec.read(written.toByteArray()).value().contents)
+        }
+    }
+
+    @Test
+    fun `an ink the app never wrote rejects the whole file`() {
+        val file = String(resource("valid-g01-v5.json"))
+        for (to in listOf("\"purpura\"", "\"Violeta\"", "\"\"")) {
+            val changed = file.replace("\"violeta\"", to)
+            check(changed != file)
+            assertEquals(
+                to,
+                BackupRejection.InvalidValue("preferences.ink"),
                 (codec.read(changed.toByteArray()) as Outcome.Failure).error
             )
         }

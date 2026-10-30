@@ -11,15 +11,10 @@ a deliberately smaller, tested MVP and the Sello visual language.
   principles for new screens, with [superseded decisions and transition](docs/decisions/0011-goal-centered-design.md).
 - [Screen and interaction briefs](docs/design/screen-briefs/README.md): the product
   intent and open policy behind each v2 screen.
-- [Current app experience baseline](docs/development/current-app-experience.md):
-  the implemented screens, navigation, behavior, adaptive layout and component
-  families to use as the starting point for UI/UX work.
-- [Current navigation graph](docs/development/navigation-graph.md): the visual route
-  map, screen composable hierarchy and navigation test coverage.
 - [Architecture and guardrails](ARCHITECTURE.md): ownership, financial/recovery
   contracts, technologies, MVP scope and developer tooling requirements.
-- [Tickets](docs/tickets/README.md): one folder per ticket with its evidence,
-  retained report and handoff; statuses, definition of done and gate profiles.
+- [Tickets](docs/tickets/README.md): one folder per ticket with its handoff;
+  statuses, definition of done and gate profiles.
 - [Independent executor guide](docs/development/execution-guide.md): prerequisites,
   file ownership, tools, verification procedures and source library.
 - [Time and composition](docs/development/time-and-composition.md): the three clocks,
@@ -38,41 +33,33 @@ a deliberately smaller, tested MVP and the Sello visual language.
   form's rules, saving once, and what it hands back.
 - [Anotar](docs/development/expense-entry.md): recording an expense, the preview,
   saving once and the receipt.
-- [Quality gates](docs/development/quality-gates.md): `./scripts/verify-ticket`, the
-  evidence every ticket needs and what CI enforces.
+- [Feature guide](docs/development/feature-guide.md): where a feature's files go and the
+  money, write, read, screen and test rules, with Metas as the example.
+- [Quality gates](docs/development/quality-gates.md): `scripts/check`, the gates and
+  what CI runs.
 - [Design references](docs/design/README.md): Sello v2, the v1.1 snapshot and provenance.
 
 The app currently implements Recibo and Resumen tabs, expense and income
 entry/history, category and limit management, corrections with guarded undo,
 persisted appearance/order settings, adaptive navigation and unreadable-storage
-startup recovery. The component catalog is populated. Backup/restore/reset and the
+startup recovery. Backup/restore/reset and the
 live-testing sandbox (debug only) are not customer-facing capabilities; see the current app
 baseline and tickets for the exact boundary.
 
-## Local host verification (G1)
+## Local checks
 
 Use the installed Android SDK and Android Studio JBR, or the validated replacement
 matrix documented by SELLO-002:
 
 ```bash
-ANDROID_HOME=/home/okabe94/Android/Sdk JAVA_HOME=/opt/android-studio/jbr \
-  PATH="/opt/android-studio/jbr/bin:$PATH" \
-  ./scripts/verify-ticket SELLO-0XX
+export ANDROID_HOME=/home/okabe94/Android/Sdk JAVA_HOME=/opt/android-studio/jbr
+export PATH="$JAVA_HOME/bin:$PATH"
+scripts/check domain app      # ktlint and unit tests of the modules you touched
+scripts/check --host          # the host gate G1, exactly as CI runs it
 ```
 
-Replace `SELLO-0XX` with the ticket being worked on. The command runs that ticket's
-gate (ticket and link checks, architecture rules, ktlint, unit tests, lint and assembly for
-G1) and writes a report under `build/reports/quality/`. Default ticket commands run
-full coverage. For a G2 ticket, `./scripts/verify-ticket SELLO-0XX --affected origin/main --retain` selects device modules and their consumers since the PR base, while
-`--gate G2` forces all device suites. Fetch the intended base first; unrelated or
-unknown inputs select full coverage. See the [local commands and selection map](docs/development/quality-gates.md#quality-runner).
-
-For documentation-only work advancing no ticket, run
-`./scripts/verify-ticket --merge-candidate origin/main`. It derives G0 (ticket
-structure, tool tests, architecture and links, Python/Git only); it cannot replace a
-ticket's G1/G2/G3.
-Hosted code pushes retain G1 to warm trusted main caches; documentation pushes use
-G0, and the nightly verifies `main` whole at G3 once it moved.
+The pull request's `quality` check runs the gate its changes need and is the only
+proof that checks passed; see [quality gates](docs/development/quality-gates.md).
 
 Build/dependency/IDE caches, machine-local configuration and signing secrets are
 not tracked. No Git remote or hosted Jira project is configured by this setup.

@@ -9,11 +9,13 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.ArchiveCategory
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
-import com.software.sello.domain.port.ExpenseCommandOutcome.Committed
-import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.RestoreExpense
 import java.time.Instant
@@ -117,7 +119,7 @@ class UndoCompensationContractTest {
 
         val outcome = ledger.expenses.restore(undo())
 
-        val restored = (outcome as Committed).expense
+        val restored = (outcome as Committed).value
         assertEquals(false, outcome.replayed)
         assertEquals(
             OperationKind.RestoreExpense to pan,
@@ -138,7 +140,7 @@ class UndoCompensationContractTest {
 
         val outcome = ledger.expenses.restore(undo())
 
-        assertEquals(Rejected(ExpenseRejection.UndoExpired), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.UndoExpired)), outcome)
         assertNothingRestored()
     }
 
@@ -169,7 +171,7 @@ class UndoCompensationContractTest {
         val outcome = ledger.expenses.restore(undo())
 
         assertNull(offer)
-        assertEquals(Rejected(ExpenseRejection.UndoExpired), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.UndoExpired)), outcome)
         assertNothingRestored()
         // What happened is still on record: the deletion committed.
         val found = (ledger.expenses.find(deletion) as Outcome.Success).value
@@ -199,7 +201,7 @@ class UndoCompensationContractTest {
         deleted()
         ledger.elapsed = deletedAt + 3.seconds
         val operation = ledger.operation()
-        val first = (ledger.expenses.restore(undo(operation)) as Committed).expense
+        val first = (ledger.expenses.restore(undo(operation)) as Committed).value
 
         ledger.reopen()
         ledger.elapsed = deletedAt + 10.hours
@@ -222,7 +224,7 @@ class UndoCompensationContractTest {
 
         val another = ledger.expenses.restore(undo())
 
-        assertEquals(Rejected(ExpenseRejection.UndoExpired), another)
+        assertEquals(Rejected(Specific(ExpenseRejection.UndoExpired)), another)
         assertEquals(listOf(original), expenses())
         assertEquals(5L, ledger.revision())
     }
@@ -240,7 +242,7 @@ class UndoCompensationContractTest {
         val late = ledger.expenses.restore(undo())
 
         assertEquals(deletedAt + 6.seconds, inTime!!.until)
-        assertEquals(Rejected(ExpenseRejection.UndoExpired), late)
+        assertEquals(Rejected(Specific(ExpenseRejection.UndoExpired)), late)
         assertNothingRestored()
     }
 
@@ -252,7 +254,7 @@ class UndoCompensationContractTest {
 
         val outcome = ledger.expenses.restore(undo(generation = 1))
 
-        assertEquals(Rejected(ExpenseRejection.StaleGeneration(current = 2)), outcome)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 2)), outcome)
         assertNothingRestored()
     }
 
@@ -265,7 +267,7 @@ class UndoCompensationContractTest {
         // Even naming the new history: what was kept belongs to the old one.
         val outcome = ledger.expenses.restore(undo(generation = 2))
 
-        assertEquals(Rejected(ExpenseRejection.UndoConflict), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.UndoConflict)), outcome)
         assertNothingRestored()
     }
 
@@ -281,7 +283,7 @@ class UndoCompensationContractTest {
 
         val outcome = ledger.expenses.restore(undo())
 
-        assertEquals(Rejected(ExpenseRejection.UndoConflict), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.UndoConflict)), outcome)
         assertEquals(before, expenses())
         assertEquals(4L, ledger.revision())
     }
@@ -298,7 +300,7 @@ class UndoCompensationContractTest {
 
         val outcome = ledger.expenses.restore(undo())
 
-        assertEquals(Rejected(ExpenseRejection.UndoConflict), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.UndoConflict)), outcome)
         assertEquals(before, expenses())
         assertEquals(4L, ledger.revision())
     }
@@ -314,7 +316,7 @@ class UndoCompensationContractTest {
 
         val outcome = ledger.expenses.restore(undo())
 
-        assertEquals(Rejected(ExpenseRejection.UndoExpired), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.UndoExpired)), outcome)
         assertEquals(emptyList<String>(), expenses())
     }
 
@@ -325,7 +327,7 @@ class UndoCompensationContractTest {
 
         val outcome = ledger.expenses.restore(undo(of = ledger.operation(4242)))
 
-        assertEquals(Rejected(ExpenseRejection.UndoExpired), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.UndoExpired)), outcome)
         assertNothingRestored()
     }
 
@@ -338,7 +340,7 @@ class UndoCompensationContractTest {
 
         val other = ledger.expenses.restore(undo(operation, of = ledger.operation(4242)))
 
-        assertEquals(Rejected(ExpenseRejection.OperationConflict), other)
+        assertEquals(Rejected(CommandRejection.OperationConflict), other)
         assertEquals(5L, ledger.revision())
     }
 
@@ -365,7 +367,7 @@ class UndoCompensationContractTest {
         ledger.elapsed = deletedAt + 2.seconds
         val retried = ledger.expenses.restore(undo())
 
-        assertTrue("$failed", (failed as Rejected).reason is ExpenseRejection.StorageFailed)
+        assertTrue("$failed", (failed as Rejected).reason is CommandRejection.StorageFailed)
         assertTrue("$retried", retried is Committed)
         assertEquals(listOf(original), expenses())
         assertEquals(5L, ledger.revision())

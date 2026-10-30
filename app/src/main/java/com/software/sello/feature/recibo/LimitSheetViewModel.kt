@@ -7,7 +7,6 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
-import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.LimitAdjustmentPolicy
@@ -16,15 +15,21 @@ import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
+import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
 import java.time.YearMonth
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,12 +56,13 @@ class LimitSheetViewModel(
     private val session: MonthSession,
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
-    private val notices: ExpenseCorrections
+    private val notices: Corrections
 ) : ViewModel() {
     private val month: YearMonth =
         saved.get<String>(KEY_MONTH)?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
             ?: session.currentMonthNow
 
+    private val submission = Submission(saved, KEY_OPERATION, ids)
     private val mutable = MutableStateFlow(LimitSheetState(month))
     val state: StateFlow<LimitSheetState> = mutable.asStateFlow()
 
@@ -73,7 +79,7 @@ class LimitSheetViewModel(
         saved.get<String>(KEY_CATEGORY)?.let { id ->
             viewModelScope.launch {
                 open(id)
-                if (saved.get<String>(KEY_OPERATION) != null) checkSaved()
+                if (submission.pending) checkSaved()
             }
         }
     }
@@ -88,7 +94,7 @@ class LimitSheetViewModel(
                 saved[KEY_DIGITS] = null
                 saved[KEY_CHOSEN] = null
                 saved[KEY_SCOPE] = null
-                saved[KEY_OPERATION] = null
+                submission.clear()
                 viewModelScope.launch { open(action.categoryId) }
             }
 
@@ -180,7 +186,7 @@ class LimitSheetViewModel(
         watching?.cancel()
         watching = viewModelScope.launch {
             snapshots.observe(month).collect { observed ->
-                snapshot = (observed as? SnapshotState.Ready)?.snapshot
+                snapshot = (observed as? ReadState.Ready)?.value
                 render()
             }
         }
@@ -267,55 +273,64 @@ class LimitSheetViewModel(
         val version = version ?: return
         val pesos = digits()?.toLongOrNull() ?: return
         val limit = (BudgetLimit.finite(Money.cop(pesos)) as? Outcome.Success)?.value ?: return
-        // Saved before the command leaves, so this attempt is recognised whatever happens.
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[KEY_OPERATION] = operation.value
         mutable.update { it.copy(busy = true, canSave = false, error = null) }
-        val command = when (now.scope) {
-            LimitScope.ThisMonth -> SetMonthLimit(operation, generation, id, version, month, limit)
-            LimitScope.FromThisMonth -> SetDefaultLimit(operation, generation, id, version, limit)
-        }
+        val scope = now.scope
         viewModelScope.launch {
-            when (val outcome = commands.submit(command)) {
-                is CategoryCommandOutcome.Committed -> done()
-                is CategoryCommandOutcome.OutcomeUnknown -> checkSaved()
-                is CategoryCommandOutcome.Rejected -> refused(outcome.reason)
-            }
+            settle(
+                submission.send(commands::find) { operation ->
+                    commands.submit(
+                        when (scope) {
+                            LimitScope.ThisMonth ->
+                                SetMonthLimit(operation, generation, id, version, month, limit)
+
+                            LimitScope.FromThisMonth ->
+                                SetDefaultLimit(operation, generation, id, version, limit)
+                        }
+                    )
+                }
+            )
         }
     }
 
     /** Asks how the saved operation ended. Nothing is sent again. */
     private suspend fun checkSaved() {
-        val operation = (saved.get<String>(KEY_OPERATION)?.let(OperationId::of) as? Outcome.Success)
-            ?.value ?: return
+        if (!submission.pending) return
         mutable.update { it.copy(busy = true, canSave = false) }
-        when (val found = commands.find(operation)) {
-            is Outcome.Failure -> mutable.update {
+        settle(submission.recover(commands::find))
+    }
+
+    private fun settle(settled: Settled<CommittedCategoryChange, CategoryRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) {
+                mutable.update { it.copy(busy = false) }
+                render()
+            }
+
+            is Settled.Committed -> done()
+
+            is Settled.Unknown -> mutable.update {
                 it.copy(busy = false, error = LimitSheetError.Unknown, canSave = false)
             }
 
-            is Outcome.Success -> if (found.value != null) {
-                done()
-            } else {
-                saved[KEY_OPERATION] = null
+            Settled.NotCommitted -> {
                 mutable.update { it.copy(busy = false, error = LimitSheetError.NotSaved) }
                 render()
             }
-        }
-    }
 
-    private fun refused(reason: CategoryRejection) {
-        // Certain: nothing was written, so this attempt is over.
-        saved[KEY_OPERATION] = null
-        val error = when (reason) {
-            is CategoryRejection.VersionConflict -> LimitSheetError.Conflict
-            is CategoryRejection.StaleGeneration -> LimitSheetError.DataChanged
-            CategoryRejection.CategoryMissing -> LimitSheetError.CategoryGone
-            CategoryRejection.CategoryArchived -> LimitSheetError.Archived
-            else -> LimitSheetError.NotSaved
+            // Certain: nothing was written, so this attempt is over.
+            is Settled.Rejected -> {
+                val error = when (settled.reason) {
+                    is CommandRejection.VersionConflict -> LimitSheetError.Conflict
+                    is CommandRejection.StaleGeneration -> LimitSheetError.DataChanged
+                    Specific(CategoryRejection.CategoryMissing) -> LimitSheetError.CategoryGone
+                    Specific(CategoryRejection.CategoryArchived) -> LimitSheetError.Archived
+                    else -> LimitSheetError.NotSaved
+                }
+                mutable.update { it.copy(busy = false, error = error) }
+                render()
+            }
         }
-        mutable.update { it.copy(busy = false, error = error) }
-        render()
     }
 
     /** The receipt is in: say so with what was saved, and close. */
@@ -338,8 +353,8 @@ class LimitSheetViewModel(
         watching?.cancel()
         watching = null
         snapshot = null
-        listOf(KEY_CATEGORY, KEY_DIGITS, KEY_CHOSEN, KEY_SCOPE, KEY_OPERATION)
-            .forEach { saved.remove<Any>(it) }
+        listOf(KEY_CATEGORY, KEY_DIGITS, KEY_CHOSEN, KEY_SCOPE).forEach { saved.remove<Any>(it) }
+        submission.clear()
         mutable.value = LimitSheetState(month)
     }
 

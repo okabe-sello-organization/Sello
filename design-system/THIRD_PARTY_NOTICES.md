@@ -28,4 +28,4 @@ supplies the tint. Sello does not use the fonts' reserved names for any derivati
 1. Copy the upstream filled vector to `res/drawable/ic_sello_<name>.xml` and, only if
    the reference shows it outlined, the outlined one to `ic_sello_<name>_outlined.xml`.
 2. Remove `android:tint` and add the entry to `SelloIcon`.
-3. `BundledAssetsTest` inflates every entry; the catalog's Icons example shows it.
+3. `BundledAssetsTest` inflates every entry.

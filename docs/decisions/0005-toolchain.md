@@ -46,7 +46,7 @@ is not distribution signing; ownership and release acceptance follow
 ## Setup, verification and sources
 
 Use the [setup guide](../development/setup.md). The
-[bootstrap evidence](../tickets/E01-foundation/SELLO-002/artifacts/SELLO-002-toolchain-verification.md) records the
+[bootstrap evidence](../tickets/E01-foundation/attachments/SELLO-002-toolchain-verification.md) records the
 initial compatibility checks; current feature and release evidence stays in tickets.
 
 - [AGP compatibility](https://developer.android.com/build/releases/agp-9-3-0-release-notes) and [built-in Kotlin](https://developer.android.com/build/migrate-to-built-in-kotlin).

@@ -11,10 +11,11 @@ import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.DeleteResult
-import com.software.sello.presentation.corrections.ExpenseCorrections
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth
@@ -62,7 +63,7 @@ class CategoryExpensesViewModel(
     private val snapshots: MonthlySnapshots,
     private val search: CategoryExpenseSearch,
     private val money: MoneyFormatter,
-    private val corrections: ExpenseCorrections
+    private val corrections: Corrections
 ) : ViewModel() {
     val query = saved.getStateFlow("expenseSearch", "")
     val order = saved.getStateFlow("expenseOrder", ExpenseOrder.Date.name)
@@ -109,11 +110,8 @@ class CategoryExpensesViewModel(
         when (action) {
             is CategoryExpensesAction.Show -> saved["expenseCategory"] = action.categoryId
 
-            is CategoryExpensesAction.Search -> if (action.query.length <=
-                60
-            ) {
-                saved["expenseSearch"] = action.query
-            }
+            is CategoryExpensesAction.Search ->
+                saved["expenseSearch"] = action.query.cutToSearchLimit()
 
             is CategoryExpensesAction.Sort -> saved["expenseOrder"] = action.order.name
 
@@ -134,11 +132,11 @@ class CategoryExpensesViewModel(
 
     private fun load(request: Request, snapshot: SnapshotState, count: Int) = flow {
         val id = (request.id?.let(CategoryId::of) as? Outcome.Success)?.value
-        val budget = (snapshot as? SnapshotState.Ready)?.snapshot
+        val budget = (snapshot as? ReadState.Ready)?.value
         if (id == null || budget == null) {
             versions = emptyMap()
             emit(
-                if (snapshot is SnapshotState.Failed ||
+                if (snapshot is ReadState.Failed ||
                     id == null
                 ) {
                     CategoryExpensesState.Failed
@@ -243,5 +241,13 @@ class CategoryExpensesViewModel(
 
     private companion object {
         const val PAGE_SIZE = 20
+        const val MAX_SEARCH = 60
+
+        /** The first [MAX_SEARCH] units, never ending on half of a two-unit character. */
+        fun String.cutToSearchLimit(): String {
+            if (length <= MAX_SEARCH) return this
+            val endsOnAHalf = Character.isHighSurrogate(this[MAX_SEARCH - 1])
+            return substring(0, if (endsOnAHalf) MAX_SEARCH - 1 else MAX_SEARCH)
+        }
     }
 }

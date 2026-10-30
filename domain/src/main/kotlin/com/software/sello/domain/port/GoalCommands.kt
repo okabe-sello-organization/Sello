@@ -141,18 +141,11 @@ data class FeatureGoal(
     val goalId: GoalId
 ) : GoalCommand
 
-/** Why nothing was written. Each of these is certain: nothing changed. */
+/** Why a goal command wrote nothing, beyond the reasons every [CommandRejection] has. */
 sealed interface GoalRejection {
-    data class StaleGeneration(val current: Long) : GoalRejection
-
-    data object OperationConflict : GoalRejection
-
     data object GoalMissing : GoalRejection
 
     data object MovementMissing : GoalRejection
-
-    /** The goal or the movement changed since the caller read it; [current] is its version now. */
-    data class VersionConflict(val current: Long) : GoalRejection
 
     /** The change asks for exactly what is recorded. */
     data object Unchanged : GoalRejection
@@ -179,8 +172,6 @@ sealed interface GoalRejection {
 
     /** Undoing would contradict what is recorded now. */
     data object UndoConflict : GoalRejection
-
-    data class StorageFailed(val failure: StorageFailure) : GoalRejection
 }
 
 /**
@@ -190,14 +181,7 @@ sealed interface GoalRejection {
  */
 data class CommittedGoal(val receipt: OperationReceipt, val goalId: GoalId, val change: GoalChange?)
 
-sealed interface GoalCommandOutcome {
-    data class Committed(val goal: CommittedGoal, val replayed: Boolean) : GoalCommandOutcome
-
-    data class Rejected(val reason: GoalRejection) : GoalCommandOutcome
-
-    /** Not known whether it was saved: ask [GoalCommands.find] or submit the same command. */
-    data class OutcomeUnknown(val operationId: OperationId) : GoalCommandOutcome
-}
+typealias GoalCommandOutcome = CommandOutcome<CommittedGoal, GoalRejection>
 
 /** The deleted movement or the completion that can still be undone. */
 data class GoalUndoOffer(val operationId: OperationId, val goalId: GoalId, val until: Duration)
@@ -234,13 +218,7 @@ data class GoalBoard(
 )
 
 /** The board as [GoalReads.observeBoard] sees it. A failed read keeps the last good board. */
-sealed interface GoalBoardState {
-    data object Loading : GoalBoardState
-
-    data class Ready(val board: GoalBoard) : GoalBoardState
-
-    data class Failed(val failure: StorageFailure, val lastGood: GoalBoard?) : GoalBoardState
-}
+typealias GoalBoardState = ReadState<GoalBoard, StorageFailure>
 
 interface GoalReads {
     /** One damaged goal fails the read: it is never left out. */

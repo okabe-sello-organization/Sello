@@ -64,7 +64,6 @@ import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
-import com.software.sello.designsystem.component.SwitchRow
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -341,7 +340,7 @@ private fun Identity(
     Slip(modifier = Modifier.fillMaxWidth(), pinked = false) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
         ) {
             IconPickerCircle(
                 icon = option?.icon,
@@ -418,7 +417,7 @@ private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -
                 text = stringResource(R.string.category_edit_limit_locked),
                 style = MaterialTheme.typography.bodyMedium,
                 color = SelloTheme.colors.inkSoft,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = SelloTheme.spacing.sm)
             )
         }
         return
@@ -447,7 +446,7 @@ private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -
         },
         amountAlpha = if (state.unlimited) GREYED_OUT_ALPHA else 1f
     ) {
-        ChipFlow(Modifier.padding(top = 8.dp)) {
+        ChipFlow(Modifier.padding(top = SelloTheme.spacing.sm)) {
             state.suggestions.forEach { suggestion ->
                 SelloChip(
                     label = suggestion.label,
@@ -458,12 +457,12 @@ private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -
                 )
             }
         }
-        state.limitTotal?.let { LimitTotalLine(it, Modifier.padding(top = 8.dp)) }
+        state.limitTotal?.let { LimitTotalLine(it, Modifier.padding(top = SelloTheme.spacing.sm)) }
         Text(
             text = limitScope(state),
             style = MaterialTheme.typography.bodySmall,
             color = SelloTheme.colors.inkSoft,
-            modifier = Modifier.padding(top = 8.dp).testTag(EDITOR_SCOPE_TAG)
+            modifier = Modifier.padding(top = SelloTheme.spacing.sm).testTag(EDITOR_SCOPE_TAG)
         )
     }
 }
@@ -587,7 +586,7 @@ private fun LimitTotalLine(total: LimitTotal, modifier: Modifier = Modifier) {
             tint = colors.inkSoft,
             modifier = Modifier.size(16.dp)
         )
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)) {
             Text(lead, style = style, color = colors.inkSoft)
             MoneyText(
                 total.amount,

@@ -3,7 +3,6 @@ package com.software.sello.feature.expense
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.Note
@@ -17,23 +16,28 @@ import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.ExpenseCommandOutcome
-import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.feature.recurrence.HandScheduleCommands
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -64,17 +68,8 @@ class ExpenseEditViewModelTest {
     private val snapshots = HandSnapshots()
     private val clock = HandFinancialClock("2026-10-22")
     private var nextId = 500
-    private val money = MoneyFormatter(
-        object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                "$digits pesos"
-
-            override fun negative(amount: String) = "menos $amount"
-
-            override fun positive(amount: String) = "más $amount"
-        }
-    )
-    private lateinit var corrections: ExpenseCorrections
+    private val money = testMoney()
+    private lateinit var corrections: Corrections
 
     private val food = categoryIn(1, "Alimentación", 900_000, icon = "restaurant")
     private val coffee = categoryIn(2, "Café", 50_000, icon = "local_cafe")
@@ -87,7 +82,7 @@ class ExpenseEditViewModelTest {
     @Before
     fun mainDispatcher() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             commands,
             HandIncomeCommands(),
             HandGoalCommands(),
@@ -313,12 +308,13 @@ class ExpenseEditViewModelTest {
     @Test
     fun aRefusedEditKeepsWhatWasTypedAndSaysWhatHappened() {
         val refusals = listOf(
-            ExpenseRejection.VersionConflict(current = 4) to EntryError.ExpenseChanged,
-            ExpenseRejection.ExpenseMissing to EntryError.ExpenseGone,
-            ExpenseRejection.StaleGeneration(current = 8) to EntryError.DataChanged,
-            ExpenseRejection.FutureDate(LocalDate.of(2026, 10, 22)) to EntryError.FutureDate,
-            ExpenseRejection.StorageFailed(StorageFailure.Unavailable("x")) to EntryError.NotSaved,
-            ExpenseRejection.Unchanged to EntryError.NotSaved
+            CommandRejection.VersionConflict(current = 4) to EntryError.ExpenseChanged,
+            Specific(ExpenseRejection.ExpenseMissing) to EntryError.ExpenseGone,
+            CommandRejection.StaleGeneration(current = 8) to EntryError.DataChanged,
+            Specific(ExpenseRejection.FutureDate(LocalDate.of(2026, 10, 22))) to
+                EntryError.FutureDate,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to EntryError.NotSaved,
+            Specific(ExpenseRejection.Unchanged) to EntryError.NotSaved
         )
 
         val seen = refusals.map { (reason, _) ->
@@ -335,7 +331,7 @@ class ExpenseEditViewModelTest {
 
     @Test
     fun onceItChangedOrIsGoneUnderneathNothingMoreCanBeSentFromThisForm() {
-        commands.editAnswer = { Rejected(ExpenseRejection.VersionConflict(current = 4)) }
+        commands.editAnswer = { Rejected(CommandRejection.VersionConflict(current = 4)) }
         val form = opened()
         form.retype("52000")
         form.onAction(ExpenseEntryAction.Submit)
@@ -352,7 +348,7 @@ class ExpenseEditViewModelTest {
 
     @Test
     fun movingItToACategoryThatStoppedAcceptingExpensesDeselectsThatCategory() {
-        commands.editAnswer = { Rejected(ExpenseRejection.CategoryArchived) }
+        commands.editAnswer = { Rejected(Specific(ExpenseRejection.CategoryArchived)) }
         val form = opened()
         form.onAction(ExpenseEntryAction.CategoryPicked(uuid(2)))
 
@@ -365,7 +361,7 @@ class ExpenseEditViewModelTest {
 
     @Test
     fun anEditWhoseOutcomeIsUnknownIsLookedUpAndNeverSentAgain() {
-        commands.editAnswer = { ExpenseCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.editAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = opened()
         form.retype("52000")
@@ -445,10 +441,10 @@ class ExpenseEditViewModelTest {
     @Test
     fun aDeletionThatWasRefusedKeepsTheFormOpenAndSaysWhy() {
         val refusals = listOf(
-            ExpenseRejection.VersionConflict(current = 4) to EntryError.ExpenseChanged,
-            ExpenseRejection.ExpenseMissing to EntryError.ExpenseGone,
-            ExpenseRejection.StaleGeneration(current = 8) to EntryError.DataChanged,
-            ExpenseRejection.StorageFailed(StorageFailure.Unavailable("x")) to EntryError.NotDeleted
+            CommandRejection.VersionConflict(current = 4) to EntryError.ExpenseChanged,
+            Specific(ExpenseRejection.ExpenseMissing) to EntryError.ExpenseGone,
+            CommandRejection.StaleGeneration(current = 8) to EntryError.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to EntryError.NotDeleted
         )
 
         val seen = refusals.map { (reason, _) ->
@@ -582,7 +578,7 @@ class ExpenseEditViewModelTest {
     fun refusedNewTermsWriteNothingAndTheChoiceIsAskedAgain() {
         val form = fromSchedule()
         form.retype("52000")
-        schedules.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.CatchUpPending) }
+        schedules.answer = { CommandOutcome.Rejected(Specific(ScheduleRejection.CatchUpPending)) }
         form.onAction(ExpenseEntryAction.Submit)
         form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
         val refused = form.now
@@ -599,15 +595,15 @@ class ExpenseEditViewModelTest {
         form.retype("52000")
         commands.editAnswer =
             {
-                ExpenseCommandOutcome.Rejected(
-                    ExpenseRejection.StorageFailed(StorageFailure.Unavailable("x"))
+                CommandOutcome.Rejected(
+                    CommandRejection.StorageFailed(StorageFailure.Unavailable("x"))
                 )
             }
         form.onAction(ExpenseEntryAction.Submit)
         form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
         val half = form.now
         commands.editAnswer = {
-            ExpenseCommandOutcome.Committed(
+            CommandOutcome.Committed(
                 commands.committed(it.operationId, it.expenseId, OperationKind.EditExpense),
                 replayed = false
             )

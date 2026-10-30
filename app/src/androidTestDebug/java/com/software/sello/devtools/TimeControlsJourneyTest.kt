@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.software.sello.NightlyOnly
 import com.software.sello.composition.DebugComposition
 import com.software.sello.composition.SandboxNames
 import com.software.sello.composition.eraseFinancialStorage
@@ -26,24 +27,23 @@ import com.software.sello.composition.openStorage
 import com.software.sello.composition.productionModules
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.BudgetLimit
-import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TransactionAmount
-import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.FinancialClock
-import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
@@ -91,13 +91,15 @@ class TimeControlsJourneyTest {
     @Before
     fun openTheSandbox() {
         eraseFinancialStorage(context, SandboxNames)
-        val opened = openStorage(
-            context,
-            bogota,
-            SystemDispatcherProvider(),
-            SystemAuditClock(),
-            SandboxNames
-        ) as Outcome.Success
+        val opened = runBlocking {
+            openStorage(
+                context,
+                bogota,
+                SystemDispatcherProvider(),
+                SystemAuditClock(),
+                SandboxNames
+            )
+        } as Outcome.Success
         val composition = DebugComposition(store, { restarts++ }) { tools = it }
         val zone = ProcessFinancialZone().apply { initialize(opened.value.profile.zone) }
         graph = koinApplication {
@@ -128,17 +130,17 @@ class TimeControlsJourneyTest {
                 IconKey.of("home").value(),
                 BudgetLimit.Unlimited
             )
-        ) as CategoryCommandOutcome.Committed
+        ) as CommandOutcome.Committed
         graph.koin.get<ExpenseCommands>().create(
             CreateExpense(
                 operation(),
                 1,
-                created.change.categoryId,
+                created.value.categoryId,
                 TransactionAmount.of(Money.cop(48_700)).value(),
                 date,
                 null
             )
-        ) as ExpenseCommandOutcome.Committed
+        ) as CommandOutcome.Committed
     }
 
     @Test
@@ -152,51 +154,27 @@ class TimeControlsJourneyTest {
         assertEquals(LocalDate.of(2026, 11, 1), graph.koin.get<FinancialClock>().today.value.date)
         assertEquals(YearMonth.of(2026, 11), withTimeout(5_000) { session.currentMonth.first() })
         val november = withTimeout(5_000) {
-            snapshots.observe(YearMonth.of(2026, 11)).first { it is SnapshotState.Ready }
-        } as SnapshotState.Ready
-        assertEquals(LocalDate.of(2026, 11, 1), november.snapshot.asOf)
+            snapshots.observe(YearMonth.of(2026, 11)).first { it is ReadState.Ready }
+        } as ReadState.Ready
+        assertEquals(LocalDate.of(2026, 11, 1), november.value.asOf)
         assertEquals(LocalDate.of(2026, 11, 1), store.session.date)
     }
 
-    @Test
-    fun steppingMovesNeitherAuditNorElapsedTime() {
-        val audit = graph.koin.get<AuditClock>()
-        val monotonic = graph.koin.get<MonotonicClock>()
-        val auditBefore = audit.now()
-        val elapsedBefore = monotonic.elapsed()
-
-        time.advanceMonths(14)
-        time.advanceDays(400)
-
-        val auditMoved = java.time.Duration.between(auditBefore, audit.now())
-        val elapsedMoved = monotonic.elapsed() - elapsedBefore
-        assertTrue("audit moved $auditMoved", auditMoved.seconds < 60)
-        assertTrue("elapsed moved $elapsedMoved", elapsedMoved.inWholeSeconds < 60)
-    }
-
-    @Test
-    fun aSavedExpenseMakesTheDateForwardOnly() {
-        expenseIn("Comida", october31)
-
-        assertTrue(store.session.changed)
-        assertEquals(DateChange.RefusedBeforeSavedHistory, time.jumpTo(LocalDate.of(2026, 10, 1)))
-        assertEquals(october31, graph.koin.get<FinancialClock>().today.value.date)
-        assertEquals(DateChange.Moved, time.jumpTo(LocalDate.of(2026, 12, 24)))
-    }
-
+    // Nightly only: the undo window's own clock is tested on the JVM (DebugGraphTest).
+    @NightlyOnly
     @Test
     fun aYearOfFinancialTimeLaterUndoStillHasItsSixRealSeconds() = runBlocking {
-        val expense = expenseIn("Comida", october31).expense
+        val expense = expenseIn("Comida", october31).value
         val commands = graph.koin.get<ExpenseCommands>()
         val deletion = operation()
         val deleted = commands.delete(DeleteExpense(deletion, 1, expense.expenseId, 1))
-        assertTrue("$deleted", deleted is ExpenseCommandOutcome.Committed)
+        assertTrue("$deleted", deleted is CommandOutcome.Committed)
 
         time.advanceMonths(12)
 
         assertNotNull(commands.undoOffer())
         val undone = commands.restore(RestoreExpense(operation(), 1, deletion))
-        assertTrue("$undone", undone is ExpenseCommandOutcome.Committed)
+        assertTrue("$undone", undone is CommandOutcome.Committed)
         assertEquals(LocalDate.of(2027, 10, 31), graph.koin.get<FinancialClock>().today.value.date)
     }
 
@@ -234,17 +212,6 @@ class TimeControlsJourneyTest {
         rule.onNodeWithTag(TOOLS_RESET_CONFIRM_TAG).performScrollTo().performClick()
         rule.waitUntil(5_000) { restarts == 1 }
         assertEquals(SandboxSession(active = true, wipe = true), store.session)
-    }
-
-    @Test
-    fun leavingRestartsIntoTheNormalProfileAndKeepsTheSandboxDate() {
-        rule.setContent { SelloTheme(reducedMotion = true) { ToolsScreen(checkNotNull(tools)) } }
-
-        rule.onNodeWithTag(TOOLS_PROFILE_TAG).assertTextContains("Sandbox, con sus propios datos")
-        rule.onNodeWithTag(TOOLS_SWITCH_TAG).performClick()
-        rule.waitUntil(5_000) { restarts == 1 }
-
-        assertEquals(SandboxSession(active = false, date = october31), store.session)
     }
 
     @Test

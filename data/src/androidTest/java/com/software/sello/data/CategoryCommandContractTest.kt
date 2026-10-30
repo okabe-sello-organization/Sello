@@ -8,10 +8,13 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
-import com.software.sello.domain.port.CategoryCommandOutcome.Committed
-import com.software.sello.domain.port.CategoryCommandOutcome.Rejected
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeCategoryIcon
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.RenameCategory
@@ -137,8 +140,8 @@ class CategoryCommandContractTest {
         ledger.categories.submit(archive(version = 1))
         val afterArchive = ledger.categories.submit(ledger.createCategory("CAFE"))
 
-        assertEquals(Rejected(CategoryRejection.NameTaken), sameName)
-        assertEquals(Rejected(CategoryRejection.NameTaken), afterArchive)
+        assertEquals(Rejected(Specific(CategoryRejection.NameTaken)), sameName)
+        assertEquals(Rejected(Specific(CategoryRejection.NameTaken)), afterArchive)
         assertEquals(listOf("${uuid(100)}|Café|cafe|shopping_cart|1|2"), categoryRows())
         assertEquals(2, ledger.revision())
         assertEquals(2, receipts())
@@ -156,7 +159,7 @@ class CategoryCommandContractTest {
         val taken = ledger.categories.submit(rename(3, "transporte"))
 
         assertTrue(renamed is Committed && ownNameRecased is Committed)
-        assertEquals(Rejected(CategoryRejection.NameTaken), taken)
+        assertEquals(Rejected(Specific(CategoryRejection.NameTaken)), taken)
         assertEquals(
             listOf(
                 "${uuid(100)}|PLAZA DE MERCADO|plaza de mercado|shopping_cart|0|3",
@@ -197,7 +200,7 @@ class CategoryCommandContractTest {
         for (stale in everyEdit(version = 1)) {
             assertEquals(
                 "$stale",
-                Rejected(CategoryRejection.VersionConflict(current = 2)),
+                Rejected(CommandRejection.VersionConflict(current = 2)),
                 ledger.categories.submit(stale)
             )
         }
@@ -215,7 +218,7 @@ class CategoryCommandContractTest {
         for (missing in everyEdit(version = 1, category = 999)) {
             assertEquals(
                 "$missing",
-                Rejected(CategoryRejection.CategoryMissing),
+                Rejected(Specific(CategoryRejection.CategoryMissing)),
                 ledger.categories.submit(missing)
             )
         }
@@ -244,12 +247,12 @@ class CategoryCommandContractTest {
         )
         assertEquals(Committed(change, replayed = false), archived)
         assertEquals(
-            ExpenseCommandOutcome.Rejected(ExpenseRejection.CategoryArchived),
+            CommandOutcome.Rejected(Specific(ExpenseRejection.CategoryArchived)),
             newExpense
         )
         assertEquals(Committed(change, replayed = true), replay)
-        assertEquals(Rejected(CategoryRejection.AlreadyArchived), again)
-        assertEquals(Rejected(CategoryRejection.VersionConflict(current = 2)), staleEditor)
+        assertEquals(Rejected(Specific(CategoryRejection.AlreadyArchived)), again)
+        assertEquals(Rejected(CommandRejection.VersionConflict(current = 2)), staleEditor)
         assertEquals(listOf("${uuid(100)}|Mercado|mercado|shopping_cart|1|2"), categoryRows())
         assertEquals(
             listOf("${uuid(100)}|2026-10-03|20000"),
@@ -278,8 +281,8 @@ class CategoryCommandContractTest {
             SetMonthLimit(ledger.operation(), 1, id, 3, october, finite(90_000))
         )
 
-        assertEquals(Rejected(CategoryRejection.NotArchived), notArchived)
-        assertEquals(Rejected(CategoryRejection.CategoryArchived), newDefault)
+        assertEquals(Rejected(Specific(CategoryRejection.NotArchived)), notArchived)
+        assertEquals(Rejected(Specific(CategoryRejection.CategoryArchived)), newDefault)
         assertTrue(renamed is Committed && correction is Committed)
         assertEquals(listOf("${uuid(100)}|Plaza|plaza|shopping_cart|1|4"), categoryRows())
         assertEquals(listOf("${uuid(100)}|2026-10|finite|90000"), monthRows())
@@ -300,7 +303,7 @@ class CategoryCommandContractTest {
             SetMonthLimit(ledger.operation(), 1, id, 1, YearMonth.of(0, 1), finite(7))
         )
 
-        assertEquals(Rejected(CategoryRejection.InvalidMonth), before)
+        assertEquals(Rejected(Specific(CategoryRejection.InvalidMonth)), before)
         assertTrue("$oldest", oldest is Committed)
         assertEquals(listOf("${uuid(100)}|0000-01|finite|7"), monthRows())
         assertEquals(receiptsBefore + 1, receipts())
@@ -320,7 +323,7 @@ class CategoryCommandContractTest {
         assertTrue("$last", last is Committed)
         assertEquals(
             Rejected(
-                CategoryRejection.StorageFailed(
+                CommandRejection.StorageFailed(
                     StorageFailure.Integrity("category", uuid(100), "version")
                 )
             ),
@@ -344,7 +347,7 @@ class CategoryCommandContractTest {
 
         assertEquals(
             Rejected(
-                CategoryRejection.StorageFailed(
+                CommandRejection.StorageFailed(
                     StorageFailure.Integrity("profile", null, "revision")
                 )
             ),
@@ -378,7 +381,10 @@ class CategoryCommandContractTest {
             )
         )
 
-        assertEquals(Rejected(CategoryRejection.FutureMonth(currentMonth = october)), future)
+        assertEquals(
+            Rejected(Specific(CategoryRejection.FutureMonth(currentMonth = october))),
+            future
+        )
         assertTrue(current is Committed && past is Committed)
         assertEquals(
             listOf("${uuid(100)}|2025-02|unlimited|null", "${uuid(100)}|2026-10|finite|0"),
@@ -427,9 +433,9 @@ class CategoryCommandContractTest {
             ),
             replays
         )
-        assertEquals(List(8) { Rejected(CategoryRejection.OperationConflict) }, conflicts)
+        assertEquals(List(8) { Rejected(CommandRejection.OperationConflict) }, conflicts)
         assertEquals(
-            ExpenseCommandOutcome.Rejected(ExpenseRejection.OperationConflict),
+            CommandOutcome.Rejected(CommandRejection.OperationConflict),
             expenseUnderACategoryOperation
         )
         assertEquals(before, Triple(categoryRows(), defaultRows(), ledger.revision()))
@@ -448,7 +454,7 @@ class CategoryCommandContractTest {
             .map { ledger.categories.submit(it) }
 
         assertEquals(
-            List(8) { Rejected(CategoryRejection.StaleGeneration(current = 2)) },
+            List(8) { Rejected(CommandRejection.StaleGeneration(current = 2)) },
             outcomes
         )
         assertEquals(1, ledger.revision())
@@ -470,7 +476,7 @@ class CategoryCommandContractTest {
 
         assertEquals(1, outcomes.count { it is Committed })
         assertEquals(
-            List(15) { Rejected(CategoryRejection.VersionConflict(current = 2)) },
+            List(15) { Rejected(CommandRejection.VersionConflict(current = 2)) },
             outcomes.filter { it !is Committed }
         )
         assertEquals(2, ledger.long("SELECT version FROM category"))
@@ -491,7 +497,7 @@ class CategoryCommandContractTest {
         }.also { go.complete(Unit) }.awaitAll()
 
         assertEquals(1, outcomes.count { it is Committed })
-        assertEquals(15, outcomes.count { it == Rejected(CategoryRejection.NameTaken) })
+        assertEquals(15, outcomes.count { it == Rejected(Specific(CategoryRejection.NameTaken)) })
         assertEquals(1, ledger.long("SELECT COUNT(*) FROM category"))
         assertEquals(1, ledger.long("SELECT COUNT(*) FROM default_limit"))
         assertEquals(1, ledger.revision())
@@ -518,7 +524,7 @@ class CategoryCommandContractTest {
 
         assertEquals(
             Rejected(
-                CategoryRejection.StorageFailed(
+                CommandRejection.StorageFailed(
                     StorageFailure.Unavailable("SQLiteConstraintException")
                 )
             ),
@@ -595,7 +601,7 @@ class CategoryCommandContractTest {
 
         assertEquals(
             Rejected(
-                CategoryRejection.StorageFailed(
+                CommandRejection.StorageFailed(
                     StorageFailure.Integrity("category", uuid(100), "name_key")
                 )
             ),

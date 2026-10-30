@@ -18,6 +18,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateExpense
@@ -54,7 +55,8 @@ import org.koin.core.context.GlobalContext
 object TestCommands {
     private var graph: Koin? = null
 
-    private val koin get() = graph ?: GlobalContext.get()
+    /** The graph the commands below run on, and whose database [TestData] reads and writes. */
+    val koin: Koin get() = graph ?: GlobalContext.get()
 
     /**
      * Runs the commands below on [graph], a test's own graph, instead of the installed
@@ -99,7 +101,7 @@ object TestCommands {
                 limit?.let(::finite) ?: BudgetLimit.Unlimited
             )
         )
-        assertTrue("$outcome", outcome is CategoryCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     /** A peso investment named [name], its first aporte [pesos] today, valued the same. */
@@ -119,7 +121,7 @@ object TestCommands {
                 null
             )
         )
-        assertTrue("$outcome", outcome is InvestmentCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     fun setMonthLimit(category: String, month: YearMonth, pesos: Long) = runBlocking {
@@ -134,7 +136,7 @@ object TestCommands {
                 finite(pesos)
             )
         )
-        assertTrue("$outcome", outcome is CategoryCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     fun createExpense(category: String, date: LocalDate, pesos: Long, note: String? = null) =
@@ -149,7 +151,7 @@ object TestCommands {
                     Note.of(note).value()
                 )
             )
-            assertTrue("$outcome", outcome is ExpenseCommandOutcome.Committed)
+            assertTrue("$outcome", outcome is CommandOutcome.Committed)
         }
 
     private fun goalVersion(id: String): Long =
@@ -172,8 +174,8 @@ object TestCommands {
                 targetMonth
             )
         )
-        assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
-        (outcome as GoalCommandOutcome.Committed).goal.goalId.value
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
+        (outcome as CommandOutcome.Committed).value.goalId.value
     }
 
     /** An aporte, or with [withdrawal] a retiro, of [pesos] dated [date]. */
@@ -195,7 +197,7 @@ object TestCommands {
                 null
             )
         )
-        assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     /** Marcar como lograda, through the real command. */
@@ -209,7 +211,7 @@ object TestCommands {
                 1.seconds
             )
         )
-        assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     /** Chooses [goal] for Recibo, as "Mostrar en Recibo" does, through the real command. */
@@ -217,7 +219,7 @@ object TestCommands {
         val outcome = koin.get<GoalCommands>().submit(
             FeatureGoal(operation(), generation(), GoalId.of(goal).value())
         )
-        assertTrue("$outcome", outcome is GoalCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
     private fun generation(): Long = TestData.long("SELECT generation FROM profile")
@@ -234,6 +236,6 @@ object TestCommands {
                 Note.of(null).value()
             )
         )
-        assertTrue("$outcome", outcome is IncomeCommandOutcome.Committed)
+        assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 }

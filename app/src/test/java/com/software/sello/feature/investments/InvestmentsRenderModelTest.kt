@@ -26,8 +26,8 @@ import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentSummary
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.domain.port.ReadState
+import com.software.sello.testing.testMoney
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -43,16 +43,7 @@ import org.junit.Test
  * The figures come from the board, as in the app; the expected text is the examples'.
  */
 class InvestmentsRenderModelTest {
-    private val render = InvestmentsRenderModel(
-        MoneyFormatter(object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                if (currency == Currency.COP) "$digits pesos" else "$digits dólares"
-
-            override fun negative(amount: String) = "menos $amount"
-
-            override fun positive(amount: String) = "más $amount"
-        })
-    )
+    private val render = InvestmentsRenderModel(testMoney())
     private val today = LocalDate.of(2026, 10, 25)
     private val at = Instant.parse("2026-10-25T12:00:00Z")
     private var ids = 0
@@ -157,7 +148,7 @@ class InvestmentsRenderModelTest {
     )
 
     private fun ready(board: InvestmentBoard) =
-        render.overview(InvestmentBoardState.Ready(board), today) as InversionesState.Ready
+        render.overview(ReadState.Ready(board), today) as InversionesState.Ready
 
     @Test
     fun theTotalLeadsWithTheValueTheReturnAndWhatProducedIt() {
@@ -215,7 +206,7 @@ class InvestmentsRenderModelTest {
 
     @Test
     fun theRowsFollowTheOrderChosenAndKeepTheirOwnShare() {
-        val board = InvestmentBoardState.Ready(board(cripto(), fondo(), parqueadero()))
+        val board = ReadState.Ready(board(cripto(), fondo(), parqueadero()))
 
         val largest = render.overview(board, today) as InversionesState.Ready
         assertEquals(
@@ -239,7 +230,7 @@ class InvestmentsRenderModelTest {
     fun withoutARateTheRowsStillFollowTheOrderChosen() {
         // Acciones EE. UU. has a 5,1 % return; Cripto has no value, so no return.
         val state = render.overview(
-            InvestmentBoardState.Ready(board(cripto(), acciones())),
+            ReadState.Ready(board(cripto(), acciones())),
             today,
             InvestmentOrder.Return
         ) as InversionesState.Ready
@@ -266,22 +257,22 @@ class InvestmentsRenderModelTest {
         val failure = StorageFailure.Unavailable("test")
         assertEquals(
             InversionesState.Failed,
-            render.overview(InvestmentBoardState.Failed(failure, null), today)
+            render.overview(ReadState.Failed(failure, null), today)
         )
         val stale = render.overview(
-            InvestmentBoardState.Failed(failure, board(parqueadero())),
+            ReadState.Failed(failure, board(parqueadero())),
             today
         ) as InversionesState.Ready
         assertTrue(stale.stale)
         assertEquals("19.000.000", stale.total!!.value.digits)
-        assertEquals(InversionesState.Loading, render.overview(InvestmentBoardState.Loading, today))
+        assertEquals(InversionesState.Loading, render.overview(ReadState.Loading, today))
     }
 
     @Test
     fun in04_theDetailKeepsItsOwnFiguresAndListsMovementsNewestFirst() {
         val fondo = fondo()
         val id = fondo.history.investment.id.value
-        val detail = render.detail(InvestmentBoardState.Ready(board(fondo)), id, today)
+        val detail = render.detail(ReadState.Ready(board(fondo)), id, today)
             as InvestmentDetailState.Ready
         assertEquals("5.242.000", detail.value!!.digits)
         assertEquals(LocalDate.of(2026, 10, 14), detail.valuedOn)
@@ -307,7 +298,7 @@ class InvestmentsRenderModelTest {
         val fondo = fondo()
         val chart = (
             render.detail(
-                InvestmentBoardState.Ready(board(fondo)),
+                ReadState.Ready(board(fondo)),
                 fondo.history.investment.id.value,
                 today
             ) as InvestmentDetailState.Ready
@@ -327,12 +318,12 @@ class InvestmentsRenderModelTest {
     fun aDeletedInvestmentIsGoneAndAFailedReadIsNeverGone() {
         assertEquals(
             InvestmentDetailState.Gone,
-            render.detail(InvestmentBoardState.Ready(board(fondo())), "missing", today)
+            render.detail(ReadState.Ready(board(fondo())), "missing", today)
         )
         assertEquals(
             InvestmentDetailState.Failed,
             render.detail(
-                InvestmentBoardState.Failed(StorageFailure.Unavailable("x"), null),
+                ReadState.Failed(StorageFailure.Unavailable("x"), null),
                 "any",
                 today
             )

@@ -1,7 +1,6 @@
 package com.software.sello.feature.goals
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalEvent
@@ -20,8 +19,9 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.EditGoalMovement
@@ -32,17 +32,19 @@ import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.GoalUndoOffer
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.movement.MovementNoteProblem
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
@@ -69,18 +71,14 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class GoalMovementViewModelTest {
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
     private val clock = HandFinancialClock("2026-10-23")
     private val today = LocalDate.of(2026, 10, 23)
     private val reads = HandGoalReads()
     private val commands = HandGoalCommands()
     private var nextId = 1
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     private val viaje = "00000000-0000-4000-9000-000000000001"
     private val celular = "00000000-0000-4000-9000-000000000002"
@@ -93,7 +91,7 @@ class GoalMovementViewModelTest {
     @Before
     fun main() {
         Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             commands,
@@ -102,7 +100,7 @@ class GoalMovementViewModelTest {
             ids,
             CoroutineScope(Dispatchers.Main)
         )
-        reads.board.value = GoalBoardState.Ready(
+        reads.board.value = ReadState.Ready(
             GoalBoard(
                 3,
                 9,
@@ -138,8 +136,6 @@ class GoalMovementViewModelTest {
     fun reset() = Dispatchers.resetMain()
 
     private fun <T> Outcome<T, *>.value(): T = (this as Outcome.Success).value
-
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).value()
 
     private fun movementId(number: Int) =
         GoalMovementId.of("00000000-0000-4000-8000-%012d".format(number)).value()
@@ -291,7 +287,7 @@ class GoalMovementViewModelTest {
     fun anUnknownOutcomeIsAskedAboutAndNothingElseIsSentUntilItIsKnown() = runTest {
         val model = model(goal = viaje)
         model.keys("5", "000")
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
 
         model.onAction(GoalMovementAction.Submit)
@@ -354,8 +350,8 @@ class GoalMovementViewModelTest {
     @Test
     fun mt15AnAporteALaterRetiroUsesCannotBeDeletedAndTheFormSaysWhy() = runTest {
         val model = model(goal = fondo, movement = movementId(41).value)
-        commands.queue += GoalCommandOutcome.Rejected(
-            GoalRejection.AboveSaved(movementId(42), Money.cop(0))
+        commands.queue += CommandOutcome.Rejected(
+            Specific(GoalRejection.AboveSaved(movementId(42), Money.cop(0)))
         )
 
         model.onAction(GoalMovementAction.Delete)
@@ -407,7 +403,7 @@ class GoalMovementViewModelTest {
         model.onAction(GoalMovementAction.ComposerDone)
 
         assertTrue(model.state.value.composerOpen)
-        assertEquals(GoalNoteProblem.TooLong, model.state.value.composerProblem)
+        assertEquals(MovementNoteProblem.TooLong, model.state.value.composerProblem)
 
         model.onAction(GoalMovementAction.ComposerChanged("Arreglo del carro"))
         model.onAction(GoalMovementAction.ComposerDone)
@@ -431,7 +427,7 @@ class GoalMovementViewModelTest {
     }
 
     private fun committedWith(change: GoalChange?, replayed: Boolean = false) =
-        GoalCommandOutcome.Committed(
+        CommandOutcome.Committed(
             CommittedGoal(
                 OperationReceipt(
                     OperationId.of(ids.next()).value(),
@@ -482,9 +478,9 @@ class GoalMovementViewModelTest {
     fun aSaveFoundAfterAnUnknownOutcomeIsNotCelebrated() = runTest {
         val model = model(goal = celular)
         model.keys("3", "0", "0", "000")
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Success(
-            committedWith(GoalChange(listOf(GoalPlace.Half), emptyList(), false)).goal
+            committedWith(GoalChange(listOf(GoalPlace.Half), emptyList(), false)).value
         )
 
         model.onAction(GoalMovementAction.Submit)

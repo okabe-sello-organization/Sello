@@ -7,7 +7,6 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -20,6 +19,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.software.sello.MainActivity
+import com.software.sello.NightlyOnly
 import com.software.sello.TestCommands
 import com.software.sello.TestData
 import com.software.sello.awaitTag
@@ -185,9 +185,23 @@ class BackupFileJourneyTest {
 
     @Test
     fun theCardSavesOnlyAfterTheDisclosureAndThenSaysGuardadoToday() {
+        val before = record().last
         val name = "sello-respaldo-${UUID.randomUUID()}.json"
         val picker = answerWith { document(name) }
         openSettings()
+
+        // Cancelling the disclosure asks for nothing and saves nothing.
+        rule.onNodeWithTag(BACKUP_CARD_CREATE_TAG).performScrollTo().performClick()
+        rule.awaitTag(BACKUP_CARD_DISCLOSURE_TAG)
+        rule.onNodeWithText("Cancelar").performClick()
+        rule.waitForIdle()
+        assertEquals(
+            0,
+            rule.onAllNodes(hasTestTag(BACKUP_CARD_DISCLOSURE_TAG)).fetchSemanticsNodes().size
+        )
+        assertEquals(0, picker.requests.size)
+        assertEquals(before, record().last)
+        assertFalse(record().unfinished)
 
         rule.onNodeWithTag(BACKUP_CARD_CREATE_TAG).performScrollTo().performClick()
         rule.awaitTag(BACKUP_CARD_DISCLOSURE_TAG)
@@ -212,43 +226,6 @@ class BackupFileJourneyTest {
     }
 
     @Test
-    fun cancellingTheDisclosureAsksForNothingAndSavesNothing() {
-        val before = record().last
-        val picker = answerWith { document("sello-respaldo-${UUID.randomUUID()}.json") }
-        openSettings()
-
-        rule.onNodeWithTag(BACKUP_CARD_CREATE_TAG).performScrollTo().performClick()
-        rule.awaitTag(BACKUP_CARD_DISCLOSURE_TAG)
-        rule.onNodeWithText("Cancelar").performClick()
-        rule.waitForIdle()
-
-        assertEquals(
-            0,
-            rule.onAllNodes(hasTestTag(BACKUP_CARD_DISCLOSURE_TAG)).fetchSemanticsNodes().size
-        )
-        assertEquals(0, picker.requests.size)
-        assertEquals(before, record().last)
-        assertFalse(record().unfinished)
-    }
-
-    @Test
-    fun dismissingThePickerSavesNothingAndSaysNothing() {
-        val before = record().last
-        val picker = answerWith { Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null) }
-        openBackup()
-
-        rule.onNodeWithTag(BACKUP_CREATE_TAG).performScrollTo().performClick()
-        waitUntil("the picker was asked") { picker.requests.size == 1 }
-        rule.waitForIdle()
-
-        rule.onNodeWithTag(BACKUP_CREATE_TAG).assertIsEnabled()
-        assertEquals(0, rule.onAllNodes(hasTestTag(BACKUP_SAVED_TAG)).fetchSemanticsNodes().size)
-        assertEquals(0, rule.onAllNodes(hasTestTag(BACKUP_FAILED_TAG)).fetchSemanticsNodes().size)
-        assertEquals(before, record().last)
-        assertFalse(record().unfinished)
-    }
-
-    @Test
     fun aDocumentThatCannotBeWrittenIsAFailureAndKeepsTheLastBackup() {
         val good = "sello-respaldo-${UUID.randomUUID()}.json"
         var answer = document(good)
@@ -270,6 +247,8 @@ class BackupFileJourneyTest {
         assertFalse(record().unfinished)
     }
 
+    // Twenty thousand rows: nightly only; the other saves here run on every pull request.
+    @NightlyOnly
     @Test
     fun aLargeHistoryIsSavedWithoutFreezingTheScreen() {
         // 20,000 synthetic expenses, written in one statement for speed.

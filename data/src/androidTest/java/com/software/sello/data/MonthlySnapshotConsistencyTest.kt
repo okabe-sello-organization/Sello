@@ -14,6 +14,7 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.Verdict
 import com.software.sello.domain.port.ArchiveCategory
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.SnapshotState
@@ -63,7 +64,7 @@ class MonthlySnapshotConsistencyTest {
         val outcome = ledger.expenses.create(ledger.createExpense(category, date, pesos))
         assertTrue(
             "$outcome",
-            outcome is com.software.sello.domain.port.ExpenseCommandOutcome.Committed
+            outcome is com.software.sello.domain.port.CommandOutcome.Committed
         )
     }
 
@@ -87,7 +88,7 @@ class MonthlySnapshotConsistencyTest {
         return Watch(states, job)
     }
 
-    private fun ready(state: SnapshotState) = (state as SnapshotState.Ready).snapshot
+    private fun ready(state: SnapshotState) = (state as ReadState.Ready).value
 
     @Test
     fun aNewInstallationReadsAsAnEmptyMonthNotAFailure() = runBlocking {
@@ -281,25 +282,25 @@ class MonthlySnapshotConsistencyTest {
         val watch = watch(october)
 
         val loading = watch.states.receive()
-        val initial = ready(watch.next("first read") { it is SnapshotState.Ready })
+        val initial = ready(watch.next("first read") { it is ReadState.Ready })
         spend(100, "2026-10-03", 30_000)
         val afterExpense =
-            ready(watch.next("expense") { it is SnapshotState.Ready && it.snapshot.revision == 2L })
+            ready(watch.next("expense") { it is ReadState.Ready && it.value.revision == 2L })
         ledger.goTo("2026-10-31")
         val lastDay = ready(
             watch.next("last day") {
-                it is SnapshotState.Ready && it.snapshot.asOf == LocalDate.of(2026, 10, 31)
+                it is ReadState.Ready && it.value.asOf == LocalDate.of(2026, 10, 31)
             }
         )
         ledger.goTo("2026-11-01")
         val nextMonth = ready(
             watch.next("rollover") {
-                it is SnapshotState.Ready && it.snapshot.asOf == LocalDate.of(2026, 11, 1)
+                it is ReadState.Ready && it.value.asOf == LocalDate.of(2026, 11, 1)
             }
         )
         watch.job.cancel()
 
-        assertEquals(SnapshotState.Loading, loading)
+        assertEquals(ReadState.Loading, loading)
         assertEquals(Money.cop(0) to 1L, initial.spent to initial.revision)
         assertEquals(Money.cop(30_000), afterExpense.spent)
         // On the 31st one day is left: 70.000 for today.
@@ -317,18 +318,18 @@ class MonthlySnapshotConsistencyTest {
         category("Mercado")
         spend(100, "2026-10-03", 30_000)
         val watch = watch(october)
-        val good = ready(watch.next("first read") { it is SnapshotState.Ready })
+        val good = ready(watch.next("first read") { it is ReadState.Ready })
         raw("UPDATE expense SET amount_minor = 0")
 
         ledger.goTo("2026-10-10")
-        val failed = watch.next("failed refresh") { it is SnapshotState.Failed }
+        val failed = watch.next("failed refresh") { it is ReadState.Failed }
         raw("UPDATE expense SET amount_minor = 30000")
         ledger.goTo("2026-10-11")
-        val recovered = ready(watch.next("recovery") { it is SnapshotState.Ready })
+        val recovered = ready(watch.next("recovery") { it is ReadState.Ready })
         watch.job.cancel()
 
         assertEquals(
-            SnapshotState.Failed(
+            ReadState.Failed(
                 SnapshotFailure.Storage(
                     StorageFailure.Integrity("expense", uuid(101), "amount_minor")
                 ),
@@ -349,12 +350,12 @@ class MonthlySnapshotConsistencyTest {
         val watch = watch(october)
 
         val loading = watch.states.receive()
-        val failed = watch.next("first read fails") { it !is SnapshotState.Loading }
+        val failed = watch.next("first read fails") { it !is ReadState.Loading }
         watch.job.cancel()
 
-        assertEquals(SnapshotState.Loading, loading)
+        assertEquals(ReadState.Loading, loading)
         assertEquals(
-            SnapshotState.Failed(
+            ReadState.Failed(
                 SnapshotFailure.Storage(StorageFailure.Integrity("category", uuid(100), "icon")),
                 lastGood = null
             ),

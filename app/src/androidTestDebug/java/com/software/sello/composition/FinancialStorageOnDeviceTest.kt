@@ -13,6 +13,7 @@ import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialProfileStore
 import com.software.sello.domain.port.MonthlySnapshots
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SnapshotState
 import java.time.YearMonth
@@ -104,12 +105,12 @@ class FinancialStorageOnDeviceTest {
 
         val read = snapshots.read(YearMonth.from(today.date)) as Outcome.Success
         val observed = snapshots.observe(YearMonth.from(today.date))
-            .first { it !is SnapshotState.Loading }
+            .first { it !is ReadState.Loading }
 
         assertEquals(OverallBudget.NoLimit, read.value.overall)
         assertEquals(emptyList<Any>(), read.value.categories)
         assertEquals(today.date to today.zone, read.value.asOf to read.value.zone)
-        assertEquals(SnapshotState.Ready(read.value), observed)
+        assertEquals(ReadState.Ready(read.value), observed)
     }
 
     @Test
@@ -128,7 +129,9 @@ class FinancialStorageOnDeviceTest {
                 "'salary', NULL, NULL, 1, 0, 0, NULL, NULL, NULL)"
         )
 
-        val opened = openStorage(context, ZoneId.of("Pacific/Kiritimati"), koin.get(), koin.get())
+        val opened = runBlocking {
+            openStorage(context, ZoneId.of("Pacific/Kiritimati"), koin.get(), koin.get())
+        }
 
         assertTrue("$opened", opened is Outcome.Success)
         (opened as Outcome.Success).value.storage.close()

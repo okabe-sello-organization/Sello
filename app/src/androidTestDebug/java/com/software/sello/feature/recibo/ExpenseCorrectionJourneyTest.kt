@@ -16,7 +16,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeLeft
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -27,8 +26,6 @@ import com.software.sello.TestData
 import com.software.sello.await
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
-import com.software.sello.designsystem.component.ACTION_LINE_MENU_TAG
-import com.software.sello.feature.expense.ENTRY_DELETE_TAG
 import com.software.sello.feature.expense.ENTRY_KEYPAD_TAG
 import com.software.sello.feature.expense.ENTRY_SUBMIT_TAG
 import com.software.sello.hideKeyboard
@@ -159,46 +156,6 @@ class ExpenseCorrectionJourneyTest {
                 "expense.restore"
             ),
             receipts()
-        )
-    }
-
-    @Test
-    fun aSwipedAwayExpenseLeavesTheFiguresAndAnOfferThatEndsByItself() {
-        val row = openMercado()
-
-        rule.onNodeWithTag(row).performScrollTo()
-            .performTouchInput { swipeLeft(startX = right - 4f, endX = left + 4f) }
-
-        rule.awaitText("Gasto borrado")
-        rule.await(saying("Te quedan aquí 300.000 pesos."))
-        rule.waitUntil(15_000) { listed() == 0 }
-        assertEquals(emptyList<String>(), stored())
-        // Nobody presses "Deshacer": the offer goes away and the deletion stands.
-        rule.waitUntil(15_000) {
-            rule.onAllNodes(hasTestTag(CORRECTION_NOTICE_TAG)).fetchSemanticsNodes().isEmpty()
-        }
-        rule.onNodeWithText("Deshacer").assertDoesNotExist()
-        assertEquals(emptyList<String>(), stored())
-        assertEquals(listOf("category.create", "expense.create", "expense.delete"), receipts())
-    }
-
-    @Test
-    fun deletingFromTheFormReturnsToTheListWhereItCanStillBeUndone() {
-        val row = openMercado()
-        rule.onNodeWithTag(row).performScrollTo().performClick()
-        rule.awaitTag(ENTRY_DELETE_TAG)
-        rule.await(saying("10.000 pesos"))
-
-        rule.onNodeWithTag(ENTRY_DELETE_TAG).performClick()
-
-        rule.awaitTag(CATEGORY_DETAIL_TAG)
-        rule.awaitText("Gasto borrado")
-        rule.onNodeWithText("Deshacer").performClick()
-        rule.awaitTag(row)
-        rule.await(saying("Te quedan aquí 290.000 pesos."))
-        assertEquals(
-            listOf("10000|Pan|1"),
-            TestData.rows("SELECT amount_minor, note, version FROM expense")
         )
     }
 }

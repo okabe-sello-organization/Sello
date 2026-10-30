@@ -5,6 +5,8 @@
 - **Goal:** Add the parts of the approved v2 Recibo, Resumen and income screens that the MVP left out, which need no new kind of data.
 - **Exit:** Resumen leads with the same-days comparison and shows the average month, the weekday answer and one suggestion; income history suggests assigning unassigned income; Recibo invites a look at the month just closed.
 
+## Decisions
+
 **Owner direction (2026-10-23):** E13 built only what existing data supports and left
 these for separate tickets. Decisions for their open points are in [ADR 0017](../../decisions/0017-goals-recurrence-investments.md); the
 rest of each rule is in the [v2 README](../../design/v2/README.md) and the

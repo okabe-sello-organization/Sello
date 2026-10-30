@@ -3,7 +3,6 @@ package com.software.sello.feature.category
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
@@ -15,14 +14,16 @@ import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -75,24 +76,16 @@ class CategoryEditorViewModelTest {
     )
 
     private fun committed(operation: OperationId) =
-        CategoryCommandOutcome.Committed(change(operation), replayed = false)
+        CommandOutcome.Committed(change(operation), replayed = false)
 
-    private fun rejected(reason: CategoryRejection) = CategoryCommandOutcome.Rejected(reason)
+    private fun rejected(reason: CommandRejection<CategoryRejection>) =
+        CommandOutcome.Rejected(reason)
 
     private val commands = HandCommands()
     private val reads = HandCategoryReads()
     private val session = MonthSession(HandFinancialClock("2026-10-09"), HandMonotonicClock())
     private var nextId = 500
-    private val money = MoneyFormatter(
-        object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                "$digits pesos"
-
-            override fun negative(amount: String) = amount
-
-            override fun positive(amount: String) = amount
-        }
-    )
+    private val money = testMoney()
 
     @Before
     fun mainDispatcher() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -370,7 +363,7 @@ class CategoryEditorViewModelTest {
 
     @Test
     fun aTakenNameIsShownOnTheFieldAndTheNextAttemptIsANewOperation() {
-        commands.answer = { rejected(CategoryRejection.NameTaken) }
+        commands.answer = { rejected(Specific(CategoryRejection.NameTaken)) }
         val editor = editor()
         editor.withNoLimit("mercado")
 
@@ -392,7 +385,7 @@ class CategoryEditorViewModelTest {
         commands.answer = {
             // The history is replaced between the form opening and the save.
             reads.generation = 2
-            rejected(CategoryRejection.StaleGeneration(current = 2))
+            rejected(CommandRejection.StaleGeneration(current = 2))
         }
         val editor = editor()
         editor.withNoLimit("Mercado")
@@ -410,7 +403,7 @@ class CategoryEditorViewModelTest {
     @Test
     fun aStorageFailureSaysNothingWasSavedAndKeepsTheDraft() {
         commands.answer = {
-            rejected(CategoryRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")))
+            rejected(CommandRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")))
         }
         val editor = editor()
         editor.type("Mercado")
@@ -427,7 +420,7 @@ class CategoryEditorViewModelTest {
 
     @Test
     fun anUnknownOutcomeIsSettledByAskingAboutTheSameOperationNotBySendingAgain() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Success(change(it)) }
         val editor = editor()
         editor.withNoLimit("Mercado")
@@ -441,7 +434,7 @@ class CategoryEditorViewModelTest {
 
     @Test
     fun anUnknownOutcomeThatTurnsOutNotSavedReturnsToTheFormWithNothingCreated() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         val editor = editor()
         editor.type("Mercado")
 
@@ -455,7 +448,7 @@ class CategoryEditorViewModelTest {
 
     @Test
     fun whileTheOutcomeCannotBeReadTheFormStaysLockedAndRetryOnlyAsksAgain() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("SQLiteException")) }
         val editor = editor()
         editor.withNoLimit("Mercado")

@@ -5,7 +5,6 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
@@ -22,6 +21,9 @@ import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryEdit
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.ChangeCategoryIcon
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.SetDefaultLimit
@@ -30,21 +32,20 @@ import com.software.sello.domain.port.UnarchiveCategory
 import com.software.sello.domain.usecase.CatchUpResult
 import com.software.sello.domain.usecase.CatchUpStop
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -108,12 +109,13 @@ class CategoryManagementViewModelTest {
     )
 
     private fun committed(operation: OperationId) =
-        CategoryCommandOutcome.Committed(change(operation), replayed = false)
+        CommandOutcome.Committed(change(operation), replayed = false)
 
-    private fun rejected(reason: CategoryRejection) = CategoryCommandOutcome.Rejected(reason)
+    private fun rejected(reason: CommandRejection<CategoryRejection>) =
+        CommandOutcome.Rejected(reason)
 
     private val storageFailed =
-        rejected(CategoryRejection.StorageFailed(StorageFailure.Unavailable("x")))
+        rejected(CommandRejection.StorageFailed(StorageFailure.Unavailable("x")))
 
     private val commands = HandCommands()
 
@@ -124,17 +126,8 @@ class CategoryManagementViewModelTest {
     private val snapshots = HandSnapshots()
     private val session = MonthSession(HandFinancialClock("2026-10-09"), HandMonotonicClock())
     private var nextId = 500
-    private val money = MoneyFormatter(
-        object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                "$digits pesos"
-
-            override fun negative(amount: String) = amount
-
-            override fun positive(amount: String) = amount
-        }
-    )
-    private lateinit var notices: ExpenseCorrections
+    private val money = testMoney()
+    private lateinit var notices: Corrections
 
     private fun finite(pesos: Long) =
         (BudgetLimit.finite(Money.cop(pesos)) as Outcome.Success).value
@@ -167,7 +160,7 @@ class CategoryManagementViewModelTest {
     @Before
     fun mainDispatcher() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        notices = ExpenseCorrections(
+        notices = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             HandGoalCommands(),
@@ -471,7 +464,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun aCategoryChangedMeanwhileStopsTheFormUntilThePersonChooses() {
-        commands.answer = { rejected(CategoryRejection.VersionConflict(current = 6)) }
+        commands.answer = { rejected(CommandRejection.VersionConflict(current = 6)) }
         val form = form()
         form.name("Cafetería")
 
@@ -487,7 +480,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun keepingTheDraftReadsTheCategoryAgainAndSavesOverItsNewVersion() {
-        commands.answer = { rejected(CategoryRejection.VersionConflict(current = 6)) }
+        commands.answer = { rejected(CommandRejection.VersionConflict(current = 6)) }
         val form = form()
         form.name("Cafetería")
         form.save()
@@ -507,7 +500,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun discardingTheDraftStartsAgainFromWhatTheCategoryIsNow() {
-        commands.answer = { rejected(CategoryRejection.VersionConflict(current = 6)) }
+        commands.answer = { rejected(CommandRejection.VersionConflict(current = 6)) }
         val form = form()
         form.name("Cafetería")
         form.save()
@@ -523,10 +516,10 @@ class CategoryManagementViewModelTest {
     @Test
     fun otherRefusalsKeepTheDraftAndSayWhatHappened() {
         val refusals = listOf(
-            CategoryRejection.CategoryMissing to SaveError.CategoryGone,
-            CategoryRejection.StaleGeneration(8) to SaveError.DataChanged,
-            CategoryRejection.StorageFailed(StorageFailure.Unavailable("x")) to SaveError.NotSaved,
-            CategoryRejection.AlreadyArchived to SaveError.Conflict
+            Specific(CategoryRejection.CategoryMissing) to SaveError.CategoryGone,
+            CommandRejection.StaleGeneration(8) to SaveError.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to SaveError.NotSaved,
+            Specific(CategoryRejection.AlreadyArchived) to SaveError.Conflict
         )
 
         val seen = refusals.map { (reason, _) ->
@@ -543,7 +536,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun aNameTakenMeanwhileIsShownOnTheNameAndNothingIsSaved() {
-        commands.answer = { rejected(CategoryRejection.NameTaken) }
+        commands.answer = { rejected(Specific(CategoryRejection.NameTaken)) }
         val form = form()
         form.name("Nueva")
 
@@ -558,7 +551,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun anUnknownOutcomeIsLookedUpAndNeverSentAgain() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = form()
         form.name("Cafetería")
@@ -578,7 +571,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun anUnknownOutcomeThatDidNotCommitLeavesTheChangeReadyToSendAgain() {
-        commands.answer = { CategoryCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         val form = form()
         form.name("Cafetería")
 
@@ -677,7 +670,7 @@ class CategoryManagementViewModelTest {
             if (answers++ ==
                 0
             ) {
-                rejected(CategoryRejection.SchedulesPending)
+                rejected(Specific(CategoryRejection.SchedulesPending))
             } else {
                 committed(it.operationId)
             }
@@ -697,7 +690,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun aCatchUpThatStopsArchivesNothingAndSaysWhy() {
-        commands.answer = { rejected(CategoryRejection.SchedulesPending) }
+        commands.answer = { rejected(Specific(CategoryRejection.SchedulesPending)) }
         caughtUp = CatchUpResult(
             emptyList(),
             CatchUpStop.Failed(StorageFailure.Unavailable("SQLException"))
@@ -715,7 +708,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun aPaymentStillDueAfterCatchUpIsAskedOnceThenSaid() {
-        commands.answer = { rejected(CategoryRejection.SchedulesPending) }
+        commands.answer = { rejected(Specific(CategoryRejection.SchedulesPending)) }
         val form = form()
         form.onAction(CategoryEditorAction.Archive)
 
@@ -778,7 +771,7 @@ class CategoryManagementViewModelTest {
 
     @Test
     fun anArchiveThatWasRefusedKeepsTheFormOpenAndSaysWhy() {
-        commands.answer = { rejected(CategoryRejection.VersionConflict(6)) }
+        commands.answer = { rejected(CommandRejection.VersionConflict(6)) }
         val form = form()
         form.onAction(CategoryEditorAction.Archive)
 

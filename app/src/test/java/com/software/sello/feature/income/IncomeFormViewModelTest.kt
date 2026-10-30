@@ -3,7 +3,6 @@ package com.software.sello.feature.income
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeSource
@@ -19,22 +18,21 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.IncomeCommandOutcome
-import com.software.sello.domain.port.IncomeCommandOutcome.Rejected
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
-import com.software.sello.feature.expense.HandIncomeReads
-import com.software.sello.feature.expense.incomeId
-import com.software.sello.feature.expense.pesos
-import com.software.sello.feature.expense.storedIncome
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
@@ -44,11 +42,11 @@ import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.feature.resumen.resumenSnapshot
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -57,7 +55,6 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -85,17 +82,8 @@ class IncomeFormViewModelTest {
     private val schedules = HandScheduleCommands(scheduleBook)
     private val clock = HandFinancialClock("2026-10-22")
     private var nextId = 500
-    private val money = MoneyFormatter(
-        object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                "$digits pesos"
-
-            override fun negative(amount: String) = "menos $amount"
-
-            override fun positive(amount: String) = "más $amount"
-        }
-    )
-    private lateinit var corrections: ExpenseCorrections
+    private val money = testMoney()
+    private lateinit var corrections: Corrections
 
     private val design = IncomeSource.Other((SourceName.of("Diseño") as Outcome.Success).value)
     private val logo = storedIncome(100, "2026-10-05", 850_000, design, "Logo").copy(version = 3)
@@ -103,7 +91,7 @@ class IncomeFormViewModelTest {
     @Before
     fun mainDispatcher() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             commands,
             HandGoalCommands(),
@@ -275,7 +263,7 @@ class IncomeFormViewModelTest {
     fun whenTheMonthCannotBeReadItSaysSoAndCanBeRetried() {
         val form = form()
         reads.of(october).value =
-            IncomeMonthState.Failed(StorageFailure.Unavailable("x"), lastGood = null)
+            ReadState.Failed(StorageFailure.Unavailable("x"), lastGood = null)
         val failed = form.now
 
         form.onAction(IncomeFormAction.Retry)
@@ -397,10 +385,11 @@ class IncomeFormViewModelTest {
     @Test
     fun aRefusedIncomeKeepsTheDraftAndSaysWhy() {
         val refusals = listOf(
-            IncomeRejection.FutureDate(LocalDate.of(2026, 10, 22)) to IncomeFormError.FutureDate,
-            IncomeRejection.InvalidDate to IncomeFormError.InvalidDate,
-            IncomeRejection.StaleGeneration(8) to IncomeFormError.DataChanged,
-            IncomeRejection.StorageFailed(StorageFailure.Unavailable("x")) to
+            Specific(IncomeRejection.FutureDate(LocalDate.of(2026, 10, 22))) to
+                IncomeFormError.FutureDate,
+            Specific(IncomeRejection.InvalidDate) to IncomeFormError.InvalidDate,
+            CommandRejection.StaleGeneration(8) to IncomeFormError.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to
                 IncomeFormError.NotSaved
         )
 
@@ -417,7 +406,7 @@ class IncomeFormViewModelTest {
 
     @Test
     fun anUnknownSaveCannotBeDiscardedAndLoseTheOperationNeededForRecovery() {
-        commands.createAnswer = { IncomeCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.createAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = ready()
         form.type("5000")
@@ -435,7 +424,7 @@ class IncomeFormViewModelTest {
 
     @Test
     fun anUnknownOutcomeIsLookedUpAndNeverSentAgain() {
-        commands.createAnswer = { IncomeCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.createAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = ready()
         form.type("5000")
@@ -608,10 +597,10 @@ class IncomeFormViewModelTest {
     @Test
     fun aRefusedCorrectionKeepsWhatWasTypedAndOnceItChangedUnderneathNothingMoreIsSent() {
         val refusals = listOf(
-            IncomeRejection.VersionConflict(4) to IncomeFormError.IncomeChanged,
-            IncomeRejection.IncomeMissing to IncomeFormError.IncomeGone,
-            IncomeRejection.StaleGeneration(8) to IncomeFormError.DataChanged,
-            IncomeRejection.StorageFailed(StorageFailure.Unavailable("x")) to
+            CommandRejection.VersionConflict(4) to IncomeFormError.IncomeChanged,
+            Specific(IncomeRejection.IncomeMissing) to IncomeFormError.IncomeGone,
+            CommandRejection.StaleGeneration(8) to IncomeFormError.DataChanged,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("x")) to
                 IncomeFormError.NotSaved
         )
 
@@ -659,7 +648,7 @@ class IncomeFormViewModelTest {
 
     @Test
     fun anUncertainDeletionIsRecoveredAsThatDeletionWithoutAnotherWriteOrEditNotice() {
-        commands.deleteAnswer = { IncomeCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val form = opened()
         form.onAction(IncomeFormAction.Delete)
@@ -678,7 +667,7 @@ class IncomeFormViewModelTest {
     fun deletingFromTheFormDeletesTheVersionReadAndClosesAndARefusalKeepsItOpen() {
         val form = opened()
         form.onAction(IncomeFormAction.Delete)
-        commands.deleteAnswer = { Rejected(IncomeRejection.VersionConflict(4)) }
+        commands.deleteAnswer = { Rejected(CommandRejection.VersionConflict(4)) }
         val refused = opened()
         refused.onAction(IncomeFormAction.Delete)
 
@@ -746,7 +735,7 @@ class IncomeFormViewModelTest {
         form.type("1000000")
         form.repeat(RepeatAction.Open)
         form.repeat(RepeatAction.Done)
-        schedules.answer = { ScheduleCommandOutcome.OutcomeUnknown(it.operationId) }
+        schedules.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         schedules.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         form.onAction(IncomeFormAction.Submit)
         val unknown = form.now.error

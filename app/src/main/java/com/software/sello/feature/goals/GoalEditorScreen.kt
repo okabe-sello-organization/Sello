@@ -39,7 +39,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -280,7 +279,7 @@ private fun DoneAsk(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit
         )
         Text(
             stringResource(R.string.goal_done_ask_body),
-            Modifier.padding(vertical = 8.dp),
+            Modifier.padding(vertical = SelloTheme.spacing.sm),
             style = MaterialTheme.typography.bodyMedium,
             color = SelloTheme.colors.inkSoft
         )
@@ -338,7 +337,7 @@ private fun Identity(
     Slip(Modifier.fillMaxWidth().testTag("goal.editor.identity"), pinked = false) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
         ) {
             IconPickerCircle(
                 icon = option?.icon,
@@ -359,6 +358,7 @@ private fun Identity(
                 onValueChange = { onAction(GoalEditorAction.NameChanged(it)) },
                 modifier = Modifier.weight(1f).focusRequester(nameFocus)
                     .testTag(GOAL_EDITOR_NAME_TAG),
+                enabled = state.editable,
                 message = when (state.nameError) {
                     GoalNameError.TooLong ->
                         FieldMessage(stringResource(R.string.goal_editor_name_too_long))
@@ -446,12 +446,12 @@ private fun Plan(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit, d
                         pace.months
                     )
                 ),
-                Modifier.padding(top = 8.dp).testTag("goal.editor.monthly")
+                Modifier.padding(top = SelloTheme.spacing.sm).testTag("goal.editor.monthly")
             )
 
             state.nothingMissing -> FactLine(
                 AnnotatedString(stringResource(R.string.goal_editor_nothing_missing)),
-                Modifier.padding(top = 8.dp).testTag("goal.editor.monthly")
+                Modifier.padding(top = SelloTheme.spacing.sm).testTag("goal.editor.monthly")
             )
         }
     }
@@ -524,12 +524,12 @@ private fun MonthSheet(
         contentColor = SelloTheme.colors.ink
     ) {
         Column(
-            Modifier.verticalScroll(rememberScrollState()).padding(16.dp)
+            Modifier.verticalScroll(rememberScrollState()).padding(SelloTheme.spacing.lg)
                 .testTag(GOAL_EDITOR_MONTHS_TAG)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
             ) {
                 Text(
                     stringResource(R.string.goal_editor_month_title),
@@ -547,7 +547,7 @@ private fun MonthSheet(
             }
             Text(
                 stringResource(R.string.goal_editor_month_note),
-                Modifier.padding(top = 4.dp, bottom = 12.dp),
+                Modifier.padding(top = SelloTheme.spacing.xs, bottom = SelloTheme.spacing.md),
                 style = MaterialTheme.typography.bodyMedium,
                 color = SelloTheme.colors.inkSoft
             )

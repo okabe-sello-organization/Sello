@@ -30,6 +30,11 @@ import com.software.sello.domain.policy.EffectiveDateError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.AuditClock
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.OutcomeUnknown
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.DatedUsdRate
@@ -40,9 +45,6 @@ import com.software.sello.domain.port.EditInvestmentMovement
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentCommandOutcome
-import com.software.sello.domain.port.InvestmentCommandOutcome.Committed
-import com.software.sello.domain.port.InvestmentCommandOutcome.OutcomeUnknown
-import com.software.sello.domain.port.InvestmentCommandOutcome.Rejected
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentEdit
 import com.software.sello.domain.port.InvestmentRejection
@@ -79,7 +81,7 @@ class RoomInvestmentCommands internal constructor(
     override suspend fun submit(command: InvestmentCommand): InvestmentCommandOutcome =
         when (command) {
             is DeleteInvestmentMovement -> undo.changing {
-                val outcome = run(command.operationId) { decide(command) }
+                val outcome = database.runOutcome(command.operationId) { decide(command) }
                 // A replay is the original deletion, so it never starts the time again.
                 if (outcome is Committed && !outcome.replayed) {
                     undo.opened(
@@ -92,35 +94,27 @@ class RoomInvestmentCommands internal constructor(
             }
 
             is RestoreInvestmentMovement -> undo.changing {
-                val outcome = run(command.operationId) { decide(command) }
+                val outcome = database.runOutcome(command.operationId) { decide(command) }
                 if (outcome is Committed && !outcome.replayed) undo.closed()
                 outcome
             }
 
-            is CreateInvestment -> run(command.operationId) { decide(command) }
+            is CreateInvestment -> database.runOutcome(command.operationId) { decide(command) }
 
-            is EditInvestment -> run(command.operationId) { decide(command) }
+            is EditInvestment -> database.runOutcome(command.operationId) { decide(command) }
 
-            is RecordInvestmentMovement -> run(command.operationId) { decide(command) }
+            is RecordInvestmentMovement -> database.runOutcome(command.operationId) {
+                decide(command)
+            }
 
-            is EditInvestmentMovement -> run(command.operationId) { decide(command) }
+            is EditInvestmentMovement -> database.runOutcome(command.operationId) {
+                decide(command)
+            }
 
-            is DeleteInvestment -> run(command.operationId) { decide(command) }
+            is DeleteInvestment -> database.runOutcome(command.operationId) { decide(command) }
 
-            is SetUsdRate -> run(command.operationId) { decide(command) }
+            is SetUsdRate -> database.runOutcome(command.operationId) { decide(command) }
         }
-
-    private suspend fun run(
-        operationId: OperationId,
-        decide: suspend () -> InvestmentCommandOutcome
-    ): InvestmentCommandOutcome = when (val run = database.runCommand(decide)) {
-        is CommandRun.Finished -> run.value
-        is CommandRun.RolledBack -> failed(run.failure)
-        CommandRun.Unknown -> OutcomeUnknown(operationId)
-    }
-
-    private fun failed(failure: StorageFailure) =
-        Rejected(InvestmentRejection.StorageFailed(failure))
 
     /** The committed change a receipt describes, or null when it is not an investment's. */
     private fun StoredReceipt.committedOrNull(): CommittedInvestment? = when {
@@ -136,19 +130,15 @@ class RoomInvestmentCommands internal constructor(
     private suspend inline fun starting(
         command: InvestmentCommand,
         proceed: (FinancialProfile) -> InvestmentCommandOutcome
-    ): InvestmentCommandOutcome = when (
-        val start = database.startCommand(
+    ): InvestmentCommandOutcome {
+        val profile = database.proceedOr(
             command.operationId,
             command.generation,
             command.kind,
-            inputDigest(command)
-        )
-    ) {
-        is CommandStart.Proceed -> proceed(start.profile)
-        is CommandStart.Stale -> Rejected(InvestmentRejection.StaleGeneration(start.current))
-        is CommandStart.Replay -> Committed(start.original.committed(), true)
-        CommandStart.Conflict -> Rejected(InvestmentRejection.OperationConflict)
-        is CommandStart.Damaged -> failed(start.failure)
+            inputDigest(command),
+            { it.committed() }
+        ) { return it }
+        return proceed(profile)
     }
 
     private suspend fun commit(
@@ -184,22 +174,22 @@ class RoomInvestmentCommands internal constructor(
     /** The investment [command] is about, at the version the caller read. */
     private suspend fun load(command: InvestmentEdit): Load {
         val row = database.investmentDao().byId(command.investmentId.value)
-            ?: return Load.Refused(Rejected(InvestmentRejection.InvestmentMissing))
+            ?: return Load.Refused(Rejected(Specific(InvestmentRejection.InvestmentMissing)))
         val history =
             when (val read = row.toHistory(database.investmentDao().movements(row.id))) {
                 is Outcome.Success -> read.value
-                is Outcome.Failure -> return Load.Refused(failed(read.error))
+                is Outcome.Failure -> return Load.Refused(storageFailed(read.error))
             }
         if (history.investment.version != command.expectedVersion) {
             return Load.Refused(
-                Rejected(InvestmentRejection.VersionConflict(history.investment.version))
+                Rejected(CommandRejection.VersionConflict(history.investment.version))
             )
         }
         // What is stored was checked before it was written; a history that does not work
         // out was damaged afterwards.
         val worked = InvestmentPolicy.figures(history)
         if (worked is Outcome.Failure) {
-            return Load.Refused(failed(damage(history.investment.id, worked.error)))
+            return Load.Refused(storageFailed(damage(history.investment.id, worked.error)))
         }
         return Load.Found(Loaded(row, history))
     }
@@ -300,20 +290,22 @@ class RoomInvestmentCommands internal constructor(
     private suspend fun decide(command: CreateInvestment): InvestmentCommandOutcome =
         starting(command) { profile ->
             if (command.currency !in InvestmentAmount.currencies) {
-                return Rejected(InvestmentRejection.CurrencyMismatch)
+                return Rejected(Specific(InvestmentRejection.CurrencyMismatch))
             }
             amountRejection(
                 InvestmentMovementKind.Contribution,
                 command.firstContribution,
                 command.currency
-            )?.let { return Rejected(it) }
+            )?.let { return Rejected(Specific(it)) }
             amountRejection(InvestmentMovementKind.Valuation, command.firstValue, command.currency)
-                ?.let { return Rejected(it) }
-            dateRejection(command.date)?.let { return Rejected(it) }
-            command.newRate?.let { rate -> dateRejection(rate.date)?.let { return Rejected(it) } }
+                ?.let { return Rejected(Specific(it)) }
+            dateRejection(command.date)?.let { return Rejected(Specific(it)) }
+            command.newRate?.let { rate ->
+                dateRejection(rate.date)?.let { return Rejected(Specific(it)) }
+            }
             val needsRate = command.currency == Currency.USD && command.newRate == null &&
                 database.investmentDao().lastRateSequence() == null
-            if (needsRate) return Rejected(InvestmentRejection.RateRequired)
+            if (needsRate) return Rejected(Specific(InvestmentRejection.RateRequired))
             val now = audit.now()
             val investmentId = when (val id = InvestmentId.of(ids.next())) {
                 is Outcome.Success -> id.value
@@ -347,7 +339,7 @@ class RoomInvestmentCommands internal constructor(
             )
             when (val worked = checked(InvestmentHistory(investment, movements))) {
                 is Outcome.Success -> Unit
-                is Outcome.Failure -> return Rejected(worked.error)
+                is Outcome.Failure -> return Rejected(Specific(worked.error))
             }
             database.investmentDao().insert(investment.toEntity(nextSequence = 2))
             movements.forEach { database.investmentDao().insertMovement(it.toEntity(investmentId)) }
@@ -364,7 +356,7 @@ class RoomInvestmentCommands internal constructor(
             val current = loaded.history.investment
             val same = current.name == command.name &&
                 current.description == command.description && current.icon == command.icon
-            if (same) return Rejected(InvestmentRejection.Unchanged)
+            if (same) return Rejected(Specific(InvestmentRejection.Unchanged))
             val now = audit.now()
             write(
                 loaded.row,
@@ -386,8 +378,8 @@ class RoomInvestmentCommands internal constructor(
             }
             val investment = loaded.history.investment
             amountRejection(command.kind, command.amount, investment.currency)
-                ?.let { return Rejected(it) }
-            dateRejection(command.date)?.let { return Rejected(it) }
+                ?.let { return Rejected(Specific(it)) }
+            dateRejection(command.date)?.let { return Rejected(Specific(it)) }
             val now = audit.now()
             val movement = InvestmentMovement(
                 id = newMovementId(),
@@ -402,7 +394,7 @@ class RoomInvestmentCommands internal constructor(
             )
             when (val worked = checked(InvestmentPolicy.with(loaded.history, movement))) {
                 is Outcome.Success -> Unit
-                is Outcome.Failure -> return Rejected(worked.error)
+                is Outcome.Failure -> return Rejected(Specific(worked.error))
             }
             database.investmentDao().insertMovement(movement.toEntity(investment.id))
             val next = nextCounter(
@@ -420,11 +412,11 @@ class RoomInvestmentCommands internal constructor(
         investment: Loaded,
         id: InvestmentMovementId,
         expectedVersion: Long
-    ): Outcome<InvestmentMovement, InvestmentRejection> {
+    ): Outcome<InvestmentMovement, CommandRejection<InvestmentRejection>> {
         val stored = investment.history.movements.firstOrNull { it.id == id }
-            ?: return Outcome.Failure(InvestmentRejection.MovementMissing)
+            ?: return Outcome.Failure(Specific(InvestmentRejection.MovementMissing))
         if (stored.version != expectedVersion) {
-            return Outcome.Failure(InvestmentRejection.VersionConflict(stored.version))
+            return Outcome.Failure(CommandRejection.VersionConflict(stored.version))
         }
         return Outcome.Success(stored)
     }
@@ -442,18 +434,18 @@ class RoomInvestmentCommands internal constructor(
                     is Outcome.Failure -> return Rejected(found.error)
                 }
             amountRejection(current.kind, command.amount, loaded.history.investment.currency)
-                ?.let { return Rejected(it) }
+                ?.let { return Rejected(Specific(it)) }
             val same = current.amount == command.amount && current.date == command.date &&
                 current.note == command.note
-            if (same) return Rejected(InvestmentRejection.Unchanged)
+            if (same) return Rejected(Specific(InvestmentRejection.Unchanged))
             if (command.date != current.date) {
-                dateRejection(command.date)?.let { return Rejected(it) }
+                dateRejection(command.date)?.let { return Rejected(Specific(it)) }
             }
             val corrected =
                 current.copy(amount = command.amount, date = command.date, note = command.note)
             when (val worked = checked(InvestmentPolicy.with(loaded.history, corrected))) {
                 is Outcome.Success -> Unit
-                is Outcome.Failure -> return Rejected(worked.error)
+                is Outcome.Failure -> return Rejected(Specific(worked.error))
             }
             val now = audit.now()
             val updated = database.investmentDao().updateMovement(
@@ -495,11 +487,11 @@ class RoomInvestmentCommands internal constructor(
             val contributions =
                 loaded.history.movements.count { it.kind == InvestmentMovementKind.Contribution }
             if (current.kind == InvestmentMovementKind.Contribution && contributions == 1) {
-                return Rejected(InvestmentRejection.LastContribution)
+                return Rejected(Specific(InvestmentRejection.LastContribution))
             }
             when (val worked = checked(InvestmentPolicy.without(loaded.history, current))) {
                 is Outcome.Success -> Unit
-                is Outcome.Failure -> return Rejected(worked.error)
+                is Outcome.Failure -> return Rejected(Specific(worked.error))
             }
             val row = checkNotNull(database.investmentDao().movement(current.id.value))
             val now = audit.now()
@@ -537,15 +529,15 @@ class RoomInvestmentCommands internal constructor(
         starting(command) { profile ->
             val inTime = undo.offered(UndoWindow.Kind.InvestmentMovement)?.deletionId ==
                 command.deletionId
-            if (!inTime) return Rejected(InvestmentRejection.UndoExpired)
+            if (!inTime) return Rejected(Specific(InvestmentRejection.UndoExpired))
             val kept = database.deletedInvestmentMovementDao().find(command.deletionId.value)
-                ?: return Rejected(InvestmentRejection.UndoExpired)
+                ?: return Rejected(Specific(InvestmentRejection.UndoExpired))
             val dao = database.investmentDao()
             val row = dao.byId(kept.investmentId)
             val taken = kept.generation != profile.generation || row == null ||
                 dao.movement(kept.movementId) != null ||
                 dao.countAt(kept.investmentId, kept.sequence) != 0
-            if (taken || row == null) return Rejected(InvestmentRejection.UndoConflict)
+            if (taken || row == null) return Rejected(Specific(InvestmentRejection.UndoConflict))
             val movement = InvestmentMovementEntity(
                 id = kept.movementId,
                 investmentId = kept.investmentId,
@@ -561,10 +553,10 @@ class RoomInvestmentCommands internal constructor(
             )
             val history = when (val read = row.toHistory(dao.movements(row.id) + movement)) {
                 is Outcome.Success -> read.value
-                is Outcome.Failure -> return failed(read.error)
+                is Outcome.Failure -> return storageFailed(read.error)
             }
             if (checked(history) is Outcome.Failure) {
-                return Rejected(InvestmentRejection.UndoConflict)
+                return Rejected(Specific(InvestmentRejection.UndoConflict))
             }
             dao.insertMovement(movement)
             val removed = database.deletedInvestmentMovementDao().remove(kept.deletionId)
@@ -595,7 +587,7 @@ class RoomInvestmentCommands internal constructor(
     /** A new dated rate; earlier ones stay (rule 11). */
     private suspend fun decide(command: SetUsdRate): InvestmentCommandOutcome =
         starting(command) { profile ->
-            dateRejection(command.date)?.let { return Rejected(it) }
+            dateRejection(command.date)?.let { return Rejected(Specific(it)) }
             val now = audit.now()
             val entry = insertRate(DatedUsdRate(command.rate, command.date), now)
             Committed(commit(profile, command, entry.id.value, now).committed(), replayed = false)

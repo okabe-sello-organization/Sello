@@ -1,7 +1,6 @@
 package com.software.sello.feature.recurrence
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.OperationId
@@ -13,6 +12,9 @@ import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.ResumeSchedule
@@ -20,22 +22,21 @@ import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
-import com.software.sello.feature.expense.pesos
 import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.presentation.recurrence.RepeatAction
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration
@@ -64,17 +65,13 @@ class ScheduleEditorViewModelTest {
     private val commands = HandScheduleCommands()
     private val snapshots = HandSnapshots()
     private var nextId = 500
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
-    private lateinit var corrections: ExpenseCorrections
+    private val money = testMoney()
+    private lateinit var corrections: Corrections
 
     @Before
     fun main() {
         Dispatchers.setMain(UnconfinedTestDispatcher())
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             HandGoalCommands(),
@@ -249,10 +246,10 @@ class ScheduleEditorViewModelTest {
     fun aRefusalSaysWhyAndAChangedScheduleCannotBeSentOver() {
         val editor = opened()
         editor.type("1000000")
-        commands.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.CatchUpPending) }
+        commands.answer = { CommandOutcome.Rejected(Specific(ScheduleRejection.CatchUpPending)) }
         editor.onAction(ScheduleEditorAction.Save)
         val pending = editor.now
-        commands.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.VersionConflict(4)) }
+        commands.answer = { CommandOutcome.Rejected(CommandRejection.VersionConflict(4)) }
         editor.onAction(ScheduleEditorAction.Save)
 
         assertEquals(ScheduleEditorError.CatchUpPending, pending.error)
@@ -267,7 +264,7 @@ class ScheduleEditorViewModelTest {
         val saved =
             SavedStateHandle(mapOf(ScheduleEditorViewModel.KEY_SCHEDULE to scheduleId(1).value))
         val editor = opened(saved = saved)
-        commands.answer = { ScheduleCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         editor.onAction(ScheduleEditorAction.Pause)
         val unknown = editor.now

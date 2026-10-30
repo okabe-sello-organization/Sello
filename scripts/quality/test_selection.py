@@ -1,177 +1,219 @@
-"""Selection must preserve reverse dependencies and fail closed on shared inputs."""
-import io
-import os
-import json
+"""The plan: documents get G0, tooling gets the host gate, code selects the device suites it can affect."""
 import re
+import subprocess
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
-from unittest.mock import patch
 
-import evidence
-import gates
-import runner
 import selection
-from support import EPIC, epic, git, make_repo, ticket, write
-from test_runner import DEVICE, Harness
+
+ALL = ["data", "design-system", "app"]
 
 
-class SelectionTests(unittest.TestCase):
-    def test_each_module_includes_its_consumers(self):
-        expected = {'app':['app'], 'catalog':['catalog'], 'data':['data','app'],
-                    'domain':['data','app'], 'design-system':['design-system','app','catalog']}
-        for module, modules in expected.items():
-            with self.subTest(module=module):
-                scope = selection.coverage('a'*40, [f'{module}/src/main/Changed.kt'])
-                self.assertEqual('affected', scope['mode'])
-                self.assertEqual(modules, scope['device_modules'])
+def pr(*paths):
+    return selection.plan("pull_request", paths)
 
-    def test_selected_modules_start_only_their_groups_and_app_starts_both_shards(self):
-        def groups(*modules):
-            return selection.groups({'device_modules': list(modules)})
-        self.assertEqual(['app-1', 'app-2'], groups('app'))
-        self.assertEqual(['support'], groups('catalog'))
-        self.assertEqual(['support'], groups('data', 'design-system'))
-        self.assertEqual(['app-1', 'app-2', 'support'], groups('data', 'app'))
-        self.assertEqual([], groups())
-        self.assertEqual(set(selection.MODULES), {m for covered in selection.GROUPS.values() for m in covered})
 
-    def test_shared_build_tooling_unknown_paths_require_every_device_module(self):
-        for path in ('gradle.properties','gradle/libs.versions.toml','data/build.gradle.kts',
-                     'app/gradle.lockfile','scripts/verify-ticket','.github/workflows/quality.yml',
-                     'docs/check.sh','new-module/src/main/X.kt','README.kt'):
+class PullRequestPlanTests(unittest.TestCase):
+    def test_documents_alone_get_g0_even_when_they_advance_a_ticket(self):
+        for paths in (("docs/tickets/E09-carryover/SELLO-040.md",),
+                      ("docs/tickets/E09-carryover/SELLO-040.md", "docs/tickets/E09-carryover/README.md",
+                       "docs/tickets/E09-carryover/attachments/SELLO-040-after.png"),
+                      ("README.md", "AGENTS.md", ".github/pull_request_template.md"),
+                      ("docs/release/dependencies.md", "docs/design/v2/screens.html"), ()):
+            with self.subTest(paths=paths):
+                plan = pr(*paths)
+                self.assertEqual(("G0", False, [], []), (plan["gate"], plan["host"], plan["modules"], plan["groups"]))
+
+    def test_documents_that_tests_read_run_those_tests(self):
+        for event in ("pull_request", "push"):
+            with self.subTest(event=event):
+                plan = selection.plan(event, ["docs/testing/sandbox-scenarios.md"])
+                self.assertEqual(("G1", True, []), (plan["gate"], plan["host"], plan["groups"]))
+                self.assertEqual({"docs/testing/sandbox-scenarios.md": "host"}, plan["changed"])
+        with unittest.mock.patch.dict(selection.HOST_INPUTS, {"docs/testing/device-corpus.md": ("data",)}):
+            self.assertEqual(("G2", ["data"], ["support"]),
+                             tuple(pr("docs/testing/device-corpus.md")[k] for k in ("gate", "modules", "groups")))
+
+    def test_every_docs_file_a_test_reads_is_a_host_input(self):
+        root = Path(__file__).resolve().parents[2]
+        listed = subprocess.run(["git", "-C", str(root), "ls-files", "*/src/test*", "*/src/androidTest*"],
+                                check=True, capture_output=True, text=True).stdout.split()
+        for source in listed:
+            text = (root / source).read_text(encoding="utf-8", errors="replace")
+            module, _, relative = source.partition("/")
+            for path in re.findall(r'"(?:\.\./)*(docs/[^"]+)"', text):
+                with self.subTest(source=source, path=path):
+                    self.assertIn(path, selection.HOST_INPUTS, "add it to selection.HOST_INPUTS")
+                    if relative.startswith("src/androidTest"):
+                        self.assertIn(module, selection.HOST_INPUTS[path])
+        self.assertIn("docs/testing/sandbox-scenarios.md", selection.HOST_INPUTS)
+
+    def test_markdown_inside_a_source_directory_is_code(self):
+        expected = {
+            "app/src/main/assets/x.md": ("G2", ["app"]),
+            "design-system/src/main/res/raw/notes.md": ("G2", ["design-system", "app"]),
+            "domain/src/test/resources/cases.md": ("G1", []),
+            "app/README.md": ("G0", []),
+            "docs/examples/src/a.md": ("G0", []),
+            ".github/pull_request_template.md": ("G0", []),
+            "AGENTS.md": ("G0", []),
+        }
+        for path, outcome in expected.items():
             with self.subTest(path=path):
-                scope=selection.coverage('a'*40,[path])
-                self.assertEqual('full',scope['mode'])
-                self.assertEqual(['data','design-system','app','catalog'],scope['device_modules'])
+                plan = pr(path)
+                self.assertEqual(outcome, (plan["gate"], plan["modules"]))
 
-    def test_schemas_and_multiple_modules_union_their_consumers(self):
-        self.assertEqual(['data','app','catalog'],selection.coverage('a'*40,
-                         ['data/schemas/db/1.json','catalog/src/main/X.kt'])['device_modules'])
+    def test_python_tooling_gets_the_host_gate_without_device_suites(self):
+        for path in ("scripts/quality/tickets.py", "scripts/quality/links.py", "scripts/quality/test_tickets.py",
+                     "scripts/quality/release.py", "scripts/performance/measure.py", "scripts/update-dependency-locks"):
+            with self.subTest(path=path):
+                plan = pr(path, "docs/notes.md")
+                self.assertEqual(("G1", True, [], []), (plan["gate"], plan["host"], plan["modules"], plan["groups"]))
 
-    def test_module_partition_changes_cannot_silently_outgrow_the_selection_graph(self):
-        root=Path(__file__).resolve().parents[2]
-        expected={'domain':set(),'data':{'domain'},'design-system':set(),
-                  'app':{'domain','data','design-system'},'catalog':{'design-system'},
-                  'prototype':{'design-system'}}
-        settings=(root/'settings.gradle.kts').read_text()
-        included=set(re.findall(r'"\:([\w-]+)"', '\n'.join(re.findall(r'include\((.*?)\)', settings, re.S))))
-        self.assertEqual(set(expected),included)
-        for module, dependencies in expected.items():
-            actual=set(re.findall(r'project\("\:([\w-]+)"\)',(root/module/'build.gradle.kts').read_text()))
-            self.assertEqual(dependencies,actual,f'Update/review the selection graph for {module}')
+    def test_scripts_the_device_jobs_run_select_every_device_group(self):
+        for path in selection.DEVICE_SCRIPTS:
+            with self.subTest(path=path):
+                plan = pr(path)
+                self.assertEqual(("G2", ALL, ["app", "support"]), (plan["gate"], plan["modules"], plan["groups"]))
 
-    def test_scope_cannot_omit_a_required_consumer_or_disguise_targeting_as_full(self):
-        scope=selection.coverage('a'*40,['data/src/main/X.kt'])
-        scope['device_modules']=['data']
-        self.assertIsNotNone(selection.problem(scope,'G2','SELLO-004'))
-        scope['mode']='full'
-        self.assertIsNotNone(selection.problem(scope,'G2','SELLO-004'))
+    def test_each_module_selects_the_suites_of_its_consumers(self):
+        expected = {
+            "app/src/main/java/A.kt": (["app"], ["app"]),
+            "data/src/main/java/A.kt": (["data", "app"], ["app", "support"]),
+            "domain/src/main/kotlin/A.kt": (["data", "app"], ["app", "support"]),
+            "design-system/src/main/java/A.kt": (["design-system", "app"], ["app", "support"]),
+            "data/schemas/com.software.sello.data.local.SelloDatabase/9.json": (["data", "app"], ["app", "support"]),
+            "app/src/debug/java/Sandbox.kt": (["app"], ["app"]),
+            "app/src/androidTestDebug/java/AppTest.kt": (["app"], ["app"]),
+            "data/src/androidTest/java/DaoTest.kt": (["data"], ["support"]),
+            "design-system/src/androidTest/java/ButtonTest.kt": (["design-system"], ["support"]),
+        }
+        for path, (modules, groups) in expected.items():
+            with self.subTest(path=path):
+                plan = pr(path)
+                self.assertEqual(("G2", modules, groups), (plan["gate"], plan["modules"], plan["groups"]))
 
-    def test_the_release_gate_always_covers_every_device_module(self):
-        scope=selection.coverage('a'*40,['app/src/main/X.kt'],gate='G3')
-        self.assertEqual(('full',['data','design-system','app','catalog']),(scope['mode'],scope['device_modules']))
-        self.assertIsNone(selection.problem(scope,'G3','SELLO-004'))
-        scope['device_modules']=['app']
-        self.assertIsNotNone(selection.problem(scope,'G3','SELLO-004'))
-        self.assertIsNotNone(selection.problem(dict(scope,device_modules=[]),'G3','SELLO-004'))
+    def test_unit_tests_alone_need_only_the_host_gate(self):
+        plan = pr("domain/src/test/kotlin/MoneyTest.kt", "app/src/testDebug/java/ScenarioTest.kt", "data/src/test/java/A.kt")
+        self.assertEqual(("G1", []), (plan["gate"], plan["modules"]))
+
+    def test_mixed_changes_union_their_suites(self):
+        self.assertEqual(["data", "design-system", "app"], pr("data/src/main/A.kt", "design-system/src/main/B.kt", "docs/x.md")["modules"])
+
+    def test_build_files_workflows_lockfiles_gradle_and_unknown_paths_select_everything(self):
+        for path in ("build.gradle.kts", "settings.gradle.kts", "gradle.properties", "gradle/libs.versions.toml",
+                     "gradle/wrapper/gradle-wrapper.properties", "app/build.gradle.kts", "data/gradle.lockfile",
+                     "settings-gradle.lockfile", "app/proguard-rules.pro", ".github/workflows/quality.yml",
+                     ".editorconfig", "gradlew", "new-module/src/main/A.kt",
+                     "docs/check.sh", "app/lint.xml"):
+            with self.subTest(path=path):
+                plan = pr(path)
+                self.assertEqual(("G2", ALL, ["app", "support"]), (plan["gate"], plan["modules"], plan["groups"]))
+
+    def test_the_plan_names_what_each_path_selects(self):
+        plan = pr("docs/a.md", "scripts/quality/links.py", "app/src/main/A.kt")
+        self.assertEqual({"docs/a.md": "document", "scripts/quality/links.py": "host", "app/src/main/A.kt": "app"}, plan["changed"])
+        self.assertIn("- Device groups: app (modules: app; pull-request tests)", selection.summary(plan))
 
 
-class LocalSelectionTests(unittest.TestCase):
+class EventPlanTests(unittest.TestCase):
+    def test_a_push_to_main_keeps_the_host_gate_and_documents_get_g0(self):
+        self.assertEqual(("G1", []), tuple(selection.plan("push", ["app/src/main/A.kt"])[k] for k in ("gate", "groups")))
+        self.assertEqual("G0", selection.plan("push", ["docs/a.md"])["gate"])
+
+    def test_nightly_and_manual_runs_verify_everything_at_g3(self):
+        for event in ("schedule", "workflow_dispatch"):
+            for paths in ([], ["docs/a.md"], ["app/src/main/A.kt"]):
+                with self.subTest(event=event, paths=paths):
+                    plan = selection.plan(event, paths)
+                    self.assertEqual(("G3", True, True, ALL, ["app", "support"]),
+                                     (plan["gate"], plan["host"], plan["release"], plan["modules"], plan["groups"]))
+
+    def test_only_the_nightly_and_manual_runs_execute_the_nightly_only_device_tests(self):
+        for event, scope in (("pull_request", "pull-request"), ("push", "pull-request"),
+                             ("schedule", "nightly"), ("workflow_dispatch", "nightly")):
+            with self.subTest(event=event):
+                self.assertEqual(scope, selection.plan(event, ["app/src/main/A.kt"])["scope"])
+        self.assertIn("nightly tests", selection.summary(selection.plan("schedule", [])))
+
+    def test_an_unknown_event_is_refused(self):
+        with self.assertRaises(ValueError):
+            selection.plan("merge_group", [])
+
+
+class RepositoryPlanTests(unittest.TestCase):
     def setUp(self):
-        device_env = patch.dict(os.environ, {"ANDROID_SERIAL": ""})
-        device_env.start()
-        self.addCleanup(device_env.stop)
-        temp=tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
-        self.root=make_repo(temp.name,epic(ticket('SELLO-003',status='Done'),
-                               ticket('SELLO-004',dependencies='SELLO-003',gate='G2')))
-        self.base=git(self.root,'rev-parse','HEAD').strip()
-        self.harness=Harness(self.root)
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.root = Path(directory.name)
+        self.git("init", "-q", "-b", "main")
+        self.git("config", "user.name", "Test")
+        self.git("config", "user.email", "test@example.invalid")
+        self.write("app/src/main/Main.kt", "fun main() = Unit\n")
+        self.write("docs/notes.md", "Notes.\n")
+        self.git("add", "-A")
+        self.git("commit", "-qm", "initial")
+        self.base = self.git("rev-parse", "HEAD").strip()
 
-    def run_ticket(self,**options):
-        return runner.run('SELLO-004',self.root,execute=self.harness.execute,
-                          environment=lambda root:{},devices=lambda:[DEVICE],stream=io.StringIO(),**options)
+    def git(self, *arguments):
+        return subprocess.run(["git", "-C", str(self.root), *arguments], check=True, capture_output=True, text=True).stdout
 
-    def test_affected_local_ticket_runs_and_retains_only_the_dependency_closure(self):
-        write(self.root,'app/src/Main.kt','fun main() = println(42)\n')
-        code,path=self.run_ticket(affected_base=self.base)
-        report=evidence.load(path)
-        self.assertEqual(0,code)
-        self.assertEqual(['app'],report['coverage']['device_modules'])
-        self.assertEqual({'app'},set(report['checks'][-1]['modules']))
-        self.assertIn('coverage affected (app)',evidence.retain(self.root,path))
+    def write(self, relative, text):
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
 
-    def test_default_ticket_command_runs_the_host_gate_without_devices(self):
-        write(self.root,'app/src/Main.kt','fun main() = println(42)\n')
-        code,path=self.run_ticket()
-        report=evidence.load(path)
-        self.assertEqual(0,code)
-        self.assertEqual({'required':'G2','executed':'G1'},report['gate'])
-        self.assertEqual('full',report['coverage']['mode'])
-        self.assertEqual([],report['coverage']['device_modules'])
-        self.assertNotIn('gradle-device',self.harness.executed)
+    def test_committed_uncommitted_and_untracked_changes_all_count(self):
+        self.write("docs/notes.md", "Changed.\n")
+        self.git("commit", "-qam", "docs")
+        self.assertEqual("G0", selection.plan_for(self.root, "pull_request", self.base)["gate"])
+        self.write("data/src/main/Store.kt", "class Store\n")
+        self.assertEqual(["data", "app"], selection.plan_for(self.root, "pull_request", self.base)["modules"])
 
-    def test_explicit_g2_runs_every_device_module_even_with_a_base(self):
-        write(self.root,'app/src/Main.kt','fun main() = println(42)\n')
-        for options in ({'requested_gate':'G2'},{'affected_base':self.base,'requested_gate':'G2'}):
-            code,path=self.run_ticket(**options)
-            self.assertEqual(0,code)
-            self.assertEqual('full',evidence.load(path)['coverage']['mode'])
-            self.assertEqual(4,len(evidence.load(path)['checks'][-1]['modules']))
+    def test_a_file_moved_out_of_the_code_keeps_its_module_selected(self):
+        self.git("mv", "app/src/main/Main.kt", "docs/Main.md")
+        plan = selection.plan_for(self.root, "pull_request", self.base)
+        self.assertEqual(("G2", ["app"]), (plan["gate"], plan["modules"]))
+        self.assertIn("app/src/main/Main.kt", plan["changed"])
 
-    def test_moved_and_deleted_paths_keep_the_original_module_in_scope(self):
-        git(self.root,'mv','app/src/Main.kt','docs/Moved.md')
-        plan=runner.candidate_plan(self.root,self.base)
-        self.assertIn('app',plan['coverage']['device_modules'])
-        self.assertIn('app/src/Main.kt',plan['coverage']['changed_paths'])
-        self.assertEqual('G2',plan['gate'])
+    def test_a_branch_name_is_compared_from_the_merge_base(self):
+        self.git("checkout", "-qb", "feature")
+        self.write("docs/notes.md", "Feature notes.\n")
+        self.git("commit", "-qam", "feature docs")
+        self.git("checkout", "-q", "main")
+        self.write("app/src/main/Main.kt", "fun main() = println(1)\n")
+        self.git("commit", "-qam", "main moved")
+        tip = self.git("rev-parse", "HEAD").strip()
+        self.git("checkout", "-q", "feature")
+        plan = selection.plan_for(self.root, "pull_request", "main")
+        self.assertEqual(("G0", self.base, ["docs/notes.md"]), (plan["gate"], plan["base"], list(plan["changed"])))
+        # CI passes the exact base commit and gets exactly that comparison.
+        self.assertEqual("G2", selection.plan_for(self.root, "pull_request", tip)["gate"])
 
-    def test_documentation_gate_needs_neither_java_nor_sdk(self):
-        write(self.root,'docs/notes.md','A note.\n')
-        def unavailable(root): raise AssertionError('Android environment must not be probed')
-        code,paths=runner.run_merge_candidate(self.base,self.root,execute=self.harness.execute,
-                     environment=unavailable,devices=lambda:[],stream=io.StringIO())
-        self.assertEqual(0,code)
-        report=evidence.load(paths[0])
-        self.assertEqual('G0',report['gate']['executed'])
-        self.assertNotIn('gradle-host',self.harness.executed)
-        self.assertIn('architecture',self.harness.executed)
+    def test_an_unknown_base_selects_everything_instead_of_nothing(self):
+        plan = selection.plan_for(self.root, "pull_request", "0" * 40)
+        self.assertEqual(("G2", ALL), (plan["gate"], plan["modules"]))
 
-    def test_old_v1_full_reports_remain_readable(self):
-        code,path=self.run_ticket()
-        report=json.loads(path.read_text());report['schema_version']=1;report.pop('coverage')
-        path.write_text(json.dumps(report))
-        self.assertEqual(0,code)
-        self.assertEqual(1,evidence.load(path)['schema_version'])
 
-    def test_passing_targeted_evidence_cannot_drop_the_selected_modules(self):
-        write(self.root,'app/src/Main.kt','fun main() = println(42)\n')
-        _,path=self.run_ticket(affected_base=self.base)
-        report=json.loads(path.read_text());report['checks'][-1]['modules']={}
-        path.write_text(json.dumps(report))
-        with self.assertRaisesRegex(evidence.EvidenceError,'executed modules differ'):
-            evidence.load(path)
+class ModuleGraphTests(unittest.TestCase):
+    def test_module_partition_changes_cannot_silently_outgrow_the_selection_graph(self):
+        root = Path(__file__).resolve().parents[2]
+        expected = {"domain": set(), "data": {"domain"}, "design-system": set(),
+                    "app": {"domain", "data", "design-system"}}
+        settings = (root / "settings.gradle.kts").read_text()
+        included = set(re.findall(r'"\:([\w-]+)"', "\n".join(re.findall(r"include\((.*?)\)", settings, re.S))))
+        self.assertEqual(set(expected), included)
+        for module, dependencies in expected.items():
+            actual = set(re.findall(r'project\("\:([\w-]+)"\)', (root / module / "build.gradle.kts").read_text()))
+            self.assertEqual(dependencies, actual, f"Update/review the selection graph for {module}")
+        consumers = {module: {m for m in selection.MODULES if module == m or module in expected.get(m, set())
+                              or any(module in expected.get(d, set()) for d in expected.get(m, set()))}
+                     for module in selection.DEPENDENTS}
+        for module, suites in selection.DEPENDENTS.items():
+            self.assertEqual(consumers[module], set(suites), module)
 
-    def test_a_documentation_report_cannot_be_relabeled_as_ticket_acceptance(self):
-        write(self.root,'docs/notes.md','A note.\n')
-        _,paths=runner.run_merge_candidate(self.base,self.root,execute=self.harness.execute,stream=io.StringIO())
-        report=json.loads(paths[0].read_text());report['ticket']='SELLO-004'
-        paths[0].write_text(json.dumps(report))
-        with self.assertRaisesRegex(evidence.EvidenceError,'documentation coverage'):
-            evidence.retain(self.root,paths[0])
 
-    def test_local_selection_matches_the_hosted_pr_plan(self):
-        import distributed
-        write(self.root,'data/src/main/Store.kt','class Store\n')
-        with patch.dict(os.environ,{'GITHUB_ACTIONS':'false','GITHUB_RUN_ID':'','GITHUB_RUN_ATTEMPT':'','QUALITY_EXECUTION_ID':'parity'}):
-            plan=distributed.context(self.root,self.base,'pull_request')
-        code,path=self.run_ticket(affected_base=self.base)
-        self.assertEqual(0,code)
-        self.assertEqual(plan['coverage'],evidence.load(path)['coverage'])
-
-    def test_local_gate_identifies_only_the_selected_device(self):
-        with patch.dict(os.environ,{'ANDROID_SERIAL':DEVICE['serial']}):
-            code,path=runner.run('SELLO-004',self.root,requested_gate='G2',execute=self.harness.execute,
-                      environment=lambda root:{},devices=lambda:[DEVICE,dict(DEVICE,serial='other')],stream=io.StringIO())
-        self.assertEqual(0,code)
-        self.assertEqual([DEVICE],evidence.load(path)['devices'])
+if __name__ == "__main__":
+    unittest.main()

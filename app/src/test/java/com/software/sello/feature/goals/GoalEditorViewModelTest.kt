@@ -1,7 +1,6 @@
 package com.software.sello.feature.goals
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalHistory
@@ -13,15 +12,15 @@ import com.software.sello.domain.model.GoalName
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.GoalTargetChange
 import com.software.sello.domain.model.IconKey
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.ChangeGoalTarget
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateGoal
@@ -34,15 +33,15 @@ import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -70,11 +69,7 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class GoalEditorViewModelTest {
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
     private val clock = HandFinancialClock("2026-10-23")
     private val reads = HandGoalReads()
     private val commands = HandGoalCommands()
@@ -83,12 +78,12 @@ class GoalEditorViewModelTest {
     private val viajeId = "00000000-0000-4000-9000-000000000001"
 
     private val scheduler = TestCoroutineScheduler()
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     @Before
     fun main() {
         Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             commands,
@@ -104,8 +99,6 @@ class GoalEditorViewModelTest {
     fun reset() = Dispatchers.resetMain()
 
     private fun <T> Outcome<T, *>.value(): T = (this as Outcome.Success).value
-
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).value()
 
     private fun goal(
         target: Long,
@@ -167,7 +160,7 @@ class GoalEditorViewModelTest {
         type("2", "0", "000", "000")
     }
 
-    private fun created(id: String = viajeId) = GoalCommandOutcome.Committed(
+    private fun created(id: String = viajeId) = CommandOutcome.Committed(
         CommittedGoal(
             OperationReceipt(
                 OperationId.of(ids.next()).value(),
@@ -320,7 +313,7 @@ class GoalEditorViewModelTest {
 
     /** What storage answers for a target change that did [change] to the stamps. */
     private fun targetChanged(change: GoalChange?, replayed: Boolean = false) =
-        GoalCommandOutcome.Committed(
+        CommandOutcome.Committed(
             CommittedGoal(
                 OperationReceipt(
                     OperationId.of(ids.next()).value(),
@@ -429,7 +422,7 @@ class GoalEditorViewModelTest {
     fun anUnknownCreateIsAskedAboutAndNothingNewIsSentUntilKnown() = runTest {
         val model = model()
         model.casaPropia()
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
 
         model.onAction(GoalEditorAction.Submit)
@@ -438,7 +431,7 @@ class GoalEditorViewModelTest {
         model.onAction(GoalEditorAction.Submit)
         assertEquals(1, commands.sent.size)
 
-        commands.found = Outcome.Success(created().goal)
+        commands.found = Outcome.Success(created().value)
         model.onAction(GoalEditorAction.Retry)
 
         assertEquals(listOf(operation, operation), commands.asked)
@@ -451,11 +444,11 @@ class GoalEditorViewModelTest {
         val first = model(saved)
         first.casaPropia()
         first.onAction(GoalEditorAction.PickMonth(YearMonth.of(2028, 12)))
-        commands.next = GoalCommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
         commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
         first.onAction(GoalEditorAction.Submit)
 
-        commands.found = Outcome.Success(created().goal)
+        commands.found = Outcome.Success(created().value)
         val restored = model(saved)
 
         assertEquals("Casa propia", restored.state.value.name)
@@ -514,7 +507,7 @@ class GoalEditorViewModelTest {
     fun aGoalChangedMeanwhileIsReadAgainNotOverwritten() = runTest {
         val model = model(editing(goal(3_000_000, 1_710_000)))
         model.onAction(GoalEditorAction.NameChanged("Viaje a Cartagena"))
-        commands.next = GoalCommandOutcome.Rejected(GoalRejection.VersionConflict(5))
+        commands.next = CommandOutcome.Rejected(CommandRejection.VersionConflict(5))
         val before = reads.reads
 
         model.onAction(GoalEditorAction.Submit)

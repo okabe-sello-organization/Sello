@@ -2,7 +2,6 @@ package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -90,7 +88,7 @@ fun SelloNavigationRail(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
-        // As wide as its longest label needs, so large text never shortens a tab's name.
+        // As wide as its longest label needs, so a tab's name is never shortened.
         modifier = modifier
             .fillMaxHeight()
             .width(IntrinsicSize.Max)
@@ -171,28 +169,6 @@ private fun DestinationContent(
 }
 
 internal val RailWidth = 80.dp
-
-/** The month as a screen title that opens a month picker. It takes its ink from the bar. */
-@Composable
-fun MonthSwitcher(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .heightIn(min = SelloTheme.spacing.minTouchTarget)
-            .clip(SelloTheme.shapes.control)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(end = 4.dp)
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleLarge.copy(fontSize = 21.sp, lineHeight = 24.sp),
-            // A second line before an ellipsis, as for any screen title at large text.
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-        Icon(SelloIcon.KeyboardArrowDown.painter(), null, Modifier.size(22.dp))
-    }
-}
 
 /**
  * One month in a [MonthGrid]. A month that is not [enabled] cannot be picked: the app
@@ -299,4 +275,5 @@ private fun YearArrow(icon: SelloIcon, label: String, onClick: (() -> Unit)?) {
 }
 
 private const val MONTHS_PER_ROW = 3
+
 private const val DISABLED_MONTH_ALPHA = 0.38f

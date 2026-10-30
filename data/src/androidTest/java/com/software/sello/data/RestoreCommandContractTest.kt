@@ -25,8 +25,9 @@ import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteExpense
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
@@ -69,11 +70,7 @@ class RestoreCommandContractTest {
     val files = DatabaseFiles()
 
     private val ledger by lazy { TestLedger(files).also { it.start() } }
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
 
     /** Preferences that record what was applied and can be told to fail. */
     private class Preferences :
@@ -414,10 +411,10 @@ class RestoreCommandContractTest {
         val undo = ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
 
         assertEquals(
-            ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)),
+            CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)),
             draft
         )
-        assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)), undo)
+        assertEquals(CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)), undo)
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM deleted_expense"))
         assertEquals(3L, ledger.long("SELECT COUNT(*) FROM expense"))
     }
@@ -429,7 +426,7 @@ class RestoreCommandContractTest {
         val enabled = ledger.categories.submit(
             EnableCarry(ledger.operation(), 1, ledger.categoryId(100), 1)
         )
-        assertTrue("$enabled", enabled is CategoryCommandOutcome.Committed)
+        assertTrue("$enabled", enabled is CommandOutcome.Committed)
         assertEquals(listOf("${uuid(100)}|2026-10|null"), ledger.chainRows())
 
         restores().replace(stage())
@@ -439,7 +436,7 @@ class RestoreCommandContractTest {
 
         assertEquals(emptyList<String>(), ledger.chainRows())
         assertEquals(
-            CategoryCommandOutcome.Rejected(CategoryRejection.StaleGeneration(2)),
+            CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)),
             prepared
         )
         assertEquals(emptyList<String>(), ledger.chainRows())

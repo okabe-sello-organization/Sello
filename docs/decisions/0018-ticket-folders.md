@@ -1,7 +1,13 @@
-# 0018 — One folder per ticket replaces the board
+# 0018 — One folder per ticket replaces the board (now one file per ticket)
 
 **Owner:** project owner (user) · **Date:** 2026-10-24
-**Status:** user-authorized implementation.
+**Status:** user-authorized implementation; amended 2026-10-29.
+
+> **Amended 2026-10-29:** each ticket is now one file, `docs/tickets/<epic>/SELLO-0NN.md`.
+> Committed evidence was retired ([ADR 0021](0021-ci-is-the-only-proof.md)): the
+> `evidence.md`, `handoff.md` and `quality-report.json` files and unlinked artifacts were
+> removed (Git history keeps them); files other documents link to moved to
+> `<epic>/attachments/`. The rest of this record describes the 2026-10-24 move.
 
 ## Decision
 
@@ -32,9 +38,8 @@ tickets whose links pointed at moved documents. For those, the move recorded
 `- **Acceptance migrated:** <old> → <new>` in `evidence.md`, after proving that the
 retained report was bound to the old hash and that only link targets differ. The
 validator accepts exactly that pair; any later acceptance edit still fails. The
-retired SELLO-045–060 reports and captures stay under `docs/tickets/retired/` as
-history. The one-time script `scripts/one-off/restructure_tickets.py` is the record
-of the move and can be deleted once the move has merged.
+retired SELLO-045–060 reports and captures, and the one-time script
+`scripts/one-off/restructure_tickets.py`, were later removed; Git history keeps them.
 
 ## Consequences
 

@@ -1,1 +1,0 @@
-No developer tools in app-release-unsigned.apk

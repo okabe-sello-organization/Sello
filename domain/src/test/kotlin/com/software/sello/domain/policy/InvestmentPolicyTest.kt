@@ -513,10 +513,6 @@ class InvestmentPolicyTest {
             ),
             overview.items.map { it.history.investment.name.value }
         )
-        assertEquals(
-            cop(4_359_838),
-            InvestmentPolicy.toPesos(usd(105_050), current.rate).valueOrFail()
-        )
     }
 
     @Test
@@ -563,11 +559,15 @@ class InvestmentPolicyTest {
 
     @Test
     fun rule16_theLargestUsdSumAtTheHighestRateFits() {
-        val top = UsdRate.of(BigDecimal("100000")).valueOrFail()
-        assertEquals(
-            cop(999_999_999_999_000),
-            InvestmentPolicy.toPesos(usd(999_999_999_999), top).valueOrFail()
-        )
+        val largest = Recorder("Acciones EE. UU.", Currency.USD).apply {
+            aporte(999_999_999_999, "2026-10-16")
+            valor(999_999_999_999, "2026-10-16")
+        }
+        val overview = InvestmentPolicy.overview(
+            listOf(largest.history to figures(largest)),
+            rate("100000", "2026-10-20")
+        ).valueOrFail()
+        assertEquals(cop(999_999_999_999_000), overview.items.single().valueInPesos)
     }
 
     @Test

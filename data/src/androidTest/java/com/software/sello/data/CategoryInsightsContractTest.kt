@@ -1,14 +1,17 @@
 package com.software.sello.data
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CategoryInsightsState
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseOrder
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SetDefaultLimit
 import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +44,7 @@ class CategoryInsightsContractTest {
                         Note.of(it).valueOrFail()
                     }
                 )
-            ) is ExpenseCommandOutcome.Committed
+            ) is CommandOutcome.Committed
         )
     }
     private suspend fun read() = ledger.categoryInsights.read(id, october).valueOrFail()
@@ -132,15 +135,15 @@ class CategoryInsightsContractTest {
         val states = Channel<CategoryInsightsState>(Channel.UNLIMITED)
         val collector =
             launch { ledger.categoryInsights.observe(id, october).collect(states::send) }
-        suspend fun ready(): CategoryInsightsState.Ready = withTimeout(10_000) {
+        suspend fun ready(): ReadState.Ready<CategoryInsights> = withTimeout(10_000) {
             var state = states.receive()
-            while (state !is CategoryInsightsState.Ready) state = states.receive()
+            while (state !is ReadState.Ready) state = states.receive()
             state
         }
         try {
-            assertEquals(9, ready().snapshot.elapsedDays)
+            assertEquals(9, ready().value.elapsedDays)
             ledger.goTo("2026-10-22")
-            assertEquals(22, ready().snapshot.elapsedDays)
+            assertEquals(22, ready().value.elapsedDays)
         } finally {
             collector.cancel()
             collector.join()

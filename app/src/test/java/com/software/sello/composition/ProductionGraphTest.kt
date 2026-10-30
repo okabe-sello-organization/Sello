@@ -11,11 +11,10 @@ import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemFinancialClock
 import com.software.sello.platform.SystemMonotonicClock
 import com.software.sello.platform.TimeSignals
+import com.software.sello.testing.TestDispatcherProvider
 import java.time.ZoneId
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -36,14 +35,7 @@ class HostSubstitutes {
     val signals = RecordingTimeSignals()
     val module: Module = module {
         single<TimeSignals> { signals }
-        single<DispatcherProvider> {
-            object : DispatcherProvider {
-                private val dispatcher = StandardTestDispatcher(scheduler)
-                override val main: CoroutineDispatcher get() = dispatcher
-                override val default: CoroutineDispatcher get() = dispatcher
-                override val io: CoroutineDispatcher get() = dispatcher
-            }
-        }
+        single<DispatcherProvider> { TestDispatcherProvider(scheduler) }
     }
 }
 

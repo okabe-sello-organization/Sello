@@ -1,7 +1,6 @@
 package com.software.sello.feature.recurrence
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
@@ -12,18 +11,17 @@ import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
-import com.software.sello.domain.port.SnapshotState
 import com.software.sello.domain.port.StoredSchedule
-import com.software.sello.feature.expense.HandSnapshots
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
-import com.software.sello.feature.expense.pesos
 import com.software.sello.navigation.HandFinancialClock
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -45,11 +43,7 @@ class SchedulesViewModelTest {
     private val clock = HandFinancialClock("2026-10-22")
     private val reads = HandScheduleReads()
     private val snapshots = HandSnapshots()
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -111,7 +105,7 @@ class SchedulesViewModelTest {
     )
 
     private fun publish(vararg schedules: StoredSchedule) {
-        reads.state.value = ScheduleBookState.Ready(ScheduleBook(1, 1, schedules.toList()))
+        reads.state.value = ReadState.Ready(ScheduleBook(1, 1, schedules.toList()))
     }
 
     private fun categories() = snapshots.ready(
@@ -216,10 +210,10 @@ class SchedulesViewModelTest {
     fun aFailedReadIsFailedNeverAnEmptyListAndRetryReadsAgain() {
         val model = list()
         categories()
-        reads.state.value = ScheduleBookState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.state.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val schedulesFailed = model.state.value
         publish(rent)
-        snapshots.of(october).value = SnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
         val categoriesFailed = model.state.value
         categories()
         model.onAction(SchedulesAction.Retry)

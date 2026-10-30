@@ -1,17 +1,25 @@
 package com.software.sello.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import com.software.sello.R
 import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonTone
@@ -24,6 +32,9 @@ import com.software.sello.feature.goals.GoalDetailAction
 import com.software.sello.feature.goals.GoalDetailScreen
 import com.software.sello.feature.goals.GoalDetailState
 import com.software.sello.feature.goals.GoalDetailViewModel
+import com.software.sello.feature.goals.GoalEditorResult
+import com.software.sello.feature.goals.GoalEditorRoot
+import com.software.sello.feature.goals.GoalMovementRoot
 import com.software.sello.feature.goals.GoalPin
 import com.software.sello.feature.goals.LogradaMoment
 import com.software.sello.feature.goals.METAS_CREATE_TAG
@@ -31,7 +42,10 @@ import com.software.sello.feature.goals.MetasAction
 import com.software.sello.feature.goals.MetasScreen
 import com.software.sello.feature.goals.MetasState
 import com.software.sello.feature.goals.MetasViewModel
+import com.software.sello.feature.reset.back
+import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.GoalCelebration
+import com.software.sello.presentation.corrections.celebration
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 
@@ -181,3 +195,90 @@ private fun goalDock(label: String, onClick: () -> Unit) =
     SelloDock(label, label, onClick, tone = ButtonTone.Gain, icon = SelloIcon.Flag)
 
 const val GOAL_EDIT_TAG = "goal.edit"
+
+/** Metas, one goal, its editor and its movements. */
+internal fun NavGraphBuilder.goalDestinations(
+    navigation: NavHostController,
+    viewModels: ViewModelProvider.Factory,
+    shellState: State<ShellState>,
+    onShell: (ShellAction) -> Unit,
+    tabs: SelloNavigation,
+    noticeState: State<CorrectionNotice?>,
+    onUndo: () -> Unit,
+    lands: (GoalCelebration) -> Boolean
+) {
+    composable<MetasRoute> {
+        val state by shellState
+        val notice by noticeState
+        MetasDestination(
+            state = state,
+            viewModels = viewModels,
+            onShell = onShell,
+            tabs = tabs,
+            onOpenGoal = { id ->
+                navigation.navigate(GoalRoute(id)) { launchSingleTop = true }
+            },
+            onCreate = { navigation.navigate(GoalEditorRoute()) { launchSingleTop = true } },
+            onContribute = {
+                navigation.navigate(GoalMovementRoute()) { launchSingleTop = true }
+            },
+            notice = notice?.let {
+                { StampNoticeBar(it, onUndo, lands) }
+            }
+        )
+    }
+    composable<GoalRoute> { entry ->
+        val state by shellState
+        val notice by noticeState
+        val id = entry.toRoute<GoalRoute>().goalId
+        GoalDestination(
+            state = state,
+            viewModels = viewModels,
+            onShell = onShell,
+            onBack = {
+                val onGoal =
+                    navigation.currentBackStackEntry?.destination?.hasRoute<GoalRoute>()
+                if (onGoal == true) navigation.popBackStack()
+            },
+            onEdit = { navigation.navigate(GoalEditorRoute(id)) { launchSingleTop = true } },
+            onContribute = {
+                navigation.navigate(GoalMovementRoute(id)) { launchSingleTop = true }
+            },
+            onWithdraw = {
+                navigation.navigate(GoalMovementRoute(id, withdrawal = true)) {
+                    launchSingleTop = true
+                }
+            },
+            onEditMovement = { movement ->
+                navigation.navigate(GoalMovementRoute(id, movementId = movement)) {
+                    launchSingleTop = true
+                }
+            },
+            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } },
+            celebration = remember(notice) {
+                notice?.celebration?.takeIf { it.goalId == id && lands(it) }
+            }
+        )
+    }
+    composable<GoalEditorRoute> {
+        GoalEditorRoot(viewModels) { result ->
+            val onEditor =
+                navigation.currentBackStackEntry?.destination?.hasRoute<GoalEditorRoute>()
+            if (onEditor == true) {
+                // A deleted goal has no page to go back to: Metas shows the rest.
+                if (result == GoalEditorResult.Deleted) {
+                    navigation.popBackStack<MetasRoute>(inclusive = false)
+                } else {
+                    navigation.popBackStack()
+                }
+            }
+        }
+    }
+    composable<GoalMovementRoute> {
+        GoalMovementRoot(viewModels) {
+            val onForm =
+                navigation.currentBackStackEntry?.destination?.hasRoute<GoalMovementRoute>()
+            if (onForm == true) navigation.popBackStack()
+        }
+    }
+}

@@ -3,32 +3,36 @@ package com.software.sello.feature.expense
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
-import com.software.sello.domain.port.SnapshotState
 import com.software.sello.feature.goals.HandGoalCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.feature.recurrence.HandScheduleCommands
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatKind
+import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.pesos
+import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -57,16 +61,7 @@ class ExpenseFormViewModelTest {
     private val schedules = HandScheduleCommands(scheduleBook)
     private val clock = HandFinancialClock("2026-10-22")
     private var nextId = 500
-    private val money = MoneyFormatter(
-        object : MoneyLabels {
-            override fun amount(currency: Currency, digits: String, isOne: Boolean) =
-                "$digits pesos"
-
-            override fun negative(amount: String) = "menos $amount"
-
-            override fun positive(amount: String) = "más $amount"
-        }
-    )
+    private val money = testMoney()
 
     /** The reference's month: 937.200 left overall, 287.600 left in Alimentación. */
     private val food = categoryIn(1, "Alimentación", 900_000, icon = "restaurant")
@@ -91,7 +86,7 @@ class ExpenseFormViewModelTest {
 
     /** What the frame is told: one for the whole test, as in the app. */
     private val corrections by lazy {
-        ExpenseCorrections(
+        Corrections(
             commands,
             HandIncomeCommands(),
             HandGoalCommands(),
@@ -169,7 +164,7 @@ class ExpenseFormViewModelTest {
     fun whenTheCategoriesCannotBeReadItSaysSoAndCanBeRetried() {
         val form = form()
         val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
-        snapshots.of(october).value = SnapshotState.Failed(failure, lastGood = null)
+        snapshots.of(october).value = ReadState.Failed(failure, lastGood = null)
         val failed = form.now
 
         form.onAction(ExpenseEntryAction.Retry)
@@ -544,7 +539,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun aCategoryThatStoppedAcceptingExpensesIsDeselectedAndTheNextTryIsANewOperation() {
-        commands.answer = { ExpenseCommandOutcome.Rejected(ExpenseRejection.CategoryArchived) }
+        commands.answer = { CommandOutcome.Rejected(Specific(ExpenseRejection.CategoryArchived)) }
         val form = ready(food, coffee)
         form.type("10000")
         form.pick(1)
@@ -552,7 +547,7 @@ class ExpenseFormViewModelTest {
         form.submit()
         val refused = form.now
         commands.answer =
-            { ExpenseCommandOutcome.Committed(commands.committed(it.operationId), false) }
+            { CommandOutcome.Committed(commands.committed(it.operationId), false) }
         form.pick(2)
         form.submit()
 
@@ -566,17 +561,18 @@ class ExpenseFormViewModelTest {
     @Test
     fun everyOtherRejectionKeepsTheDraftAndSaysNothingWasSaved() {
         val cases = listOf(
-            ExpenseRejection.CategoryMissing to EntryError.CategoryGone,
-            ExpenseRejection.FutureDate(LocalDate.of(2026, 10, 21)) to EntryError.FutureDate,
-            ExpenseRejection.InvalidDate to EntryError.InvalidDate,
-            ExpenseRejection.StaleGeneration(current = 2) to EntryError.DataChanged,
-            ExpenseRejection.OperationConflict to EntryError.NotSaved,
-            ExpenseRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")) to
+            Specific(ExpenseRejection.CategoryMissing) to EntryError.CategoryGone,
+            Specific(ExpenseRejection.FutureDate(LocalDate.of(2026, 10, 21))) to
+                EntryError.FutureDate,
+            Specific(ExpenseRejection.InvalidDate) to EntryError.InvalidDate,
+            CommandRejection.StaleGeneration(current = 2) to EntryError.DataChanged,
+            CommandRejection.OperationConflict to EntryError.NotSaved,
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("SQLiteException")) to
                 EntryError.NotSaved
         )
 
         for ((reason, error) in cases) {
-            commands.answer = { ExpenseCommandOutcome.Rejected(reason) }
+            commands.answer = { CommandOutcome.Rejected(reason) }
             val form = ready(food).chosen()
             form.type("10000")
             form.onAction(ExpenseEntryAction.NoteChanged("Pan"))
@@ -593,14 +589,14 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun afterTheDataWasReplacedTheNextAttemptUsesTheNewGeneration() {
-        commands.answer = { ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)) }
+        commands.answer = { CommandOutcome.Rejected(CommandRejection.StaleGeneration(2)) }
         val form = ready(food).chosen()
         form.type("10000")
         form.submit()
 
         snapshots.ready(monthOf("2026-10-22", listOf(food), generation = 2))
         commands.answer =
-            { ExpenseCommandOutcome.Committed(commands.committed(it.operationId), false) }
+            { CommandOutcome.Committed(commands.committed(it.operationId), false) }
         form.submit()
 
         assertEquals(listOf(1L, 2L), commands.created.map { it.generation })
@@ -610,7 +606,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun anUnknownOutcomeIsSettledByAskingAboutTheSameOperationNeverBySendingAgain() {
-        commands.answer = { ExpenseCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Success(commands.committed(it)) }
         val form = ready(food).chosen()
         form.type("10000")
@@ -624,7 +620,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun anUnknownOutcomeThatWasNotSavedReturnsToTheDraftWithNothingRecorded() {
-        commands.answer = { ExpenseCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         val form = ready(food).chosen()
         form.type("10000")
 
@@ -640,7 +636,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun whileTheOutcomeCannotBeReadTheDraftIsLockedAndRetryOnlyAsksAgain() {
-        commands.answer = { ExpenseCommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("SQLiteException")) }
         val form = ready(food).chosen()
         form.type("10000")
@@ -695,7 +691,7 @@ class ExpenseFormViewModelTest {
 
     @Test
     fun aRejectedAttemptLeavesNothingToRecoverAfterARestart() {
-        commands.answer = { ExpenseCommandOutcome.Rejected(ExpenseRejection.CategoryArchived) }
+        commands.answer = { CommandOutcome.Rejected(Specific(ExpenseRejection.CategoryArchived)) }
         val saved = SavedStateHandle()
         val first = ready(food, saved = saved)
         first.type("10000")
@@ -948,13 +944,13 @@ class ExpenseFormViewModelTest {
         form.repeat(RepeatAction.Open)
         form.repeat(RepeatAction.Done)
         schedules.answer = {
-            ScheduleCommandOutcome.Rejected(
-                ScheduleRejection.StartTooEarly(LocalDate.parse("2026-10-23"))
+            CommandOutcome.Rejected(
+                Specific(ScheduleRejection.StartTooEarly(LocalDate.parse("2026-10-23")))
             )
         }
         form.submit()
         val early = form.now
-        schedules.answer = { ScheduleCommandOutcome.Rejected(ScheduleRejection.CategoryArchived) }
+        schedules.answer = { CommandOutcome.Rejected(Specific(ScheduleRejection.CategoryArchived)) }
         form.submit()
 
         assertEquals(EntryError.StartTooEarly, early.error)
@@ -973,7 +969,7 @@ class ExpenseFormViewModelTest {
         form.type("950000")
         form.repeat(RepeatAction.Open)
         form.repeat(RepeatAction.Done)
-        schedules.answer = { ScheduleCommandOutcome.OutcomeUnknown(it.operationId) }
+        schedules.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
         schedules.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         form.submit()
         val unknown = form.now

@@ -4,9 +4,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-/** The four window shapes Sello lays out for. It follows the window, not the device. */
-enum class SelloWindowClass { Compact, ShortLandscape, Medium, Expanded }
-
 /**
  * How a screen arranges itself in a window.
  *
@@ -18,7 +15,6 @@ enum class SelloWindowClass { Compact, ShortLandscape, Medium, Expanded }
  */
 @Immutable
 data class SelloWindowLayout(
-    val windowClass: SelloWindowClass,
     val useRail: Boolean,
     val twoPane: Boolean,
     val contentMaxWidth: Dp? = null,
@@ -29,10 +25,9 @@ data class SelloWindowLayout(
 /** The reference's breakpoints. A short window is a phone on its side, however wide. */
 fun selloWindowLayout(width: Dp, height: Dp): SelloWindowLayout = when {
     height < ShortHeight ->
-        SelloWindowLayout(SelloWindowClass.ShortLandscape, useRail = true, twoPane = true)
+        SelloWindowLayout(useRail = true, twoPane = true)
 
     width >= ExpandedWidth -> SelloWindowLayout(
-        SelloWindowClass.Expanded,
         useRail = true,
         twoPane = true,
         listPaneWidth = 400.dp,
@@ -40,13 +35,12 @@ fun selloWindowLayout(width: Dp, height: Dp): SelloWindowLayout = when {
     )
 
     width >= MediumWidth -> SelloWindowLayout(
-        SelloWindowClass.Medium,
         useRail = false,
         twoPane = false,
         contentMaxWidth = MediumContentWidth
     )
 
-    else -> SelloWindowLayout(SelloWindowClass.Compact, useRail = false, twoPane = false)
+    else -> SelloWindowLayout(useRail = false, twoPane = false)
 }
 
 private val ShortHeight = 480.dp
@@ -56,15 +50,12 @@ private val MediumContentWidth = 560.dp
 
 /**
  * Category cells per row for the [width] they are given: two, three once the column is
- * as wide as a medium window's, and one from font scale 1.3 so names have room.
+ * as wide as a medium window's.
  */
-fun categoryColumns(width: Dp, fontScale: Float): Int = when {
-    fontScale >= LARGE_TYPE_SCALE -> 1
+fun categoryColumns(width: Dp): Int = when {
     width >= MediumContentWidth -> 3
     else -> 2
 }
-
-private const val LARGE_TYPE_SCALE = 1.3f
 
 /**
  * How much of a chart's height a value takes, from 0 to 1. This is geometry: it may

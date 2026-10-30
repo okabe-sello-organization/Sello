@@ -10,7 +10,11 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteIncome
@@ -18,13 +22,12 @@ import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.IncomeCommandOutcome
-import com.software.sello.domain.port.IncomeCommandOutcome.Committed
-import com.software.sello.domain.port.IncomeCommandOutcome.Rejected
 import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeMonth
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeRejection
 import com.software.sello.domain.port.IncomeUndoOffer
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreIncome
 import java.time.Instant
@@ -75,8 +78,6 @@ class IncomeCommandContractTest {
 
     private fun keptIncome() = ledger.rows("deleted_income", "sequence", "deletion_id", "income_id")
 
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
-
     private fun source(key: String, name: String? = null) = IncomeSource.of(key, name).valueOrFail()
 
     private fun incomeId(number: Int) = IncomeId.of(uuid(number)).valueOrFail()
@@ -92,7 +93,7 @@ class IncomeCommandContractTest {
     ) = CreateIncome(
         operation,
         generation,
-        pesos(pesos),
+        transactionPesos(pesos),
         source(key, name),
         LocalDate.parse(date),
         Note.of(note).valueOrFail()
@@ -113,7 +114,7 @@ class IncomeCommandContractTest {
         generation,
         incomeId(income),
         version,
-        pesos(pesos),
+        transactionPesos(pesos),
         source(key, name),
         LocalDate.parse(date),
         Note.of(note).valueOrFail()
@@ -126,7 +127,7 @@ class IncomeCommandContractTest {
         generation: Long = 1
     ) = DeleteIncome(operation, generation, incomeId(income), version)
 
-    private fun committed(outcome: IncomeCommandOutcome) = (outcome as Committed).income
+    private fun committed(outcome: IncomeCommandOutcome) = (outcome as Committed).value
 
     private fun raw(sql: String) = ledger.database.openHelper.writableDatabase.execSQL(sql)
 
@@ -176,8 +177,8 @@ class IncomeCommandContractTest {
         val otherSource = ledger.incomes.create(create(key = "freelance", operation = operation))
 
         assertEquals(Committed(committed(first), replayed = true), again)
-        assertEquals(Rejected(IncomeRejection.OperationConflict), otherAmount)
-        assertEquals(Rejected(IncomeRejection.OperationConflict), otherSource)
+        assertEquals(Rejected(CommandRejection.OperationConflict), otherAmount)
+        assertEquals(Rejected(CommandRejection.OperationConflict), otherSource)
         assertEquals(listOf(salary), incomes())
         assertEquals(1L, ledger.revision())
     }
@@ -188,9 +189,12 @@ class IncomeCommandContractTest {
         val unreadable = ledger.incomes.create(create(date = "-0001-01-01"))
         val stale = ledger.incomes.create(create(generation = 2))
 
-        assertEquals(Rejected(IncomeRejection.FutureDate(LocalDate.of(2026, 10, 9))), tomorrow)
-        assertEquals(Rejected(IncomeRejection.InvalidDate), unreadable)
-        assertEquals(Rejected(IncomeRejection.StaleGeneration(current = 1)), stale)
+        assertEquals(
+            Rejected(Specific(IncomeRejection.FutureDate(LocalDate.of(2026, 10, 9)))),
+            tomorrow
+        )
+        assertEquals(Rejected(Specific(IncomeRejection.InvalidDate)), unreadable)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 1)), stale)
         assertEquals(emptyList<String>(), incomes())
         assertEquals(0L, ledger.revision())
     }
@@ -203,7 +207,9 @@ class IncomeCommandContractTest {
 
         assertEquals(
             Rejected(
-                IncomeRejection.StorageFailed(StorageFailure.Integrity("profile", null, "revision"))
+                CommandRejection.StorageFailed(
+                    StorageFailure.Integrity("profile", null, "revision")
+                )
             ),
             outcome
         )
@@ -317,10 +323,10 @@ class IncomeCommandContractTest {
         val same = ledger.incomes.edit(edit(version = 2, pesos = 160_000))
         val replaced = ledger.incomes.edit(edit(version = 2, pesos = 5, generation = 2))
 
-        assertEquals(Rejected(IncomeRejection.VersionConflict(current = 2)), stale)
-        assertEquals(Rejected(IncomeRejection.IncomeMissing), never)
-        assertEquals(Rejected(IncomeRejection.Unchanged), same)
-        assertEquals(Rejected(IncomeRejection.StaleGeneration(current = 1)), replaced)
+        assertEquals(Rejected(CommandRejection.VersionConflict(current = 2)), stale)
+        assertEquals(Rejected(Specific(IncomeRejection.IncomeMissing)), never)
+        assertEquals(Rejected(Specific(IncomeRejection.Unchanged)), same)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 1)), replaced)
         assertEquals(after, incomes())
         assertEquals(2L, ledger.revision())
     }
@@ -338,7 +344,7 @@ class IncomeCommandContractTest {
 
         assertTrue("$amountOnly", amountOnly is Committed)
         assertEquals(
-            Rejected(IncomeRejection.FutureDate(LocalDate.of(2026, 10, 1))),
+            Rejected(Specific(IncomeRejection.FutureDate(LocalDate.of(2026, 10, 1)))),
             toAnotherFutureDay
         )
         assertEquals(
@@ -361,7 +367,7 @@ class IncomeCommandContractTest {
             7,
             outcomes.count {
                 it ==
-                    Rejected(IncomeRejection.VersionConflict(current = 2))
+                    Rejected(CommandRejection.VersionConflict(current = 2))
             }
         )
         assertEquals(listOf("2"), ledger.rows("income", "version"))
@@ -402,8 +408,8 @@ class IncomeCommandContractTest {
         val stale = ledger.incomes.delete(delete(version = 1))
         val never = ledger.incomes.delete(delete(version = 1, income = 999))
 
-        assertEquals(Rejected(IncomeRejection.VersionConflict(current = 2)), stale)
-        assertEquals(Rejected(IncomeRejection.IncomeMissing), never)
+        assertEquals(Rejected(CommandRejection.VersionConflict(current = 2)), stale)
+        assertEquals(Rejected(Specific(IncomeRejection.IncomeMissing)), never)
         assertEquals(1, incomes().size)
         assertEquals(emptyList<String>(), keptIncome())
         assertNull(ledger.incomes.undoOffer())
@@ -457,7 +463,7 @@ class IncomeCommandContractTest {
 
         assertEquals(7.hours + 6.seconds, stillThere!!.until)
         assertNull(gone)
-        assertEquals(Rejected(IncomeRejection.UndoExpired), outcome)
+        assertEquals(Rejected(Specific(IncomeRejection.UndoExpired)), outcome)
         assertEquals(emptyList<String>(), incomes())
         assertEquals(2L, ledger.revision())
     }
@@ -473,7 +479,7 @@ class IncomeCommandContractTest {
         val discarded = ledger.storage().discardUndoCopies()
 
         assertNull(offer)
-        assertEquals(Rejected(IncomeRejection.UndoExpired), outcome)
+        assertEquals(Rejected(Specific(IncomeRejection.UndoExpired)), outcome)
         assertEquals(emptyList<String>(), incomes())
         val found = (ledger.incomes.find(deletion) as Outcome.Success).value
         assertEquals(OperationKind.DeleteIncome, found!!.receipt.kind)
@@ -509,7 +515,7 @@ class IncomeCommandContractTest {
         val late = ledger.incomes.restore(undo(deletion))
 
         assertEquals(7.hours + 6.seconds, inTime!!.until)
-        assertEquals(Rejected(IncomeRejection.UndoExpired), late)
+        assertEquals(Rejected(Specific(IncomeRejection.UndoExpired)), late)
     }
 
     @Test
@@ -532,10 +538,10 @@ class IncomeCommandContractTest {
         val prepared = ledger.incomes.restore(undo(deletion, generation = 1))
         val otherHistory = ledger.incomes.restore(undo(deletion, generation = 2))
 
-        assertEquals(Rejected(IncomeRejection.UndoConflict), sequenceTaken)
-        assertEquals(Rejected(IncomeRejection.UndoConflict), identifierTaken)
-        assertEquals(Rejected(IncomeRejection.StaleGeneration(current = 2)), prepared)
-        assertEquals(Rejected(IncomeRejection.UndoConflict), otherHistory)
+        assertEquals(Rejected(Specific(IncomeRejection.UndoConflict)), sequenceTaken)
+        assertEquals(Rejected(Specific(IncomeRejection.UndoConflict)), identifierTaken)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 2)), prepared)
+        assertEquals(Rejected(Specific(IncomeRejection.UndoConflict)), otherHistory)
         assertEquals(emptyList<String>(), incomes())
         assertEquals(0, receipts().count { it.contains("income.restore") })
     }
@@ -569,7 +575,7 @@ class IncomeCommandContractTest {
 
         assertEquals(expenseDeletion, offered!!.deletionId)
         assertNull(ledger.expenses.undoOffer())
-        assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.UndoExpired), expenseUndo)
+        assertEquals(CommandOutcome.Rejected(Specific(ExpenseRejection.UndoExpired)), expenseUndo)
         // One kept copy across both kinds, the income's.
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM deleted_expense"))
         assertEquals(1, keptIncome().size)
@@ -590,7 +596,7 @@ class IncomeCommandContractTest {
         val incomeUndo = ledger.incomes.restore(undo(incomeDeletion))
 
         assertNull(ledger.incomes.undoOffer())
-        assertEquals(Rejected(IncomeRejection.UndoExpired), incomeUndo)
+        assertEquals(Rejected(Specific(IncomeRejection.UndoExpired)), incomeUndo)
         assertEquals(emptyList<String>(), keptIncome())
         assertEquals(1L, ledger.long("SELECT COUNT(*) FROM deleted_expense"))
         assertEquals(emptyList<String>(), incomes())
@@ -662,11 +668,11 @@ class IncomeCommandContractTest {
             ledger.incomeReads.observeMonth(october).collect { states.send(it) }
         }
         suspend fun totalAt(revision: Long): Money = withTimeout(15_000) {
-            var ready = states.receive() as? IncomeMonthState.Ready
-            while (ready?.month?.revision != revision) {
-                ready = states.receive() as? IncomeMonthState.Ready
+            var ready = states.receive() as? ReadState.Ready
+            while (ready?.value?.revision != revision) {
+                ready = states.receive() as? ReadState.Ready
             }
-            ready.month.total
+            ready.value.total
         }
         val atFirst = totalAt(0)
 

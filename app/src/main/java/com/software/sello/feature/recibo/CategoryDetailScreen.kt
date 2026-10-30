@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -33,15 +32,12 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
-import com.software.sello.designsystem.component.ActionLine
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FittedMoneyText
-import com.software.sello.designsystem.component.KeyValue
 import com.software.sello.designsystem.component.LeaderLine
-import com.software.sello.designsystem.component.LineAction
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloNotice
@@ -107,6 +103,7 @@ fun CategoryDetailScreen(
             CategoryDetailState.Gone -> EmptySlip(
                 title = stringResource(R.string.category_detail_gone_title),
                 body = stringResource(R.string.category_detail_gone_body),
+                icon = SelloIcon.Block,
                 modifier = Modifier.testTag(CATEGORY_DETAIL_GONE_TAG)
             )
 
@@ -230,7 +227,7 @@ private fun HeaderSlip(
                 }
             }
             BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val stacked = LocalDensity.current.fontScale > 1.3f || maxWidth < 240.dp
+                val stacked = maxWidth < 240.dp
                 val circle: @Composable () -> Unit = {
                     CategoryCircle(
                         CategoryIcons.iconFor(category.iconKey),
@@ -274,7 +271,7 @@ private fun HeaderSlip(
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs),
                 modifier = Modifier.testTag(CATEGORY_DETAIL_SPENT_TAG)
             ) {
                 Text(
@@ -285,7 +282,7 @@ private fun HeaderSlip(
                 MoneyText(category.spent, textStyle = MaterialTheme.typography.labelMedium)
             }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs),
                 modifier = Modifier.testTag(CATEGORY_DETAIL_LIMIT_TAG)
             ) {
                 category.limit?.let {
@@ -380,6 +377,7 @@ private fun Expenses(
                 months.inSentence(state.month)
             ),
             body = stringResource(R.string.category_detail_empty_body),
+            icon = SelloIcon.ReceiptLong,
             modifier = Modifier.testTag(CATEGORY_DETAIL_EMPTY_TAG),
             actionLabel = stringResource(R.string.category_detail_record_here)
                 .takeIf { state.canRecord },
@@ -518,4 +516,3 @@ const val CATEGORY_DETAIL_PAST_HELP_TAG = "detail:past-help"
 const val CATEGORY_DETAIL_PAST_LIMIT_ANNOUNCEMENT_TAG = "detail:past-limit-announcement"
 const val CATEGORY_DETAIL_HINT_TAG = "detail:hint"
 const val CATEGORY_DETAIL_DELETE_PROBLEM_TAG = "detail:delete-problem"
-const val CATEGORY_DETAIL_MORE_FAILED_TAG = "detail:more-failed"

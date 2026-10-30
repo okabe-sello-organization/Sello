@@ -19,15 +19,13 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupPreparationFailure
-import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryOrderingPreferences
-import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.EnableCarry
-import com.software.sello.domain.port.ExpenseCommandOutcome
-import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
@@ -188,7 +186,7 @@ class CarryBackupRestoreTest {
         val outcome = source.categories.submit(
             DisableCarry(source.operation(), 1, source.categoryId(100), 2, cop(-40_000))
         )
-        check(outcome is CategoryCommandOutcome.Committed) { "$outcome" }
+        check(outcome is CommandOutcome.Committed) { "$outcome" }
     }
 
     private suspend fun comida(of: TestLedger, through: String) =
@@ -516,13 +514,10 @@ class CarryBackupRestoreTest {
         )
         val undo = other.expenses.restore(RestoreExpense(other.operation(), 1, deletion))
 
-        val fenced = CategoryCommandOutcome.Rejected(CategoryRejection.StaleGeneration(2))
+        val fenced = CommandOutcome.Rejected(CommandRejection.StaleGeneration(2))
         assertEquals(fenced, stale)
         assertEquals(fenced, staleDisable)
-        assertEquals(
-            ExpenseCommandOutcome.Rejected(ExpenseRejection.StaleGeneration(2)),
-            undo
-        )
+        assertEquals(fenced, undo)
         assertEquals(listOf("${uuid(100)}|2027-01|null"), other.chainRows())
         assertEquals(0L, other.long("SELECT COUNT(*) FROM deleted_expense"))
     }

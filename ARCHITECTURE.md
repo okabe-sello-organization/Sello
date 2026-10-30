@@ -1,11 +1,12 @@
 # Sello — architectural guardrails
 
-**Status:** proposed implementation baseline · **Updated:** 2026-10-16
+**Status:** proposed implementation baseline · **Updated:** 2026-10-29
 
 **MUST** is mandatory; **SHOULD** is the default, with a documented reason to
 deviate; **COULD** is optional, justified by a shipped capability or measured need.
-These rules govern new work; the generated Android template does not yet satisfy
-them. This document owns architecture and release scope, not implementation detail.
+These rules govern new work. This document owns technical contracts and release scope,
+not implementation detail; process rules (Git, pull requests, reviews, tickets,
+verification) live in [AGENTS.md](AGENTS.md).
 
 ## 1. Product boundary and delivery
 
@@ -36,28 +37,25 @@ Sello is an offline-first, local-only Android financial app, Spanish first
   journey, including recovery, accessibility, and CI. The operation receipt does
   not require a separate confirmation screen; ordinary saves use brief feedback
   in the new design direction. Backup/restore/reset must be complete before MVP release.
-- **MUST** build the live-testing sandbox and component catalog alongside the
-  first slice, extending their scenarios/examples as each capability ships (§9).
+- **SHOULD** keep the live-testing sandbox useful for hand-testing new flows (§9).
 - **MUST** harvest legacy requirements, counterexamples, and reviewed algorithms,
   never copy entire legacy layers or assume its formulas are authoritative.
 - **MUST** target private APK distribution for MVP, with the approved SDK 30 floor
-  subject to SELLO-002 compatibility verification. Use distinct customer/debug/catalog
+  subject to SELLO-002 compatibility verification. Use distinct customer/debug
   identities from D02; no Google Play/AAB publication work is in current scope.
   Private distribution does not waive production signing, artifact inspection or
   release/device acceptance; distribution requires separate authorization.
 
 ## 2. Modules and ownership
 
-Start with four production Gradle modules plus a developer-only catalog, not one
-module per screen:
+Start with four Gradle modules, not one module per screen:
 
 | Module | Owns | Allowed production dependencies |
 | --- | --- | --- |
 | `:domain` | Typed models, financial policies, meaningful use cases, consumer-shaped repository/workflow ports and platform-neutral application contracts | Kotlin/JVM, coroutines; no Android, UI, storage, DI, or HTTP libraries |
 | `:data` | Room schema/DAOs/mappers, migrations, DataStore adapter, portable backup/export codecs, future HTTP adapter; atomic workflow implementations | `:domain`, infrastructure libraries |
-| `:design-system` | Sello tokens/theme, stateless paper/input/feedback/chart primitives and previews | Compose/Material/adaptive UI; no domain, data, or feature dependency |
+| `:design-system` | Sello tokens/theme, stateless paper/input/feedback/chart primitives; debug-only `@Preview`s in `src/debug` | Compose/Material/adaptive UI; no domain, data, or feature dependency |
 | `:app` | Composition root, navigation/month session, feature presentation, Android document/permission/notification/worker adapters | `:domain`, `:design-system`; `:data` **only from composition** |
-| `:catalog` | Separately installable developer app showcasing grouped UI components and synthetic states | `:design-system`, Compose/UI; no `:app`, domain, data, storage, or network dependency |
 
 - **MUST** enforce module direction in Gradle and composition-only `:data` imports
   with an automated architecture check. Features/platform adapters cannot use DAOs,
@@ -76,7 +74,7 @@ module per screen:
   cost warrants it; they depend on domain/design-system, never data or each other.
 - **SHOULD** initially keep sandbox controls/adapters in `:app/src/debug`.
   **COULD** extract `:dev-tools` as they grow; only debug variants may depend on it,
-  with data wiring confined to composition. Production modules never depend on catalog.
+  with data wiring confined to composition.
 
 ## 3. Technology policy
 
@@ -91,7 +89,7 @@ module per screen:
 | Background | WorkManager + injected WorkerFactory, **only when** recurrence/alerts ship. Workers call use cases, not DAOs. |
 | Network | **SHOULD** use Ktor Client + a maintained Android engine/typed serialization when provider rates ship; no HTTP dependency or INTERNET permission for MVP. |
 | Charts | **SHOULD** start with small Compose drawing primitives behind Sello chart contracts. **COULD** adopt a renderer after precision, accessibility, theme, and performance tests—not expose its types to domain. |
-| Verification | JUnit, `kotlinx-coroutines-test`, real-Room instrumented tests, Compose UI tests, Android Lint; **SHOULD** use ktlint and Detekt plus architecture rules. |
+| Verification | JUnit, `kotlinx-coroutines-test`, real-Room instrumented tests, Compose UI tests (screens from given state on the JVM with Robolectric, journeys on a device), Roborazzi screenshot baselines, Android Lint; **SHOULD** use ktlint and Detekt plus architecture rules (§10). |
 
 - **MUST** pin dependencies centrally; review licenses/security/maintenance and
   transitive costs. No dynamic versions; upgrades must pass gates.
@@ -126,10 +124,14 @@ spending exceeds the limit. Recurrence and expected-income lifecycle details are
 deferred beyond MVP. Remaining implementation inputs are listed in the
 [open decisions](docs/design/philosophy.md#open-implementation-decisions).
 
-- **MUST** represent money as checked `Long` minor units + currency: COP scale 0;
-  USD/EUR/GBP scale 2. Use exact widened intermediate sums and decimal rates with
-  explicit units. Round conversion once at destination scale (`HALF_UP` default).
-  No Float/Double money, unchecked SQL arithmetic, wraparound, saturation, or
+- **MUST** store and add money as checked whole minor units: `Money` is a 64-bit
+  `Long` plus currency (COP in pesos, scale 0; USD/EUR/GBP in cents, scale 2). Addition
+  and subtraction refuse overflow and currency mismatch with a typed error, never
+  wrapping or clipping; a long sum may be built in widened exact arithmetic and is then
+  checked once. `BigDecimal` is only for rates, percentages and conversions, each with
+  an explicit `RoundingMode` named in its policy (`HALF_UP` unless the policy says
+  otherwise) and a single rounding at the destination scale. Rates carry explicit
+  units. No Float/Double money, unchecked SQL arithmetic, or
   missing-data-to-zero substitution. Approximate chart coordinates are not money.
 - **MUST** validate original input and command/storage/wire boundaries: positive
   amounts where required, currencies, references, dates, versions, and bounded text.
@@ -205,8 +207,11 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   recovery metadata belong in Room; DataStore cannot be a second financial truth.
 - **MUST** bound/page growing queries and run I/O, ledger replay, and file work
   off main. Related reads must retain snapshot consistency.
-- **MUST** give every mutation an operation ID, persisted data generation, and an
-  expected record version where applicable. In one short transaction: validate,
+- **MUST** give every money write (expenses, incomes, goal and investment movements,
+  anything that changes money) an operation ID, persisted data generation, and an
+  expected record version where applicable; it is replay-safe and an unknown outcome
+  is checked before any retry. Other writes (settings, names, preferences) MAY skip
+  the operation ID; existing IDs stay. In one short transaction: validate,
   check replay, mutate all affected rows, and store a durable receipt. Identical
   operation/input replays return that receipt; conflicting input is rejected.
   Edits/deletes prove affected rows; uniqueness is database-enforced, not a Mutex.
@@ -238,16 +243,26 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
 
 ## 6. Presentation and Sello design
 
-- **MUST** follow immutable `State / Action / Event / ViewModel / ScreenRoot /
-  Screen`: stateless rendering, explicit actions, Root-owned lifecycle/navigation
-  effects. Local state is ephemeral visuals only; small drafts/selections/operation
-  IDs use `SavedStateHandle`, large datasets reconstruct from persisted IDs.
-- **MUST** distinguish Loading, Ready (including true empty), and Failed with
-  retry/optional last-good data. Durable submission results belong in state/receipts,
-  not only lossy event channels. Recomposition/restoration never submits again;
+- **MUST** follow the screen pattern in use: an immutable `State`, `Action`s in, a
+  `ViewModel` exposing the state, and a `<Name>Root`/`<Name>Screen` split (stateless
+  rendering; Root-owned lifecycle/navigation effects). There are no `Event` types:
+  durable results stay in `State`, with no event channels. Local state is ephemeral
+  visuals only; small drafts/selections/operation IDs use `SavedStateHandle`, large
+  datasets reconstruct from persisted IDs.
+- **MUST** distinguish Loading, Ready (including true empty), and Failed. A failed
+  read keeps the last good figures, marked as older, with a notice and retry; it shows
+  an error only when nothing ever loaded, never zero or empty data. Durable submission results belong in state/receipts.
+  Recomposition/restoration never submits again;
   success stamps require a confirmed receipt, and edits do not celebrate creation.
 - **MUST** centralize theme, paper, stamps, money, inputs, charts, and feedback.
   Features map domain models to presentation primitives for design-system APIs.
+  **SHOULD** reuse a design-system component when one fits; otherwise build it inside
+  the feature, and promote it to `:design-system` when a second feature needs it.
+- **MUST** handle loading, empty, error, busy and restored drafts on every new or
+  changed screen. Screens use one layout at every font size: large text (font scale
+  above 1.0) is not supported and gets no layout of its own. Reduced motion and adaptive layouts
+  (landscape/medium/expanded) are delivered as their own tasks unless a ticket says
+  otherwise.
 - **MUST** apply the [design philosophy](docs/design/philosophy.md): lead home with
   budget margin after upcoming-payment reservations, show the reserved amount at
   lower priority and keep overall allowance secondary. Keep essential controls visible
@@ -259,14 +274,18 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   Metas ships, include a compact user-chosen goal, defaulting to the active goal
   with highest completion percentage. Financial replacements require §4's approvals.
 - **MUST** preserve answer-first paper, category circles, no home pace graph/shadows/
-  warning cards; Cobalto/Violeta × light/dark, Sistema default, bundled Schibsted
-  Grotesk/Saira Stencil One and Material Symbols Rounded. Use stamps with a clear
-  purpose and at most one large budget verdict; goal milestones/completion may earn
-  dedicated celebrations, respecting reduced motion. Colors/type/spacing/motion come
+  warning cards; Sistema default, bundled Schibsted Grotesk/Saira Stencil One and
+  Material Symbols Rounded. Use stamps with a clear purpose and at most one large
+  budget verdict; goal milestones/completion may earn dedicated celebrations,
+  respecting reduced motion. Colors/type/spacing/motion come
   from tokens, copy from resources/plurals. Keep exact overrun facts and neutral copy.
 - **MUST** keep full exact amounts on slips/lists and accessible labels; abbreviate
-  only chart axes. Respect reduced motion, ≥12sp text, ≥48dp hit targets, contrast,
-  keyboard/Switch Access/TalkBack, and font scales 1.0/1.3/2.0 from the first slice.
+  only chart axes. Keep ≥12sp text, ≥48dp hit targets, contrast, and
+  keyboard/Switch Access/TalkBack support.
+- **MUST** treat a theme as data: one palette per scheme × light/dark. Today's schemes
+  are Cobalto and Violeta (each light/dark) and more are planned, so adding one means
+  one palette plus its registration. The stored theme id and backups MUST keep
+  accepting every id ever written.
 - **MUST** apply [approved D06 ordering](docs/decisions/0001-mvp-contract.md#d06--ordering):
   selected-month expense count/spending/limit metrics, latest added expense rather
   than configuration/expense modification for the latest-activity option, reversible
@@ -282,8 +301,8 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   clearing drafts. Dock always opens an expense; goals/investment movements start
   in their own screens. Back returns to Recibo before exiting.
 - **SHOULD** use adaptive Material APIs for compact/landscape/medium/expanded
-  layouts; follow the reference's breakpoints, insets, keyboard behavior, and side
-  panels. Deep links only validate/prefill a draft; confirmation is required to save.
+  layouts when that task is delivered; follow the reference's breakpoints, insets,
+  keyboard behavior, and side panels. Deep links only validate/prefill a draft; confirmation is required to save.
 
 ## 7. Recovery files and privacy
 
@@ -338,100 +357,63 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
 - **MUST**, for batches: define atomic versus per-item semantics before the UI;
   retain every operation ID/result. A partially committed batch is not “rolled back”.
 
-## 9. Developer tools: simulation and catalog
+## 9. Developer tools: live-testing sandbox
 
-### Live-testing sandbox
-
-- **MUST** provide a debug-only tools entry point and a distinct debug application
-  ID/private data store, installable beside production. Clearly label sandbox mode;
-  simulated data, clock controls, fixtures, routes, and fault injectors must be
-  absent from release artifacts—not merely hidden by `BuildConfig.DEBUG`.
+- **MUST** add or rework a scenario only when it helps the owner test a new flow or
+  failure by hand. Scenarios use real command/storage paths (Room, domain commands,
+  receipt recovery), synthetic data and controlled clocks; seed/replay through
+  validated commands or import contracts, never alternate financial formulas or
+  unchecked DAO edits. Manual exploration complements automated tests.
+- **MUST** keep debug tools out of release: a debug-only tools entry point and a
+  distinct debug application ID/private data store, installable beside production.
+  Clearly label sandbox mode; simulated data, clock controls, fixtures, routes, and
+  fault injectors must be absent from release artifacts, not merely hidden by
+  `BuildConfig.DEBUG`. Component previews are `@Preview` functions in
+  `design-system/src/debug`, debug-only.
 - **MUST** inject an observable financial clock: freeze, advance by day/month,
   jump to a date, and bounded step/play/pause. Trigger the same rollover/snapshot
   recomputation as normal use. Do not change device time or accelerate monotonic
   timers, UI animation, undo expiry, network timeouts, or real audit timestamps.
-- **MUST** test real feature paths: Room, domain commands, receipt recovery, and
-  chart projections. Seed/replay synthetic scenarios through validated commands
-  or import contracts; never alternate financial formulas or unchecked DAO edits.
-- **MUST**, when recurrence ships, expose explicit “run due work” and bounded
-  catch-up using the production use case, uniqueness, and checkpoints. Show
-  created/skipped/failed/pending results. Virtual time does not advance Android's
-  WorkManager scheduler; scheduler integration needs separate worker/device tests.
-  Sandbox stepping must control competing automatic work and external side effects.
-- **SHOULD** offer reproducible seeded histories and scripts for graph growth,
-  month/year/leap-day boundaries, month-end anchors, missed runs, restart, duplicates,
-  and failures. Persist sandbox time/zone/scenario/checkpoint for restart tests;
-  rewind mutated history only by resetting/replaying an isolated scenario.
-- **MUST** expose active date/zone, scenario/seed, operation receipts, revisions,
-  and catch-up progress without sensitive logs. Simulation metadata stays out of
-  portable user backups. Reset is sandbox-scoped, cancels/fences its work, and
-  restores a known baseline. Diagnostic export is synthetic/redacted and explicit.
-- **MUST** add applicable live scenarios with each new financial capability;
-  manual exploration complements—not replaces—automated regression tests.
-  **COULD** add scripted fault injection and accelerated long-running simulations
-  behind debug-only adapters as real workflows require them.
-
-### Component catalog
-
-- **MUST** use the separate `:catalog` application module with its own application
-  ID and launcher; no extra product flavor is needed initially. It renders the
-  **actual** `:design-system` components, never copied implementations or app screens.
-  It is a developer artifact, not a customer release.
-- **MUST** group examples by type: foundations/tokens, paper, stamps, money/text,
-  categories, inputs, navigation/layout, charts, and feedback/overlays. Use synthetic
-  render fixtures and local interaction state; no repositories, permissions, or
-  production DI graph. Catalog-only chrome/fixtures stay outside design-system.
-- **MUST** offer all four themes, font scales, compact/landscape/expanded widths,
-  and applicable empty/loading/error/busy/disabled/large-value/interactive states.
-  Each new reusable component ships with examples and Compose previews.
-- **SHOULD** give examples stable IDs for targeted UI/accessibility tests and
-  share fixtures with previews/tests where practical. **COULD** add screenshot
-  regression testing once rendering baselines are stable.
+- **MUST**, when recurrence ships, run due work in the sandbox through the production
+  catch-up, uniqueness, and checkpoints, as a changed financial day does; a scenario's
+  catch-up step waits for it and stops on a failed or unknown batch. Virtual time does
+  not advance Android's WorkManager scheduler; scheduler integration needs separate
+  worker/device tests.
+- **SHOULD** persist sandbox time/zone/scenario/checkpoint so an interrupted load
+  carries on, and rewind mutated history only by resetting/reloading an isolated
+  scenario. Expose active date/zone and the loaded scenario's progress, never as
+  complete before it is, without sensitive logs. Simulation metadata stays out of
+  portable user backups; reset is sandbox-scoped, cancels/fences its work, and
+  restores a known baseline.
 
 Integration references: [build variants/source sets][build-variants] and
 [WorkManager testing][work-testing].
 
 ## 10. Enforcement and evolution
 
-- **MUST** make SELLO-004's [quality flow](docs/development/quality-gates.md)
-  a prerequisite for subsequent implementation: one ticket-derived gate runner,
-  validated evidence bound to the verified change set before Review/Done, and
-  trusted CI enforcement on the real merge result before protected merges. Passing
-  automation never substitutes for acceptance review.
-- **MUST** follow the repository-owned [ticket folders](docs/tickets/README.md)
-  for execution/dependencies and ticket delivery evidence. They operationalize
-  these guardrails; it does not override financial contracts or expand MVP scope.
-- **MUST** use meaningful red→green behavior tests, controlled clocks/virtual time,
-  external fakes, and real Room for transactions/migrations. No arbitrary sleeps,
-  live network, global DI, or test-order assumptions.
+- `scripts/quality/architecture.py` enforces module edges and the code rules it
+  lists. The pull request's `quality` check on GitHub is the only proof that checks
+  passed; no reports are committed. Process, commands and gate profiles are in
+  [AGENTS.md](AGENTS.md) and [quality gates](docs/development/quality-gates.md).
+- **MUST** use red-first tests for bug fixes and meaningful behavior tests otherwise,
+  with controlled clocks/virtual time, external fakes, and real Room for
+  transactions/migrations. Expected money values are hand-worked literals, never
+  computed with the code under test. No arbitrary sleeps, live network, global DI,
+  or test-order assumptions.
 - **MUST** cover duplicates, cancellation around commit, stale versions, missing
   rows, overflow rollback, read-error-not-empty, guarded undo, malformed backup,
   restore preference failure, and reset fencing before MVP release. Later gates
   include recurrence restart, withdrawal-not-loss, FX races, and milestone history.
-- **MUST** gate code changes with architecture/static checks, unit tests, lint, and
-  debug/release assembly; affected device flows and migration tests run in CI. The
-  required local run is that host gate; the hosted check runs the device suites
-  (ADR 0014, amended 2026-10-24).
-  [ADR 0014](docs/decisions/0014-change-aware-quality-gates.md) permits Python/Git-only
-  G0 for documentation advancing no ticket and explicit dependency-aware G2 device
-  scope. Shared/build/unknown inputs require full device coverage; the nightly
-  verifies `main` whole at G3 once it moved (ADR 0009, amended 2026-10-26). Reports
-  must distinguish targeted execution from full coverage. Completion evidence is
-  bound to the pull request's own change set; the pull request's hosted run verifies
-  its merge with `main` as it stood, and the push run and the nightly verify what
-  landed (ADR 0014, amended 2026-10-24; ADR 0009, amended 2026-10-26).
-  Release additionally requires release-composition checks, dependency review,
-  accessibility/adaptive smoke tests, shrinking, and production signing validation.
-  Assembly is not device execution; ephemeral CI signing is not customer-distribution signing.
-- **MUST** also assemble the catalog, exercise sandbox restart/rollover scenarios,
-  and verify release artifacts contain no debug tooling, fixtures, or test clocks.
-- **SHOULD** keep previews for four themes and loading/empty/error/busy/large-money
-  states. Measure startup/large-list responsiveness before adding optimizations.
+- Device tests cover critical paths only: storage on real Room, platform contracts and
+  a small set of user journeys. Screen and ViewModel behavior is tested on the JVM.
+  A flaky test is a defect fixed at its cause, never retried or disabled.
+- **MUST** verify release artifacts contain no debug tooling, fixtures, or test
+  clocks; assembly is not device execution and CI signing is not distribution signing.
 - **MUST** record significant deviations in short ADRs (context, alternatives,
   decision, consequences, verification); update changed guardrails here.
 - **MUST** settle MVP scope acceptance, supported API/toolchain matrix, backup
   plaintext policy, and forecast examples before the first release. Legacy import
-  and investment/rate semantics are explicit later decisions—not hidden defaults.
+  and investment/rate semantics are explicit later decisions, not hidden defaults.
 
 ## References and precedence
 

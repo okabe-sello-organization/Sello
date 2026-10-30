@@ -1,7 +1,6 @@
 package com.software.sello.feature.goals
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.Goal
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
@@ -21,16 +20,16 @@ import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
-import com.software.sello.feature.expense.HandIncomeCommands
+import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
-import com.software.sello.presentation.corrections.ExpenseCorrections
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -61,11 +60,7 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReciboGoalViewModelTest {
-    private val money = MoneyFormatter(object : MoneyLabels {
-        override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-        override fun negative(amount: String) = "menos $amount"
-        override fun positive(amount: String) = "más $amount"
-    })
+    private val money = testMoney()
     private val clock = HandFinancialClock("2026-10-23")
     private val session = MonthSession(clock, HandMonotonicClock())
     private val reads = HandGoalReads()
@@ -73,7 +68,7 @@ class ReciboGoalViewModelTest {
     private var nextId = 1
     private val ids = RecordIdSource { "00000000-0000-4000-a000-%012d".format(nextId++) }
     private val scheduler = TestCoroutineScheduler()
-    private lateinit var corrections: ExpenseCorrections
+    private lateinit var corrections: Corrections
 
     private val viaje = "00000000-0000-4000-9000-000000000001"
     private val celular = "00000000-0000-4000-9000-000000000002"
@@ -82,7 +77,7 @@ class ReciboGoalViewModelTest {
     @Before
     fun main() {
         Dispatchers.setMain(UnconfinedTestDispatcher(scheduler))
-        corrections = ExpenseCorrections(
+        corrections = Corrections(
             HandExpenseCommands(),
             HandIncomeCommands(),
             commands,
@@ -165,7 +160,7 @@ class ReciboGoalViewModelTest {
 
     @Test
     fun mt28AndMt29TheGoalTheBoardNamesIsShownWithItsPercentage() = runTest {
-        reads.board.value = GoalBoardState.Ready(board(a, b, featured = viaje))
+        reads.board.value = ReadState.Ready(board(a, b, featured = viaje))
         val model = model()
         watch(model)
 
@@ -175,13 +170,13 @@ class ReciboGoalViewModelTest {
         )
 
         // MT29: B chosen, whatever A's completion.
-        reads.board.value = GoalBoardState.Ready(board(a, b, featured = celular))
+        reads.board.value = ReadState.Ready(board(a, b, featured = celular))
         assertEquals(ReciboGoalPill(celular, "Celular nuevo", "flight", 37), shown(model).pill)
     }
 
     @Test
     fun mt30WhenTheShownGoalIsCompletedRecibosGoalFallsBack() = runTest {
-        reads.board.value = GoalBoardState.Ready(board(a, b, featured = celular))
+        reads.board.value = ReadState.Ready(board(a, b, featured = celular))
         val model = model()
         watch(model)
 
@@ -192,7 +187,7 @@ class ReciboGoalViewModelTest {
             1_200_000,
             LocalDate.of(2026, 10, 23)
         )
-        reads.board.value = GoalBoardState.Ready(board(a, completedB, featured = viaje))
+        reads.board.value = ReadState.Ready(board(a, completedB, featured = viaje))
 
         assertEquals(viaje, shown(model).pill?.id)
         assertEquals(null, shown(model).reached)
@@ -205,14 +200,14 @@ class ReciboGoalViewModelTest {
         assertEquals(ReciboGoalState.Hidden, model.state.value)
 
         val done = goal(viaje, "Viaje a la costa", 3_000_000, 3_000_000, LocalDate.of(2026, 10, 2))
-        reads.board.value = GoalBoardState.Ready(board(done, featured = null))
+        reads.board.value = ReadState.Ready(board(done, featured = null))
 
         assertEquals(ReciboGoalState.Hidden, model.state.value)
     }
 
     @Test
     fun nothingIsShownOnAPastMonthAndTheGoalIsBackOnTheCurrentOne() = runTest {
-        reads.board.value = GoalBoardState.Ready(board(a, b, featured = viaje))
+        reads.board.value = ReadState.Ready(board(a, b, featured = viaje))
         val model = model()
         watch(model)
 
@@ -226,7 +221,7 @@ class ReciboGoalViewModelTest {
     @Test
     fun anotherGoalAt100PercentGetsTheRowButTheShownGoalDoesNot() = runTest {
         val reached = goal(curso, "Curso de inglés", 2_000_000, 2_000_000)
-        reads.board.value = GoalBoardState.Ready(board(a, reached, featured = viaje))
+        reads.board.value = ReadState.Ready(board(a, reached, featured = viaje))
         val model = model()
         watch(model)
 
@@ -236,20 +231,20 @@ class ReciboGoalViewModelTest {
         )
 
         // Chosen and at 100 %: the pill says 100 %, and no row repeats it.
-        reads.board.value = GoalBoardState.Ready(board(a, reached, featured = curso))
+        reads.board.value = ReadState.Ready(board(a, reached, featured = curso))
         assertEquals(100L, shown(model).pill?.percentage)
         assertEquals(null, shown(model).reached)
     }
 
     @Test
     fun aFailedReadIsSaidKeepsTheLastGoodGoalAndRetryReadsAgain() = runTest {
-        reads.board.value = GoalBoardState.Failed(StorageFailure.Unavailable("x"), null)
+        reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val model = model()
         watch(model)
         assertEquals(ReciboGoalState.Failed, model.state.value)
 
         reads.board.value =
-            GoalBoardState.Failed(StorageFailure.Unavailable("x"), board(a, featured = viaje))
+            ReadState.Failed(StorageFailure.Unavailable("x"), board(a, featured = viaje))
         assertEquals(viaje, shown(model).pill?.id)
 
         val before = reads.started
@@ -260,7 +255,7 @@ class ReciboGoalViewModelTest {
     @Test
     fun theWaitingGoalIsMarkedLogradaFromItsRowOnceAndTheMomentStaysOpen() = runTest {
         val reached = goal(curso, "Curso de inglés", 2_000_000, 2_000_000)
-        reads.board.value = GoalBoardState.Ready(board(a, reached, featured = viaje))
+        reads.board.value = ReadState.Ready(board(a, reached, featured = viaje))
         val model = model()
         watch(model)
 
@@ -273,7 +268,7 @@ class ReciboGoalViewModelTest {
         assertEquals(GoalId.of(curso).value() to 4L, sent.goalId to sent.expectedVersion)
         // Storage now reads it completed: the row is gone, the moment stays until closed.
         val done = goal(curso, "Curso de inglés", 2_000_000, 2_000_000, LocalDate.of(2026, 10, 23))
-        reads.board.value = GoalBoardState.Ready(board(a, done, featured = viaje))
+        reads.board.value = ReadState.Ready(board(a, done, featured = viaje))
         assertEquals(null, shown(model).reached)
         assertTrue(shown(model).completion is CompletionState.Celebrating)
 
@@ -285,7 +280,7 @@ class ReciboGoalViewModelTest {
     fun theShownGoalAt100PercentOrMoreWaitsToBeMarkedInsteadOfAskingForMore() = runTest {
         // 3.360.000 saved of 3.000.000: 112 %, still active.
         val over = goal(viaje, "Viaje a la costa", 3_360_000, 3_000_000)
-        reads.board.value = GoalBoardState.Ready(board(over, b, featured = viaje))
+        reads.board.value = ReadState.Ready(board(over, b, featured = viaje))
         val model = model()
         watch(model)
 
@@ -295,14 +290,14 @@ class ReciboGoalViewModelTest {
         )
 
         // Under 100 % it still asks for more.
-        reads.board.value = GoalBoardState.Ready(board(a, b, featured = viaje))
+        reads.board.value = ReadState.Ready(board(a, b, featured = viaje))
         assertEquals(false, shown(model).pill?.reached)
     }
 
     @Test
     fun theShownWaitingGoalIsMarkedLogradaFromThePill() = runTest {
         val over = goal(viaje, "Viaje a la costa", 3_360_000, 3_000_000)
-        reads.board.value = GoalBoardState.Ready(board(over, b, featured = viaje))
+        reads.board.value = ReadState.Ready(board(over, b, featured = viaje))
         val model = model()
         watch(model)
 

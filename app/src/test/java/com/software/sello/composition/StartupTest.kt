@@ -10,12 +10,21 @@ import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
-import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.StageFailure
 import com.software.sello.domain.port.StagedRestore
+import com.software.sello.feature.backup.HandRestores
 import com.software.sello.feature.startup.StartupRestore
 import java.time.Instant
 import java.time.ZoneId
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,8 +35,10 @@ import org.junit.Test
 
 /**
  * Starting the app against storage a test scripts: each open and each move is counted,
- * and a restore from the failure screen is logged step by step.
+ * and a restore from the failure screen is logged step by step. Opens run in the test's
+ * scope, so a test sees the data opening until it lets the scheduler run.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class StartupTest {
     private val corrupt = StorageFailure.Unavailable("SQLiteDatabaseCorruptException")
     private val full = StorageFailure.Unavailable("SQLiteFullException")
@@ -39,6 +50,9 @@ class StartupTest {
     private var opened = 0
     private var moves = 0
     private var move: Outcome<Unit, StorageFailure> = Outcome.Success(Unit)
+
+    /** While set, the next open waits for it: the disk is slow. */
+    private var slowOpen: CompletableDeferred<Unit>? = null
     private val restores = HandRestores(events)
     private val bytes = byteArrayOf(1, 2, 3)
     private val checked = CheckedBackup(
@@ -53,14 +67,20 @@ class StartupTest {
         PendingPreferences(null, null)
     )
 
-    /** Answers each open with the next scripted result; a test never opens more than it scripted. */
-    private fun startup(
-        vararg results: Outcome<ViewModelProvider.Factory, StorageFailure>
+    /**
+     * Answers each open with the next scripted result; a test never opens more than it
+     * scripted. The first open has only begun when this returns.
+     */
+    private fun TestScope.startup(
+        vararg results: Outcome<ViewModelProvider.Factory, StorageFailure>,
+        scope: CoroutineScope = backgroundScope
     ): Startup {
         opens += results
         return Startup(
+            scope = scope,
             start = {
                 events += "open"
+                slowOpen?.await()
                 when (val result = opens[opened++]) {
                     is Outcome.Success -> Outcome.Success(Started(result.value, restores))
                     is Outcome.Failure -> result
@@ -76,34 +96,6 @@ class StartupTest {
                 read
             }
         )
-    }
-
-    /** Restores that answer as told and log what they were asked. */
-    private class HandRestores(private val events: MutableList<String>) : Restores {
-        var stageAnswer: Outcome<StagedRestore, StageFailure>? = null
-        var replaceAnswer: RestoreOutcome? = null
-        var applyAnswer: RestoreOutcome.Restored? = null
-
-        override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
-            events += "stage ${bytes.toList()}"
-            return stageAnswer!!
-        }
-
-        override suspend fun staged(): StagedRestore? = null
-
-        override suspend fun discard() = Unit
-
-        override suspend fun replace(staged: StagedRestore): RestoreOutcome {
-            events += "replace ${staged.operationId.value}"
-            return replaceAnswer!!
-        }
-
-        override suspend fun pending(): RestoreOutcome.Restored? = null
-
-        override suspend fun applyPending(): RestoreOutcome.Restored? {
-            events += "apply"
-            return applyAnswer
-        }
     }
 
     private fun staged() = StagedRestore(
@@ -123,24 +115,142 @@ class StartupTest {
 
     private val source = DocumentSource("content://provider/document/7")
 
+    /** A start whose first open has finished. */
+    private fun TestScope.started(
+        vararg results: Outcome<ViewModelProvider.Factory, StorageFailure>
+    ): Startup = startup(*results).also { runCurrent() }
+
     @Test
-    fun dataThatCannotBeOpenedIsAFailedStartNotACrash() {
+    fun creatingTheStartReturnsBeforeTheDataOpens() = runTest {
+        val startup = startup(Outcome.Success(factory))
+
+        // The application creates the start on the main thread; opening blocks it.
+        assertEquals("the data opened while the start was created", 0, opened)
+        assertFalse(startup.state.value is StartupState.Ready)
+
+        assertEquals(StartupState.Opening, startup.state.value)
+        runCurrent()
+        assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun aSlowDiskKeepsTheStartOpeningNeitherReadyNorFailed() = runTest {
+        val disk = CompletableDeferred<Unit>()
+        slowOpen = disk
         val startup = startup(Outcome.Failure(corrupt))
+        runCurrent()
+
+        assertEquals(StartupState.Opening, startup.state.value)
+
+        disk.complete(Unit)
+        runCurrent()
+        assertEquals(StartupState.Failed(corrupt), startup.state.value)
+    }
+
+    @Test
+    fun tryingAgainShowsTheDataOpeningUntilItAnswers() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
+        val disk = CompletableDeferred<Unit>()
+        slowOpen = disk
+
+        val retried = backgroundScope.launch { startup.retry() }
+        runCurrent()
+        assertEquals(StartupState.Opening, startup.state.value)
+
+        disk.complete(Unit)
+        retried.join()
+        assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
+        assertEquals(2, opened)
+    }
+
+    @Test
+    fun tryingAgainTwiceWhileItOpensOpensOnce() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
+        slowOpen = CompletableDeferred()
+
+        val first = backgroundScope.launch { startup.retry() }
+        val second = backgroundScope.launch { startup.retry() }
+        runCurrent()
+        slowOpen!!.complete(Unit)
+        first.join()
+        second.join()
+
+        assertEquals(2, opened)
+        assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
+    }
+
+    @Test
+    fun aRetryWhoseCallerIsCancelledStillFinishesTheOpenAndKeepsItsResult() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
+        val disk = CompletableDeferred<Unit>()
+        slowOpen = disk
+        val retried = backgroundScope.launch { startup.retry() }
+        runCurrent()
+
+        retried.cancel()
+        disk.complete(Unit)
+        runCurrent()
+
+        // The caller was told it was cancelled; the store it began is not left half open.
+        assertTrue(retried.isCancelled)
+        assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
+        assertTrue(startup.retry())
+        assertEquals(2, opened)
+    }
+
+    @Test
+    fun aCancelledCallerIsToldSoEvenWhenTheOpenFinished() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Failure(full))
+        val disk = CompletableDeferred<Unit>()
+        slowOpen = disk
+        var answered: Boolean? = null
+        val retried = backgroundScope.launch { answered = startup.retry() }
+        runCurrent()
+
+        retried.cancel()
+        disk.complete(Unit)
+        runCurrent()
+
+        assertNull(answered)
+        assertEquals(StartupState.Failed(full), startup.state.value)
+    }
+
+    @Test
+    fun aProcessThatEndsWhileOpeningLeavesTheNextOneToOpenAgain() = runTest {
+        val process = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        slowOpen = CompletableDeferred()
+        val first = startup(Outcome.Success(factory), scope = process)
+        runCurrent()
+        process.cancel()
+        slowOpen = null
+
+        val next = startup(Outcome.Success(factory))
+        runCurrent()
+
+        assertEquals(StartupState.Opening, first.state.value)
+        assertSame(factory, (next.state.value as StartupState.Ready).viewModels)
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun dataThatCannotBeOpenedIsAFailedStartNotACrash() = runTest {
+        val startup = started(Outcome.Failure(corrupt))
 
         assertEquals(StartupState.Failed(corrupt), startup.state.value)
         assertEquals(1, opened)
     }
 
     @Test
-    fun dataThatOpensIsReadyWithTheViewModelsBuiltForIt() {
-        val startup = startup(Outcome.Success(factory))
+    fun dataThatOpensIsReadyWithTheViewModelsBuiltForIt() = runTest {
+        val startup = started(Outcome.Success(factory))
 
         assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
     }
 
     @Test
-    fun tryingAgainOpensOnceMoreAndBecomesReadyWhenItWorks() {
-        val startup = startup(Outcome.Failure(corrupt), Outcome.Success(factory))
+    fun tryingAgainOpensOnceMoreAndBecomesReadyWhenItWorks() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
 
         assertTrue(startup.retry())
 
@@ -149,8 +259,8 @@ class StartupTest {
     }
 
     @Test
-    fun tryingAgainThatFailsStaysFailedWithTheLatestReason() {
-        val startup = startup(Outcome.Failure(full), Outcome.Failure(corrupt))
+    fun tryingAgainThatFailsStaysFailedWithTheLatestReason() = runTest {
+        val startup = started(Outcome.Failure(full), Outcome.Failure(corrupt))
 
         assertFalse(startup.retry())
 
@@ -159,8 +269,8 @@ class StartupTest {
     }
 
     @Test
-    fun onceReadyTryingAgainNeverOpensASecondStore() {
-        val startup = startup(Outcome.Failure(corrupt), Outcome.Success(factory))
+    fun onceReadyTryingAgainNeverOpensASecondStore() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
         startup.retry()
 
         assertTrue(startup.retry())
@@ -171,8 +281,8 @@ class StartupTest {
     }
 
     @Test
-    fun dataThatOpenedIsNeverSetAside() {
-        val startup = startup(Outcome.Success(factory))
+    fun dataThatOpenedIsNeverSetAside() = runTest {
+        val startup = started(Outcome.Success(factory))
 
         assertFalse(startup.setAside())
 
@@ -181,8 +291,8 @@ class StartupTest {
     }
 
     @Test
-    fun settingAsideMovesTheDataAndOpensNothingByItself() {
-        val startup = startup(Outcome.Failure(corrupt))
+    fun settingAsideMovesTheDataAndOpensNothingByItself() = runTest {
+        val startup = started(Outcome.Failure(corrupt))
 
         assertTrue(startup.setAside())
 
@@ -192,9 +302,9 @@ class StartupTest {
     }
 
     @Test
-    fun dataThatCannotBeMovedIsReportedAndLeavesTheStartFailed() {
+    fun dataThatCannotBeMovedIsReportedAndLeavesTheStartFailed() = runTest {
         move = Outcome.Failure(StorageFailure.Unavailable("AccessDeniedException"))
-        val startup = startup(Outcome.Failure(corrupt))
+        val startup = started(Outcome.Failure(corrupt))
 
         assertFalse(startup.setAside())
 
@@ -203,8 +313,75 @@ class StartupTest {
     }
 
     @Test
+    fun startingOverAfterASetAsideOpensTheEmptyDataThenRelaunchesOnce() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
+        var relaunches = 0
+        startup.setAside()
+
+        startup.startOver { relaunches++ }
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
+        assertEquals(2, opened)
+        assertEquals(1, relaunches)
+    }
+
+    @Test
+    fun askingAgainAfterTheEmptyDataFailedOpensAndRelaunchesNothingMore() = runTest {
+        val startup = started(Outcome.Failure(corrupt), Outcome.Failure(full))
+        var relaunches = 0
+        startup.setAside()
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        // The failure screen comes back with its start-over still done and asks again.
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        assertEquals(StartupState.Failed(full), startup.state.value)
+        assertEquals(2, opened)
+        assertEquals(1, relaunches)
+    }
+
+    @Test
+    fun withoutASetAsideStartingOverOpensAndRelaunchesNothing() = runTest {
+        val startup = started(Outcome.Failure(corrupt))
+        var relaunches = 0
+
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        assertEquals(StartupState.Failed(corrupt), startup.state.value)
+        assertEquals(1, opened)
+        assertEquals(0, relaunches)
+    }
+
+    @Test
+    fun aSecondSetAsideAllowsASecondStartOver() = runTest {
+        val startup = started(
+            Outcome.Failure(corrupt),
+            Outcome.Failure(full),
+            Outcome.Success(factory)
+        )
+        var relaunches = 0
+        startup.setAside()
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        startup.setAside()
+        startup.startOver { relaunches++ }
+        runCurrent()
+
+        assertSame(factory, (startup.state.value as StartupState.Ready).viewModels)
+        assertEquals(3, opened)
+        assertEquals(2, moves)
+        assertEquals(2, relaunches)
+    }
+
+    @Test
     fun checkingABackupReadsItAndMovesOrOpensNothing() = runTest {
-        val startup = startup(Outcome.Failure(corrupt))
+        val startup = started(Outcome.Failure(corrupt))
 
         val answer = startup.check(source)
 
@@ -216,7 +393,7 @@ class StartupTest {
     @Test
     fun aRestoreSetsTheDataAsideOpensANewStoreAndFillsItFromTheCheckedFile() = runTest {
         willRestore()
-        val startup = startup(Outcome.Failure(corrupt), Outcome.Success(factory))
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
         startup.check(source)
 
         val ended = startup.restore()
@@ -239,7 +416,7 @@ class StartupTest {
 
     @Test
     fun withoutACheckedFileOrAfterARejectedOneNothingIsMoved() = runTest {
-        val startup = startup(Outcome.Failure(corrupt))
+        val startup = started(Outcome.Failure(corrupt))
         assertEquals(StartupRestore.NotSetAside, startup.restore())
 
         startup.check(source)
@@ -259,7 +436,7 @@ class StartupTest {
     @Test
     fun dataThatCannotBeSetAsideIsNotRestoredOverAndNothingOpens() = runTest {
         move = Outcome.Failure(StorageFailure.Unavailable("AccessDeniedException"))
-        val startup = startup(Outcome.Failure(corrupt))
+        val startup = started(Outcome.Failure(corrupt))
         startup.check(source)
 
         assertEquals(StartupRestore.NotSetAside, startup.restore())
@@ -270,7 +447,7 @@ class StartupTest {
 
     @Test
     fun aNewStoreThatWillNotOpenIsAnInterruptedRestoreWithTheLatestReason() = runTest {
-        val startup = startup(Outcome.Failure(corrupt), Outcome.Failure(full))
+        val startup = started(Outcome.Failure(corrupt), Outcome.Failure(full))
         startup.check(source)
 
         assertEquals(StartupRestore.Interrupted, startup.restore())
@@ -289,7 +466,7 @@ class StartupTest {
             willRestore(outcome)
             opened = 0
             opens.clear()
-            val startup = startup(Outcome.Failure(corrupt), Outcome.Success(factory))
+            val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
             startup.check(source)
 
             assertEquals(StartupRestore.Interrupted, startup.restore())
@@ -299,7 +476,7 @@ class StartupTest {
     @Test
     fun onceARestoreOpenedTheNewStoreNothingOpensOrMovesAgain() = runTest {
         willRestore()
-        val startup = startup(Outcome.Failure(corrupt), Outcome.Success(factory))
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
         startup.check(source)
         startup.restore()
 
@@ -316,7 +493,7 @@ class StartupTest {
     fun pendingPreferencesAreAppliedInTheStoreTheRestoreOpened() = runTest {
         willRestore()
         restores.applyAnswer = restored
-        val startup = startup(Outcome.Failure(corrupt), Outcome.Success(factory))
+        val startup = started(Outcome.Failure(corrupt), Outcome.Success(factory))
         assertNull(startup.applyPending())
         startup.check(source)
         startup.restore()

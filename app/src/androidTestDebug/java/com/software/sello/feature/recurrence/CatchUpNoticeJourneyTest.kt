@@ -16,14 +16,14 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.software.sello.await
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
 import com.software.sello.composition.viewModels
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.devtools.JourneySetups
 import com.software.sello.devtools.SandboxGraph
-import com.software.sello.devtools.SandboxSession
-import com.software.sello.devtools.Scenarios
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.PreferenceRead
@@ -56,22 +56,14 @@ class CatchUpNoticeJourneyTest {
         sandbox?.erase()
     }
 
-    /** "Una semana fuera" up to its check on 3 oct: two bus rides recorded so far. */
+    /** "Una semana fuera" up to its catch-up on 3 oct: two bus rides recorded so far. */
     private fun beforeTheWeekAway(): SandboxGraph {
-        val scenario = Scenarios.WeekAway
-        val graph = SandboxGraph(
-            SandboxSession(
-                active = true,
-                date = scenario.start,
-                zone = scenario.zone,
-                scenario = scenario.key
-            )
-        )
+        val graph = JourneySetups.graph(JourneySetups.WeekAway)
         sandbox = graph
         graph.erase()
         graph.open()
         val runner = checkNotNull(graph.tools?.scenarios)
-        runBlocking { repeat(STEPS_TO_THIRD_OCTOBER) { runner.step() } }
+        runBlocking { repeat(JourneySetups.UP_TO_THIRD_OCTOBER) { runner.step() } }
         return graph
     }
 
@@ -84,13 +76,39 @@ class CatchUpNoticeJourneyTest {
         }
     }
 
+    /**
+     * Listo closes the list only once what it showed is kept as seen, so Recibo is back
+     * only after that, and Recibo must not show the dismissed bar even for a frame: look
+     * the moment it is back. What was kept is checked against storage at the end.
+     */
+    private fun barGone() =
+        rule.onNodeWithTag(CATCH_UP_BAR_TAG, useUnmergedTree = true).assertDoesNotExist()
+
     private fun inBar(text: String) =
         rule.onNode(hasText(text) and hasAnyAncestor(hasTestTag(CATCH_UP_BAR_TAG)), true)
+
+    /** Each recorded entry: note, date, the occurrence it came from and pesos. */
+    private fun SandboxGraph.entries() = rows(
+        "SELECT note || '|' || effective_date || '|' || origin_date || '|' || amount_minor " +
+            "FROM expense ORDER BY effective_date, note"
+    )
+
+    /** The last occurrence each schedule handled: note, date and slot. */
+    private fun SandboxGraph.checkpoints() = rows(
+        "SELECT note || '|' || IFNULL(handled_date || '|' || handled_slot, 'none') " +
+            "FROM schedule ORDER BY note"
+    )
 
     @Test
     fun openingAfterAWeekShowsWhatWasRecordedUntilListo() {
         val graph = beforeTheWeekAway()
         val runner = checkNotNull(graph.tools?.scenarios)
+        // RE10 by 3 oct: the bus on 26 sep and 3 oct, nothing of the rent yet.
+        assertEquals(
+            listOf("Bus|2026-09-26|2026-09-26|20000", "Bus|2026-10-03|2026-10-03|20000"),
+            graph.entries()
+        )
+        assertEquals(listOf("Arriendo|none", "Bus|2026-10-03|1"), graph.checkpoints())
         rule.setContent {
             SelloTheme(reducedMotion = true) { SelloAppRoot(viewModels(graph.koin)) }
         }
@@ -99,18 +117,41 @@ class CatchUpNoticeJourneyTest {
         rule.awaitTag(CATCH_UP_BAR_TAG)
         inBar("Sello anotó 2 pagos fijos").assertExists()
         inBar("Ver").performClick()
-        rule.awaitTag(CATCH_UP_LIST_TAG)
-        rule.onNodeWithText("Sello anotó estos 2").assertExists()
+        // The list opens on its placeholder while it reads what was recorded, so the
+        // list's own tag says nothing yet: wait for the heading the read brings.
+        rule.await(
+            hasText("Sello anotó estos 2") and hasAnyAncestor(hasTestTag(CATCH_UP_LIST_TAG))
+        )
         rule.onNode(hasText("Listo") and hasAnyAncestor(hasTestTag(SCAFFOLD_DOCK_TAG)), true)
             .assertExists()
         rule.onNodeWithContentDescription(LISTO).press()
         rule.awaitTag(RECIBO_SUMMARY_TAG)
-        rule.waitForIdle()
-        rule.onNodeWithTag(CATCH_UP_BAR_TAG).assertDoesNotExist()
+        barGone()
 
         // A week away: on 24 oct catch-up records rent and three rides.
         runBlocking { while (runner.step()) Unit }
         assertEquals(true, runner.state.value.finished)
+        // RE10 on 24 oct, each on its own date: rent 950.000 and rides of 20.000 on the
+        // 10th, 17th and 24th. October by hand: 20.000 (3 oct) + 950.000 + 3 × 20.000.
+        assertEquals(
+            listOf(
+                "Bus|2026-09-26|2026-09-26|20000",
+                "Bus|2026-10-03|2026-10-03|20000",
+                "Arriendo|2026-10-05|2026-10-05|950000",
+                "Bus|2026-10-10|2026-10-10|20000",
+                "Bus|2026-10-17|2026-10-17|20000",
+                "Bus|2026-10-24|2026-10-24|20000"
+            ),
+            graph.entries()
+        )
+        assertEquals(
+            listOf("1030000"),
+            graph.rows(
+                "SELECT SUM(amount_minor) FROM expense " +
+                    "WHERE effective_date BETWEEN '2026-10-01' AND '2026-10-31'"
+            )
+        )
+        assertEquals(listOf("Arriendo|2026-10-05|1", "Bus|2026-10-24|1"), graph.checkpoints())
         rule.awaitTag(CATCH_UP_BAR_TAG)
         inBar("Sello anotó 4 pagos fijos").assertExists()
         capture("bar")
@@ -135,8 +176,7 @@ class CatchUpNoticeJourneyTest {
         rule.awaitTag(CATCH_UP_LIST_TAG)
         rule.onNodeWithContentDescription(LISTO).press()
         rule.awaitTag(RECIBO_SUMMARY_TAG)
-        rule.waitForIdle()
-        rule.onNodeWithTag(CATCH_UP_BAR_TAG).assertDoesNotExist()
+        barGone()
 
         // Listo was kept: nothing is left to show the next time Sello opens.
         runBlocking {
@@ -153,6 +193,3 @@ class CatchUpNoticeJourneyTest {
 
 /** The dock, read as what it does; it shows "Listo". */
 private const val LISTO = "Listo, ya revisé lo que Sello anotó"
-
-/** Two categories, rent, catch-up, the bus, catch-up, 3 oct, catch-up and its check. */
-private const val STEPS_TO_THIRD_OCTOBER = 9

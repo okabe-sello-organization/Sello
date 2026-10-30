@@ -20,6 +20,7 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.ScheduleBook
@@ -100,9 +101,9 @@ class ResumenViewModelTest {
         val model = model()
         watch(model)
         assertEquals(ResumenState.Loading, model.state.value)
-        reads.of(october).value = ResumenSnapshotState.Ready(resumenSnapshot())
+        reads.of(october).value = ReadState.Ready(resumenSnapshot())
         assertEquals("150.000 pesos", (model.state.value as ResumenState.Ready).income.spoken)
-        reads.of(october).value = ResumenSnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+        reads.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
         assertEquals(ResumenState.Failed, model.state.value)
         model.onAction(ResumenAction.Retry)
         assertEquals(2, reads.started)
@@ -117,10 +118,10 @@ class ResumenViewModelTest {
         val model = model()
         watch(model)
         val original = resumenSnapshot(income = 200_000)
-        reads.of(october).value = ResumenSnapshotState.Ready(original)
+        reads.of(october).value = ReadState.Ready(original)
         model.onAction(ResumenAction.SelectHistory("2026-10"))
         val corrected = resumenSnapshot(spent = 27_000, income = 200_000)
-        reads.of(october).value = ResumenSnapshotState.Ready(corrected)
+        reads.of(october).value = ReadState.Ready(corrected)
         val shown = model.state.value as ResumenState.Ready
         assertEquals("2026-10", shown.selectedHistory)
         assertEquals("27.000 pesos", shown.history.last().amount.spoken)
@@ -132,7 +133,7 @@ class ResumenViewModelTest {
     fun selectionExpiresWithVirtualTimeAndUnknownIdsAreIgnored() = runTest {
         val model = model()
         watch(model)
-        reads.of(october).value = ResumenSnapshotState.Ready(resumenSnapshot())
+        reads.of(october).value = ReadState.Ready(resumenSnapshot())
         model.onAction(ResumenAction.SelectHistory("not-a-month"))
         assertNull((model.state.value as ResumenState.Ready).selectedHistory)
         model.onAction(ResumenAction.SelectHistory("2026-10"))
@@ -149,12 +150,12 @@ class ResumenViewModelTest {
         val saved = SavedStateHandle(mapOf("resumen.history" to "2026-10|2026-10"))
         val model = model(saved)
         watch(model)
-        reads.of(october).value = ResumenSnapshotState.Ready(resumenSnapshot())
+        reads.of(october).value = ReadState.Ready(resumenSnapshot())
         assertEquals("2026-10", (model.state.value as ResumenState.Ready).selectedHistory)
         val september = YearMonth.of(2026, 9)
         session.select(september)
         val original = resumenSnapshot()
-        reads.of(september).value = ResumenSnapshotState.Ready(
+        reads.of(september).value = ReadState.Ready(
             original.copy(budget = original.budget.copy(month = september))
         )
         assertNull((model.state.value as ResumenState.Ready).selectedHistory)
@@ -195,12 +196,12 @@ class ResumenViewModelTest {
     fun theStubSaysTheNearestFixedOneStillToComeAndNothingWhenItCannotBeRead() = runTest {
         val model = model()
         watch(model)
-        reads.of(october).value = ResumenSnapshotState.Ready(resumenSnapshot())
+        reads.of(october).value = ReadState.Ready(resumenSnapshot())
         // While loading, no fact: never "none".
         assertEquals(ResumenNextFixed.Unknown, shown(model))
 
         // The 5th went through on 5 Oct, so 5 Nov; the 28th is still to come; the 15th is paused.
-        schedules.state.value = ScheduleBookState.Ready(
+        schedules.state.value = ReadState.Ready(
             ScheduleBook(
                 1,
                 1,
@@ -221,10 +222,10 @@ class ResumenViewModelTest {
             shown(model)
         )
 
-        schedules.state.value = ScheduleBookState.Ready(ScheduleBook(1, 2, emptyList()))
+        schedules.state.value = ReadState.Ready(ScheduleBook(1, 2, emptyList()))
         assertEquals(ResumenNextFixed.None, shown(model))
 
-        schedules.state.value = ScheduleBookState.Failed(
+        schedules.state.value = ReadState.Failed(
             StorageFailure.Unavailable("hand"),
             ScheduleBook(1, 2, emptyList())
         )
@@ -253,7 +254,7 @@ class ResumenViewModelTest {
     fun dismissingTheSuggestionRemembersItForThisMonthAndHidesIt() = runTest {
         val model = model()
         watch(model)
-        reads.of(october).value = ResumenSnapshotState.Ready(withSuggestion())
+        reads.of(october).value = ReadState.Ready(withSuggestion())
         assertEquals("Hogar", (model.state.value as ResumenState.Ready).suggestion?.name)
 
         model.onAction(ResumenAction.DismissSuggestion)
@@ -269,7 +270,7 @@ class ResumenViewModelTest {
         val model = model()
         watch(model)
 
-        reads.of(october).value = ResumenSnapshotState.Ready(withSuggestion())
+        reads.of(october).value = ReadState.Ready(withSuggestion())
 
         assertEquals("Hogar", (model.state.value as ResumenState.Ready).suggestion?.name)
     }
@@ -281,7 +282,7 @@ class ResumenViewModelTest {
         val model = model()
         watch(model)
 
-        reads.of(october).value = ResumenSnapshotState.Ready(withSuggestion())
+        reads.of(october).value = ReadState.Ready(withSuggestion())
 
         assertEquals("Hogar", (model.state.value as ResumenState.Ready).suggestion?.name)
     }
@@ -306,7 +307,7 @@ private class HandResumenSnapshots : ResumenSnapshots {
     var started = 0
 
     fun of(month: YearMonth) = states.getOrPut(month) {
-        MutableStateFlow<ResumenSnapshotState>(ResumenSnapshotState.Loading)
+        MutableStateFlow<ResumenSnapshotState>(ReadState.Loading)
     }
 
     override suspend fun read(month: YearMonth): Outcome<ResumenSnapshot, SnapshotFailure> =

@@ -19,7 +19,15 @@ lifecycleProcess = "2.9.4"
 navigation = "2.9.8"
 serialization = "1.11.0"
 datastore = "1.2.1"
-materialIconsExtended = "1.7.8"
+robolectric = "4.17"
+# The Android 17 (API 37) framework jar Robolectric 4.17 runs on; see ADR 0022.
+robolectricAndroidAll = "17-robolectric-15733970-i7"
+roborazzi = "1.77.0"
+# The androidx.test release Robolectric 4.17 is built against (monitor 1.8.0), for the JVM
+# screen tests only. The device tests keep junitVersion, espressoCore and testRunner above.
+androidxTestCoreJvm = "1.7.0"
+androidxJunitJvm = "1.3.0"
+espressoCoreJvm = "3.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -37,7 +45,6 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
-androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended", version.ref = "materialIconsExtended" }
 androidx-lifecycle-process = { group = "androidx.lifecycle", name = "lifecycle-process", version.ref = "lifecycleProcess" }
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "lifecycleProcess" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleProcess" }
@@ -54,6 +61,12 @@ androidx-room-runtime = { group = "androidx.room", name = "room-runtime", versio
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+robolectric-android-all = { group = "org.robolectric", name = "android-all-instrumented", version.ref = "robolectricAndroidAll" }
+roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
+androidx-test-core-jvm = { group = "androidx.test", name = "core", version.ref = "androidxTestCoreJvm" }
+androidx-junit-jvm = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunitJvm" }
+androidx-espresso-core-jvm = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCoreJvm" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -63,3 +76,4 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }

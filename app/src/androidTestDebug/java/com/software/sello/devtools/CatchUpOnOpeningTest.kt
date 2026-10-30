@@ -13,6 +13,7 @@ import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateCategory
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.RecordIdSource
@@ -81,7 +82,7 @@ class CatchUpOnOpeningTest {
             )
         )
         val transporte: CategoryId =
-            (category as CategoryCommandOutcome.Committed).change.categoryId
+            (category as CommandOutcome.Committed).value.categoryId
         val created = sandbox.koin.get<ScheduleCommands>().submit(
             CreateSchedule(
                 operation(),
@@ -96,7 +97,7 @@ class CatchUpOnOpeningTest {
                 null
             )
         )
-        assertTrue("$created", created is ScheduleCommandOutcome.Committed)
+        assertTrue("$created", created is CommandOutcome.Committed)
 
         // Sello closes, and opens again two weeks later.
         openOn(LocalDate.of(2026, 10, 15))

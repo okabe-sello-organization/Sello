@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -98,7 +99,7 @@ fun ConfirmSlip(
                 SelloButton(
                     text = confirmLabel,
                     onClick = onConfirm,
-                    kind = if (destructive) ButtonKind.Destructive else ButtonKind.Filled,
+                    tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
                     loading = busy,
                     modifier = Modifier.weight(1f)
                 )
@@ -109,8 +110,8 @@ fun ConfirmSlip(
 
 /**
  * [ConfirmSlip] with any [content] under the title, such as points to read before
- * saving a file. The content scrolls when the slip would not fit, as at large text,
- * the buttons stay in view and go one above the other when a label would not fit.
+ * saving a file. The content scrolls when the slip would not fit; the buttons stay
+ * in view and go one above the other when a label would not fit.
  */
 @Composable
 fun ConfirmSlip(
@@ -162,7 +163,7 @@ fun ConfirmSlip(
                         SelloButton(
                             text = confirmLabel,
                             onClick = onConfirm,
-                            kind = if (destructive) ButtonKind.Destructive else ButtonKind.Filled,
+                            tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
                             loading = busy
                         )
                     }
@@ -177,7 +178,7 @@ fun ConfirmSlip(
  * applies to the next ones too: [firstLabel] outlined, [secondLabel] filled, and
  * [backLabel] under them to go back without answering. The slip is [ConfirmSlip]'s.
  * Back and a tap outside are [onBack]. The answers stand one above the other when they
- * do not fit side by side, as at large text. While [busy] the answer given shows a
+ * do not fit side by side. While [busy] the answer given shows a
  * spinner and nothing can be pressed or dismissed, so it is requested once.
  */
 @Composable
@@ -198,8 +199,7 @@ fun ChoiceSlip(
     Dialog(onDismissRequest = { if (!busy) onBack() }) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect { window?.setDimAmount(SCRIM_ALPHA) }
-        // The dialog's own window would take the system's text size; keep the caller's,
-        // as the catalog's font control sets it.
+        // The dialog's own window would take the system's text size; keep the caller's.
         CompositionLocalProvider(LocalDensity provides density) {
             Slip(
                 pinked = false,
@@ -256,8 +256,8 @@ fun ChoiceSlip(
 
 /**
  * [ChoiceSlip] with any [content] under the title, such as a choice of format and the
- * points to read before acting. The content scrolls when the slip would not fit, as at
- * large text; the answers stay in view.
+ * points to read before acting. The content scrolls when the slip would not fit; the
+ * answers stay in view.
  */
 @Composable
 fun ChoiceSlip(
@@ -335,17 +335,10 @@ fun ChoiceSlip(
 
 internal const val SCRIM_ALPHA = 0.55f
 
-/** A slip with nothing to show yet: a title, one sentence and at most one action. */
-@Composable
-fun EmptySlip(
-    title: String,
-    body: String,
-    modifier: Modifier = Modifier,
-    actionLabel: String? = null,
-    onAction: (() -> Unit)? = null
-) = EmptySlipContent(title, body, modifier, actionLabel, onAction, icon = null)
-
-/** The v2 look of [EmptySlip]: the same content centred under a large decorative [icon]. */
+/**
+ * A slip with nothing to show yet: a title, one sentence and at most one action,
+ * centred under a large decorative [icon] that fits what is missing.
+ */
 @Composable
 fun EmptySlip(
     title: String,
@@ -354,20 +347,10 @@ fun EmptySlip(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null
-) = EmptySlipContent(title, body, modifier, actionLabel, onAction, icon)
-
-@Composable
-private fun EmptySlipContent(
-    title: String,
-    body: String,
-    modifier: Modifier,
-    actionLabel: String?,
-    onAction: (() -> Unit)?,
-    icon: SelloIcon?
 ) {
     Slip(modifier = modifier.fillMaxWidth()) {
         StateLayout(icon) {
-            StateText(title, body, icon != null)
+            StateText(title, body)
             if (actionLabel != null && onAction != null) {
                 Spacer(Modifier.height(SelloTheme.spacing.lg))
                 SelloButton(text = actionLabel, onClick = onAction, kind = ButtonKind.Outlined)
@@ -378,8 +361,8 @@ private fun EmptySlipContent(
 
 /**
  * A slip whose content could not be read. [message] says what failed in plain words.
- * It never shows a figure: a failed read has no amount, not a zero. With an [icon] it
- * takes the v2 look: centred under a large decorative icon.
+ * It never shows a figure: a failed read has no amount, not a zero. It is centred under
+ * a large decorative [icon].
  */
 @Composable
 fun ErrorSlip(
@@ -388,55 +371,47 @@ fun ErrorSlip(
     modifier: Modifier = Modifier,
     title: String = stringResource(R.string.sello_error_title),
     retryLabel: String = stringResource(R.string.sello_retry),
-    icon: SelloIcon? = null
+    icon: SelloIcon = SelloIcon.Error
 ) {
     Slip(modifier = modifier.fillMaxWidth()) {
         StateLayout(icon) {
             Column(
-                horizontalAlignment = if (icon !=
-                    null
-                ) {
-                    Alignment.CenterHorizontally
-                } else {
-                    Alignment.Start
-                },
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-            ) { StateText(title, message, icon != null) }
+            ) { StateText(title, message) }
             Spacer(Modifier.height(SelloTheme.spacing.lg))
             SelloButton(text = retryLabel, onClick = onRetry, kind = ButtonKind.Outlined)
         }
     }
 }
 
-/** Left-aligned as in v1.1, or centred under a decorative [icon] as in v2. */
+/** The test tag of the decorative icon above the text of an [EmptySlip] or [ErrorSlip]. */
+const val STATE_ICON_TAG = "state-slip:icon"
+
+/** Centred under a decorative [icon]. */
 @Composable
-private fun StateLayout(icon: SelloIcon?, content: @Composable () -> Unit) {
-    if (icon == null) {
-        Column { content() }
-    } else {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth().padding(vertical = SelloTheme.spacing.md)
-        ) {
-            Icon(
-                painter = icon.painter(),
-                contentDescription = null,
-                tint = SelloTheme.colors.brand,
-                modifier = Modifier.size(44.dp)
-            )
-            Spacer(Modifier.height(SelloTheme.spacing.sm))
-            content()
-        }
+private fun StateLayout(icon: SelloIcon, content: @Composable () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth().padding(vertical = SelloTheme.spacing.md)
+    ) {
+        Icon(
+            painter = icon.painter(),
+            contentDescription = null,
+            tint = SelloTheme.colors.brand,
+            modifier = Modifier.size(44.dp).testTag(STATE_ICON_TAG)
+        )
+        Spacer(Modifier.height(SelloTheme.spacing.sm))
+        content()
     }
 }
 
 @Composable
-private fun StateText(title: String, body: String, centred: Boolean) {
-    val align = if (centred) TextAlign.Center else TextAlign.Start
+private fun StateText(title: String, body: String) {
     Text(
         text = title,
         style = MaterialTheme.typography.headlineSmall,
-        textAlign = align,
+        textAlign = TextAlign.Center,
         modifier = Modifier.semantics { heading() }
     )
     Spacer(Modifier.height(SelloTheme.spacing.xs))
@@ -444,7 +419,7 @@ private fun StateText(title: String, body: String, centred: Boolean) {
         text = body,
         style = MaterialTheme.typography.bodyLarge,
         color = SelloTheme.colors.inkSoft,
-        textAlign = align
+        textAlign = TextAlign.Center
     )
 }
 

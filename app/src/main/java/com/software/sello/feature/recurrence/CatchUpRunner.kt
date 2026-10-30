@@ -1,6 +1,8 @@
 package com.software.sello.feature.recurrence
 
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.usecase.CatchUpNow
@@ -47,8 +49,8 @@ class CatchUpRunner(
     init {
         scope.launch {
             val revisions = reads.observe()
-                .filterIsInstance<ScheduleBookState.Ready>()
-                .map { it.book.generation to it.book.revision }
+                .filterIsInstance<ReadState.Ready<ScheduleBook>>()
+                .map { it.value.generation to it.value.revision }
             combine(clock.today, revisions) { day, revision -> day to revision }
                 .conflate()
                 .collect { run() }

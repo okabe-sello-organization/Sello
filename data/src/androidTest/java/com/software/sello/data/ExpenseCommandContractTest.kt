@@ -19,11 +19,14 @@ import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedExpense
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
-import com.software.sello.domain.port.ExpenseCommandOutcome.Committed
-import com.software.sello.domain.port.ExpenseCommandOutcome.Rejected
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.FinancialClock
@@ -217,7 +220,7 @@ class ExpenseCommandContractTest {
         for (different in changed) {
             assertEquals(
                 "$different",
-                Rejected(ExpenseRejection.OperationConflict),
+                Rejected(CommandRejection.OperationConflict),
                 commands.create(different)
             )
         }
@@ -253,9 +256,9 @@ class ExpenseCommandContractTest {
         val staleReplay = commands.create(command(50))
         val ahead = commands.create(command(52, generation = 3))
 
-        assertEquals(Rejected(ExpenseRejection.StaleGeneration(current = 2)), stale)
-        assertEquals(Rejected(ExpenseRejection.StaleGeneration(current = 2)), staleReplay)
-        assertEquals(Rejected(ExpenseRejection.StaleGeneration(current = 2)), ahead)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 2)), stale)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 2)), staleReplay)
+        assertEquals(Rejected(CommandRejection.StaleGeneration(current = 2)), ahead)
         assertEquals(listOf(storedPan()), expenses())
         assertEquals(1, database.count("operation_receipt"))
         assertEquals(1, revision())
@@ -267,7 +270,7 @@ class ExpenseCommandContractTest {
 
         val outcome = commands.create(command(50, categoryNumber = 9))
 
-        assertEquals(Rejected(ExpenseRejection.CategoryMissing), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.CategoryMissing)), outcome)
         assertNothingWritten()
         assertEquals(Outcome.Success(null), commands.find(command(50).operationId))
     }
@@ -281,7 +284,7 @@ class ExpenseCommandContractTest {
         val outcome = commands.create(command(50))
         val earlier = commands.create(command(49))
 
-        assertEquals(Rejected(ExpenseRejection.CategoryArchived), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.CategoryArchived)), outcome)
         // An operation that committed before the archive still answers with its receipt.
         assertEquals(Committed(committed(49, 100, 1), replayed = true), earlier)
         assertEquals(listOf(storedPan()), expenses())
@@ -299,7 +302,7 @@ class ExpenseCommandContractTest {
 
         assertEquals(Committed(committed(50, 100, 1), replayed = false), onTheDay)
         assertEquals(
-            Rejected(ExpenseRejection.FutureDate(today = LocalDate.of(2026, 12, 31))),
+            Rejected(Specific(ExpenseRejection.FutureDate(today = LocalDate.of(2026, 12, 31)))),
             dayAfter
         )
         assertEquals(listOf("2026-12-31"), expenses().map { it.effectiveDate })
@@ -315,8 +318,8 @@ class ExpenseCommandContractTest {
         val before = commands.create(command(50, date = "-0001-01-01"))
         val longBefore = commands.create(command(51, date = "-2026-10-03"))
 
-        assertEquals(Rejected(ExpenseRejection.InvalidDate), before)
-        assertEquals(Rejected(ExpenseRejection.InvalidDate), longBefore)
+        assertEquals(Rejected(Specific(ExpenseRejection.InvalidDate)), before)
+        assertEquals(Rejected(Specific(ExpenseRejection.InvalidDate)), longBefore)
         assertNothingWritten()
         assertNull(commands.find(command(50).operationId).valueOrFail())
     }
@@ -328,7 +331,7 @@ class ExpenseCommandContractTest {
 
         val outcome = commands.create(command(50, date = "+10000-01-01"))
 
-        assertEquals(Rejected(ExpenseRejection.InvalidDate), outcome)
+        assertEquals(Rejected(Specific(ExpenseRejection.InvalidDate)), outcome)
         assertNothingWritten()
     }
 
@@ -350,7 +353,7 @@ class ExpenseCommandContractTest {
     private fun raw(sql: String) = database.openHelper.writableDatabase.execSQL(sql)
 
     private fun integrity(record: String, field: String) =
-        Rejected(ExpenseRejection.StorageFailed(StorageFailure.Integrity(record, null, field)))
+        Rejected(CommandRejection.StorageFailed(StorageFailure.Integrity(record, null, field)))
 
     @Test
     fun aRevisionThatCannotAdvanceRefusesTheExpenseAndWritesNothing() = runBlocking {
@@ -376,7 +379,7 @@ class ExpenseCommandContractTest {
 
         assertEquals(
             Long.MAX_VALUE,
-            ((last as Committed).expense.receipt).revision
+            ((last as Committed).value.receipt).revision
         )
         assertEquals(integrity("profile", "revision"), beyond)
         assertEquals(listOf(10_000L), expenses().map { it.amountMinor })
@@ -439,7 +442,7 @@ class ExpenseCommandContractTest {
             }
         }.also { go.complete(Unit) }.awaitAll()
 
-        val saved = outcomes.map { (it as Committed).expense }
+        val saved = outcomes.map { (it as Committed).value }
         assertEquals((1L..16L).toList(), saved.map { it.receipt.revision }.sorted())
         assertEquals(16, saved.map { it.expenseId }.toSet().size)
         assertEquals((1L..16L).toList(), expenses().map { it.sequence }.sorted())
@@ -458,7 +461,7 @@ class ExpenseCommandContractTest {
 
         assertEquals(
             Rejected(
-                ExpenseRejection.StorageFailed(
+                CommandRejection.StorageFailed(
                     StorageFailure.Unavailable("SQLiteConstraintException")
                 )
             ),
@@ -540,7 +543,7 @@ class ExpenseCommandContractTest {
         val outcome = commands.create(command(50))
         whenAnIdIsTaken = {}
 
-        assertEquals(ExpenseCommandOutcome.OutcomeUnknown(command(50).operationId), outcome)
+        assertEquals(CommandOutcome.OutcomeUnknown(command(50).operationId), outcome)
         assertEquals(Outcome.Success(null), commands.find(command(50).operationId))
         assertNothingWritten()
         assertEquals(1, database.count("category"))
@@ -559,7 +562,7 @@ class ExpenseCommandContractTest {
             Committed(committed(50, 100, 1), replayed = true),
             commands.create(command(50))
         )
-        assertEquals(Rejected(ExpenseRejection.OperationConflict), commands.create(command(50, 1)))
+        assertEquals(Rejected(CommandRejection.OperationConflict), commands.create(command(50, 1)))
         assertEquals(listOf(storedPan()), expenses())
         assertEquals(1, revision())
     }
@@ -597,7 +600,7 @@ class ExpenseCommandContractTest {
 
             assertEquals(
                 "$change",
-                Rejected(ExpenseRejection.StorageFailed(damaged)),
+                Rejected(CommandRejection.StorageFailed(damaged)),
                 commands.create(command(50))
             )
             assertEquals(
@@ -624,7 +627,7 @@ class ExpenseCommandContractTest {
 
         assertEquals(
             Rejected(
-                ExpenseRejection.StorageFailed(
+                CommandRejection.StorageFailed(
                     StorageFailure.Integrity("category", uuid(1), "icon")
                 )
             ),
@@ -632,7 +635,7 @@ class ExpenseCommandContractTest {
         )
         assertEquals(
             Rejected(
-                ExpenseRejection.StorageFailed(
+                CommandRejection.StorageFailed(
                     StorageFailure.Integrity("profile", null, "financial_zone")
                 )
             ),

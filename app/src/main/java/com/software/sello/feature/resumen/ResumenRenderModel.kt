@@ -2,9 +2,9 @@ package com.software.sello.feature.resumen
 
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
-import com.software.sello.designsystem.component.ComparisonBar
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.WeekdayPattern
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.presentation.money.MoneyFormatter
 import java.math.BigDecimal
@@ -18,11 +18,11 @@ import java.util.Locale
 class ResumenRenderModel(private val money: MoneyFormatter) {
     /** [current] is the financial month in progress; a date from another year shows its year. */
     fun render(state: ResumenSnapshotState, current: YearMonth): ResumenState = when (state) {
-        ResumenSnapshotState.Loading -> ResumenState.Loading
+        ReadState.Loading -> ResumenState.Loading
 
-        is ResumenSnapshotState.Ready -> month(state.snapshot, false, current)
+        is ReadState.Ready -> month(state.value, false, current)
 
-        is ResumenSnapshotState.Failed -> state.lastGood?.let { month(it, true, current) }
+        is ReadState.Failed -> state.lastGood?.let { month(it, true, current) }
             ?: ResumenState.Failed
     }
 

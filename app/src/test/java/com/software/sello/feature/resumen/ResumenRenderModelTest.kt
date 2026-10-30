@@ -3,7 +3,6 @@ package com.software.sello.feature.resumen
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
-import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DailySpending
 import com.software.sello.domain.model.LimitAdjustment
 import com.software.sello.domain.model.Money
@@ -19,12 +18,12 @@ import com.software.sello.domain.model.SpendingDirection
 import com.software.sello.domain.model.SpendingMonth
 import com.software.sello.domain.model.WeekdayPattern
 import com.software.sello.domain.model.WeekdaySpending
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
-import com.software.sello.presentation.money.MoneyFormatter
-import com.software.sello.presentation.money.MoneyLabels
+import com.software.sello.testing.testMoney
 import java.math.BigInteger
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -36,11 +35,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-internal fun resumenMoney() = MoneyFormatter(object : MoneyLabels {
-    override fun amount(currency: Currency, digits: String, isOne: Boolean) = "$digits pesos"
-    override fun negative(amount: String) = "menos $amount"
-    override fun positive(amount: String) = "más $amount"
-})
+internal fun resumenMoney() = testMoney()
 
 internal fun resumenSnapshot(spent: Long = 30_000, income: Long = 150_000): ResumenSnapshot {
     val month = YearMonth.of(2026, 10)
@@ -70,7 +65,7 @@ class ResumenRenderModelTest {
 
     @Test
     fun cashFlowAndPlanningCapacityAreDifferentExactAmounts() {
-        val state = render.render(ResumenSnapshotState.Ready(resumenSnapshot()))
+        val state = render.render(ReadState.Ready(resumenSnapshot()))
         assertTrue(state is ResumenState.Ready)
         state as ResumenState.Ready
         assertEquals("120.000 pesos", state.netFlow.spoken)
@@ -79,7 +74,7 @@ class ResumenRenderModelTest {
 
     @Test
     fun aSingleMonthHasTooLittleHistoryAndTheDateIsWrittenAsInASentence() {
-        val state = render.render(ResumenSnapshotState.Ready(resumenSnapshot()))
+        val state = render.render(ReadState.Ready(resumenSnapshot()))
         assertTrue(state is ResumenState.Ready)
         state as ResumenState.Ready
         assertTrue(state.insufficientHistory)
@@ -100,7 +95,7 @@ class ResumenRenderModelTest {
                 )
             )
         )
-        val state = render.render(ResumenSnapshotState.Ready(snapshot))
+        val state = render.render(ReadState.Ready(snapshot))
         assertTrue(state is ResumenState.Ready)
         state as ResumenState.Ready
         assertEquals("menos 9.007.199.254.740.993 pesos", state.netFlow.spoken)
@@ -113,11 +108,11 @@ class ResumenRenderModelTest {
         assertEquals(
             ResumenState.Failed,
             render.render(
-                ResumenSnapshotState.Failed(SnapshotFailure.Unrepresentable, null)
+                ReadState.Failed(SnapshotFailure.Unrepresentable, null)
             )
         )
         val state = render.render(
-            ResumenSnapshotState.Failed(SnapshotFailure.Unrepresentable, resumenSnapshot())
+            ReadState.Failed(SnapshotFailure.Unrepresentable, resumenSnapshot())
         )
         assertTrue(state is ResumenState.Ready)
         assertTrue((state as ResumenState.Ready).stale)
@@ -126,7 +121,7 @@ class ResumenRenderModelTest {
 
     @Test
     fun theRecordedUntilDayShowsItsYearOnlyWhenItIsFromAnotherYear() {
-        val ready = ResumenSnapshotState.Ready(resumenSnapshot())
+        val ready = ReadState.Ready(resumenSnapshot())
 
         assertEquals("3 de octubre", (render.render(ready) as ResumenState.Ready).asOf)
         assertEquals(
@@ -138,7 +133,7 @@ class ResumenRenderModelTest {
     // --- SELLO-123: where the income went ---
 
     private fun incomeOf(snapshot: ResumenSnapshot) =
-        (render.render(ResumenSnapshotState.Ready(snapshot)) as ResumenState.Ready).incomeSlip
+        (render.render(ReadState.Ready(snapshot)) as ResumenState.Ready).incomeSlip
 
     @Test
     fun theIncomeSlipCountsTheIncomesAndDrawsWhatWasSpentOfThem() {
@@ -182,7 +177,7 @@ class ResumenRenderModelTest {
             )
         )
 
-        val state = render.render(ResumenSnapshotState.Ready(snapshot)) as ResumenState.Ready
+        val state = render.render(ReadState.Ready(snapshot)) as ResumenState.Ready
 
         assertEquals(listOf(false, true), state.history.map { it.current })
         assertEquals(
@@ -205,7 +200,7 @@ class ResumenRenderModelTest {
             history = listOf(SpendingMonth(september, Money.cop(80_000), null, null, 2))
         )
 
-        val state = render.render(ResumenSnapshotState.Ready(snapshot)) as ResumenState.Ready
+        val state = render.render(ReadState.Ready(snapshot)) as ResumenState.Ready
 
         assertEquals(listOf(false), state.history.map { it.current })
         assertEquals(null, state.monthLimit)
@@ -228,7 +223,7 @@ class ResumenRenderModelTest {
         )
         val snapshot = resumenSnapshot().copy(budget = budget)
 
-        val state = render.render(ResumenSnapshotState.Ready(snapshot)) as ResumenState.Ready
+        val state = render.render(ReadState.Ready(snapshot)) as ResumenState.Ready
 
         // Spent 75.000: Casa 45.000 (3/5), Comida 30.000 (2/5); Ocio spent nothing.
         assertEquals(
@@ -244,7 +239,7 @@ class ResumenRenderModelTest {
     // --- v2: the comparison, a normal month, weekdays and the suggestion ---
 
     private fun ready(snapshot: ResumenSnapshot) =
-        render.render(ResumenSnapshotState.Ready(snapshot)) as ResumenState.Ready
+        render.render(ReadState.Ready(snapshot)) as ResumenState.Ready
 
     @Test
     fun theMonthInProgressIsComparedWithTheSameDaysOfSeptember() {

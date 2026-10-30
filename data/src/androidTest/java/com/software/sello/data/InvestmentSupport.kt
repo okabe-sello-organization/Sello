@@ -14,6 +14,7 @@ import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.UsdRate
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommittedInvestment
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.DatedUsdRate
@@ -77,7 +78,7 @@ fun TestLedger.createInvestment(
 /** Creates an investment and returns what was committed; fails the test otherwise. */
 suspend fun TestLedger.created(command: CreateInvestment): CommittedInvestment =
     when (val outcome = invest(command)) {
-        is InvestmentCommandOutcome.Committed -> outcome.change
+        is CommandOutcome.Committed -> outcome.value
         else -> throw AssertionError("expected the investment to be created, got $outcome")
     }
 
@@ -117,7 +118,7 @@ suspend fun TestLedger.recorded(
     date: String
 ) {
     val outcome = movement(id, kind, amount, date)
-    if (outcome !is InvestmentCommandOutcome.Committed) {
+    if (outcome !is CommandOutcome.Committed) {
         throw AssertionError("expected the movement to be recorded, got $outcome")
     }
 }

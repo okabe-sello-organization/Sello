@@ -91,42 +91,6 @@ class MoneyTextRenderTest {
         )
     }
 
-    // ---- Counting ----
-
-    @Test
-    fun aCountStartsAndEndsOnTheExactAmounts() {
-        val pairs = listOf(
-            0L to 937_200L,
-            937_200L to 0L,
-            -5L to 5L,
-            0L to Long.MAX_VALUE,
-            Long.MAX_VALUE - 1 to Long.MAX_VALUE,
-            Long.MIN_VALUE to Long.MAX_VALUE,
-            999_999_999_999L to 1_000_000_000_000L
-        )
-        for ((from, to) in pairs) {
-            assertEquals(from, countFrame(from, to, 0f))
-            assertEquals(to, countFrame(from, to, 1f))
-            assertEquals(to, countFrame(from, to, 1.2f)) // a spring may overshoot
-            assertEquals(from, countFrame(from, to, -0.1f))
-        }
-    }
-
-    @Test
-    fun everyFrameStaysBetweenTheTwoAmounts() {
-        val pairs = listOf(0L to 937_200L, 937_200L to 100L, Long.MIN_VALUE to Long.MAX_VALUE)
-        for ((from, to) in pairs) {
-            var previous = from
-            for (step in 1..99) {
-                val frame = countFrame(from, to, step / 100f)
-                assertTrue("$frame", frame in minOf(from, to)..maxOf(from, to))
-                assertTrue(if (to >= from) frame >= previous else frame <= previous)
-                previous = frame
-            }
-        }
-        assertEquals(468_600L, countFrame(0, 937_200, 0.5f))
-    }
-
     // ---- Pinked edge ----
 
     @Test

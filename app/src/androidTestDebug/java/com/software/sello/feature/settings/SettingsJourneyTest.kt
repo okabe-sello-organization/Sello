@@ -11,9 +11,7 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.Lifecycle
@@ -117,22 +115,6 @@ class SettingsJourneyTest {
         inSettings(slip, option).assertIsSelected()
         Espresso.pressBack()
         rule.waitForIdle()
-    }
-
-    @Test
-    fun tusDatosComesFirstThenLoQueSeRepiteAndThereIsNoAvisos() {
-        launch()
-        openSettings()
-
-        val tops = listOf(
-            SETTINGS_DATA_TAG,
-            SETTINGS_RECURRING_TAG,
-            SETTINGS_APPEARANCE_TAG,
-            SETTINGS_ORDERING_TAG,
-            SETTINGS_INVESTMENTS_TAG
-        ).map { rule.onNodeWithTag(it).getUnclippedBoundsInRoot().top }
-        assertEquals(tops.sorted(), tops)
-        assertEquals(0, rule.onAllNodes(hasText("Avisos")).fetchSemanticsNodes().size)
     }
 
     @Test

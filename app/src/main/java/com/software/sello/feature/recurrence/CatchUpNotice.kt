@@ -43,6 +43,7 @@ import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.ScheduleRecordReads
 import com.software.sello.domain.port.ScheduleRecordsState
@@ -61,6 +62,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -123,8 +125,11 @@ class CatchUpNoticeViewModel(
             when (seen) {
                 is PreferenceRead.Failed -> flowOf(CatchUpNoticeState.Failed)
 
+                // What was shown belongs to the old "seen": until the read for the new one
+                // lands, say nothing rather than keep the bar Listo has just dismissed.
                 is PreferenceRead.Ready -> records.observeRecordedAfter(seen.value)
                     .map { read -> render(read, clock.today.value.date) }
+                    .onStart { emit(CatchUpNoticeState.Loading) }
             }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, CatchUpNoticeState.Loading)
@@ -145,9 +150,9 @@ class CatchUpNoticeViewModel(
 
     private suspend fun render(read: ScheduleRecordsState, today: LocalDate): CatchUpNoticeState {
         val records = when (read) {
-            ScheduleRecordsState.Loading -> return CatchUpNoticeState.Loading
-            is ScheduleRecordsState.Failed -> return CatchUpNoticeState.Failed
-            is ScheduleRecordsState.Ready -> read.records
+            ReadState.Loading -> return CatchUpNoticeState.Loading
+            is ReadState.Failed -> return CatchUpNoticeState.Failed
+            is ReadState.Ready -> read.value
         }
         if (records.isEmpty()) return CatchUpNoticeState.Ready(emptyList(), today)
         // Archived categories included: an entry may still be in one.

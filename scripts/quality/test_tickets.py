@@ -1,4 +1,4 @@
-"""Ticket folders: docs/tickets/<epic>/<SELLO-0NN>/ticket.md is the canonical ticket."""
+"""Ticket files: docs/tickets/<epic>/SELLO-0NN.md is the canonical ticket."""
 import io
 import tempfile
 import unittest
@@ -10,35 +10,9 @@ import tickets
 SECTIONS = """### Outcome
 A complete, independently verifiable task.
 
-### Deliverables
-An integrated implementation and evidence.
-
 ### Acceptance criteria
 - The existing project keeps working.
-
-### Tests
-Meaningful red and green verification.
-
-### Working checkpoint
-The app builds and its affected flow runs.
-
-### Context and starting points
-Read the actual baseline and completed predecessor contracts.
-
-### Implementation plan
-1. Implement the owned boundary.
-2. Verify the behavior without fake success.
-
-### Concrete cases and pitfalls
-Reject incomplete outcomes and preserve existing financial history.
-
-### Verification recipe
-Run focused tests and the assigned integrated gate.
 """
-EVIDENCE = "# SELLO-001 — Complete a working task\n\n" + "".join(
-    f"- **{name}:** verified evidence\n" for name in tickets.DELIVERY_FIELDS
-) + "- **Quality run:** run q001; retained report\n"
-
 
 def epic_readme(identifier="SELLO-E01", status="Backlog", increment=None):
     extra = f"- **Increment:** {increment}\n" if increment else ""
@@ -51,7 +25,7 @@ def ticket_text(identifier="SELLO-001", status="Backlog", dependencies="None", g
             f"- **Status:** {status}\n- **Depends on:** {dependencies}\n- **Gate:** {gate}\n\n{SECTIONS}")
 
 
-class TicketFolderTests(unittest.TestCase):
+class TicketFileTests(unittest.TestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
@@ -65,7 +39,7 @@ class TicketFolderTests(unittest.TestCase):
     def epic(self, folder="E01-foundation", readme=None, **ticket_files):
         self.write(f"docs/tickets/{folder}/README.md", readme or epic_readme())
         for identifier, text in ticket_files.items():
-            self.write(f"docs/tickets/{folder}/{identifier.replace('_', '-')}/ticket.md", text)
+            self.write(f"docs/tickets/{folder}/{identifier.replace('_', '-')}.md", text)
 
     def load(self):
         return tickets.load(self.root)
@@ -81,20 +55,55 @@ class TicketFolderTests(unittest.TestCase):
         self.assertEqual(("SELLO-001", "Complete a working task", (), "G1", "SELLO-E01"),
                          (only.identifier, only.title, only.dependencies, only.gate, only.epic_id))
 
-    def test_folder_name_must_match_the_ticket_heading(self):
+    def test_file_name_must_match_the_ticket_heading(self):
         self.epic(SELLO_002=ticket_text("SELLO-001"))
-        with self.assertRaisesRegex(ValueError, "folder SELLO-002 holds SELLO-001"):
+        with self.assertRaisesRegex(ValueError, "file SELLO-002.md holds SELLO-001"):
             self.load()
 
+    def test_a_ticket_folder_is_rejected(self):
+        self.epic(SELLO_001=ticket_text())
+        self.write("docs/tickets/E01-foundation/SELLO-002/ticket.md", ticket_text("SELLO-002"))
+        with self.assertRaisesRegex(ValueError, "ticket folders SELLO-002; a ticket is one file"):
+            self.load()
+
+    def test_old_sections_and_images_are_allowed(self):
+        self.epic(SELLO_001=ticket_text() + "\n### Implementation plan\n1. Build it.\n")
+        self.write("docs/tickets/E01-foundation/attachments/SELLO-001-screen.png", "png")
+        self.assertEqual(["SELLO-001"], [t.identifier for t in self.load()[0].tickets])
+
     def test_epic_folder_without_a_readme_is_rejected(self):
-        self.write("docs/tickets/E01-foundation/SELLO-001/ticket.md", ticket_text())
+        self.write("docs/tickets/E01-foundation/SELLO-001.md", ticket_text())
         with self.assertRaisesRegex(ValueError, "README.md"):
             self.load()
+
+    def test_stray_files_and_folders_are_rejected(self):
+        for stray in ("docs/tickets/E01-foundation/notes.md", "docs/tickets/E01-foundation/SELLO-12.md",
+                      "docs/tickets/E01-foundation/images/a.png", "docs/tickets/SELLO-002.md",
+                      "docs/tickets/E23_misnamed/SELLO-003.md"):
+            with self.subTest(stray=stray):
+                directory = tempfile.TemporaryDirectory()
+                self.addCleanup(directory.cleanup)
+                self.root = Path(directory.name)
+                self.epic(SELLO_001=ticket_text())
+                self.write(stray, ticket_text("SELLO-003"))
+                with self.assertRaisesRegex(ValueError, "epic folder"):
+                    self.load()
+
+    def test_rejects_invalid_fields_and_duplicate_metadata(self):
+        for old, new, message in (("- **Type:** Task", "- **Type:** Epic", "invalid type/gate"),
+                                  ("- **Gate:** G1", "- **Gate:** G9", "invalid type/gate"),
+                                  ("- **Priority:** P0", "- **Priority:** P9", "invalid status/priority"),
+                                  ("- **Status:** Backlog", "- **Status:** Started", "invalid status/priority"),
+                                  ("- **Gate:** G1", "- **Gate:** G1\n- **Gate:** G2", "Duplicate metadata")):
+            with self.subTest(new=new):
+                self.epic(SELLO_001=ticket_text().replace(old, new))
+                with self.assertRaisesRegex(ValueError, message):
+                    self.validate()
 
     def test_template_folder_is_not_an_epic(self):
         self.epic(SELLO_001=ticket_text())
         self.write("docs/tickets/TEMPLATE/README.md", "# Template\n")
-        self.write("docs/tickets/TEMPLATE/SELLO-0NN/ticket.md", "# SELLO-0NN — Title\n")
+        self.write("docs/tickets/TEMPLATE/SELLO-0NN.md", "# SELLO-0NN — Title\n")
         self.assertEqual(["SELLO-E01"], [epic.identifier for epic in self.load()])
 
     def test_preserves_post_mvp_increment_and_rejects_unknown(self):
@@ -116,15 +125,14 @@ class TicketFolderTests(unittest.TestCase):
             self.validate()
 
     def test_rejects_missing_required_sections(self):
-        for section in ("Acceptance criteria", "Context and starting points", "Implementation plan",
-                        "Concrete cases and pitfalls", "Verification recipe"):
+        for section in ("Outcome", "Acceptance criteria"):
             self.epic(SELLO_001=ticket_text().replace(f"### {section}", "### Other"))
             with self.assertRaisesRegex(ValueError, section):
                 self.load()
 
-    def test_rejects_empty_deliverable(self):
-        self.epic(SELLO_001=ticket_text().replace("An integrated implementation and evidence.", ""))
-        with self.assertRaisesRegex(ValueError, "Deliverables"):
+    def test_rejects_empty_outcome(self):
+        self.epic(SELLO_001=ticket_text().replace("A complete, independently verifiable task.", ""))
+        with self.assertRaisesRegex(ValueError, "Outcome"):
             self.load()
 
     def test_rejects_duplicate_ids_across_epics(self):
@@ -146,53 +154,23 @@ class TicketFolderTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unfinished dependencies"):
             self.validate()
 
-    def test_downstream_task_requires_explicit_quality_dependency(self):
+    def test_no_ticket_needs_a_quality_dependency(self):
         self.epic(SELLO_005=ticket_text("SELLO-005"))
-        with self.assertRaisesRegex(ValueError, "must depend on SELLO-004"):
-            self.validate()
-
-    def test_review_requires_quality_run_in_evidence_file(self):
-        self.epic(SELLO_004=ticket_text("SELLO-004", status="Review"))
-        with self.assertRaisesRegex(ValueError, "missing Quality run"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-004/evidence.md", "# SELLO-004\n\n- **Quality run:** TODO\n")
-        with self.assertRaisesRegex(ValueError, "placeholder Delivery evidence in Quality run"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-004/evidence.md", "# SELLO-004\n\n- **Quality run:** run q004; retained report\n")
         self.validate()
 
-    def test_done_requires_complete_evidence_and_a_handoff(self):
-        self.epic(SELLO_001=ticket_text(status="Done"))
-        with self.assertRaisesRegex(ValueError, "missing Delivery evidence"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-001/evidence.md", EVIDENCE.replace("- **Review:** verified evidence\n", ""))
-        with self.assertRaisesRegex(ValueError, "missing Review"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-001/evidence.md", EVIDENCE.replace("**Gate results:** verified evidence", "**Gate results:** TBD"))
-        with self.assertRaisesRegex(ValueError, "placeholder Delivery evidence"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-001/evidence.md", EVIDENCE)
-        with self.assertRaisesRegex(ValueError, "missing handoff.md"):
-            self.validate()
-        self.write("docs/tickets/E01-foundation/SELLO-001/handoff.md", "# SELLO-001\n\nWhat changed.\n")
+    def test_done_needs_no_evidence_or_handoff_file(self):
+        self.epic(SELLO_001=ticket_text(status="Done"), SELLO_002=ticket_text("SELLO-002", status="Done", dependencies="SELLO-001"))
         self.validate()
 
-    def test_evidence_in_the_ticket_file_is_rejected(self):
-        self.epic(SELLO_001=ticket_text(status="Done") + "\n### Delivery evidence\n- **Review:** here\n")
-        with self.assertRaisesRegex(ValueError, "Delivery evidence belongs in evidence.md"):
-            self.load()
+    def test_done_requires_done_dependencies(self):
+        self.epic(SELLO_001=ticket_text(), SELLO_002=ticket_text("SELLO-002", status="Done", dependencies="SELLO-001"))
+        with self.assertRaisesRegex(ValueError, "unfinished dependencies for Done"):
+            self.validate()
 
     def test_epic_cannot_be_done_with_unfinished_children(self):
         self.epic(readme=epic_readme(status="Done"), SELLO_001=ticket_text())
         with self.assertRaisesRegex(ValueError, "unfinished children"):
             self.validate()
-
-    def test_verify_report_hook_receives_the_quality_run_field(self):
-        self.epic(SELLO_004=ticket_text("SELLO-004", status="Review"))
-        self.write("docs/tickets/E01-foundation/SELLO-004/evidence.md", "# SELLO-004\n\n- **Quality run:** run q004\n")
-        seen = []
-        tickets.validate(self.load(), lambda ticket, fields: seen.append((ticket.identifier, fields["Quality run"])))
-        self.assertEqual([("SELLO-004", "run q004")], seen)
 
     def test_status_table_is_printed_on_demand_not_committed(self):
         self.epic(SELLO_001=ticket_text(status="Done"), SELLO_002=ticket_text("SELLO-002", dependencies="SELLO-001"))
@@ -206,48 +184,15 @@ class TicketFolderTests(unittest.TestCase):
         self.epic(SELLO_001=ticket_text())
         out, err = io.StringIO(), io.StringIO()
         with redirect_stdout(out), redirect_stderr(err):
-            self.assertEqual(0, tickets.main(["check", "--skip-evidence"], root=self.root))
+            self.assertEqual(0, tickets.main(["check"], root=self.root))
             self.assertEqual(0, tickets.main(["status", "E01"], root=self.root))
         self.assertIn("PASS: 1 epics, 1 tickets", out.getvalue())
         self.assertIn("SELLO-001", out.getvalue())
         self.epic(SELLO_001=ticket_text(status="Ready", dependencies="SELLO-999"))
         with redirect_stdout(out), redirect_stderr(err):
-            self.assertEqual(1, tickets.main(["check", "--skip-evidence"], root=self.root))
+            self.assertEqual(1, tickets.main(["check"], root=self.root))
         self.assertIn("Unknown dependency", err.getvalue())
 
-
-class SplitEpicTests(unittest.TestCase):
-    """The one-time move from epic files keeps every ticket's acceptance text identical."""
-
-    EPIC = (
-        "# SELLO-E01 — Foundation\n\n- **Status:** Done\n- **Goal:** Build.\n- **Exit:** Works.\n\n"
-        "**Owner direction:** read [E02](E02-design.md) and [ADR](../../../decisions/0001-mvp-contract.md).\n\n"
-        "## SELLO-001 — Complete a working task\n\n- **Type:** Task\n- **Priority:** P0\n- **Status:** Done\n"
-        "- **Depends on:** None\n- **Gate:** G1\n\n" + SECTIONS +
-        "\n### Execution progress\n\n- Started.\n\n### Delivery evidence\n\n- **Review:** merged in #1\n"
-        "- **Quality run:** run q001; report docs/planning/mvp/quality-reports/SELLO-001.json sha256 abc\n\n"
-        "## SELLO-002 — Second task\n\n- **Type:** Task\n- **Priority:** P0\n- **Status:** Backlog\n"
-        "- **Depends on:** SELLO-001\n- **Gate:** G1\n\n" + SECTIONS
-    )
-
-    def test_split_separates_readme_tickets_and_evidence(self):
-        readme, parts = tickets.split_epic_text(self.EPIC)
-        self.assertTrue(readme.startswith("# SELLO-E01 — Foundation\n"))
-        self.assertIn("**Owner direction:**", readme)
-        self.assertEqual(["SELLO-001", "SELLO-002"], [identifier for identifier, _, _ in parts])
-        first, second = parts[0], parts[1]
-        self.assertTrue(first[1].startswith("# SELLO-001 — Complete a working task\n"))
-        self.assertIn("### Execution progress", first[1])
-        self.assertNotIn("Delivery evidence", first[1])
-        self.assertIn("- **Review:** merged in #1", first[2])
-        self.assertIsNone(second[2])
-
-    def test_split_keeps_the_acceptance_text_identical(self):
-        import fingerprint
-        _, parts = tickets.split_epic_text(self.EPIC)
-        for identifier, ticket_md, _ in parts:
-            section = fingerprint.ticket_section(self.EPIC, identifier)
-            self.assertEqual(fingerprint.acceptance_text(section), fingerprint.acceptance_text(ticket_md), identifier)
 
 
 if __name__ == "__main__":

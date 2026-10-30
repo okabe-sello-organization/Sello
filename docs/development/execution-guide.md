@@ -4,12 +4,13 @@ Read this with the assigned ticket, [agent rules](../../AGENTS.md),
 [architecture](../../ARCHITECTURE.md), and [tickets and gates](../tickets/README.md).
 It supplies shared tools and conventions; the ticket supplies the actual work.
 Do not execute all tickets at once or copy a proposed API blindly over completed code.
+For the shape of a new feature and its tests, read the [feature guide](feature-guide.md).
 
 ## Starting from a new checkout
 
 1. Run `pwd`, `git status --short`, `git log -1 --oneline`, and inspect applicable
    `AGENTS.md`. Preserve existing work.
-2. Read the ticket's dependencies and their Delivery evidence. Locate their
+2. Read the ticket's dependencies and their pull requests. Locate their
    **actual** produced contracts, tests and decision records. If a supposedly Done
    prerequisite is missing/broken, report the discrepancy; do not recreate a fake
    adapter just to unblock yourself. Ready work still requires its listed approvals.
@@ -27,13 +28,12 @@ Do not execute all tickets at once or copy a proposed API blindly over completed
 
 | Ownership | Where it lives |
 | --- | --- |
-| Pure financial types/policies/ports | `domain/src/main/kotlin/com/software/sello/domain/{model,policy,port}/`; tests in `domain/src/test/kotlin/` |
-| Room/transactions/codecs | `data/src/main/java/com/software/sello/data/{local,mapper,repository}/` and `data/src/main/kotlin/.../data/preferences/`; host tests in `data/src/test/`, real Room in `data/src/androidTest/`; exported schemas in `data/schemas/`. Backup codecs (`backup`) do not exist yet |
+| Pure financial types/policies/ports | `domain/src/main/kotlin/com/software/sello/domain/{model,policy,port,usecase}/`; tests in `domain/src/test/kotlin/` |
+| Room/transactions/codecs | `data/src/main/java/com/software/sello/data/{local,mapper,repository}/` and `data/src/main/kotlin/.../data/{backup,export,preferences,reset}/` (backup codecs, CSV/JSON export, DataStore preferences, reset); host tests in `data/src/test/`, real Room in `data/src/androidTest/`; exported schemas in `data/schemas/` |
 | Reusable UI | `design-system/src/main/java/com/software/sello/designsystem/{component,icon,theme}/`; previews and host/device tests alongside that module |
 | App wiring/platform | `app/src/main/java/com/software/sello/{composition,navigation,platform,presentation}/`; composition is the only app package importing data implementations |
-| Feature UI | `app/src/main/java/com/software/sello/feature/{category,expense,income,recibo,resumen,settings,startup}/`; each owns State/Action/Event/ViewModel/ScreenRoot/Screen as needed. A `backup` feature does not exist yet |
+| Feature UI | `app/src/main/java/com/software/sello/feature/{backup,category,expense,goals,income,investments,recibo,recurrence,reset,resumen,settings,startup}/` (recurrence holds the schedules); each owns State/Action/ViewModel/`<Name>Root`/`<Name>Screen` as needed (no Event types; results stay in State) |
 | Sandbox | `app/src/debug/java/com/software/sello/devtools/`, `app/src/debug/res/` and debug-only bindings; release has no reverse dependency |
-| Catalog | `catalog/src/main/java/com/software/sello/catalog/{components,foundations}/`; synthetic render examples only, no domain/data/app dependency |
 | Decisions, tickets and runbooks | `docs/decisions/`, `docs/tickets/<epic>/<ticket>/`, `docs/testing/`, `docs/release/` |
 
 Port/type names in tickets are contract suggestions. Agree signatures at the owning
@@ -51,18 +51,16 @@ Focused **host** examples:
 ```bash
 ./gradlew :domain:test --tests '*MoneyPolicyTest'
 ./gradlew :app:testDebugUnitTest --tests '*ExpenseFormViewModelTest'
-./gradlew :catalog:assembleDebug
+./gradlew :app:assembleDebug
 ```
 
 The test names specified by tickets are **tests to create**; if compatible predecessor
 tests already exist, document the actual selector. A no-matching-tests result is
 not a pass. For a no-test configuration/docs change, verify the actual config/links
-and run its gate instead of fabricating behavior red→green.
-G0/G1/G2/G3 commands are in [README.md](../tickets/README.md#gate-profiles). Run the assigned
-gate after focused tests. Default ticket commands run the host gate G1; the hosted
-`quality` check runs the device suites on the merge result. `--affected BASE` runs
-the documented dependency-aware device scope locally; an explicit `--gate G2` runs
-every device suite. Do not replace gate evidence with a focused task.
+and run its checks instead of fabricating behavior red→green.
+The gates and `scripts/check` are in the [quality gates guide](quality-gates.md).
+Run focused checks while working and the device tests you wrote or changed on your
+own emulator; the pull request's `quality` check runs the gate and is the proof.
 
 ## Device and process restoration
 
@@ -70,7 +68,7 @@ Use the API 30 emulator from [setup](setup.md#device-smoke) or an
 explicitly selected device. If
 T3 device tools are available, list/open a suitable device first; otherwise use
 Android Studio's AVD manager and `adb devices`. Set `ANDROID_SERIAL` when multiple
-devices exist. Device permissions follow [AGENTS.md](../../AGENTS.md#tests-and-verification).
+devices exist. Device permissions follow [AGENTS.md](../../AGENTS.md#tests).
 Release QA uses an isolated synthetic test installation; sandbox scenarios use debug only.
 
 ```bash
@@ -78,7 +76,6 @@ adb devices
 ./gradlew :app:assembleDebugAndroidTest :data:assembleDebugAndroidTest
 ./gradlew :data:connectedDebugAndroidTest
 ./gradlew :app:connectedDebugAndroidTest
-./gradlew :catalog:connectedDebugAndroidTest
 ```
 
 For an instrumented class selector use the actual configured test package:
@@ -147,10 +144,9 @@ need their own independent examples before the D03 ones they replace are retired
 
 ## Delivery record
 
-Verification commands, the executor flow, what makes a report stale and how to
-recover from each failure are in the [quality gates guide](quality-gates.md#quality-runner).
-The evidence fields, the ticket folder and the definition of done are in the
-[tickets README](../tickets/README.md#definition-of-done--every-ticket). Do not
+Verification commands, what CI runs and how to read a red check are in the
+[quality gates guide](quality-gates.md). The ticket file and how a ticket closes are in the
+[tickets README](../tickets/README.md#closing-a-ticket). Do not
 commit or publish unless the current user request authorizes it.
 
 ## Source library

@@ -24,7 +24,6 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CreateIncome
-import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
@@ -61,11 +60,7 @@ class BackupSnapshotConsistencyTest {
     private val september = YearMonth.of(2026, 9)
     private val october = YearMonth.of(2026, 10)
 
-    private val dispatchers = object : DispatcherProvider {
-        override val main = Dispatchers.Default
-        override val default = Dispatchers.Default
-        override val io = Dispatchers.IO
-    }
+    private val dispatchers = realDispatchers
 
     private class Preferences(
         private val appearance: PreferenceRead<AppearancePreference>,

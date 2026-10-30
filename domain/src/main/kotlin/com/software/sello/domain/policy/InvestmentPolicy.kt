@@ -208,11 +208,6 @@ object InvestmentPolicy {
     fun currentRate(rates: List<UsdRateEntry>): UsdRateEntry? =
         rates.maxWithOrNull(compareBy({ it.date }, { it.sequence }))
 
-    /** [usd] in pesos at [rate], rounded half up to the peso once (rule 13, IN28). */
-    fun toPesos(usd: Money, rate: UsdRate): Outcome<Money, PortfolioError> =
-        pesos(BigInteger.valueOf(usd.minorUnits), rate)?.let { Outcome.Success(it) }
-            ?: Outcome.Failure(PortfolioError.Unrepresentable)
-
     /** [cents] dollars at [rate], rounded half up to the peso, or null if it does not fit. */
     private fun pesos(cents: BigInteger, rate: UsdRate): Money? =
         BigDecimal(cents, Currency.USD.scale)

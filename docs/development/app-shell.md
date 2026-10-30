@@ -4,8 +4,8 @@
 Design: [Sello v2](../design/v2/README.md) shells and [components](../design/v2/components.html).
 
 The frame every screen sits in, and the state that belongs to the whole app instead
-of to one screen. All of it is in `:app`, package `navigation`; every route is listed
-in the [navigation graph](navigation-graph.md).
+of to one screen. All of it is in `:app`, package `navigation`; every route is declared
+in `Routes.kt`.
 
 ## What is on screen today
 
@@ -57,7 +57,7 @@ the v2 full-width **+ Anotar** button, read as "Anotar un gasto", and the tab ba
 passes its own dock, **+ Anotar ingreso** (read "Anotar un ingreso"), and its own title,
 "Ingresos de octubre" (SELLO-071); every other screen's dock records an expense. On Recibo
 and Resumen the top bar is the v2 `MonthBar` (SELLO-068): **Octubre** large, a small
-**2026** that hides from font scale 1.3, and the chevron; the button keeps the spoken
+**2026** and the chevron; the button keeps the spoken
 "Cambiar de mes. Mes actual: …" label and opens the same picker. Pushed screens with a
 back arrow (Configuración, income history, a category opened on a phone) keep their
 titled `MonthSwitcher` bar. The month
@@ -83,7 +83,7 @@ bar or a titled bar, and the band grows with it.
 
 ## What is said about a correction
 
-`ExpenseCorrections` (`presentation/corrections`) is one object for the whole process.
+`Corrections` (`presentation/corrections`) is one object for the whole process.
 It deletes and undoes expenses and income, and holds the one notice shown above the
 dock on Recibo, Resumen, category detail and income history. Forms do not show it;
 leaving the form does.

@@ -1,6 +1,0 @@
-# SELLO-040 — Extend portable backup, restore and reset for carryover
-
-Backup format version 6 adds `financial.carryChains` (category, start month, optional end month; no carry, capacity or remaining). Versions 1–5 read as every category off; version 7+ is refused. Code: `data/.../backup` (`BackupWire`, `BackupValidation.carryChains`, `BackupCodec`, `RoomRestores`, `BackupExport`); format in `docs/data/backup-format.md`.
-Validation before the preview: references, months, `financialMonth` (version 6 says the financial month it was made in; no chain starts or ends after it), overlap, finite base within CP25 in every chain month, an open chain's latest default finite; owner rulings: an open chain on an archived category is malformed. Restore replaces `carry_chain` in the same transaction as the rest; reset already removed it.
-Customer gate: the default `BackupCodec` (`CarryChainSupport.Refused`) refuses any file with a chain with `RestoreRejection.CarryNotSupported` before anything is kept; test and developer paths use `CarryChainSupport.Accepted`.
-Open: SELLO-041 lifts the gate when carry is explainable in the app; SELLO-042 should wire the accepting codec into the developer path (`FinancialStorage.restores` and `backupExports` take a `codec`). `BackupSummary.carryChains` is counted in the restore preview, the erase confirmation and the export summary.

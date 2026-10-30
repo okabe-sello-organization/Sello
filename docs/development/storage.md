@@ -152,8 +152,8 @@ receipt exists is finished, and one without a receipt is forgotten.
 
 Goals (SELLO-087) are stored as their history: stamps and percentages are worked out
 from it by `GoalPolicy` and never stored ([goal rules](../testing/goal-examples.md)).
-Backups (format version 2), restore and erase-all carry the goal tables with the rest
-(SELLO-088).
+Backups (since format version 2), restore and erase-all carry the goal tables with the
+rest (SELLO-088). The current backup format version is `BackupCodec.VERSION`.
 
 Schedules (SELLO-098) are stored as their terms; their occurrences are worked out by
 `SchedulePolicy` and never stored ([recurrence rules](../testing/recurrence-examples.md)).
@@ -164,7 +164,7 @@ and with no foreign key, so the entry outlives its schedule. A schedule's
 every earlier one are never recorded again, even after their entry was deleted.
 Catch-up writes those entries and moves the checkpoints in one transaction per batch,
 with a `schedule.catch_up` receipt that has no subject ([commands](commands.md#catch-up)).
-Backups (format version 3, SELLO-099) carry schedules, their pauses and checkpoints
+Backups (since format version 3, SELLO-099) carry schedules, their pauses and checkpoints
 and every entry's origin; restore puts them back as they were and erase-all removes
 them.
 
@@ -176,7 +176,7 @@ written. A new investment writes its row, its first aporte and its first value (
 position, the same date) and, for a first USD investment, the rate in one transaction.
 Deleting an investment deletes its movements in that command's transaction, never by a
 cascade. Rates are only ever added; the current one is the latest date, then the last
-entered. Backups carry investments, their movements and the rates (format version 4,
+entered. Backups carry investments, their movements and the rates (since format version 4,
 SELLO-108); restore puts them back as they were, each movement at its recording position,
 and erase-all removes them. Neither keeps a deleted movement's undo copy.
 

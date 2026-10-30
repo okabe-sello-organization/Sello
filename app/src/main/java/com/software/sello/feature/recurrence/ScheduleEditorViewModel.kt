@@ -18,10 +18,13 @@ import com.software.sello.domain.policy.AmountDraftError
 import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.port.ChangeSchedule
+import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.CommittedSchedule
 import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PauseSchedule
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ResumeSchedule
 import com.software.sello.domain.port.ScheduleCommand
@@ -32,11 +35,15 @@ import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.presentation.corrections.CorrectionNotice
-import com.software.sello.presentation.corrections.ExpenseCorrections
+import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatDraft
+import com.software.sello.presentation.submission.SavedDraft
+import com.software.sello.presentation.submission.Settled
+import com.software.sello.presentation.submission.Submission
+import com.software.sello.presentation.submission.typed
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -50,6 +57,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
 
 /**
  * Changes, pauses, resumes or deletes one schedule through [schedules]
@@ -68,7 +76,7 @@ class ScheduleEditorViewModel(
     private val clock: FinancialClock,
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
-    private val corrections: ExpenseCorrections
+    private val corrections: Corrections
 ) : ViewModel() {
     private data class Progress(
         val stored: StoredSchedule? = null,
@@ -83,36 +91,45 @@ class ScheduleEditorViewModel(
         val attempt: Int = 0
     )
 
+    /**
+     * The terms as typed, kept under one key: the amount as text, the category or the
+     * income source, the note, a start picked, and the version the draft was started at.
+     */
+    @Serializable
+    private data class Draft(
+        val version: Long? = null,
+        val amount: String? = null,
+        val category: String? = null,
+        val source: String? = null,
+        val other: String? = null,
+        val note: String = "",
+        val start: String? = null
+    )
+
+    private val drafts = SavedDraft(saved, DRAFT, Draft.serializer())
+    private val submission = Submission(saved, OPERATION, ids)
+    private val form = MutableStateFlow(drafts.read() ?: Draft())
+
     private val id: ScheduleId? =
         (saved.get<String>(KEY_SCHEDULE)?.let(ScheduleId::of) as? Outcome.Success)?.value
     private val repeat = RepeatDraft(saved, "schedule")
     private val progress = MutableStateFlow(Progress())
 
-    /** Every saved draft field, so any change is noticed. */
-    private val draft = combine(
-        saved.getStateFlow<String?>(AMOUNT, null),
-        saved.getStateFlow<String?>(CATEGORY, null),
-        saved.getStateFlow<String?>(SOURCE, null),
-        saved.getStateFlow<String?>(OTHER, null),
-        saved.getStateFlow<String?>(NOTE, null)
-    ) { _, _, _, _, _ -> Unit }
-
     private val writing = combine(
         saved.getStateFlow<String?>(COMPOSER, null),
         saved.getStateFlow<String?>(COMPOSER_TEXT, null),
-        saved.getStateFlow<String?>(START, null),
         saved.getStateFlow(START_PICKER, false),
         repeat.changes
-    ) { _, _, _, _, _ -> Unit }
+    ) { _, _, _, _ -> Unit }
 
     private val month = combine(
         clock.today.map { YearMonth.from(it.date) }.distinctUntilChanged(),
         progress.map { it.attempt }.distinctUntilChanged()
     ) { month, _ -> month }.flatMapLatest(snapshots::observe)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, SnapshotState.Loading)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     val state: StateFlow<ScheduleEditorState> =
-        combine(progress, month, clock.today, draft, writing) { progress, month, today, _, _ ->
+        combine(progress, month, clock.today, form, writing) { progress, month, today, _, _ ->
             render(progress, month, today.date)
         }.stateIn(
             viewModelScope,
@@ -122,7 +139,7 @@ class ScheduleEditorViewModel(
 
     init {
         viewModelScope.launch {
-            if (saved.get<String>(OPERATION) != null) recover() else load()
+            if (submission.pending) recover() else load()
         }
     }
 
@@ -140,7 +157,7 @@ class ScheduleEditorViewModel(
                     ?: return progress.update {
                         it.copy(loadFailed = false, error = ScheduleEditorError.ScheduleGone)
                     }
-                val version = saved.get<Long>(VERSION)
+                val version = form.value.version
                 if (version == null) {
                     start(stored)
                 } else if (version != stored.version) {
@@ -159,17 +176,21 @@ class ScheduleEditorViewModel(
 
     private fun start(stored: StoredSchedule) {
         val entry = stored.schedule.entry
-        saved[VERSION] = stored.version
-        saved[AMOUNT] = entry.amount.money.minorUnits.toString()
-        saved[NOTE] = entry.note?.value.orEmpty()
-        when (entry) {
-            is ScheduledEntry.Payment -> saved[CATEGORY] = entry.categoryId.value
+        val started = form.value.copy(
+            version = stored.version,
+            amount = entry.amount.money.minorUnits.toString(),
+            note = entry.note?.value.orEmpty()
+        )
+        edit(
+            when (entry) {
+                is ScheduledEntry.Payment -> started.copy(category = entry.categoryId.value)
 
-            is ScheduledEntry.Income -> {
-                saved[SOURCE] = entry.source.key
-                saved[OTHER] = (entry.source as? IncomeSource.Other)?.name?.value.orEmpty()
+                is ScheduledEntry.Income -> started.copy(
+                    source = entry.source.key,
+                    other = (entry.source as? IncomeSource.Other)?.name?.value.orEmpty()
+                )
             }
-        }
+        )
         repeat.keep(
             RepeatChoice.of(stored.schedule.recurrence.rule, stored.schedule.recurrence.end)
         )
@@ -192,19 +213,19 @@ class ScheduleEditorViewModel(
 
             is ScheduleEditorAction.CategoryPicked ->
                 if (now.editable && now.categories.any { it.id == action.id }) {
-                    saved[CATEGORY] = action.id
+                    edit(form.value.copy(category = action.id))
                     progress.update { it.copy(error = null) }
                 }
 
             is ScheduleEditorAction.SourcePicked ->
                 if (now.editable && now.income && action.key in IncomeSource.keys) {
-                    saved[SOURCE] = action.key
+                    edit(form.value.copy(source = action.key))
                 }
 
             is ScheduleEditorAction.OpenComposer -> if (now.editable) {
                 saved[COMPOSER_TEXT] = when (action.what) {
-                    ScheduleComposer.Note -> saved[NOTE] ?: ""
-                    ScheduleComposer.SourceName -> saved[OTHER] ?: ""
+                    ScheduleComposer.Note -> form.value.note
+                    ScheduleComposer.SourceName -> form.value.other.orEmpty()
                 }
                 saved[COMPOSER] = action.what.name
             }
@@ -217,7 +238,13 @@ class ScheduleEditorViewModel(
                 val what = composer() ?: return
                 val text = saved.get<String>(COMPOSER_TEXT).orEmpty()
                 if (now.editable && composerProblem(what, text) == null) {
-                    saved[if (what == ScheduleComposer.Note) NOTE else OTHER] = text
+                    edit(
+                        if (what == ScheduleComposer.Note) {
+                            form.value.copy(note = text)
+                        } else {
+                            form.value.copy(other = text)
+                        }
+                    )
                     closeComposer()
                 }
             }
@@ -231,7 +258,7 @@ class ScheduleEditorViewModel(
             // New terms start after today (rule 7); an earlier day is not taken.
             is ScheduleEditorAction.StartPicked -> {
                 if (now.editable && action.date.isAfter(now.today)) {
-                    saved[START] = action.date.toString()
+                    edit(form.value.copy(start = action.date.toString()))
                 }
                 saved[START_PICKER] = false
             }
@@ -268,7 +295,7 @@ class ScheduleEditorViewModel(
             ScheduleEditorAction.Retry -> when {
                 now.busy -> Unit
 
-                saved.get<String>(OPERATION) != null -> viewModelScope.launch { recover() }
+                submission.pending -> viewModelScope.launch { recover() }
 
                 else -> {
                     progress.update { it.copy(attempt = it.attempt + 1) }
@@ -277,7 +304,7 @@ class ScheduleEditorViewModel(
             }
 
             ScheduleEditorAction.Back -> when {
-                now.busy || saved.get<String>(OPERATION) != null -> Unit
+                now.busy || submission.pending -> Unit
 
                 now.editable && now.missing != ScheduleMissing.Changes ->
                     progress.update { it.copy(confirmDiscard = true) }
@@ -292,15 +319,16 @@ class ScheduleEditorViewModel(
         }
     }
 
+    private fun edit(next: Draft) {
+        drafts.write(next)
+        form.value = next
+    }
+
     private fun amountDraft(): AmountDraft =
-        saved.get<String>(AMOUNT)?.let(AmountDraft::paste) ?: AmountDraft.Empty
+        form.value.amount?.let(AmountDraft::paste) ?: AmountDraft.Empty
 
     private fun setAmount(amount: AmountDraft) {
-        saved[AMOUNT] = when (amount) {
-            AmountDraft.Empty -> null
-            is AmountDraft.Digits -> amount.digits
-            is AmountDraft.Rejected -> amount.original
-        }
+        edit(form.value.copy(amount = amount.typed()))
         progress.update { it.copy(atLimit = false) }
     }
 
@@ -337,22 +365,22 @@ class ScheduleEditorViewModel(
     /** The entry the draft describes, or null while something in it is not valid. */
     private fun entry(stored: StoredSchedule): ScheduledEntry? {
         val amount = (amountDraft().toTransactionAmount() as? Outcome.Success)?.value ?: return null
-        val note = (Note.of(saved[NOTE] ?: "") as? Outcome.Success)?.value
-        if (Note.of(saved[NOTE] ?: "") is Outcome.Failure) return null
+        val note = (Note.of(form.value.note) as? Outcome.Success)?.value
+        if (Note.of(form.value.note) is Outcome.Failure) return null
         return when (stored.schedule.entry) {
             is ScheduledEntry.Payment -> {
                 val category =
-                    (saved.get<String>(CATEGORY)?.let(CategoryId::of) as? Outcome.Success)?.value
+                    (form.value.category?.let(CategoryId::of) as? Outcome.Success)?.value
                         ?: return null
                 ScheduledEntry.Payment(category, amount, note)
             }
 
             is ScheduledEntry.Income -> {
-                val key = saved.get<String>(SOURCE) ?: return null
+                val key = form.value.source ?: return null
                 val source = (
                     IncomeSource.of(
                         key,
-                        saved.get<String>(OTHER).takeIf {
+                        form.value.other.takeIf {
                             key ==
                                 IncomeSource.Other.KEY
                         }
@@ -369,7 +397,7 @@ class ScheduleEditorViewModel(
      * start changes; else the day picked, or tomorrow, since new terms start after today.
      */
     private fun start(stored: StoredSchedule, today: LocalDate): LocalDate {
-        val picked = (saved.get<String>(START)?.let(EffectiveDates::parseDate) as? Outcome.Success)
+        val picked = (form.value.start?.let(EffectiveDates::parseDate) as? Outcome.Success)
             ?.value
         if (picked != null) return picked
         val rule = repeat.choice?.rule()
@@ -383,72 +411,87 @@ class ScheduleEditorViewModel(
 
     private fun change(now: ScheduleEditorState) {
         val stored = progress.value.stored ?: return
-        val snapshot = (month.value as? SnapshotState.Ready)?.snapshot ?: return
+        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         val entry = entry(stored) ?: return
         val rule = repeat.choice?.rule() ?: return
         val start = start(stored, now.today)
-        submit(
-            ScheduleChange.Changed,
+        val end = repeat.choice?.end
+        submit(ScheduleChange.Changed) { operation ->
             ChangeSchedule(
-                newOperation(ScheduleChange.Changed),
+                operation,
                 snapshot.generation,
                 stored.schedule.id,
                 stored.version,
                 entry,
                 rule,
                 start,
-                repeat.choice?.end
+                end
             )
-        )
+        }
     }
 
     private fun send(change: ScheduleChange) {
         val stored = progress.value.stored ?: return
-        val snapshot = (month.value as? SnapshotState.Ready)?.snapshot ?: return
-        val operation = newOperation(change)
+        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         val id = stored.schedule.id
         val generation = snapshot.generation
-        submit(
-            change,
+        submit(change) { operation ->
             when (change) {
                 ScheduleChange.Paused -> PauseSchedule(operation, generation, id, stored.version)
                 ScheduleChange.Resumed -> ResumeSchedule(operation, generation, id, stored.version)
                 else -> DeleteSchedule(operation, generation, id, stored.version)
             }
-        )
-    }
-
-    /** The identifier is saved before the command leaves, so this attempt is never sent twice. */
-    private fun newOperation(change: ScheduleChange): OperationId {
-        val operation = (OperationId.of(ids.next()) as Outcome.Success).value
-        saved[OPERATION] = operation.value
-        saved[OPERATION_KIND] = change.name
-        return operation
-    }
-
-    private fun submit(change: ScheduleChange, command: ScheduleCommand) {
-        progress.update { it.copy(busy = true, error = null) }
-        viewModelScope.launch {
-            when (val outcome = schedules.submit(command)) {
-                is ScheduleCommandOutcome.Committed -> done(change)
-
-                is ScheduleCommandOutcome.OutcomeUnknown -> recover()
-
-                is ScheduleCommandOutcome.Rejected -> {
-                    saved[OPERATION] = null
-                    saved[OPERATION_KIND] = null
-                    progress.update { it.copy(busy = false, error = error(outcome.reason)) }
-                }
-            }
         }
     }
 
+    private fun submit(change: ScheduleChange, command: (OperationId) -> ScheduleCommand) {
+        progress.update { it.copy(busy = true, error = null) }
+        viewModelScope.launch {
+            settle(
+                change,
+                submission.send(schedules::find, change.name) { schedules.submit(command(it)) }
+            )
+        }
+    }
+
+    private suspend fun settle(
+        change: ScheduleChange,
+        settled: Settled<CommittedSchedule, ScheduleRejection>?
+    ) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
+
+            // Only a receipt counts as done.
+            is Settled.Committed -> done(change)
+
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = ScheduleEditorError.Unknown)
+            }
+
+            Settled.NotCommitted -> {
+                progress.update { it.copy(busy = false) }
+                if (progress.value.stored == null) load()
+            }
+
+            is Settled.Rejected ->
+                progress.update { it.copy(busy = false, error = error(settled.reason)) }
+        }
+    }
+
+    private fun error(reason: CommandRejection<ScheduleRejection>) = when (reason) {
+        is CommandRejection.StaleGeneration -> ScheduleEditorError.DataChanged
+
+        is CommandRejection.VersionConflict -> ScheduleEditorError.ScheduleChanged
+
+        CommandRejection.OperationConflict,
+        is CommandRejection.StorageFailed -> ScheduleEditorError.NotSaved
+
+        is CommandRejection.Specific -> error(reason.reason)
+    }
+
     private fun error(reason: ScheduleRejection) = when (reason) {
-        is ScheduleRejection.StaleGeneration -> ScheduleEditorError.DataChanged
-
         ScheduleRejection.ScheduleMissing -> ScheduleEditorError.ScheduleGone
-
-        is ScheduleRejection.VersionConflict -> ScheduleEditorError.ScheduleChanged
 
         ScheduleRejection.CatchUpPending -> ScheduleEditorError.CatchUpPending
 
@@ -464,38 +507,19 @@ class ScheduleEditorViewModel(
 
     /** Asks storage how the saved operation ended. Only a receipt counts as done. */
     private suspend fun recover() {
-        val operation = (saved.get<String>(OPERATION)?.let(OperationId::of) as? Outcome.Success)
-            ?.value
-        val change = ScheduleChange.entries.firstOrNull {
-            it.name ==
-                saved.get<String>(OPERATION_KIND)
-        }
-        if (operation == null || change == null) {
-            saved[OPERATION] = null
-            saved[OPERATION_KIND] = null
+        val change = ScheduleChange.entries.firstOrNull { it.name == submission.step }
+        if (!submission.pending || change == null) {
+            submission.clear()
             return load()
         }
         progress.update { it.copy(busy = true, error = null) }
-        when (val found = schedules.find(operation)) {
-            is Outcome.Failure -> progress.update {
-                it.copy(busy = false, error = ScheduleEditorError.Unknown)
-            }
-
-            is Outcome.Success -> if (found.value != null) {
-                done(change)
-            } else {
-                saved[OPERATION] = null
-                saved[OPERATION_KIND] = null
-                progress.update { it.copy(busy = false) }
-                if (progress.value.stored == null) load()
-            }
-        }
+        val settled = submission.recover(schedules::find)
+        if (settled == null && !submission.pending) return load()
+        settle(change, settled)
     }
 
     private fun done(change: ScheduleChange) {
-        saved[OPERATION] = null
-        saved[OPERATION_KIND] = null
-        val income = saved.get<String>(SOURCE) != null
+        val income = form.value.source != null
         corrections.scheduleChanged(CorrectionNotice.ScheduleChanged(change, income))
         progress.update { it.copy(busy = false, closed = true) }
     }
@@ -506,14 +530,14 @@ class ScheduleEditorViewModel(
         today: LocalDate
     ): ScheduleEditorState {
         val stored = progress.stored
-        val snapshot = (month as? SnapshotState.Ready)?.snapshot
+        val snapshot = (month as? ReadState.Ready)?.value
         val payment = stored?.schedule?.entry as? ScheduledEntry.Payment
         val categories = snapshot?.categories.orEmpty()
             .map { it.category }
             .filter { !it.archived || it.id == payment?.categoryId }
         val amount = amountDraft()
         val valid = (amount.toTransactionAmount() as? Outcome.Success)?.value
-        val note = saved.get<String>(NOTE).orEmpty()
+        val note = form.value.note
         val noteProblem = (Note.of(note) as? Outcome.Failure)?.error?.let(::problem)
         val composer = composer()
         val composerText = saved.get<String>(COMPOSER_TEXT).orEmpty()
@@ -535,8 +559,8 @@ class ScheduleEditorViewModel(
         val repeatUi = repeat.ui(maxOf(start ?: today, today))
         return ScheduleEditorState(
             loading = !progress.loadFailed && progress.error == null &&
-                (stored == null || month is SnapshotState.Loading),
-            loadFailed = progress.loadFailed || month is SnapshotState.Failed,
+                (stored == null || month is ReadState.Loading),
+            loadFailed = progress.loadFailed || month is ReadState.Failed,
             income = stored?.schedule?.entry is ScheduledEntry.Income,
             amount = valid?.let { money.format(it.money) },
             amountText = (amount as? AmountDraft.Rejected)?.original,
@@ -546,15 +570,15 @@ class ScheduleEditorViewModel(
             categories = categories.map {
                 ScheduleCategory(it.id.value, it.name.value, it.icon.value)
             },
-            categoryId = saved.get<String>(CATEGORY)?.takeIf { id ->
+            categoryId = form.value.category?.takeIf { id ->
                 categories.any {
                     it.id.value ==
                         id
                 }
             },
             sourceKeys = IncomeSource.keys,
-            sourceKey = saved.get<String>(SOURCE).orEmpty(),
-            otherName = saved.get<String>(OTHER).orEmpty(),
+            sourceKey = form.value.source.orEmpty(),
+            otherName = form.value.other.orEmpty(),
             note = note,
             noteProblem = noteProblem,
             composer = composer,
@@ -572,7 +596,7 @@ class ScheduleEditorViewModel(
 
                 valid == null -> ScheduleMissing.Amount
 
-                payment != null && saved.get<String>(CATEGORY)
+                payment != null && form.value.category
                     ?.let { id -> categories.any { it.id.value == id && !it.archived } } != true ->
                     ScheduleMissing.Category
 
@@ -609,17 +633,10 @@ class ScheduleEditorViewModel(
         /** Route argument: the schedule to change. */
         const val KEY_SCHEDULE = "scheduleId"
 
-        private const val VERSION = "schedule.version"
-        private const val AMOUNT = "schedule.amount"
-        private const val CATEGORY = "schedule.category"
-        private const val SOURCE = "schedule.source"
-        private const val OTHER = "schedule.other"
-        private const val NOTE = "schedule.note"
-        private const val START = "schedule.start"
+        private const val DRAFT = "schedule.draft"
         private const val START_PICKER = "schedule.startPicker"
         private const val COMPOSER = "schedule.composer"
         private const val COMPOSER_TEXT = "schedule.composer.text"
         private const val OPERATION = "schedule.operation"
-        private const val OPERATION_KIND = "schedule.operation.kind"
     }
 }

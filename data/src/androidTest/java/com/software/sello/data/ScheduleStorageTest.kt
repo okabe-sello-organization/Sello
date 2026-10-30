@@ -7,7 +7,6 @@ import com.software.sello.data.mapper.toDomain
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.IncomeSource
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
@@ -18,7 +17,8 @@ import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.model.TransactionAmount
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
@@ -51,8 +51,6 @@ class ScheduleStorageTest {
     private val salary = uuid(201)
 
     private fun d(text: String) = LocalDate.parse(text)
-
-    private fun pesos(amount: Long) = TransactionAmount.of(Money.cop(amount)).valueOrFail()
 
     private fun hogar() = runBlocking {
         ledger.categories.submit(ledger.createCategory("Hogar"))
@@ -131,7 +129,7 @@ class ScheduleStorageTest {
                     ScheduleId.of(rent).valueOrFail(),
                     ScheduledEntry.Payment(
                         CategoryId.of(uuid(100)).valueOrFail(),
-                        pesos(950_000),
+                        transactionPesos(950_000),
                         Note.of("Arriendo").valueOrFail()
                     ),
                     Recurrence.of(
@@ -153,7 +151,7 @@ class ScheduleStorageTest {
             StoredSchedule(
                 schedule = Schedule(
                     ScheduleId.of(salary).valueOrFail(),
-                    ScheduledEntry.Income(IncomeSource.Salary, pesos(800_000), null),
+                    ScheduledEntry.Income(IncomeSource.Salary, transactionPesos(800_000), null),
                     Recurrence.of(
                         RepeatRule.TwiceMonthly.of(15, 30).valueOrFail(),
                         d("2026-10-01")
@@ -314,7 +312,7 @@ class ScheduleStorageTest {
     fun aDeletedOccurrenceComesBackWithItsOriginOnUndo() = runBlocking {
         hogar()
         val created = ledger.expenses.create(ledger.createExpense(100, "2026-10-05", 950_000))
-        val expense = (created as ExpenseCommandOutcome.Committed).expense.expenseId
+        val expense = (created as CommandOutcome.Committed).value.expenseId
         ledger.database.openHelper.writableDatabase.execSQL(
             "UPDATE expense SET origin_schedule_id = '$rent', origin_date = '2026-10-05', " +
                 "origin_slot = 1 WHERE id = '${expense.value}'"
@@ -328,7 +326,7 @@ class ScheduleStorageTest {
         )
         val restored = ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
 
-        assertTrue("$restored", restored is ExpenseCommandOutcome.Committed)
+        assertTrue("$restored", restored is CommandOutcome.Committed)
         assertEquals(
             listOf("$rent|2026-10-05|1"),
             ledger.rows("expense", "origin_schedule_id", "origin_date", "origin_slot")
@@ -339,7 +337,7 @@ class ScheduleStorageTest {
     fun undoIsRefusedWhileAnotherEntryRecordsTheSameOccurrence() = runBlocking {
         hogar()
         val created = ledger.expenses.create(ledger.createExpense(100, "2026-10-05", 950_000))
-        val expense = (created as ExpenseCommandOutcome.Committed).expense.expenseId
+        val expense = (created as CommandOutcome.Committed).value.expenseId
         ledger.database.openHelper.writableDatabase.execSQL(
             "UPDATE expense SET origin_schedule_id = '$rent', origin_date = '2026-10-05', " +
                 "origin_slot = 1 WHERE id = '${expense.value}'"
@@ -350,6 +348,6 @@ class ScheduleStorageTest {
 
         val restored = ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
 
-        assertEquals(ExpenseCommandOutcome.Rejected(ExpenseRejection.UndoConflict), restored)
+        assertEquals(CommandOutcome.Rejected(Specific(ExpenseRejection.UndoConflict)), restored)
     }
 }

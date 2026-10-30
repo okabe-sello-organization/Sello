@@ -135,15 +135,7 @@ data class DisableCarry(
 
 /** Why nothing was written. Each of these is certain. */
 sealed interface CategoryRejection {
-    data class StaleGeneration(val current: Long) : CategoryRejection
-
-    /** This operation already committed with different input. */
-    data object OperationConflict : CategoryRejection
-
     data object CategoryMissing : CategoryRejection
-
-    /** Someone changed the category since the caller read it. */
-    data class VersionConflict(val current: Long) : CategoryRejection
 
     /** Another category, archived or not, already has this name ignoring case and accents. */
     data object NameTaken : CategoryRejection
@@ -197,22 +189,12 @@ sealed interface CategoryRejection {
 
     /** The category's carry could not be calculated before or after the change (CP8, CP23). */
     data class CarryUnavailable(val failure: CarryoverFailure) : CategoryRejection
-
-    data class StorageFailed(val failure: StorageFailure) : CategoryRejection
 }
 
 /** A committed category change and the receipt that proves it. */
 data class CommittedCategoryChange(val receipt: OperationReceipt, val categoryId: CategoryId)
 
-sealed interface CategoryCommandOutcome {
-    data class Committed(val change: CommittedCategoryChange, val replayed: Boolean) :
-        CategoryCommandOutcome
-
-    data class Rejected(val reason: CategoryRejection) : CategoryCommandOutcome
-
-    /** Not known whether it was saved: ask [CategoryCommands.find] or submit the same command. */
-    data class OutcomeUnknown(val operationId: OperationId) : CategoryCommandOutcome
-}
+typealias CategoryCommandOutcome = CommandOutcome<CommittedCategoryChange, CategoryRejection>
 
 interface CategoryCommands {
     /**
