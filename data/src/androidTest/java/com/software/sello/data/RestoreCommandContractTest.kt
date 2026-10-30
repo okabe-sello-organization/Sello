@@ -18,6 +18,7 @@ import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
+import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
@@ -45,8 +46,14 @@ import java.io.File
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
+import java.util.concurrent.Executors
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -363,6 +370,201 @@ class RestoreCommandContractTest {
         val again = restores().staged()
 
         assertEquals(StagedLookup.Waiting(staged), again)
+    }
+
+    /**
+     * As if the process died in the middle of the replacement: the transaction never
+     * commits, its writes roll back, and the database is opened again.
+     */
+    private suspend fun diedWhileReplacing(staged: StagedRestore) {
+        whenStamped = { throw IllegalStateException("The process died") }
+        assertEquals(RestoreOutcome.Failed, restores().replace(staged))
+        whenStamped = {}
+        ledger.reopen()
+    }
+
+    private fun restoreReceipts() =
+        ledger.rows("operation_receipt", "operation_id", "kind").filter {
+            it.endsWith("|history.restore")
+        }
+
+    @Test
+    fun aConfirmedFileThatDidNotCommitIsFoundAttemptedAndReplacedUnderItsOperation() = runBlocking {
+        currentHistory()
+        val before = everyRow()
+        val staged = stage()
+
+        diedWhileReplacing(staged)
+
+        assertEquals(StagedLookup.Waiting(staged, attempted = true), restores().staged())
+        assertEquals(before, everyRow())
+        assertEquals(emptyList<String>(), restoreReceipts())
+
+        // Confirming again replaces once, under the operation staged with the file.
+        assertTrue(restores().replace(staged) is RestoreOutcome.Restored)
+        assertEquals(
+            listOf("${staged.operationId.value}|history.restore"),
+            restoreReceipts()
+        )
+        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun aFileOnlyPreviewedIsNotFoundAttemptedAfterARestart() = runBlocking {
+        currentHistory()
+        val staged = stage()
+
+        ledger.reopen()
+
+        // Staging writes the manifest as before the key existed: no `attempted` in it.
+        assertFalse(File(files.restoreFolder, "staged.properties").readText().contains("attempted"))
+        assertEquals(StagedLookup.Waiting(staged, attempted = false), restores().staged())
+    }
+
+    @Test
+    fun anAttemptedFileExpiresOnlyOnceItsReceiptReads() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        diedWhileReplacing(staged)
+        val kept = stagingFiles()
+        ledger.database.openHelper.writableDatabase
+            .execSQL("ALTER TABLE operation_receipt RENAME TO operation_receipt_away")
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+        ledger.reopen()
+
+        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
+        assertEquals(kept, stagingFiles())
+
+        ledger.database.openHelper.writableDatabase
+            .execSQL("ALTER TABLE operation_receipt_away RENAME TO operation_receipt")
+        ledger.reopen()
+
+        assertEquals(
+            StagedLookup.NotReplaced(staged.operationId, attempted = true),
+            restores().staged()
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun anAttemptedFileIsLeftBehindWhenTheHistoryMovesToANewGeneration() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        diedWhileReplacing(staged)
+
+        ledger.database.openHelper.writableDatabase
+            .execSQL("UPDATE profile SET generation = generation + 1")
+        ledger.reopen()
+
+        assertEquals(
+            StagedLookup.NotReplaced(staged.operationId, attempted = true),
+            restores().staged()
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    private val operationKey get() = File(files.restoreFolder, "staged.properties")
+
+    /** A directory where the manifest's temporary copy goes: writing the manifest fails. */
+    private fun blockManifestWrites() =
+        File(files.restoreFolder, "staged.properties.tmp").apply { mkdirs() }
+
+    @Test
+    fun aStageCutShortOffersNothingRatherThanAnEarlierConfirmation() = runBlocking {
+        currentHistory()
+        val first = stage()
+        diedWhileReplacing(first)
+        assertEquals(StagedLookup.Waiting(first, attempted = true), restores().staged())
+
+        val blocker = blockManifestWrites()
+        assertEquals(Outcome.Failure(StageFailure.Storage), restores().stage(g01()))
+
+        assertEquals(StagedLookup.None, restores().staged())
+        blocker.deleteRecursively()
+        val second = stage()
+        assertEquals(StagedLookup.Waiting(second, attempted = false), restores().staged())
+    }
+
+    @Test
+    fun aConfirmationThatCannotBeRecordedStillReplaces() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val blocker = blockManifestWrites()
+
+        // The replacement still reaches its transaction, which stamps the receipt.
+        diedWhileReplacing(staged)
+
+        assertEquals(StagedLookup.Waiting(staged, attempted = false), restores().staged())
+        assertTrue(restores().replace(staged) is RestoreOutcome.Restored)
+        blocker.deleteRecursively()
+        assertEquals(listOf("${staged.operationId.value}|history.restore"), restoreReceipts())
+    }
+
+    @Test
+    fun anotherOperationLeavesTheStagedFileUnmarked() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val other = (OperationId.of(uuid(99_999)) as Outcome.Success).value
+
+        diedWhileReplacing(staged.copy(operationId = other))
+
+        assertFalse(operationKey.readText().contains("attempted"))
+        assertEquals(StagedLookup.Waiting(staged, attempted = false), restores().staged())
+    }
+
+    /**
+     * Runs the caller on a thread of its own and cancels it as it is about to go on
+     * after the confirmation was recorded, before the replacement's transaction.
+     */
+    private class CancelAfterTheKey(
+        private val manifest: File,
+        private val delegate: CoroutineDispatcher
+    ) : CoroutineDispatcher() {
+        @Volatile
+        var cancelled = false
+
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            if (!cancelled && manifest.exists() && manifest.readText().contains("attempted=true")) {
+                cancelled = true
+                context[Job]?.cancel()
+            }
+            delegate.dispatch(context, block)
+        }
+    }
+
+    @Test
+    fun aCallerCancelledAfterTheConfirmationIsRecordedCommitsNothing() = runBlocking {
+        currentHistory()
+        val before = everyRow()
+        val staged = stage()
+        val thread = Executors.newSingleThreadExecutor()
+        val caller = CancelAfterTheKey(operationKey, thread.asCoroutineDispatcher())
+
+        val replacing = async(caller) { restores().replace(staged) }
+        val cancelled = runCatching { replacing.await() }.exceptionOrNull()
+        thread.shutdown()
+
+        assertTrue(caller.cancelled)
+        assertTrue("$cancelled", cancelled is CancellationException)
+        assertEquals(before, everyRow())
+        assertEquals(emptyList<String>(), restoreReceipts())
+        ledger.reopen()
+        assertEquals(StagedLookup.Waiting(staged, attempted = true), restores().staged())
+    }
+
+    @Test
+    fun aReplacementRefusedBecauseTheHistoryMovedIsNoLongerFoundAttempted() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        ledger.expenses.create(ledger.createExpense(100, "2026-10-07", 9_000))
+
+        assertEquals(RestoreOutcome.Stale, restores().replace(staged))
+        ledger.reopen()
+
+        val again = restores().staged() as StagedLookup.Waiting
+        assertEquals(staged.operationId, again.staged.operationId)
+        assertFalse(again.attempted)
     }
 
     @Test

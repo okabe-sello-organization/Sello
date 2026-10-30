@@ -60,8 +60,9 @@ import kotlinx.coroutines.withContext
  * - `staged.json` and `staged.properties`: a checked file and the operation it will
  *   be replaced under, its history position and when it was staged, and for a
  *   FinanceTracker backup what its translation changed and left out (ADR 0019): the
- *   file kept is then the translated Sello backup. Nothing financial has changed while
- *   only these exist.
+ *   file kept is then the translated Sello backup. `attempted` is added just before a
+ *   replacement starts, so a later look can tell a confirmed file from one only
+ *   previewed. Nothing financial has changed while only these exist.
  * - `restored.json`: the history was replaced from it; its preferences are not all
  *   applied yet. `applied` lists the groups that are. The folder empties once all are.
  *
@@ -161,7 +162,11 @@ class RoomRestores(
                 setProperty(STAGED_AT, audit.now().toEpochMilli().toString())
                 report?.let { write(it) }
             }
-            writeAtomically(staged, bytes) && writeAtomically(manifest, properties.text())
+            // The old manifest goes first: a stage cut short then finds nothing, never this
+            // file under another file's operation or confirmation.
+            (!manifest.exists() || manifest.delete()) &&
+                writeAtomically(staged, bytes) &&
+                writeAtomically(manifest, properties.text())
         }
         if (!written) return Outcome.Failure(StageFailure.Storage)
         return Outcome.Success(position.preview(operation, contents, report))
@@ -187,18 +192,19 @@ class RoomRestores(
             false -> Unit
         }
         val position = (position() as? Outcome.Success)?.value
-            ?: return StagedLookup.NotReplaced(manifest.operation)
+            ?: return manifest.notReplaced()
         val expired = audit.now().isAfter(manifest.stagedAt.plus(STAGING_LIFETIME))
         if (position.generation != manifest.generation || expired) {
             discard()
-            return StagedLookup.NotReplaced(manifest.operation)
+            return manifest.notReplaced()
         }
         val bytes = io { staged.takeIf { it.exists() }?.readBytes() }
-            ?: return StagedLookup.NotReplaced(manifest.operation)
+            ?: return manifest.notReplaced()
         val plan = codec.read(bytes) as? Outcome.Success
-            ?: return StagedLookup.NotReplaced(manifest.operation).also { discard() }
+            ?: return manifest.notReplaced().also { discard() }
         return StagedLookup.Waiting(
-            position.preview(manifest.operation, plan.value.contents, manifest.report)
+            position.preview(manifest.operation, plan.value.contents, manifest.report),
+            attempted = manifest.attempted
         )
     }
 
@@ -217,6 +223,7 @@ class RoomRestores(
         val contents = (codec.read(bytes) as? Outcome.Success)?.value?.contents
             ?: return RestoreOutcome.Failed
         val digest = digest(staged, bytes)
+        markAttempted(staged.operationId, attempted = true)
         val run = database.runCommand { write(staged, contents, digest) }
         return when (run) {
             is CommandRun.Finished -> when (run.value) {
@@ -228,7 +235,11 @@ class RoomRestores(
                     )
                 }
 
-                Replacement.Moved -> RestoreOutcome.Stale
+                // Previewed again with the new counts, as a file not confirmed yet.
+                Replacement.Moved -> {
+                    markAttempted(staged.operationId, attempted = false)
+                    RestoreOutcome.Stale
+                }
 
                 Replacement.Conflict -> RestoreOutcome.Failed
             }
@@ -492,8 +503,38 @@ class RoomRestores(
         val operation: OperationId,
         val generation: Long,
         val stagedAt: Instant,
-        val report: LegacyImportReport?
-    )
+        val report: LegacyImportReport?,
+        val attempted: Boolean
+    ) {
+        fun notReplaced() = StagedLookup.NotReplaced(operation, attempted)
+    }
+
+    /**
+     * Records in the manifest whether [operation]'s replacement was started: just before
+     * it starts, and taken back when it was refused because the history moved. If that
+     * cannot be written the replacement still goes ahead: a later look then shows the
+     * file without saying it was confirmed, never anything untrue.
+     */
+    private suspend fun markAttempted(operation: OperationId, attempted: Boolean) {
+        io {
+            try {
+                if (!manifest.exists()) return@io
+                val properties = Properties().apply { manifest.inputStream().use(::load) }
+                if (properties.getProperty(OPERATION) != operation.value) return@io
+                if ((properties.getProperty(ATTEMPTED) == true.toString()) == attempted) {
+                    return@io
+                }
+                if (attempted) {
+                    properties.setProperty(ATTEMPTED, true.toString())
+                } else {
+                    properties.remove(ATTEMPTED)
+                }
+                writeAtomically(manifest, properties.text())
+            } catch (_: IOException) {
+                // Left unmarked; see above.
+            }
+        }
+    }
 
     private suspend fun readManifest(): Manifest? = io {
         if (!manifest.exists() || !staged.exists()) return@io null
@@ -517,7 +558,9 @@ class RoomRestores(
             } else {
                 // A report that cannot be read makes the staging unusable, not complete.
                 properties.report() ?: return@io null
-            }
+            },
+            // A manifest written before this key existed was never attempted from it.
+            attempted = properties.getProperty(ATTEMPTED) == true.toString()
         )
     }
 
@@ -579,6 +622,7 @@ class RoomRestores(
         const val OPERATION = "operation"
         const val GENERATION = "generation"
         const val STAGED_AT = "stagedAt"
+        const val ATTEMPTED = "attempted"
         const val LEGACY_LINES = "legacy.lines"
         const val LEGACY_LINE = "legacy."
         const val APPEARANCE = "appearance"

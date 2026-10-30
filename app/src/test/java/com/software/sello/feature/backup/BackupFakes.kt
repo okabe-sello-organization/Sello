@@ -99,6 +99,9 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
     var stagedGate: CompletableDeferred<Unit>? = null
     val staged = mutableListOf<Int>()
     var replaced = 0
+
+    /** The operation of each replacement that got past [replaceGate], in order. */
+    val replacedOperations = mutableListOf<OperationId>()
     var discarded = 0
     var applied = 0
     var looked = 0
@@ -123,6 +126,7 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
         events?.add("replace ${staged.operationId.value}")
         replaceGate?.await()
         replaced++
+        replacedOperations += staged.operationId
         return replaceAnswer
     }
 

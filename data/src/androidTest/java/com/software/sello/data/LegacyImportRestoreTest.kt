@@ -76,6 +76,8 @@ class LegacyImportRestoreTest {
     private val preferences = Preferences()
     private var nextId = 5_000
 
+    private var whenStamped: () -> Unit = {}
+
     private fun restores() = RoomRestores(
         ledger.database,
         files.restoreFolder,
@@ -84,7 +86,10 @@ class LegacyImportRestoreTest {
         investments,
         NoticeSeen(),
         { uuid(nextId++) },
-        { Instant.parse("2026-10-25T20:00:00Z") },
+        {
+            whenStamped()
+            Instant.parse("2026-10-25T20:00:00Z")
+        },
         dispatchers
     )
 
@@ -261,6 +266,21 @@ class LegacyImportRestoreTest {
 
         assertEquals(report, resumed?.legacy)
         assertEquals(BackupSummary(2, 2, 1, 1, 1, 1), resumed?.replacement)
+    }
+
+    /** Marking a confirmation in the manifest keeps the report written beside it. */
+    @Test
+    fun theReportOfAConfirmedLegacyFileSurvivesARestart() = runBlocking {
+        currentHistory()
+        val staged = restores().stage(legacy.toByteArray()).valueOrFail()
+        // Confirmed, and the replacement rolled back as if the process had died in it.
+        whenStamped = { throw IllegalStateException("The process died") }
+        assertEquals(RestoreOutcome.Failed, restores().replace(staged))
+        whenStamped = {}
+
+        ledger.reopen()
+
+        assertEquals(StagedLookup.Waiting(staged, attempted = true), restores().staged())
     }
 
     @Test
