@@ -190,7 +190,8 @@ outside `src/debug`. See [sandbox](sandbox.md).
 - [ ] Review category: money rules, storage or schema, backup, recovery, privacy, CI or gates
       get an adversarial review by a separate agent ([orchestration](orchestration.md)); other
       code gets a lighter review by a separate agent, never the author.
-- [ ] The pull request follows the [template](../../.github/pull_request_template.md): what
-      changed, why, the proof (tests, screenshots) and **Not covered**. CI's `quality` check
+- [ ] The pull request follows the [template](../../.github/pull_request_template.md): one
+      line on what it does, a before-and-now table, screenshots when something looks
+      different, the proof and **Not covered**, with no paragraphs. CI's `quality` check
       is the proof that checks passed; never say a run happened that did not.
 - [ ] A lasting decision has an ADR in `docs/decisions/`.
