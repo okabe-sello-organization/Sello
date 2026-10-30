@@ -70,6 +70,14 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(emulator.WORKFLOW_SETTINGS,
                          emulator_step_settings(WORKFLOW.read_text(encoding="utf-8")))
 
+    def test_the_screen_is_a_phone_at_mdpi_with_no_navigation_bar(self):
+        settings = emulator_step_settings(WORKFLOW.read_text(encoding="utf-8"))
+        options = settings["emulator-options"].split()
+        self.assertEqual("412x914", options[options.index("-skin") + 1])
+        self.assertEqual("412x914", emulator.SCREEN)
+        # A device profile brings its own screen and an on-screen navigation bar (#224).
+        self.assertNotIn("profile", settings)
+
 
 class Sandbox(unittest.TestCase):
     """A cache directory of its own, an SDK with the image, and no real adb or emulator."""
@@ -174,6 +182,24 @@ class StartTest(Sandbox):
         process.kill.assert_called_once()
         self.assertNotIn(("emulator-5554", "emu", "kill"), self.adb_calls)
         self.assertEqual({}, emulator.records())
+
+    def test_makes_the_avd_without_a_profile_and_boots_it_with_the_workflows_screen(self):
+        created, spawned = [], []
+
+        def creating(argv, **kwargs):
+            created.append(argv)
+            return avdmanager(argv, **kwargs)
+
+        def spawning(argv, **kwargs):
+            spawned.append(argv)
+            return mock.Mock(pid=4242, returncode=1, **{"poll.return_value": 1})
+
+        with mock.patch.object(emulator.subprocess, "run", creating), \
+                mock.patch.object(emulator.subprocess, "Popen", spawning), \
+                contextlib.redirect_stderr(io.StringIO()):
+            emulator.main(["start"], out=io.StringIO())
+        self.assertFalse({"-d", "--device"} & set(created[0]))
+        self.assertEqual(["-skin", "412x914"], spawned[0][spawned[0].index("-skin"):][:2])
 
     def test_no_free_port_deletes_the_new_avd(self):
         with mock.patch.object(emulator.subprocess, "run", avdmanager), \

@@ -232,13 +232,15 @@ scripts/emulator list                                # what it started and still
 ```
 
 It copies the Quality workflow's emulator step: the pinned API-30 `google_apis` x86_64
-image, avdmanager's default hardware with no `--device` profile (320x640 at mdpi, no
-navigation bar, no hardware keyboard), two cores, `-no-window -gpu swiftshader_indirect
--no-snapshot -noaudio -no-boot-anim`, the screen unlocked and the three animation
-scales at zero. A test of `scripts/quality/test_emulator.py` keeps it equal to the
-workflow. Do not make the AVD another way: a phone profile such as `-d pixel` adds an
-on-screen navigation bar even with its screen edited to 320x640, the window loses
-48 dp, and journeys that pass on CI fail (#224).
+image, avdmanager's default hardware with no `--device` profile (mdpi, no navigation
+bar, no hardware keyboard), two cores, `-no-window -gpu swiftshader_indirect
+-no-snapshot -noaudio -no-boot-anim -skin 412x914`, the screen unlocked and the three
+animation scales at zero. `-skin` makes the screen a common phone's, 412x914 dp (a
+Pixel 6 or 7, or Android Studio's Medium Phone), drawn at one pixel per dp so CI's
+two-core software rendering stays fast. A test of `scripts/quality/test_emulator.py`
+keeps it equal to the workflow. Do not make the AVD another way: a phone profile such
+as `-d pixel` adds an on-screen navigation bar, the window loses 48 dp, and journeys
+that pass on CI fail (#224).
 
 Agents can start emulators at once: a lock on the script's record makes them choose
 different ports. `stop` refuses a serial it did not start, and stops one it did only

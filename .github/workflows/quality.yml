@@ -203,7 +203,9 @@ jobs:
           arch: x86_64
           cores: 2
           force-avd-creation: true
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          # No profile: avdmanager's default hardware is mdpi with no navigation bar (#224);
+          # -skin makes its screen a 412x914 dp phone's. scripts/emulator makes the same AVD.
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -skin 412x914
           disable-animations: true
           # The action runs each script line on its own, so one line keeps the exit status.
           # The emulator's crashpad_handler can outlive "emu kill" and keep the action

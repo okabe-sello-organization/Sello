@@ -34,7 +34,8 @@ The digest is public; it identifies the key without revealing it.
 ## Release gate (G3)
 
 `scripts/check --release` on the owner's machine, with the `sello.signing.*` entries
-and the owner's API-30 emulator as `ANDROID_SERIAL`, runs the host gate and every device
+and an emulator from `scripts/emulator start` as `ANDROID_SERIAL` (it refuses a device
+without CI's API level and screen), runs the host gate and every device
 suite, then the release checks of ADR 0016: the licence list, the production signature and
 artifact checks, and installing and opening the signed APK on the emulator. A passed
 run leaves the release candidate in `build/release-candidate/`:
