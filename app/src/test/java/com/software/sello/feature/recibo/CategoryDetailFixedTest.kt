@@ -404,7 +404,7 @@ class CategoryDetailFixedTest {
         snapshots.ready(snapshotOf(950_000, emptyList(), revision = 3))
         assertEquals(DetailFixedState.Hidden, viewModel.ready.fixed)
         schedules.state.value = ReadState.Failed(StorageFailure.Unavailable("hand"), null)
-        assertEquals(DetailFixedState.Hidden, viewModel.ready.fixed)
+        assertEquals(DetailFixedState.Failed, viewModel.ready.fixed)
     }
 
     /** After a restore, another history: the slip of the one before is not kept. */

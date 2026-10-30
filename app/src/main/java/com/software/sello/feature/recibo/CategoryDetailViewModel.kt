@@ -322,9 +322,8 @@ class CategoryDetailViewModel(
                     before
                 }
 
-                // Never read, or read empty while the hero now reserves something.
-                failed && (before == null || state.upcoming.isNotEmpty()) ->
-                    DetailFixedState.Failed
+                // Failed with no list to keep: said, never shown as none.
+                failed -> DetailFixedState.Failed
 
                 // Nothing reserved: no skeleton for a category that may have no schedules.
                 state.upcoming.isEmpty() -> DetailFixedState.Hidden
