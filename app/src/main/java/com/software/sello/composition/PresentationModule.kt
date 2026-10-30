@@ -19,6 +19,7 @@ import com.software.sello.feature.backup.ExportSession
 import com.software.sello.feature.backup.ExportViewModel
 import com.software.sello.feature.backup.RestoreSession
 import com.software.sello.feature.backup.RestoreViewModel
+import com.software.sello.feature.bulk.BulkEntryViewModel
 import com.software.sello.feature.category.CategoryEditorViewModel
 import com.software.sello.feature.category.CategoryManagementViewModel
 import com.software.sello.feature.expense.ExpenseEntryViewModel
@@ -133,6 +134,7 @@ private fun Module.viewModels() {
     factoryOf(::CategoryDetailViewModel)
     factoryOf(::CategoryExpensesViewModel)
     factoryOf(::ExpenseEntryViewModel)
+    factoryOf(::BulkEntryViewModel)
     factoryOf(::CategoryEditorViewModel)
     factoryOf(::UpcomingPaymentsViewModel)
     factoryOf(::AdjustBudgetViewModel)

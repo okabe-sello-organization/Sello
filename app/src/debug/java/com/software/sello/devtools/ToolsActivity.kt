@@ -84,6 +84,7 @@ fun ToolsScreen(tools: SandboxTools) {
             }, onLeave = { move { leave() } })
             tools.time?.let { TimeSlip(it) }
             ScenarioSlip(tools.scenarios, enabled = !moving, onLoad = { move { load(it) } })
+            tools.receipts?.let { ReceiptSlip(it) }
             if (tools.profiles.inSandbox) {
                 ResetSlip(enabled = !moving, onReset = {
                     move { reset() }
@@ -213,6 +214,29 @@ private fun TimeSlip(time: SandboxTime) {
     }
 }
 
+/** Hides the next Anotar varios receipt's outcome, to try **Comprobar si se guardó**. */
+@Composable
+private fun ReceiptSlip(receipts: ReceiptOutcomes) {
+    val armed by receipts.armed.collectAsState()
+    Slip(Modifier.fillMaxWidth()) {
+        Heading(stringResource(R.string.tools_receipts_heading))
+        Note(stringResource(R.string.tools_receipts_note))
+        if (armed) {
+            Note(
+                stringResource(R.string.tools_receipts_armed),
+                Modifier.semantics { liveRegion = LiveRegionMode.Polite }
+            )
+        }
+        SelloButton(
+            stringResource(R.string.tools_receipts_arm),
+            { receipts.arm() },
+            Modifier.fillMaxWidth().testTag(TOOLS_RECEIPTS_ARM_TAG),
+            kind = ButtonKind.Outlined,
+            enabled = !armed
+        )
+    }
+}
+
 @Composable
 private fun ScenarioSlip(runner: ScenarioRunner?, enabled: Boolean, onLoad: (Scenario) -> Unit) {
     var loading by rememberSaveable { mutableStateOf<String?>(null) }
@@ -337,3 +361,4 @@ const val TOOLS_RESET_CONFIRM_TAG = "tools:reset-confirm"
 const val TOOLS_SCENARIO_PROGRESS_TAG = "tools:scenario-progress"
 const val TOOLS_SCENARIO_PROBLEM_TAG = "tools:scenario-problem"
 const val TOOLS_SCENARIO_RETRY_TAG = "tools:scenario-retry"
+const val TOOLS_RECEIPTS_ARM_TAG = "tools:receipts-arm"

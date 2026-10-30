@@ -87,7 +87,12 @@ internal fun NavGraphBuilder.incomeDestinations(
             } else {
                 announcements::retry
             },
-            announcementFailed = announcementState.failure != null
+            announcementFailed = announcementState.failure != null,
+            onSeveral = { several ->
+                navigation.navigate(several.route()) {
+                    popUpTo<IncomeEntryRoute> { inclusive = true }
+                }
+            }
         ) { navigation.popBackStack() }
     }
     composable<IncomeEditRoute> {

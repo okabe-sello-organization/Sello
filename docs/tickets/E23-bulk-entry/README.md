@@ -38,3 +38,7 @@ is preselected; ways in are the Varios pill and links at the foot of the lists, 
 dock long-press; removing a draft line has a short Deshacer; leaving asks to discard; two
 rows of category or source chips and no Nueva chip; a line's title is its category,
 source or type, with the note under it.
+
+**Owner ruling (2026-10-30):** routes may carry what the person typed on the screen they
+came from (amount, note, date), as hints checked like any input and free to be ignored;
+Varios on Anotar hands its draft to the bulk receipt this way (SELLO-131, #287).

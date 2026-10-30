@@ -165,6 +165,26 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
             )
         }
 
+        is CorrectionNotice.ExpensesRecorded -> {
+            // On screen the figure as it is written; read aloud with its currency.
+            SelloNotice(
+                message = pluralStringResource(
+                    R.plurals.notice_expenses_recorded,
+                    notice.count,
+                    notice.count,
+                    notice.total.digits
+                ),
+                modifier = tagged,
+                spoken = pluralStringResource(
+                    R.plurals.notice_expenses_recorded,
+                    notice.count,
+                    notice.count,
+                    notice.total.spoken
+                ),
+                confirmation = true
+            )
+        }
+
         is CorrectionNotice.GoalMovementDeleted -> SelloNotice(
             message = stringResource(
                 if (notice.undoFailed) {

@@ -112,6 +112,7 @@ fun ExpenseEntryRoot(
     announcementFailed: Boolean = false,
     createdCategoryId: String? = null,
     onCreatedCategoryTaken: () -> Unit = {},
+    onSeveral: ((ExpenseSeveral) -> Unit)? = null,
     onClosed: () -> Unit
 ) {
     val viewModel: ExpenseEntryViewModel = viewModel(factory = viewModels)
@@ -138,6 +139,7 @@ fun ExpenseEntryRoot(
             onClosed()
         }
     }
+    LaunchedEffect(state.several) { state.several?.let { onSeveral?.invoke(it) } }
     BackHandler { viewModel.onAction(ExpenseEntryAction.Back) }
     // While Se repite's sheet is open, Back closes it and keeps the choice as it was.
     BackHandler(enabled = state.repeat.sheet != null) {
@@ -149,6 +151,7 @@ fun ExpenseEntryRoot(
         viewModel::onAction,
         onIncome = onIncome,
         onCreateCategory = onCreateCategory,
+        severalOffered = onSeveral != null,
         showPastExpenseAnnouncement = !announcements.loading &&
             state.editing && state.pastMonths.isNotEmpty() &&
             !announcements.preference.pastExpenseSeen,
@@ -166,6 +169,7 @@ fun ExpenseEntryScreen(
     modifier: Modifier = Modifier,
     onIncome: (() -> Unit)? = null,
     onCreateCategory: (() -> Unit)? = null,
+    severalOffered: Boolean = false,
     showPastExpenseAnnouncement: Boolean = false,
     dismissPastExpenseAnnouncement: () -> Unit = {},
     announcementBusy: Boolean = false,
@@ -182,6 +186,19 @@ fun ExpenseEntryScreen(
             }
         },
         actions = {
+            // Anotar varios, taking what is typed so far as its first line.
+            if (severalOffered && !state.editing && !state.loading && !state.loadFailed) {
+                val description = stringResource(R.string.expense_entry_several_description)
+                FieldPill(
+                    text = stringResource(R.string.expense_entry_several),
+                    icon = SelloIcon.ReceiptLong,
+                    onClick = { onAction(ExpenseEntryAction.Several) },
+                    modifier = Modifier
+                        .testTag(ENTRY_SEVERAL_TAG)
+                        .semantics { contentDescription = description },
+                    enabled = state.canOpenSeveral
+                )
+            }
             // Only for an expense that is recorded and has been read: nothing else
             // is there to delete. Undo is offered afterwards, so it does not ask first.
             if (state.editing && !state.loading && !state.loadFailed) {
@@ -746,5 +763,6 @@ const val ENTRY_MISSING_TAG = "expense-entry:missing"
 const val ENTRY_ERROR_TAG = "expense-entry:error"
 const val ENTRY_SUBMIT_TAG = "expense-entry:submit"
 const val ENTRY_DELETE_TAG = "expense-entry:delete"
+const val ENTRY_SEVERAL_TAG = "expense-entry:several"
 const val ENTRY_PAST_MONTHS_TAG = "expense-entry:past-months"
 const val ENTRY_PAST_EXPENSE_ANNOUNCEMENT_TAG = "expense-entry:past-expense-announcement"
