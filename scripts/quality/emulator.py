@@ -5,9 +5,10 @@
     scripts/emulator list         the emulators this script started and still knows
 
 The AVD matches .github/workflows/quality.yml's reactivecircus/android-emulator-runner
-step: the pinned system image, avdmanager's default hardware (320x640 at mdpi, no
-hardware keyboard), two cores, the same emulator flags, the screen unlocked and the
-three animation scales at zero. Each AVD gets a unique name, its own ANDROID_AVD_HOME
+step: the pinned system image, avdmanager's default hardware with no device profile
+(mdpi, no navigation bar, no hardware keyboard), two cores, the same emulator flags
+(their -skin makes the screen a 412x914 dp phone's), the screen unlocked and the three
+animation scales at zero. Each AVD gets a unique name, its own ANDROID_AVD_HOME
 and a port no other emulator uses, so it never touches someone else's device.
 """
 import argparse
@@ -28,7 +29,12 @@ import check
 
 API_LEVEL, TARGET, ARCH, CORES = "30", "google_apis", "x86_64", "2"
 PACKAGE = f"system-images;android-{API_LEVEL};{TARGET};{ARCH}"
-EMULATOR_OPTIONS = ("-no-window", "-gpu", "swiftshader_indirect", "-no-snapshot", "-noaudio", "-no-boot-anim")
+# A Pixel 6 or 7's, or Android Studio's Medium Phone's, about 411x914 dp (the emulator rounds
+# the width to a multiple of 4), drawn at mdpi, one pixel per dp, to keep swiftshader's work
+# small on CI's two cores.
+SCREEN = "412x914"
+EMULATOR_OPTIONS = ("-no-window", "-gpu", "swiftshader_indirect", "-no-snapshot", "-noaudio", "-no-boot-anim",
+                    "-skin", SCREEN)
 ANIMATION_SCALES = ("window_animation_scale", "transition_animation_scale", "animator_duration_scale")
 PORTS = range(5554, 5684, 2)  # the console ports adb scans; adb uses each one plus one
 # The emulator step's `with:` in quality.yml, without its script; a test keeps them equal.
