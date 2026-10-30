@@ -59,4 +59,24 @@ class CategoryEditorScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    /** A 13-digit limit pasted over it: kept as pasted, with why it cannot be set. */
+    @Test
+    fun aLimitAboveTheMaximum() {
+        val pasted = editing.copy(
+            limitText = "1.000.000.000.000",
+            limitAmount = MoneyTextValue(
+                MoneySign.None,
+                "",
+                "1.000.000.000.000",
+                "1.000.000.000.000 pesos"
+            ),
+            limitError = LimitError.TooLarge
+        )
+        val look = Look()
+        rule.showSello(look) {
+            CategoryEditorScreen(pasted, {})
+        }
+        rule.captureStill("src/test/screenshots/category-editor-too-large-${look.label}.png")
+    }
 }

@@ -422,6 +422,54 @@ class CategoryManagementViewModelTest {
     }
 
     @Test
+    fun aLimitAboveTheMaximumSaysWhyAgainWhenSinLimiteIsTurnedOffNotWhileItIsOn() {
+        val form = form()
+        form.limit("1.000.000.000.000")
+
+        form.onAction(CategoryEditorAction.UnlimitedChanged(true))
+        val on = form.now.limitError
+        form.onAction(CategoryEditorAction.UnlimitedChanged(false))
+
+        assertNull(on)
+        assertEquals(LimitError.TooLarge, form.now.limitError)
+        assertEquals("1.000.000.000.000", form.now.limitText)
+    }
+
+    @Test
+    fun aRestoredDraftAboveTheMaximumSaysWhyAndIsNeverSent() {
+        val saved = opening()
+        form(saved).limit("1.000.000.000.000")
+        val restored = form(saved.afterProcessDeath())
+        val reopened = restored.now.limitError
+
+        restored.save()
+
+        assertEquals(LimitError.TooLarge, reopened)
+        assertEquals("1.000.000.000.000", restored.now.limitText)
+        assertEquals(LimitError.TooLarge, restored.now.limitError)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
+    @Test
+    fun aStoredLimitAboveTheMaximumShowsNoReasonWhenReopenedOrSwitchedBack() {
+        val large = MonthBudgetState.Limited(finite(1_000_000_000_000), explicit = false)
+        reads.categories = listOf(stored(1, "Café", large), mercado)
+        val saved = opening()
+        form(saved).name("Cafetería")
+        val restored = form(saved.afterProcessDeath())
+        val reopened = restored.now.limitError
+        restored.onAction(CategoryEditorAction.UnlimitedChanged(true))
+        restored.onAction(CategoryEditorAction.UnlimitedChanged(false))
+
+        restored.save()
+
+        assertNull(reopened)
+        assertNull(restored.now.limitError)
+        assertEquals("1000000000000", restored.now.limitText)
+        assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
+    }
+
+    @Test
     fun aStoredLimitAboveTheMaximumCannotBeChangedToAnotherOne() {
         val large = MonthBudgetState.Limited(finite(1_000_000_000_000), explicit = false)
         reads.categories = listOf(stored(1, "Café", large), mercado)

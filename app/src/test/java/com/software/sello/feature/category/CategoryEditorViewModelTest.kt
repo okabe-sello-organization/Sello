@@ -297,12 +297,28 @@ class CategoryEditorViewModelTest {
             limit("1.000.000.000.000")
         }
         val restored = editor(saved.afterProcessDeath())
+        val reopened = restored.state.value.limitError
 
         restored.submit()
 
+        assertEquals(LimitError.TooLarge, reopened)
         assertEquals("1.000.000.000.000", restored.state.value.limitText)
         assertEquals(LimitError.TooLarge, restored.state.value.limitError)
         assertEquals(emptyList<CreateCategory>(), commands.submitted)
+    }
+
+    @Test
+    fun aLimitAboveTheMaximumSaysWhyAgainWhenSinLimiteIsTurnedOffNotWhileItIsOn() {
+        val editor = editor()
+        editor.limit("1.000.000.000.000")
+
+        editor.onAction(CategoryEditorAction.UnlimitedChanged(true))
+        val on = editor.state.value.limitError
+        editor.onAction(CategoryEditorAction.UnlimitedChanged(false))
+
+        assertNull(on)
+        assertEquals(LimitError.TooLarge, editor.state.value.limitError)
+        assertEquals("1.000.000.000.000", editor.state.value.limitText)
     }
 
     @Test

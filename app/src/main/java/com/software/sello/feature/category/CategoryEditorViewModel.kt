@@ -82,6 +82,7 @@ class CategoryEditorViewModel(
             unlimited = typed.unlimited,
             limitText = typed.limit,
             limitAmount = figures.amount(typed.limit),
+            limitError = LimitEntry.reason(typed.unlimited, typed.limit),
             suggestions = LimitFigures(money).suggestions(null),
             result = saved.get<String>(KEY_CREATED)?.let(EditorResult::Created)
         )
@@ -113,7 +114,7 @@ class CategoryEditorViewModel(
             }
 
             is CategoryEditorAction.LimitChanged -> if (now.editable && !now.unlimited) {
-                setLimit(false, action.text, error = LimitEntry.pasted(action.text))
+                setLimit(unlimited = false, text = action.text)
             }
 
             is CategoryEditorAction.LimitDigit -> if (now.editable && !now.unlimited) {
@@ -184,14 +185,14 @@ class CategoryEditorViewModel(
         drafts.write(next)
     }
 
-    private fun setLimit(unlimited: Boolean, text: String, error: LimitError? = null) {
+    private fun setLimit(unlimited: Boolean, text: String) {
         keep(typed.copy(unlimited = unlimited, limit = text))
         mutable.update {
             it.copy(
                 unlimited = unlimited,
                 limitText = text,
                 limitAmount = figures.amount(text),
-                limitError = error,
+                limitError = LimitEntry.reason(unlimited, text),
                 limitTotal = figures.total(budget, null, unlimited, text)
             )
         }

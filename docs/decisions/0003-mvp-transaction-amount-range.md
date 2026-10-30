@@ -20,7 +20,7 @@ and storage/backup compatibility review. This rule does not add currencies or an
 account ledger.
 
 **Amended 2026-10-29 (owner):** a category limit is capped at the same maximum when
-set; limits already stored or restored from a backup keep reading.
+set; limits already stored, restored from a backup or imported keep reading.
 
 ## Verification
 

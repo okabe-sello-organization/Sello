@@ -169,6 +169,7 @@ class CategoryManagementViewModel(
             iconKey = typed.icon,
             unlimited = typed.unlimited,
             limitText = typed.limit,
+            limitError = limitReason(typed.unlimited, typed.limit),
             suggestions = LimitFigures(money).suggestions(null),
             targetMonth = targetMonth,
             historical = targetMonth < currentMonth
@@ -203,9 +204,7 @@ class CategoryManagementViewModel(
                 if (now.editable && !now.limitLocked) setLimit(action.unlimited, now.limitText)
 
             is CategoryEditorAction.LimitChanged ->
-                if (now.editable && !now.limitLocked && !now.unlimited) {
-                    setLimit(false, action.text, error = pastedError(action.text))
-                }
+                if (now.editable && !now.limitLocked && !now.unlimited) setLimit(false, action.text)
 
             is CategoryEditorAction.LimitDigit -> if (typesLimit(now)) {
                 LimitKeys.press(now.limitText) {
@@ -454,16 +453,21 @@ class CategoryManagementViewModel(
         drafts.write(next)
     }
 
-    private fun setLimit(unlimited: Boolean, text: String, error: LimitError? = null) {
+    private fun setLimit(unlimited: Boolean, text: String) {
         remember(typed.copy(unlimited = unlimited, limit = text))
-        render { it.copy(unlimited = unlimited, limitText = text, limitError = error) }
+        val reason = limitReason(unlimited, text)
+        render { it.copy(unlimited = unlimited, limitText = text, limitError = reason) }
     }
 
-    /** A pasted limit too large to set, unless it is the stored one, which is not being set. */
-    private fun pastedError(text: String): LimitError? {
+    /**
+     * [LimitEntry.reason], except for the stored limit, which is not being set: one stored
+     * above the maximum is shown with no reason and left as it is.
+     */
+    private fun limitReason(unlimited: Boolean, text: String): LimitError? {
         val stored = (original?.limit as? StoredLimit.Finite)?.pesos
-        val pasted = (CopAmountInput.parse(text) as? Outcome.Success)?.value?.minorUnits
-        return if (pasted != null && pasted == stored) null else LimitEntry.pasted(text)
+        val written = (CopAmountInput.parse(text) as? Outcome.Success)?.value?.minorUnits
+        if (written != null && written == stored) return null
+        return LimitEntry.reason(unlimited, text)
     }
 
     /** Said while typing: a name another category has, however it is written, cannot be saved. */

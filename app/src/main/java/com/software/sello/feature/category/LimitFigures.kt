@@ -88,11 +88,16 @@ internal object LimitEntry {
     }
 
     /**
-     * Said as soon as [text] is pasted, as the expense amount does: an amount too large to
-     * set. Text that is not an amount is said on saving, as before.
+     * Said whenever the field holds [text], as the expense amount does: an amount too large
+     * to set, unless "Sin límite" is on and the amount is not sent. It is worked out from the
+     * text, so a pasted, restored or switched-back amount says it alike. Text that is not an
+     * amount is said on saving, as before.
      */
-    fun pasted(text: String): LimitError? =
+    fun reason(unlimited: Boolean, text: String): LimitError? = if (unlimited) {
+        null
+    } else {
         (limit(text) as? Outcome.Failure)?.error?.takeIf { it == LimitError.TooLarge }
+    }
 }
 
 /**
