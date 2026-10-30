@@ -286,6 +286,12 @@ class CheckTests(unittest.TestCase):
         self.assertEqual(2, self.check("--release"))
         self.assertEqual([], self.fake.ran)
 
+    def test_release_refuses_a_device_without_cis_screen_before_anything_runs(self):
+        self.screen = ("Physical size: 320x640\n", "Physical density: 160\n")
+        self.assertEqual(2, self.check("--release", environ={"ANDROID_SERIAL": "emulator-5580"}))
+        self.assertIn("does not have CI's 412x914 screen", self.out.getvalue())
+        self.assertEqual([], self.fake.ran)
+
     def test_release_runs_the_whole_gate_then_the_owners_signing_and_launch(self):
         self.assertEqual(0, self.check("--release", environ={"ANDROID_SERIAL": "emulator-5580"}))
         names = self.fake.names()
