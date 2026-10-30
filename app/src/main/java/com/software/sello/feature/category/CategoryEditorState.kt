@@ -7,7 +7,7 @@ import java.time.YearMonth
 enum class NameError { Required, TooLong, NotAllowed, Taken }
 
 /** Why the limit cannot be used. The text typed is kept as it was. */
-enum class LimitError { Required, NotAnAmount }
+enum class LimitError { Required, NotAnAmount, TooLarge }
 
 /**
  * Why saving did not finish. For a new category none of these means it was created.

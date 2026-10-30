@@ -8,7 +8,6 @@ import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TextError
-import com.software.sello.domain.policy.CopAmountInput
 import com.software.sello.domain.policy.SuggestedLimit
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
@@ -114,7 +113,7 @@ class CategoryEditorViewModel(
             }
 
             is CategoryEditorAction.LimitChanged -> if (now.editable && !now.unlimited) {
-                setLimit(unlimited = false, text = action.text)
+                setLimit(false, action.text, error = LimitEntry.pasted(action.text))
             }
 
             is CategoryEditorAction.LimitDigit -> if (now.editable && !now.unlimited) {
@@ -185,14 +184,14 @@ class CategoryEditorViewModel(
         drafts.write(next)
     }
 
-    private fun setLimit(unlimited: Boolean, text: String) {
+    private fun setLimit(unlimited: Boolean, text: String, error: LimitError? = null) {
         keep(typed.copy(unlimited = unlimited, limit = text))
         mutable.update {
             it.copy(
                 unlimited = unlimited,
                 limitText = text,
                 limitAmount = figures.amount(text),
-                limitError = null,
+                limitError = error,
                 limitTotal = figures.total(budget, null, unlimited, text)
             )
         }
@@ -263,11 +262,11 @@ class CategoryEditorViewModel(
             state.limitText.isBlank() ->
                 return mutable.update { it.copy(limitError = LimitError.Required) }
 
-            else -> {
-                val money = CopAmountInput.parse(state.limitText) as? Outcome.Success
-                val finite = money?.let { BudgetLimit.finite(it.value) } as? Outcome.Success
-                finite?.value
-                    ?: return mutable.update { it.copy(limitError = LimitError.NotAnAmount) }
+            else -> when (val entered = LimitEntry.limit(state.limitText)) {
+                is Outcome.Success -> entered.value
+
+                is Outcome.Failure ->
+                    return mutable.update { it.copy(limitError = entered.error) }
             }
         }
         val icon = (IconKey.of(state.iconKey) as? Outcome.Success)?.value ?: return

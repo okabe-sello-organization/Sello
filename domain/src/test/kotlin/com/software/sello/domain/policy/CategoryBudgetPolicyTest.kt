@@ -211,6 +211,13 @@ class CategoryBudgetPolicyTest {
     }
 
     @Test
+    fun aLimitAboveTheMaximumOneCanSetIsNotSuggestedHoweverCommon() {
+        val categories = limits(1_000_000_000_000, 1_000_000_000_000, 999_999_999_999)
+
+        assertEquals(listOf(200_000L, 300_000L, 999_999_999_999L), suggested(categories))
+    }
+
+    @Test
     fun fewerThanThreeOwnLimitsAreToppedUpFromTheStartingOnes() {
         assertEquals(listOf(200_000L, 250_000L, 300_000L), suggested(limits(250_000)))
         assertEquals(

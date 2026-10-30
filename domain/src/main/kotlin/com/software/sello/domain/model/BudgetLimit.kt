@@ -6,6 +6,9 @@ sealed interface BudgetLimitError {
     data object Negative : BudgetLimitError
 
     data class UnsupportedCurrency(val currency: Currency) : BudgetLimitError
+
+    /** Only a limit being set is held to this; see [BudgetLimit.entered]. */
+    data object AboveMaximum : BudgetLimitError
 }
 
 /**
@@ -14,7 +17,7 @@ sealed interface BudgetLimitError {
  * month with no configuration at all, which has no [BudgetLimit].
  */
 sealed interface BudgetLimit {
-    /** Zero or more. Not subject to the per-record transaction maximum. */
+    /** Zero or more. Only a limit being set is held to the transaction maximum ([entered]). */
     @ConsistentCopyVisibility
     data class Finite internal constructor(val amount: Money) : BudgetLimit
 
@@ -29,6 +32,22 @@ sealed interface BudgetLimit {
 
             else -> Outcome.Success(Finite(amount))
         }
+
+        /**
+         * A limit a person sets: a [finite] one no larger than one expense may be,
+         * [TransactionAmount.MAX_UNITS]. Stored and restored limits are read with [finite],
+         * so a larger one kept from before this rule still reads (ADR 0003).
+         */
+        fun entered(amount: Money): Outcome<Finite, BudgetLimitError> =
+            when (val limit = finite(amount)) {
+                is Outcome.Failure -> limit
+
+                is Outcome.Success -> if (amount.minorUnits > TransactionAmount.MAX_UNITS) {
+                    Outcome.Failure(BudgetLimitError.AboveMaximum)
+                } else {
+                    limit
+                }
+            }
     }
 }
 

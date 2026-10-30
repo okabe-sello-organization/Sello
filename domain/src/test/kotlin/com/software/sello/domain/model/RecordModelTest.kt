@@ -78,6 +78,32 @@ class RecordModelTest {
     }
 
     @Test
+    fun aLimitBeingSetMayBeZeroUpToTheTransactionMaximumAndNoMore() {
+        assertEquals(Money.cop(0), BudgetLimit.entered(Money.cop(0)).valueOrFail().amount)
+        assertEquals(
+            Money.cop(999_999_999_999),
+            BudgetLimit.entered(Money.cop(999_999_999_999)).valueOrFail().amount
+        )
+        assertEquals(
+            BudgetLimitError.AboveMaximum,
+            BudgetLimit.entered(Money.cop(1_000_000_000_000)).errorOrFail()
+        )
+        assertEquals(
+            BudgetLimitError.AboveMaximum,
+            BudgetLimit.entered(Money.cop(Long.MAX_VALUE)).errorOrFail()
+        )
+    }
+
+    @Test
+    fun aLimitBeingSetIsRefusedForTheSameReasonsAsAnyLimitFirst() {
+        assertEquals(BudgetLimitError.Negative, BudgetLimit.entered(Money.cop(-1)).errorOrFail())
+        assertEquals(
+            BudgetLimitError.UnsupportedCurrency(Currency.USD),
+            BudgetLimit.entered(Money(1_000_000_000_000, Currency.USD)).errorOrFail()
+        )
+    }
+
+    @Test
     fun aNegativeOrForeignLimitIsRejected() {
         assertEquals(
             BudgetLimitError.Negative,

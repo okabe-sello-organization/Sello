@@ -203,7 +203,9 @@ class CategoryManagementViewModel(
                 if (now.editable && !now.limitLocked) setLimit(action.unlimited, now.limitText)
 
             is CategoryEditorAction.LimitChanged ->
-                if (now.editable && !now.limitLocked && !now.unlimited) setLimit(false, action.text)
+                if (now.editable && !now.limitLocked && !now.unlimited) {
+                    setLimit(false, action.text, error = pastedError(action.text))
+                }
 
             is CategoryEditorAction.LimitDigit -> if (typesLimit(now)) {
                 LimitKeys.press(now.limitText) {
@@ -452,9 +454,16 @@ class CategoryManagementViewModel(
         drafts.write(next)
     }
 
-    private fun setLimit(unlimited: Boolean, text: String) {
+    private fun setLimit(unlimited: Boolean, text: String, error: LimitError? = null) {
         remember(typed.copy(unlimited = unlimited, limit = text))
-        render { it.copy(unlimited = unlimited, limitText = text, limitError = null) }
+        render { it.copy(unlimited = unlimited, limitText = text, limitError = error) }
+    }
+
+    /** A pasted limit too large to set, unless it is the stored one, which is not being set. */
+    private fun pastedError(text: String): LimitError? {
+        val stored = (original?.limit as? StoredLimit.Finite)?.pesos
+        val pasted = (CopAmountInput.parse(text) as? Outcome.Success)?.value?.minorUnits
+        return if (pasted != null && pasted == stored) null else LimitEntry.pasted(text)
     }
 
     /** Said while typing: a name another category has, however it is written, cannot be saved. */
@@ -639,8 +648,13 @@ class CategoryManagementViewModel(
 
                 StoredLimit.Unlimited -> BudgetLimit.Unlimited
 
-                is StoredLimit.Finite ->
-                    (BudgetLimit.finite(Money.cop(asked.pesos)) as Outcome.Success).value
+                // Only a changed limit is set: one stored above the maximum still reads.
+                is StoredLimit.Finite -> when (val entered = LimitEntry.limit(state.limitText)) {
+                    is Outcome.Success -> entered.value
+
+                    is Outcome.Failure ->
+                        return mutable.update { it.copy(limitError = entered.error) }
+                }
             }
         } else {
             null

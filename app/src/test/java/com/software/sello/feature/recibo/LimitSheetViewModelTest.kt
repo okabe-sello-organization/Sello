@@ -371,6 +371,61 @@ class LimitSheetViewModelTest {
         assertEquals(cases.map { it.second to "150.000 pesos" }, seen)
     }
 
+    /** Café alone, limit 50.000, with two expenses that spend [first] + 1 this month. */
+    private fun cafeSpending(first: Long) = monthOf(
+        "2026-10-22",
+        listOf(categoryIn(1, "Café", 50_000, icon = "local_cafe")),
+        listOf(storedExpense(50, 1, "2026-10-05", first), storedExpense(51, 1, "2026-10-06", 1))
+    )
+
+    @Test
+    fun aShortcutOfTheLargestLimitOneCanSetIsOfferedAndSaved() {
+        val sheet = sheet().apply { onAction(LimitSheetAction.Open(cafe)) }
+        // Spent 999.999.999.998 + 1 = 999.999.999.999; covering the month needs the same.
+        snapshots.ready(cafeSpending(999_999_999_998))
+
+        val chips = sheet.state.value.chips.map { it.kind to it.pesos }
+        sheet.onAction(LimitSheetAction.Chip(ChipKind.Spent))
+        sheet.onAction(LimitSheetAction.Save)
+
+        assertEquals(listOf(ChipKind.Spent to 999_999_999_999L), chips)
+        assertEquals(finite(999_999_999_999), (commands.submitted.single() as SetMonthLimit).limit)
+    }
+
+    @Test
+    fun aShortcutAboveTheLargestLimitOneCanSetIsNotOffered() {
+        val sheet = sheet().apply { onAction(LimitSheetAction.Open(cafe)) }
+        // Spent 999.999.999.999 + 1 = 1.000.000.000.000, and so is covering the month.
+        snapshots.ready(cafeSpending(999_999_999_999))
+
+        sheet.onAction(LimitSheetAction.Chip(ChipKind.Spent))
+        sheet.onAction(LimitSheetAction.Save)
+
+        assertEquals(emptyList<LimitChip>(), sheet.state.value.chips)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
+    @Test
+    fun aRestoredDraftAboveTheLargestLimitOneCanSetCannotBeSaved() {
+        snapshots.ready(excedido)
+        val sheet = sheet(
+            SavedStateHandle(
+                mapOf(
+                    "month" to "2026-10",
+                    LimitSheetViewModel.KEY_CATEGORY to cafe,
+                    LimitSheetViewModel.KEY_DIGITS to "1000000000000"
+                )
+            )
+        )
+
+        sheet.onAction(LimitSheetAction.Save)
+
+        assertEquals("1.000.000.000.000 pesos", sheet.state.value.amount?.spoken)
+        assertFalse(sheet.state.value.canSave)
+        assertNull(sheet.state.value.fact)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
     @Test
     fun theDraftSurvivesProcessDeath() {
         snapshots.ready(excedido)

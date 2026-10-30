@@ -2,6 +2,7 @@ package com.software.sello.feature.category
 
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.BudgetLimitError
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
@@ -62,6 +63,36 @@ class LimitFigures(private val money: MoneyFormatter) {
         /** Limits offered before the person has three of their own, in pesos. */
         val STARTING_LIMITS = listOf(200_000L, 300_000L, 500_000L)
     }
+}
+
+/**
+ * A limit written in the field as one the person is setting ([BudgetLimit.entered]): read
+ * exactly as written, never clipped or repaired. The field keeps the text either way.
+ */
+internal object LimitEntry {
+    /** [text] as the limit it sets, or why it cannot be set. */
+    fun limit(text: String): Outcome<BudgetLimit.Finite, LimitError> {
+        val money = (CopAmountInput.parse(text) as? Outcome.Success)?.value
+            ?: return Outcome.Failure(LimitError.NotAnAmount)
+        return when (val limit = BudgetLimit.entered(money)) {
+            is Outcome.Success -> limit
+
+            is Outcome.Failure -> Outcome.Failure(
+                if (limit.error == BudgetLimitError.AboveMaximum) {
+                    LimitError.TooLarge
+                } else {
+                    LimitError.NotAnAmount
+                }
+            )
+        }
+    }
+
+    /**
+     * Said as soon as [text] is pasted, as the expense amount does: an amount too large to
+     * set. Text that is not an amount is said on saving, as before.
+     */
+    fun pasted(text: String): LimitError? =
+        (limit(text) as? Outcome.Failure)?.error?.takeIf { it == LimitError.TooLarge }
 }
 
 /**

@@ -249,6 +249,63 @@ class CategoryEditorViewModelTest {
     }
 
     @Test
+    fun aPastedLimitAboveTheMaximumIsKeptAsPastedAndNeverSaved() {
+        val editor = editor()
+        editor.type("Mercado")
+        editor.limit("1.000.000.000.000")
+        val pasted = editor.state.value.limitError
+
+        editor.submit()
+
+        assertEquals(LimitError.TooLarge, pasted)
+        assertEquals(LimitError.TooLarge, editor.state.value.limitError)
+        assertEquals("1.000.000.000.000", editor.state.value.limitText)
+        assertEquals(emptyList<CreateCategory>(), commands.submitted)
+    }
+
+    @Test
+    fun aPastedLimitOfTheMaximumIsSavedExactly() {
+        val editor = editor()
+        editor.type("Mercado")
+        editor.limit("999.999.999.999")
+        val pasted = editor.state.value.limitError
+
+        editor.submit()
+
+        assertNull(pasted)
+        assertEquals(finite(999_999_999_999), commands.submitted.single().limit)
+    }
+
+    @Test
+    fun aSuggestionAboveTheMaximumIsRefusedNotClipped() {
+        val editor = editor()
+        editor.type("Mercado")
+
+        editor.onAction(CategoryEditorAction.SuggestionPicked(1_000_000_000_000))
+        editor.submit()
+
+        assertEquals("1000000000000", editor.state.value.limitText)
+        assertEquals(LimitError.TooLarge, editor.state.value.limitError)
+        assertEquals(emptyList<CreateCategory>(), commands.submitted)
+    }
+
+    @Test
+    fun aRestoredDraftAboveTheMaximumIsRefusedOnSaving() {
+        val saved = SavedStateHandle()
+        editor(saved).apply {
+            type("Mercado")
+            limit("1.000.000.000.000")
+        }
+        val restored = editor(saved.afterProcessDeath())
+
+        restored.submit()
+
+        assertEquals("1.000.000.000.000", restored.state.value.limitText)
+        assertEquals(LimitError.TooLarge, restored.state.value.limitError)
+        assertEquals(emptyList<CreateCategory>(), commands.submitted)
+    }
+
+    @Test
     fun choosingSinLimiteKeepsTheAmountTypedAndIgnoresTypingUntilItIsTurnedOffAgain() {
         val editor = editor()
         editor.limit("300000")
@@ -654,6 +711,22 @@ class CategoryEditorViewModelTest {
         assertEquals(
             listOf("150.000 pesos", "200.000 pesos", "900.000 pesos"),
             state.suggestions.map { it.spoken }
+        )
+    }
+
+    @Test
+    fun aLimitAboveTheMaximumOneCanSetIsNeverSuggested() {
+        reads.categories = listOf(
+            withLimit(1, "Comida", 1_000_000_000_000),
+            withLimit(2, "Café", 1_000_000_000_000),
+            withLimit(3, "Ropa", 999_999_999_999)
+        )
+
+        val state = editor().state.value
+
+        assertEquals(
+            listOf("200.000", "300.000", "999.999.999.999"),
+            state.suggestions.map { it.label }
         )
     }
 

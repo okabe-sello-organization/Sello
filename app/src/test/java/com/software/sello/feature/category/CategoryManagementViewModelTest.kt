@@ -375,6 +375,66 @@ class CategoryManagementViewModelTest {
     }
 
     @Test
+    fun aPastedLimitAboveTheMaximumIsRefusedAtOnceKeptAsPastedAndNeverSent() {
+        val form = form()
+        form.limit("1.000.000.000.000")
+        val pasted = form.now.limitError
+
+        form.save()
+
+        assertEquals(LimitError.TooLarge, pasted)
+        assertEquals(LimitError.TooLarge, form.now.limitError)
+        assertEquals("1.000.000.000.000", form.now.limitText)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
+    @Test
+    fun aPastedLimitOfTheMaximumIsSentExactly() {
+        val form = form()
+        form.limit("999.999.999.999")
+        val pasted = form.now.limitError
+
+        form.save()
+
+        assertNull(pasted)
+        assertEquals(
+            finite(999_999_999_999),
+            (commands.submitted.single() as SetDefaultLimit).limit
+        )
+    }
+
+    @Test
+    fun aStoredLimitAboveTheMaximumStillReadsAndIsLeftAsItIsByARename() {
+        val large = MonthBudgetState.Limited(finite(1_000_000_000_000), explicit = false)
+        reads.categories = listOf(stored(1, "Café", large), mercado)
+        val form = form()
+        val opened = form.now
+        form.limit("1.000.000.000.000")
+        val repasted = form.now.limitError
+        form.name("Cafetería")
+
+        form.save()
+
+        assertEquals("1000000000000", opened.limitText)
+        assertEquals("1.000.000.000.000 pesos", opened.limitAmount?.spoken)
+        assertNull(repasted)
+        assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
+    }
+
+    @Test
+    fun aStoredLimitAboveTheMaximumCannotBeChangedToAnotherOne() {
+        val large = MonthBudgetState.Limited(finite(1_000_000_000_000), explicit = false)
+        reads.categories = listOf(stored(1, "Café", large), mercado)
+        val form = form()
+        form.limit("1.000.000.000.001")
+
+        form.save()
+
+        assertEquals(LimitError.TooLarge, form.now.limitError)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
+    @Test
     fun turningSinLimiteOnIsALimitChangeToUnlimitedNotToZero() {
         val form = form()
 
