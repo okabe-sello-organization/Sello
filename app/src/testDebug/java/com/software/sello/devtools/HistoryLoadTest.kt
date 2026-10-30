@@ -71,6 +71,25 @@ class HistoryLoadTest {
     private fun MonthlySnapshot.category(name: String) =
         categories.single { it.category.name.value == name }
 
+    /** One category in one month: carry-in (null outside a chain), capacity, spent, remaining. */
+    private data class Row(
+        val carryIn: Long?,
+        val capacity: Long,
+        val spent: Long,
+        val remaining: Long
+    )
+
+    private fun JvmSandbox.row(year: Int, month: Int, name: String): Row {
+        val line = month(year, month).category(name)
+        val budget = checkNotNull(line.budget) { "$name has no limit in $year-$month" }
+        return Row(
+            budget.carry?.carryIn?.minorUnits,
+            budget.limit.minorUnits,
+            line.spent.minorUnits,
+            budget.remaining.minorUnits
+        )
+    }
+
     private fun pesos(amount: Long) = Money.cop(amount)
 
     @Test
@@ -260,16 +279,18 @@ class HistoryLoadTest {
         // October to the 24th: rent 1.200.000, the gym 120.000 on the 15th, the bus on 7,
         // 14 and 21 October, Luna 90.000 on the 14th, Mercado 460.000 + 290.000, Salidas
         // 230.000 and Farmacia 45.000, against 1.500.000 + 900.000 + 250.000 + 300.000 +
-        // 150.000 + 200.000 + 200.000; Salud has no limit and Ocio is archived.
+        // 150.000 + 200.000 + 200.000 = 3.500.000 plus Mascota's carry-in of 120.000;
+        // Salud has no limit and Ocio is archived.
         val october = six.month(2026, 10)
         assertEquals(pesos(2_525_000), october.spent)
-        assertEquals(pesos(3_500_000), october.limited().budget.limit)
-        assertEquals(pesos(975_000), october.limited().budget.remaining)
+        assertEquals(pesos(3_620_000), october.limited().budget.limit)
+        assertEquals(pesos(1_095_000), october.limited().budget.remaining)
         // Still due: internet 95.000 and the bus 30.000 on the 28th.
         val reservation = checkNotNull(october.limited().reservation)
         assertEquals(pesos(125_000), reservation.total)
-        assertEquals(pesos(850_000), reservation.margin)
+        assertEquals(pesos(970_000), reservation.margin)
         // The quincena of the 15th and 150.000 of passive income; the 30th still expected.
+        // Por asignar counts the 3.500.000 of bases only, never the carry.
         val summary = six.summary(2026, 10)
         assertEquals(pesos(2_350_000), summary.income)
         assertEquals(pesos(-175_000), summary.netFlow)
@@ -286,18 +307,80 @@ class HistoryLoadTest {
 
         // August: Salidas 600.000 that month only, the gym paused, Ocio archived on the 1st
         // but keeping its 150.000 that month (ADR 0001). Rent, internet, four buses, Luna,
-        // the phone, Mercado 780.000, Salidas 540.000 and Farmacia 45.000.
+        // the phone, Mercado 780.000, Salidas 540.000 and Farmacia 45.000, against bases of
+        // 3.950.000 and Mascota's carry-in of −100.000.
         val august = six.month(2026, 8)
         assertEquals(pesos(3_020_000), august.spent)
-        assertEquals(pesos(3_950_000), august.limited().budget.limit)
-        assertEquals(pesos(930_000), august.limited().budget.remaining)
+        assertEquals(pesos(3_850_000), august.limited().budget.limit)
+        assertEquals(pesos(830_000), august.limited().budget.remaining)
         assertEquals(pesos(60_000), august.category("Salidas").budget?.remaining)
         // Two quincenas and 650.000 freelance.
         assertEquals(pesos(5_050_000), six.summary(2026, 8).income)
-        // September: the duplicated meal deleted and 350.000 corrected to 305.000.
+        // September: the duplicated meal deleted and 350.000 corrected to 305.000; bases
+        // 3.500.000 and Mascota's carry-in of 10.000.
         val september = six.month(2026, 9)
         assertEquals(pesos(2_820_000), september.spent)
-        assertEquals(pesos(680_000), september.limited().budget.remaining)
+        assertEquals(pesos(3_510_000), september.limited().budget.limit)
+        assertEquals(pesos(690_000), september.limited().budget.remaining)
+
+        // Mascota carries from April, base 200.000: Luna on 1 and 29 April, then once a
+        // month; the vet's 400.000 on 12 June; the vaccine of 18 July, 50.000, recorded on
+        // 24 October and confirmed. By hand, K(m+1) = K(m) + 200.000 − S(m):
+        // abr 0 + 200.000 − 180.000 = 20.000; may 20.000 + 200.000 − 90.000 = 130.000;
+        // jun 130.000 + 200.000 − 490.000 = −160.000; jul −160.000 + 200.000 − 140.000 =
+        // −100.000; ago −100.000 + 200.000 − 90.000 = 10.000; sep 10.000 + 200.000 −
+        // 90.000 = 120.000.
+        assertEquals(
+            listOf(
+                Row(0, 200_000, 180_000, 20_000),
+                Row(20_000, 220_000, 90_000, 130_000),
+                Row(130_000, 330_000, 490_000, -160_000),
+                Row(-160_000, 40_000, 140_000, -100_000),
+                Row(-100_000, 100_000, 90_000, 10_000),
+                Row(10_000, 210_000, 90_000, 120_000),
+                Row(120_000, 320_000, 90_000, 230_000)
+            ),
+            (4..10).map { six.row(2026, it, "Mascota") }
+        )
+        // Ocio carries from May, base 150.000 and 80.000 of Cine a month: may 70.000, jun
+        // 70.000 + 70.000 = 140.000, jul 210.000, dropped when it was archived on 1 August
+        // with exactly that confirmed. April, before it was turned on, never counts.
+        assertEquals(
+            listOf(
+                Row(null, 150_000, 80_000, 70_000),
+                Row(0, 150_000, 80_000, 70_000),
+                Row(70_000, 220_000, 80_000, 140_000),
+                Row(140_000, 290_000, 80_000, 210_000),
+                Row(null, 150_000, 0, 150_000)
+            ),
+            (4..8).map { six.row(2026, it, "Ocio") }
+        )
+        // Resumen's graph, abr–oct. Limit is Σ B + Σ K: bases 3.550.000 abr–jun, 3.650.000
+        // jul (Mercado 900.000), 3.950.000 ago (Salidas 600.000), 3.500.000 sep–oct (Ocio
+        // archived); carry-in Mascota + Ocio: abr 0, may 20.000 + 0, jun 130.000 + 70.000,
+        // jul −160.000 + 140.000, ago −100.000, sep 10.000, oct 120.000. Spent: abr
+        // 1.295.000 + 730.000 + 150.000 + 180.000 + 45.000 + 120.000 + 180.000 + 150.000 +
+        // 80.000; may 1.295.000 + 750.000 + 120.000 + 220.000 + 120.000 + 90.000 + 150.000
+        // + 80.000; jun 1.295.000 + 750.000 + 120.000 + 260.000 + 120.000 + 120.000 +
+        // 490.000 + 150.000 + 80.000; jul 1.295.000 + 830.000 + 150.000 + 240.000 +
+        // 140.000 + 150.000 + 80.000; ago, sep and oct as above.
+        val graph = six.summary(2026, 10).history.associateBy { it.month }
+        listOf(
+            listOf(4L, 3_550_000L, 0L, 3_550_000L, 2_930_000L),
+            listOf(5L, 3_550_000L, 20_000L, 3_570_000L, 2_825_000L),
+            listOf(6L, 3_550_000L, 200_000L, 3_750_000L, 3_385_000L),
+            listOf(7L, 3_650_000L, -20_000L, 3_630_000L, 2_885_000L),
+            listOf(8L, 3_950_000L, -100_000L, 3_850_000L, 3_020_000L),
+            listOf(9L, 3_500_000L, 10_000L, 3_510_000L, 2_820_000L),
+            listOf(10L, 3_500_000L, 120_000L, 3_620_000L, 2_525_000L)
+        ).forEach { (month, base, carryIn, limit, spent) ->
+            val point = graph.getValue(YearMonth.of(2026, month.toInt()))
+            val carry = checkNotNull(point.carry) { "carry $month" }
+            assertEquals("base $month", pesos(base), carry.base)
+            assertEquals("carry-in $month", pesos(carryIn), carry.carryIn)
+            assertEquals("limit $month", pesos(limit), point.limit)
+            assertEquals("spent $month", pesos(spent), point.spent)
+        }
         assertEquals(
             listOf("Ocio|1"),
             six.rows("SELECT name, archived FROM category WHERE archived = 1")

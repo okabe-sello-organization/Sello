@@ -377,7 +377,9 @@ object Scenarios {
      * Six months of everything, 1 April to 24 October 2026: fixed payments with a pause, an
      * end and every 28 days, a twice-monthly salary with extra income, expenses corrected
      * and deleted, a raised limit, a month's own limit, an archived category, three goals
-     * (a retiro, one lograda, one on Recibo) and investments in pesos and dollars.
+     * (a retiro, one lograda, one on Recibo) and investments in pesos and dollars. Mascota
+     * carries from April through a vet bill's overspend and a July vaccine recorded late on
+     * 24 October; Ocio carries from May until archiving it drops its 210.000.
      */
     val SixMonths: Scenario = run {
         val steps = mutableListOf<ScenarioStep>(
@@ -390,6 +392,7 @@ object Scenarios {
             Category("mascota", "Mascota", "pets", 200_000),
             Category("tecnologia", "Tecnología", "phone_iphone", 200_000),
             Category("ocio", "Ocio", "theaters", 150_000),
+            EnableCarry("mascota", 1),
             Schedule("arriendo", Scheduled.Payment("hogar", 1_200_000, "Arriendo"), Every.Month(5)),
             CatchUp,
             Schedule("internet", Scheduled.Payment("hogar", 95_000, "Internet"), Every.Month(28)),
@@ -436,12 +439,13 @@ object Scenarios {
             Expense("mercado", 310_000, "Mercado", day(2026, 4, 18)),
             Expense("salud", 45_000, "Farmacia", day(2026, 4, 22)),
             Expense("ocio", 80_000, "Cine", day(2026, 4, 25)),
-            // May: the dollar investment, a freelance job.
+            // May: the dollar investment, a freelance job, Ocio carrying.
             AdvanceTo(day(2026, 5, 1)),
             CatchUp,
             Aporte("viaje", 300_000, 2),
             Aporte("emergencia", 500_000, 2),
             Aporte("regalo", 150_000, 1),
+            EnableCarry("ocio", 1),
             Movement("fondo", Move.Aporte, 500_000, 1),
             Investment(
                 "acciones",
@@ -458,7 +462,7 @@ object Scenarios {
             Expense("mercado", 320_000, "Mercado", day(2026, 5, 16)),
             Income(800_000, "freelance", day(2026, 5, 20)),
             Expense("ocio", 80_000, "Cine", day(2026, 5, 23)),
-            // June: a new dollar rate and more dollars.
+            // June: a new dollar rate, more dollars and a vet bill over Mascota's budget.
             AdvanceTo(day(2026, 6, 1)),
             CatchUp,
             Aporte("viaje", 300_000, 3),
@@ -470,6 +474,7 @@ object Scenarios {
             CatchUp,
             Expense("mercado", 400_000, "Mercado", day(2026, 6, 6)),
             Expense("salud", 120_000, "Odontólogo", day(2026, 6, 10)),
+            Expense("mascota", 400_000, "Veterinario", day(2026, 6, 12)),
             Expense("salidas", 260_000, "Comida fuera", day(2026, 6, 13)),
             Expense("mercado", 350_000, "Mercado", day(2026, 6, 20)),
             Expense("ocio", 80_000, "Cine", day(2026, 6, 27)),
@@ -493,10 +498,10 @@ object Scenarios {
             Expense("mercado", 380_000, "Mercado", day(2026, 7, 18)),
             Income(300_000, "transfer", day(2026, 7, 24)),
             Expense("ocio", 80_000, "Cine", day(2026, 7, 25)),
-            // August: Ocio archived, a holiday limit for Salidas, a weekend trip.
+            // August: Ocio archived with its 210.000 dropped, a holiday limit for Salidas, a trip.
             AdvanceTo(day(2026, 8, 1)),
             CatchUp,
-            Archive("ocio", 1),
+            Archive("ocio", 2, confirmedCarryIn = 210_000),
             SetMonthLimit("salidas", YearMonth.of(2026, 8), 600_000, 1),
             Aporte("emergencia", 500_000, 5),
             Aporte("regalo", 150_000, 4),
@@ -551,19 +556,27 @@ object Scenarios {
             Expense("salidas", 230_000, "Comida fuera", day(2026, 10, 10)),
             Expense("mercado", 290_000, "Mercado", day(2026, 10, 17)),
             Expense("salud", 45_000, "Farmacia", day(2026, 10, 21)),
+            // Luna's July vaccine, forgotten: August, September and October change.
+            Expense(
+                "mascota",
+                50_000,
+                "Vacuna de Luna",
+                day(2026, 7, 18),
+                confirmsCorrection = true
+            ),
             SetRate(Rate(405_050))
         )
         Scenario(
             id = "seis-meses",
-            version = 1,
+            version = 2,
             seed = 1,
             zone = Bogota,
             start = day(2026, 4, 1),
             today = day(2026, 10, 24),
             title = "Seis meses con todo",
             summary = "Desde abril: pagos fijos, quincena, metas, inversiones en pesos y " +
-                "dólares, límites cambiados, Ocio archivado y correcciones. Octubre " +
-                "2.525.000 de 3.500.000.",
+                "dólares, límites cambiados, Ocio archivado, arrastre en Mascota y Ocio y " +
+                "correcciones. Octubre 2.525.000 de 3.620.000.",
             steps = steps
         )
     }

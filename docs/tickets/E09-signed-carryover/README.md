@@ -43,7 +43,8 @@ SELLO-041 and SELLO-042 under the new [AGENTS.md](../../../AGENTS.md).
   tests. Scenarios, resume and checkpoints are tested on the JVM through the real
   commands; release isolation uses the existing release-artifact check. Carry storage,
   replay, restore and reset already run on real Room from SELLO-039 and SELLO-040.
-  Device sandbox journeys are a separate low-priority task (#248).
+  No device sandbox journeys and no further carry scenario: carry joins the six-month
+  history, `seis-meses` (#248).
 
 **Owner decision (2026-10-29):** SELLO-043, the carryover release, is dropped and its
 file removed. The epic is done with SELLO-037 to SELLO-042; nothing is released or tagged.
