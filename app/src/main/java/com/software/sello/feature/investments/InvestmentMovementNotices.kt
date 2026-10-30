@@ -2,6 +2,7 @@ package com.software.sello.feature.investments
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.software.sello.R
 import com.software.sello.designsystem.component.SelloNotice
@@ -79,6 +80,28 @@ fun InvestmentMovementNoticeBar(
                 message = written?.let { stringResource(said, it) } ?: stringResource(plain),
                 modifier = modifier,
                 spoken = amount?.let { stringResource(said, it.spoken) } ?: stringResource(plain),
+                confirmation = true
+            )
+        }
+
+        is CorrectionNotice.InvestmentMovementsRecorded -> {
+            val name = notice.investmentName
+            SelloNotice(
+                message = if (name != null) {
+                    pluralStringResource(
+                        R.plurals.notice_investment_movements,
+                        notice.count,
+                        notice.count,
+                        name
+                    )
+                } else {
+                    pluralStringResource(
+                        R.plurals.notice_investment_movements_plain,
+                        notice.count,
+                        notice.count
+                    )
+                },
+                modifier = modifier,
                 confirmation = true
             )
         }

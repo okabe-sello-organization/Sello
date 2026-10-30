@@ -36,6 +36,7 @@ import com.software.sello.feature.investments.InvestmentDetailState
 import com.software.sello.feature.investments.InvestmentDetailViewModel
 import com.software.sello.feature.investments.InvestmentEditorRoot
 import com.software.sello.feature.investments.InvestmentMovementRoot
+import com.software.sello.feature.investments.InvestmentMovementsRoot
 import com.software.sello.feature.investments.UsdRateAction
 import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.investments.UsdRateScreen
@@ -116,8 +117,9 @@ internal fun InversionesDestination(
 /**
  * One investment, titled with its name, never a month. The pencil edits it ([onEdit]);
  * the dock and **Anotar el valor de hoy** open the movement form with it chosen
- * ([onMove], with the kind); a movement opens its correction ([onEditMovement]). A
- * deleted investment leaves through [onBack].
+ * ([onMove], with the kind); a movement opens its correction ([onEditMovement]);
+ * **Varios movimientos** opens the receipt ([onMoveSeveral]). A deleted investment leaves
+ * through [onBack].
  */
 @Composable
 internal fun InvestmentDestination(
@@ -128,6 +130,7 @@ internal fun InvestmentDestination(
     onEdit: () -> Unit,
     onMove: (kind: String?) -> Unit,
     onEditMovement: (String) -> Unit,
+    onMoveSeveral: () -> Unit = {},
     notice: (@Composable () -> Unit)? = null
 ) {
     val model: InvestmentDetailViewModel = viewModel(factory = viewModels)
@@ -161,6 +164,7 @@ internal fun InvestmentDestination(
                     InvestmentDetailAction.Edit -> onEdit()
                     InvestmentDetailAction.RecordValue -> onMove(KIND_VALUATION)
                     is InvestmentDetailAction.OpenMovement -> onEditMovement(action.id)
+                    InvestmentDetailAction.RecordSeveral -> onMoveSeveral()
                     else -> Unit
                 }
                 model.onAction(action)
@@ -272,6 +276,9 @@ internal fun NavGraphBuilder.investmentDestinations(
                     launchSingleTop = true
                 }
             },
+            onMoveSeveral = {
+                navigation.navigate(InvestmentMovementsRoute(id)) { launchSingleTop = true }
+            },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         )
     }
@@ -299,6 +306,13 @@ internal fun NavGraphBuilder.investmentDestinations(
         InvestmentMovementRoot(viewModels) {
             val onForm = navigation.currentBackStackEntry?.destination
                 ?.hasRoute<InvestmentMovementRoute>()
+            if (onForm == true) navigation.popBackStack()
+        }
+    }
+    composable<InvestmentMovementsRoute> {
+        InvestmentMovementsRoot(viewModels) {
+            val onForm = navigation.currentBackStackEntry?.destination
+                ?.hasRoute<InvestmentMovementsRoute>()
             if (onForm == true) navigation.popBackStack()
         }
     }
