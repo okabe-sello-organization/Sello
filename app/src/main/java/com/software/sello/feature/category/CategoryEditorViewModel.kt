@@ -9,6 +9,7 @@ import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.policy.CopAmountInput
+import com.software.sello.domain.policy.SuggestedLimit
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
@@ -55,7 +56,13 @@ class CategoryEditorViewModel(
     )
 
     private val drafts = SavedDraft(saved, KEY_DRAFT, Draft.serializer())
-    private var typed = drafts.read() ?: Draft()
+
+    /**
+     * A limit another screen suggested, kept only when the field could hold it. It starts a
+     * new draft and never replaces one the person already changed.
+     */
+    private val suggestedLimit = saved.get<String>(KEY_LIMIT)?.takeIf(SuggestedLimit::accepts)
+    private var typed = drafts.read() ?: Draft(limit = suggestedLimit.orEmpty())
     private val submission = Submission(saved, KEY_OPERATION, ids)
     private var generation: Long? = null
     private val figures = LimitFigures(money)
@@ -189,7 +196,7 @@ class CategoryEditorViewModel(
 
     /** Whether leaving would lose something the person entered or chose. */
     private fun isDirty(state: CategoryEditorState) = state.name.isNotBlank() ||
-        state.limitText.isNotBlank() ||
+        (state.limitText.isNotBlank() && state.limitText != suggestedLimit) ||
         state.unlimited ||
         typed.iconChosen
 
@@ -315,6 +322,9 @@ class CategoryEditorViewModel(
     companion object {
         /** The route's argument: opened because an expense needs a category. */
         const val KEY_FOR_ENTRY = "forEntry"
+
+        /** The route's argument: a limit to start the form with, in pesos. */
+        const val KEY_LIMIT = "limit"
 
         private const val KEY_DRAFT = "category.draft"
         private const val KEY_OPERATION = "category.operation"

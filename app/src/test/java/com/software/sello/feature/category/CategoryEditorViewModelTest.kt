@@ -814,4 +814,65 @@ class CategoryEditorViewModelTest {
         editor.press(CategoryEditorAction.LimitBackspace)
         assertEquals("", editor.state.value.limitText)
     }
+
+    // --- A limit suggested by another screen (SELLO-083) ---
+
+    private fun suggested(limit: String) =
+        SavedStateHandle(mapOf(CategoryEditorViewModel.KEY_LIMIT to limit))
+
+    @Test
+    fun aSuggestedLimitStartsTheFormWithThatAmountAndNothingElse() {
+        val state = editor(suggested("50000")).state.value
+
+        assertEquals("50000", state.limitText)
+        assertEquals("50.000 pesos", state.limitAmount!!.spoken)
+        assertFalse(state.unlimited)
+        assertEquals("", state.name)
+        // Nothing is saved or sent until the person names the category and saves it.
+        assertFalse(state.canSubmit)
+        assertEquals(emptyList<CreateCategory>(), commands.submitted)
+    }
+
+    @Test
+    fun theLargestLimitTheFieldHoldsIsKeptWhole() {
+        val state = editor(suggested("999999999999")).state.value
+
+        assertEquals("999999999999", state.limitText)
+    }
+
+    @Test
+    fun aSuggestedLimitTheFieldCannotHoldIsLeftOutNeverClipped() {
+        // 13 digits, one more than the field takes; and things that are not plain pesos.
+        listOf("1000000000000", "-5", "50.000", "050000", "1e3", " 5", "").forEach { text ->
+            val state = editor(suggested(text)).state.value
+
+            assertEquals(text, "", state.limitText)
+            assertNull(text, state.limitAmount)
+        }
+    }
+
+    @Test
+    fun leavingWithOnlyTheSuggestedLimitAsksNothingButChangingItDoes() {
+        val untouched = editor(suggested("50000"))
+        untouched.onAction(CategoryEditorAction.Back)
+
+        val changed = editor(suggested("50000"))
+        changed.onAction(CategoryEditorAction.LimitChanged("60000"))
+        changed.onAction(CategoryEditorAction.Back)
+
+        assertEquals(EditorResult.Discarded, untouched.state.value.result)
+        assertFalse(untouched.state.value.confirmDiscard)
+        assertTrue(changed.state.value.confirmDiscard)
+    }
+
+    @Test
+    fun aSuggestedLimitNeverReplacesTheDraftThePersonAlreadyChanged() {
+        val saved = suggested("50000")
+        val first = editor(saved)
+        first.onAction(CategoryEditorAction.LimitCleared)
+
+        val restored = editor(saved.afterProcessDeath()).state.value
+
+        assertEquals("", restored.limitText)
+    }
 }

@@ -17,8 +17,9 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * What the month's income looks like, kept as committed images (ADR 0022): Cobalto light, Cobalto
- * dark at twice the font size, and Violeta light. See ExpenseEntryScreenshotTest.
+ * What the month's income looks like with the suggestion to assign what is unassigned, kept as
+ * committed images (ADR 0022): Cobalto light, Cobalto dark at twice the font size, and Violeta
+ * light. See ExpenseEntryScreenshotTest.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -49,7 +50,9 @@ class IncomeHistoryScreenshotTest {
                 state,
                 split,
                 IncomePlanState.None,
+                AssignSuggestion(pesos("50.000"), "50000"),
                 today,
+                {},
                 {},
                 {},
                 {},

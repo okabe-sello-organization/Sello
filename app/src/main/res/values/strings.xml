@@ -517,6 +517,10 @@
     <string name="income_empty_body">Sello funciona sin ingresos. Si los anotas, verás cuánto tiene un presupuesto y cuánto no.</string>
     <string name="income_more">Ver más ingresos</string>
     <string name="income_edit_description">Editar %1$s: %2$s, %3$s</string>
+    <string name="income_assign_title">Una sugerencia</string>
+    <string name="income_assign_evidence">%1$s de lo que entró aún no tiene un presupuesto.</string>
+    <string name="income_assign_advice">Podrías darle un destino: ahorro, ocio o una reserva, con su propia categoría.</string>
+    <string name="income_assign_action">Asignar a una categoría ›</string>
     <string name="income_plan_tag">Plan del mes</string>
     <string name="income_plan_caption">Incluye lo que esperas recibir</string>
     <string name="income_plan_recorded">Anotado</string>

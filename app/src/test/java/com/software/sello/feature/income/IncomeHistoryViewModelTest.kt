@@ -400,4 +400,112 @@ class IncomeHistoryViewModelTest {
         assertEquals(IncomePlanState.Failed, summaryFailed)
         assertTrue(model.plan.value is IncomePlanState.Shown)
     }
+
+    // --- Asignar a una categoría: the suggestion for unassigned income (SELLO-083) ---
+
+    /** The summary of [income] with the budgets taking 100.000, as the fixture has it. */
+    private fun snapshot(income: Long) = ReadState.Ready(resumenSnapshot(income = income))
+
+    @Test
+    fun positiveUnassignedIncomeInTheMonthInProgressOffersACategoryWithThatLimit() {
+        val model = history()
+        // 150.000 came in; the budgets take 100.000: 50.000 has no budget.
+        summary(october).value = snapshot(150_000)
+
+        val offer = model.assign.value!!
+        assertEquals("50.000 pesos", offer.unassigned.spoken)
+        assertEquals("50000", offer.limit)
+    }
+
+    @Test
+    fun nothingIsOfferedWhileTheSummaryIsStillRead() {
+        val model = history()
+
+        assertNull(model.assign.value)
+    }
+
+    @Test
+    fun nothingIsUnassignedNothingIsOffered() {
+        val model = history()
+        // 100.000 came in and the budgets take 100.000.
+        summary(october).value = snapshot(100_000)
+
+        assertNull(model.assign.value)
+    }
+
+    @Test
+    fun budgetsAboveTheIncomeKeepTheirSignAndOfferNothing() {
+        val model = history()
+        // 60.000 came in against 100.000 of budgets: 40.000 short.
+        summary(october).value = snapshot(60_000)
+
+        assertNull(model.assign.value)
+        assertEquals("menos 40.000 pesos", model.split.value!!.unallocated.spoken)
+    }
+
+    @Test
+    fun aClosedMonthOffersNothingEvenWithUnassignedIncome() {
+        val model = history()
+        val september = YearMonth.of(2026, 9)
+        summary(october).value = snapshot(150_000)
+        summary(september).value = snapshot(300_000)
+
+        session.select(september)
+
+        // 200.000 of September's income is unassigned, but the month is over.
+        assertEquals("200.000 pesos", model.split.value!!.unallocated.spoken)
+        assertNull(model.assign.value)
+        session.select(october)
+        assertEquals("50.000 pesos", model.assign.value!!.unassigned.spoken)
+    }
+
+    @Test
+    fun aFailedReadOffersNothingEvenWithTheLastGoodFiguresKept() {
+        val model = history()
+        summary(october).value = snapshot(150_000)
+
+        summary(october).value =
+            ReadState.Failed(SnapshotFailure.Unrepresentable, resumenSnapshot(income = 150_000))
+
+        assertNull(model.assign.value)
+    }
+
+    @Test
+    fun aLimitTheFormCanHoldIsPrefilledWholeToTheLastDigit() {
+        val model = history()
+        // The budgets take 100.000, so this leaves 999.999.999.999 (twelve digits) unassigned.
+        summary(october).value = snapshot(1_000_000_099_999)
+
+        val offer = model.assign.value!!
+        assertEquals("999.999.999.999", offer.unassigned.digits)
+        assertEquals("999999999999", offer.limit)
+    }
+
+    @Test
+    fun anUnassignedAmountThatIsNotAValidLimitIsOfferedWithAnEmptyLimitAndNeverClipped() {
+        val model = history()
+        // 1.000.000.000.000 unassigned: thirteen digits, more than a limit can be.
+        summary(october).value = snapshot(1_000_000_100_000)
+
+        val offer = model.assign.value!!
+        assertEquals("1.000.000.000.000", offer.unassigned.digits)
+        assertNull(offer.limit)
+    }
+
+    @Test
+    fun theOfferFollowsTheSummaryWhenABudgetIsAssigned() {
+        val model = history()
+        summary(october).value = snapshot(150_000)
+        val before = model.assign.value
+
+        // A category of 50.000 is created: the budgets now take 150.000.
+        summary(october).value = ReadState.Ready(
+            resumenSnapshot(income = 150_000).let {
+                it.copy(allocated = Money.cop(150_000), unallocated = Money.cop(0))
+            }
+        )
+
+        assertEquals("50000", before!!.limit)
+        assertNull(model.assign.value)
+    }
 }

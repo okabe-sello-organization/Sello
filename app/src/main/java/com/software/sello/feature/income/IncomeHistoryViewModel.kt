@@ -9,6 +9,7 @@ import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.policy.IncomePlanPolicy
+import com.software.sello.domain.policy.SuggestedLimit
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeMonth
@@ -53,6 +54,13 @@ data class IncomeSplit(
     val over: Boolean,
     val allocatedShare: Float
 )
+
+/**
+ * The offer to give unassigned income a category: [unassigned] is what the budgets leave
+ * out. [limit] starts the new category's limit, in pesos, only when [unassigned] is a limit
+ * the form can hold; otherwise it is null and the limit starts empty. Nothing is assigned.
+ */
+data class AssignSuggestion(val unassigned: MoneyTextValue, val limit: String?)
 
 data class IncomeLine(
     val id: String,
@@ -152,6 +160,32 @@ class IncomeHistoryViewModel(
             allocatedShare = share
         )
     }
+
+    /**
+     * Null unless the month in progress has recorded income left unassigned: a closed
+     * month, an amount of zero or less, a summary still read and one that could not be
+     * read offer nothing.
+     */
+    val assign: StateFlow<AssignSuggestion?> = combine(
+        session.selectedMonth,
+        session.currentMonth
+    ) { selected, current -> selected.takeIf { it == current } }
+        .distinctUntilChanged()
+        .flatMapLatest { month ->
+            if (month == null) {
+                flowOf(null)
+            } else {
+                snapshots.observe(month).map { read ->
+                    (read as? ReadState.Ready)?.value?.let(::assign)
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private fun assign(summary: ResumenSnapshot): AssignSuggestion? =
+        summary.unallocated.takeIf { it.minorUnits > 0 }?.let {
+            AssignSuggestion(money.format(it), SuggestedLimit.of(it))
+        }
 
     private val shown = MutableStateFlow<IncomeHistoryState>(IncomeHistoryState.Loading)
     val state: StateFlow<IncomeHistoryState> = shown.asStateFlow()
