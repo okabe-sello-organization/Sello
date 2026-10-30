@@ -379,8 +379,8 @@ private fun ChartSlips(
                 style = MoneyStyle.Title,
                 modifier = Modifier.testTag("resumen.history.selected")
             )
-            // The month read with its carry: the capacity with its base and carry (CP27).
-            val carry = state.carry?.takeIf { point.chart.id == state.month }
+            // A month with carry: the capacity with its base and carry, never alone (CP27).
+            val carry = state.carry?.takeIf { point.chart.id == state.month } ?: point.carry
             if (carry != null) {
                 CarryBreakdownSection(carry, footnote = null)
             } else {
@@ -403,11 +403,13 @@ private fun ChartSlips(
                 state.history.map { point ->
                     point.chart.copy(
                         axisLabel = point.chart.axisLabel + if (point.current) "*" else "",
-                        spoken = if (point.current) {
-                            point.chart.spoken + ", " + inProgress
-                        } else {
-                            point.chart.spoken
-                        },
+                        spoken = (
+                            if (point.current) {
+                                point.chart.spoken + ", " + inProgress
+                            } else {
+                                point.chart.spoken
+                            }
+                            ) + carrySpoken(point),
                         // Short values, only on the highest and the current columns.
                         valueLabel = chartLabel(point.chart.value).takeIf {
                             point.current || point.chart.value == highest
@@ -626,3 +628,15 @@ private fun ChartWidth(count: Int, tag: String, chart: @Composable (Modifier) ->
 }
 
 private val ResumenTwoPaneWidth = 600.dp
+
+/** ". Límite con arrastre 230.000; límite base 150.000, arrastre más 80.000." for a carried month. */
+@Composable
+private fun carrySpoken(point: ResumenPoint): String {
+    val carry = point.carry ?: return ""
+    return stringResource(
+        R.string.resumen_history_carry_spoken,
+        carry.capacity.spoken,
+        carry.base.spoken,
+        carry.carry.spoken
+    )
+}

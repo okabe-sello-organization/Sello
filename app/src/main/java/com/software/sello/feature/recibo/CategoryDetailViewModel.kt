@@ -159,7 +159,7 @@ class CategoryDetailViewModel(
 
                     DeleteResult.DataChanged -> DeleteProblem.DataChanged
 
-                    DeleteResult.Failed -> DeleteProblem.Failed
+                    DeleteResult.Failed, DeleteResult.Unknown -> DeleteProblem.Failed
 
                     // The list of later months is shown above every screen (CP20).
                     DeleteResult.AwaitsConfirmation -> null

@@ -19,6 +19,7 @@ import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PastVerdict
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.policy.CarryMonthChange
 import com.software.sello.domain.policy.MonthBudgetState
@@ -96,8 +97,16 @@ class CategoryCarryEditorTest {
             return answers.removeFirstOrNull() ?: committed(command.operationId)
         }
 
-        override suspend fun find(operationId: OperationId) =
-            Outcome.Success<CommittedCategoryChange?>(null)
+        val lookups = mutableListOf<OperationId>()
+        var found: (OperationId) -> Outcome<CommittedCategoryChange?, StorageFailure> =
+            { Outcome.Success(null) }
+
+        override suspend fun find(
+            operationId: OperationId
+        ): Outcome<CommittedCategoryChange?, StorageFailure> {
+            lookups += operationId
+            return found(operationId)
+        }
     }
 
     private fun committed(operation: OperationId) = CommandOutcome.Committed(
@@ -184,32 +193,35 @@ class CategoryCarryEditorTest {
     @After
     fun resetDispatcher() = Dispatchers.resetMain()
 
-    private fun form(month: YearMonth? = null) = CategoryManagementViewModel(
-        SavedStateHandle(
-            buildMap {
-                put(CategoryManagementViewModel.KEY_CATEGORY, uuid(1))
-                if (month != null) put(CategoryManagementViewModel.KEY_MONTH, month.toString())
-            }
-        ),
-        commands,
-        reads,
-        snapshots,
-        session,
-        { uuid(nextId++) },
-        money,
-        Corrections(
-            HandExpenseCommands(),
-            HandIncomeCommands(),
-            HandGoalCommands(),
-            HandInvestmentCommands(),
-            { Duration.ZERO },
-            { uuid(nextId++) },
-            CoroutineScope(Dispatchers.Main),
-            HandCategoryReads(),
-            testMoney()
-        ),
-        { CatchUpResult(emptyList(), stopped = null) }
+    private fun saved(month: YearMonth? = null) = SavedStateHandle(
+        buildMap {
+            put(CategoryManagementViewModel.KEY_CATEGORY, uuid(1))
+            if (month != null) put(CategoryManagementViewModel.KEY_MONTH, month.toString())
+        }
     )
+
+    private fun form(month: YearMonth? = null, state: SavedStateHandle = saved(month)) =
+        CategoryManagementViewModel(
+            state,
+            commands,
+            reads,
+            snapshots,
+            session,
+            { uuid(nextId++) },
+            money,
+            Corrections(
+                HandExpenseCommands(),
+                HandIncomeCommands(),
+                HandGoalCommands(),
+                HandInvestmentCommands(),
+                { Duration.ZERO },
+                { uuid(nextId++) },
+                CoroutineScope(Dispatchers.Main),
+                HandCategoryReads(),
+                testMoney()
+            ),
+            { CatchUpResult(emptyList(), stopped = null) }
+        )
 
     private val CategoryManagementViewModel.now get() = state.value
 
@@ -222,6 +234,7 @@ class CategoryCarryEditorTest {
         assertEquals(
             CarryCard.On(
                 ene,
+                plain("100.000"),
                 minus("20.000"),
                 plain("20.000"),
                 CarryDirection.Deficit,
@@ -449,5 +462,67 @@ class CategoryCarryEditorTest {
 
         assertEquals(CarryProblemText.Unavailable, form.now.carryProblem)
         assertNull(form.now.result)
+    }
+
+    private fun unknown() =
+        CommandOutcome.OutcomeUnknown((OperationId.of(uuid(999)) as Outcome.Success).value)
+
+    @Test
+    fun anUnknownOutcomeIsAskedWithTheSameOperationAndNeverSentAgain() {
+        publish(carrying = false)
+        commands.answers += unknown()
+        commands.found = { Outcome.Success(committed(it).value) }
+        val form = form()
+
+        form.onAction(CategoryEditorAction.EnableCarry)
+        form.onAction(CategoryEditorAction.CarryConfirmed)
+
+        assertEquals(1, commands.submitted.size)
+        assertEquals(listOf(commands.submitted.single().operationId), commands.lookups)
+        assertEquals(CarryDone.Enabled, form.now.carryDone)
+    }
+
+    @Test
+    fun aCarryChangeInterruptedByProcessDeathIsSettledByTheSameOperationOnRestart() {
+        publish(carrying = true)
+        // −20.000 is asked, confirmed and sent; its outcome is unknown and asking fails.
+        commands.answers += rejected(CategoryRejection.DropUnconfirmed(sc17))
+        commands.answers += unknown()
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        val state = saved()
+        val before = form(state = state)
+        before.onAction(CategoryEditorAction.DisableCarry)
+        before.onAction(CategoryEditorAction.CarryConfirmed)
+        assertEquals(SaveError.Unknown, before.now.saveError)
+        val sent = commands.submitted.last() as DisableCarry
+        assertEquals(cop(-20_000), sent.confirmedCarryIn)
+
+        // The process dies; storage had committed it. The new form only asks.
+        publish(carrying = false)
+        commands.found = { Outcome.Success(committed(it).value) }
+        val after = form(state = state)
+
+        assertEquals(2, commands.submitted.size)
+        assertEquals(listOf(sent.operationId), commands.lookups.distinct())
+        assertEquals(CarryCard.Off(feb), after.now.carry)
+        assertNull(after.now.saveError)
+        assertEquals(false, after.now.busy)
+    }
+
+    @Test
+    fun aDoubleTapOnTheDropConfirmationSendsOnce() {
+        publish(carrying = true)
+        commands.answers += rejected(CategoryRejection.DropUnconfirmed(sc17))
+        val form = form()
+        form.onAction(CategoryEditorAction.DisableCarry)
+
+        commands.hold = CompletableDeferred()
+        form.onAction(CategoryEditorAction.CarryConfirmed)
+        form.onAction(CategoryEditorAction.CarryConfirmed)
+        commands.hold!!.complete(Unit)
+
+        val sent = commands.submitted.filterIsInstance<DisableCarry>()
+        assertEquals(listOf(null, cop(-20_000)), sent.map { it.confirmedCarryIn })
+        assertEquals(CarryDone.Disabled, form.now.carryDone)
     }
 }

@@ -192,7 +192,8 @@ class AdjustCarryTest {
         assertEquals(minus("150.000"), sheet.state.value.carry)
         assertEquals(plain("100.000"), sheet.state.value.current)
         assertEquals(
-            listOf(ChipKind.Spent to 150_000L, ChipKind.CoverMonth to 120_000L),
+            // Nothing was spent: never "Lo gastado · 150.000", its own chip for S − K.
+            listOf(ChipKind.CoverSpent to 150_000L, ChipKind.CoverMonth to 120_000L),
             sheet.state.value.chips.map { it.kind to it.pesos }
         )
         "150000".forEach { sheet.onAction(LimitSheetAction.Digit(it - '0')) }

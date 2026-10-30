@@ -228,8 +228,9 @@ data class CarryChangeRow(
     val verdictAfter: VerdictWord?
 )
 
+/** One category's rows; [name] is null when it could not be read, never shown blank. */
 @Immutable
-data class CarryChangeGroup(val name: String, val iconKey: String?, val rows: List<CarryChangeRow>)
+data class CarryChangeGroup(val name: String?, val iconKey: String?, val rows: List<CarryChangeRow>)
 
 /**
  * What a correction changes before it is saved (ADR 0020 CP20–CP22): [months] later months
@@ -280,7 +281,7 @@ class CarryCorrectionText(private val money: MoneyFormatter) {
                 }
             }.sortedWith(compareBy({ it.month }, { it.kind.ordinal }))
             val category = categories[id]
-            CarryChangeGroup(category?.name?.value.orEmpty(), category?.icon?.value, rows)
+            CarryChangeGroup(category?.name?.value, category?.icon?.value, rows)
         }
         return CarryCorrectionList(
             months = correction.months.size,
@@ -391,7 +392,10 @@ fun CarryCorrectionContent(
                         SelloTheme.colors.brand
                     )
                 }
-                Text(group.name, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    group.name ?: stringResource(R.string.carry_list_unknown_category),
+                    style = MaterialTheme.typography.titleSmall
+                )
             }
             group.rows.forEach { ChangeLine(it, dates) }
         }

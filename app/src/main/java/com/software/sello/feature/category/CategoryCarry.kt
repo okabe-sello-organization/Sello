@@ -44,6 +44,7 @@ sealed interface CarryCard {
 
     data class On(
         val since: YearMonth,
+        val base: MoneyTextValue,
         val carry: MoneyTextValue,
         val carryMagnitude: MoneyTextValue,
         val direction: CarryDirection,
@@ -168,6 +169,7 @@ internal fun CarrySection(state: CategoryEditorState, onAction: (CategoryEditorA
                 )
                 CarryBreakdown(
                     listOf(
+                        CarryLine(stringResource(R.string.carry_base), card.base),
                         CarryLine(
                             stringResource(R.string.carry_in),
                             card.carry,

@@ -6,8 +6,12 @@ import java.time.YearMonth
 /** Which months a new limit is for. "Solo" is the default. */
 enum class LimitScope { ThisMonth, FromThisMonth }
 
-/** What a shortcut covers: what the category spent, the month's overrun, or reserved payments. */
-enum class ChipKind { Spent, CoverMonth, CoverPayments }
+/**
+ * What a shortcut covers: what the category spent, the month's overrun, or reserved payments.
+ * [CoverSpent] is the base that covers what was spent once the category's carry counts
+ * (S − K), never called "Lo gastado".
+ */
+enum class ChipKind { Spent, CoverMonth, CoverPayments, CoverSpent }
 
 /** A limit offered in one tap: drawn as [amount], typed as [pesos]. */
 data class LimitChip(val kind: ChipKind, val amount: MoneyTextValue, val pesos: Long)

@@ -21,10 +21,17 @@ data class AdjustOrder(val limited: List<CategoryMonth>, val open: List<Category
 
 /**
  * The limits the sheet offers for one category, each null when it is not offered:
- * [spent] covers what the category spent; [coverMonth] closes the month's overrun;
- * [coverPayments] covers what reserved payments still need.
+ * [spent] covers what the category spent ("Lo gastado"); [coverMonth] closes the month's
+ * overrun; [coverPayments] covers what reserved payments still need. While the category
+ * carries, what was spent is not what spending needs, so [coverSpent] is offered instead:
+ * the base that makes `C = S`, which is `S − K` (ADR 0020 CP19), and [spent] is null.
  */
-data class LimitShortcuts(val spent: Money?, val coverMonth: Money?, val coverPayments: Money?)
+data class LimitShortcuts(
+    val spent: Money?,
+    val coverMonth: Money?,
+    val coverPayments: Money?,
+    val coverSpent: Money? = null
+)
 
 /**
  * The month were one category's base limit changed: its [total] of finite base limits, and
@@ -93,9 +100,11 @@ object LimitAdjustmentPolicy {
             ?.let { sum(base, plus = it) }
         if (coverMonth is Outcome.Failure) return coverMonth
         if (coverPayments is Outcome.Failure) return coverPayments
+        val carrying = line.budget?.carry != null
         return Outcome.Success(
             LimitShortcuts(
-                spent = spent,
+                spent = spent.takeUnless { carrying },
+                coverSpent = spent.takeIf { carrying },
                 coverMonth = (coverMonth as? Outcome.Success)?.value,
                 coverPayments = (coverPayments as? Outcome.Success)?.value
             )

@@ -115,6 +115,30 @@ class ResumenCarryRenderTest {
     }
 
     @Test
+    fun sc13EachHistoryMonthThatCarriesGivesBaseCarryAndCapacity() {
+        val state = read(carrying = true)
+
+        // ene starts the chain: 150.000 + 0. feb: 150.000 + 80.000 = 230.000 (SC13).
+        assertEquals(
+            listOf(
+                Triple("2027-01", "150.000", "0") to "150.000",
+                Triple("2027-02", "150.000", "80.000") to "230.000"
+            ),
+            state.history.map { point ->
+                val carry = point.carry!!
+                Triple(point.chart.id, carry.base.digits, carry.carry.digits) to
+                    carry.capacity.digits
+            }
+        )
+        assertEquals(plain("230.000"), state.history.last().detail)
+    }
+
+    @Test
+    fun withoutCarryNoHistoryMonthCarries() {
+        assertEquals(listOf(null, null), read(carrying = false).history.map { it.carry })
+    }
+
+    @Test
     fun withoutCarryTheLineIsTheLimitAndNothingCarries() {
         val state = read(carrying = false)
 

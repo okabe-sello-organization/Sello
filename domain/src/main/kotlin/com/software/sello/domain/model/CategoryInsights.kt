@@ -16,7 +16,17 @@ data class CategoryWeek(
     val ceiling: Money
 )
 
-data class CategoryHistoryMonth(val month: YearMonth, val spent: Money, val limit: Money?)
+/**
+ * One completed month of the category. [limit] is what the month is judged on: its capacity
+ * `C = B + K` while a chain covers it, with [carry] splitting it (ADR 0020 CP14, CP19), else
+ * the configured limit.
+ */
+data class CategoryHistoryMonth(
+    val month: YearMonth,
+    val spent: Money,
+    val limit: Money?,
+    val carry: CarryBreakdown? = null
+)
 
 /** A recorded comparison, absent when there is no known, positive previous baseline. */
 data class CategoryComparison(val previousMonth: YearMonth, val tenthsPercent: BigInteger)

@@ -2,6 +2,7 @@ package com.software.sello.domain.policy
 
 import com.software.sello.domain.model.CarryBreakdown
 import com.software.sello.domain.model.CategoryCarryInput
+import com.software.sello.domain.model.CategoryHistoryMonth
 import com.software.sello.domain.policy.Carry.chain
 import com.software.sello.domain.policy.Carry.comida
 import com.software.sello.domain.policy.Carry.comidaInput
@@ -9,6 +10,7 @@ import com.software.sello.domain.policy.Carry.cop
 import com.software.sello.domain.policy.Carry.ene
 import com.software.sello.domain.policy.Carry.expense
 import com.software.sello.domain.policy.Carry.feb
+import com.software.sello.domain.policy.Carry.mar
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.valueOrFail
 import java.time.LocalDate
@@ -89,5 +91,65 @@ class CategoryInsightsCarryTest {
         assertNull(category.carry)
         assertEquals(cop(10_000), insights.allowance?.amount)
         assertEquals(cop(70_000), insights.weeks.single { it.current }.remainingAllowance)
+    }
+
+    @Test
+    fun sc09HistoryJudgesEachPastChainMonthOnBasePlusCarry() {
+        val march = FinancialDay(LocalDate.parse("2027-03-10"), ZoneId.of("America/Bogota"))
+        val throughFeb = comidaInput(
+            listOf(chain(ene)),
+            ene,
+            feb,
+            "2027-03-10",
+            listOf("2027-01-10" to 20_000L, "2027-02-05" to 30_000L)
+        )
+        val insights = CategoryInsightsPolicy.snapshot(
+            comida,
+            mar,
+            march,
+            3,
+            41,
+            CategoryInsightsPolicy.monthsEndingIn(mar).map { period ->
+                CategoryHistoryInput(
+                    period,
+                    comidaLine.takeIf { period >= ene }
+                        ?: comidaLine.copy(state = MonthBudgetState.Unconfigured),
+                    expenses,
+                    when {
+                        period == mar -> throughFeb
+                        period >= ene -> carry
+                        else -> null
+                    }
+                )
+            }
+        ).valueOrFail()
+
+        // ene starts the chain at 0: 100.000. feb carries ene's 80.000: 180.000, so its
+        // 30.000 is within, never judged against the 100.000 base alone.
+        assertEquals(
+            listOf(
+                CategoryHistoryMonth(
+                    ene,
+                    cop(20_000),
+                    cop(100_000),
+                    CarryBreakdown(cop(100_000), cop(0), cop(100_000), ene)
+                ),
+                CategoryHistoryMonth(
+                    feb,
+                    cop(30_000),
+                    cop(180_000),
+                    CarryBreakdown(cop(100_000), cop(80_000), cop(180_000), ene)
+                )
+            ),
+            insights.history
+        )
+    }
+
+    @Test
+    fun historyWithoutCarryKeepsTheConfiguredLimit() {
+        val insights = read { null }
+
+        assertEquals(listOf(cop(100_000)), insights.history.map { it.limit })
+        assertEquals(listOf(null), insights.history.map { it.carry })
     }
 }

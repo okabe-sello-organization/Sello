@@ -484,6 +484,7 @@ private fun chipText(kind: ChipKind): Int = when (kind) {
     ChipKind.Spent -> R.string.limit_sheet_chip_spent
     ChipKind.CoverMonth -> R.string.limit_sheet_chip_month
     ChipKind.CoverPayments -> R.string.limit_sheet_chip_payments
+    ChipKind.CoverSpent -> R.string.limit_sheet_chip_cover_spent
 }
 
 /** "Tu límite total de octubre pasaría a 1.100.000. Te quedarían 20.000." */

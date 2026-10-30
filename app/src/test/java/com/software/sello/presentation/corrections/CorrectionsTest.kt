@@ -166,8 +166,9 @@ class CorrectionsTest {
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("SQLiteException")) }
         val unreadable = delete()
 
+        // A lookup that fails says nothing either way: unknown, never "not deleted".
         assertEquals(
-            listOf(DeleteResult.Failed, DeleteResult.Deleted, DeleteResult.Failed),
+            listOf(DeleteResult.Failed, DeleteResult.Deleted, DeleteResult.Unknown),
             listOf(notSaved, saved, unreadable)
         )
         assertEquals(CorrectionNotice.Deleted(canUndo = false), savedNotice)

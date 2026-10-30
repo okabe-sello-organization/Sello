@@ -2,6 +2,8 @@ package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.CategoryInsights
+import com.software.sello.presentation.carry.CarryFigures
+import com.software.sello.presentation.carry.carryFigures
 import com.software.sello.presentation.money.MoneyFormatter
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -26,13 +28,18 @@ data class DetailWeek(
     val ceiling: Long
 )
 
+/**
+ * One month of the history chart. While a chain covers it, [limit] is its limit with carry
+ * and [carry] gives the base and the carry beside it (ADR 0020 CP19, CP27).
+ */
 data class DetailHistoryMonth(
     val month: YearMonth,
     val spent: MoneyTextValue,
     val value: Long,
     val limit: MoneyTextValue?,
     val limitValue: Long?,
-    val current: Boolean = false
+    val current: Boolean = false,
+    val carry: CarryFigures? = null
 )
 
 enum class DetailComparisonDirection { Higher, Lower, Equal }
@@ -103,7 +110,8 @@ class CategoryInsightsRenderModel(private val money: MoneyFormatter) {
                 money.format(it.spent),
                 it.spent.minorUnits,
                 it.limit?.let(money::format),
-                it.limit?.minorUnits
+                it.limit?.minorUnits,
+                carry = it.carry?.let { parts -> money.carryFigures(parts, it.month, spent = null) }
             )
         }
         val budget = snapshot.budget
@@ -117,7 +125,10 @@ class CategoryInsightsRenderModel(private val money: MoneyFormatter) {
             category.spent.minorUnits,
             category.budget?.limit?.let(money::format),
             category.budget?.limit?.minorUnits,
-            current = true
+            current = true,
+            carry = category.budget?.carry?.let {
+                money.carryFigures(it, budget.month, spent = null)
+            }
         )
     }
 

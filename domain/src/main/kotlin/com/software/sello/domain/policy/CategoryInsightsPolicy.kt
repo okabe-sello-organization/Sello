@@ -142,11 +142,19 @@ object CategoryInsightsPolicy {
             ) {
                 return Outcome.Failure(SnapshotFailure.Unrepresentable)
             }
-            val finite = (
+            // A month a chain covers is judged on base + carry, as its own snapshot is (CP14).
+            val carried = budgets[inputs.indexOf(input)].categories.singleOrNull()?.budget
+                ?.takeIf { it.carry != null }
+            val finite = carried?.limit ?: (
                 (input.category.state as? MonthBudgetState.Limited)?.limit as?
                     com.software.sello.domain.model.BudgetLimit.Finite
                 )?.amount
-            history += CategoryHistoryMonth(input.month, Money.cop(total.toLong()), finite)
+            history += CategoryHistoryMonth(
+                input.month,
+                Money.cop(total.toLong()),
+                finite,
+                carried?.carry
+            )
         }
         val weekday = counted.groupBy { it.date.dayOfWeek }.entries
             .sortedBy { it.key.value }.maxByOrNull { sum(it.value) }?.key

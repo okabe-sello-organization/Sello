@@ -377,6 +377,7 @@ class CategoryManagementViewModel(
                 } else {
                     CarryCard.On(
                         since = since,
+                        base = money.format(carry.base),
                         carry = money.format(carry.carryIn, signed = true),
                         carryMagnitude = money.magnitude(carry.carryIn),
                         direction = when {

@@ -128,7 +128,9 @@ data class ResumenPoint(
     val amount: MoneyTextValue,
     val detail: MoneyTextValue? = null,
     /** The month in progress: drawn striped and said to be up to today, never as a whole month. */
-    val current: Boolean = false
+    val current: Boolean = false,
+    /** While categories carry that month: [detail] is its limit with carry, split here (CP27). */
+    val carry: CarryFigures? = null
 )
 
 @Immutable

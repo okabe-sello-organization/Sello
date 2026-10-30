@@ -50,9 +50,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -73,6 +71,9 @@ sealed interface CorrectionNotice {
 
     /** The deleted expense is back. */
     data object Restored : CorrectionNotice
+
+    /** A deletion confirmed after its list: whether it was saved could not be found out. */
+    data object DeleteUnknown : CorrectionNotice
 
     /** A deletion confirmed after its list was not made: the data changed, or storage failed. */
     data object NotDeleted : CorrectionNotice
@@ -260,7 +261,10 @@ enum class DeleteResult {
      * It reaches a closed month of a carry chain: nothing was deleted, and [Corrections.question]
      * shows the later months it changes before it is confirmed (ADR 0020 CP20, CP21).
      */
-    AwaitsConfirmation
+    AwaitsConfirmation,
+
+    /** It may or may not have been deleted: its outcome was not known and asking failed. */
+    Unknown
 }
 
 /** Which correction a list waits to confirm. */
@@ -318,13 +322,14 @@ class Corrections(
     /** A list waiting to be confirmed before a deletion, or its undoing, is sent. */
     val question: StateFlow<CorrectionQuestion?> = asking
 
-    private val confirmedDeleted = MutableSharedFlow<ExpenseId>(extraBufferCapacity = 1)
+    private val confirmedDeleted = MutableStateFlow<ExpenseId?>(null)
 
     /**
-     * Expenses deleted once their list was confirmed: the screen that asked may still be
-     * open on one, and closes (the deletion was not its own answer).
+     * The last expense deleted once its list was confirmed, kept as state: a form still open
+     * on it closes (the deletion was not its own answer). An expense deleted is never shown
+     * again, so this never closes another form.
      */
-    val confirmedDeletions: SharedFlow<ExpenseId> = confirmedDeleted
+    val confirmedDeletion: StateFlow<ExpenseId?> = confirmedDeleted
 
     /**
      * The deletion on offer. [undoOperation] names every attempt to undo it, so an
@@ -430,9 +435,12 @@ class Corrections(
         val committed = when (val outcome = commands.delete(command)) {
             is CommandOutcome.Committed -> true
 
-            // Asked, never sent again: only a receipt says it was deleted.
-            is CommandOutcome.OutcomeUnknown ->
-                (commands.find(operation) as? Outcome.Success)?.value != null
+            // Asked, never sent again: only a receipt says it was deleted, and a question
+            // that cannot be answered says nothing either way.
+            is CommandOutcome.OutcomeUnknown -> when (val found = commands.find(operation)) {
+                is Outcome.Success -> found.value != null
+                is Outcome.Failure -> return DeleteResult.Unknown
+            }
 
             is CommandOutcome.Rejected -> return when (val reason = outcome.reason) {
                 Specific(ExpenseRejection.ExpenseMissing) -> DeleteResult.Gone
@@ -468,7 +476,7 @@ class Corrections(
         if (!committed) return DeleteResult.Failed
         asked = null
         asking.value = null
-        if (confirmation != null) confirmedDeleted.tryEmit(expenseId)
+        if (confirmation != null) confirmedDeleted.value = expenseId
         val until = commands.undoOffer()?.takeIf { it.deletionId == operation }?.until
         return deleted(Kind.Expense, operation, generation, until, carryMonths = months)
     }
@@ -503,19 +511,37 @@ class Corrections(
                     if (result != DeleteResult.AwaitsConfirmation &&
                         result != DeleteResult.Deleted
                     ) {
-                        // Certain: nothing was deleted. The list's screen may be gone; it is said here.
+                        // The list's screen may be gone; what happened is said here.
                         asking.value = null
                         asked = null
-                        said(CorrectionNotice.NotDeleted)
+                        said(
+                            if (result == DeleteResult.Unknown) {
+                                CorrectionNotice.DeleteUnknown
+                            } else {
+                                CorrectionNotice.NotDeleted
+                            }
+                        )
                     }
                 }
             }
 
             CorrectionKind.Undo -> {
-                val offered = pending ?: return run { asking.value = null }
+                val offered = pending ?: return undoListExpired()
+                // Once confirmed, the answer decides what is said, not the time running out.
+                ending?.cancel()
                 scope.launch { settle(offered, restore(offered, askedUndo)) }
             }
         }
+    }
+
+    /**
+     * The time to undo ran out while its list was open: the list goes and the person is told
+     * the deletion stands, never left with a button that does nothing.
+     */
+    private fun undoListExpired() {
+        asking.value = null
+        askedUndo = null
+        said(CorrectionNotice.UndoTooLate)
     }
 
     /** The list shown is not confirmed: nothing is sent, and an offer to undo stays. */
@@ -924,11 +950,7 @@ class Corrections(
     /** Shows [notice] until the clock reads [until]. */
     private fun show(notice: CorrectionNotice, until: Duration) {
         ending?.cancel()
-        if (monotonic.elapsed() >= until) {
-            pending = null
-            shown.value = null
-            return
-        }
+        if (monotonic.elapsed() >= until) return over()
         shown.value = notice
         ending = scope.launch {
             var left = until - monotonic.elapsed()
@@ -936,9 +958,19 @@ class Corrections(
                 delay(left)
                 left = until - monotonic.elapsed()
             }
-            pending = null
-            shown.value = null
+            over()
         }
+    }
+
+    /**
+     * What is shown is over. An undo whose list is still open, and not yet confirmed, can no
+     * longer be done: the list goes with it and that is said (AC4).
+     */
+    private fun over() {
+        val list = asking.value
+        if (list?.kind == CorrectionKind.Undo && !list.busy) return undoListExpired()
+        pending = null
+        shown.value = null
     }
 
     private fun operation(): OperationId = when (val id = OperationId.of(ids.next())) {

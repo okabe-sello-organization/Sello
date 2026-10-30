@@ -119,12 +119,17 @@ class LimitAdjustmentCarryTest {
 
     @Test
     fun anEarlierDeficitIsCoveredByTheBaseThatReachesSpendingAndTheMonth() {
-        // Lo gastado: the base that makes C = S is S − K = 0 − (−150.000) = 150.000
-        // (150.000 − 150.000 = C 0 = S). Taking C instead would offer 0, as the base alone.
+        // Not "Lo gastado" (nothing was spent): the base that makes C = S is S − K =
+        // 0 − (−150.000) = 150.000 (150.000 − 150.000 = C 0 = S), its own chip.
         // Cubre el mes: base − overall R = 100.000 − (−20.000) = 120.000
         // (overall C becomes 570.000 − 150.000 = 420.000 = S). Taking C would offer −30.000.
         assertEquals(
-            LimitShortcuts(spent = cop(150_000), coverMonth = cop(120_000), coverPayments = null),
+            LimitShortcuts(
+                spent = null,
+                coverMonth = cop(120_000),
+                coverPayments = null,
+                coverSpent = cop(150_000)
+            ),
             LimitAdjustmentPolicy.shortcuts(excedido, comida).valueOrFail()
         )
     }
@@ -143,7 +148,12 @@ class LimitAdjustmentCarryTest {
         )
 
         assertEquals(
-            LimitShortcuts(spent = cop(120_000), coverMonth = cop(120_000), coverPayments = null),
+            LimitShortcuts(
+                spent = null,
+                coverMonth = cop(120_000),
+                coverPayments = null,
+                coverSpent = cop(120_000)
+            ),
             LimitAdjustmentPolicy.shortcuts(surplus, comida).valueOrFail()
         )
     }
@@ -156,9 +166,10 @@ class LimitAdjustmentCarryTest {
         // leaving M −200.000.
         assertEquals(
             LimitShortcuts(
-                spent = cop(1_100_000),
+                spent = null,
                 coverMonth = null,
-                coverPayments = cop(1_250_000)
+                coverPayments = cop(1_250_000),
+                coverSpent = cop(1_100_000)
             ),
             LimitAdjustmentPolicy.shortcuts(revisar, hogar).valueOrFail()
         )

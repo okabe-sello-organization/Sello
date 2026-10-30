@@ -118,6 +118,33 @@ class CarryScreenshotTest {
     @Test
     fun reciboVioletaLight() = recibo(Look(ink = SelloInk.Violeta))
 
+    /**
+     * SC11 on 22 feb 2027: Comida (base 100.000) carries −150.000 from ene, so its capacity
+     * is −50.000; with Hogar and Transporte the month is 20.000 over: 0 por día beside the
+     * signed deficit, never hiding it (CP14, CP15).
+     */
+    @Test
+    fun deficitWithZeroAllowance() {
+        val sc11 = carryMonthOf(
+            "2027-02-22",
+            listOf(
+                categoryIn(1, "Comida", 100_000, icon = "restaurant"),
+                categoryIn(2, "Hogar", 400_000),
+                categoryIn(3, "Transporte", 50_000)
+            ),
+            listOf(
+                storedExpense(110, 1, "2027-01-10", 250_000),
+                storedExpense(111, 2, "2027-02-06", 380_000),
+                storedExpense(112, 3, "2027-02-07", 40_000)
+            ),
+            mapOf(1 to ene)
+        )
+        rule.showSello(Look()) {
+            ReciboScreen(render.recibo(ReadState.Ready(sc11)), {}, PaddingValues(12.dp))
+        }
+        rule.captureStill("src/test/screenshots/carry-deficit-cobalto-light-font1.0.png")
+    }
+
     @Test
     fun categoryDetail() {
         val comida = render.categories(sc13).first { it.name == "Comida" }
@@ -154,6 +181,7 @@ class CarryScreenshotTest {
         targetMonth = abr,
         carry = CarryCard.On(
             since = ene,
+            base = plain("100.000"),
             carry = minus("40.000"),
             carryMagnitude = plain("40.000"),
             direction = CarryDirection.Deficit,

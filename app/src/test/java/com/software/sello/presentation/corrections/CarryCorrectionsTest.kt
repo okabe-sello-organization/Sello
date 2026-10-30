@@ -5,7 +5,9 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.CarryMonth
 import com.software.sello.domain.model.CarryVerdict
 import com.software.sello.domain.model.Money
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PastVerdict
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.Verdict
 import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.policy.CarryMonthChange
@@ -35,6 +37,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -285,5 +288,119 @@ class CarryCorrectionsTest {
         assertNotEquals(commands.restored.first().operationId, commands.restored.last().operationId)
         assertEquals(CorrectionNotice.Restored, corrections.notice.value)
         assertNull(corrections.question.value)
+    }
+
+    private fun offerFor6Seconds() {
+        commands.offer = {
+            commands.deleted.lastOrNull()?.let {
+                UndoOffer(it.operationId, it.expenseId, 5.hours + 6.seconds)
+            }
+        }
+    }
+
+    @Test
+    fun undoExpiringWhileItsListIsOpenClosesTheListAndSaysSo() = test {
+        offerFor6Seconds()
+        corrections.delete(expenseId(101), 3, 7)
+        commands.restoreAnswer = { unconfirmed() }
+        corrections.undo()
+        runCurrent()
+        assertEquals(CorrectionKind.Undo, corrections.question.value?.kind)
+
+        // The six seconds run out with the list still open.
+        advanceTimeBy(6_001)
+        runCurrent()
+
+        assertNull(corrections.question.value)
+        assertEquals(CorrectionNotice.UndoTooLate, corrections.notice.value)
+        // Deshacer pressed now does nothing more: nothing is sent again.
+        corrections.confirmQuestion()
+        runCurrent()
+        assertEquals(1, commands.restored.size)
+    }
+
+    @Test
+    fun aConfirmedUndoIsAnsweredByStorageNotByTheClock() = test {
+        offerFor6Seconds()
+        corrections.delete(expenseId(101), 3, 7)
+        commands.restoreAnswer = { unconfirmed() }
+        corrections.undo()
+        runCurrent()
+        commands.hold = CompletableDeferred()
+        commands.restoreAnswer = {
+            CommandOutcome.Rejected(Specific(ExpenseRejection.UndoExpired))
+        }
+
+        corrections.confirmQuestion()
+        runCurrent()
+        // In flight past the deadline: the list waits for its answer, still busy.
+        advanceTimeBy(6_001)
+        runCurrent()
+        assertEquals(true, corrections.question.value?.busy)
+        commands.hold!!.complete(Unit)
+        runCurrent()
+
+        assertNull(corrections.question.value)
+        assertEquals(CorrectionNotice.UndoTooLate, corrections.notice.value)
+    }
+
+    @Test
+    fun aConfirmedDeletionWhoseOutcomeCannotBeFoundIsSaidToBeUnknown() = test {
+        commands.deleteAnswer = { unconfirmed() }
+        corrections.delete(expenseId(101), 3, 7)
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+
+        corrections.confirmQuestion()
+        runCurrent()
+
+        // Asked with the same operation, never sent again, and never called "not deleted".
+        assertEquals(listOf(commands.deleted.last().operationId), commands.looked)
+        assertEquals(2, commands.deleted.size)
+        assertEquals(CorrectionNotice.DeleteUnknown, corrections.notice.value)
+        assertNull(corrections.question.value)
+    }
+
+    @Test
+    fun aDeletionConfirmedAfterItsListIsKeptAsStateForTheFormOpenOnIt() = test {
+        commands.deleteAnswer = { unconfirmed() }
+        corrections.delete(expenseId(101), 3, 7)
+        assertNull(corrections.confirmedDeletion.value)
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(
+                    it.operationId,
+                    it.expenseId,
+                    com.software.sello.domain.model.OperationKind.DeleteExpense
+                ),
+                replayed = false
+            )
+        }
+
+        corrections.confirmQuestion()
+        runCurrent()
+
+        assertEquals(expenseId(101), corrections.confirmedDeletion.value)
+    }
+
+    @Test
+    fun aCategoryWhoseNameCannotBeReadIsListedWithoutAName() = test {
+        val unnamed = Corrections(
+            commands,
+            HandIncomeCommands(),
+            HandGoalCommands(),
+            HandInvestmentCommands(),
+            monotonic,
+            { uuid(nextId++) },
+            scope.backgroundScope,
+            HandCategoryReads().apply { failure = StorageFailure.Unavailable("x") },
+            testMoney()
+        )
+        commands.deleteAnswer = { unconfirmed() }
+
+        unnamed.delete(expenseId(101), 3, 7)
+
+        // Null, drawn as "Una categoría": never a blank heading.
+        assertNull(unnamed.question.value!!.list.groups.single().name)
     }
 }

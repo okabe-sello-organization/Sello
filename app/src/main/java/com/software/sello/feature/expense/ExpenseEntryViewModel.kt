@@ -173,10 +173,8 @@ class ExpenseEntryViewModel(
     init {
         // A deletion asked here can be confirmed on the list shown above every screen.
         viewModelScope.launch {
-            corrections.confirmedDeletions.collect { deleted ->
-                if (deleted ==
-                    editedExpense
-                ) {
+            corrections.confirmedDeletion.collect { deleted ->
+                if (deleted != null && deleted == editedExpense) {
                     progress.update { it.copy(busy = false, closed = true) }
                 }
             }
@@ -536,7 +534,7 @@ class ExpenseEntryViewModel(
 
                 DeleteResult.DataChanged -> EntryError.DataChanged
 
-                DeleteResult.Failed -> EntryError.NotDeleted
+                DeleteResult.Failed, DeleteResult.Unknown -> EntryError.NotDeleted
 
                 // The list of later months is shown above the form; it stays open (CP20).
                 DeleteResult.AwaitsConfirmation -> return@launch progress.update {

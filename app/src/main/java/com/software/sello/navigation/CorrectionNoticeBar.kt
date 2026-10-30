@@ -68,6 +68,9 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
         CorrectionNotice.NotDeleted ->
             SelloNotice(stringResource(R.string.correction_not_deleted), tagged)
 
+        CorrectionNotice.DeleteUnknown ->
+            SelloNotice(stringResource(R.string.correction_delete_unknown), tagged)
+
         CorrectionNotice.Restored ->
             SelloNotice(stringResource(R.string.correction_restored), tagged)
 

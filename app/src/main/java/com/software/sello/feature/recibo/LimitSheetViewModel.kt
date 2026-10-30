@@ -256,6 +256,7 @@ class LimitSheetViewModel(
             ?.value ?: return emptyList()
         return listOfNotNull(
             shortcuts.spent?.let { ChipKind.Spent to it },
+            shortcuts.coverSpent?.let { ChipKind.CoverSpent to it },
             shortcuts.coverMonth?.let { ChipKind.CoverMonth to it },
             shortcuts.coverPayments?.let { ChipKind.CoverPayments to it }
         )

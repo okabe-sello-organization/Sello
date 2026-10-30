@@ -194,6 +194,7 @@
     <string name="limit_sheet_chip_spent">Lo gastado · %1$s</string>
     <string name="limit_sheet_chip_month">Cubre el mes · %1$s</string>
     <string name="limit_sheet_chip_payments">Cubre tus pagos · %1$s</string>
+    <string name="limit_sheet_chip_cover_spent">Base que cubre lo gastado · %1$s</string>
     <string name="limit_sheet_fact_total">Tu límite total de %1$s pasaría a %2$s.</string>
     <string name="limit_sheet_fact_left">Te quedarían %1$s.</string>
     <string name="limit_sheet_fact_exact">Quedarías justo en el límite.</string>
@@ -259,6 +260,9 @@
     <string name="category_detail_history_current">%1$s, hasta hoy</string>
     <string name="category_detail_history_spoken">%1$s: %2$s.</string>
     <string name="category_detail_history_limit_spoken">%1$s Límite: %2$s.</string>
+    <string name="resumen_history_carry_spoken">. Límite con arrastre %1$s; límite base %2$s, arrastre %3$s</string>
+    <string name="category_detail_history_carry_spoken">%1$s Límite con arrastre: %2$s; límite base %3$s, arrastre %4$s.</string>
+    <string name="category_detail_history_carry_legend">Línea punteada: límite de cada mes, con arrastre en los meses que arrastran</string>
     <string name="category_detail_history_limit_legend">Línea punteada: límite de cada mes</string>
     <string name="category_detail_chart_limit">Límite</string>
     <string name="category_detail_insights_failed">No pudimos leer las cifras de esta categoría.</string>
@@ -1452,7 +1456,6 @@
         <item quantity="other">%1$d categorías arrastran · cifras al %2$s</item>
     </plurals>
     <string name="carry_cell">con arrastre</string>
-    <string name="carry_cell_spoken">, con arrastre</string>
     <string name="carry_why_overall">Tu límite con arrastre es %1$s: %2$s trae %3$s de meses anteriores.</string>
     <string name="carry_why_overall_many">Tu límite con arrastre es %1$s: tus categorías traen %2$s de meses anteriores.</string>
     <string name="carry_why_category">Te pasaste %1$s en meses anteriores y tu límite base es %2$s: %3$s empezó en %4$s.</string>
@@ -1478,6 +1481,7 @@
     <string name="carry_list_remaining_spoken">Restante de %1$s a %2$s</string>
     <string name="carry_list_total_same">Tu límite total con arrastre no cambia: lo que sube en una categoría baja en la otra.</string>
     <string name="carry_list_bases">Los límites base no cambian. Se guarda todo junto o nada.</string>
+    <string name="carry_list_unknown_category">Una categoría</string>
     <string name="carry_list_bases_saved">Los límites base no cambian.</string>
     <string name="catch_up_carry_failed_title">No pudimos calcular tu arrastre</string>
     <string name="carry_list_changed">Tus datos cambiaron mientras revisabas. Nada se guardó; esta es la lista nueva.</string>
@@ -1490,7 +1494,6 @@
     <string name="carry_correct_undo_title">¿Deshacer el borrado?</string>
     <string name="carry_correct_undo">Deshacer</string>
     <string name="carry_correct_limit_title">¿Guardar el límite de %1$s?</string>
-    <string name="carry_correct_expense">%1$s · %2$s · %3$s</string>
     <string name="carry_correct_limit_what">Límite base de %1$s: %2$s → %3$s</string>
     <string name="carry_failed_title">No pudimos calcular el arrastre</string>
     <string name="carry_failed_title_of">No pudimos calcular el arrastre de %1$s</string>
@@ -1541,6 +1544,7 @@
         <item quantity="one">cambió el límite con arrastre de %d mes</item>
         <item quantity="other">cambió el límite con arrastre de %d meses</item>
     </plurals>
+    <string name="correction_delete_unknown">No sabemos si el gasto se borró. Revisa la lista antes de volver a intentarlo.</string>
     <string name="correction_not_deleted">No se borró el gasto. Tus datos cambiaron o no se pudo guardar; vuelve a intentarlo.</string>
     <string name="carry_with_change">%1$s · %2$s</string>
     <string name="catch_up_carry_title">Al registrar tus pagos pendientes cambió el límite con arrastre</string>

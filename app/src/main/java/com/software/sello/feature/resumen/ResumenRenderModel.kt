@@ -76,7 +76,8 @@ class ResumenRenderModel(private val money: MoneyFormatter) {
                     label,
                     amount,
                     entry.limit?.let(money::format),
-                    current
+                    current,
+                    entry.carry?.let { money.carryFigures(it, entry.month, spent = null) }
                 )
             },
             monthLimit = snapshot.history.lastOrNull { it.month == budget.month }?.limit?.let {
