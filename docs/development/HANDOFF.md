@@ -4,9 +4,9 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-10-26 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Epics E01–E08, E10, E12, E13, E15, E17, E18 and E20–E22 are Done; E16 has work under way
-and E19 waits only for its `0.2.0` release ticket. Each ticket's
+**Snapshot:** 2026-10-29 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
+Every epic is Done: E01–E10, E12, E13 and E15–E22. The owner dropped E14 and the
+release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
 This summary is refreshed when an epic closes and adds no verification claims.
@@ -57,9 +57,14 @@ This summary is refreshed when an epic closes and adds no verification claims.
   through the picker or shared through a one-file FileProvider) and Borrar todos los
   datos. Then Lo que se repite, Apariencia (theme, ink swatches), Recibo (category order
   and direction) and Inversiones (starting currency, list order, Dólar rate).
+- Signed carryover ([E09](../tickets/E09-signed-carryover/README.md)): per category,
+  opt-in and off by default; next carry = (base + carry) − spending, with no cap.
+  Verdicts and allowance use base + carry; turning off or archiving with a balance
+  confirms dropping it; past corrections preview and replay later months. Rules:
+  [ADR 0020](../decisions/0020-signed-carryover-policy.md).
 - Shared month and restored drafts/navigation.
-- Room schema 6 for finances (goals since 4, recurring schedules since 5, investments
-  since 6); DataStore for nonfinancial preferences; backup format version 5
+- Room schema 7 for finances (goals since 4, recurring schedules since 5, investments
+  since 6, carryover since 7); DataStore for nonfinancial preferences; backup format version 6
   ([format](../data/backup-format.md)).
 - Backups save and restore through the system file picker, also from the start-up
   failure screen; retry and confirmed start-over preserve an unreadable database privately.
@@ -86,21 +91,12 @@ What each ticket changed is in its pull request, linked from the ticket file
 
 - Distributing the `0.1.0` APK is a separate, owner-authorized action; nothing was
   published or tagged.
-- SELLO-074 ([E14](../tickets/E14-assistive-technology/README.md)): the manual
-  TalkBack, Switch Access and keyboard pass, moved post-MVP by the owner on
-  2026-10-23. E13 is done without it.
-- [E16](../tickets/E16-v2-today-gaps/README.md) is done: SELLO-079 was dropped, and
-  SELLO-083 and SELLO-084 delivered the rest of today's v2 screens (SELLO-080–082 and
-  SELLO-117 were done before). Issue #256, pasted limits over 12 digits, is open.
-- SELLO-113 ([E19](../tickets/E19-investments/README.md)): releasing Metas, recurrence
-  and Inversiones, with Configuración's E20 changes, as `0.2.0`; the owner starts it.
-  Decisions in [ADR 0017](../decisions/0017-goals-recurrence-investments.md).
-- Signed carryover (E09) and the assistive-technology pass (E14) stay on the post-MVP
-  roadmap. Legacy import (E10) is done: Restaurar also takes a FinanceTracker backup,
-  investments included ([ADR 0019](../decisions/0019-legacy-import.md)).
+- No ticket is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
+  (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
+  keyboard walks). The automated accessibility checks from SELLO-033 stay.
+- Open GitHub issues, such as #248 (device sandbox journeys), are not tickets.
 
-Every MVP ticket is Done. The post-MVP epics E09, E10 and E14–E20 live under
-[docs/tickets](../tickets/README.md).
+All epics live under [docs/tickets](../tickets/README.md).
 
 ## Detail references
 

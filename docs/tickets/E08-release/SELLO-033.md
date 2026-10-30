@@ -45,7 +45,7 @@ SELLO-061–069, so this ticket starts after that epic.
 
 **Owner direction (2026-10-23):** manual assistive-technology walks (TalkBack,
 Switch Access, hardware keyboard) are outside the MVP and move to post-MVP
-[SELLO-074](../E14-assistive-technology/SELLO-074.md).
+SELLO-074, which the owner dropped with its epic E14 on 2026-10-29.
 The automated semantics checks stay here: exact spoken amounts, labels, focus order,
 48dp targets and status that is not color alone.
 

@@ -245,7 +245,6 @@ separate from `C`; CP17 and CP19 say which each uses. ADR 0002's open decisions 
 | SELLO-040 portable | CP25–CP27: chains in the file, version rules, validation, replay equals SC01, reset | SC40, SC42–SC45 |
 | SELLO-041 UI | CP9–CP11, CP14–CP22, CP27 and the wording above: opt-in, drop and correction confirmations, breakdowns | SC08–SC22, SC25–SC34, SC46, SC47 |
 | SELLO-042 sandbox | The named histories through real commands, never stored carry arrays | SC01–SC05, SC17–SC21, SC25–SC30, SC37, SC41, SC47 |
-| SELLO-043 release | The whole corpus on the release matrix | SC01–SC47 |
 
 ## Approval
 

@@ -3,9 +3,9 @@
 Which windows, text sizes and themes the assembled daily-use app was checked in, what
 each check proves, and the test or walk that proves it. SELLO-033 assembled this
 matrix under [D10](../decisions/0001-mvp-contract.md#d10--release-acceptance-and-review).
-Manual TalkBack, Switch Access and hardware keyboard walks are post-MVP
-([SELLO-074](../tickets/E14-assistive-technology/README.md)); the accessibility
-checks a test can read are here. Synthetic data only.
+Manual TalkBack, Switch Access and hardware keyboard walks are not planned: the
+owner dropped SELLO-074 and its epic E14 on 2026-10-29. The accessibility checks a
+test can read are here. Synthetic data only.
 
 ## Configurations
 
@@ -108,7 +108,7 @@ The walks show the observable result on a device: one receipt per confirmed acti
 
 ## Not covered
 
-- Manual TalkBack, Switch Access and hardware keyboard walks: post-MVP, SELLO-074.
+- Manual TalkBack, Switch Access and hardware keyboard walks: dropped with SELLO-074 (2026-10-29).
 - Physical devices: none used. D10's signed installation on a physical device belongs
   to SELLO-036.
 - API 37: the only image is a 16 KB-page one; the gate and walks use API 30, the

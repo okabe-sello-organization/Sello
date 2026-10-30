@@ -1,9 +1,9 @@
 # SELLO-E09 — Signed budget carryover after MVP
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** Preserve surplus and overspending across enabled budget periods without confusing plans with account balances.
-- **Exit:** Approved signed-carry policy, exact explainable availability, recoverable storage/portable files, accessible opt-in workflows and executed multi-month regression/release evidence; non-carry journeys remain usable.
+- **Exit:** Approved signed-carry policy, exact explainable availability, recoverable storage/portable files, accessible opt-in workflows and the multi-month sandbox histories; non-carry journeys remain usable.
 
 This is an approved roadmap addition, not MVP scope. Read
 [ADR 0002](../../decisions/0002-signed-carryover-direction.md),
@@ -44,3 +44,6 @@ SELLO-041 and SELLO-042 under the new [AGENTS.md](../../../AGENTS.md).
   commands; release isolation uses the existing release-artifact check. Carry storage,
   replay, restore and reset already run on real Room from SELLO-039 and SELLO-040.
   Device sandbox journeys are a separate low-priority task (#248).
+
+**Owner decision (2026-10-29):** SELLO-043, the carryover release, is dropped and its
+file removed. The epic is done with SELLO-037 to SELLO-042; nothing is released or tagged.
