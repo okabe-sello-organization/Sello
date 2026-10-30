@@ -1,6 +1,6 @@
 # SELLO-E09 — Signed budget carryover after MVP
 
-- **Status:** Backlog
+- **Status:** In Progress
 - **Increment:** Post-MVP
 - **Goal:** Preserve surplus and overspending across enabled budget periods without confusing plans with account balances.
 - **Exit:** Approved signed-carry policy, exact explainable availability, recoverable storage/portable files, accessible opt-in workflows and executed multi-month regression/release evidence; non-carry journeys remain usable.
