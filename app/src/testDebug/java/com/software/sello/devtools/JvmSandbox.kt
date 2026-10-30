@@ -9,9 +9,13 @@ import com.software.sello.composition.eraseFinancialStorage
 import com.software.sello.composition.openStorage
 import com.software.sello.composition.productionModules
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.platform.ProcessFinancialZone
 import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemDispatcherProvider
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.job
@@ -19,6 +23,12 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertTrue
 import org.koin.core.KoinApplication
 import org.koin.dsl.koinApplication
+import org.koin.dsl.module
+
+/** Elapsed time that moves only when a test moves it: undo windows run on this, never on a wall. */
+class ControlledMonotonicClock(var now: Duration = 1.seconds) : MonotonicClock {
+    override fun elapsed(): Duration = now
+}
 
 /**
  * The debug app's graph on the sandbox's own data, on the JVM under Robolectric, built
@@ -35,6 +45,9 @@ class JvmSandbox(val scenario: Scenario) {
             scenario = scenario.key
         )
     )
+
+    /** The graph's monotonic clock, shared by every process this sandbox opens. */
+    val monotonic = ControlledMonotonicClock()
     private var graph: KoinApplication? = null
     var runner: ScenarioRunner? = null
         private set
@@ -61,7 +74,8 @@ class JvmSandbox(val scenario: Scenario) {
             allowOverride(true)
             modules(
                 productionModules(context, zone, opened.value.storage, SandboxNames) +
-                    composition.modules(opened.value.profile)
+                    composition.modules(opened.value.profile) +
+                    module { single<MonotonicClock> { monotonic } }
             )
         }
         return this
@@ -114,6 +128,24 @@ class JvmSandbox(val scenario: Scenario) {
     fun chains(): List<String> = rows(
         "SELECT c.name, h.start_month, h.end_month FROM carry_chain h " +
             "JOIN category c ON c.id = h.category_id ORDER BY c.name, h.start_month"
+    )
+
+    /**
+     * A runner for this history on this process's ports, working on [scope] instead of the
+     * main thread, which a Robolectric test holds: its [ScenarioRunner.load] can be joined.
+     */
+    fun runnerOn(generation: Long, scope: CoroutineScope) = ScenarioRunner(
+        scenario,
+        generation,
+        SandboxTime(koin.get<FinancialClock>() as ControlledFinancialClock, store, scope),
+        koin.get(),
+        koin.get(),
+        koin.get(),
+        koin.get(),
+        ScenarioSchedules(koin.get(), koin.get()),
+        koin.get(),
+        store,
+        scope
     )
 
     /** Takes steps here, on the test's thread, until step [index] is the next one. */

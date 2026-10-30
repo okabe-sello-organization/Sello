@@ -10,6 +10,7 @@ import com.software.sello.devtools.ScenarioStep.Expense
 import com.software.sello.devtools.ScenarioStep.SetDefaultLimit
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.BudgetStanding
+import com.software.sello.domain.model.CarryVerdict
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.Money
@@ -48,10 +49,15 @@ import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.ResumenSnapshots
 import com.software.sello.domain.port.SetMonthLimit
+import com.software.sello.domain.port.UndoOffer
 import com.software.sello.domain.usecase.CatchUpNow
 import java.time.LocalDate
 import java.time.YearMonth
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -332,11 +338,38 @@ class CarryoverScenarioTest {
         val april = chains.month(2027, 4).limited()
         assertEquals(pesos(770_000), april.budget.limit)
         assertEquals(pesos(770_000), april.budget.remaining)
-        // CP17: Por asignar counts the five bases, 500.000, never the carry.
+        // CP17 and SC14: with 1.000.000 of income, Por asignar counts the five bases,
+        // 500.000, and leaves 500.000; never the 770.000 capacity (which would leave 230.000).
         val summary = runBlocking {
             chains.koin.get<ResumenSnapshots>().read(YearMonth.of(2027, 4)).value()
         }
+        assertEquals(pesos(1_000_000), summary.income)
         assertEquals(pesos(500_000), summary.allocated)
+        assertEquals(pesos(500_000), summary.unallocated)
+        assertEquals(pesos(1_000_000), summary.netFlow)
+        // Resumen's graph, ene–abr, worked out by hand from the categories above. Limit
+        // is the capacity Σ B + Σ K: ene 5 × 100.000 + 0; feb 500.000 + (80.000 − 20.000 −
+        // 150.000 + 70.000 − 300.000) = 180.000; mar 500.000 + (110.000 + 10.000 − 50.000 +
+        // 170.000 − 200.000) = 540.000; abr 500.000 + 270.000 = 770.000. Spent: ene
+        // 20.000 + 120.000 + 250.000 + 30.000 + 400.000; feb 70.000 + 70.000; mar 250.000
+        // + 20.000; abr nothing.
+        val graph = summary.history.associateBy { it.month }
+        listOf(
+            Triple(1, 500_000L, 820_000L),
+            Triple(2, 180_000L, 140_000L),
+            Triple(3, 540_000L, 270_000L),
+            Triple(4, 770_000L, 0L)
+        ).forEach { (month, limit, spent) ->
+            val point = graph.getValue(YearMonth.of(2027, month))
+            assertEquals("limit $month", pesos(limit), point.limit)
+            assertEquals("spent $month", pesos(spent), point.spent)
+        }
+        // The carry-in behind each capacity is split out beside the bases.
+        listOf(1 to 0L, 2 to -320_000L, 3 to 40_000L, 4 to 270_000L).forEach { (month, carry) ->
+            val breakdown = checkNotNull(graph.getValue(YearMonth.of(2027, month)).carry)
+            assertEquals("base $month", pesos(500_000), breakdown.base)
+            assertEquals("carry-in $month", pesos(carry), breakdown.carryIn)
+        }
     }
 
     @Test
@@ -772,6 +805,15 @@ class CarryoverScenarioTest {
             listOf(listed("Hogar", 3, 1_200_000L to 900_000L, 700_000L to 400_000L)),
             payments.listed(hogar)
         )
+        // The notice's feb row: Restante 200.000 → −100.000, and Cumplido becomes Excedido.
+        val feb = hogar.edited.single()
+        assertEquals(YearMonth.of(2027, 2), feb.month)
+        assertEquals(
+            200_000L to -100_000L,
+            feb.before.remaining.minorUnits to feb.after.remaining.minorUnits
+        )
+        assertEquals(CarryVerdict.Closed(PastVerdict.WithinLimit), feb.before.verdict)
+        assertEquals(CarryVerdict.Closed(PastVerdict.Over), feb.after.verdict)
     }
 
     // --- Resume, restore and reset ---------------------------------------------------------
@@ -923,15 +965,23 @@ class CarryoverScenarioTest {
         assertEquals(emptyList<String>(), cut.chains())
         assertEquals(listOf("0"), cut.rows("SELECT COUNT(*) FROM category"))
 
-        // The next process finds its history gone: the step it would take next is refused,
-        // and nothing is written into the empty one.
+        // The next process, asked to carry the load on, finds its history gone and writes
+        // nothing into the empty one.
         cut.open()
-        val runner = checkNotNull(cut.runner)
+        cut.store.session = cut.store.session.copy(loading = true)
+        val scope = CoroutineScope(Dispatchers.Default)
+        val runner = cut.runnerOn(cut.generation(), scope)
         assertEquals(march, runner.state.value.next)
-        assertTrue(!runBlocking { runner.step() })
-        assertTrue(runner.state.value.problem != null)
+        runner.resume()
+        runBlocking { runner.load().join() }
+        assertEquals(
+            "La historia que se estaba cargando se borró; cárgala de nuevo.",
+            runner.state.value.problem
+        )
+        assertEquals(march, runner.state.value.next)
         assertEquals(emptyList<String>(), cut.chains())
         assertEquals(listOf("0"), cut.rows("SELECT COUNT(*) FROM expense"))
+        scope.cancel()
     }
 
     // --- Audit time and undo windows -------------------------------------------------------
@@ -956,42 +1006,56 @@ class CarryoverScenarioTest {
         assertTrue(categoryUpdated in before..after)
     }
 
+    /** A delete of a new April expense, and the undo window it opens on the controlled clock. */
+    private fun JvmSandbox.deleteAnExpense(): UndoOffer {
+        val saved = create("comida", 15_000, scenario.today).committed().value
+        delete(saved.expenseId).committed()
+        return checkNotNull(koin.get<ExpenseCommands>().undoOffer())
+    }
+
+    private fun JvmSandbox.restore(offer: UndoOffer, confirmation: CorrectionConfirmation?) =
+        runBlocking {
+            koin.get<ExpenseCommands>().restore(
+                RestoreExpense(operation(), generation(), offer.deletionId, confirmation)
+            )
+        }
+
     @Test
-    fun anUndoWindowOpenedBeforeTheFinancialClockMovesRunsOnRealTime() {
+    fun anUndoWindowOpenedBeforeTheFinancialClockMovesIsUntouchedByIt() {
         val fixture = load(Scenarios.CarryCorrectable)
-        val expenses = fixture.koin.get<ExpenseCommands>()
-        val today = fixture.scenario.today
-        val saved = fixture.create("comida", 15_000, today).committed().value
-        fixture.delete(saved.expenseId).committed()
-        val offer = checkNotNull(expenses.undoOffer())
+        val offer = fixture.deleteAnExpense()
+        val elapsed = fixture.monotonic.elapsed()
         val audit = fixture.rows("SELECT id, created_at, updated_at FROM expense ORDER BY id")
 
         // Two financial months pass at once.
         (fixture.koin.get<FinancialClock>() as ControlledFinancialClock).advanceMonths(2)
 
-        assertEquals(offer, expenses.undoOffer())
-        assertTrue(fixture.koin.get<MonotonicClock>().elapsed() < offer.until)
+        assertEquals(elapsed, fixture.monotonic.elapsed())
+        assertEquals(offer, fixture.koin.get<ExpenseCommands>().undoOffer())
         assertEquals(
             audit,
             fixture.rows("SELECT id, created_at, updated_at FROM expense ORDER BY id")
         )
         // April is now a closed month of the chain, so putting the expense back is a
         // correction that lists the later months; it is not an expired undo.
-        val restore = { confirmation: CorrectionConfirmation? ->
-            runBlocking {
-                expenses.restore(
-                    RestoreExpense(
-                        operation(),
-                        fixture.generation(),
-                        offer.deletionId,
-                        confirmation
-                    )
-                )
-            }
-        }
-        val listed = restore(null).unconfirmed()
-        restore(listed.confirmation).committed()
+        val listed = fixture.restore(offer, null).unconfirmed()
+        fixture.restore(offer, listed.confirmation).committed()
         // abr: C 60.000 less 15.000 spent leaves 45.000 for may (derived).
         assertEquals(Row(45_000, 145_000, 0, 145_000), fixture.row(2027, 5, "Comida"))
+    }
+
+    @Test
+    fun anUndoWindowEndsOnlyWhenTheMonotonicClockPassesIt() {
+        val fixture = load(Scenarios.CarryCorrectable)
+        val offer = fixture.deleteAnExpense()
+        (fixture.koin.get<FinancialClock>() as ControlledFinancialClock).advanceMonths(2)
+
+        // The 6 s window is real elapsed time, here moved by the test: still open one
+        // millisecond before it ends, expired at its end, whatever month it is.
+        fixture.monotonic.now = offer.until - 1.milliseconds
+        assertTrue(fixture.restore(offer, null).unconfirmed().correction.months.isNotEmpty())
+        fixture.monotonic.now = offer.until
+        val expired = (fixture.restore(offer, null) as CommandOutcome.Rejected).reason
+        assertEquals(CommandRejection.Specific(ExpenseRejection.UndoExpired), expired)
     }
 }

@@ -571,8 +571,9 @@ object Scenarios {
     /**
      * Five categories of 100.000 a month that carry from 1 January 2027, each with the
      * spending of one signed carryover example (SC01–SC05), through the short February
-     * and on to 12 April, with nothing spent yet in April. Comida is SC01, Transporte
-     * SC02, Hogar SC03, Salud SC04 and Ocio SC05.
+     * and on to 12 April, with nothing spent yet in April and an income of 1.000.000
+     * on the day (SC14). Comida is SC01, Transporte SC02, Hogar SC03, Salud SC04 and Ocio
+     * SC05.
      */
     val CarryChains = Scenario(
         id = "arrastre-cadenas",
@@ -607,7 +608,8 @@ object Scenarios {
             AdvanceTo(day(2027, 3, 31)),
             Expense("comida", 250_000, "Mercado", day(2027, 3, 18)),
             Expense("hogar", 20_000, "Aseo", day(2027, 3, 9)),
-            AdvanceTo(day(2027, 4, 12))
+            AdvanceTo(day(2027, 4, 12)),
+            Income(1_000_000, "salary")
         )
     )
 

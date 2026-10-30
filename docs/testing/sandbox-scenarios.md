@@ -171,7 +171,9 @@ SC01–SC47, or derived by hand from `K(m+1) = K(m) + B(m) − S(m)` and marked 
 - `arrastre-cadenas@1` (SC01–SC05), Comida: ene `R` 80.000; feb `K` 80.000 `C` 180.000;
   mar `K` 110.000 `C` 210.000 `R` −40.000, Excedido; abr `K` −40.000 `C` 60.000.
   Hogar feb `K` −150.000 `C` −50.000. Ocio abr `K` −100.000 `C` 0, Al día. Overall abr
-  `C` 770.000; Por asignar counts the five bases, 500.000.
+  `C` 770.000; with 1.000.000 of income Por asignar counts the five bases, leaving 500.000
+  (SC14). Resumen's graph, ene–abr: limit 500.000 / 180.000 / 540.000 / 770.000, spent
+  820.000 / 140.000 / 270.000 / 0.
 - `arrastre-bisiesto@1` (SC41): ene `K` 10.000 `C` 110.000; 22 feb 2028 `R` 160.000, 8 days
   left, 20.000 a day.
 - `arrastre-transiciones@1` (SC07, SC17–SC21): the drop shows −20.000 (Límite 80.000 →
@@ -179,7 +181,10 @@ SC01–SC47, or derived by hand from `K(m+1) = K(m) + B(m) − S(m)` and marked 
   nothing; Ocio, turned on on 17 February after a January overspend, starts at 0 and counts
   the whole month (feb `S` 50.000, mar `C` 150.000); chains ene–feb and abr onwards for
   Comida, ene–feb for Hogar and Salud, feb onwards for Ocio, none for Transporte.
-  Not scripted: SC06, and the June unarchive tail of SC20/SC21 (see the tests below).
+  Not scripted: SC06, which a damaged chain needs (`SignedCarryoverPolicyTest` covers it),
+  and the June unarchive tail of SC20/SC21: the sandbox has no `Unarchive` step, and
+  `CarryoverCommandContractTest.archivingWithABalanceNeedsItConfirmedAndUnarchivingLeavesCarryOff`
+  covers it on real Room.
 - `arrastre-correcciones@1` (SC25, SC27–SC31, SC34): deleting the 20.000 of January lists
   feb 180.000 → 200.000, mar 210.000 → 230.000, abr 60.000 → 80.000; the same confirmed
   change sent again returns the same receipt and does not cascade twice; an old
@@ -198,8 +203,8 @@ SC01–SC47, or derived by hand from `K(m+1) = K(m) + B(m) − S(m)` and marked 
   the figures above; the drop confirmations; late corrections and their lists; a step
   that committed before its checkpoint is answered from its receipt after a restart; a
   backup, an interrupted restore, a restore over carrying categories and the app's own
-  reset; audit stamps stay in real time and an open undo window survives two financial
-  months. It adds no device test; device sandbox journeys are tracked in issue #248.
+  reset; audit stamps stay in real time, and an open undo window, on a controlled
+  monotonic clock, survives two financial months and ends only when that clock passes it. It adds no device test; device sandbox journeys are tracked in issue #248.
 - `ScenarioDefinitionTest`: each history's steps name what an earlier step made, dates
   only go forward and end on its day, versions are the ones a screen would read, and
   this document names every history and version.
