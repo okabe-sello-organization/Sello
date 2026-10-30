@@ -11,7 +11,6 @@ import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -63,8 +62,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.onClick
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
@@ -154,7 +151,8 @@ data class BulkTotal(
  * carries [highlightedFoot] (a goal's or investment's date pill). [onRemove] runs from a swipe
  * towards the start past 40 % of the line, from its long-press menu or from the action a
  * screen reader offers; the last line offers none of them. Each line is read as one item:
- * its title, detail, amount and reason. While not [enabled] nothing responds.
+ * its place, title, detail, amount and reason; the date pill is reached on its own. While not
+ * [enabled] nothing responds and no line is highlighted.
  */
 @Composable
 fun BulkReceipt(
@@ -201,15 +199,18 @@ fun BulkReceipt(
                 .testTag(BULK_RECEIPT_LINES_TAG)
         ) {
             itemsIndexed(lines, key = { _, line -> line.key }) { index, line ->
+                val shown = enabled && index == highlighted
                 BulkLineRow(
                     line = line,
-                    highlighted = index == highlighted,
+                    position = index + 1,
+                    count = lines.size,
+                    highlighted = shown,
                     ruled = index < lines.lastIndex,
                     removable = lines.size > 1,
                     enabled = enabled,
                     onSelect = { onSelect(index) },
                     onRemove = { onRemove(index) },
-                    foot = highlightedFoot.takeIf { index == highlighted }
+                    foot = highlightedFoot.takeIf { shown }
                 )
             }
         }
@@ -320,6 +321,8 @@ private fun ReceiptFoot(total: BulkTotal, onAdd: () -> Unit, addEnabled: Boolean
 @Composable
 private fun BulkLineRow(
     line: BulkLine,
+    position: Int,
+    count: Int,
     highlighted: Boolean,
     ruled: Boolean,
     removable: Boolean,
@@ -339,12 +342,13 @@ private fun BulkLineRow(
     var menuOpen by remember { mutableStateOf(false) }
     val canRemove = removable && enabled
     val removeLabel = stringResource(R.string.sello_bulk_remove_line)
-    val spoken = listOfNotNull(
-        line.title,
-        line.detail.takeIf { line.reason == null },
-        line.amount?.spoken ?: stringResource(R.string.sello_amount_empty),
-        line.reason
-    ).joinToString(", ")
+    val spoken = stringResource(R.string.sello_bulk_line_position, position, count) + ". " +
+        listOfNotNull(
+            line.title,
+            line.detail.takeIf { line.reason == null },
+            line.amount?.spoken ?: stringResource(R.string.sello_amount_empty),
+            line.reason
+        ).joinToString(", ")
     val edge = when {
         line.reason != null -> colors.semantic.loss
         highlighted -> colors.ink
@@ -415,9 +419,10 @@ private fun BulkLineRow(
                         scope.launch { dragged.snapTo(to) }
                     },
                     onDragStopped = {
+                        // Removed before springing back: the line may leave meanwhile.
                         val past = width > 0 && dragged.value <= -width * SWIPE_THRESHOLD
-                        if (reduced) dragged.snapTo(0f) else dragged.animateTo(0f)
                         if (past) remove()
+                        if (reduced) dragged.snapTo(0f) else dragged.animateTo(0f)
                     }
                 )
                 .combinedClickable(
@@ -426,17 +431,12 @@ private fun BulkLineRow(
                     onLongClick = { menuOpen = true }.takeIf { canRemove },
                     onClick = onSelect
                 )
-                .clearAndSetSemantics {
+                // The click above gives the role, the tap and, while locked, disabled; the
+                // content is cleared below, so only the date pill is read on its own.
+                .semantics {
                     contentDescription = spoken
                     testTag = BULK_LINE_TAG
-                    role = Role.Button
                     selected = highlighted
-                    if (enabled) {
-                        onClick {
-                            onSelect()
-                            true
-                        }
-                    }
                     if (canRemove) {
                         customActions = listOf(
                             CustomAccessibilityAction(removeLabel) {
@@ -449,7 +449,7 @@ private fun BulkLineRow(
                 .heightIn(min = 54.dp)
                 .padding(start = 8.dp, end = 10.dp, top = 6.dp, bottom = 6.dp)
         ) {
-            LineContent(line, highlighted)
+            Box(Modifier.clearAndSetSemantics {}) { LineContent(line, highlighted) }
             if (foot != null) {
                 Row(Modifier.padding(start = MarkSize + 10.dp, top = 2.dp)) { foot() }
             }
@@ -478,7 +478,7 @@ private fun BulkLineRow(
 }
 
 @Composable
-private fun ColumnScope.LineContent(line: BulkLine, highlighted: Boolean) {
+private fun LineContent(line: BulkLine, highlighted: Boolean) {
     val colors = SelloTheme.colors
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -517,7 +517,7 @@ private fun ColumnScope.LineContent(line: BulkLine, highlighted: Boolean) {
                 )
             } else {
                 MoneyText(
-                    line.amount,
+                    line.amount.withCodeInline(),
                     fontWeight = FontWeight.W800,
                     color = line.amountTone.ink(),
                     singleLine = false
@@ -572,6 +572,13 @@ private fun LineMark(icon: SelloIcon?, tone: BulkMarkTone, missingInLoss: Boolea
         Icon(icon.painter(), null, Modifier.size(20.dp), ink)
     }
 }
+
+/**
+ * A dollar line keeps its code at the figure's size, as the design draws `+USD 250,50`: at
+ * line size a raised code would be too small to read. Pesos carry none.
+ */
+private fun MoneyTextValue.withCodeInline(): MoneyTextValue =
+    if (symbol.isEmpty()) this else copy(symbol = "", digits = "$symbol\u00A0$digits")
 
 @Composable
 private fun BulkAmountTone.ink(): Color = when (this) {

@@ -64,6 +64,7 @@ class BulkReceiptScreenshotTest {
         caption: BulkCaption,
         total: BulkTotal = expenseTotal,
         addEnabled: Boolean = true,
+        enabled: Boolean = true,
         dated: Boolean = true,
         highlightedFoot: (@Composable () -> Unit)? = null
     ) {
@@ -77,6 +78,7 @@ class BulkReceiptScreenshotTest {
             onAdd = {},
             modifier = Modifier.height(SlipHeight),
             addEnabled = addEnabled,
+            enabled = enabled,
             headerEnd = { if (dated) FieldPill("Hoy, jue 22", SelloIcon.Event, {}) },
             highlightedFoot = highlightedFoot
         )
@@ -215,6 +217,59 @@ class BulkReceiptScreenshotTest {
         )
     }
 
+    private fun saving(dark: Boolean) = capture("saving", dark) {
+        // Locked while saving: no highlight, no caret, Otro renglón waits.
+        Receipt(
+            threeExpenses,
+            2,
+            BulkCaption.Count("Anotar varios", "3 renglones"),
+            enabled = false
+        )
+    }
+
+    private fun usd(dark: Boolean) = capture("usd", dark) {
+        // Aportado counts only the aportes: 250,50 + 300,00 = 550,50.
+        Receipt(
+            listOf(
+                BulkLine(
+                    "1",
+                    SelloIcon.Add,
+                    BulkMarkTone.Gain,
+                    "Aporte",
+                    dollars("250,50"),
+                    detail = "lun 12 oct"
+                ),
+                BulkLine(
+                    "2",
+                    SelloIcon.Add,
+                    BulkMarkTone.Gain,
+                    "Aporte",
+                    dollars("300,00"),
+                    detail = "lun 5 oct"
+                ),
+                BulkLine(
+                    "3",
+                    SelloIcon.Add,
+                    BulkMarkTone.Gain,
+                    "Dividendo o renta",
+                    dollars("12,40"),
+                    detail = "Dividendo de octubre"
+                )
+            ),
+            2,
+            BulkCaption.Count("3 renglones"),
+            total = BulkTotal(
+                "Aportado",
+                MoneyTextValue(MoneySign.None, "USD", "550,50", "550,50 dólares")
+            ),
+            dated = false,
+            highlightedFoot = { FieldPill("vie 16 oct", SelloIcon.Event, {}) }
+        )
+    }
+
+    private fun dollars(digits: String) =
+        MoneyTextValue(MoneySign.Plus, "USD", digits, "más $digits dólares")
+
     private fun missingType(dark: Boolean) = capture("missing-type", dark) {
         Receipt(
             listOf(
@@ -259,6 +314,14 @@ class BulkReceiptScreenshotTest {
     @Test fun investmentClaro() = investment(dark = false)
 
     @Test fun investmentOscuro() = investment(dark = true)
+
+    @Test fun savingClaro() = saving(dark = false)
+
+    @Test fun savingOscuro() = saving(dark = true)
+
+    @Test fun usdClaro() = usd(dark = false)
+
+    @Test fun usdOscuro() = usd(dark = true)
 
     @Test fun missingTypeClaro() = missingType(dark = false)
 

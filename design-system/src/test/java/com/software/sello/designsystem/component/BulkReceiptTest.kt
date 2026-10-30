@@ -1,6 +1,7 @@
 package com.software.sello.designsystem.component
 
 import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
@@ -11,8 +12,10 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -24,6 +27,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -49,10 +53,12 @@ class BulkReceiptTest {
     private fun receipt(
         lines: List<BulkLine> = threeExpenses,
         enabled: Boolean = true,
-        addEnabled: Boolean = true
+        addEnabled: Boolean = true,
+        reducedMotion: Boolean = true,
+        highlightedFoot: (@Composable () -> Unit)? = null
     ) {
         rule.setContent {
-            SelloTheme(reducedMotion = true) {
+            SelloTheme(reducedMotion = reducedMotion) {
                 BulkReceipt(
                     lines = lines,
                     highlighted = highlighted,
@@ -66,7 +72,8 @@ class BulkReceiptTest {
                     onAdd = { done += "add" },
                     modifier = Modifier.height(400.dp),
                     addEnabled = addEnabled,
-                    enabled = enabled
+                    enabled = enabled,
+                    highlightedFoot = highlightedFoot
                 )
             }
         }
@@ -137,12 +144,12 @@ class BulkReceiptTest {
 
         val first = line(0).fetchSemanticsNode().config
         assertEquals(
-            listOf("Transporte, Uber, 18.400 pesos"),
+            listOf("Renglón 1 de 3. Transporte, Uber, 18.400 pesos"),
             first[SemanticsProperties.ContentDescription]
         )
         val missing = line(1).fetchSemanticsNode()
         assertEquals(
-            listOf("Farmacia Pasteur, 75.100 pesos, Elige una categoría"),
+            listOf("Renglón 2 de 3. Farmacia Pasteur, 75.100 pesos, Elige una categoría"),
             missing.config[SemanticsProperties.ContentDescription]
         )
         // One item: nothing inside the line is read on its own.
@@ -160,7 +167,7 @@ class BulkReceiptTest {
         receipt(lines = listOf(threeExpenses[0].copy(amount = null, detail = null)))
 
         assertEquals(
-            listOf("Transporte, Sin monto"),
+            listOf("Renglón 1 de 1. Transporte, Sin monto"),
             line(0).fetchSemanticsNode().config[SemanticsProperties.ContentDescription]
         )
     }
@@ -204,7 +211,7 @@ class BulkReceiptTest {
     }
 
     @Test
-    fun otroRenglonAddsALineAndWaitsWhenNotAllowed() {
+    fun otroRenglonAddsALine() {
         receipt()
         rule.onNodeWithText("Otro renglón").performClick()
         assertEquals(listOf("add"), done)
@@ -220,6 +227,51 @@ class BulkReceiptTest {
 
         assertEquals(emptyList<String>(), done)
         rule.onNodeWithText("Otro renglón").assertIsNotEnabled()
+    }
+
+    @Test
+    fun whileLockedEachLineReadsAsDisabledAndOffersNoRemoval() {
+        receipt(enabled = false)
+
+        line(1).assertIsNotEnabled()
+        val actions = line(1).fetchSemanticsNode().config.getOrNull(SemanticsActions.CustomActions)
+        assertTrue(actions.isNullOrEmpty())
+    }
+
+    @Test
+    fun whileLockedNoLineIsHighlightedNorCarriesItsFoot() {
+        receipt(enabled = false, highlightedFoot = { FieldPill("vie 16 oct", SelloIcon.Event, {}) })
+
+        (0..2).forEach { index ->
+            val config = line(index).fetchSemanticsNode().config
+            assertEquals(false, config[SemanticsProperties.Selected])
+        }
+        rule.onAllNodes(hasText("vie 16 oct")).assertCountEquals(0)
+    }
+
+    @Test
+    fun theHighlightedLinesDatePillIsReachedAndTappedOnItsOwn() {
+        var pillTaps = 0
+        receipt(highlightedFoot = { FieldPill("vie 16 oct", SelloIcon.Event, { pillTaps++ }) })
+
+        val pill = line(2).fetchSemanticsNode().children.single()
+        assertEquals(listOf("vie 16 oct"), pill.config[SemanticsProperties.Text].map { it.text })
+        rule.onNode(hasText("vie 16 oct") and hasClickAction()).performClick()
+
+        assertEquals(1, pillTaps)
+        assertEquals(emptyList<String>(), done)
+    }
+
+    @Test
+    fun aSwipePastFortyPercentRemovesTheLineBeforeItSpringsBack() {
+        receipt(reducedMotion = false)
+        rule.mainClock.autoAdvance = false
+
+        line(1).performTouchInput { swipeLeft(startX = right - 4f, endX = right - width * 0.5f) }
+        rule.mainClock.advanceTimeByFrame()
+        rule.mainClock.advanceTimeByFrame()
+
+        assertEquals(listOf("remove 1"), done)
     }
 
     @Test
