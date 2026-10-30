@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -20,7 +22,9 @@ import com.software.sello.designsystem.theme.SelloTheme
 /**
  * A tinted note where Sello suggests something: the [evidence] it rests on, the [advice]
  * and one [actionLabel] that opens the place to act. Nothing is changed by showing it.
- * It can be sent away only when [onDismiss] is given, with [dismissLabel] as its spoken name.
+ * [evidenceSpoken] is how the evidence is read aloud when it holds an amount, which is said in
+ * pesos. It can be sent away only when [onDismiss] is given, with [dismissLabel] as its spoken
+ * name.
  */
 @Composable
 fun SuggestionNote(
@@ -30,6 +34,7 @@ fun SuggestionNote(
     actionLabel: String,
     onAction: () -> Unit,
     modifier: Modifier = Modifier,
+    evidenceSpoken: String? = null,
     dismissLabel: String? = null,
     onDismiss: (() -> Unit)? = null
 ) {
@@ -60,7 +65,11 @@ fun SuggestionNote(
                 }
             }
         }
-        Text(evidence, color = colors.onBrandSoft)
+        Text(
+            evidence,
+            Modifier.semantics { evidenceSpoken?.let { contentDescription = it } },
+            color = colors.onBrandSoft
+        )
         Text(advice, color = colors.onBrandSoft, fontWeight = FontWeight.W800)
         SelloButton(actionLabel, onAction, kind = ButtonKind.Text)
     }

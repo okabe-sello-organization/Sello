@@ -133,6 +133,10 @@ class IncomeHistoryScreenTest {
         rule.onNodeWithText(
             "Podrías darle un destino: ahorro, ocio o una reserva, con su propia categoría."
         ).assertIsDisplayed()
+        // The amount is read in pesos, as everywhere else.
+        rule.onNodeWithContentDescription(
+            "50.000 pesos de lo que entró aún no tiene un presupuesto."
+        ).assertIsDisplayed()
         // The action only asks for the form: nothing is assigned or saved by it.
         assertEquals(emptyList<String?>(), assigned)
         rule.onNodeWithText("Asignar a una categoría ›").performScrollTo().performClick()

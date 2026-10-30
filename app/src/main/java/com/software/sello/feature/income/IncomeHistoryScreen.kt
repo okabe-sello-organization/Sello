@@ -165,6 +165,7 @@ private fun AssignNote(assign: AssignSuggestion, onAssign: (String?) -> Unit) {
     SuggestionNote(
         title = stringResource(R.string.income_assign_title),
         evidence = stringResource(R.string.income_assign_evidence, assign.unassigned.digits),
+        evidenceSpoken = stringResource(R.string.income_assign_evidence, assign.unassigned.spoken),
         advice = stringResource(R.string.income_assign_advice),
         actionLabel = stringResource(R.string.income_assign_action),
         onAction = { onAssign(assign.limit) },
