@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -19,6 +21,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -58,6 +62,7 @@ import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
 import java.time.YearMonth
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 /**
  * One category in the selected month: what is left of its limit, what was spent, and
@@ -81,8 +86,14 @@ fun CategoryDetailScreen(
     announcementBusy: Boolean = false,
     announcementFailed: Boolean = false,
     onShowAllExpenses: () -> Unit = {},
-    onSetMonthLimit: (categoryId: String, month: YearMonth) -> Unit = { _, _ -> }
+    onSetMonthLimit: (categoryId: String, month: YearMonth) -> Unit = { _, _ -> },
+    onOpenSchedule: (String) -> Unit = {},
+    onAllSchedules: () -> Unit = {},
+    onAdjustBudget: () -> Unit = {}
 ) {
+    // The reserved footnote brings Pagos fijos into view, as Recibo's opens Pagos previstos.
+    val fixedSlip = remember { BringIntoViewRequester() }
+    val scope = rememberCoroutineScope()
     Column(
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
         modifier = modifier
@@ -127,7 +138,14 @@ fun CategoryDetailScreen(
                         Modifier.testTag(CATEGORY_DETAIL_STALE_TAG)
                     )
                 }
-                HeaderSlip(state, months, showName, onEditCategory)
+                HeaderSlip(
+                    state,
+                    months,
+                    showName,
+                    onEditCategory,
+                    onAdjustBudget,
+                    onReserved = { scope.launch { fixedSlip.bringIntoView() } }
+                )
                 // A month that is over can still have its limit corrected; said where
                 // that month is being looked at, every time.
                 if (state.month < YearMonth.from(state.today)) {
@@ -162,6 +180,15 @@ fun CategoryDetailScreen(
                         )
                     }
                 }
+                CategoryFixedPayments(
+                    state,
+                    months,
+                    dates,
+                    onAction,
+                    onOpenSchedule,
+                    onAllSchedules,
+                    Modifier.bringIntoViewRequester(fixedSlip)
+                )
                 Expenses(
                     state,
                     months,
@@ -182,9 +209,13 @@ private fun HeaderSlip(
     state: CategoryDetailState.Ready,
     months: MonthNames,
     showName: Boolean,
-    onEditCategory: () -> Unit
+    onEditCategory: () -> Unit,
+    onAdjustBudget: () -> Unit,
+    onReserved: () -> Unit
 ) {
     val category = state.category
+    // While its payments are reserved, what they leave (SELLO-135), as Recibo's answer.
+    val figure = category.reserved?.figure ?: category.figure
     val figures = (state.insights as? DetailInsightsState.Ready)?.figures
     Slip(Modifier.fillMaxWidth().testTag(CATEGORY_DETAIL_HEADER_TAG)) {
         if (showName) {
@@ -205,8 +236,8 @@ private fun HeaderSlip(
                 }
             }
         }
-        val headline = detailHeadline(category.figure.headline)
-        val stamp = stampText(category.figure.stamp)
+        val headline = detailHeadline(figure.headline)
+        val stamp = stampText(figure.stamp)
         // An archived category is stamped as such: that, not its verdict, is what it is now.
         val archived = stringResource(R.string.recibo_category_archived)
             .takeIf { category.archived }
@@ -214,7 +245,7 @@ private fun HeaderSlip(
             stringResource(
                 R.string.recibo_summary_description,
                 headline,
-                category.figure.amount.spoken,
+                figure.amount.spoken,
                 archived ?: stamp
             )
         Column(Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = spoken }) {
@@ -234,7 +265,7 @@ private fun HeaderSlip(
                 } else if (category.limit != null) {
                     Stamp(
                         stamp,
-                        stampInk(category.figure.stamp),
+                        stampInk(figure.stamp),
                         Modifier.padding(vertical = 6.dp)
                     )
                 }
@@ -253,9 +284,9 @@ private fun HeaderSlip(
                 }
                 val amount: @Composable () -> Unit = {
                     FittedMoneyText(
-                        category.figure.amount,
+                        figure.amount,
                         startSize = 44,
-                        color = if (category.over) {
+                        color = if (category.over && category.reserved == null) {
                             SelloTheme.colors.semantic.loss
                         } else {
                             SelloTheme.colors.ink
@@ -279,6 +310,11 @@ private fun HeaderSlip(
             }
         }
         category.why?.let { CarryWhyNote(it) }
+        // Revisar's two facts under the big number, as on Recibo.
+        category.reserved?.shortfall?.let {
+            ShortfallNote(it)
+            AdjustBudgetLink(onAdjustBudget)
+        }
         Spacer(Modifier.height(SelloTheme.spacing.sm))
         // With carry the limit is the capacity: it is shown with its base and carry, never
         // alone as "de 180.000" (ADR 0020 CP27).
@@ -378,6 +414,7 @@ private fun HeaderSlip(
                 )
             }
         }
+        category.reserved?.let { ReservedFootnote(it.footnote, onReserved) }
     }
 }
 
@@ -524,6 +561,7 @@ private fun detailHeadline(headline: ReciboHeadline): String = stringResource(
         ReciboHeadline.Overspent -> R.string.category_detail_headline_overspent
         ReciboHeadline.LeftOver -> R.string.category_detail_headline_left_over
         ReciboHeadline.Spent -> R.string.category_detail_headline_spent
+        ReciboHeadline.ShortForPayments -> R.string.recibo_answer_short
     }
 )
 

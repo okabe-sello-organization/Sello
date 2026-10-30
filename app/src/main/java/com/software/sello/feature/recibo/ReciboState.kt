@@ -52,7 +52,10 @@ enum class ReciboHeadline {
     LeftOver,
 
     /** "Has gastado": there is no limit to compare with. */
-    Spent
+    Spent,
+
+    /** "Falta para": what a category's reserved payments need beyond what is left. */
+    ShortForPayments
 }
 
 /** The verdict, in words on the screen and in what a screen reader says. */
@@ -168,6 +171,17 @@ data class ReciboShortfall(
     val reserved: MoneyTextValue
 )
 
+/**
+ * A category's answer while its payments still to come are reserved (SELLO-135), as
+ * Recibo's is for the month: the [figure] they leave, the [footnote] and, in Revisar,
+ * the [shortfall]'s two facts. Recibo's cells keep the recorded figure.
+ */
+data class CategoryReserved(
+    val figure: BudgetFigure,
+    val footnote: ReciboReserved,
+    val shortfall: ReciboShortfall?
+)
+
 /** What can be spent each day from today to the end of the month, today included. */
 data class ReciboPerDay(val amount: MoneyTextValue, val days: Int)
 
@@ -201,7 +215,9 @@ data class ReciboCategory(
     /** While it carries: base, carry and capacity; [limit] is then the capacity (CP27). */
     val carry: CarryFigures? = null,
     /** Why its verdict is what it is, when an earlier deficit explains it. */
-    val why: CarryWhy? = null
+    val why: CarryWhy? = null,
+    /** While its own payments are reserved, what category detail shows instead of [figure]. */
+    val reserved: CategoryReserved? = null
 ) {
     /** No limit on purpose, as its stamp says; never set or paused is something else. */
     val unlimited: Boolean get() = figure.stamp == ReciboStamp.NoLimit

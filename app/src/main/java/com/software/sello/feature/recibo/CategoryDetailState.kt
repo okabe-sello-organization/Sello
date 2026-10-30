@@ -1,6 +1,7 @@
 package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.RepeatRule
 import com.software.sello.presentation.carry.CarryProblem
 import java.time.LocalDate
 import java.time.YearMonth
@@ -28,7 +29,11 @@ sealed interface CategoryDetailState {
         val deleteProblem: DeleteProblem? = null,
         val insights: DetailInsightsState = DetailInsightsState.Loading,
         /** Why the latest read failed, when a carry figure cannot be calculated (CP8). */
-        val carryProblem: CarryProblem? = null
+        val carryProblem: CarryProblem? = null,
+        /** Its payments still to come this month, from the same snapshot as [category]. */
+        val upcoming: List<DetailUpcomingPayment> = emptyList(),
+        /** The Pagos fijos slip (SELLO-135). */
+        val fixed: DetailFixedState = DetailFixedState.Hidden
     ) : CategoryDetailState
 
     /** The month was read and this category has nothing in it. */
@@ -38,6 +43,42 @@ sealed interface CategoryDetailState {
 
     /** A carry figure cannot be calculated and nothing earlier was read (CP8). */
     data class CarryFailed(val problem: CarryProblem) : CategoryDetailState
+}
+
+/** One of the category's payments the month in progress still reserves. */
+data class DetailUpcomingPayment(
+    val scheduleId: String,
+    val name: String,
+    val date: LocalDate,
+    val amount: MoneyTextValue
+)
+
+/**
+ * One of the category's other fixed payments: nothing of it is still to come this month.
+ * [next] is its next occurrence; [pausedFrom] says it is paused, since then.
+ */
+data class DetailSchedule(
+    val id: String,
+    val name: String,
+    val rule: RepeatRule,
+    val start: LocalDate,
+    val next: LocalDate?,
+    val pausedFrom: LocalDate?,
+    val amount: MoneyTextValue
+)
+
+/** Pagos fijos on category detail (docs/design/v2/categoria-fijos.html). */
+sealed interface DetailFixedState {
+    /** A month that is over, or a category none of whose payments repeat. */
+    data object Hidden : DetailFixedState
+
+    data object Loading : DetailFixedState
+
+    /** The schedules could not be read and none was read before: never shown as none. */
+    data object Failed : DetailFixedState
+
+    data class Ready(val upcoming: List<DetailUpcomingPayment>, val later: List<DetailSchedule>) :
+        DetailFixedState
 }
 
 /** Why an expense was not deleted. In every case it is still recorded, or was already gone. */

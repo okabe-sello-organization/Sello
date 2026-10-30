@@ -42,3 +42,10 @@ recorded difference, not a forecast or verdict.
 All totals use exact widened arithmetic in domain. Insights and their category
 budget share a transaction revision, generation, financial date and zone. Failed
 reads stay failures. No schema, dependency, financial write or deletion policy changes.
+
+**Amendment (2026-10-30, SELLO-135):** in the month in progress, the category's own
+payments still to come are reserved as Recibo reserves the month's (ADR 0012 BG1–BG2):
+the remainder behind the daily figure and the current week's allowance is the margin
+`M = R − Q` of this category alone, read in the same transaction. With 550.000 left and
+290.000 to come over 10 days, Al día is 26.000, not 55.000, and the week of 22–28 has
+182.000. A negative margin gives 0. Recibo's category cells keep the recorded remainder.

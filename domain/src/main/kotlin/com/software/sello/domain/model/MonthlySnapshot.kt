@@ -132,7 +132,15 @@ data class CategoryMonth(
     val budget: LimitedBudget?,
     val expenseCount: Int,
     /** Newest original addition in the selected month, never an edit/update time. */
-    val newestExpenseAddition: Instant? = null
+    val newestExpenseAddition: Instant? = null,
+    /** Its payments the month in progress still reserves, by date (rule 11); else none. */
+    val upcoming: List<ReservedPayment> = emptyList(),
+    /**
+     * [upcoming] against this category's own remainder, only while it has a [budget] and
+     * one is reserved: what category detail's figures are from (SELLO-135). Recibo's cells
+     * and verdicts do not use it.
+     */
+    val reservation: Reservation? = null
 )
 
 /**

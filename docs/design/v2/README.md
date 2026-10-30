@@ -29,6 +29,7 @@ synthetic.
 | [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16; + Nueva meta moved to the band by the owner 2026-10-26; Nueva meta and Nueva categoría made alike by the owner 2026-10-26 (see below) |
 | [Inversiones](inversiones.html) | Locked 2026-10-16; USD and the rate added 2026-10-25 by owner delegation (SELLO-106) |
 | [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice; the list redesigned by the owner 2026-10-26 (SELLO-122) |
+| [Pagos fijos en la categoría](categoria-fijos.html) | Approved 2026-10-30 by the owner (SELLO-135, E24): category detail counts its own payments still to come and lists its fixed payments |
 | [Ajustar presupuesto](ajustar.html) | Locked 2026-10-26 by the owner: the screen behind Recibo's **Ajustar presupuesto ›** and its limit sheet |
 | [Arrastre](arrastre.html) | Delegated by the owner 2026-10-28 for SELLO-041 (E09, signed carry-over); approved by merging it: turning carry on, the breakdowns, dropping a balance, corrections, the catch-up lines, an uncomputable carry, Resumen |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
@@ -757,3 +758,11 @@ an owner-approved order change on 2026-10-22: hero → latest expenses → En n�
 Cada semana gastas → Un mes normal aquí. [ADR 0015](../../decisions/0015-category-detail-insights.md)
 records the approved weekly and completed-month-history rules. Existing no-symbol,
 archive-only deletion and current status decisions continue to apply.
+
+**Fixed payments (SELLO-135, [mock](categoria-fijos.html)):** while payments of the
+category are still to come this month, the hero is what they leave, with Recibo's
+stamps (Sin margen, Revisar with "Falta para tus pagos", its sentence and **Ajustar
+presupuesto ›**) and its footnote, which brings the slip into view. Al día and the
+week's stripe come from it. A **Pagos fijos** slip right under the hero lists **Por venir
+en {mes}** and **Más adelante**, each row opening its schedule, then **Ver todos los
+pagos fijos ›**. No slip in a past month or for a category without fixed payments.

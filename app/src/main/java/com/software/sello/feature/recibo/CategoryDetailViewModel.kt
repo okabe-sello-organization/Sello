@@ -7,6 +7,9 @@ import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.policy.ScheduleListPolicy
+import com.software.sello.domain.policy.ScheduleStatus
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryInsightsState
 import com.software.sello.domain.port.ExpenseCursor
@@ -14,12 +17,15 @@ import com.software.sello.domain.port.ExpensePage
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.ScheduleBookState
+import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.carry.carryProblem
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.DeleteResult
 import com.software.sello.presentation.money.MoneyFormatter
+import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -52,7 +58,8 @@ class CategoryDetailViewModel(
     private val expenses: ExpenseReads,
     private val money: MoneyFormatter,
     private val corrections: Corrections,
-    private val insightsSnapshots: CategoryInsightsSnapshots
+    private val insightsSnapshots: CategoryInsightsSnapshots,
+    schedules: ScheduleReads
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val category = MutableStateFlow<String?>(null)
@@ -108,6 +115,17 @@ class CategoryDetailViewModel(
                 if (state is CategoryDetailState.Ready) {
                     state.copy(
                         deleteProblem = problem
+                    )
+                } else {
+                    state
+                }
+            }
+            // The schedules are read on their own: a change to one never lists the
+            // expenses again. What is still to come is the snapshot's, as on Recibo.
+            .combine(attempt.flatMapLatest { schedules.observe() }) { state, book ->
+                if (state is CategoryDetailState.Ready) {
+                    state.copy(
+                        fixed = fixed(state, book)
                     )
                 } else {
                     state
@@ -204,6 +222,15 @@ class CategoryDetailViewModel(
             stale = stale,
             canRecord = !line.archived && snapshot.month == YearMonth.from(snapshot.asOf),
             carryProblem = problem,
+            upcoming = snapshot.categories.firstOrNull { it.category.id == id }?.upcoming.orEmpty()
+                .map { payment ->
+                    DetailUpcomingPayment(
+                        scheduleId = payment.schedule.value,
+                        name = payment.note?.value ?: line.name,
+                        date = payment.occurrence.date,
+                        amount = money.format(payment.amount.money)
+                    )
+                },
             insights = when (insights) {
                 ReadState.Loading -> DetailInsightsState.Loading
 
@@ -245,6 +272,54 @@ class CategoryDetailViewModel(
                 if (list !is ExpenseListState.Failed) kept = Kept(shown, snapshot.generation, list)
                 emit(ready.copy(expenses = list))
             }
+        }
+    }
+
+    /**
+     * Pagos fijos: what the snapshot still reserves for the category, then its other
+     * payments that repeat, not ended. Only in the month in progress. A failed read keeps
+     * the schedules read before; with none, it says so and is never "none".
+     */
+    private fun fixed(state: CategoryDetailState.Ready, book: ScheduleBookState): DetailFixedState {
+        if (state.month != YearMonth.from(state.today)) return DetailFixedState.Hidden
+        val stored = when (book) {
+            ReadState.Loading -> return if (state.upcoming.isEmpty()) {
+                DetailFixedState.Hidden
+            } else {
+                DetailFixedState.Loading
+            }
+
+            is ReadState.Ready -> book.value.schedules
+
+            is ReadState.Failed -> book.lastGood?.schedules ?: return DetailFixedState.Failed
+        }
+        val coming = state.upcoming.map { it.scheduleId }.toSet()
+        val later = ScheduleListPolicy.lines(
+            stored.filter {
+                (it.schedule.entry as? ScheduledEntry.Payment)?.categoryId?.value ==
+                    state.category.id
+            },
+            state.today,
+            state.month
+        )
+            .filter { it.status != ScheduleStatus.Ended && it.stored.schedule.id.value !in coming }
+            .sortedBy { it.next ?: LocalDate.MAX }
+            .map { line ->
+                val schedule = line.stored.schedule
+                DetailSchedule(
+                    id = schedule.id.value,
+                    name = schedule.entry.note?.value ?: state.category.name,
+                    rule = schedule.recurrence.rule,
+                    start = schedule.recurrence.start,
+                    next = line.next.takeIf { line.status == ScheduleStatus.Active },
+                    pausedFrom = line.pausedFrom.takeIf { line.status == ScheduleStatus.Paused },
+                    amount = money.format(schedule.entry.amount.money)
+                )
+            }
+        return if (state.upcoming.isEmpty() && later.isEmpty()) {
+            DetailFixedState.Hidden
+        } else {
+            DetailFixedState.Ready(state.upcoming, later)
         }
     }
 

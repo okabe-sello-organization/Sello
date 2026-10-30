@@ -287,7 +287,7 @@ internal fun ReservedFootnote(reserved: ReciboReserved, onClick: () -> Unit) {
 
 /** "Ajustar presupuesto ›", for a month in progress that is Excedido or Revisar. */
 @Composable
-private fun AdjustBudgetLink(onClick: () -> Unit) {
+internal fun AdjustBudgetLink(onClick: () -> Unit) {
     val spoken = stringResource(R.string.recibo_adjust_budget_description)
     val ink = SelloTheme.colors.brand
     Row(
@@ -567,6 +567,7 @@ internal fun reciboHeadline(headline: ReciboHeadline): String = stringResource(
         ReciboHeadline.Overspent -> R.string.recibo_headline_overspent
         ReciboHeadline.LeftOver -> R.string.recibo_headline_left_over
         ReciboHeadline.Spent -> R.string.recibo_headline_spent
+        ReciboHeadline.ShortForPayments -> R.string.recibo_answer_short
     }
 )
 

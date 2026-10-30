@@ -6,11 +6,13 @@ import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ReservedPayment
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.CategoryHistoryInput
 import com.software.sello.domain.policy.CategoryInMonth
 import com.software.sello.domain.policy.CategoryInsightsPolicy
+import com.software.sello.domain.policy.ReservationPolicy
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryInsightsState
 import com.software.sello.domain.port.ExpenseCursor
@@ -35,7 +37,9 @@ class RoomCategoryInsightsSnapshots(
         val revision: Long,
         val months: List<CategoryHistoryInput>,
         /** Per month, the carry rows when a chain covers it (ADR 0020 CP19); else null. */
-        val carry: List<CarryRows?>
+        val carry: List<CarryRows?>,
+        /** This category's payments the selected month reserves, read with the rest. */
+        val reserved: List<ReservedPayment>
     )
 
     override suspend fun read(
@@ -73,7 +77,8 @@ class RoomCategoryInsightsSnapshots(
                 today,
                 rows.generation,
                 rows.revision,
-                months
+                months,
+                rows.reserved
             )
         }
     }
@@ -122,7 +127,14 @@ class RoomCategoryInsightsSnapshots(
                 is Outcome.Success -> read.value
             }
         }
-        return Outcome.Success(Rows(generation, revision, months, carry))
+        // As RoomMonthlySnapshots reserves them, so detail and Recibo agree (SELLO-135).
+        val schedules = when (val read = database.storedSchedules()) {
+            is Outcome.Failure -> return read
+            is Outcome.Success -> read.value
+        }
+        val reserved = ReservationPolicy.reserved(schedules, month, chains)
+            .filter { it.categoryId == id }
+        return Outcome.Success(Rows(generation, revision, months, carry, reserved))
     }
 
     override fun observe(categoryId: CategoryId, month: YearMonth): Flow<CategoryInsightsState> =
