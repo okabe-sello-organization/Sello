@@ -19,8 +19,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * What the month's income looks like, without and with the suggestion to assign what is
  * unassigned, and as last read after a refresh that failed, kept as committed images
- * (ADR 0022): Cobalto light, Cobalto dark at twice the font size, and Violeta light. See
- * ExpenseEntryScreenshotTest.
+ * (ADR 0022): Cobalto light, Cobalto dark and Violeta light. See ExpenseEntryScreenshotTest.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

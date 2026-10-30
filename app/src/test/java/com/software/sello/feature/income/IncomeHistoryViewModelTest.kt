@@ -304,8 +304,9 @@ class IncomeHistoryViewModelTest {
         }
         val model = history()
         reads.publish(october)
+        // Reading the list again fails at the same revision, so the shown list stays current.
         reads.failure = StorageFailure.Unavailable("x")
-        reads.publish(october, revision = 2)
+        model.onAction(IncomeHistoryAction.Retry)
         val older = model.state.value as IncomeHistoryState.Ready
         reads.failure = null
 
@@ -313,13 +314,13 @@ class IncomeHistoryViewModelTest {
 
         assertTrue(older.stale)
         assertEquals(50, older.lines.size)
-        val after = model.state.value as IncomeHistoryState.Ready
-        assertEquals(after.lines.map { it.id }.distinct(), after.lines.map { it.id })
-        model.onAction(IncomeHistoryAction.More)
+        // It read on from where the shown list ends, never the first page again.
+        assertEquals(2L, reads.pages.last().first?.sequence)
         val all = model.state.value as IncomeHistoryState.Ready
         assertEquals(51, all.lines.size)
         assertEquals(51, all.lines.map { it.id }.distinct().size)
-        assertFalse(all.stale)
+        // Only a refresh that succeeds clears the older marker, not a Más page.
+        assertTrue(all.stale)
     }
 
     @Test
