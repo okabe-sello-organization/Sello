@@ -86,7 +86,8 @@ class RestoreSession(
     /**
      * On opening the screen: a replacement still pending, one an earlier process died
      * in the middle of (restored, or not known yet), or a staged file still waiting,
-     * saying it was not replaced if it had been confirmed.
+     * saying it was not replaced if it had been confirmed; a confirmed file that can no
+     * longer be offered is shown as not restored.
      * Failing all, [chosen], a file an earlier process was given but had not finished
      * with, is checked again; it is never replaced without a confirmation.
      */
@@ -106,7 +107,11 @@ class RestoreSession(
 
                         is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
 
-                        StagedLookup.None, is StagedLookup.NotReplaced -> null
+                        // A confirmed file that can no longer be offered: say it did not happen.
+                        is StagedLookup.NotReplaced ->
+                            RestoreStep.Failed.takeIf { found.attempted }
+
+                        StagedLookup.None -> null
                     }
                 when {
                     next != null -> state.compareAndSet(RestoreStep.Idle, next)

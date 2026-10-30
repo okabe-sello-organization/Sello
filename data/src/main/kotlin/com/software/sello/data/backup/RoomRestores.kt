@@ -162,7 +162,11 @@ class RoomRestores(
                 setProperty(STAGED_AT, audit.now().toEpochMilli().toString())
                 report?.let { write(it) }
             }
-            writeAtomically(staged, bytes) && writeAtomically(manifest, properties.text())
+            // The old manifest goes first: a stage cut short then finds nothing, never this
+            // file under another file's operation or confirmation.
+            (!manifest.exists() || manifest.delete()) &&
+                writeAtomically(staged, bytes) &&
+                writeAtomically(manifest, properties.text())
         }
         if (!written) return Outcome.Failure(StageFailure.Storage)
         return Outcome.Success(position.preview(operation, contents, report))
@@ -188,16 +192,16 @@ class RoomRestores(
             false -> Unit
         }
         val position = (position() as? Outcome.Success)?.value
-            ?: return StagedLookup.NotReplaced(manifest.operation)
+            ?: return manifest.notReplaced()
         val expired = audit.now().isAfter(manifest.stagedAt.plus(STAGING_LIFETIME))
         if (position.generation != manifest.generation || expired) {
             discard()
-            return StagedLookup.NotReplaced(manifest.operation)
+            return manifest.notReplaced()
         }
         val bytes = io { staged.takeIf { it.exists() }?.readBytes() }
-            ?: return StagedLookup.NotReplaced(manifest.operation)
+            ?: return manifest.notReplaced()
         val plan = codec.read(bytes) as? Outcome.Success
-            ?: return StagedLookup.NotReplaced(manifest.operation).also { discard() }
+            ?: return manifest.notReplaced().also { discard() }
         return StagedLookup.Waiting(
             position.preview(manifest.operation, plan.value.contents, manifest.report),
             attempted = manifest.attempted
@@ -219,7 +223,7 @@ class RoomRestores(
         val contents = (codec.read(bytes) as? Outcome.Success)?.value?.contents
             ?: return RestoreOutcome.Failed
         val digest = digest(staged, bytes)
-        markAttempted(staged.operationId)
+        markAttempted(staged.operationId, attempted = true)
         val run = database.runCommand { write(staged, contents, digest) }
         return when (run) {
             is CommandRun.Finished -> when (run.value) {
@@ -231,7 +235,11 @@ class RoomRestores(
                     )
                 }
 
-                Replacement.Moved -> RestoreOutcome.Stale
+                // Previewed again with the new counts, as a file not confirmed yet.
+                Replacement.Moved -> {
+                    markAttempted(staged.operationId, attempted = false)
+                    RestoreOutcome.Stale
+                }
 
                 Replacement.Conflict -> RestoreOutcome.Failed
             }
@@ -497,21 +505,30 @@ class RoomRestores(
         val stagedAt: Instant,
         val report: LegacyImportReport?,
         val attempted: Boolean
-    )
+    ) {
+        fun notReplaced() = StagedLookup.NotReplaced(operation, attempted)
+    }
 
     /**
-     * Records in the manifest that [operation]'s replacement is starting. If it cannot
-     * be written the replacement still goes ahead: a later look then shows the file
-     * without saying it was confirmed, never anything untrue.
+     * Records in the manifest whether [operation]'s replacement was started: just before
+     * it starts, and taken back when it was refused because the history moved. If that
+     * cannot be written the replacement still goes ahead: a later look then shows the
+     * file without saying it was confirmed, never anything untrue.
      */
-    private suspend fun markAttempted(operation: OperationId) {
+    private suspend fun markAttempted(operation: OperationId, attempted: Boolean) {
         io {
             try {
                 if (!manifest.exists()) return@io
                 val properties = Properties().apply { manifest.inputStream().use(::load) }
                 if (properties.getProperty(OPERATION) != operation.value) return@io
-                if (properties.getProperty(ATTEMPTED) == true.toString()) return@io
-                properties.setProperty(ATTEMPTED, true.toString())
+                if ((properties.getProperty(ATTEMPTED) == true.toString()) == attempted) {
+                    return@io
+                }
+                if (attempted) {
+                    properties.setProperty(ATTEMPTED, true.toString())
+                } else {
+                    properties.remove(ATTEMPTED)
+                }
                 writeAtomically(manifest, properties.text())
             } catch (_: IOException) {
                 // Left unmarked; see above.

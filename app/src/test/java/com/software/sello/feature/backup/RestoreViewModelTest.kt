@@ -452,8 +452,7 @@ class RestoreViewModelTest {
         assertFalse(restored.state.value.replaced)
         assertEquals(1, read.size)
 
-        // The preview is the staging's own, so confirming again replaces under the same
-        // operation, and only once.
+        // Confirming again replaces under the staged file's own operation, and only once.
         restores.replaceGate = null
         restores.replaceAnswer = done
         restored.onAction(RestoreAction.Confirm)
@@ -461,7 +460,31 @@ class RestoreViewModelTest {
         runCurrent()
 
         assertEquals(RestoreStep.Restored(done), restored.state.value.step)
-        assertEquals(1, restores.replaced)
+        assertEquals(listOf(operation), restores.replacedOperations)
+    }
+
+    @Test
+    fun aConfirmedRestoreThatCanNoLongerBeOfferedAfterTheRestartSaysItWasNotRestored() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        restores.stageAnswer = Outcome.Success(staged)
+        restores.replaceGate = CompletableDeferred()
+        val (model) = model(handle, process)
+        choose(model)
+        model.onAction(RestoreAction.Confirm)
+        runCurrent()
+
+        // It did not commit, and its staging expired before the reopen.
+        restores.stagedAnswer = StagedLookup.NotReplaced(operation, attempted = true)
+        val restored = afterProcessDeath(handle, process)
+
+        assertEquals(RestoreStep.Failed, restored.state.value.step)
+        assertFalse(restored.state.value.replaced)
+        assertEquals(1, read.size)
+
+        restored.onAction(RestoreAction.Dismiss)
+        assertEquals(RestoreStep.Idle, restored.state.value.step)
+        assertEquals(0, restores.replaced)
     }
 
     @Test

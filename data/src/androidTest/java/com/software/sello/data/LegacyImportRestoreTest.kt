@@ -76,6 +76,8 @@ class LegacyImportRestoreTest {
     private val preferences = Preferences()
     private var nextId = 5_000
 
+    private var whenStamped: () -> Unit = {}
+
     private fun restores() = RoomRestores(
         ledger.database,
         files.restoreFolder,
@@ -84,7 +86,10 @@ class LegacyImportRestoreTest {
         investments,
         NoticeSeen(),
         { uuid(nextId++) },
-        { Instant.parse("2026-10-25T20:00:00Z") },
+        {
+            whenStamped()
+            Instant.parse("2026-10-25T20:00:00Z")
+        },
         dispatchers
     )
 
@@ -268,11 +273,10 @@ class LegacyImportRestoreTest {
     fun theReportOfAConfirmedLegacyFileSurvivesARestart() = runBlocking {
         currentHistory()
         val staged = restores().stage(legacy.toByteArray()).valueOrFail()
-        // Refused as stale, after the confirmation was marked.
-        assertEquals(
-            RestoreOutcome.Stale,
-            restores().replace(staged.copy(revision = staged.revision + 1))
-        )
+        // Confirmed, and the replacement rolled back as if the process had died in it.
+        whenStamped = { throw IllegalStateException("The process died") }
+        assertEquals(RestoreOutcome.Failed, restores().replace(staged))
+        whenStamped = {}
 
         ledger.reopen()
 
