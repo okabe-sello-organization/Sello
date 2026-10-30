@@ -155,7 +155,9 @@ class GoalCommandContractTest {
         assertEquals(listOf("0|${uuid(101)}|target|3000000|1"), events())
         assertEquals(1L, ledger.revision())
         assertEquals(listOf("1|goal.create|${uuid(100)}"), receipts())
-        assertEquals(Outcome.Success(saved), ledger.goals.find(operation))
+        assertEquals(emptyList<GoalMovementId>(), saved.movementIds)
+        // A found receipt does not keep which movements it wrote, so it names none.
+        assertEquals(Outcome.Success(saved.copy(movementIds = null)), ledger.goals.find(operation))
         val board = (ledger.goalReads.board() as Outcome.Success).value
         assertEquals(listOf(0L), board.goals.map { it.progress.percentage })
         assertEquals(viaje, board.featured)
@@ -570,8 +572,13 @@ class GoalCommandContractTest {
         assertNull(returned)
         assertTrue(cancellation != null)
         assertEquals(Money.cop(750_000), summary().progress.saved)
-        val found = (ledger.goals.find(command.operationId) as Outcome.Success).value
-        assertEquals(Committed(found!!, replayed = true), ledger.goals.submit(command))
+        val found = (ledger.goals.find(command.operationId) as Outcome.Success).value!!
+        assertNull(found.movementIds)
+        // The replay of a single movement is not a batch, so it names no lines.
+        assertEquals(
+            Committed(found.copy(movementIds = emptyList()), replayed = true),
+            ledger.goals.submit(command)
+        )
         assertEquals(Money.cop(750_000), summary().progress.saved)
     }
 }

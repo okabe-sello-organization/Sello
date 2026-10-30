@@ -4,6 +4,9 @@ import com.software.sello.data.repository.inputDigest
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.GoalId
+import com.software.sello.domain.model.GoalMovementKind
+import com.software.sello.domain.model.GoalMovementLine
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationId
@@ -14,6 +17,7 @@ import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.EditExpense
+import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
@@ -104,6 +108,31 @@ class CommandIdentityTest {
         assertNotEquals(
             inputDigest(month),
             inputDigest(month.copy(confirmedCarryIn = Money.cop(0)))
+        )
+    }
+
+    @Test
+    fun aReceiptOfGoalMovementsIsItsLinesInTheOrderSent() {
+        val goal = GoalId.of(id(3)).value()
+        val aporte = GoalMovementLine(GoalMovementKind.Contribution, amount, ene, null)
+        val retiro = GoalMovementLine(
+            GoalMovementKind.Withdrawal,
+            amount,
+            ene,
+            Note.of("Pan").value()
+        )
+        fun receipt(vararg lines: GoalMovementLine) =
+            inputDigest(RecordGoalMovements(operation, 4, goal, 3, lines.toList()))
+
+        assertEquals(receipt(aporte, retiro), receipt(aporte, retiro))
+        assertEquals(
+            4,
+            setOf(
+                receipt(aporte, retiro),
+                receipt(retiro, aporte),
+                receipt(aporte, retiro.copy(note = null)),
+                receipt(aporte)
+            ).size
         )
     }
 }
