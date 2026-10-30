@@ -1024,13 +1024,13 @@ class CarryoverScenarioTest {
     fun anUndoWindowOpenedBeforeTheFinancialClockMovesIsUntouchedByIt() {
         val fixture = load(Scenarios.CarryCorrectable)
         val offer = fixture.deleteAnExpense()
-        val elapsed = fixture.monotonic.elapsed()
+        val elapsed = fixture.koin.get<MonotonicClock>().elapsed()
         val audit = fixture.rows("SELECT id, created_at, updated_at FROM expense ORDER BY id")
 
         // Two financial months pass at once.
         (fixture.koin.get<FinancialClock>() as ControlledFinancialClock).advanceMonths(2)
 
-        assertEquals(elapsed, fixture.monotonic.elapsed())
+        assertEquals(elapsed, fixture.koin.get<MonotonicClock>().elapsed())
         assertEquals(offer, fixture.koin.get<ExpenseCommands>().undoOffer())
         assertEquals(
             audit,
