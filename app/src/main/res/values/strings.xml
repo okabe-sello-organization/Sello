@@ -162,6 +162,9 @@
     <string name="recibo_per_day_description">%1$s por día. %2$s.</string>
     <string name="recibo_month_closed">Mes cerrado · gastaste %1$s de %2$s.</string>
     <string name="recibo_month_closed_description">Mes cerrado. Gastaste %1$s de %2$s.</string>
+    <string name="recibo_invitation">Ver cómo cerraste %1$s</string>
+    <string name="recibo_invitation_description">Ver cómo cerraste %1$s, abre el resumen de ese mes</string>
+    <string name="recibo_invitation_dismiss">Descartar invitación</string>
     <string name="recibo_categories_title">Tus categorías</string>
     <string name="recibo_adjust_budget">Ajustar presupuesto</string>
     <string name="recibo_adjust_budget_description">Ajustar presupuesto, abre tus categorías y sus límites</string>

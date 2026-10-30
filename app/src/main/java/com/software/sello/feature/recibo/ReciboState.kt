@@ -1,6 +1,7 @@
 package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import java.time.YearMonth
 
 /** What Recibo shows. A failed read is its own state; it is never shown as zero. */
 sealed interface ReciboState {
@@ -11,17 +12,22 @@ sealed interface ReciboState {
 
     /**
      * A month that was read. With [stale] the latest read failed and this is the last
-     * one that worked, shown as older data and never as current.
+     * one that worked, shown as older data and never as current. [invitation] is the one
+     * line inviting a look at the month just closed, when there is one to offer.
      */
     data class Month(
         val summary: ReciboSummary,
         val categories: List<ReciboCategory>,
-        val stale: Boolean
+        val stale: Boolean,
+        val invitation: ReciboInvitation? = null
     ) : ReciboState
 
     /** The read failed and there is nothing earlier to show. */
     data object Failed : ReciboState
 }
+
+/** "Ver cómo cerraste [month] ›": the month just closed, which had expenses. */
+data class ReciboInvitation(val month: YearMonth)
 
 /** Which sentence an amount completes. */
 enum class ReciboHeadline {
@@ -166,4 +172,10 @@ sealed interface ReciboAction {
 
     /** Open Ajustar presupuesto for the month shown. Navigation is the root's. */
     data object AdjustBudget : ReciboAction
+
+    /** Open [month] in Resumen. The invitation is remembered as handled; navigation is the root's. */
+    data class OpenInvitation(val month: YearMonth) : ReciboAction
+
+    /** The × on the invitation: not wanted for [month]. */
+    data class DismissInvitation(val month: YearMonth) : ReciboAction
 }

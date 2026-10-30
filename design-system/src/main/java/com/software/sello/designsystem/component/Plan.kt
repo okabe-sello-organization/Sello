@@ -41,22 +41,21 @@ import com.software.sello.designsystem.theme.SelloTheme
  * with [corner] radius (half the height or more draws a pill). For things that are a
  * plan or an offer rather than a record, never for recorded money.
  */
-internal fun Modifier.dashedOutline(color: Color, width: Dp, corner: Dp): Modifier =
-    drawWithContent {
-        drawContent()
-        val stroke = width.toPx()
-        val radius = minOf(corner.toPx(), size.height / 2) - stroke / 2
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(stroke / 2, stroke / 2),
-            size = Size(size.width - stroke, size.height - stroke),
-            cornerRadius = CornerRadius(radius),
-            style = Stroke(
-                stroke,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx()))
-            )
+fun Modifier.dashedOutline(color: Color, width: Dp, corner: Dp): Modifier = drawWithContent {
+    drawContent()
+    val stroke = width.toPx()
+    val radius = minOf(corner.toPx(), size.height / 2) - stroke / 2
+    drawRoundRect(
+        color = color,
+        topLeft = Offset(stroke / 2, stroke / 2),
+        size = Size(size.width - stroke, size.height - stroke),
+        cornerRadius = CornerRadius(radius),
+        style = Stroke(
+            stroke,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx()))
         )
-    }
+    )
+}
 
 /**
  * A plan beside the records, not on the desk's paper: a dashed outline on the
