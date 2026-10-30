@@ -23,6 +23,7 @@ import com.software.sello.feature.bulk.BulkEntryViewModel
 import com.software.sello.feature.category.CategoryEditorViewModel
 import com.software.sello.feature.category.CategoryManagementViewModel
 import com.software.sello.feature.expense.ExpenseEntryViewModel
+import com.software.sello.feature.goals.GoalBulkViewModel
 import com.software.sello.feature.goals.GoalDetailViewModel
 import com.software.sello.feature.goals.GoalEditorViewModel
 import com.software.sello.feature.goals.GoalMovementViewModel
@@ -34,6 +35,7 @@ import com.software.sello.feature.investments.InversionesViewModel
 import com.software.sello.feature.investments.InvestmentDetailViewModel
 import com.software.sello.feature.investments.InvestmentEditorViewModel
 import com.software.sello.feature.investments.InvestmentMovementViewModel
+import com.software.sello.feature.investments.InvestmentMovementsViewModel
 import com.software.sello.feature.investments.UsdRateEntryViewModel
 import com.software.sello.feature.investments.UsdRateViewModel
 import com.software.sello.feature.recibo.AdjustBudgetViewModel
@@ -122,10 +124,12 @@ private fun Module.viewModels() {
     factoryOf(::InvestmentDetailViewModel)
     factoryOf(::InvestmentEditorViewModel)
     factoryOf(::InvestmentMovementViewModel)
+    factoryOf(::InvestmentMovementsViewModel)
     factoryOf(::UsdRateEntryViewModel)
     factoryOf(::MetasViewModel)
     factoryOf(::GoalEditorViewModel)
     factoryOf(::GoalMovementViewModel)
+    factoryOf(::GoalBulkViewModel)
     factoryOf(::GoalDetailViewModel)
     factoryOf(::CategoryDetailViewModel)
     factoryOf(::CategoryExpensesViewModel)

@@ -1061,6 +1061,28 @@
     <string name="goal_movement_changed">La meta cambió mientras escribías. Revisa y vuelve a intentarlo.</string>
     <string name="goal_movement_completed">Esta meta ya está lograda: no se puede cambiar.</string>
     <string name="goal_movement_not_deleted">No se borró. El movimiento sigue ahí.</string>
+    <string name="goal_bulk_title">Aportar varios</string>
+    <plurals name="goal_bulk_lines"><item quantity="one">%d renglón</item><item quantity="other">%d renglones</item></plurals>
+    <string name="goal_bulk_kind">Tipo</string>
+    <string name="goal_bulk_kind_line">Tipo · renglón %d</string>
+    <string name="goal_bulk_no_kind">Sin tipo</string>
+    <string name="goal_bulk_choose_kind">Elige Aportar o Retirar</string>
+    <plurals name="goal_bulk_missing"><item quantity="one">Falta %d tipo</item><item quantity="other">Faltan %d tipos</item></plurals>
+    <plurals name="goal_bulk_review"><item quantity="one">Revisa %d renglón</item><item quantity="other">Revisa %d renglones</item></plurals>
+    <string name="goal_bulk_limit">Máximo 30 por recibo</string>
+    <string name="goal_bulk_available">Solo hay %s disponibles</string>
+    <string name="goal_bulk_future_date">La fecha no puede ser posterior a hoy</string>
+    <string name="goal_bulk_total">Total</string>
+    <plurals name="goal_bulk_submit"><item quantity="one">Anotar movimiento</item><item quantity="other">Anotar %d movimientos</item></plurals>
+    <string name="goal_bulk_not_saved">No se guardó. Tu borrador sigue aquí.</string>
+    <plurals name="goal_bulk_discard_title"><item quantity="one">¿Descartar %d renglón?</item><item quantity="other">¿Descartar %d renglones?</item></plurals>
+    <string name="goal_bulk_discard_message">Se borra lo que escribiste en este recibo. Esto no se puede deshacer.</string>
+    <string name="goal_bulk_keep_editing">Seguir anotando</string>
+    <string name="goal_bulk_removed">Quitaste el renglón de %s</string>
+    <string name="goal_bulk_removed_untyped">Quitaste un renglón</string>
+    <string name="goal_bulk_note_kind">Movimiento</string>
+    <plurals name="notice_goal_movements"><item quantity="one">%1$d movimiento anotado: %2$s</item><item quantity="other">%1$d movimientos anotados: %2$s</item></plurals>
+    <plurals name="notice_goal_movements_plain"><item quantity="one">%d movimiento anotado</item><item quantity="other">%d movimientos anotados</item></plurals>
     <!-- Nueva meta and Editar meta (SELLO-090) -->
     <string name="goal_icon_home">Casa</string>
     <string name="goal_icon_flight">Viaje</string>
@@ -1436,6 +1458,30 @@
     <string name="notice_investment_withdrawal_plain">Retiro anotado</string>
     <string name="notice_investment_dividend">Dividendo anotado: %1$s</string>
     <string name="notice_investment_dividend_plain">Dividendo anotado</string>
+    <!-- Varios movimientos (SELLO-134) -->
+    <string name="investment_movements_title">Varios movimientos</string>
+    <string name="investment_movements_in_dollars">%1$s · en dólares</string>
+    <plurals name="investment_movements_lines"><item quantity="one">%d renglón</item><item quantity="other">%d renglones</item></plurals>
+    <plurals name="investment_movements_missing"><item quantity="one">Falta %d tipo</item><item quantity="other">Faltan %d tipos</item></plurals>
+    <plurals name="investment_movements_refused"><item quantity="one">Revisa %d renglón</item><item quantity="other">Revisa %d renglones</item></plurals>
+    <string name="investment_movements_full">Máximo 30 por recibo</string>
+    <string name="investment_movements_contributed">Aportado</string>
+    <string name="investment_movements_no_type">Sin tipo</string>
+    <string name="investment_movements_choose_type">Elige un tipo</string>
+    <string name="investment_movements_type_line">Tipo · renglón %1$d</string>
+    <plurals name="investment_movements_record"><item quantity="one">Anotar movimiento</item><item quantity="other">Anotar %d movimientos</item></plurals>
+    <string name="investment_movements_not_saved">No se guardó. Tu borrador sigue aquí.</string>
+    <string name="investment_movements_gone">Esta inversión ya no está. No se anotó nada.</string>
+    <plurals name="investment_movements_discard"><item quantity="one">¿Descartar %d renglón?</item><item quantity="other">¿Descartar %d renglones?</item></plurals>
+    <string name="investment_movements_removed">Quitaste el renglón de %1$s</string>
+    <string name="investment_movements_removed_plain">Quitaste un renglón</string>
+    <string name="investment_movements_leaves_short">Deja corto el retiro de %1$s del %2$s</string>
+    <string name="investment_movements_before_first">Antes del primer aporte (%1$s)</string>
+    <string name="investment_movements_future">La fecha no puede ser posterior a hoy</string>
+    <string name="investment_movements_invalid_amount">Escribe un monto mayor que 0</string>
+    <string name="investment_movements_other">Este renglón no se puede anotar</string>
+    <plurals name="notice_investment_movements"><item quantity="one">%1$d movimiento anotado en %2$s</item><item quantity="other">%1$d movimientos anotados en %2$s</item></plurals>
+    <plurals name="notice_investment_movements_plain"><item quantity="one">%d movimiento anotado</item><item quantity="other">%d movimientos anotados</item></plurals>
     <!-- Agregar y editar inversión (SELLO-110) -->
     <string name="investment_editor_new">Nueva inversión</string>
     <string name="investment_editor_edit">Editar inversión</string>

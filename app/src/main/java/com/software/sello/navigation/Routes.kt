@@ -46,6 +46,10 @@ data class InvestmentMovementRoute(
     val movementId: String? = null
 )
 
+/** Varios movimientos: several movements of [investmentId] on one receipt. */
+@Serializable
+data class InvestmentMovementsRoute(val investmentId: String)
+
 /** Dólar: the current USD rate and the earlier ones, from Configuración or Inversiones. */
 @Serializable
 data object UsdRateRoute
@@ -72,6 +76,13 @@ data class GoalMovementRoute(
     val withdrawal: Boolean = false,
     val movementId: String? = null
 )
+
+/**
+ * Aportar varios: several aportes and retiros of [goalId] on one receipt. The screen reads
+ * the goal itself.
+ */
+@Serializable
+data class GoalBulkRoute(val goalId: String)
 
 /** Nonfinancial controls reachable from Recibo's settings action. */
 @Serializable

@@ -91,4 +91,7 @@ sealed interface InvestmentDetailAction {
     data object RecordValue : InvestmentDetailAction
 
     data class OpenMovement(val id: String) : InvestmentDetailAction
+
+    /** Varios movimientos: handled by the root. */
+    data object RecordSeveral : InvestmentDetailAction
 }
