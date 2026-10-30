@@ -131,6 +131,23 @@ class CategoryDetailFixedTest {
         stored(5, 2, "Suscripción", monthly(25), 20_000, "2026-09-25")
     )
 
+    private fun snapshotOf(
+        spent: Long,
+        stored: List<StoredSchedule>,
+        generation: Long = 1,
+        revision: Long = 1
+    ) = (
+        MonthlyBudgetPolicy.snapshot(
+            october,
+            FinancialDay(today, ZoneId.of("America/Bogota")),
+            generation,
+            revision,
+            listOf(home, coffee),
+            listOf(storedExpense(100, 1, "2026-10-05", spent)),
+            ReservationPolicy.reserved(stored, october)
+        ) as Outcome.Success
+        ).value
+
     private fun publish(
         spent: Long,
         stored: List<StoredSchedule> = book,
@@ -366,6 +383,42 @@ class CategoryDetailFixedTest {
         schedules.state.value = ReadState.Failed(StorageFailure.Unavailable("hand"), null)
 
         assertEquals(before.copy(stale = true), viewModel.ready.fixed)
+    }
+
+    /** Internet was its only fixed payment and was deleted: it never comes back. */
+    @Test
+    fun aPaymentDeletedSinceIsNeverShownAgainFromWhatWasKept() = runTest {
+        val viewModel = started()
+        val internet = listOf(book[1])
+        publish(950_000, stored = internet)
+        schedules.state.value = ReadState.Ready(ScheduleBook(1, 1, internet))
+        viewModel.show(1)
+        assertEquals(1, (viewModel.ready.fixed as DetailFixedState.Ready).upcoming.size)
+
+        // Deleted at revision 2: both reads see it gone.
+        snapshots.ready(snapshotOf(950_000, emptyList(), revision = 2))
+        schedules.state.value = ReadState.Ready(ScheduleBook(1, 2, emptyList()))
+        assertEquals(DetailFixedState.Hidden, viewModel.ready.fixed)
+
+        // A later write: the hero arrives first, then the schedules read fails.
+        snapshots.ready(snapshotOf(950_000, emptyList(), revision = 3))
+        assertEquals(DetailFixedState.Hidden, viewModel.ready.fixed)
+        schedules.state.value = ReadState.Failed(StorageFailure.Unavailable("hand"), null)
+        assertEquals(DetailFixedState.Hidden, viewModel.ready.fixed)
+    }
+
+    /** After a restore, another history: the slip of the one before is not kept. */
+    @Test
+    fun aSlipOfAnotherHistoryIsNotKept() = runTest {
+        val viewModel = started()
+        publish(950_000)
+        schedules.state.value = ReadState.Ready(ScheduleBook(1, 1, book))
+        viewModel.show(1)
+
+        snapshots.ready(snapshotOf(950_000, book, generation = 2))
+        schedules.state.value = ReadState.Failed(StorageFailure.Unavailable("hand"), null)
+
+        assertEquals(DetailFixedState.Failed, viewModel.ready.fixed)
     }
 
     /** Schedules read at another revision than the hero wait: the two always agree. */

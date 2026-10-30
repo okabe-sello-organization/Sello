@@ -279,11 +279,21 @@ class CategoryDetailViewModel(
     }
 
     /**
-     * The last schedules read and the last slip shown, so a failed read, or a retry whose
-     * read fails again, keeps what was listed, marked as older (never "none").
+     * The last schedules read and the last slip worked out from them, so a failed read, or a
+     * retry whose read fails again, keeps what was listed, marked as older (never "none").
+     * The slip is kept with what it was of, as [Kept] is: a slip found empty is kept too,
+     * so a payment deleted or ended since never comes back.
      */
     private var keptBook: ScheduleBook? = null
-    private var keptFixed: Pair<String, DetailFixedState.Ready>? = null
+
+    private class KeptFixed(
+        val categoryId: String,
+        val month: YearMonth,
+        val generation: Long,
+        val slip: DetailFixedState
+    )
+
+    private var keptFixed: KeptFixed? = null
 
     /**
      * Pagos fijos: what the snapshot still reserves for the category, then its other
@@ -298,12 +308,23 @@ class CategoryDetailViewModel(
             is ReadState.Ready -> book.value.also { keptBook = it }
             is ReadState.Failed -> book.lastGood ?: keptBook
         }?.takeIf { it.generation == state.generation }
-        val before = keptFixed?.takeIf { it.first == state.category.id }?.second
+        val before = keptFixed?.takeIf {
+            it.categoryId == state.category.id && it.month == state.month &&
+                it.generation == state.generation
+        }?.slip
         if (read == null || read.revision != state.revision) {
             return when {
-                failed -> before?.copy(stale = true) ?: DetailFixedState.Failed
+                before is DetailFixedState.Ready -> if (failed) {
+                    before.copy(
+                        stale = true
+                    )
+                } else {
+                    before
+                }
 
-                before != null -> before
+                // Never read, or read empty while the hero now reserves something.
+                failed && (before == null || state.upcoming.isNotEmpty()) ->
+                    DetailFixedState.Failed
 
                 // Nothing reserved: no skeleton for a category that may have no schedules.
                 state.upcoming.isEmpty() -> DetailFixedState.Hidden
@@ -334,9 +355,12 @@ class CategoryDetailViewModel(
                     amount = money.format(schedule.entry.amount.money)
                 )
             }
-        if (state.upcoming.isEmpty() && later.isEmpty()) return DetailFixedState.Hidden
-        val shown = DetailFixedState.Ready(state.upcoming, later, stale = failed)
-        keptFixed = state.category.id to shown
+        val shown = if (state.upcoming.isEmpty() && later.isEmpty()) {
+            DetailFixedState.Hidden
+        } else {
+            DetailFixedState.Ready(state.upcoming, later, stale = failed)
+        }
+        keptFixed = KeptFixed(state.category.id, state.month, state.generation, shown)
         return shown
     }
 
