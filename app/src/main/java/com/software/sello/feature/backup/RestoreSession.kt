@@ -98,22 +98,7 @@ class RestoreSession(
             resuming.withLock {
                 // Another screen's look may have found it first.
                 if (state.value != RestoreStep.Idle) return@withLock
-                val next = restores.pending()?.let { RestoreStep.Restored(it) }
-                    ?: when (val found = restores.staged()) {
-                        is StagedLookup.Waiting ->
-                            RestoreStep.Previewing(found.staged, notReplaced = found.attempted)
-
-                        is StagedLookup.Replaced -> replaced(found.operationId)
-
-                        is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
-
-                        // A confirmed file that can no longer be offered: say it did not
-                        // happen, unless a file chosen since is still to be checked.
-                        is StagedLookup.NotReplaced ->
-                            RestoreStep.Failed.takeIf { found.attempted && chosen == null }
-
-                        StagedLookup.None -> null
-                    }
+                val next = look(chosen)
                 when {
                     next != null -> state.compareAndSet(RestoreStep.Idle, next)
                     chosen != null -> choose(chosen)
@@ -122,18 +107,45 @@ class RestoreSession(
         }
     }
 
+    /** What [resume] finds, called with [resuming] held; null when there is nothing to show. */
+    private suspend fun look(chosen: DocumentSource?): RestoreStep? =
+        restores.pending()?.let { RestoreStep.Restored(it) }
+            ?: when (val found = restores.staged()) {
+                is StagedLookup.Waiting ->
+                    RestoreStep.Previewing(found.staged, notReplaced = found.attempted)
+
+                is StagedLookup.Replaced -> replaced(found.operationId)
+
+                is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
+
+                // A confirmed file that can no longer be offered: say it did not
+                // happen, unless a file chosen since is still to be checked.
+                is StagedLookup.NotReplaced ->
+                    RestoreStep.Failed.takeIf { found.attempted && chosen == null }
+
+                StagedLookup.None -> null
+            }
+
+    /**
+     * Stages [source] in turn with the looks. A file staged earlier that may have replaced
+     * the history refuses it, and is shown as a look finds it instead: restored, or not
+     * known yet. Found gone by then, the chosen file is said not restored.
+     */
     fun choose(source: DocumentSource) = begin(RestoreStep.Checking, from = ::choosable) {
         when (val read = reader.read(source, maxBytes)) {
             DocumentRead.Failed -> RestoreStep.Rejected(RestoreRejection.Unreadable)
 
             is DocumentRead.TooLarge -> RestoreStep.Rejected(RestoreRejection.TooLarge)
 
-            is DocumentRead.Read -> when (val staged = restores.stage(read.bytes)) {
-                is Outcome.Success -> RestoreStep.Previewing(staged.value)
+            is DocumentRead.Read -> resuming.withLock {
+                when (val staged = restores.stage(read.bytes)) {
+                    is Outcome.Success -> RestoreStep.Previewing(staged.value)
 
-                is Outcome.Failure -> when (val failure = staged.error) {
-                    is StageFailure.Rejected -> RestoreStep.Rejected(failure.reason)
-                    StageFailure.Storage -> RestoreStep.Failed
+                    is Outcome.Failure -> when (val failure = staged.error) {
+                        is StageFailure.Rejected -> RestoreStep.Rejected(failure.reason)
+                        StageFailure.Storage -> RestoreStep.Failed
+                        StageFailure.Unsettled -> look(chosen = null) ?: RestoreStep.Failed
+                    }
                 }
             }
         }

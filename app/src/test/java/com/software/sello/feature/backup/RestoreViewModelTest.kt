@@ -125,6 +125,42 @@ class RestoreViewModelTest {
     }
 
     @Test
+    fun aFileRefusedWhileAnEarlierOutcomeIsUnknownShowsThatOutcome() = runTest {
+        restores.stageAnswer = Outcome.Failure(StageFailure.Unsettled)
+        val (model) = model()
+        restores.stagedAnswer = StagedLookup.Unknown(operation)
+
+        choose(model)
+
+        assertEquals(RestoreStep.Unknown(operation), model.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun aFileRefusedWhileAnEarlierReplacementCommittedShowsItRestored() = runTest {
+        restores.stageAnswer = Outcome.Failure(StageFailure.Unsettled)
+        val (model) = model()
+        restores.stagedAnswer = StagedLookup.Replaced(operation)
+        restores.applyAnswer = done
+
+        choose(model)
+
+        assertEquals(RestoreStep.Restored(done), model.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun aFileRefusedForAnEarlierOneThatIsGoneByTheLookSaysNothingWasRestored() = runTest {
+        restores.stageAnswer = Outcome.Failure(StageFailure.Unsettled)
+        val (model) = model()
+
+        choose(model)
+
+        assertEquals(RestoreStep.Failed, model.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
     fun eachKindOfBadFileIsNamedAndChangesNothing() = runTest {
         for (reason in RestoreRejection.entries.filter { it != RestoreRejection.Unreadable }) {
             restores.stageAnswer = Outcome.Failure(StageFailure.Rejected(reason))
@@ -783,6 +819,23 @@ class RestoreViewModelTest {
         assertEquals(RestoreStep.Restored(done), respaldo.state.value.step)
         assertEquals(RestoreStep.Restored(done), tusDatos.state.value.step)
         assertEquals(1, committed.written)
+    }
+
+    @Test
+    fun aFileChosenBeforeTheLookFindsTheCommittedReplacementShowsItRestored() = runTest {
+        val startUp = CompletableDeferred<Unit>()
+        committed.readGates += startUp
+
+        // A file is chosen while the start-up apply runs, so Respaldo's look never starts.
+        val model = restartedOn(backgroundScope)
+        choose(model)
+        assertEquals(RestoreStep.Checking, model.state.value.step)
+        startUp.complete(Unit)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done), model.state.value.step)
+        assertEquals(1, committed.written)
+        assertEquals(1, read.size)
     }
 
     @Test

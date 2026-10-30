@@ -161,8 +161,9 @@ class CommittedBeforeRename(
     /** How many times the preferences were written. */
     var written = 0
 
+    /** Refused until a look finds the replacement; staging is never offered after that. */
     override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> =
-        Outcome.Failure(StageFailure.Storage)
+        Outcome.Failure(if (renamed) StageFailure.Storage else StageFailure.Unsettled)
 
     override suspend fun staged(): StagedLookup {
         stagedGates.removeFirstOrNull()?.await()
