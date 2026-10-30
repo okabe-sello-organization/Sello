@@ -1,5 +1,6 @@
 package com.software.sello.feature.backup
 
+import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.BackupExports
 import com.software.sello.domain.port.BackupPreparationFailure
@@ -10,6 +11,7 @@ import com.software.sello.domain.port.DocumentDestination
 import com.software.sello.domain.port.DocumentWrite
 import com.software.sello.domain.port.DocumentWriter
 import com.software.sello.domain.port.LastBackup
+import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
@@ -130,5 +132,57 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
         events?.add("apply")
         applied++
         return applyAnswer
+    }
+}
+
+/**
+ * The store as a new process finds it when a replacement committed and the process died
+ * before its staged file was renamed, behaving as the real one does: looking at the
+ * staged file renames it, a look before the preferences are applied cannot rename it
+ * again, and applying them writes them and, with none left, forgets the replacement,
+ * so a later look or apply finds nothing. The nth [staged] waits for the nth of
+ * [stagedGates]; the nth [applyPending], for the nth of [readGates] before it reads and
+ * the nth of [writeGates] before it writes. A missing or null gate does not wait.
+ */
+class CommittedBeforeRename(
+    private val operation: OperationId,
+    private val outcome: RestoreOutcome.Restored
+) : Restores {
+    val stagedGates = ArrayDeque<CompletableDeferred<Unit>?>()
+    val readGates = ArrayDeque<CompletableDeferred<Unit>?>()
+    val writeGates = ArrayDeque<CompletableDeferred<Unit>?>()
+    private var renamed = false
+    private var forgotten = false
+
+    /** How many times the preferences were written. */
+    var written = 0
+
+    override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> =
+        Outcome.Failure(StageFailure.Storage)
+
+    override suspend fun staged(): StagedLookup {
+        stagedGates.removeFirstOrNull()?.await()
+        return when {
+            forgotten -> StagedLookup.None
+            renamed -> StagedLookup.Unknown(operation)
+            else -> StagedLookup.Replaced(operation).also { renamed = true }
+        }
+    }
+
+    override suspend fun discard() = Unit
+
+    override suspend fun replace(staged: StagedRestore): RestoreOutcome = RestoreOutcome.Failed
+
+    override suspend fun pending(): RestoreOutcome.Restored? =
+        outcome.takeIf { renamed && !forgotten }
+
+    override suspend fun applyPending(): RestoreOutcome.Restored? {
+        val write = writeGates.removeFirstOrNull()
+        readGates.removeFirstOrNull()?.await()
+        if (pending() == null) return null
+        write?.await()
+        written++
+        forgotten = true
+        return outcome.copy(preferences = PendingPreferences(null, null))
     }
 }
