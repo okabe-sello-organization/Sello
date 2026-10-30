@@ -288,6 +288,7 @@
     <string name="category_detail_empty_title">Sin gastos en %1$s</string>
     <string name="category_detail_empty_body">Cuando anotes un gasto en esta categoría aparecerá aquí.</string>
     <string name="category_detail_record_here">Anotar aquí</string>
+    <string name="category_detail_record_several">Anotar varios</string>
     <string name="category_detail_list_failed">No pudimos leer los gastos de esta categoría.</string>
     <string name="category_detail_failed">No pudimos leer esta categoría.</string>
     <string name="category_detail_gone_title">Nada aquí este mes</string>
@@ -313,6 +314,7 @@
     <string name="notice_limit_adjusted_from">Límite de %1$s desde %2$s: %3$s</string>
     <string name="notice_expense_recorded_amount">Gasto anotado: %1$s</string>
     <string name="notice_expense_recorded_plain">Gasto anotado</string>
+    <plurals name="notice_expenses_recorded"><item quantity="one">Gasto anotado: %2$s</item><item quantity="other">%1$d gastos anotados: %2$s</item></plurals>
     <string name="notice_income_recorded">Ingreso anotado: %1$s</string>
     <string name="notice_income_recorded_plain">Ingreso anotado</string>
     <string name="income_deleted">Ingreso borrado</string>
@@ -438,6 +440,33 @@
     <string name="expense_entry_discard_confirm">Descartar</string>
     <string name="expense_entry_discard_keep">Seguir anotando</string>
     <string name="expense_entry_date_confirm">Aceptar</string>
+    <string name="expense_entry_several">Varios</string>
+    <string name="expense_entry_several_description">Anotar varios</string>
+    <string name="bulk_title">Anotar varios</string>
+    <plurals name="bulk_lines"><item quantity="one">%d renglón</item><item quantity="other">%d renglones</item></plurals>
+    <plurals name="bulk_missing_categories"><item quantity="one">Falta 1 categoría</item><item quantity="other">Faltan %d categorías</item></plurals>
+    <plurals name="bulk_refused_lines"><item quantity="one">Revisa 1 renglón</item><item quantity="other">Revisa %d renglones</item></plurals>
+    <string name="bulk_total">Total</string>
+    <string name="bulk_line_limit">Máximo 30 por recibo</string>
+    <string name="bulk_no_category">Sin categoría</string>
+    <string name="bulk_choose_category">Elige una categoría</string>
+    <string name="bulk_category_archived">Esta categoría está archivada</string>
+    <string name="bulk_category_missing">Esta categoría ya no existe</string>
+    <string name="bulk_month_full">El total del mes no admite este monto</string>
+    <string name="bulk_categories_heading">Categoría</string>
+    <string name="bulk_categories_heading_line">Categoría · renglón %d</string>
+    <plurals name="bulk_submit"><item quantity="one">Anotar gasto</item><item quantity="other">Anotar %d gastos</item></plurals>
+    <string name="bulk_future_date">La fecha no puede ser posterior a hoy. No se anotó nada.</string>
+    <string name="bulk_data_changed">Tus datos cambiaron mientras tanto. No se anotó nada; inténtalo de nuevo.</string>
+    <string name="bulk_read_failed">No pudimos leer tus categorías. Tus renglones siguen aquí.</string>
+    <string name="bulk_retry">Reintentar</string>
+    <string name="bulk_removed">Quitaste el renglón de %1$s</string>
+    <string name="bulk_removed_plain">Quitaste un renglón</string>
+    <plurals name="bulk_discard_title"><item quantity="one">¿Descartar 1 renglón?</item><item quantity="other">¿Descartar %d renglones?</item></plurals>
+    <string name="bulk_discard_message">Se borra lo que escribiste en este recibo. Esto no se puede deshacer.</string>
+    <string name="bulk_note_context">Renglón %1$d</string>
+    <string name="bulk_note_spoken">Nota del renglón %1$d</string>
+    <string name="bulk_correction_title">¿Anotar estos gastos?</string>
     <string name="expense_edit_title">Editar gasto</string>
     <string name="expense_edit_submit">Guardar cambios</string>
     <string name="expense_edit_submit_description">Guardar cambios: gasto de %1$s en %2$s</string>

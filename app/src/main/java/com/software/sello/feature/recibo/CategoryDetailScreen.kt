@@ -81,7 +81,8 @@ fun CategoryDetailScreen(
     announcementBusy: Boolean = false,
     announcementFailed: Boolean = false,
     onShowAllExpenses: () -> Unit = {},
-    onSetMonthLimit: (categoryId: String, month: YearMonth) -> Unit = { _, _ -> }
+    onSetMonthLimit: (categoryId: String, month: YearMonth) -> Unit = { _, _ -> },
+    onRecordSeveral: (() -> Unit)? = null
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md),
@@ -169,7 +170,8 @@ fun CategoryDetailScreen(
                     onAction,
                     onRecordHere,
                     onEditExpense,
-                    onShowAllExpenses
+                    onShowAllExpenses,
+                    onRecordSeveral
                 )
                 CategoryInsightSections(state, months, dates, onAction)
             }
@@ -391,7 +393,8 @@ private fun Expenses(
     onAction: (CategoryDetailAction) -> Unit,
     onRecordHere: () -> Unit,
     onEditExpense: (String) -> Unit,
-    onShowAllExpenses: () -> Unit
+    onShowAllExpenses: () -> Unit,
+    onRecordSeveral: (() -> Unit)?
 ) {
     when (val list = state.expenses) {
         ExpenseListState.Loading -> SlipSkeleton(Modifier.testTag(CATEGORY_DETAIL_LIST_LOADING_TAG))
@@ -421,7 +424,8 @@ private fun Expenses(
             dates,
             onAction,
             onEditExpense,
-            onShowAllExpenses
+            onShowAllExpenses,
+            onRecordSeveral.takeIf { state.canRecord }
         )
     }
 }
@@ -433,7 +437,8 @@ private fun ExpenseList(
     dates: DateLabels,
     onAction: (CategoryDetailAction) -> Unit,
     onEditExpense: (String) -> Unit,
-    onShowAllExpenses: () -> Unit
+    onShowAllExpenses: () -> Unit,
+    onRecordSeveral: (() -> Unit)?
 ) {
     val count = state.category.expenseCount
     val edit = stringResource(R.string.category_detail_expense_edit)
@@ -506,6 +511,17 @@ private fun ExpenseList(
                 ) { MoneyText(row.amount) }
             }
         }
+        // Several expenses at once, every new line starting in this category.
+        onRecordSeveral?.let {
+            SelloButton(
+                text = stringResource(R.string.category_detail_record_several),
+                onClick = it,
+                kind = ButtonKind.Text,
+                icon = SelloIcon.ReceiptLong,
+                contentPadding = PaddingValues(end = SelloTheme.spacing.md),
+                modifier = Modifier.testTag(CATEGORY_DETAIL_RECORD_SEVERAL_TAG)
+            )
+        }
     }
 }
 
@@ -543,6 +559,7 @@ const val CATEGORY_DETAIL_LIST_LOADING_TAG = "detail:list-loading"
 const val CATEGORY_DETAIL_LIST_FAILED_TAG = "detail:list-failed"
 const val CATEGORY_DETAIL_EMPTY_TAG = "detail:empty"
 const val CATEGORY_DETAIL_MORE_TAG = "detail:more"
+const val CATEGORY_DETAIL_RECORD_SEVERAL_TAG = "detail:record-several"
 const val CATEGORY_DETAIL_EDIT_TAG = "detail:edit-category"
 const val CATEGORY_DETAIL_PAST_HELP_TAG = "detail:past-help"
 const val CATEGORY_DETAIL_PAST_LIMIT_ANNOUNCEMENT_TAG = "detail:past-limit-announcement"

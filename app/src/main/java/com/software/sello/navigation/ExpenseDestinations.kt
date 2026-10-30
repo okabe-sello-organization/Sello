@@ -14,7 +14,9 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import com.software.sello.feature.bulk.BulkEntryRoot
 import com.software.sello.feature.expense.ExpenseEntryRoot
+import com.software.sello.feature.expense.ExpenseSeveral
 import com.software.sello.feature.income.IncomeFormRoot
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
@@ -40,11 +42,22 @@ internal fun NavGraphBuilder.expenseDestinations(
             } else {
                 announcements::retry
             },
-            announcementFailed = announcementState.failure != null
+            announcementFailed = announcementState.failure != null,
+            onSeveral = { several ->
+                navigation.navigate(several.route()) {
+                    popUpTo<ExpenseEntryRoute> { inclusive = true }
+                }
+            }
         ) {
             val onEntry =
                 navigation.currentBackStackEntry?.destination?.hasRoute<ExpenseEntryRoute>()
             if (onEntry == true) navigation.popBackStack()
+        }
+    }
+    composable<ExpenseBulkRoute> {
+        BulkEntryRoot(viewModels) {
+            val onBulk = navigation.currentBackStackEntry?.destination?.hasRoute<ExpenseBulkRoute>()
+            if (onBulk == true) navigation.popBackStack()
         }
     }
     // The same form: the route's identifier makes it correct that expense.
@@ -76,6 +89,7 @@ internal fun EntryDestination(
     onDismissPastExpense: () -> Unit,
     announcementFailed: Boolean,
     result: SavedStateHandle? = null,
+    onSeveral: ((ExpenseSeveral) -> Unit)? = null,
     onClosed: () -> Unit
 ) {
     var income by rememberSaveable { mutableStateOf(startsWithIncome) }
@@ -97,7 +111,11 @@ internal fun EntryDestination(
             announcementFailed = announcementFailed,
             createdCategoryId = created,
             onCreatedCategoryTaken = { result?.set(CREATED_CATEGORY_RESULT, null) },
+            onSeveral = onSeveral,
             onClosed = onClosed
         )
     }
 }
+
+/** Anotar varios with what was typed in Anotar as its first line. */
+internal fun ExpenseSeveral.route() = ExpenseBulkRoute(categoryId, amount, note, date.toString())

@@ -825,6 +825,51 @@ class ExpenseFormViewModelTest {
         assertTrue(form.now.confirmDiscard)
     }
 
+    // --- Varios: Anotar varios with what is typed as its line one (SELLO-131) ---
+
+    @Test
+    fun variosHandsWhatIsTypedToAnotarVariosAndSavesNothing() {
+        val form = ready().chosen()
+        form.type("18400")
+        form.onAction(ExpenseEntryAction.DatePicked(LocalDate.parse("2026-10-20")))
+        form.onAction(ExpenseEntryAction.OpenNote)
+        form.onAction(ExpenseEntryAction.NoteDraftChanged("Uber"))
+        form.onAction(ExpenseEntryAction.NoteDone)
+
+        form.onAction(ExpenseEntryAction.Several)
+
+        assertEquals(
+            ExpenseSeveral("18400", uuid(1), "Uber", LocalDate.parse("2026-10-20")),
+            form.now.several
+        )
+        assertEquals(emptyList<CreateExpense>(), commands.created)
+    }
+
+    @Test
+    fun variosWithNothingTypedStillOpensWithTheDate() {
+        val form = ready()
+
+        form.onAction(ExpenseEntryAction.Several)
+
+        assertEquals(
+            ExpenseSeveral(null, null, null, LocalDate.parse("2026-10-22")),
+            form.now.several
+        )
+    }
+
+    @Test
+    fun variosIsNotOfferedWhileSeRepiteIsOn() {
+        val form = ready().chosen()
+        form.type("950000")
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.Done)
+
+        form.onAction(ExpenseEntryAction.Several)
+
+        assertFalse(form.now.canOpenSeveral)
+        assertNull(form.now.several)
+    }
+
     // --- Se repite: a schedule instead of one expense (SELLO-100) ---
 
     private fun ExpenseEntryViewModel.repeat(action: RepeatAction) =

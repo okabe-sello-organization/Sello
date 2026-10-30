@@ -23,6 +23,7 @@ import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.DocumentRead
 import com.software.sello.domain.port.DocumentReader
 import com.software.sello.domain.port.DocumentSource
+import com.software.sello.domain.port.ExpenseBatchCommands
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.FinancialProfileStore
@@ -107,6 +108,7 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single { storage } onClose { it?.close() }
     single<FinancialProfileStore> { storage.profiles }
     single<ExpenseCommands> { storage.expenseCommands(get(), get(), get(), get()) }
+    single<ExpenseBatchCommands> { storage.expenseBatchCommands(get(), get(), get()) }
     single<CategoryCommands> { storage.categoryCommands(get(), get(), get()) }
     single<CategoryReads> { storage.categoryReads }
     single<CategoryInsightsSnapshots> {

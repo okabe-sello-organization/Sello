@@ -143,6 +143,20 @@ data class ExpenseEntryRoute(
 )
 
 /**
+ * Anotar varios: several expenses on one receipt. The arguments are hints for the first
+ * draft from where it was opened: the category every new line starts in, or what was
+ * typed in Anotar ([amount], [note], [date]), which becomes line one. The sheet checks them
+ * like any other input and reads its categories itself.
+ */
+@Serializable
+data class ExpenseBulkRoute(
+    val categoryId: String? = null,
+    val amount: String? = null,
+    val note: String? = null,
+    val date: String? = null
+)
+
+/**
  * The same form, correcting the recorded expense with this identifier. The form reads
  * the expense itself; if there is none with that identifier it says so.
  */

@@ -47,6 +47,18 @@ class ExpenseEntryScreenshotTest {
         rule.captureStill("src/test/screenshots/expense-entry-${look.label}.png")
     }
 
+    /** Opened where Anotar varios is reachable: the Varios pill in the bar. */
+    private fun captureVarios(look: Look, label: String) {
+        rule.showSello(look) { ExpenseEntryScreen(ready, dateLabels(), {}, severalOffered = true) }
+        rule.captureStill("src/test/screenshots/expense-entry-varios-$label.png")
+    }
+
+    @Test
+    fun variosClaro() = captureVarios(Look(), "claro")
+
+    @Test
+    fun variosOscuro() = captureVarios(Look(dark = true), "oscuro")
+
     @Test
     fun cobaltoLight() = capture(Look())
 
