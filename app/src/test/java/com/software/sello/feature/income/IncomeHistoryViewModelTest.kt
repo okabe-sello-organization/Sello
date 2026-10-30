@@ -36,12 +36,15 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -102,11 +105,13 @@ class IncomeHistoryViewModelTest {
         val written = mutableListOf<YearMonth>()
         var answer: PreferenceWrite = PreferenceWrite.Saved
 
-        /** Until it is false the read never answers, as a slow preference file does. */
-        var slow = false
+        /** While set, the read has not answered yet, as with a slow preference file. */
+        var held: CompletableDeferred<Unit>? = null
 
-        override fun observeDismissedIncomeSuggestion(): Flow<PreferenceRead<YearMonth?>> =
-            if (slow) flow { awaitCancellation() } else stored
+        override fun observeDismissedIncomeSuggestion(): Flow<PreferenceRead<YearMonth?>> = flow {
+            held?.await()
+            emitAll(stored)
+        }
 
         override suspend fun dismissIncomeSuggestion(month: YearMonth): PreferenceWrite {
             written += month
@@ -599,13 +604,44 @@ class IncomeHistoryViewModelTest {
     }
 
     @Test
-    fun aSlowPreferenceReadDoesNotDelayTheSuggestionAndAFailedOneHidesNothing() {
-        suggestions.slow = true
-        val slow = history()
+    fun theScreenLoadsWhileOnlyTheNoteWaitsForTheDismissalRead() {
+        val answer = CompletableDeferred<Unit>()
+        suggestions.held = answer
+        val model = history()
         summary(october).value = snapshot(150_000)
-        assertEquals("50.000 pesos", slow.assign.value!!.unassigned.spoken)
 
-        suggestions.slow = false
+        // The rest of the screen is there; the note is not until the read has answered.
+        assertEquals("50.000 pesos", model.split.value!!.unallocated.spoken)
+        assertNull(model.assign.value)
+        answer.complete(Unit)
+
+        assertEquals("50.000 pesos", model.assign.value!!.unassigned.spoken)
+    }
+
+    @Test
+    fun aDismissedMonthNeverShowsTheNoteOnLaunch() {
+        suggestions.stored.value = PreferenceRead.Ready(october)
+        val answer = CompletableDeferred<Unit>()
+        suggestions.held = answer
+        val model = history()
+        val seen = mutableListOf<AssignSuggestion?>()
+        val watcher = CoroutineScope(Dispatchers.Unconfined).launch {
+            model.assign.collect { seen += it }
+        }
+        summary(october).value = snapshot(150_000)
+        answer.complete(Unit)
+        watcher.cancel()
+
+        // Never a frame with the note, before or after the read answered.
+        assertEquals(listOf<AssignSuggestion?>(null), seen.distinct())
+    }
+
+    @Test
+    fun aFailedDismissalReadKeepsTheLastGoodValueAndOneNeverReadHidesNothing() {
+        suggestions.stored.value = PreferenceRead.Failed(PreferenceFailure.Unavailable, october)
+        summary(october).value = snapshot(150_000)
+        assertNull(history().assign.value)
+
         suggestions.stored.value =
             PreferenceRead.Failed(PreferenceFailure.Unavailable, lastGood = null)
         assertEquals("50.000 pesos", history().assign.value!!.unassigned.spoken)

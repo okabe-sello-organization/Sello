@@ -230,26 +230,42 @@ class IncomeHistoryViewModel(
      */
     private val dismissedNow = MutableStateFlow<YearMonth?>(null)
 
-    /** What was stored. A failed read hides nothing, and a slow one never delays the screen. */
+    /** The stored dismissal once read; [answered] is false until the first answer arrives. */
+    private data class Stored(val answered: Boolean, val month: YearMonth?)
+
+    /**
+     * What was stored. Until the read answers, nothing is known, so the note waits (only the
+     * note: the rest of the screen does not). A failed read keeps the last good value.
+     */
     private val dismissedStored = suggestions.observeDismissedIncomeSuggestion()
         .map { read ->
-            when (read) {
-                is PreferenceRead.Ready -> read.value
-                is PreferenceRead.Failed -> read.lastGood
-            }
+            Stored(
+                answered = true,
+                month = when (read) {
+                    is PreferenceRead.Ready -> read.value
+                    is PreferenceRead.Failed -> read.lastGood
+                }
+            )
         }
-        .onStart { emit(null) }
+        .onStart { emit(Stored(answered = false, month = null)) }
 
     /**
      * Null unless the month in progress has recorded income left unassigned and the person
      * has not dismissed the suggestion for it: a closed month, an amount of zero or less, a
-     * summary still read and one that could not be read offer nothing. Reintentar reads again.
+     * summary still read and one that could not be read offer nothing, nor does a dismissal
+     * that is not read yet. Reintentar reads again.
      */
     val assign: StateFlow<AssignSuggestion?> = combine(
         offered,
         dismissedStored,
         dismissedNow
-    ) { offer, stored, now -> offer?.takeUnless { it.month == stored || it.month == now }?.offer }
+    ) { offer, stored, now ->
+        // Once the stored dismissal shows the month, it alone decides: a reset can bring it back.
+        if (now != null && stored.month == now) dismissedNow.compareAndSet(now, null)
+        offer?.takeIf {
+            stored.answered && it.month != stored.month && it.month != now
+        }?.offer
+    }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -302,12 +318,6 @@ class IncomeHistoryViewModel(
     )
 
     init {
-        // Once the stored dismissal shows the month, it alone decides: a reset can bring it back.
-        viewModelScope.launch {
-            dismissedStored.collect { stored ->
-                if (stored != null) dismissedNow.compareAndSet(stored, null)
-            }
-        }
         viewModelScope.launch {
             combine(session.selectedMonth, attempts) { month, _ -> month }
                 .flatMapLatest(reads::observeMonth).collectLatest { state ->
