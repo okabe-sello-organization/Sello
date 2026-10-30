@@ -200,7 +200,6 @@ internal fun RestoreRejection.message() = when (this) {
     RestoreRejection.NewerVersion -> R.string.restore_rejected_newer
     RestoreRejection.Damaged -> R.string.restore_rejected_damaged
     RestoreRejection.InvalidContent -> R.string.restore_rejected_content
-    RestoreRejection.CarryNotSupported -> R.string.restore_rejected_carry
 }
 
 /** One group by its name; appearance and order together as D09 words them; more, as a whole. */

@@ -14,6 +14,9 @@ import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
+import com.software.sello.designsystem.component.CarryBreakdown
+import com.software.sello.designsystem.component.CarryLine
+import com.software.sello.designsystem.component.ChangeRow
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ChipFlow
@@ -23,6 +26,7 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.LeaderLine
+import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
@@ -148,4 +152,28 @@ private fun EntryControlsPreview() = Stage {
     SegmentedSwitch(listOf("Sistema", "Claro", "Oscuro"), 0, {})
     Text("Teclado de montos", color = SelloTheme.colors.inkSoft)
     AmountKeypad({}, {}, {}, {})
+}
+
+@SelloPreviews
+@Composable
+private fun CarryPreview() = Stage {
+    CarryBreakdown(
+        listOf(
+            CarryLine("Límite base", pesos("100.000")),
+            CarryLine(
+                "Arrastre",
+                pesos("20.000", minus = true),
+                "Te pasaste 20.000 en meses anteriores"
+            ),
+            CarryLine("Límite con arrastre", pesos("80.000"), emphasis = LineEmphasis.Strong),
+            CarryLine("Gastado", pesos("30.000"))
+        ),
+        footnote = "Viene del restante de ene 2027 · arrastras desde ene 2027"
+    )
+    ChangeRow(
+        "feb 2027",
+        "180.000 → 200.000 (+20.000)",
+        "feb 2027: límite con arrastre de 180.000 a 200.000, más 20.000.",
+        caption = "Restante 110.000 → 130.000"
+    )
 }

@@ -252,10 +252,12 @@ object MonthlyBudgetPolicy {
             ?: return Outcome.Success(null)
         val entry = when (val found = SignedCarryoverPolicy.carryIn(input, month, currentMonth)) {
             is Outcome.Success -> found.value
-            is Outcome.Failure -> return Outcome.Failure(found.error.toSnapshot())
+            is Outcome.Failure -> return Outcome.Failure(found.error.toSnapshot(categoryId))
         }
         if (entry != null && base == null) {
-            return Outcome.Failure(SnapshotFailure.Carryover(CarryoverFailure.NoFiniteBase(month)))
+            return Outcome.Failure(
+                SnapshotFailure.Carryover(CarryoverFailure.NoFiniteBase(month), categoryId)
+            )
         }
         return Outcome.Success(entry)
     }
@@ -291,9 +293,9 @@ object MonthlyBudgetPolicy {
         return Outcome.Success(CarryBreakdown(base, carry, capacity, chainStart = null))
     }
 
-    private fun CarryoverFailure.toSnapshot(): SnapshotFailure = when (this) {
+    private fun CarryoverFailure.toSnapshot(categoryId: CategoryId): SnapshotFailure = when (this) {
         CarryoverFailure.Unrepresentable -> SnapshotFailure.Unrepresentable
-        else -> SnapshotFailure.Carryover(this)
+        else -> SnapshotFailure.Carryover(this, categoryId)
     }
 
     private fun total(amounts: List<Money>): Outcome<Money, SnapshotFailure> =

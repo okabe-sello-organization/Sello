@@ -7,7 +7,9 @@ import com.software.sello.devtools.ScenarioStep.CatchUp
 import com.software.sello.devtools.ScenarioStep.Category
 import com.software.sello.devtools.ScenarioStep.ChooseForRecibo
 import com.software.sello.devtools.ScenarioStep.DeleteExpense
+import com.software.sello.devtools.ScenarioStep.DisableCarry
 import com.software.sello.devtools.ScenarioStep.EditExpense
+import com.software.sello.devtools.ScenarioStep.EnableCarry
 import com.software.sello.devtools.ScenarioStep.Expense
 import com.software.sello.devtools.ScenarioStep.Goal
 import com.software.sello.devtools.ScenarioStep.GoalTarget
@@ -566,8 +568,269 @@ object Scenarios {
         )
     }
 
-    val all: List<Scenario> =
-        listOf(NormalYear, TightMonth, GoalSaver, Investor, FixedPayments, SixMonths)
+    /**
+     * Five categories of 100.000 a month that carry from 1 January 2027, each with the
+     * spending of one signed carryover example (SC01–SC05), through the short February
+     * and on to 12 April, with nothing spent yet in April and an income of 1.000.000
+     * on the day (SC14). Comida is SC01, Transporte SC02, Hogar SC03, Salud SC04 and Ocio
+     * SC05.
+     */
+    val CarryChains = Scenario(
+        id = "arrastre-cadenas",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2027, 1, 1),
+        today = day(2027, 4, 12),
+        title = "Arrastre: superávit y déficit",
+        summary = "Cinco categorías que arrastran desde enero: lo que sobra, repetir exceso, " +
+            "un déficit mayor que el límite, meses sin gastos y febrero corto. Hoy 12 abr.",
+        steps = listOf(
+            Category("comida", "Comida", "restaurant", 100_000),
+            Category("transporte", "Transporte", "directions_bus", 100_000),
+            Category("hogar", "Hogar", "home", 100_000),
+            Category("salud", "Salud", "medical_services", 100_000),
+            Category("ocio", "Ocio", "theaters", 100_000),
+            EnableCarry("comida", 1),
+            EnableCarry("transporte", 1),
+            EnableCarry("hogar", 1),
+            EnableCarry("salud", 1),
+            EnableCarry("ocio", 1),
+            AdvanceTo(day(2027, 1, 31)),
+            Expense("comida", 20_000, "Mercado", day(2027, 1, 12)),
+            Expense("transporte", 120_000, "Taxis", day(2027, 1, 15)),
+            Expense("hogar", 250_000, "Reparación", day(2027, 1, 20)),
+            Expense("salud", 30_000, "Farmacia", day(2027, 1, 22)),
+            Expense("ocio", 400_000, "Concierto", day(2027, 1, 25)),
+            AdvanceTo(day(2027, 2, 28)),
+            Expense("comida", 70_000, "Mercado", day(2027, 2, 10)),
+            Expense("transporte", 70_000, "Taxis", day(2027, 2, 14)),
+            AdvanceTo(day(2027, 3, 31)),
+            Expense("comida", 250_000, "Mercado", day(2027, 3, 18)),
+            Expense("hogar", 20_000, "Aseo", day(2027, 3, 9)),
+            AdvanceTo(day(2027, 4, 12)),
+            Income(1_000_000, "salary")
+        )
+    )
+
+    /**
+     * One category that carries from 1 December 2027 across the new year and the 29 days of
+     * February 2028, ending on 22 February with the whole month still to spend.
+     */
+    val CarryLeapYear = Scenario(
+        id = "arrastre-bisiesto",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2027, 12, 1),
+        today = day(2028, 2, 22),
+        title = "Arrastre: fin de año y bisiesto",
+        summary = "Comida arrastra desde diciembre, pasa el año nuevo y llega al 22 de febrero " +
+            "de 2028 (29 días): quedan 8 días en el mes.",
+        steps = listOf(
+            Category("comida", "Comida", "restaurant", 100_000),
+            EnableCarry("comida", 1),
+            AdvanceTo(day(2027, 12, 31)),
+            Expense("comida", 90_000, "Mercado", day(2027, 12, 15)),
+            AdvanceTo(day(2028, 1, 31)),
+            Expense("comida", 50_000, "Mercado", day(2028, 1, 10)),
+            AdvanceTo(day(2028, 2, 22))
+        )
+    )
+
+    /**
+     * What turning carry off, archiving and making a limit unlimited do to a balance, each
+     * with the exact amount confirmed (SC17–SC21), and turning it on again in April with
+     * an expense of 1 April already recorded. Comida carries −20.000 into February and
+     * is turned off on 10 February, then on again on 3 April. Hogar is archived on 12
+     * February with the same balance. Salud, with +80.000, becomes unlimited on 5
+     * February. Transporte is turned on and off in January, so no chain remains. Ocio,
+     * 40.000 over in January, is turned on on 17 February with 30.000 already spent that
+     * month and 20.000 more after (SC07). It ends on 20 April.
+     */
+    val CarryTransitions = Scenario(
+        id = "arrastre-transiciones",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2027, 1, 1),
+        today = day(2027, 4, 20),
+        title = "Arrastre: apagar, archivar y volver a encender",
+        summary = "Dejar de arrastrar −20.000 el 10 feb, archivar Hogar el 12 feb, Salud sin " +
+            "límite el 5 feb con 80.000, encender Ocio el 17 feb y Comida el 3 abr en cero.",
+        steps = listOf(
+            Category("comida", "Comida", "restaurant", 100_000),
+            Category("hogar", "Hogar", "home", 100_000),
+            Category("salud", "Salud", "medical_services", 100_000),
+            Category("transporte", "Transporte", "directions_bus", 100_000),
+            Category("ocio", "Ocio", "theaters", 100_000),
+            EnableCarry("comida", 1),
+            EnableCarry("hogar", 1),
+            EnableCarry("salud", 1),
+            EnableCarry("transporte", 1),
+            DisableCarry("transporte", 2),
+            AdvanceTo(day(2027, 1, 31)),
+            Expense("comida", 120_000, "Mercado", day(2027, 1, 14)),
+            Expense("hogar", 120_000, "Arriendo", day(2027, 1, 5)),
+            Expense("salud", 20_000, "Farmacia", day(2027, 1, 21)),
+            Expense("ocio", 140_000, "Concierto", day(2027, 1, 18)),
+            AdvanceTo(day(2027, 2, 5)),
+            SetDefaultLimit("salud", null, 2, confirmedCarryIn = 80_000),
+            AdvanceTo(day(2027, 2, 10)),
+            Expense("comida", 30_000, "Mercado", day(2027, 2, 8)),
+            DisableCarry("comida", 2, confirmedCarryIn = -20_000),
+            AdvanceTo(day(2027, 2, 12)),
+            Archive("hogar", 2, confirmedCarryIn = -20_000),
+            AdvanceTo(day(2027, 2, 17)),
+            Expense("ocio", 30_000, "Cine", day(2027, 2, 8)),
+            EnableCarry("ocio", 1),
+            AdvanceTo(day(2027, 2, 28)),
+            Expense("comida", 20_000, "Mercado", day(2027, 2, 20)),
+            Expense("ocio", 20_000, "Cine", day(2027, 2, 20)),
+            AdvanceTo(day(2027, 4, 3)),
+            Expense("comida", 15_000, "Mercado", day(2027, 4, 1)),
+            EnableCarry("comida", 3),
+            AdvanceTo(day(2027, 4, 20)),
+            Expense("comida", 20_000, "Mercado", day(2027, 4, 10))
+        )
+    )
+
+    /**
+     * SC01's Comida (ene 20.000, feb 30.000 + 40.000, mar 250.000) and Transporte of 50.000
+     * (ene 10.000), both carrying from January, on 10 April with nothing spent in April
+     * yet: the fixture the late corrections of SC25–SC30 are made against.
+     */
+    val CarryCorrectable = Scenario(
+        id = "arrastre-correcciones",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2027, 1, 1),
+        today = day(2027, 4, 10),
+        title = "Arrastre: para corregir el pasado",
+        summary = "Comida y Transporte arrastran desde enero; hoy 10 abr, sin gastos en abril. " +
+            "Sirve para borrar, mover y agregar gastos de meses cerrados.",
+        steps = listOf(
+            Category("comida", "Comida", "restaurant", 100_000),
+            Category("transporte", "Transporte", "directions_bus", 50_000),
+            EnableCarry("comida", 1),
+            EnableCarry("transporte", 1),
+            AdvanceTo(day(2027, 1, 31)),
+            Expense("comida", 20_000, "Mercado", day(2027, 1, 12)),
+            Expense("transporte", 10_000, "Bus", day(2027, 1, 18)),
+            AdvanceTo(day(2027, 2, 28)),
+            Expense("comida", 30_000, "Mercado", day(2027, 2, 6)),
+            Expense("comida", 40_000, "Mercado", day(2027, 2, 19)),
+            AdvanceTo(day(2027, 3, 31)),
+            Expense("comida", 250_000, "Mercado", day(2027, 3, 18)),
+            AdvanceTo(day(2027, 4, 10))
+        )
+    )
+
+    /**
+     * SC01's Comida, then on 2 April a forgotten 200.000 expense of January is recorded
+     * (SC30): the command lists the later months it changes and the step confirms them.
+     * It ends on 12 April.
+     */
+    val CarryCorrected = Scenario(
+        id = "arrastre-corregido",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2027, 1, 1),
+        today = day(2027, 4, 12),
+        title = "Arrastre: un gasto olvidado de enero",
+        summary = "Comida arrastra desde enero y el 2 abr se registra un gasto de 200.000 de " +
+            "enero: febrero, marzo y abril se recalculan a la vez.",
+        steps = listOf(
+            Category("comida", "Comida", "restaurant", 100_000),
+            EnableCarry("comida", 1),
+            AdvanceTo(day(2027, 1, 31)),
+            Expense("comida", 20_000, "Mercado", day(2027, 1, 12)),
+            AdvanceTo(day(2027, 2, 28)),
+            Expense("comida", 70_000, "Mercado", day(2027, 2, 10)),
+            AdvanceTo(day(2027, 3, 31)),
+            Expense("comida", 250_000, "Mercado", day(2027, 3, 18)),
+            AdvanceTo(day(2027, 4, 2)),
+            Expense(
+                "comida",
+                200_000,
+                "Cuota olvidada",
+                day(2027, 1, 15),
+                confirmsCorrection = true
+            ),
+            AdvanceTo(day(2027, 4, 12))
+        )
+    )
+
+    /**
+     * Hogar of 1.000.000 carrying from January with the whole of January spent, 800.000
+     * spent early in February and a [payment] due on 5 February that catch-up records only
+     * on 10 March, after Sello was closed since 4 February. March has 500.000 spent.
+     */
+    private fun carryPayment(id: String, title: String, summary: String, payment: Long) = Scenario(
+        id = id,
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2027, 1, 1),
+        today = day(2027, 3, 10),
+        title = title,
+        summary = summary,
+        steps = listOf(
+            Category("hogar", "Hogar", "home", 1_000_000),
+            EnableCarry("hogar", 1),
+            AdvanceTo(day(2027, 1, 31)),
+            Expense("hogar", 1_000_000, "Arriendo", day(2027, 1, 5)),
+            AdvanceTo(day(2027, 2, 4)),
+            Expense("hogar", 800_000, "Arriendo", day(2027, 2, 3)),
+            Schedule(
+                "cuota",
+                Scheduled.Payment("hogar", payment, "Cuota"),
+                Every.Month(5),
+                start = day(2027, 2, 5),
+                end = day(2027, 2, 5)
+            ),
+            CatchUp,
+            AdvanceTo(day(2027, 3, 10)),
+            CatchUp,
+            Expense("hogar", 500_000, "Mercado", day(2027, 3, 3))
+        )
+    )
+
+    /** SC37: a payment of 200.000 from February is recorded on 10 March. */
+    val CarryPayments = carryPayment(
+        "arrastre-pagos",
+        "Arrastre: un pago de febrero llega en marzo",
+        "Hogar arrastra; un pago de 200.000 del 5 feb se registra al volver el 10 mar y " +
+            "baja el límite con arrastre de marzo.",
+        200_000
+    )
+
+    /** SC47: as [CarryPayments] with 300.000, which turns February into an overspend. */
+    val CarryBigPayments = carryPayment(
+        "arrastre-pagos-grandes",
+        "Arrastre: un pago que deja febrero excedido",
+        "Hogar arrastra; un pago de 300.000 del 5 feb se registra el 10 mar y febrero pasa " +
+            "de 200.000 a −100.000.",
+        300_000
+    )
+
+    val all: List<Scenario> = listOf(
+        NormalYear,
+        TightMonth,
+        GoalSaver,
+        Investor,
+        FixedPayments,
+        SixMonths,
+        CarryChains,
+        CarryLeapYear,
+        CarryTransitions,
+        CarryCorrectable,
+        CarryCorrected,
+        CarryPayments,
+        CarryBigPayments
+    )
 
     fun find(key: String?): Scenario? = all.firstOrNull { it.key == key }
 }

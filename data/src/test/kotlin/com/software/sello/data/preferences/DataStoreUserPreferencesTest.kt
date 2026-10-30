@@ -235,6 +235,52 @@ class DataStoreUserPreferencesTest {
     }
 
     @Test
+    fun theHandledClosedMonthInviteSurvivesANewAdapterAndALaterOneReplacesIt() = runTest {
+        val data = HandDataStore()
+        val september = YearMonth.of(2026, 9)
+        val october = YearMonth.of(2026, 10)
+
+        assertEquals(
+            PreferenceRead.Ready(null),
+            DataStoreUserPreferences(data).observeHandled().first()
+        )
+        assertEquals(PreferenceWrite.Saved, DataStoreUserPreferences(data).markHandled(september))
+        assertEquals(
+            PreferenceRead.Ready(september),
+            DataStoreUserPreferences(data).observeHandled().first()
+        )
+        DataStoreUserPreferences(data).markHandled(october)
+        assertEquals(
+            PreferenceRead.Ready(october),
+            DataStoreUserPreferences(data).observeHandled().first()
+        )
+    }
+
+    @Test
+    fun resetForgetsTheHandledClosedMonthInviteAndNothingElseWasNeeded() = runTest {
+        val data = HandDataStore()
+        val preferences = DataStoreUserPreferences(data)
+        preferences.markHandled(YearMonth.of(2026, 9))
+
+        assertEquals(PreferenceWrite.Saved, preferences.resetAll())
+
+        assertEquals(PreferenceRead.Ready(null), preferences.observeHandled().first())
+    }
+
+    @Test
+    fun aDamagedHandledClosedMonthIsVisibleAsInvalid() = runTest {
+        val raw = mutablePreferencesOf(
+            stringPreferencesKey("recibo_closed_month_invite_handled_v1") to "septiembre"
+        )
+        val preferences = DataStoreUserPreferences(HandDataStore(raw))
+
+        assertEquals(
+            PreferenceRead.Failed<YearMonth?>(PreferenceFailure.InvalidValue, null),
+            preferences.observeHandled().first()
+        )
+    }
+
+    @Test
     fun whenTheCatchUpNoticeWasSeenSurvivesANewAdapterAndALaterTimeReplacesIt() = runTest {
         val data = HandDataStore()
         val first = Instant.parse("2026-10-22T14:00:00.250Z")

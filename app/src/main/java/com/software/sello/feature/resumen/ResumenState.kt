@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.SpendingDirection
+import com.software.sello.presentation.carry.CarryFigures
 import java.time.LocalDate
 
 sealed interface ResumenState {
@@ -23,6 +24,8 @@ sealed interface ResumenState {
         val history: List<ResumenPoint>,
         /** The selected month's limit, drawn once as a dashed line over the columns. */
         val monthLimit: ResumenLimit?,
+        /** The selected month's carry: its base, carry and capacity (CP19, CP27). */
+        val carry: CarryFigures? = null,
         /** Shown above the columns once there is enough history to average. */
         val normalMonth: ResumenNormalMonth?,
         /** Ranked by what was spent, most first; their amounts add up to [spent]. */
@@ -125,11 +128,13 @@ data class ResumenPoint(
     val amount: MoneyTextValue,
     val detail: MoneyTextValue? = null,
     /** The month in progress: drawn striped and said to be up to today, never as a whole month. */
-    val current: Boolean = false
+    val current: Boolean = false,
+    /** While categories carry that month: [detail] is its limit with carry, split here (CP27). */
+    val carry: CarryFigures? = null
 )
 
 @Immutable
-data class ResumenLimit(val value: Long, val amount: MoneyTextValue)
+data class ResumenLimit(val value: Long, val amount: MoneyTextValue, val carried: Boolean = false)
 
 /**
  * A category row in the income slip, ranked by what was spent. [share] is how much of the

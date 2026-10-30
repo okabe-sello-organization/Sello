@@ -282,7 +282,10 @@ class CarryoverReadContractTest {
             "currency" to "COP"
         )
 
-        val noBase = SnapshotFailure.Carryover(CarryoverFailure.NoFiniteBase(month("2027-02")))
+        val noBase = SnapshotFailure.Carryover(
+            CarryoverFailure.NoFiniteBase(month("2027-02")),
+            ledger.categoryId(100)
+        )
         assertEquals(Outcome.Failure(noBase), snapshot("2027-04"))
         assertEquals(
             Outcome.Failure(

@@ -78,6 +78,15 @@ interface IncomeSuggestionPreferences {
 }
 
 /**
+ * The latest closed month whose Recibo invitation was opened or dismissed; null before the
+ * first time. A later month's invitation is a new one, so only the latest is kept.
+ */
+interface ClosedMonthInvitePreferences {
+    fun observeHandled(): Flow<PreferenceRead<YearMonth?>>
+    suspend fun markHandled(month: YearMonth): PreferenceWrite
+}
+
+/**
  * When the catch-up notice was last dismissed with Listo, on the audit clock that also
  * stamps what catch-up records; null before the first time.
  */

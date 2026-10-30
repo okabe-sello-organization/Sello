@@ -30,6 +30,7 @@ import com.software.sello.domain.port.BackupRecords
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.ClosedMonthInvitePreferences
 import com.software.sello.domain.port.CorrectionAnnouncementPreferences
 import com.software.sello.domain.port.IncomeSuggestionPreferences
 import com.software.sello.domain.port.InvestmentPreferences
@@ -67,6 +68,7 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
     CorrectionAnnouncementPreferences,
     SuggestionPreferences,
     IncomeSuggestionPreferences,
+    ClosedMonthInvitePreferences,
     CatchUpNoticePreferences,
     BackupRecords,
     PreferenceReset {
@@ -136,6 +138,11 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
 
     override suspend fun dismissIncomeSuggestion(month: YearMonth): PreferenceWrite =
         write { this[INCOME_SUGGESTION_DISMISSED] = month.toString() }
+
+    override fun observeHandled(): Flow<PreferenceRead<YearMonth?>> = observe(::closedMonthInvite)
+
+    override suspend fun markHandled(month: YearMonth): PreferenceWrite =
+        write { this[CLOSED_MONTH_INVITE_HANDLED] = month.toString() }
 
     override fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>> = observe { stored ->
         Decoded.Value(stored[CATCH_UP_NOTICE_SEEN]?.let(Instant::ofEpochMilli))
@@ -290,6 +297,13 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         return Decoded.Value(month)
     }
 
+    /** Stored as `2026-10`; anything else is damage, not "nothing handled". */
+    private fun closedMonthInvite(stored: Preferences): Decoded<YearMonth?> {
+        val raw = stored[CLOSED_MONTH_INVITE_HANDLED] ?: return Decoded.Value(null)
+        val month = runCatching { YearMonth.parse(raw) }.getOrNull() ?: return Decoded.Invalid
+        return Decoded.Value(month)
+    }
+
     /** The last backup is all of its keys or none of them; anything between is damage. */
     private fun backups(stored: Preferences): Decoded<BackupRecord> {
         val unfinished = stored[BACKUP_UNFINISHED] ?: false
@@ -341,6 +355,8 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         val SUGGESTION_DISMISSED = stringPreferencesKey("resumen_suggestion_dismissed_v1")
         val INCOME_SUGGESTION_DISMISSED =
             stringPreferencesKey("income_suggestion_dismissed_v1")
+        val CLOSED_MONTH_INVITE_HANDLED =
+            stringPreferencesKey("recibo_closed_month_invite_handled_v1")
         val CATCH_UP_NOTICE_SEEN = longPreferencesKey("catch_up_notice_seen_v1")
         val BACKUP_UNFINISHED = booleanPreferencesKey("backup_unfinished_v1")
         val BACKUP_AT = longPreferencesKey("backup_last_at_v1")

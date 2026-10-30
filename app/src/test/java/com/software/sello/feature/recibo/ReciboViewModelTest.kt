@@ -21,6 +21,7 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
@@ -62,6 +63,8 @@ class ReciboViewModelTest {
     private val snapshots = ObserveOnlySnapshots()
     private val orderings = HandOrderings()
 
+    private val categoryReads = HandCategoryReads()
+
     @Before
     fun mainDispatcher() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
@@ -69,7 +72,15 @@ class ReciboViewModelTest {
     fun resetDispatcher() = Dispatchers.resetMain()
 
     private fun TestScope.started(): Pair<ReciboViewModel, Job> {
-        val viewModel = ReciboViewModel(session, snapshots, orderings, testMoney())
+        val viewModel = ReciboViewModel(
+            session,
+            snapshots,
+            orderings,
+            testMoney(),
+            HandInvitations(),
+            clock,
+            categoryReads
+        )
         // Something has to be watching for the state to be kept up to date.
         val watching =
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -186,15 +197,16 @@ class ReciboViewModelTest {
     fun theMonthChangeMovesRecibotoTheNewMonth() = runTest {
         val (viewModel) = started()
         val november = YearMonth.of(2026, 11)
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 9_000, categories = 1))
         snapshots.of(november).value = ReadState.Ready(snapshot(november, 1, categories = 1))
 
         clock.goTo("2026-11-01")
 
-        assertEquals(listOf(october, november), snapshots.observed)
-        assertEquals(
-            MoneyTextValue(MoneySign.None, "", "1", "1 pesos"),
-            (viewModel.state.value as ReciboState.Month).summary.amount
-        )
+        // Day 1: the invitation reads October once more, beside the month now shown.
+        assertEquals(listOf(october, november, october), snapshots.observed)
+        val state = viewModel.state.value as ReciboState.Month
+        assertEquals(MoneyTextValue(MoneySign.None, "", "1", "1 pesos"), state.summary.amount)
+        assertEquals(ReciboInvitation(october), state.invitation)
     }
 
     @Test
@@ -225,7 +237,7 @@ class ReciboViewModelTest {
     }
 }
 
-private class HandOrderings : CategoryOrderingPreferences {
+internal class HandOrderings : CategoryOrderingPreferences {
     val state = MutableStateFlow<PreferenceRead<CategoryOrderingPreference>>(
         PreferenceRead.Ready(CategoryOrderingPreference())
     )

@@ -3,7 +3,6 @@ package com.software.sello.data.repository
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.domain.model.CarryChain
-import com.software.sello.domain.model.CarryoverFailure
 import com.software.sello.domain.model.CategoryCarryInput
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.MonthlySnapshot
@@ -65,12 +64,9 @@ class RoomMonthlySnapshots(
         return withContext(computation) {
             val carryover = ArrayList<CategoryCarryInput>(rows.carry.size)
             for (category in rows.carry) {
-                when (val input = category.input(today.date)) {
+                when (val input = category.snapshotInput(today.date)) {
                     is Outcome.Success -> carryover += input.value
-
-                    is Outcome.Failure -> return@withContext Outcome.Failure(
-                        input.error.toSnapshot()
-                    )
+                    is Outcome.Failure -> return@withContext input
                 }
             }
             MonthlyBudgetPolicy.snapshot(
@@ -114,11 +110,6 @@ class RoomMonthlySnapshots(
         return Outcome.Success(
             Rows(budget, expenses, schedules, chains.values.flatten(), carry)
         )
-    }
-
-    private fun CarryoverFailure.toSnapshot(): SnapshotFailure = when (this) {
-        CarryoverFailure.Unrepresentable -> SnapshotFailure.Unrepresentable
-        else -> SnapshotFailure.Carryover(this)
     }
 
     /**

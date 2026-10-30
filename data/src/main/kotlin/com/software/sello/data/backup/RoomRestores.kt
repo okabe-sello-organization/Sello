@@ -648,6 +648,4 @@ internal fun BackupRejection.reason(): RestoreRejection = when (this) {
     is BackupRejection.DuplicateCategoryName, is BackupRejection.DuplicateEntry,
     is BackupRejection.DanglingReference, is BackupRejection.HistoryTooLong,
     is BackupRejection.InvalidChain -> RestoreRejection.InvalidContent
-
-    BackupRejection.CarryNotSupported -> RestoreRejection.CarryNotSupported
 }

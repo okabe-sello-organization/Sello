@@ -9,10 +9,13 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
+import com.software.sello.domain.policy.CarryCorrection
+import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CompleteGoal
+import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteIncome
@@ -36,6 +39,9 @@ import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.RestoreIncome
 import com.software.sello.domain.port.RestoreInvestmentMovement
 import com.software.sello.domain.port.UndoGoalCompletion
+import com.software.sello.presentation.carry.CarryCorrectionList
+import com.software.sello.presentation.carry.CarryCorrectionText
+import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -58,11 +64,19 @@ sealed interface CorrectionNotice {
     data class Deleted(
         val canUndo: Boolean,
         val undoing: Boolean = false,
-        val undoFailed: Boolean = false
+        val undoFailed: Boolean = false,
+        /** With carry: how many later months the deletion changed (CP21). */
+        val carryMonths: Int? = null
     ) : CorrectionNotice
 
     /** The deleted expense is back. */
     data object Restored : CorrectionNotice
+
+    /** A deletion confirmed after its list: whether it was saved could not be found out. */
+    data object DeleteUnknown : CorrectionNotice
+
+    /** A deletion confirmed after its list was not made: the data changed, or storage failed. */
+    data object NotDeleted : CorrectionNotice
 
     /** The time to undo was over when undo was asked. The deletion stands. */
     data object UndoTooLate : CorrectionNotice
@@ -235,8 +249,41 @@ data class GoalCelebration(
     val missing: MoneyTextValue? = null
 )
 
+/** An expense deleted once its list was confirmed; [number] tells one deletion from the next. */
+data class ConfirmedDeletion(val expenseId: ExpenseId, val number: Long)
+
 /** How a deletion ended. Only [Deleted] means the expense is gone. */
-enum class DeleteResult { Deleted, Gone, Changed, DataChanged, Failed }
+enum class DeleteResult {
+    Deleted,
+    Gone,
+    Changed,
+    DataChanged,
+    Failed,
+
+    /**
+     * It reaches a closed month of a carry chain: nothing was deleted, and [Corrections.question]
+     * shows the later months it changes before it is confirmed (ADR 0020 CP20, CP21).
+     */
+    AwaitsConfirmation,
+
+    /** It may or may not have been deleted: its outcome was not known and asking failed. */
+    Unknown
+}
+
+/** Which correction a list waits to confirm. */
+enum class CorrectionKind { Delete, Undo }
+
+/**
+ * The later months a deletion, or undoing one, changes, shown before it is saved. With
+ * [changed] the list was read again because the data moved meanwhile (SC34); while [busy]
+ * the confirmed change is being sent and nothing can be pressed.
+ */
+data class CorrectionQuestion(
+    val kind: CorrectionKind,
+    val list: CarryCorrectionList,
+    val changed: Boolean = false,
+    val busy: Boolean = false
+)
 
 /**
  * Deleting an expense, an income, a goal's movement or an investment's movement, undoing that, and what is said
@@ -256,8 +303,39 @@ class Corrections(
     private val investments: InvestmentCommands,
     private val monotonic: MonotonicClock,
     private val ids: RecordIdSource,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val categories: CategoryReads,
+    money: MoneyFormatter
 ) {
+    private val correctionText = CarryCorrectionText(money)
+
+    /** A deletion waiting for its list to be confirmed, with what came with the list. */
+    private class Asked(
+        val expenseId: ExpenseId,
+        val expectedVersion: Long,
+        val generation: Long,
+        val confirmation: CorrectionConfirmation,
+        val months: Int
+    )
+
+    private var asked: Asked? = null
+    private var askedUndo: CorrectionConfirmation? = null
+    private val asking = MutableStateFlow<CorrectionQuestion?>(null)
+
+    /** A list waiting to be confirmed before a deletion, or its undoing, is sent. */
+    val question: StateFlow<CorrectionQuestion?> = asking
+
+    private val confirmedDeleted = MutableStateFlow<ConfirmedDeletion?>(null)
+    private var confirmedCount = 0L
+
+    /**
+     * The last expense deleted once its list was confirmed, kept as state: a form open on it
+     * when it happened closes (the deletion was not its own answer). Each deletion has its
+     * own [ConfirmedDeletion.number], so a form compares with what it saw when it opened and
+     * never closes for one that came before it; undoing the deletion clears it.
+     */
+    val confirmedDeletion: StateFlow<ConfirmedDeletion?> = confirmedDeleted
+
     /**
      * The deletion on offer. [undoOperation] names every attempt to undo it, so an
      * attempt whose outcome was not known is asked again and never done twice.
@@ -267,18 +345,32 @@ class Corrections(
         val deletionId: OperationId,
         val generation: Long,
         val until: Duration,
-        val undoOperation: OperationId,
-        val goalName: String = ""
+        var undoOperation: OperationId,
+        val goalName: String = "",
+        val carryMonths: Int? = null
     )
 
     /** What the deletion on offer removed. */
     private enum class Kind { Expense, Income, GoalMovement, GoalCompletion, InvestmentMovement }
 
     /** How an attempt to undo ended. [Retry]: nothing was restored and nothing forbids it. */
-    private enum class Undone { Restored, TooLate, Blocked, Retry }
+    private enum class Undone { Restored, TooLate, Blocked, Retry, Asked }
 
     /** What became of a restore command, in the terms every kind has in common. */
-    private enum class Sent { Committed, Unknown, Expired, Conflict, Other }
+    private sealed interface Sent {
+        data object Committed : Sent
+
+        data object Unknown : Sent
+
+        data object Expired : Sent
+
+        data object Conflict : Sent
+
+        data object Other : Sent
+
+        /** An expense's restore changes later months of a chain: its list is shown first. */
+        data class Asks(val question: ExpenseRejection.CorrectionUnconfirmed) : Sent
+    }
 
     private val shown = MutableStateFlow<CorrectionNotice?>(null)
     val notice: StateFlow<CorrectionNotice?> = shown
@@ -293,9 +385,10 @@ class Corrections(
         canUndo: Boolean,
         undoing: Boolean = false,
         failed: Boolean = false,
-        goalName: String = ""
+        goalName: String = "",
+        carryMonths: Int? = null
     ) = when (kind) {
-        Kind.Expense -> CorrectionNotice.Deleted(canUndo, undoing, failed)
+        Kind.Expense -> CorrectionNotice.Deleted(canUndo, undoing, failed, carryMonths)
 
         Kind.Income -> CorrectionNotice.IncomeDeleted(canUndo, undoing, failed)
 
@@ -326,26 +419,158 @@ class Corrections(
         expectedVersion: Long,
         generation: Long
     ): DeleteResult = scope.async {
+        asked = null
+        asking.value = null
+        sendDelete(expenseId, expectedVersion, generation, confirmation = null, months = null)
+    }.await()
+
+    /**
+     * Sends the deletion, with the [confirmation] that came with its list when one was
+     * shown. A list that is needed, or needed again, is asked and nothing is deleted.
+     */
+    private suspend fun sendDelete(
+        expenseId: ExpenseId,
+        expectedVersion: Long,
+        generation: Long,
+        confirmation: CorrectionConfirmation?,
+        months: Int?
+    ): DeleteResult {
         val operation = operation()
-        val command = DeleteExpense(operation, generation, expenseId, expectedVersion)
+        val command = DeleteExpense(operation, generation, expenseId, expectedVersion, confirmation)
         val committed = when (val outcome = commands.delete(command)) {
             is CommandOutcome.Committed -> true
 
-            // Asked, never sent again: only a receipt says it was deleted.
-            is CommandOutcome.OutcomeUnknown ->
-                (commands.find(operation) as? Outcome.Success)?.value != null
+            // Asked, never sent again: only a receipt says it was deleted, and a question
+            // that cannot be answered says nothing either way.
+            is CommandOutcome.OutcomeUnknown -> when (val found = commands.find(operation)) {
+                is Outcome.Success -> found.value != null
+                is Outcome.Failure -> return DeleteResult.Unknown
+            }
 
-            is CommandOutcome.Rejected -> return@async when (outcome.reason) {
+            is CommandOutcome.Rejected -> return when (val reason = outcome.reason) {
                 Specific(ExpenseRejection.ExpenseMissing) -> DeleteResult.Gone
+
                 is CommandRejection.VersionConflict -> DeleteResult.Changed
+
                 is CommandRejection.StaleGeneration -> DeleteResult.DataChanged
+
+                is Specific -> when (val asks = reason.reason) {
+                    is ExpenseRejection.CorrectionUnconfirmed -> {
+                        val list = list(asks.correction)
+                        asked = Asked(
+                            expenseId,
+                            expectedVersion,
+                            generation,
+                            asks.confirmation,
+                            asks.correction.months.size
+                        )
+                        asking.value = CorrectionQuestion(
+                            CorrectionKind.Delete,
+                            list,
+                            changed = confirmation != null
+                        )
+                        DeleteResult.AwaitsConfirmation
+                    }
+
+                    else -> DeleteResult.Failed
+                }
+
                 else -> DeleteResult.Failed
             }
         }
-        if (!committed) return@async DeleteResult.Failed
+        if (!committed) return DeleteResult.Failed
+        asked = null
+        asking.value = null
+        if (confirmation != null) {
+            confirmedDeleted.value = ConfirmedDeletion(expenseId, ++confirmedCount)
+        }
         val until = commands.undoOffer()?.takeIf { it.deletionId == operation }?.until
-        deleted(Kind.Expense, operation, generation, until)
-    }.await()
+        return deleted(Kind.Expense, operation, generation, until, carryMonths = months)
+    }
+
+    /** The list of later months for [correction], with the categories' names. */
+    private suspend fun list(correction: CarryCorrection): CarryCorrectionList {
+        val month = correction.firstAffected ?: correction.edited.firstOrNull()?.month
+        val names = month?.let { categories.monthBudget(it) as? Outcome.Success }?.value
+            ?.categories.orEmpty().associate { it.category.id to it.category }
+        return correctionText.list(correction, names)
+    }
+
+    /**
+     * The list shown is confirmed: the deletion, or its undoing, is sent with what came
+     * with the list. Asked again while that is being done, it does nothing.
+     */
+    fun confirmQuestion() {
+        val shown = asking.value ?: return
+        if (shown.busy) return
+        asking.value = shown.copy(busy = true)
+        when (shown.kind) {
+            CorrectionKind.Delete -> {
+                val wanted = asked ?: return run { asking.value = null }
+                scope.launch {
+                    val result = sendDelete(
+                        wanted.expenseId,
+                        wanted.expectedVersion,
+                        wanted.generation,
+                        wanted.confirmation,
+                        wanted.months
+                    )
+                    if (result != DeleteResult.AwaitsConfirmation &&
+                        result != DeleteResult.Deleted
+                    ) {
+                        // The list's screen may be gone; what happened is said here.
+                        asking.value = null
+                        asked = null
+                        said(
+                            if (result == DeleteResult.Unknown) {
+                                CorrectionNotice.DeleteUnknown
+                            } else {
+                                CorrectionNotice.NotDeleted
+                            }
+                        )
+                    }
+                }
+            }
+
+            CorrectionKind.Undo -> {
+                val offered = pending ?: return undoListExpired()
+                // Once confirmed, the answer decides what is said, not the time running out,
+                // and the bar's Deshacer is held: the same operation is never sent twice.
+                ending?.cancel()
+                this.shown.value = offer(
+                    offered.kind,
+                    canUndo = true,
+                    undoing = true,
+                    goalName = offered.goalName,
+                    carryMonths = offered.carryMonths
+                )
+                scope.launch { settle(offered, restore(offered, askedUndo)) }
+            }
+        }
+    }
+
+    /**
+     * The time to undo ran out while its list was open: the list goes and the person is told
+     * the deletion stands, never left with a button that does nothing.
+     */
+    private fun undoListExpired() {
+        asking.value = null
+        askedUndo = null
+        said(CorrectionNotice.UndoTooLate)
+    }
+
+    /** The list shown is not confirmed: nothing is sent, and an offer to undo stays. */
+    fun dismissQuestion() {
+        val shown = asking.value ?: return
+        if (shown.busy) return
+        asking.value = null
+        asked = null
+        askedUndo = null
+        val offered = pending
+        if (shown.kind == CorrectionKind.Undo && offered != null) {
+            show(offer(offered.kind, canUndo = true, goalName = offered.goalName), offered.until)
+        }
+    }
 
     /** The same for an income. */
     suspend fun deleteIncome(command: DeleteIncome): IncomeCommandOutcome = scope.async {
@@ -390,14 +615,19 @@ class Corrections(
         operation: OperationId,
         generation: Long,
         until: Duration?,
-        goalName: String = ""
+        goalName: String = "",
+        carryMonths: Int? = null
     ): DeleteResult {
         if (until == null) {
             pending = null
-            show(offer(kind, canUndo = false, goalName = goalName), monotonic.elapsed() + NOTICE)
+            show(
+                offer(kind, canUndo = false, goalName = goalName, carryMonths = carryMonths),
+                monotonic.elapsed() + NOTICE
+            )
         } else {
-            pending = Pending(kind, operation, generation, until, operation(), goalName)
-            show(offer(kind, canUndo = true, goalName = goalName), until)
+            pending =
+                Pending(kind, operation, generation, until, operation(), goalName, carryMonths)
+            show(offer(kind, canUndo = true, goalName = goalName, carryMonths = carryMonths), until)
         }
         return DeleteResult.Deleted
     }
@@ -407,30 +637,35 @@ class Corrections(
         val offered = pending ?: return
         val (canUndo, undoing) = offerShown() ?: return
         if (!canUndo || undoing) return
+        // Its list is open: the answer is given there, not by a second Deshacer.
+        if (asking.value?.kind == CorrectionKind.Undo) return
         // Once asked, the answer decides what is said next, not the time running out.
         ending?.cancel()
         shown.value =
             offer(offered.kind, canUndo = true, undoing = true, goalName = offered.goalName)
-        scope.launch { settle(offered, restore(offered)) }
+        scope.launch { settle(offered, restore(offered, confirmation = null)) }
     }
 
-    /** How a kind sends its restore, and asks about one whose outcome was not known. */
+    /**
+     * How a kind sends its restore, and asks about one whose outcome was not known. Only an
+     * expense's restore can need a list confirmed first (ADR 0020 CP21); the others ignore it.
+     */
     private class Restorer(
-        val send: suspend (OperationId, Long, OperationId) -> Sent,
+        val send: suspend (OperationId, Long, OperationId, CorrectionConfirmation?) -> Sent,
         val found: suspend (OperationId) -> Boolean
     )
 
     private fun restorer(kind: Kind) = when (kind) {
         Kind.Expense -> Restorer(
-            { operation, generation, deletion ->
-                commands.restore(RestoreExpense(operation, generation, deletion))
+            { operation, generation, deletion, confirmation ->
+                commands.restore(RestoreExpense(operation, generation, deletion, confirmation))
                     .sent(ExpenseRejection.UndoExpired, ExpenseRejection.UndoConflict)
             },
             { (commands.find(it) as? Outcome.Success)?.value != null }
         )
 
         Kind.Income -> Restorer(
-            { operation, generation, deletion ->
+            { operation, generation, deletion, _ ->
                 incomes.restore(RestoreIncome(operation, generation, deletion))
                     .sent(IncomeRejection.UndoExpired, IncomeRejection.UndoConflict)
             },
@@ -438,7 +673,7 @@ class Corrections(
         )
 
         Kind.GoalMovement -> Restorer(
-            { operation, generation, deletion ->
+            { operation, generation, deletion, _ ->
                 goals.submit(RestoreGoalMovement(operation, generation, deletion))
                     .sent(GoalRejection.UndoExpired, GoalRejection.UndoConflict)
             },
@@ -446,7 +681,7 @@ class Corrections(
         )
 
         Kind.GoalCompletion -> Restorer(
-            { operation, generation, deletion ->
+            { operation, generation, deletion, _ ->
                 goals.submit(UndoGoalCompletion(operation, generation, deletion))
                     .sent(GoalRejection.UndoExpired, GoalRejection.UndoConflict)
             },
@@ -454,7 +689,7 @@ class Corrections(
         )
 
         Kind.InvestmentMovement -> Restorer(
-            { operation, generation, deletion ->
+            { operation, generation, deletion, _ ->
                 investments.submit(RestoreInvestmentMovement(operation, generation, deletion))
                     .sent(InvestmentRejection.UndoExpired, InvestmentRejection.UndoConflict)
             },
@@ -463,12 +698,19 @@ class Corrections(
     }
 
     /**
-     * One attempt to put back what [offered] deleted, whatever its kind. An outcome that is
-     * not known is asked about with the same operation, never sent as a new one.
+     * One attempt to put back what [offered] deleted, whatever its kind, with the
+     * [confirmation] that came with its list when one was shown. An outcome that is not
+     * known is asked about with the same operation, never sent as a new one.
      */
-    private suspend fun restore(offered: Pending): Undone {
+    private suspend fun restore(offered: Pending, confirmation: CorrectionConfirmation?): Undone {
         val restorer = restorer(offered.kind)
-        return when (restorer.send(offered.undoOperation, offered.generation, offered.deletionId)) {
+        val sent = restorer.send(
+            offered.undoOperation,
+            offered.generation,
+            offered.deletionId,
+            confirmation
+        )
+        return when (sent) {
             Sent.Committed -> Undone.Restored
 
             Sent.Unknown ->
@@ -479,6 +721,24 @@ class Corrections(
             Sent.Conflict -> Undone.Blocked
 
             Sent.Other -> Undone.Retry
+
+            // Putting it back reaches a closed month of a chain (CP21): the list first.
+            // The refused attempt wrote nothing; the confirmed one is a new operation.
+            is Sent.Asks -> {
+                offered.undoOperation = operation()
+                askedUndo = sent.question.confirmation
+                asking.value = CorrectionQuestion(
+                    CorrectionKind.Undo,
+                    list(sent.question.correction),
+                    changed = confirmation != null
+                )
+                Undone.Asked
+            }
+        }.also {
+            if (it != Undone.Asked) {
+                askedUndo = null
+                asking.value = null
+            }
         }
     }
 
@@ -491,9 +751,14 @@ class Corrections(
 
         is CommandOutcome.OutcomeUnknown -> Sent.Unknown
 
-        is CommandOutcome.Rejected -> when (reason) {
+        is CommandOutcome.Rejected -> when (val why = reason) {
             Specific(expired) -> Sent.Expired
+
             Specific(conflict), is CommandRejection.StaleGeneration -> Sent.Conflict
+
+            is Specific -> (why.reason as? ExpenseRejection.CorrectionUnconfirmed)
+                ?.let(Sent::Asks) ?: Sent.Other
+
             else -> Sent.Other
         }
     }
@@ -503,15 +768,36 @@ class Corrections(
         if (pending !== offered) return
         val kind = offered.kind
         when {
-            outcome == Undone.Restored -> said(
-                when (kind) {
-                    Kind.Expense -> CorrectionNotice.Restored
-                    Kind.Income -> CorrectionNotice.IncomeRestored
-                    Kind.GoalMovement -> CorrectionNotice.GoalMovementRestored
-                    Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndone(offered.goalName)
-                    Kind.InvestmentMovement -> CorrectionNotice.InvestmentMovementRestored
-                }
+            // The list is shown; the offer waits under it, as it was.
+            outcome == Undone.Asked -> show(
+                offer(
+                    kind,
+                    canUndo = true,
+                    goalName = offered.goalName,
+                    carryMonths = offered.carryMonths
+                ),
+                offered.until
             )
+
+            outcome == Undone.Restored -> {
+                // The expense is back: no form should close for its earlier deletion.
+                if (kind == Kind.Expense) confirmedDeleted.value = null
+                said(
+                    when (kind) {
+                        Kind.Expense -> CorrectionNotice.Restored
+
+                        Kind.Income -> CorrectionNotice.IncomeRestored
+
+                        Kind.GoalMovement -> CorrectionNotice.GoalMovementRestored
+
+                        Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndone(
+                            offered.goalName
+                        )
+
+                        Kind.InvestmentMovement -> CorrectionNotice.InvestmentMovementRestored
+                    }
+                )
+            }
 
             outcome == Undone.Blocked -> said(
                 when (kind) {
@@ -691,11 +977,7 @@ class Corrections(
     /** Shows [notice] until the clock reads [until]. */
     private fun show(notice: CorrectionNotice, until: Duration) {
         ending?.cancel()
-        if (monotonic.elapsed() >= until) {
-            pending = null
-            shown.value = null
-            return
-        }
+        if (monotonic.elapsed() >= until) return over()
         shown.value = notice
         ending = scope.launch {
             var left = until - monotonic.elapsed()
@@ -703,9 +985,19 @@ class Corrections(
                 delay(left)
                 left = until - monotonic.elapsed()
             }
-            pending = null
-            shown.value = null
+            over()
         }
+    }
+
+    /**
+     * What is shown is over. An undo whose list is still open, and not yet confirmed, can no
+     * longer be done: the list goes with it and that is said (AC4).
+     */
+    private fun over() {
+        val list = asking.value
+        if (list?.kind == CorrectionKind.Undo && !list.busy) return undoListExpired()
+        pending = null
+        shown.value = null
     }
 
     private fun operation(): OperationId = when (val id = OperationId.of(ids.next())) {

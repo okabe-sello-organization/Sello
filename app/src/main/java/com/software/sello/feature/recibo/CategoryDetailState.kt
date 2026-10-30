@@ -1,6 +1,7 @@
 package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.presentation.carry.CarryProblem
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -25,13 +26,18 @@ sealed interface CategoryDetailState {
         val expenses: ExpenseListState,
         /** Why the last deletion asked for from this list did not happen, until the next one. */
         val deleteProblem: DeleteProblem? = null,
-        val insights: DetailInsightsState = DetailInsightsState.Loading
+        val insights: DetailInsightsState = DetailInsightsState.Loading,
+        /** Why the latest read failed, when a carry figure cannot be calculated (CP8). */
+        val carryProblem: CarryProblem? = null
     ) : CategoryDetailState
 
     /** The month was read and this category has nothing in it. */
     data object Gone : CategoryDetailState
 
     data object Failed : CategoryDetailState
+
+    /** A carry figure cannot be calculated and nothing earlier was read (CP8). */
+    data class CarryFailed(val problem: CarryProblem) : CategoryDetailState
 }
 
 /** Why an expense was not deleted. In every case it is still recorded, or was already gone. */
@@ -46,7 +52,10 @@ enum class DeleteProblem {
     DataChanged,
 
     /** Storage failed and nothing was deleted. */
-    Failed
+    Failed,
+
+    /** Whether it was deleted could not be found out. */
+    Unknown
 }
 
 /** The expenses listed. An empty list and a list that could not be read are different. */

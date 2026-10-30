@@ -120,7 +120,15 @@ data class CategoryEditorState(
     val changed: Boolean = false,
     /** What the last attempt saved before it stopped, in order. */
     val savedParts: List<EditPart> = emptyList(),
-    val archiveQuestion: ArchiveQuestion? = null
+    val archiveQuestion: ArchiveQuestion? = null,
+    /** Editing the month in progress: the carry setting. Null where it is not offered. */
+    val carry: CarryCard? = null,
+    /** A carry question waiting for an answer: turning on, a drop or a correction list. */
+    val carryQuestion: CarryQuestion? = null,
+    /** Why the last carry change, or a limit while carrying, was refused. */
+    val carryProblem: CarryProblemText? = null,
+    /** The last carry change that has its receipt. */
+    val carryDone: CarryDone? = null
 ) {
     /**
      * Nothing can be sent without a name, with a name known to be taken, while
@@ -138,6 +146,13 @@ data class CategoryEditorState(
 
     /** An existing category that has been read can be archived or unarchived from here. */
     val canArchive: Boolean get() = editing && !loading && !loadFailed && editable
+
+    /**
+     * Carry is changed by its own command (CP28), never with the form's changes: only while
+     * nothing else is waiting to be saved.
+     */
+    val canChangeCarry: Boolean
+        get() = canArchive && !changed && carry != null && carry !is CarryCard.Unreadable
 
     private companion object {
         val Blocking = setOf(SaveError.Unknown, SaveError.Conflict, SaveError.CategoryGone)
@@ -190,4 +205,16 @@ sealed interface CategoryEditorAction {
 
     /** After a conflict: read the category again and keep what was typed, to save over it. */
     data object ReloadKeepingDraft : CategoryEditorAction
+
+    /** Ask to turn carry on from this month. Nothing is sent yet. */
+    data object EnableCarry : CategoryEditorAction
+
+    /** Turn carry off: with a balance, Sello asks first with the exact figures. */
+    data object DisableCarry : CategoryEditorAction
+
+    /** The carry question shown is answered yes: what it names is sent. */
+    data object CarryConfirmed : CategoryEditorAction
+
+    /** The carry question shown is answered no: nothing changes. */
+    data object CarryDismissed : CategoryEditorAction
 }

@@ -25,7 +25,7 @@ import org.junit.Test
  * every expected figure below is copied from docs/testing/signed-carryover-examples.md.
  */
 class CarryBackupTest {
-    private val accepting = BackupCodec(carryChains = CarryChainSupport.Accepted)
+    private val defaultCodec = BackupCodec()
     private val open = String(resource("valid-carry-sc01-v6.json"))
     private val ended = String(resource("valid-carry-sc22-v6.json"))
 
@@ -62,7 +62,7 @@ class CarryBackupTest {
         preferences = null
     )
 
-    private fun rejection(text: String, codec: BackupCodec = accepting): BackupRejection =
+    private fun rejection(text: String, codec: BackupCodec = defaultCodec): BackupRejection =
         when (val read = codec.read(text.toByteArray())) {
             is Outcome.Failure -> read.error
 
@@ -71,7 +71,7 @@ class CarryBackupTest {
             )
         }
 
-    private fun accepted(text: String) = accepting.read(text.toByteArray()).value()
+    private fun accepted(text: String) = defaultCodec.read(text.toByteArray()).value()
 
     private fun variant(from: String, to: String, file: String = open): String {
         assertEquals("'$from' must occur once", 1, file.split(from).size - 1)
@@ -100,7 +100,7 @@ class CarryBackupTest {
             open to listOf(chain("2027-01")),
             ended to listOf(chain("2027-01", "2027-04"))
         )) {
-            val written = String(accepting.encode(sc01(chains)).value())
+            val written = String(defaultCodec.encode(sc01(chains)).value())
 
             assertEquals(file, written)
             assertFalse(written.contains("carryIn"))
@@ -129,7 +129,7 @@ class CarryBackupTest {
             )
         )
 
-        val written = String(accepting.encode(contents).value())
+        val written = String(defaultCodec.encode(contents).value())
 
         assertEquals(
             listOf(
@@ -153,7 +153,7 @@ class CarryBackupTest {
             "valid-g01-v5.json", "valid-goals-v2.json", "valid-goals-v3.json",
             "valid-schedules-v3.json", "valid-investments-v4.json"
         )) {
-            val plan = accepting.read(resource(name)).value()
+            val plan = defaultCodec.read(resource(name)).value()
 
             assertEquals(name, emptyList<CarryChain>(), plan.contents.financial.carryChains)
             assertEquals(name, 0, plan.counts.carryChains)
@@ -189,25 +189,19 @@ class CarryBackupTest {
         )
     }
 
-    // The customer gate until SELLO-041.
+    // SELLO-041: the codec the app builds reads and writes chains; nothing refuses them.
 
     @Test
-    fun `the customer codec refuses a file with a chain, open or ended, whole`() {
+    fun `the default codec reads a file with a chain, open or ended, and writes one`() {
         for (file in listOf(open, ended)) {
-            assertEquals(BackupRejection.CarryNotSupported, rejection(file, BackupCodec()))
+            assertTrue(BackupCodec().read(file.toByteArray()) is Outcome.Success)
         }
-        assertEquals(
-            BackupRejection.CarryNotSupported,
-            (BackupCodec().encode(sc01(listOf(chain("2027-01")))) as Outcome.Failure).error
-        )
+        assertTrue(BackupCodec().encode(sc01(listOf(chain("2027-01")))) is Outcome.Success)
     }
 
     @Test
-    fun `the check before a start-up restore refuses it the same way`() {
-        assertEquals(
-            Outcome.Failure(RestoreRejection.CarryNotSupported),
-            BackupCodec().check(open.toByteArray())
-        )
+    fun `the check before a start-up restore takes a chain and still refuses a broken one`() {
+        assertTrue(BackupCodec().check(open.toByteArray()) is Outcome.Success)
         assertEquals(
             Outcome.Failure(RestoreRejection.InvalidContent),
             BackupCodec().check(variant("\"end\": null", "\"end\": \"2026-12\"").toByteArray())
@@ -215,27 +209,6 @@ class CarryBackupTest {
         assertEquals(
             Outcome.Failure(RestoreRejection.NewerVersion),
             BackupCodec().check(variant("\"version\": 6,", "\"version\": 7,").toByteArray())
-        )
-    }
-
-    @Test
-    fun `the customer codec still reads every file without a chain`() {
-        val customer = BackupCodec()
-
-        assertEquals(g01(), customer.read(resource("valid-g01.json")).value().contents)
-        assertEquals(
-            g01().financial,
-            customer.read(resource("valid-g01-v6.json")).value().contents.financial
-        )
-    }
-
-    @Test
-    fun `a file broken in another way is told so, not that carry is unsupported`() {
-        val broken = variant("\"end\": null", "\"end\": \"2026-12\"")
-
-        assertEquals(
-            BackupRejection.InvalidValue("$chainPath.end"),
-            rejection(broken, BackupCodec())
         )
     }
 
@@ -559,7 +532,7 @@ class CarryBackupTest {
             financialMonth = month("2027-06")
         )
 
-        val written = String(accepting.encode(contents).value())
+        val written = String(defaultCodec.encode(contents).value())
 
         assertTrue(written.contains("\"financialMonth\": \"2027-06\""))
         assertTrue(written.contains("\"exportedAt\": \"2026-10-09T15:04:05.678Z\""))
@@ -574,7 +547,7 @@ class CarryBackupTest {
             financialMonth = month("2027-03")
         )
 
-        val written = String(accepting.encode(contents).value())
+        val written = String(defaultCodec.encode(contents).value())
 
         assertTrue(written.contains("\"financialMonth\": \"2027-05\""))
         assertEquals(
@@ -607,7 +580,7 @@ class CarryBackupTest {
 
         assertTrue(rejection(older) is BackupRejection.Malformed)
         // Read from its own version, the month is that of its export in its zone.
-        val plan = accepting.read(resource("valid-g01-v5.json")).value()
+        val plan = defaultCodec.read(resource("valid-g01-v5.json")).value()
         assertEquals(month("2026-10"), plan.contents.financialMonth)
     }
 
@@ -621,11 +594,11 @@ class CarryBackupTest {
         // 1 category, 1 default, 3 expenses and 1 chain are the file's only array elements.
         assertEquals(
             BackupRejection.TooManyRecords(5),
-            rejection(open, BackupCodec(BackupBounds(maxRecords = 5), CarryChainSupport.Accepted))
+            rejection(open, BackupCodec(BackupBounds(maxRecords = 5)))
         )
         assertEquals(
             1,
-            BackupCodec(BackupBounds(maxRecords = 6), CarryChainSupport.Accepted)
+            BackupCodec(BackupBounds(maxRecords = 6))
                 .read(open.toByteArray()).value().counts.carryChains
         )
     }

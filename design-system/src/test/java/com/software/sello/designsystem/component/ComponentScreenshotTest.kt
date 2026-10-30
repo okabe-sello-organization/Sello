@@ -62,6 +62,36 @@ class ComponentScreenshotTest {
     }
 
     @Test
+    fun carry() = capture("carry") {
+        CarryBreakdown(
+            listOf(
+                CarryLine("Límite base", pesos("100.000")),
+                CarryLine(
+                    "Arrastre",
+                    pesos("20.000", minus = true),
+                    "Te pasaste 20.000 en meses anteriores"
+                ),
+                CarryLine("Límite con arrastre", pesos("80.000"), emphasis = LineEmphasis.Strong),
+                CarryLine("Gastado", pesos("30.000"))
+            ),
+            footnote = "Viene del restante de ene 2027 · arrastras desde ene 2027"
+        )
+        ChangeRow(
+            "feb 2027",
+            "180.000 → 200.000 (+20.000)",
+            "feb 2027: límite con arrastre de 180.000 a 200.000, más 20.000.",
+            caption = "Restante 110.000 → 130.000"
+        )
+        ChangeRow(
+            "mar 2027",
+            "210.000 → 280.000 (+70.000)",
+            "mar 2027: límite con arrastre de 210.000 a 280.000, más 70.000.",
+            caption = "Restante −40.000 → 30.000 · Excedido → Cumplido",
+            emphasized = true
+        )
+    }
+
+    @Test
     fun buttonsAndChips() = capture("buttons-and-chips") {
         SelloButton("Guardar", {})
         SelloButton("Guardando", {}, loading = true)

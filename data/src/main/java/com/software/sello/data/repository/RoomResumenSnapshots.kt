@@ -2,6 +2,7 @@ package com.software.sello.data.repository
 
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
+import com.software.sello.domain.model.CategoryCarryInput
 import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ResumenSnapshot
@@ -30,6 +31,8 @@ class RoomResumenSnapshots(
         val generation: Long,
         val revision: Long,
         val months: List<ResumenMonthInput>,
+        /** Per month, the carry rows of each category a chain covers then (ADR 0020 CP16). */
+        val carry: List<List<CarryRows>>,
         val incomes: List<Income>
     )
 
@@ -45,12 +48,23 @@ class RoomResumenSnapshots(
             is Outcome.Failure -> return Outcome.Failure(SnapshotFailure.Storage(read.error))
         }
         return withContext(computation) {
+            val months = ArrayList<ResumenMonthInput>(rows.months.size)
+            for ((input, carry) in rows.months.zip(rows.carry)) {
+                val carryover = ArrayList<CategoryCarryInput>(carry.size)
+                for (category in carry) {
+                    when (val read = category.snapshotInput(today.date)) {
+                        is Outcome.Success -> carryover += read.value
+                        is Outcome.Failure -> return@withContext read
+                    }
+                }
+                months += input.copy(carryover = carryover)
+            }
             ResumenPolicy.snapshot(
                 month,
                 today,
                 rows.generation,
                 rows.revision,
-                rows.months,
+                months,
                 rows.incomes
             )
         }
@@ -62,6 +76,13 @@ class RoomResumenSnapshots(
             is Outcome.Failure -> return budget
         }
         val months = mutableListOf<ResumenMonthInput>()
+        val carry = mutableListOf<List<CarryRows>>()
+        // Each month's carry from the chain covering it alone, read in this transaction
+        // (SELLO-038 consumer boundary, as RoomMonthlySnapshots).
+        val chains = when (val read = database.everyCarryChain()) {
+            is Outcome.Success -> read.value
+            is Outcome.Failure -> return read
+        }
         for (period in ResumenPolicy.monthsEndingIn(month)) {
             val budget = if (period == month) {
                 selected
@@ -80,12 +101,20 @@ class RoomResumenSnapshots(
                 budget.categories.map { CategoryInMonth(it.category, it.state) },
                 expenses
             )
+            val covered = ArrayList<CarryRows>()
+            for ((category, of) in chains) {
+                when (val read = database.carryInRows(category, of, period)) {
+                    is Outcome.Success -> read.value?.let { covered += it }
+                    is Outcome.Failure -> return read
+                }
+            }
+            carry += covered
         }
         val incomes = when (val read = database.monthIncomes(month)) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return read
         }
-        return Outcome.Success(Rows(selected.generation, selected.revision, months, incomes))
+        return Outcome.Success(Rows(selected.generation, selected.revision, months, carry, incomes))
     }
 
     override fun observe(month: YearMonth): Flow<ResumenSnapshotState> = observeOn(

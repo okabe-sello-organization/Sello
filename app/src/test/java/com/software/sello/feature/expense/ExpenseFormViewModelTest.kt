@@ -25,12 +25,14 @@ import com.software.sello.feature.investments.HandInvestmentCommands
 import com.software.sello.feature.recurrence.HandScheduleCommands
 import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.feature.recurrence.scheduleId
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatKind
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
@@ -95,7 +97,9 @@ class ExpenseFormViewModelTest {
                 Duration.ZERO
             },
             { uuid(nextId++) },
-            CoroutineScope(Dispatchers.Main)
+            CoroutineScope(Dispatchers.Main),
+            HandCategoryReads(),
+            testMoney()
         )
     }
 

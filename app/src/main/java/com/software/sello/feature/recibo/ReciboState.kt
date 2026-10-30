@@ -1,6 +1,10 @@
 package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.presentation.carry.CarryFigures
+import com.software.sello.presentation.carry.CarryProblem
+import java.time.LocalDate
+import java.time.YearMonth
 
 /** What Recibo shows. A failed read is its own state; it is never shown as zero. */
 sealed interface ReciboState {
@@ -11,17 +15,30 @@ sealed interface ReciboState {
 
     /**
      * A month that was read. With [stale] the latest read failed and this is the last
-     * one that worked, shown as older data and never as current.
+     * one that worked, shown as older data and never as current. [invitation] is the one
+     * line inviting a look at the month just closed, when there is one to offer.
      */
     data class Month(
         val summary: ReciboSummary,
         val categories: List<ReciboCategory>,
-        val stale: Boolean
+        val stale: Boolean,
+        /** Why the latest read failed, when it is a carry figure that cannot be calculated. */
+        val carryProblem: CarryProblem? = null,
+        val invitation: ReciboInvitation? = null
     ) : ReciboState
 
     /** The read failed and there is nothing earlier to show. */
     data object Failed : ReciboState
+
+    /**
+     * A carry figure the month needs cannot be calculated and there is nothing earlier to
+     * show (ADR 0020 CP8): never zero or the base alone, with what repairs it.
+     */
+    data class CarryFailed(val problem: CarryProblem) : ReciboState
 }
+
+/** "Ver cómo cerraste [month] ›": the month just closed, which had expenses. */
+data class ReciboInvitation(val month: YearMonth)
 
 /** Which sentence an amount completes. */
 enum class ReciboHeadline {
@@ -105,7 +122,37 @@ data class ReciboSummary(
     /** While payments are reserved: the footnote "Incluye … separado para … pagos previstos". */
     val reserved: ReciboReserved? = null,
     /** While reserved payments need more than is left: the two facts behind it. */
-    val shortfall: ReciboShortfall? = null
+    val shortfall: ReciboShortfall? = null,
+    /** While a category carries this month: the month's base, carry and capacity (CP16, CP27). */
+    val carry: ReciboCarry? = null
+)
+
+/**
+ * The month's carry: the sum of the carrying [categories]' carry-in on top of the bases,
+ * read on [asOf]. [why] explains a verdict an earlier deficit caused.
+ */
+data class ReciboCarry(
+    val figures: CarryFigures,
+    val categories: List<CarriedCategory>,
+    val asOf: LocalDate,
+    val why: CarryWhy? = null
+)
+
+/** A category that carries this month, and since when. */
+data class CarriedCategory(val name: String, val since: YearMonth)
+
+/**
+ * "Tu límite con arrastre es [capacity]: [category] trae [carry] de meses anteriores." With
+ * no [category], several carry. With [base] and [month], the capacity is not above zero:
+ * "Te pasaste … y tu límite base es [base]: [month] empezó en [capacity]."
+ */
+data class CarryWhy(
+    val capacity: MoneyTextValue,
+    val carry: MoneyTextValue,
+    val carryMagnitude: MoneyTextValue,
+    val category: String?,
+    val base: MoneyTextValue? = null,
+    val month: YearMonth? = null
 )
 
 /** What is reserved for the [count] payments still to come this month. */
@@ -124,8 +171,15 @@ data class ReciboShortfall(
 /** What can be spent each day from today to the end of the month, today included. */
 data class ReciboPerDay(val amount: MoneyTextValue, val days: Int)
 
-/** What a finished month spent against its limit, both from the same snapshot. */
-data class ReciboClosedMonth(val spent: MoneyTextValue, val limit: MoneyTextValue)
+/**
+ * What a finished month spent against its limit, both from the same snapshot. With
+ * [carried] the limit is the month's limit with carry.
+ */
+data class ReciboClosedMonth(
+    val spent: MoneyTextValue,
+    val limit: MoneyTextValue,
+    val carried: Boolean = false
+)
 
 /**
  * One category in the month. [cellAmount] is what its cell shows: what is left, with a
@@ -143,7 +197,11 @@ data class ReciboCategory(
     val limit: MoneyTextValue?,
     val fraction: Float?,
     val over: Boolean,
-    val expenseCount: Int
+    val expenseCount: Int,
+    /** While it carries: base, carry and capacity; [limit] is then the capacity (CP27). */
+    val carry: CarryFigures? = null,
+    /** Why its verdict is what it is, when an earlier deficit explains it. */
+    val why: CarryWhy? = null
 ) {
     /** No limit on purpose, as its stamp says; never set or paused is something else. */
     val unlimited: Boolean get() = figure.stamp == ReciboStamp.NoLimit
@@ -166,4 +224,13 @@ sealed interface ReciboAction {
 
     /** Open Ajustar presupuesto for the month shown. Navigation is the root's. */
     data object AdjustBudget : ReciboAction
+
+    /** Open [month] in Resumen. The invitation is remembered as handled; navigation is the root's. */
+    data class OpenInvitation(val month: YearMonth) : ReciboAction
+
+    /** The × on the invitation: not wanted for [month]. */
+    data class DismissInvitation(val month: YearMonth) : ReciboAction
+
+    /** Open the category's form on [month], to give that month a limit. Navigation is the root's. */
+    data class SetMonthLimit(val categoryId: String, val month: YearMonth) : ReciboAction
 }

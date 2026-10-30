@@ -168,6 +168,8 @@ sealed interface SnapshotFailure {
     /**
      * A carry figure the month needs could not be calculated (ADR 0020 CP8): missing history,
      * a chain month without a finite base, damaged chains. Never shown as zero carry.
+     * [categoryId] is the category whose chain failed, so the repair can be pointed at.
      */
-    data class Carryover(val failure: CarryoverFailure) : SnapshotFailure
+    data class Carryover(val failure: CarryoverFailure, val categoryId: CategoryId) :
+        SnapshotFailure
 }

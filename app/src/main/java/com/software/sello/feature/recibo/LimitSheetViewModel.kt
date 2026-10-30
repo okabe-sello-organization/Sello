@@ -224,7 +224,8 @@ class LimitSheetViewModel(
                         it.left.minorUnits == 0L -> FactOutcome.Exactly
                         else -> FactOutcome.Short
                     },
-                    afterPayments = it.afterPayments
+                    afterPayments = it.afterPayments,
+                    capacity = it.carry?.capacity?.let(money::format)
                 )
             }
         } else {
@@ -233,6 +234,7 @@ class LimitSheetViewModel(
         mutable.update { now ->
             now.copy(
                 spent = line?.spent?.let(money::format),
+                carry = line?.budget?.carry?.carryIn?.let { money.format(it, signed = true) },
                 scope = scope(),
                 amount = pesos?.let { money.format(Money.cop(it)) },
                 chips = chips,
@@ -254,6 +256,7 @@ class LimitSheetViewModel(
             ?.value ?: return emptyList()
         return listOfNotNull(
             shortcuts.spent?.let { ChipKind.Spent to it },
+            shortcuts.coverSpent?.let { ChipKind.CoverSpent to it },
             shortcuts.coverMonth?.let { ChipKind.CoverMonth to it },
             shortcuts.coverPayments?.let { ChipKind.CoverPayments to it }
         )
@@ -320,11 +323,21 @@ class LimitSheetViewModel(
 
             // Certain: nothing was written, so this attempt is over.
             is Settled.Rejected -> {
-                val error = when (settled.reason) {
+                val error = when (val reason = settled.reason) {
                     is CommandRejection.VersionConflict -> LimitSheetError.Conflict
+
                     is CommandRejection.StaleGeneration -> LimitSheetError.DataChanged
+
                     Specific(CategoryRejection.CategoryMissing) -> LimitSheetError.CategoryGone
+
                     Specific(CategoryRejection.CategoryArchived) -> LimitSheetError.Archived
+
+                    is Specific -> when (reason.reason) {
+                        is CategoryRejection.ChainBaseAboveLimit -> LimitSheetError.LimitAboveCap
+                        is CategoryRejection.CarryUnavailable -> LimitSheetError.CarryUnavailable
+                        else -> LimitSheetError.NotSaved
+                    }
+
                     else -> LimitSheetError.NotSaved
                 }
                 mutable.update { it.copy(busy = false, error = error) }

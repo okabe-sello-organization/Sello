@@ -107,6 +107,11 @@ class CarryoverCorrectionReplayTest {
             listOf(180_000L to 200_000L, 210_000L to 230_000L, 60_000L to 80_000L),
             result.months.map { it.capacity() }
         )
+        // "By how much" (CP20): each later month moves by the 20.000 taken out of ene.
+        assertEquals(
+            listOf(cop(20_000), cop(20_000), cop(20_000)),
+            result.months.map { it.capacityChange }
+        )
         // mar: R -40.000 -> -20.000, Excedido by 40.000 -> 20.000, still Excedido.
         val march = result.months[1]
         assertEquals(-40_000L to -20_000L, march.remaining())
@@ -160,6 +165,10 @@ class CarryoverCorrectionReplayTest {
             transporteMonths.map {
                 it.capacity()
             }
+        )
+        assertEquals(
+            listOf(cop(70_000), cop(70_000), cop(-70_000), cop(-70_000)),
+            (comidaMonths + transporteMonths).map { it.capacityChange }
         )
         // The edited month of each chain: feb R 110.000 -> 180.000 and 90.000 -> 20.000.
         assertEquals(
@@ -284,7 +293,8 @@ class CarryoverCorrectionReplayTest {
                 SettledBalanceChange(
                     comida,
                     SettledBalance(ene, abr, cop(-40_000)),
-                    SettledBalance(ene, abr, cop(-20_000))
+                    SettledBalance(ene, abr, cop(-20_000)),
+                    cop(20_000)
                 )
             ),
             result.settled

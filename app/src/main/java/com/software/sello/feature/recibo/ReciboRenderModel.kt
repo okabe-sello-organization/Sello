@@ -13,7 +13,10 @@ import com.software.sello.domain.policy.CategoryOrderPolicy
 import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
+import com.software.sello.presentation.carry.carryFigures
+import com.software.sello.presentation.carry.carryProblem
 import com.software.sello.presentation.money.MoneyFormatter
+import java.time.YearMonth
 
 /**
  * Turns one snapshot into what Recibo and the category detail draw. It chooses words
@@ -29,8 +32,24 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
 
         is ReadState.Ready -> month(state.value, stale = false, ordering)
 
-        is ReadState.Failed -> state.lastGood?.let { month(it, stale = true, ordering) }
-            ?: ReciboState.Failed
+        is ReadState.Failed -> {
+            val last = state.lastGood
+            val names = last?.categories.orEmpty().associate {
+                it.category.id to
+                    it.category.name.value
+            }
+            val problem = carryProblem(state.failure, names)
+            when {
+                last != null -> when (val shown = month(last, stale = true, ordering)) {
+                    is ReciboState.Month -> shown.copy(carryProblem = problem)
+                    else -> shown
+                }
+
+                problem != null -> ReciboState.CarryFailed(problem)
+
+                else -> ReciboState.Failed
+            }
+        }
     }
 
     private fun month(
@@ -51,7 +70,7 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
         snapshot.categories,
         ordering.order,
         ordering.direction
-    ).map(::category)
+    ).map { category(it, snapshot.month) }
 
     internal fun summary(snapshot: MonthlySnapshot): ReciboSummary =
         when (val overall = snapshot.overall) {
@@ -84,7 +103,11 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
                     },
                     // Spent, limit and remainder all come from this one budget.
                     closed = if (budget.standing is BudgetStanding.Past) {
-                        ReciboClosedMonth(money.format(budget.spent), money.format(budget.limit))
+                        ReciboClosedMonth(
+                            money.format(budget.spent),
+                            money.format(budget.limit),
+                            carried = budget.carry != null
+                        )
                     } else {
                         null
                     },
@@ -100,12 +123,50 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
                             over = it.overLimitBy != null,
                             reserved = money.format(it.total)
                         )
-                    }
+                    },
+                    carry = carry(snapshot, budget)
                 )
             }
         }
 
-    private fun category(line: CategoryMonth): ReciboCategory {
+    /** The month's carry, with each carrying category and since when (CP16, CP27). */
+    private fun carry(snapshot: MonthlySnapshot, budget: LimitedBudget): ReciboCarry? {
+        val figures = money.carryFigures(budget, snapshot.month) ?: return null
+        val carrying = snapshot.categories.mapNotNull { line ->
+            line.budget?.carry?.chainStart?.let { CarriedCategory(line.category.name.value, it) }
+        }
+        return ReciboCarry(
+            figures,
+            carrying,
+            snapshot.asOf,
+            why(budget, carrying.singleOrNull()?.name, snapshot.month, overall = true)
+        )
+    }
+
+    /**
+     * Why a verdict is Excedido when an earlier deficit made it so: only for a budget over
+     * its limit with a negative carry (CP14). Compared, never calculated.
+     */
+    private fun why(
+        budget: LimitedBudget,
+        name: String?,
+        month: YearMonth,
+        overall: Boolean
+    ): CarryWhy? {
+        val carry = budget.carry ?: return null
+        if (!budget.isOverspent || carry.carryIn.minorUnits >= 0) return null
+        val notAboveZero = carry.capacity.minorUnits <= 0 && !overall
+        return CarryWhy(
+            capacity = money.format(carry.capacity),
+            carry = money.format(carry.carryIn, signed = true),
+            carryMagnitude = money.magnitude(carry.carryIn),
+            category = name,
+            base = money.format(carry.base).takeIf { notAboveZero },
+            month = month.takeIf { notAboveZero }
+        )
+    }
+
+    private fun category(line: CategoryMonth, month: YearMonth): ReciboCategory {
         val budget = line.budget
         val spent = money.format(line.spent)
         return ReciboCategory(
@@ -120,7 +181,9 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
             limit = budget?.let { money.format(it.limit) },
             fraction = budget?.let(::fill),
             over = budget?.isOverspent ?: false,
-            expenseCount = line.expenseCount
+            expenseCount = line.expenseCount,
+            carry = budget?.let { money.carryFigures(it, month) },
+            why = budget?.let { why(it, line.category.name.value, month, overall = false) }
         )
     }
 

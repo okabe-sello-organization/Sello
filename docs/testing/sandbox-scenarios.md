@@ -35,6 +35,13 @@ Zone: America/Bogota for all. Amounts in pesos.
 | `inversiones@1` | Inversiones con dólares | 3 May 2025 → 24 Oct 2026 | The v2 page's four investments over 18 months with values and dividends, and one in USD with a rate |
 | `pagos-fijos@1` | Pagos fijos y dos semanas fuera | 1 Jul 2026 → 24 Oct 2026 | Schedules with catch-up, a day-31 payment, a weekly one, a pause, a twice-monthly salary, two weeks away, reserved payments and Plan del mes |
 | `seis-meses@1` | Seis meses con todo | 1 Apr 2026 → 24 Oct 2026 | Someone who has used every feature for over six months: schedules, extra income, corrections, limit changes, an archived category, goals and investments in pesos and dollars |
+| `arrastre-cadenas@1` | Arrastre: superávit y déficit | 1 Jan 2027 → 12 Apr 2027 | Five categories that carry from January: a surplus, repeated overspend, a deficit beyond the next base, skipped months and a 28-day February (SC01–SC05) |
+| `arrastre-bisiesto@1` | Arrastre: fin de año y bisiesto | 1 Dec 2027 → 22 Feb 2028 | A chain across the new year into a 29-day February, 8 days left (SC41) |
+| `arrastre-transiciones@1` | Arrastre: apagar, archivar y volver a encender | 1 Jan 2027 → 20 Apr 2027 | Turning carry off, archiving and making a limit unlimited with a balance, turning it on mid-month, whole month from day 1 (SC07, SC17–SC21) |
+| `arrastre-correcciones@1` | Arrastre: para corregir el pasado | 1 Jan 2027 → 10 Apr 2027 | Two chains with nothing spent in April yet, to correct closed months by hand (SC25–SC31, SC34) |
+| `arrastre-corregido@1` | Arrastre: un gasto olvidado de enero | 1 Jan 2027 → 12 Apr 2027 | A forgotten January expense recorded on 2 April, listed and confirmed in the script (SC30) |
+| `arrastre-pagos@1` | Arrastre: un pago de febrero llega en marzo | 1 Jan 2027 → 10 Mar 2027 | A 200.000 payment of 5 February recorded by catch-up on 10 March (SC37) |
+| `arrastre-pagos-grandes@1` | Arrastre: un pago que deja febrero excedido | 1 Jan 2027 → 10 Mar 2027 | The same with 300.000 (SC47) |
 
 ### Un año normal (`un-ano@1`)
 
@@ -147,14 +154,64 @@ Checked by `HistoryLoadTest.sixMonthsOfEverything`:
 - CDT +180.000, +3,6 %; Fondo 2.820.000 of 12 October, +120.000, +4,0 %; Acciones
   +USD 69,20; dólar a 4.050,50 del 24 oct.
 
+### Arrastre (signed carryover)
+
+The `arrastre-…` histories turn carry on, off, archive and unlimit through the real
+category commands (`EnableCarry`, `DisableCarry`, `Archive` and `SetDefaultLimit` with the
+exact balance confirmed) and record late expenses through the real expense command, which
+lists the later months it changes and is confirmed with that list's confirmation
+(`Expense(confirmsCorrection = true)`). Nothing writes a carry, capacity or graph value:
+every figure is derived on read from the expenses, the limits and the chains. Only the
+financial clock is stepped, so audit times and undo windows keep running in real time.
+
+Figures are those of the [signed carryover examples](signed-carryover-examples.md), named
+SC01–SC47, or derived by hand from `K(m+1) = K(m) + B(m) − S(m)` and marked so in
+`CarryoverScenarioTest`. Highlights, all `K` carry-in, `C` capacity, `R` remaining:
+
+- `arrastre-cadenas@1` (SC01–SC05), Comida: ene `R` 80.000; feb `K` 80.000 `C` 180.000;
+  mar `K` 110.000 `C` 210.000 `R` −40.000, Excedido; abr `K` −40.000 `C` 60.000.
+  Hogar feb `K` −150.000 `C` −50.000. Ocio abr `K` −100.000 `C` 0, Al día. Overall abr
+  `C` 770.000; with 1.000.000 of income Por asignar counts the five bases, leaving 500.000
+  (SC14). Resumen's graph, ene–abr: limit 500.000 / 180.000 / 540.000 / 770.000, spent
+  820.000 / 140.000 / 270.000 / 0.
+- `arrastre-bisiesto@1` (SC41): ene `K` 10.000 `C` 110.000; 22 feb 2028 `R` 160.000, 8 days
+  left, 20.000 a day.
+- `arrastre-transiciones@1` (SC07, SC17–SC21): the drop shows −20.000 (Límite 80.000 →
+  100.000, Restante 50.000 → 70.000) and +80.000; a wrong or missing amount changes
+  nothing; Ocio, turned on on 17 February after a January overspend, starts at 0 and counts
+  the whole month (feb `S` 50.000, mar `C` 150.000); chains ene–feb and abr onwards for
+  Comida, ene–feb for Hogar and Salud, feb onwards for Ocio, none for Transporte.
+  Not scripted: SC06, which a damaged chain needs (`SignedCarryoverPolicyTest` covers it),
+  and the June unarchive tail of SC20/SC21: the sandbox has no `Unarchive` step, and
+  `CarryoverCommandContractTest.archivingWithABalanceNeedsItConfirmedAndUnarchivingLeavesCarryOff`
+  covers it on real Room.
+- `arrastre-correcciones@1` (SC25, SC27–SC31, SC34): deleting the 20.000 of January lists
+  feb 180.000 → 200.000, mar 210.000 → 230.000, abr 60.000 → 80.000; the same confirmed
+  change sent again returns the same receipt and does not cascade twice; an old
+  confirmation is refused after another change and the list is shown again.
+- `arrastre-corregido@1` (SC30): feb `C` −20.000 `R` −90.000, mar `C` 10.000 `R` −240.000,
+  abr `C` −140.000.
+- `arrastre-pagos@1` (SC37): the app records the 5 February payment itself on 10 March;
+  feb `R` 0, mar `K` 0 `C` 1.000.000 `R` 500.000, nothing set aside, 22.700 a day, and the
+  opening notice lists feb Restante 200.000 → 0 and mar `C` 1.200.000 → 1.000.000.
+  `arrastre-pagos-grandes@1` (SC47): feb `R` 200.000 → −100.000, Excedido; mar `C`
+  1.200.000 → 900.000.
+
 ## Tests
 
+- `CarryoverScenarioTest` (JVM, real Room under Robolectric, through the real commands):
+  the figures above; the drop confirmations; late corrections and their lists; a step
+  that committed before its checkpoint is answered from its receipt after a restart; a
+  backup, an interrupted restore, a restore over carrying categories and the app's own
+  reset; audit stamps stay in real time, and an open undo window, on a controlled
+  monotonic clock, survives two financial months and ends only when that clock passes it. It adds no device test; device sandbox journeys are tracked in issue #248.
 - `ScenarioDefinitionTest`: each history's steps name what an earlier step made, dates
   only go forward and end on its day, versions are the ones a screen would read, and
   this document names every history and version.
 - `HistoryLoadTest` (JVM, real Room under Robolectric): each history loads to its day
   with the figures above, and a load cut after a committed step whose checkpoint was
-  lost ends with the same rows as a load straight through.
+  lost, or restored from a backup, ends with the same rows (chains included) as a load
+  straight through.
 - `ScenarioRunnerTest`: loading, carrying on in a new process, a refusal and an unknown
   outcome, on ledgers.
 
