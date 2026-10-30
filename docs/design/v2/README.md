@@ -23,6 +23,7 @@ synthetic.
 | --- | --- |
 | [Recibo / Home](home.html) | Locked 2026-10-15 (past-month state added with Resumen) |
 | [Expense and income entry](entry.html) | Locked 2026-10-15 |
+| [Anotar varios](varios.html) | Locked 2026-10-30 by the owner (SELLO-126, E23): the bulk receipt for expenses, incomes, one goal and one investment, and where it opens from |
 | [Resumen](resumen.html) | Locked 2026-10-15 |
 | [Income](income.html) | Locked 2026-10-15 |
 | [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16; + Nueva meta moved to the band by the owner 2026-10-26; Nueva meta and Nueva categoría made alike by the owner 2026-10-26 (see below) |
@@ -149,6 +150,50 @@ in gain green with a `+`.
 **Rejected during the review:** the system keyboard for amounts (layout jumps after the
 note closes, no `000`), the four-column pad, darker-paper and outlined delete keys, the
 paper-slip note dialog, and placing the note beside the date or under the amount.
+
+## Anotar varios
+
+**Locked 2026-10-30 by the owner** (SELLO-126, [varios.html](varios.html)). One receipt for several
+expenses, incomes, goal movements or investment movements, saved whole or not at all. It is
+the entry sheet's language redrawn from v1.1's [Anotar varios and Varios
+movimientos](../sello-spec.html#s-varios). The owner approved it as drawn, including every choice the page lists for them.
+
+**Order, top to bottom:** ✕ and the Gasto/Ingreso switch (a title and the goal's or
+investment's name instead, for those two) → the **receipt**, a pinked slip that takes the free
+height: header (**Anotar varios**, the line count, the date pill), the lines, a tear line,
+**Otro renglón** and the total → chips and note row for the highlighted line → action → Sello
+pad. The lines scroll inside the receipt; the foot, chips, action and pad never move.
+
+- **A line:** mark (category circle, a green + for an income or aporte, a neutral ← for a
+  retiro), its category, source or type, the note under it, the amount. The line the pad
+  types into has a dark edge; tapping a line highlights it. A new line copies the category,
+  source or type (and the date, for goals and investments) above it. Opening has one empty line.
+- **Kinds:** expenses and incomes share **one date** for the receipt (the pill in its header);
+  the switch sets the kind of the whole receipt. A goal's or an investment's lines each carry a
+  type and a date, the date as a pill on the highlighted line. A USD investment's lines and foot
+  are in dollars, with the comma key.
+- **Total:** the sum of the lines; a goal shows its net (aportes − retiros); an investment shows
+  **Aportado** (aportes − retiros), because dividends and valuations do not add up with them.
+- **Blocking:** a line with an amount but no category, source or type is outlined in loss with
+  the reason on it, the header says **Falta 1 categoría** and the action waits. At 30 lines the
+  header says **Máximo 30 por recibo** and **Otro renglón** waits. Lines without an amount are
+  ignored; the button counts the rest: **Anotar gasto**, **Anotar 3 gastos**.
+- **Removing:** swipe a line left (past 40 % it reads **Suelta para quitar**) or long-press it;
+  a **Deshacer** toast covers the draft. The last line cannot be removed.
+- **Saving, failure, unknown outcome:** as on entry (**Guardando…** locks everything; **No se
+  guardó. Tu borrador sigue aquí.**; **Aún no sabemos si se guardó…** with **Comprobar si se
+  guardó** and no second write). A refused line is marked with its reason and the draft stays.
+- **Saved:** the sheet closes and the screen it came from shows one confirmation, for example
+  **3 gastos anotados: 126.000**, with its figures already updated. No undo.
+- **Opens from:** a **Varios** pill in the Anotar bar (what is typed becomes line one), and
+  **Anotar varios** at the foot of a category's latest expenses (every new line starts in that
+  category), the goal's movements, the investment's movements and the income list.
+- **Leaving** with lines asks **¿Descartar 3 renglones?** Switching Gasto/Ingreso with lines
+  typed asks first and keeps amounts and notes, clearing categories and sources.
+
+**Rejected:** v1.1's long press on the dock and the investment's overflow menu as ways in; a
+total that adds dividends and valuations; mixing expenses and incomes on one receipt; a
+**Nueva** chip (creating categories is outside E23).
 
 ## Shared: the selected month
 

@@ -29,3 +29,12 @@ started.
 - **Run:** implementers on Claude Opus 5.5 at high effort for the storage tickets
   (SELLO-127 to SELLO-129), Claude Sonnet 5.5 at high effort for the others; reviewers on
   Claude Opus 5.5. Merges are delegated as in [orchestration](../../development/orchestration.md).
+
+**Owner approval (2026-10-30):** the [Anotar varios mock](../../design/v2/varios.html)
+(SELLO-126) approved as drawn, with every choice it lists: switching Gasto/Ingreso asks
+first, keeps amounts and notes and clears categories or sources; a goal's total is aportes
+minus retiros; an investment's total is Aportado; a USD receipt stays in dollars; no type
+is preselected; ways in are the Varios pill and links at the foot of the lists, with no
+dock long-press; removing a draft line has a short Deshacer; leaving asks to discard; two
+rows of category or source chips and no Nueva chip; a line's title is its category,
+source or type, with the note under it.
