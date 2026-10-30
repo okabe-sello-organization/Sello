@@ -1,6 +1,10 @@
 package com.software.sello.feature.recibo
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -9,6 +13,7 @@ import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
+import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Rule
@@ -114,7 +119,11 @@ class ReciboScreenshotTest {
     /** The first week of a month: the same screen with the dashed invitation under the answer. */
     private fun captureInvited(look: Look) {
         val invited = overspent.copy(invitation = ReciboInvitation(YearMonth.of(2026, 10)))
-        rule.showSello(look) { ReciboScreen(invited, {}, PaddingValues(12.dp)) }
+        rule.showSello(look) {
+            Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk)) {
+                ReciboScreen(invited, {}, PaddingValues(12.dp))
+            }
+        }
         rule.captureStill("src/test/screenshots/recibo-invitation-${look.label}.png")
     }
 

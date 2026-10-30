@@ -30,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -238,6 +239,54 @@ class ReciboInvitationViewModelTest {
     }
 
     @Test
+    fun aFailedWriteStillHidesItForTheSession() = runTest {
+        publish(october, 100)
+        publish(september, 920_000)
+        invitations.writeResult = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+        val viewModel = started()
+
+        viewModel.onAction(ReciboAction.DismissInvitation(september))
+
+        assertEquals(listOf(september), invitations.written)
+        assertNull(invitationOf(viewModel))
+    }
+
+    @Test
+    fun anOlderMonthIsNotOfferedAgainWhenTheDayMovesBack() = runTest {
+        clock.goTo("2026-11-03")
+        publish(october, 100)
+        publish(november, 100)
+        publish(september, 920_000)
+        invitations.state.value = PreferenceRead.Ready(october)
+        val viewModel = started()
+        assertNull(invitationOf(viewModel))
+
+        clock.goTo("2026-10-03")
+
+        assertNull(invitationOf(viewModel))
+    }
+
+    @Test
+    fun theFirstStateDoesNotWaitForThePreferenceRead() = runTest {
+        publish(october, 100)
+        publish(september, 920_000)
+        val silent = ReciboViewModel(
+            session,
+            snapshots,
+            HandOrderings(),
+            testMoney(),
+            NeverRead(),
+            clock
+        )
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            silent.state.collect {}
+        }
+
+        val state = silent.state.value as ReciboState.Month
+        assertNull(state.invitation)
+    }
+
+    @Test
     fun aFailedPreferenceReadKeepsWhatWasLastKnownAndOtherwiseOffersIt() = runTest {
         publish(october, 100)
         publish(september, 920_000)
@@ -257,11 +306,21 @@ internal class HandInvitations : ClosedMonthInvitePreferences {
     val state = MutableStateFlow<PreferenceRead<YearMonth?>>(PreferenceRead.Ready(null))
     val written = mutableListOf<YearMonth>()
 
+    /** What a write says; a saved one is kept, a failed one is not. */
+    var writeResult: PreferenceWrite = PreferenceWrite.Saved
+
     override fun observeHandled(): Flow<PreferenceRead<YearMonth?>> = state
 
     override suspend fun markHandled(month: YearMonth): PreferenceWrite {
         written += month
-        state.value = PreferenceRead.Ready(month)
-        return PreferenceWrite.Saved
+        if (writeResult == PreferenceWrite.Saved) state.value = PreferenceRead.Ready(month)
+        return writeResult
     }
+}
+
+/** A preference read that has not answered yet. */
+private class NeverRead : ClosedMonthInvitePreferences {
+    override fun observeHandled(): Flow<PreferenceRead<YearMonth?>> = emptyFlow()
+
+    override suspend fun markHandled(month: YearMonth): PreferenceWrite = PreferenceWrite.Saved
 }

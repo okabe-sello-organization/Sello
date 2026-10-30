@@ -193,15 +193,16 @@ class ReciboViewModelTest {
     fun theMonthChangeMovesRecibotoTheNewMonth() = runTest {
         val (viewModel) = started()
         val november = YearMonth.of(2026, 11)
+        snapshots.of(october).value = ReadState.Ready(snapshot(october, 9_000, categories = 1))
         snapshots.of(november).value = ReadState.Ready(snapshot(november, 1, categories = 1))
 
-        clock.goTo("2026-11-09")
+        clock.goTo("2026-11-01")
 
-        assertEquals(listOf(october, november), snapshots.observed)
-        assertEquals(
-            MoneyTextValue(MoneySign.None, "", "1", "1 pesos"),
-            (viewModel.state.value as ReciboState.Month).summary.amount
-        )
+        // Day 1: the invitation reads October once more, beside the month now shown.
+        assertEquals(listOf(october, november, october), snapshots.observed)
+        val state = viewModel.state.value as ReciboState.Month
+        assertEquals(MoneyTextValue(MoneySign.None, "", "1", "1 pesos"), state.summary.amount)
+        assertEquals(ReciboInvitation(october), state.invitation)
     }
 
     @Test

@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -55,13 +56,22 @@ class ReciboViewModel(
             CategoryOrderingPreference()
         )
 
-    /** What was handled, as last read. A failed read hides nothing: it is only advice. */
-    private val handled = invitations.observeHandled().map { read ->
-        when (read) {
-            is PreferenceRead.Ready -> read.value
-            is PreferenceRead.Failed -> read.lastGood
-        }
-    }
+    /** What was handled in this session, so the line goes even when keeping it fails. */
+    private val handledHere = MutableStateFlow<YearMonth?>(null)
+
+    /**
+     * The latest month handled, kept or only in this session. A failed read hides nothing:
+     * it is only advice.
+     */
+    private val handled = combine(
+        invitations.observeHandled().map { read ->
+            when (read) {
+                is PreferenceRead.Ready -> read.value
+                is PreferenceRead.Failed -> read.lastGood
+            }
+        },
+        handledHere
+    ) { kept, here -> listOfNotNull(kept, here).maxOrNull() }
 
     /**
      * The month just closed, on the financial day, while it had expenses and was not yet
@@ -73,7 +83,9 @@ class ReciboViewModel(
         clock.today,
         handled
     ) { shown, today, done ->
-        ClosedMonthInvitePolicy.monthToReview(today.date, shown)?.takeIf { it != done }
+        ClosedMonthInvitePolicy.monthToReview(today.date, shown)?.takeIf {
+            done == null || it > done
+        }
     }
         .distinctUntilChanged()
         .flatMapLatest { month ->
@@ -86,6 +98,8 @@ class ReciboViewModel(
                 }
             }
         }
+        // Recibo's first state never waits on a preference read: no line until it is known.
+        .onStart { emit(null) }
 
     val state: StateFlow<ReciboState> =
         combine(session.selectedMonth, attempt) { month, _ -> month }
@@ -119,8 +133,9 @@ class ReciboViewModel(
         }
     }
 
-    /** Gone for [month] from now on, and across restarts. */
+    /** Gone for [month] at once, and across restarts when it can be kept. */
     private fun handle(month: YearMonth) {
+        handledHere.update { maxOf(it ?: month, month) }
         viewModelScope.launch { invitations.markHandled(month) }
     }
 
