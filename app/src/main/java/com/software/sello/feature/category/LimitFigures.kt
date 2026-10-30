@@ -9,6 +9,7 @@ import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.CategoryBudgetPolicy
 import com.software.sello.domain.policy.CategoryInMonth
 import com.software.sello.domain.policy.CopAmountInput
+import com.software.sello.domain.policy.LimitKeypad
 import com.software.sello.domain.policy.MonthlyBudgetPolicy
 import com.software.sello.domain.port.MonthBudget
 import com.software.sello.presentation.money.MoneyFormatter
@@ -81,10 +82,9 @@ internal object LimitKeys {
     fun backspace(text: String): String = draft(text).backspace().digits()
 
     private fun draft(text: String): AmountDraft =
-        if (PadDigits.matches(text)) AmountDraft.Digits(text) else AmountDraft.Empty
+        if (LimitKeypad.fits(text)) AmountDraft.Digits(text) else AmountDraft.Empty
 
     private fun AmountDraft.digits() = (this as? AmountDraft.Digits)?.digits.orEmpty()
 
-    private val PadDigits = Regex("[1-9][0-9]{0,11}")
     private const val ZERO = "0"
 }

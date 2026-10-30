@@ -51,6 +51,7 @@ import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.StubButton
+import com.software.sello.designsystem.component.SuggestionNote
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
 import com.software.sello.designsystem.component.selloWindowLayout

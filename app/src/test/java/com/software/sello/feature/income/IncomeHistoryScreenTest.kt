@@ -39,6 +39,7 @@ class IncomeHistoryScreenTest {
     private val actions = mutableListOf<IncomeHistoryAction>()
     private var created = 0
     private val edited = mutableListOf<String>()
+    private val assigned = mutableListOf<String?>()
 
     private fun minus(digits: String) =
         MoneyTextValue(MoneySign.Minus, "", digits, "menos $digits pesos")
@@ -77,16 +78,19 @@ class IncomeHistoryScreenTest {
     private fun show(
         state: IncomeHistoryState,
         split: IncomeSplit?,
-        plan: IncomePlanState = IncomePlanState.None
+        plan: IncomePlanState = IncomePlanState.None,
+        assign: AssignSuggestion? = null
     ) {
         rule.showSello(Look()) {
             IncomeHistoryScreen(
                 state,
                 split,
                 plan,
+                assign,
                 today,
                 { actions += it },
                 { created++ },
+                { assigned += it },
                 { edited += it },
                 PaddingValues(12.dp)
             )
@@ -112,6 +116,83 @@ class IncomeHistoryScreenTest {
         // Nothing is expected: no plan. And no suggestion here.
         rule.onNodeWithTag("income.plan").assertDoesNotExist()
         rule.onNodeWithText("Una sugerencia").assertDoesNotExist()
+    }
+
+    // --- Asignar a una categoría (SELLO-083) ---
+
+    private val offer = AssignSuggestion(pesos("50.000"), "50000")
+
+    @Test
+    fun unassignedIncomeOffersACategoryAndTheActionOpensItWithTheLimit() {
+        show(ready(), split, assign = offer)
+
+        rule.onNodeWithTag("income.assign").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Una sugerencia").assertIsDisplayed()
+        rule.onNodeWithText("50.000 de lo que entró aún no tiene un presupuesto.")
+            .assertIsDisplayed()
+        rule.onNodeWithText(
+            "Podrías darle un destino: ahorro, ocio o una reserva, con su propia categoría."
+        ).assertIsDisplayed()
+        // The amount is read in pesos, as everywhere else.
+        rule.onNodeWithContentDescription(
+            "50.000 pesos de lo que entró aún no tiene un presupuesto."
+        ).assertIsDisplayed()
+        // The action only asks for the form: nothing is assigned or saved by it.
+        assertEquals(emptyList<String?>(), assigned)
+        rule.onNodeWithText("Asignar a una categoría ›").performScrollTo().performClick()
+
+        assertEquals(listOf<String?>("50000"), assigned)
+        assertEquals(emptyList<IncomeHistoryAction>(), actions)
+        assertEquals(0, created)
+    }
+
+    @Test
+    fun anAmountThatCannotBeALimitStillOffersTheCategoryWithAnEmptyLimit() {
+        show(
+            ready(),
+            split,
+            assign = AssignSuggestion(pesos("1.000.000.000.000"), limit = null)
+        )
+
+        rule.onNodeWithText("1.000.000.000.000 de lo que entró aún no tiene un presupuesto.")
+            .assertIsDisplayed()
+        rule.onNodeWithText("Asignar a una categoría ›").performScrollTo().performClick()
+
+        assertEquals(listOf<String?>(null), assigned)
+    }
+
+    @Test
+    fun withoutAnOfferThereIsNoSuggestion() {
+        // No offer: a closed month, nothing or a negative amount unassigned, a failed read.
+        show(ready(), split, assign = null)
+
+        rule.onNodeWithTag("income.assign").assertDoesNotExist()
+        rule.onNodeWithText("Asignar a una categoría ›").assertDoesNotExist()
+    }
+
+    @Test
+    fun theSuggestionIsNotDrawnWhileLoading() {
+        show(IncomeHistoryState.Loading, split = null, assign = offer)
+        rule.onNodeWithTag("income.assign").assertDoesNotExist()
+    }
+
+    @Test
+    fun aFailedReadDrawsNoSuggestion() {
+        show(IncomeHistoryState.Failed, split = null, assign = offer)
+
+        rule.onNodeWithTag("income.assign").assertDoesNotExist()
+        rule.onNodeWithText("Asignar a una categoría ›").assertDoesNotExist()
+    }
+
+    @Test
+    fun theCrossDismissesTheSuggestionAndOnlyAsksForIt() {
+        show(ready(), split, IncomePlanState.Shown(plan), assign = offer)
+
+        rule.onNodeWithTag("income.assign").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithContentDescription("Descartar sugerencia").performClick()
+
+        assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.DismissAssign), actions)
+        assertEquals(emptyList<String?>(), assigned)
     }
 
     @Test

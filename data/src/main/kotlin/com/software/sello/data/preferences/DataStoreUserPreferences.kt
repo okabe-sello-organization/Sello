@@ -32,6 +32,7 @@ import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.ClosedMonthInvitePreferences
 import com.software.sello.domain.port.CorrectionAnnouncementPreferences
+import com.software.sello.domain.port.IncomeSuggestionPreferences
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.LastBackup
 import com.software.sello.domain.port.PreferenceFailure
@@ -66,6 +67,7 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
     InvestmentPreferences,
     CorrectionAnnouncementPreferences,
     SuggestionPreferences,
+    IncomeSuggestionPreferences,
     ClosedMonthInvitePreferences,
     CatchUpNoticePreferences,
     BackupRecords,
@@ -130,6 +132,12 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
 
     override suspend fun dismissSuggestion(dismissed: DismissedSuggestion): PreferenceWrite =
         write { this[SUGGESTION_DISMISSED] = "${dismissed.month}|${dismissed.categoryId.value}" }
+
+    override fun observeDismissedIncomeSuggestion(): Flow<PreferenceRead<YearMonth?>> =
+        observe(::dismissedIncomeSuggestion)
+
+    override suspend fun dismissIncomeSuggestion(month: YearMonth): PreferenceWrite =
+        write { this[INCOME_SUGGESTION_DISMISSED] = month.toString() }
 
     override fun observeHandled(): Flow<PreferenceRead<YearMonth?>> = observe(::closedMonthInvite)
 
@@ -282,6 +290,13 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         return Decoded.Value(DismissedSuggestion(month, id))
     }
 
+    /** Stored as `2026-10`; anything else is damage, not "nothing dismissed". */
+    private fun dismissedIncomeSuggestion(stored: Preferences): Decoded<YearMonth?> {
+        val raw = stored[INCOME_SUGGESTION_DISMISSED] ?: return Decoded.Value(null)
+        val month = runCatching { YearMonth.parse(raw) }.getOrNull() ?: return Decoded.Invalid
+        return Decoded.Value(month)
+    }
+
     /** Stored as `2026-10`; anything else is damage, not "nothing handled". */
     private fun closedMonthInvite(stored: Preferences): Decoded<YearMonth?> {
         val raw = stored[CLOSED_MONTH_INVITE_HANDLED] ?: return Decoded.Value(null)
@@ -338,6 +353,8 @@ class DataStoreUserPreferences internal constructor(private val data: DataStore<
         val PAST_EXPENSE_SEEN = booleanPreferencesKey("past_expense_correction_seen_v1")
         val PAST_LIMIT_SEEN = booleanPreferencesKey("past_limit_correction_seen_v1")
         val SUGGESTION_DISMISSED = stringPreferencesKey("resumen_suggestion_dismissed_v1")
+        val INCOME_SUGGESTION_DISMISSED =
+            stringPreferencesKey("income_suggestion_dismissed_v1")
         val CLOSED_MONTH_INVITE_HANDLED =
             stringPreferencesKey("recibo_closed_month_invite_handled_v1")
         val CATCH_UP_NOTICE_SEEN = longPreferencesKey("catch_up_notice_seen_v1")

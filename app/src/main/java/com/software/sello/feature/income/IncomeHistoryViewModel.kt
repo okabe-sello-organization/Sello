@@ -9,11 +9,14 @@ import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.policy.IncomePlanPolicy
+import com.software.sello.domain.policy.SuggestedLimit
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeMonth
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.IncomeSuggestionPreferences
+import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
@@ -24,6 +27,7 @@ import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -55,6 +59,13 @@ data class IncomeSplit(
     /** A category carries this month: Sin asignar still counts base limits only (CP17). */
     val carrying: Boolean = false
 )
+
+/**
+ * The offer to give unassigned income a category: [unassigned] is what the budgets leave
+ * out. [limit] starts the new category's limit, in pesos, only when [unassigned] is a limit
+ * the form can hold; otherwise it is null and the limit starts empty. Nothing is assigned.
+ */
+data class AssignSuggestion(val unassigned: MoneyTextValue, val limit: String?)
 
 data class IncomeLine(
     val id: String,
@@ -117,6 +128,9 @@ sealed interface IncomeHistoryAction {
     data object Retry : IncomeHistoryAction
 
     data object More : IncomeHistoryAction
+
+    /** Hides the suggestion to assign income for the month in progress. */
+    data object DismissAssign : IncomeHistoryAction
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -125,6 +139,7 @@ class IncomeHistoryViewModel(
     private val session: MonthSession,
     snapshots: ResumenSnapshots,
     schedules: ScheduleReads,
+    private val suggestions: IncomeSuggestionPreferences,
     private val money: MoneyFormatter,
     clock: FinancialClock
 ) : ViewModel() {
@@ -185,6 +200,74 @@ class IncomeHistoryViewModel(
         }
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, IncomePlanState.None)
+
+    /** The month in progress and what it leaves unassigned, before any dismissal. */
+    private data class Unassigned(val month: YearMonth, val offer: AssignSuggestion)
+
+    private val offered: Flow<Unassigned?> = combine(
+        session.selectedMonth,
+        session.currentMonth,
+        attempts
+    ) { selected, current, _ -> selected.takeIf { it == current } }
+        .flatMapLatest { month ->
+            if (month == null) {
+                flowOf(null)
+            } else {
+                snapshots.observe(month).map { read ->
+                    (read as? ReadState.Ready)?.value?.let { assign(month, it) }
+                }
+            }
+        }
+
+    private fun assign(month: YearMonth, summary: ResumenSnapshot): Unassigned? =
+        summary.unallocated.takeIf { it.minorUnits > 0 }?.let {
+            Unassigned(month, AssignSuggestion(money.format(it), SuggestedLimit.of(it)))
+        }
+
+    /**
+     * The month dismissed in this session, kept until the stored dismissal shows it, so a
+     * write that failed still hides the suggestion.
+     */
+    private val dismissedNow = MutableStateFlow<YearMonth?>(null)
+
+    /** The stored dismissal once read; [answered] is false until the first answer arrives. */
+    private data class Stored(val answered: Boolean, val month: YearMonth?)
+
+    /**
+     * What was stored. Until the read answers, nothing is known, so the note waits (only the
+     * note: the rest of the screen does not). A failed read keeps the last good value.
+     */
+    private val dismissedStored = suggestions.observeDismissedIncomeSuggestion()
+        .map { read ->
+            Stored(
+                answered = true,
+                month = when (read) {
+                    is PreferenceRead.Ready -> read.value
+                    is PreferenceRead.Failed -> read.lastGood
+                }
+            )
+        }
+        .onStart { emit(Stored(answered = false, month = null)) }
+
+    /**
+     * Null unless the month in progress has recorded income left unassigned and the person
+     * has not dismissed the suggestion for it: a closed month, an amount of zero or less, a
+     * summary still read and one that could not be read offer nothing, nor does a dismissal
+     * that is not read yet. Reintentar reads again.
+     */
+    val assign: StateFlow<AssignSuggestion?> = combine(
+        offered,
+        dismissedStored,
+        dismissedNow
+    ) { offer, stored, now ->
+        // Once the stored dismissal shows the month, it alone decides: a reset can bring it back.
+        if (now != null && stored.month == now) dismissedNow.compareAndSet(now, null)
+        offer?.takeIf {
+            stored.answered && it.month != stored.month && it.month != now
+        }?.offer
+    }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** Null while the two reads disagree or one is still loading: the last plan stays. */
     private fun plan(
@@ -269,6 +352,8 @@ class IncomeHistoryViewModel(
         when (action) {
             IncomeHistoryAction.Retry -> attempts.update { it + 1 }
 
+            IncomeHistoryAction.DismissAssign -> dismissAssign()
+
             IncomeHistoryAction.More -> {
                 val current = shown.value as? IncomeHistoryState.Ready ?: return
                 val snapshot = snapshot ?: return
@@ -278,6 +363,14 @@ class IncomeHistoryViewModel(
                 viewModelScope.launch { page(snapshot, first = false, epoch) }
             }
         }
+    }
+
+    /** Remembers it for this month only: if income is still unassigned next month, it returns. */
+    private fun dismissAssign() {
+        if (assign.value == null) return
+        val month = session.currentMonthNow
+        dismissedNow.value = month
+        viewModelScope.launch { suggestions.dismissIncomeSuggestion(month) }
     }
 
     /**

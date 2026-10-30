@@ -89,9 +89,9 @@ What each ticket changed is in its pull request, linked from the ticket file
 - SELLO-074 ([E14](../tickets/E14-assistive-technology/README.md)): the manual
   TalkBack, Switch Access and keyboard pass, moved post-MVP by the owner on
   2026-10-23. E13 is done without it.
-- SELLO-079, SELLO-083 and SELLO-084 ([E16](../tickets/E16-v2-today-gaps/README.md)):
-  the rest of today's v2 screens (SELLO-080–082 and SELLO-117 are done; the SELLO-079
-  audit credits them).
+- [E16](../tickets/E16-v2-today-gaps/README.md) is done: SELLO-079 was dropped, and
+  SELLO-083 and SELLO-084 delivered the rest of today's v2 screens (SELLO-080–082 and
+  SELLO-117 were done before). Issue #256, pasted limits over 12 digits, is open.
 - SELLO-113 ([E19](../tickets/E19-investments/README.md)): releasing Metas, recurrence
   and Inversiones, with Configuración's E20 changes, as `0.2.0`; the owner starts it.
   Decisions in [ADR 0017](../decisions/0017-goals-recurrence-investments.md).

@@ -68,6 +68,16 @@ interface SuggestionPreferences {
 }
 
 /**
+ * The month whose "assign income to a category" suggestion on the income screen was
+ * dismissed; a new dismissal replaces it. The suggestion may come back in a later month
+ * while income is still unassigned. Nonfinancial: it hides advice, never a figure.
+ */
+interface IncomeSuggestionPreferences {
+    fun observeDismissedIncomeSuggestion(): Flow<PreferenceRead<YearMonth?>>
+    suspend fun dismissIncomeSuggestion(month: YearMonth): PreferenceWrite
+}
+
+/**
  * The latest closed month whose Recibo invitation was opened or dismissed; null before the
  * first time. A later month's invitation is a new one, so only the latest is kept.
  */

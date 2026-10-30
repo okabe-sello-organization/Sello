@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,12 +25,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.FittedMoneyText
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
@@ -194,47 +191,5 @@ internal fun SpendingRankRow(
             Modifier.size(18.dp),
             SelloTheme.colors.outline
         )
-    }
-}
-
-@Composable
-internal fun SuggestionNote(
-    title: String,
-    evidence: String,
-    advice: String,
-    actionLabel: String,
-    dismissLabel: String,
-    onAction: () -> Unit,
-    onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val colors = SelloTheme.colors
-    Column(
-        modifier.fillMaxWidth().background(
-            colors.brandSoft,
-            SelloTheme.shapes.control
-        ).padding(SelloTheme.spacing.lg),
-        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                SelloIcon.Insights.painter(),
-                null,
-                Modifier.padding(end = SelloTheme.spacing.sm),
-                colors.onBrandSoft
-            )
-            Text(
-                title,
-                Modifier.weight(1f),
-                color = colors.onBrandSoft,
-                fontWeight = FontWeight.W800
-            )
-            androidx.compose.material3.IconButton(onClick = onDismiss) {
-                Icon(SelloIcon.Close.painter(), dismissLabel, tint = colors.onBrandSoft)
-            }
-        }
-        Text(evidence, color = colors.onBrandSoft)
-        Text(advice, color = colors.onBrandSoft, fontWeight = FontWeight.W800)
-        SelloButton(actionLabel, onAction, kind = ButtonKind.Text)
     }
 }

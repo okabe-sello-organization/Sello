@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.MainActivity
@@ -74,6 +75,8 @@ class IncomeJourneyTest {
         rule.onNodeWithText("Listo").assertDoesNotExist()
         // The v2 history: what came in, and the income itself in the list.
         rule.awaitTag("income.hero")
+        // With nothing budgeted the suggestion comes first, so the list is scrolled to.
+        rule.onNodeWithTag("income.history").performScrollToNode(hasTestTag("income.list"))
         rule.onNodeWithTag("income.list").assertExists()
         assertEquals(
             listOf("150000|COP|freelance|null|1"),

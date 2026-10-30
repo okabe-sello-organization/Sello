@@ -41,6 +41,7 @@ internal fun NavGraphBuilder.incomeDestinations(
         val today by model.today.collectAsStateWithLifecycle()
         val split by model.split.collectAsStateWithLifecycle()
         val plan by model.plan.collectAsStateWithLifecycle()
+        val assign by model.assign.collectAsStateWithLifecycle()
         ShellScreen(
             state,
             monthNames(),
@@ -61,9 +62,13 @@ internal fun NavGraphBuilder.incomeDestinations(
                 history,
                 split,
                 plan,
+                assign,
                 today,
                 model::onAction,
                 { navigation.navigate(IncomeEntryRoute()) },
+                {
+                    navigation.navigate(CategoryEditorRoute(limit = it)) { launchSingleTop = true }
+                },
                 { navigation.navigate(IncomeEditRoute(it)) },
                 padding
             )

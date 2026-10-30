@@ -37,6 +37,7 @@ import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.SuggestionNote
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
 import com.software.sello.designsystem.component.TotalRule
@@ -56,9 +57,11 @@ fun IncomeHistoryScreen(
     state: IncomeHistoryState,
     split: IncomeSplit?,
     plan: IncomePlanState,
+    assign: AssignSuggestion?,
     today: LocalDate,
     onAction: (IncomeHistoryAction) -> Unit,
     onCreate: () -> Unit,
+    onAssign: (limit: String?) -> Unit,
     onEdit: (String) -> Unit,
     padding: PaddingValues
 ) {
@@ -104,6 +107,7 @@ fun IncomeHistoryScreen(
             } else {
                 item { CameIn(state, split, months.inSentence(state.month)) }
                 planItem(plan, today, onAction)
+                assign?.let { item { AssignNote(it, onAssign, onAction) } }
                 item {
                     Slip(Modifier.fillMaxWidth().testTag("income.list"), pinked = false) {
                         Text(
@@ -150,6 +154,30 @@ fun IncomeHistoryScreen(
             }
         }
     }
+}
+
+/**
+ * "{monto} de lo que entró aún no tiene un presupuesto": the offer to give it a category of
+ * its own. It opens the new-category form and changes nothing by itself; the × hides it for
+ * the month.
+ */
+@Composable
+private fun AssignNote(
+    assign: AssignSuggestion,
+    onAssign: (String?) -> Unit,
+    onAction: (IncomeHistoryAction) -> Unit
+) {
+    SuggestionNote(
+        title = stringResource(R.string.income_assign_title),
+        evidence = stringResource(R.string.income_assign_evidence, assign.unassigned.digits),
+        evidenceSpoken = stringResource(R.string.income_assign_evidence, assign.unassigned.spoken),
+        advice = stringResource(R.string.income_assign_advice),
+        actionLabel = stringResource(R.string.income_assign_action),
+        onAction = { onAssign(assign.limit) },
+        modifier = Modifier.testTag("income.assign"),
+        dismissLabel = stringResource(R.string.income_assign_dismiss),
+        onDismiss = { onAction(IncomeHistoryAction.DismissAssign) }
+    )
 }
 
 private fun LazyListScope.planItem(

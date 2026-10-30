@@ -522,4 +522,69 @@ class DataStoreUserPreferencesTest {
         )
         appTheme.join()
     }
+
+    @Test
+    fun aDismissedIncomeSuggestionSurvivesANewAdapterAndALaterMonthReplacesIt() = runTest {
+        val data = HandDataStore()
+        val october = YearMonth.of(2026, 10)
+        val november = YearMonth.of(2026, 11)
+
+        assertEquals(
+            PreferenceRead.Ready<YearMonth?>(null),
+            DataStoreUserPreferences(data).observeDismissedIncomeSuggestion().first()
+        )
+        assertEquals(
+            PreferenceWrite.Saved,
+            DataStoreUserPreferences(data).dismissIncomeSuggestion(october)
+        )
+        assertEquals(
+            PreferenceRead.Ready<YearMonth?>(october),
+            DataStoreUserPreferences(data).observeDismissedIncomeSuggestion().first()
+        )
+        // The stored form is the month alone, and Resumen's own dismissal is untouched.
+        val key = stringPreferencesKey("income_suggestion_dismissed_v1")
+        assertEquals("2026-10", data.data.first()[key])
+        assertEquals(
+            PreferenceRead.Ready<DismissedSuggestion?>(null),
+            DataStoreUserPreferences(data).observeDismissedSuggestion().first()
+        )
+        DataStoreUserPreferences(data).dismissIncomeSuggestion(november)
+        assertEquals(
+            PreferenceRead.Ready<YearMonth?>(november),
+            DataStoreUserPreferences(data).observeDismissedIncomeSuggestion().first()
+        )
+    }
+
+    @Test
+    fun resetForgetsADismissedIncomeSuggestion() = runTest {
+        val preferences = DataStoreUserPreferences(HandDataStore())
+        preferences.dismissIncomeSuggestion(YearMonth.of(2026, 10))
+
+        assertEquals(PreferenceWrite.Saved, preferences.resetAll())
+
+        assertEquals(
+            PreferenceRead.Ready<YearMonth?>(null),
+            preferences.observeDismissedIncomeSuggestion().first()
+        )
+    }
+
+    @Test
+    fun anIncomeSuggestionDismissalThatCannotBeKeptOrIsDamagedFailsVisibly() = runTest {
+        assertEquals(
+            PreferenceWrite.Failed(PreferenceFailure.Unavailable),
+            DataStoreUserPreferences(UnavailableDataStore())
+                .dismissIncomeSuggestion(YearMonth.of(2026, 10))
+        )
+        val damaged = DataStoreUserPreferences(
+            HandDataStore(
+                mutablePreferencesOf(
+                    stringPreferencesKey("income_suggestion_dismissed_v1") to "octubre"
+                )
+            )
+        )
+        assertEquals(
+            PreferenceRead.Failed<YearMonth?>(PreferenceFailure.InvalidValue, null),
+            damaged.observeDismissedIncomeSuggestion().first()
+        )
+    }
 }
