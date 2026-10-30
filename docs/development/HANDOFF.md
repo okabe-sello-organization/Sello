@@ -94,7 +94,7 @@ What each ticket changed is in its pull request, linked from the ticket file
 - No ticket is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
   (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
   keyboard walks). The automated accessibility checks from SELLO-033 stay.
-- Open GitHub issues, such as #248 (device sandbox journeys), are not tickets.
+- Open GitHub issues are not tickets.
 
 All epics live under [docs/tickets](../tickets/README.md).
 

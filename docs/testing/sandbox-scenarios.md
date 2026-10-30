@@ -34,7 +34,7 @@ Zone: America/Bogota for all. Amounts in pesos.
 | `metas@1` | Ahorro para metas | 1 Apr 2026 → 24 Oct 2026 | Goals with aportes, a retiro, a faded stamp, a target change, one marked lograda and one on Recibo |
 | `inversiones@1` | Inversiones con dólares | 3 May 2025 → 24 Oct 2026 | The v2 page's four investments over 18 months with values and dividends, and one in USD with a rate |
 | `pagos-fijos@1` | Pagos fijos y dos semanas fuera | 1 Jul 2026 → 24 Oct 2026 | Schedules with catch-up, a day-31 payment, a weekly one, a pause, a twice-monthly salary, two weeks away, reserved payments and Plan del mes |
-| `seis-meses@1` | Seis meses con todo | 1 Apr 2026 → 24 Oct 2026 | Someone who has used every feature for over six months: schedules, extra income, corrections, limit changes, an archived category, goals and investments in pesos and dollars |
+| `seis-meses@2` | Seis meses con todo | 1 Apr 2026 → 24 Oct 2026 | Someone who has used every feature for over six months: schedules, extra income, corrections, limit changes, an archived category, signed carry, goals and investments in pesos and dollars |
 | `arrastre-cadenas@1` | Arrastre: superávit y déficit | 1 Jan 2027 → 12 Apr 2027 | Five categories that carry from January: a surplus, repeated overspend, a deficit beyond the next base, skipped months and a 28-day February (SC01–SC05) |
 | `arrastre-bisiesto@1` | Arrastre: fin de año y bisiesto | 1 Dec 2027 → 22 Feb 2028 | A chain across the new year into a 29-day February, 8 days left (SC41) |
 | `arrastre-transiciones@1` | Arrastre: apagar, archivar y volver a encender | 1 Jan 2027 → 20 Apr 2027 | Turning carry off, archiving and making a limit unlimited with a balance, turning it on mid-month, whole month from day 1 (SC07, SC17–SC21) |
@@ -114,7 +114,7 @@ Checked by `HistoryLoadTest.fixedPaymentsAndTwoWeeksAway`:
 - The gym on 31 July, 31 August and 30 September; the classes only on 10 July and 10
   August. September spent 2.285.000.
 
-### Seis meses con todo (`seis-meses@1`)
+### Seis meses con todo (`seis-meses@2`)
 
 Hogar 1.500.000, Mercado 800.000 (900.000 from July), Transporte 250.000, Salidas
 300.000 (600.000 for August only), Salud with no limit, Gimnasio 150.000, Mascota
@@ -129,6 +129,10 @@ Hogar 1.500.000, Mercado 800.000 (900.000 from July), Transporte 250.000, Salida
 - **By hand:** Mercado twice a month, a meal out, Farmacia or the dentist some months,
   Cine while Ocio is open. In September a meal entered twice is deleted and a Mercado
   of 305.000 typed as 350.000 is corrected.
+- **Carry:** Mascota carries from 1 April; a vet bill of 400.000 on 12 June overspends it,
+  and Luna's vaccine of 18 July, 50.000, is recorded late on 24 October and confirmed.
+  Ocio carries from 1 May and is archived on 1 August with its 210.000 confirmed and
+  dropped. The other categories never carry.
 - **Goals:** Viaje a Cartagena (4.000.000) 300.000 a month with a retiro of 400.000 on
   10 August; Fondo de emergencia (6.000.000) 500.000 a month, chosen for Recibo in
   October; Regalo de Navidad (600.000) 150.000 from May to August, lograda 1 September.
@@ -141,13 +145,33 @@ Hogar 1.500.000, Mercado 800.000 (900.000 from July), Transporte 250.000, Salida
 Checked by `HistoryLoadTest.sixMonthsOfEverything`:
 
 - October to the 24th: spent 1.200.000 + 120.000 + 3 × 30.000 + 90.000 + 750.000 +
-  230.000 + 45.000 = 2.525.000 of 3.500.000, 975.000 left; set aside 125.000 (internet
-  and the bus on the 28th), margin 850.000. Income 2.350.000, net −175.000,
-  unassigned −1.150.000; Plan del mes expects 2.200.000 on the 30th, 4.550.000 planned,
-  1.050.000 unassigned.
-- August: 3.020.000 of 3.950.000 (Ocio, archived that month, keeps its 150.000), 930.000
-  left; Salidas 60.000 left of its 600.000; income 5.050.000. September: 2.820.000,
-  680.000 left.
+  230.000 + 45.000 = 2.525.000 of 3.500.000 + Mascota's 120.000 carried = 3.620.000,
+  1.095.000 left; set aside 125.000 (internet and the bus on the 28th), margin 970.000.
+  Income 2.350.000, net −175.000, unassigned −1.150.000 (bases only, never the carry);
+  Plan del mes expects 2.200.000 on the 30th, 4.550.000 planned, 1.050.000 unassigned.
+- August: 3.020.000 of 3.950.000 − 100.000 = 3.850.000 (Ocio, archived that month, keeps
+  its 150.000), 830.000 left; Salidas 60.000 left of its 600.000; income 5.050.000.
+  September: 2.820.000 of 3.510.000, 690.000 left.
+- Mascota, base 200.000, by hand from `K(m+1) = K(m) + B(m) − S(m)` (`K` carry-in, `C`
+  capacity, `S` spent, `R` remaining):
+
+  | | abr | may | jun | jul | ago | sep | oct |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | `K` | 0 | 20.000 | 130.000 | −160.000 | −100.000 | 10.000 | 120.000 |
+  | `C` | 200.000 | 220.000 | 330.000 | 40.000 | 100.000 | 210.000 | 320.000 |
+  | `S` | 180.000 | 90.000 | 490.000 | 140.000 | 90.000 | 90.000 | 90.000 |
+  | `R` | 20.000 | 130.000 | −160.000 | −100.000 | 10.000 | 120.000 | 230.000 |
+
+  `S` is Luna (twice in April), the vet in June and the late vaccine in July; without
+  the vaccine July would leave −50.000 and each later `C` and `R` would be 50.000 higher.
+- Ocio, base 150.000 and 80.000 of Cine a month: abr no carry, `R` 70.000; may `K` 0
+  `R` 70.000; jun `K` 70.000 `C` 220.000 `R` 140.000; jul `K` 140.000 `C` 290.000 `R`
+  210.000; ago no carry, `C` 150.000.
+- Resumen's graph, abr–oct: bases 3.550.000 / 3.550.000 / 3.550.000 / 3.650.000 /
+  3.950.000 / 3.500.000 / 3.500.000, carry-in 0 / 20.000 / 200.000 / −20.000 /
+  −100.000 / 10.000 / 120.000, so limit 3.550.000 / 3.570.000 / 3.750.000 / 3.630.000 /
+  3.850.000 / 3.510.000 / 3.620.000; spent 2.930.000 / 2.825.000 / 3.385.000 /
+  2.885.000 / 3.020.000 / 2.820.000 / 2.525.000.
 - The gym on 15 April, May, June, September and October; six phone instalments, the
   last on 20 September.
 - Viaje 1.400.000; Fondo de emergencia 3.500.000 on Recibo; Regalo 600.000, lograda.
@@ -204,7 +228,9 @@ SC01–SC47, or derived by hand from `K(m+1) = K(m) + B(m) − S(m)` and marked 
   that committed before its checkpoint is answered from its receipt after a restart; a
   backup, an interrupted restore, a restore over carrying categories and the app's own
   reset; audit stamps stay in real time, and an open undo window, on a controlled
-  monotonic clock, survives two financial months and ends only when that clock passes it. It adds no device test; device sandbox journeys are tracked in issue #248.
+  monotonic clock, survives two financial months and ends only when that clock passes it.
+  It adds no device test: on 2026-10-29 the owner chose no device sandbox journeys and
+  carry in `seis-meses` instead (#248).
 - `ScenarioDefinitionTest`: each history's steps name what an earlier step made, dates
   only go forward and end on its day, versions are the ones a screen would read, and
   this document names every history and version.
