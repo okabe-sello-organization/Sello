@@ -595,6 +595,39 @@ class GoalBulkViewModelTest {
     }
 
     @Test
+    fun aReceiptThatReachesTheTargetCelebratesOnceAndItsReplayDoesNot() = runTest {
+        // 450.000 + 750.000 = 1.200.000 of 1.200.000: the target, 0 left. No stamps are
+        // passed in the change, so only reaching the target can celebrate.
+        val model = model(goal = celular)
+        model.line(withdrawal = false, "750000")
+        commands.next = committed(GoalChange(emptyList(), emptyList(), true))
+
+        model.onAction(GoalBulkAction.Submit)
+
+        val notice = corrections.notice.value as CorrectionNotice.GoalMovementsRecorded
+        val celebration = notice.celebration!!
+        assertEquals(celular to "Celular nuevo", celebration.goalId to celebration.goalName)
+        assertTrue(celebration.reachedMeta)
+        assertEquals(emptyList<GoalPlace>(), celebration.earned)
+        assertEquals("0", celebration.missing!!.digits)
+        assertEquals(1, commands.sent.size)
+
+        // The same receipt found again by asking after an unknown outcome is not celebrated.
+        val replay = model(goal = celular)
+        replay.line(withdrawal = false, "750000")
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        replay.onAction(GoalBulkAction.Submit)
+        commands.found = Outcome.Success(
+            committed(GoalChange(emptyList(), emptyList(), true)).value.copy(movementIds = null)
+        )
+        replay.onAction(GoalBulkAction.Retry)
+
+        assertTrue(replay.state.value.closed)
+        assertNull((corrections.notice.value as CorrectionNotice.GoalMovementsRecorded).celebration)
+    }
+
+    @Test
     fun aReceiptThatEarnsNothingOrIsAReplayCelebratesNothing() = runTest {
         val plain = model(goal = celular)
         plain.line(withdrawal = false, "1000")
