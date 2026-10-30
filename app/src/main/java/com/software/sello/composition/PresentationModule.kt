@@ -22,6 +22,7 @@ import com.software.sello.feature.backup.RestoreViewModel
 import com.software.sello.feature.category.CategoryEditorViewModel
 import com.software.sello.feature.category.CategoryManagementViewModel
 import com.software.sello.feature.expense.ExpenseEntryViewModel
+import com.software.sello.feature.goals.GoalBulkViewModel
 import com.software.sello.feature.goals.GoalDetailViewModel
 import com.software.sello.feature.goals.GoalEditorViewModel
 import com.software.sello.feature.goals.GoalMovementViewModel
@@ -125,6 +126,7 @@ private fun Module.viewModels() {
     factoryOf(::MetasViewModel)
     factoryOf(::GoalEditorViewModel)
     factoryOf(::GoalMovementViewModel)
+    factoryOf(::GoalBulkViewModel)
     factoryOf(::GoalDetailViewModel)
     factoryOf(::CategoryDetailViewModel)
     factoryOf(::CategoryExpensesViewModel)

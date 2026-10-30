@@ -195,6 +195,16 @@ sealed interface CorrectionNotice {
         val celebration: GoalCelebration? = null
     ) : CorrectionNotice
 
+    /**
+     * A receipt of [count] aportes and retiros storage confirmed: "3 movimientos anotados:
+     * +130.000", [net] being aportes minus retiros. [net] is null when it could not be worked out.
+     */
+    data class GoalMovementsRecorded(
+        val count: Int,
+        val net: MoneyTextValue?,
+        val celebration: GoalCelebration? = null
+    ) : CorrectionNotice
+
     /** A new target, storage confirmed, that earned or relit a stamp (rule 7, MT18). */
     data class GoalTargetChanged(val celebration: GoalCelebration) : CorrectionNotice
 
@@ -230,6 +240,7 @@ sealed interface InvestmentMovementNotice : CorrectionNotice
 val CorrectionNotice.celebration: GoalCelebration?
     get() = when (this) {
         is CorrectionNotice.GoalMovementRecorded -> celebration
+        is CorrectionNotice.GoalMovementsRecorded -> celebration
         is CorrectionNotice.GoalTargetChanged -> celebration
         else -> null
     }
@@ -899,6 +910,9 @@ class Corrections(
 
     /** A screen reports a new aporte or retiro its receipt confirmed, read back from storage. */
     fun goalMovementRecorded(notice: CorrectionNotice.GoalMovementRecorded) = said(notice)
+
+    /** A screen reports a receipt of several aportes and retiros its receipt confirmed. */
+    fun goalMovementsRecorded(notice: CorrectionNotice.GoalMovementsRecorded) = said(notice)
 
     /**
      * Whether [celebration]'s stamps come down now: only the first time a screen asks, so
