@@ -91,7 +91,7 @@ internal fun NavGraphBuilder.resumenDestinations(
                 showName = false, onAction = detail::onAction,
                 onRecordHere = { navigation.navigate(ExpenseEntryRoute(id)) },
                 onShowAllExpenses = { navigation.navigate(CategoryExpensesRoute(id)) },
-                onRecordSeveral = { navigation.navigate(ExpenseBulkRoute(categoryId = id)) },
+                onRecordSeveral = { navigation.navigate(BulkEntryRoute(categoryId = id)) },
                 onSetMonthLimit = { categoryId, month ->
                     navigation.navigate(CategoryEditRoute(categoryId, month.toString()))
                 },

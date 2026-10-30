@@ -315,6 +315,7 @@
     <string name="notice_expense_recorded_amount">Gasto anotado: %1$s</string>
     <string name="notice_expense_recorded_plain">Gasto anotado</string>
     <plurals name="notice_expenses_recorded"><item quantity="one">Gasto anotado: %2$s</item><item quantity="other">%1$d gastos anotados: %2$s</item></plurals>
+    <plurals name="notice_incomes_recorded"><item quantity="one">Ingreso anotado: %2$s</item><item quantity="other">%1$d ingresos anotados: %2$s</item></plurals>
     <string name="notice_income_recorded">Ingreso anotado: %1$s</string>
     <string name="notice_income_recorded_plain">Ingreso anotado</string>
     <string name="income_deleted">Ingreso borrado</string>
@@ -467,6 +468,25 @@
     <string name="bulk_note_context">Renglón %1$d</string>
     <string name="bulk_note_spoken">Nota del renglón %1$d</string>
     <string name="bulk_correction_title">¿Anotar estos gastos?</string>
+    <plurals name="bulk_missing_sources"><item quantity="one">Falta 1 origen</item><item quantity="other">Faltan %d orígenes</item></plurals>
+    <string name="bulk_no_source">Sin origen</string>
+    <string name="bulk_choose_source">Elige un origen</string>
+    <string name="bulk_name_source">Escribe el nombre del origen</string>
+    <string name="bulk_sources_heading">Origen</string>
+    <string name="bulk_sources_heading_line">Origen · renglón %d</string>
+    <plurals name="bulk_submit_incomes"><item quantity="one">Anotar ingreso</item><item quantity="other">Anotar %d ingresos</item></plurals>
+    <string name="bulk_read_failed_incomes">No pudimos leer tus datos. Tus renglones siguen aquí.</string>
+    <string name="bulk_switch_to_incomes">¿Pasar a ingresos?</string>
+    <string name="bulk_switch_to_expenses">¿Pasar a gastos?</string>
+    <plurals name="bulk_switch_to_incomes_message"><item quantity="one">Tu %2$s conserva monto y nota. Tendrás que elegir su origen.</item><item quantity="other">Tus %2$s conservan monto y nota. Tendrás que elegir el origen de cada uno.</item></plurals>
+    <plurals name="bulk_switch_to_expenses_message"><item quantity="one">Tu %2$s conserva monto y nota. Tendrás que elegir su categoría.</item><item quantity="other">Tus %2$s conservan monto y nota. Tendrás que elegir la categoría de cada uno.</item></plurals>
+    <string name="bulk_switch_go_income">Pasar a ingreso</string>
+    <string name="bulk_switch_go_expense">Pasar a gasto</string>
+    <string name="bulk_switch_keep_expenses">Seguir con gastos</string>
+    <string name="bulk_switch_keep_incomes">Seguir con ingresos</string>
+    <string name="bulk_source_name_context">Renglón %1$d · Origen</string>
+    <string name="bulk_source_name_context_end">nombre</string>
+    <string name="bulk_source_name_spoken">Nombre del origen Otro del renglón %1$d</string>
     <string name="expense_edit_title">Editar gasto</string>
     <string name="expense_edit_submit">Guardar cambios</string>
     <string name="expense_edit_submit_description">Guardar cambios: gasto de %1$s en %2$s</string>
@@ -539,6 +559,7 @@
     <string name="income_history_guidance">Puedes corregir ingresos de meses anteriores. Su fecha determina el mes que cambia; no cambia tus gastos ni tus límites.</string>
     <string name="income_past_months">Esta corrección afecta los ingresos de %1$s.</string>
     <string name="income_history_title">Ingresos</string>
+    <string name="income_record_several">Anotar varios</string>
     <string name="income_history_title_month">Ingresos de %1$s</string>
     <string name="dock_income_label">Anotar un ingreso</string>
     <string name="income_came_in">Entró en %1$s</string>

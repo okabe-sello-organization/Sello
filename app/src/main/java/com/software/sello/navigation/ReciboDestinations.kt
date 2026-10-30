@@ -104,7 +104,7 @@ internal fun NavGraphBuilder.reciboDestinations(
             },
             // Opened from the month on screen: that is the month whose limit it edits.
             onShowAllExpenses = { id -> navigation.navigate(CategoryExpensesRoute(id)) },
-            onRecordSeveral = { id -> navigation.navigate(ExpenseBulkRoute(categoryId = id)) },
+            onRecordSeveral = { id -> navigation.navigate(BulkEntryRoute(categoryId = id)) },
             onOpenRecorded = { navigation.navigate(CatchUpRoute) { launchSingleTop = true } },
             onOpenReserved = {
                 navigation.navigate(UpcomingPaymentsRoute) { launchSingleTop = true }

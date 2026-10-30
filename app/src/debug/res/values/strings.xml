@@ -46,7 +46,7 @@
     <string name="tools_scenario_loaded">Cargada. Hoy es el %1$s.</string>
     <string name="tools_scenario_retry">Seguir cargando</string>
     <string name="tools_receipts_heading">Anotar varios</string>
-    <string name="tools_receipts_note">El próximo recibo de varios gastos se guarda de verdad, pero la app no se entera: muestra «Aún no sabemos si se guardó» y la primera comprobación también falla. La siguiente lo encuentra.</string>
+    <string name="tools_receipts_note">El próximo recibo de varios gastos o ingresos se guarda de verdad, pero la app no se entera: muestra «Aún no sabemos si se guardó» y la primera comprobación también falla. La siguiente lo encuentra.</string>
     <string name="tools_receipts_arm">Ocultar el resultado del próximo recibo</string>
     <string name="tools_receipts_armed">Listo: el próximo recibo quedará sin resultado.</string>
 </resources>

@@ -18,6 +18,7 @@ import com.software.sello.feature.bulk.BulkEntryRoot
 import com.software.sello.feature.expense.ExpenseEntryRoot
 import com.software.sello.feature.expense.ExpenseSeveral
 import com.software.sello.feature.income.IncomeFormRoot
+import com.software.sello.feature.income.IncomeSeveral
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,8 +44,8 @@ internal fun NavGraphBuilder.expenseDestinations(
                 announcements::retry
             },
             announcementFailed = announcementState.failure != null,
-            onSeveral = { several ->
-                navigation.navigate(several.route()) {
+            onSeveral = { route ->
+                navigation.navigate(route) {
                     popUpTo<ExpenseEntryRoute> { inclusive = true }
                 }
             }
@@ -54,9 +55,9 @@ internal fun NavGraphBuilder.expenseDestinations(
             if (onEntry == true) navigation.popBackStack()
         }
     }
-    composable<ExpenseBulkRoute> {
+    composable<BulkEntryRoute> {
         BulkEntryRoot(viewModels) {
-            val onBulk = navigation.currentBackStackEntry?.destination?.hasRoute<ExpenseBulkRoute>()
+            val onBulk = navigation.currentBackStackEntry?.destination?.hasRoute<BulkEntryRoute>()
             if (onBulk == true) navigation.popBackStack()
         }
     }
@@ -89,7 +90,7 @@ internal fun EntryDestination(
     onDismissPastExpense: () -> Unit,
     announcementFailed: Boolean,
     result: SavedStateHandle? = null,
-    onSeveral: ((ExpenseSeveral) -> Unit)? = null,
+    onSeveral: ((BulkEntryRoute) -> Unit)? = null,
     onClosed: () -> Unit
 ) {
     var income by rememberSaveable { mutableStateOf(startsWithIncome) }
@@ -100,7 +101,12 @@ internal fun EntryDestination(
         }
         ).collectAsStateWithLifecycle()
     if (income) {
-        IncomeFormRoot(viewModels, onClosed, onExpense = { income = false })
+        IncomeFormRoot(
+            viewModels,
+            onClosed,
+            onExpense = { income = false },
+            onSeveral = onSeveral?.let { go -> { several -> go(several.route()) } }
+        )
     } else {
         ExpenseEntryRoot(
             viewModels,
@@ -111,11 +117,21 @@ internal fun EntryDestination(
             announcementFailed = announcementFailed,
             createdCategoryId = created,
             onCreatedCategoryTaken = { result?.set(CREATED_CATEGORY_RESULT, null) },
-            onSeveral = onSeveral,
+            onSeveral = onSeveral?.let { go -> { several -> go(several.route()) } },
             onClosed = onClosed
         )
     }
 }
 
 /** Anotar varios with what was typed in Anotar as its first line. */
-internal fun ExpenseSeveral.route() = ExpenseBulkRoute(categoryId, amount, note, date.toString())
+internal fun ExpenseSeveral.route() = BulkEntryRoute(categoryId, amount, note, date.toString())
+
+/** Anotar varios for incomes, with what was typed in Anotar as its first line. */
+internal fun IncomeSeveral.route() = BulkEntryRoute(
+    amount = amount,
+    note = note,
+    date = date.toString(),
+    income = true,
+    source = sourceKey,
+    sourceName = otherName
+)

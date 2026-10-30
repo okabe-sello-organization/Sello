@@ -130,6 +130,7 @@ class BulkEntryViewModelTest {
     private fun sheet(saved: SavedStateHandle = SavedStateHandle()) = BulkEntryViewModel(
         saved,
         commands,
+        HandIncomeBatchCommands(),
         snapshots,
         clock,
         { uuid(nextId++) },

@@ -108,7 +108,8 @@ class IncomeFormViewModel(
         /** The schedule that recorded the income being corrected, while it still exists. */
         val following: StoredSchedule? = null,
         /** Saving waits for Solo este or Este y los siguientes. */
-        val askFollowing: Boolean = false
+        val askFollowing: Boolean = false,
+        val several: IncomeSeveral? = null
     )
 
     private val editing = saved.get<String>(KEY_EDITED_INCOME) != null
@@ -238,6 +239,23 @@ class IncomeFormViewModel(
                 action.key in IncomeSource.keys
             ) {
                 change(draft.value.copy(source = action.key))
+            }
+
+            IncomeFormAction.Several -> if (now.canOpenSeveral && !now.loading) {
+                val typed = draft.value
+                progress.update {
+                    it.copy(
+                        several = IncomeSeveral(
+                            amount = (typed.amount as? AmountDraft.Digits)?.digits,
+                            sourceKey = typed.source,
+                            otherName = typed.other.takeIf { name ->
+                                typed.source == IncomeSource.Other.KEY && name.isNotBlank()
+                            },
+                            note = typed.note.takeIf { note -> note.isNotBlank() },
+                            date = typed.date
+                        )
+                    )
+                }
             }
 
             is IncomeFormAction.OtherNameChanged -> if (now.editable) {
@@ -810,6 +828,7 @@ class IncomeFormViewModel(
             editing = editing,
             repeat = repeating,
             askFollowing = progress.askFollowing,
+            several = progress.several,
             following = progress.following?.let { following ->
                 val income = following.schedule.entry as? ScheduledEntry.Income
                 FollowingSchedule(

@@ -9,6 +9,7 @@ import com.software.sello.devtools.FencedCategoryCommands
 import com.software.sello.devtools.FencedExpenseBatchCommands
 import com.software.sello.devtools.FencedExpenseCommands
 import com.software.sello.devtools.FencedGoalCommands
+import com.software.sello.devtools.FencedIncomeBatchCommands
 import com.software.sello.devtools.FencedIncomeCommands
 import com.software.sello.devtools.FencedInvestmentCommands
 import com.software.sello.devtools.FencedScheduleCatchUp
@@ -36,6 +37,7 @@ import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.GoalCommands
+import com.software.sello.domain.port.IncomeBatchCommands
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.ScheduleCatchUpStore
@@ -140,6 +142,14 @@ class DebugComposition(
                 single<ExpenseBatchCommands> {
                     FencedExpenseBatchCommands(
                         get<FinancialStorage>().expenseBatchCommands(get(), get(), get()),
+                        fence,
+                        saved,
+                        receipts
+                    )
+                }
+                single<IncomeBatchCommands> {
+                    FencedIncomeBatchCommands(
+                        get<FinancialStorage>().incomeBatchCommands(get(), get(), get()),
                         fence,
                         saved,
                         receipts

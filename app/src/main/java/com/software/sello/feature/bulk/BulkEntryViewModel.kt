@@ -6,25 +6,31 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.ExactTotal
+import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.EntryBatchPolicy
 import com.software.sello.domain.port.CommandRejection
-import com.software.sello.domain.port.CommittedExpenses
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateExpenses
+import com.software.sello.domain.port.CreateIncomes
 import com.software.sello.domain.port.ExpenseBatchCommands
 import com.software.sello.domain.port.ExpenseBatchRejection
 import com.software.sello.domain.port.ExpenseLine
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.IncomeBatchCommands
+import com.software.sello.domain.port.IncomeBatchRejection
+import com.software.sello.domain.port.IncomeLine
 import com.software.sello.domain.port.LineRefusal
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.domain.port.RefusedLine
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.presentation.carry.CarryCorrectionText
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -52,8 +58,9 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 /**
- * Anotar varios for expenses: several lines typed on one receipt and saved through
- * [ExpenseBatchCommands] as one operation, every line or none.
+ * Anotar varios: several expenses or several incomes typed on one receipt and saved through
+ * [ExpenseBatchCommands] or [IncomeBatchCommands] as one operation, every line or none. The
+ * Gasto/Ingreso switch sets the kind of the whole receipt; lines are never mixed.
  *
  * The lines, the highlighted line, the date and the operation of a save in progress are
  * kept in [saved], so rotation or the process being killed neither loses the receipt nor
@@ -67,6 +74,7 @@ import kotlinx.serialization.Serializable
 class BulkEntryViewModel(
     private val saved: SavedStateHandle,
     private val commands: ExpenseBatchCommands,
+    private val incomes: IncomeBatchCommands,
     snapshots: MonthlySnapshots,
     private val clock: FinancialClock,
     private val ids: RecordIdSource,
@@ -81,12 +89,18 @@ class BulkEntryViewModel(
     /** The lines of the receipt last sent, by key, in the order storage numbers them. */
     private var sentKeys: List<Int> = emptyList()
 
+    /**
+     * [categoryId] is for an expense, [sourceKey] and [otherName] for an income; a line has
+     * only those of its receipt's kind.
+     */
     @Serializable
     private data class Line(
         val key: Int,
         @Serializable(with = AmountDraftSerializer::class) val amount: AmountDraft,
         val categoryId: String?,
-        val note: String
+        val note: String,
+        val sourceKey: String? = null,
+        val otherName: String = ""
     )
 
     @Serializable
@@ -94,7 +108,8 @@ class BulkEntryViewModel(
         val lines: List<Line>,
         val highlighted: Int,
         @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
-        val nextKey: Int
+        val nextKey: Int,
+        val kind: BulkKind = BulkKind.Expense
     )
 
     /** A line taken off the draft and where it was, for Deshacer. */
@@ -108,6 +123,7 @@ class BulkEntryViewModel(
         val busy: Boolean = false,
         val error: BulkError? = null,
         val confirmDiscard: Boolean = false,
+        val confirmSwitch: Boolean = false,
         val removed: Removed? = null,
         /** Lines storage refused, by key, until they change. */
         val refused: Map<Int, LineProblem> = emptyMap(),
@@ -126,6 +142,9 @@ class BulkEntryViewModel(
     /** The note being written in its composer; kept in [saved] so a restart reopens it. */
     private val noteDraft: StateFlow<String?> = saved.getStateFlow(KEY_NOTE_DRAFT, null)
 
+    /** Whether the composer writes the note or Otro's name; kept with it. */
+    private val composing: StateFlow<Boolean> = saved.getStateFlow(KEY_COMPOSING_NAME, false)
+
     /** The month of the receipt's date: its categories and the generation to send. */
     private val month: StateFlow<SnapshotState> =
         combine(
@@ -136,14 +155,14 @@ class BulkEntryViewModel(
             .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     val state: StateFlow<BulkEntryState> =
-        combine(draft, progress, month, clock.today, noteDraft) {
-                draft,
-                progress,
-                month,
-                today,
-                note
-            ->
-            render(draft, progress, month, today.date, note)
+        combine(
+            draft,
+            progress,
+            month,
+            clock.today,
+            combine(noteDraft, composing) { note, name -> note to name }
+        ) { draft, progress, month, today, (note, name) ->
+            render(draft, progress, month, today.date, note, name)
         }.stateIn(
             viewModelScope,
             SharingStarted.Eagerly,
@@ -152,7 +171,8 @@ class BulkEntryViewModel(
                 progress.value,
                 month.value,
                 clock.today.value.date,
-                noteDraft.value
+                noteDraft.value,
+                composing.value
             )
         )
 
@@ -170,12 +190,22 @@ class BulkEntryViewModel(
 
     /**
      * The first draft: what was typed in Anotar becomes line one and a second line, in the
-     * same category, waits for the next amount; otherwise one empty line, in the category
-     * it was opened from, if any.
+     * same category or source, waits for the next amount; otherwise one empty line, in the
+     * category it was opened from, if any.
      */
     private fun opening(): Draft {
         val today = clock.today.value.date
-        val category = saved.get<String>(KEY_PREFILL_CATEGORY)
+        val kind = if (saved.get<Boolean>(KEY_PREFILL_INCOME) == true) {
+            BulkKind.Income
+        } else {
+            BulkKind.Expense
+        }
+        val category = saved.get<String>(KEY_PREFILL_CATEGORY).takeIf { kind == BulkKind.Expense }
+        val source = saved.get<String>(KEY_PREFILL_SOURCE)
+            ?.takeIf { kind == BulkKind.Income && it in IncomeSource.keys }
+        val otherName = saved.get<String>(KEY_PREFILL_SOURCE_NAME)
+            ?.takeIf { source == IncomeSource.Other.KEY && SourceName.of(it) is Outcome.Success }
+            .orEmpty()
         // A hint that is not valid is dropped, not shown as an error the person did not make.
         val amount = saved.get<String>(KEY_PREFILL_AMOUNT)?.let(AmountDraft::paste)
             ?.takeIf { it.toTransactionAmount() is Outcome.Success }
@@ -185,15 +215,22 @@ class BulkEntryViewModel(
         return if (amount != null) {
             Draft(
                 listOf(
-                    Line(0, amount, category, note.orEmpty()),
-                    Line(1, AmountDraft.Empty, category, "")
+                    Line(0, amount, category, note.orEmpty(), source, otherName),
+                    Line(1, AmountDraft.Empty, category, "", source, otherName)
                 ),
                 highlighted = 1,
                 date = date,
-                nextKey = 2
+                nextKey = 2,
+                kind = kind
             )
         } else {
-            Draft(listOf(Line(0, AmountDraft.Empty, category, note.orEmpty())), 0, date, 1)
+            Draft(
+                listOf(Line(0, AmountDraft.Empty, category, note.orEmpty(), source, otherName)),
+                0,
+                date,
+                1,
+                kind
+            )
         }
     }
 
@@ -260,10 +297,39 @@ class BulkEntryViewModel(
                 progress.update { it.copy(atLimit = false) }
             }
 
-            is BulkEntryAction.CategoryPicked ->
-                if (now.editable && now.categories.any { it.id == action.id }) {
-                    editLine { it.copy(categoryId = action.id) }
+            is BulkEntryAction.CategoryPicked -> if (now.editable &&
+                now.kind == BulkKind.Expense &&
+                now.categories.any { it.id == action.id }
+            ) {
+                editLine { it.copy(categoryId = action.id) }
+            }
+
+            is BulkEntryAction.SourcePicked -> if (now.editable &&
+                now.kind == BulkKind.Income &&
+                action.key in IncomeSource.keys
+            ) {
+                editLine { it.copy(sourceKey = action.key) }
+                // Otro asks for its name at once, as written before, if it had one.
+                if (action.key == IncomeSource.Other.KEY) openSourceName()
+            }
+
+            BulkEntryAction.OpenSourceName ->
+                if (now.editable && now.highlightedLine.source?.other == true) openSourceName()
+
+            is BulkEntryAction.KindPicked -> if (now.editable && action.kind != now.kind) {
+                if (now.typedLines > 0) {
+                    progress.update { it.copy(confirmSwitch = true) }
+                } else {
+                    switchKind()
                 }
+            }
+
+            BulkEntryAction.SwitchConfirmed -> if (now.confirmSwitch) {
+                progress.update { it.copy(confirmSwitch = false) }
+                if (now.editable) switchKind()
+            }
+
+            BulkEntryAction.SwitchDismissed -> progress.update { it.copy(confirmSwitch = false) }
 
             is BulkEntryAction.Select -> if (now.editable && action.index in now.lines.indices) {
                 edit { it.copy(highlighted = action.index) }
@@ -284,7 +350,9 @@ class BulkEntryViewModel(
                             it.nextKey,
                             AmountDraft.Empty,
                             above.categoryId,
-                            ""
+                            "",
+                            above.sourceKey,
+                            above.otherName
                         ),
                         highlighted = it.lines.size,
                         nextKey = it.nextKey + 1
@@ -315,6 +383,7 @@ class BulkEntryViewModel(
             }
 
             BulkEntryAction.OpenNote -> if (now.editable) {
+                saved[KEY_COMPOSING_NAME] = false
                 saved[KEY_NOTE_DRAFT] = draft.value.lines[draft.value.highlighted].note
             }
 
@@ -324,9 +393,18 @@ class BulkEntryViewModel(
             // Over the limit nothing is taken: the composer stays open with the text in it.
             BulkEntryAction.NoteDone -> {
                 val written = saved.get<String>(KEY_NOTE_DRAFT)
-                if (written != null && now.editable && Note.of(written) is Outcome.Success) {
-                    editLine { it.copy(note = written) }
-                    saved[KEY_NOTE_DRAFT] = null
+                when {
+                    written == null || !now.editable -> Unit
+
+                    composing.value -> if (SourceName.of(written) is Outcome.Success) {
+                        editLine { it.copy(otherName = written) }
+                        saved[KEY_NOTE_DRAFT] = null
+                    }
+
+                    Note.of(written) is Outcome.Success -> {
+                        editLine { it.copy(note = written) }
+                        saved[KEY_NOTE_DRAFT] = null
+                    }
                 }
             }
 
@@ -365,6 +443,39 @@ class BulkEntryViewModel(
     }
 
     private fun highlightedAmount() = draft.value.lines[draft.value.highlighted].amount
+
+    private fun openSourceName() {
+        saved[KEY_COMPOSING_NAME] = true
+        saved[KEY_NOTE_DRAFT] = draft.value.lines[draft.value.highlighted].otherName
+    }
+
+    /**
+     * Turns the whole receipt into the other kind. Amounts and notes stay; every category
+     * and source goes, so nothing is filed where the person did not put it. What was refused,
+     * the list of later months and the line Deshacer would bring back belong to the old kind.
+     */
+    private fun switchKind() {
+        edit { now ->
+            now.copy(
+                kind = if (now.kind == BulkKind.Expense) BulkKind.Income else BulkKind.Expense,
+                lines = now.lines.map {
+                    it.copy(categoryId = null, sourceKey = null, otherName = "")
+                },
+                highlighted = 0
+            )
+        }
+        confirmation = null
+        saved[KEY_NOTE_DRAFT] = null
+        progress.update {
+            it.copy(
+                atLimit = false,
+                error = null,
+                removed = null,
+                refused = emptyMap(),
+                correction = null
+            )
+        }
+    }
 
     private fun key(change: AmountDraft.Change) {
         editLine { it.copy(amount = change.draft) }
@@ -414,6 +525,13 @@ class BulkEntryViewModel(
 
     private fun submit() {
         val snapshot = (month.value as? ReadState.Ready)?.value ?: return
+        when (draft.value.kind) {
+            BulkKind.Expense -> submitExpenses(snapshot)
+            BulkKind.Income -> submitIncomes(snapshot)
+        }
+    }
+
+    private fun submitExpenses(snapshot: MonthlySnapshot) {
         val now = draft.value
         val offered = eligible(snapshot).map { it.id }.toSet()
         // Only lines with an amount are sent; each in a category the receipt offers.
@@ -440,11 +558,42 @@ class BulkEntryViewModel(
                     )
                 )
             }
-            settle(settled)
+            settle(settled, ::refused)
         }
     }
 
-    private suspend fun settle(settled: Settled<CommittedExpenses, ExpenseBatchRejection>?) {
+    private fun submitIncomes(snapshot: MonthlySnapshot) {
+        val now = draft.value
+        // Only lines with an amount are sent; each with a source, Otro with its name.
+        val sent = now.lines.mapNotNull { line ->
+            val amount = (line.amount.toTransactionAmount() as? Outcome.Success)?.value
+                ?: return@mapNotNull null
+            val source = line.source() ?: return
+            val note = Note.of(line.note) as? Outcome.Success ?: return
+            line.key to IncomeLine(source, amount, note.value)
+        }
+        if (sent.isEmpty()) return
+        sentKeys = sent.map { it.first }
+        progress.update { it.copy(busy = true, error = null) }
+        viewModelScope.launch {
+            val settled = submission.send(incomes::find) { operation ->
+                incomes.create(
+                    CreateIncomes(operation, snapshot.generation, now.date, sent.map { it.second })
+                )
+            }
+            settle(settled, ::refused)
+        }
+    }
+
+    /** The line's income source, or null while it has none that can be saved. */
+    private fun Line.source(): IncomeSource? {
+        val key = sourceKey ?: return null
+        val name = otherName.takeIf { key == IncomeSource.Other.KEY }
+        return (IncomeSource.of(key, name) as? Outcome.Success)?.value
+    }
+
+    /** [refused] reads a refusal; asking about a saved operation never gets one. */
+    private suspend fun <R> settle(settled: Settled<*, R>?, refused: (R) -> Unit = {}) {
         when (settled) {
             // Something is still in flight and will settle; or nothing was left to ask about.
             null -> if (!submission.pending) progress.update { it.copy(busy = false) }
@@ -481,30 +630,7 @@ class BulkEntryViewModel(
         when (reason) {
             is ExpenseBatchRejection.LineCount -> failed(BulkError.NotSaved)
 
-            is ExpenseBatchRejection.Lines -> {
-                val reasons = reason.refused.map { it.reason }
-                when {
-                    reasons.any { it is LineRefusal.FutureDate } -> failed(BulkError.FutureDate)
-
-                    reasons.any { it == LineRefusal.InvalidDate } -> failed(BulkError.InvalidDate)
-
-                    else -> {
-                        // Each refused line by its place among the lines that were sent.
-                        val marked = reason.refused.mapNotNull { line ->
-                            val key = sentKeys.getOrNull(line.position) ?: return@mapNotNull null
-                            val problem = when (line.reason) {
-                                LineRefusal.CategoryArchived -> LineProblem.CategoryArchived
-                                LineRefusal.CategoryMissing -> LineProblem.CategoryMissing
-                                else -> LineProblem.MonthFull
-                            }
-                            key to problem
-                        }.toMap()
-                        progress.update {
-                            it.copy(busy = false, error = BulkError.NotSaved, refused = marked)
-                        }
-                    }
-                }
-            }
+            is ExpenseBatchRejection.Lines -> refusedLines(reason.refused)
 
             // It reaches a closed month of a carry chain: the list first, then the same
             // receipt with what came with it (CP20, SC34).
@@ -528,10 +654,46 @@ class BulkEntryViewModel(
         }
     }
 
+    private fun refused(reason: IncomeBatchRejection) {
+        when (reason) {
+            is IncomeBatchRejection.LineCount -> failed(BulkError.NotSaved)
+            is IncomeBatchRejection.Lines -> refusedLines(reason.refused)
+        }
+    }
+
+    private fun refusedLines(refused: List<RefusedLine>) {
+        val reasons = refused.map { it.reason }
+        when {
+            reasons.any { it is LineRefusal.FutureDate } -> failed(BulkError.FutureDate)
+
+            reasons.any { it == LineRefusal.InvalidDate } -> failed(BulkError.InvalidDate)
+
+            else -> {
+                // Each refused line by its place among the lines that were sent.
+                val marked = refused.mapNotNull { line ->
+                    val key = sentKeys.getOrNull(line.position) ?: return@mapNotNull null
+                    val problem = when (line.reason) {
+                        LineRefusal.CategoryArchived -> LineProblem.CategoryArchived
+                        LineRefusal.CategoryMissing -> LineProblem.CategoryMissing
+                        else -> LineProblem.MonthFull
+                    }
+                    key to problem
+                }.toMap()
+                progress.update {
+                    it.copy(busy = false, error = BulkError.NotSaved, refused = marked)
+                }
+            }
+        }
+    }
+
     /** Asks storage how the saved operation ended, with its own ID. Only a receipt counts. */
     private suspend fun recover() {
         progress.update { it.copy(busy = true, error = null) }
-        settle(submission.recover(commands::find))
+        // The kind cannot change while a save is pending: it is the kind that was sent.
+        when (draft.value.kind) {
+            BulkKind.Expense -> settle(submission.recover(commands::find))
+            BulkKind.Income -> settle(submission.recover(incomes::find))
+        }
     }
 
     /**
@@ -541,9 +703,16 @@ class BulkEntryViewModel(
     private fun announce() {
         progress.update { it.copy(busy = true, error = null, recorded = true) }
         val amounts = amounts(draft.value)
-        corrections.expensesRecorded(
-            CorrectionNotice.ExpensesRecorded(amounts.size, money.format(total(amounts)))
-        )
+        val total = money.format(total(amounts))
+        when (draft.value.kind) {
+            BulkKind.Expense -> corrections.expensesRecorded(
+                CorrectionNotice.ExpensesRecorded(amounts.size, total)
+            )
+
+            BulkKind.Income -> corrections.incomesRecorded(
+                CorrectionNotice.IncomesRecorded(amounts.size, total)
+            )
+        }
         progress.update { it.copy(busy = false, closed = true) }
     }
 
@@ -572,28 +741,53 @@ class BulkEntryViewModel(
         progress: Progress,
         month: SnapshotState,
         today: LocalDate,
-        writing: String?
+        writing: String?,
+        naming: Boolean
     ): BulkEntryState {
+        val income = draft.kind == BulkKind.Income
         val snapshot = snapshotOf(month)
-        val categories = snapshot?.let(::eligible).orEmpty()
-            .map { BulkCategory(it.id.value, it.name.value, it.icon.value) }
+        val categories = if (income) {
+            emptyList()
+        } else {
+            snapshot?.let(::eligible).orEmpty()
+                .map { BulkCategory(it.id.value, it.name.value, it.icon.value) }
+        }
         val known = snapshot != null
         val lines = draft.lines.map { line ->
             val amount = (line.amount.toTransactionAmount() as? Outcome.Success)?.value
             val category = categories.firstOrNull { it.id == line.categoryId }
+            val source = line.sourceKey?.takeIf { income }?.let { key ->
+                BulkSource(
+                    key,
+                    line.otherName.takeIf {
+                        key == IncomeSource.Other.KEY &&
+                            it.isNotBlank()
+                    }
+                )
+            }
+            val missing = when {
+                amount == null -> null
+                !income -> LineProblem.NoCategory.takeIf { known && category == null }
+                source == null -> LineProblem.NoSource
+                line.source() == null -> LineProblem.NoSourceName
+                else -> null
+            }
             BulkLineUi(
                 key = line.key.toString(),
                 category = category,
                 amount = amount?.let { money.format(it.money) },
                 note = line.note,
-                problem = progress.refused[line.key]
-                    ?: LineProblem.NoCategory.takeIf { known && amount != null && category == null }
+                problem = progress.refused[line.key] ?: missing,
+                source = source
             )
         }
         val amounts = amounts(draft)
         val noteDraft = writing?.takeIf { !progress.recorded }
-        val checkedNote = noteDraft?.let(Note::of) as? Outcome.Failure
+        val checkedNote = noteDraft?.let {
+            if (naming) SourceName.of(it) else Note.of(it)
+        } as? Outcome.Failure
         return BulkEntryState(
+            kind = draft.kind,
             lines = lines,
             highlighted = draft.highlighted,
             date = draft.date,
@@ -601,22 +795,31 @@ class BulkEntryViewModel(
             loading = !progress.recorded && !known && month is ReadState.Loading,
             readFailed = !progress.recorded && month is ReadState.Failed,
             categories = categories,
+            sources = if (income) IncomeSource.keys else emptyList(),
             total = money.format(total(amounts)),
             count = amounts.size,
-            missingCategories = lines.count { it.problem == LineProblem.NoCategory },
+            missingCategories = lines.count { it.problem in Missing },
             refusedLines = lines.count { progress.refused.containsKey(it.key.toInt()) },
             atLimit = progress.atLimit,
             limitPulse = progress.limitPulse,
             datePickerOpen = progress.datePickerOpen,
             noteDraft = noteDraft,
+            composing = if (naming) BulkComposer.SourceName else BulkComposer.Note,
             noteDraftTooLong = checkedNote?.error is TextError.TooLong,
-            noteDraftNotAllowed = checkedNote != null && checkedNote.error !is TextError.TooLong,
+            noteDraftNotAllowed = checkedNote?.error == TextError.ControlCharacter,
+            noteDraftRequired = checkedNote?.error == TextError.Required,
             noteDraftLength = noteDraft?.trim()?.let { it.codePointCount(0, it.length) } ?: 0,
             busy = progress.busy,
             error = progress.error,
             confirmDiscard = progress.confirmDiscard,
+            confirmSwitch = progress.confirmSwitch,
             removed = progress.removed?.let { removed ->
-                RemovedLine(categories.firstOrNull { it.id == removed.line.categoryId }?.name)
+                RemovedLine(
+                    categories.firstOrNull { it.id == removed.line.categoryId }?.name,
+                    removed.line.sourceKey?.takeIf { income }?.let { key ->
+                        BulkSource(key, removed.line.otherName.takeIf { it.isNotBlank() })
+                    }
+                )
             },
             correction = progress.correction,
             recorded = progress.recorded,
@@ -630,12 +833,20 @@ class BulkEntryViewModel(
         const val KEY_PREFILL_AMOUNT = "amount"
         const val KEY_PREFILL_NOTE = "note"
         const val KEY_PREFILL_DATE = "date"
+        const val KEY_PREFILL_INCOME = "income"
+        const val KEY_PREFILL_SOURCE = "source"
+        const val KEY_PREFILL_SOURCE_NAME = "sourceName"
 
         private const val KEY_DRAFT = "bulk.expense.draft"
         private const val KEY_NOTE_DRAFT = "bulk.expense.note.draft"
+        private const val KEY_COMPOSING_NAME = "bulk.composing.name"
         private const val KEY_OPERATION = "bulk.expense.operation"
         private const val KEY_SAVED = "bulk.expense.saved"
 
         private val DateErrors = setOf(BulkError.FutureDate, BulkError.InvalidDate)
+
+        /** What a line still needs before it can be saved. */
+        private val Missing =
+            setOf(LineProblem.NoCategory, LineProblem.NoSource, LineProblem.NoSourceName)
     }
 }
