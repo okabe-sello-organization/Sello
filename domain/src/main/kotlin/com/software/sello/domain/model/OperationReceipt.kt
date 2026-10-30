@@ -31,6 +31,9 @@ enum class OperationKind(val key: String) {
     EditGoal("goal.edit"),
     ChangeGoalTarget("goal.change_target"),
     RecordGoalMovement("goal.record_movement"),
+
+    /** Several aportes and retiros of one goal on one receipt, all or none. */
+    RecordGoalMovements("goal.record_movements"),
     EditGoalMovement("goal.edit_movement"),
     DeleteGoalMovement("goal.delete_movement"),
     RestoreGoalMovement("goal.restore_movement"),
@@ -41,6 +44,9 @@ enum class OperationKind(val key: String) {
     CreateInvestment("investment.create"),
     EditInvestment("investment.edit"),
     RecordInvestmentMovement("investment.record_movement"),
+
+    /** Several movements of one investment, saved together or not at all. */
+    RecordInvestmentMovements("investment.record_movements"),
     EditInvestmentMovement("investment.edit_movement"),
     DeleteInvestmentMovement("investment.delete_movement"),
     RestoreInvestmentMovement("investment.restore_movement"),

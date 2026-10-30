@@ -185,7 +185,7 @@ class UsdRateViewModelTest {
         // Back waits while the outcome is not known; asking again finds it saved.
         model.onAction(UsdRateEntryAction.Back)
         assertFalse(model.state.value.closed)
-        commands.found = Outcome.Success(committed().value)
+        commands.found = Outcome.Success(committed().value.copy(movementIds = null))
         model.onAction(UsdRateEntryAction.Retry)
         runCurrent()
         assertTrue(model.state.value.closed)

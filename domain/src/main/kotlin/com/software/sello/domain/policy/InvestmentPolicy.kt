@@ -6,6 +6,7 @@ import com.software.sello.domain.model.GainDirection
 import com.software.sello.domain.model.InvestmentFigures
 import com.software.sello.domain.model.InvestmentHistory
 import com.software.sello.domain.model.InvestmentHistoryError
+import com.software.sello.domain.model.InvestmentLineError
 import com.software.sello.domain.model.InvestmentMovement
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.InvestmentReturn
@@ -178,6 +179,43 @@ object InvestmentPolicy {
             history.movements + movement
         }
         return history.copy(movements = movements)
+    }
+
+    /**
+     * [history] with [lines] added, each at the recording position the caller gave it
+     * after every recorded one, in line order: on a shared date a line replays after what
+     * is recorded and after the lines before it (SELLO-129). Refuses as [figures] does,
+     * naming the line at fault: the line the rule broke at or, when it broke at a recorded
+     * retiro, the last value or retiro line replayed before that retiro, which left it
+     * short. Only a value or a retiro lowers what a later retiro may take, and a line
+     * replayed after a movement cannot change it.
+     */
+    fun withLines(
+        history: InvestmentHistory,
+        lines: List<InvestmentMovement>
+    ): Outcome<InvestmentFigures, InvestmentLineError> {
+        val combined = history.copy(movements = history.movements + lines)
+        val error = when (val worked = figures(combined)) {
+            is Outcome.Success -> return worked
+            is Outcome.Failure -> worked.error
+        }
+        val broken = when (error) {
+            is InvestmentHistoryError.WithdrawalAboveValue -> error.withdrawal
+            is InvestmentHistoryError.WithdrawalWithoutValue -> error.withdrawal
+            is InvestmentHistoryError.BeforeFirstContribution -> error.movement
+            is InvestmentHistoryError.CurrencyMismatch -> error.movement
+            InvestmentHistoryError.NoContribution, InvestmentHistoryError.Unrepresentable -> null
+        }
+        val own = lines.indexOfFirst { it.id == broken }
+        if (broken == null || own >= 0) {
+            return Outcome.Failure(InvestmentLineError(own.takeIf { it >= 0 }, error))
+        }
+        val at = combined.movements.first { it.id == broken }
+        val lowering = setOf(InvestmentMovementKind.Valuation, InvestmentMovementKind.Withdrawal)
+        val culprit = lines.withIndex()
+            .filter { (_, line) -> line.kind in lowering && replayOrder.compare(line, at) < 0 }
+            .maxWithOrNull { a, b -> replayOrder.compare(a.value, b.value) }
+        return Outcome.Failure(InvestmentLineError(culprit?.index, error))
     }
 
     /** [history] without the movement [movement]'s id. */

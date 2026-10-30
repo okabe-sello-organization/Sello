@@ -164,7 +164,11 @@ class InvestmentCommandContractTest {
             )
             assertEquals(1L, ledger.revision())
             assertEquals(listOf("1|investment.create|${uuid(100)}"), receipts())
-            assertEquals(Outcome.Success(saved), ledger.investments.find(operation))
+            // A found receipt does not know its movements.
+            assertEquals(
+                Outcome.Success(saved.copy(movementIds = null)),
+                ledger.investments.find(operation)
+            )
             val figures = figures()
             assertEquals(CarriedValue(Money.cop(3_000_000), day("2025-05-03")), figures.value)
             assertEquals(Money.cop(0), figures.gain)
@@ -723,7 +727,10 @@ class InvestmentCommandContractTest {
         val receipt = committed(set)
         assertEquals(OperationKind.SetUsdRate, receipt.receipt.kind)
         assertNull(receipt.investmentId)
-        assertEquals(Outcome.Success(receipt), ledger.investments.find(receipt.receipt.operationId))
+        assertEquals(
+            Outcome.Success(receipt.copy(movementIds = null)),
+            ledger.investments.find(receipt.receipt.operationId)
+        )
         assertEquals("investment.set_usd_rate|${uuid(100)}", receipts().first().substringAfter('|'))
     }
 
@@ -850,7 +857,12 @@ class InvestmentCommandContractTest {
         assertTrue(cancellation != null)
         assertEquals(Money.cop(1_750_000), figures().contributed)
         val found = ledger.investments.find(command.operationId).valueOrFail()
-        assertEquals(Committed(found!!, replayed = true), ledger.investments.submit(command))
+        // The replay of a single movement names none; the found receipt does not know them.
+        assertNull(found!!.movementIds)
+        assertEquals(
+            Committed(found.copy(movementIds = emptyList()), replayed = true),
+            ledger.investments.submit(command)
+        )
         assertEquals(Money.cop(1_750_000), figures().contributed)
     }
 }

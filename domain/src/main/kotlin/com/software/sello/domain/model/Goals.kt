@@ -56,6 +56,17 @@ data class GoalMovement(
     val updatedAt: Instant
 ) : GoalEvent
 
+/**
+ * One line of a receipt of several movements: what [GoalMovement] holds before it is
+ * recorded. Each line has its own [date], since such a receipt mostly catches up past months.
+ */
+data class GoalMovementLine(
+    val kind: GoalMovementKind,
+    val amount: TransactionAmount,
+    val date: LocalDate,
+    val note: Note?
+)
+
 /** A goal with every event of its history as it now stands, corrections applied. */
 data class GoalHistory(val goal: Goal, val events: List<GoalEvent>)
 
