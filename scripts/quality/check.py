@@ -20,6 +20,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import emulator
 import gates
 import junit
 import selection
@@ -67,8 +68,26 @@ def device_api(root, serial):
         return ""
 
 
-def select_device(root, environ, devices=attached_devices, api=device_api):
-    """The one API-30 device to test on: ANDROID_SERIAL, or on CI the only one attached."""
+def device_screen(root, serial):
+    """What `wm size` and `wm density` print on [serial]; "" for one that did not answer."""
+    answers = []
+    for setting in ("size", "density"):
+        try:
+            answers.append(subprocess.run([adb_path(root), "-s", serial, "shell", "wm", setting],
+                                          capture_output=True, text=True, timeout=DEVICE_QUERY_SECONDS).stdout)
+        except subprocess.TimeoutExpired:
+            answers.append("")
+    return tuple(answers)
+
+
+def screen_values(answer):
+    """Every value a `wm size` or `wm density` answer reports: the physical one and any override."""
+    return re.findall(r"^\s*(?:Physical|Override) (?:size|density): *(\S+)", answer, re.MULTILINE)
+
+
+def select_device(root, environ, devices=attached_devices, api=device_api, screen=device_screen):
+    """The one API-30 device with CI's screen to test on: ANDROID_SERIAL, or on CI the only
+    one attached."""
     serial = environ.get("ANDROID_SERIAL")
     if not serial:
         attached = devices(root)
@@ -80,6 +99,11 @@ def select_device(root, environ, devices=attached_devices, api=device_api):
         raise Refusal(f"{serial} is not connected")
     if api(root, serial) != "30":
         raise Refusal(f"{serial} is not an API-30 device, or did not answer")
+    size, density = screen(root, serial)
+    sizes, densities = screen_values(size), screen_values(density)
+    if not sizes or set(sizes) != {emulator.SCREEN} or not densities or set(densities) != {emulator.DENSITY}:
+        raise Refusal(f"{serial} does not have CI's {emulator.SCREEN} screen at density {emulator.DENSITY} "
+                      f"(it reports {', '.join(sizes + densities) or 'nothing'}); use scripts/emulator start")
     return serial
 
 
@@ -258,7 +282,7 @@ def parser():
 
 
 def main(argv=None, root=ROOT, execute=default_execute, out=sys.stdout, environ=None,
-         devices=attached_devices, api=device_api):
+         devices=attached_devices, api=device_api, screen=device_screen):
     arguments = parser().parse_args(argv)
     environ = dict(os.environ if environ is None else environ)
     usage = parser().error
@@ -298,10 +322,10 @@ def main(argv=None, root=ROOT, execute=default_execute, out=sys.stdout, environ=
                 raise Refusal(f"--modules takes {', '.join(selection.MODULES)}")
             runs = check.device_runs(arguments.device, modules)
             if not arguments.build_only:
-                check.environ["ANDROID_SERIAL"] = select_device(root, environ, devices, api)
+                check.environ["ANDROID_SERIAL"] = select_device(root, environ, devices, api, screen)
             passed = check.device(runs, arguments.build_only, arguments.scope or "pull-request")
         else:
-            check.environ["ANDROID_SERIAL"] = select_device(root, environ, devices, api)
+            check.environ["ANDROID_SERIAL"] = select_device(root, environ, devices, api, screen)
             passed = (check.fast() and check.host_gradle()
                       and check.device(check.device_runs([], []), scope="nightly")
                       and check.release_checks(ci=False))

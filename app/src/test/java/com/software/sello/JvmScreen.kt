@@ -19,7 +19,7 @@ import com.software.sello.designsystem.theme.SelloTheme
  * Screen tests on the JVM (ADR 0022). A test class runs with
  * `@RunWith(AndroidJUnit4::class)` and `createComposeRule()`; Robolectric gives it the
  * screen of `src/test/resources/robolectric.properties`: API 37 and 320x640 dp at one
- * pixel per dp, the hosted emulator's screen.
+ * pixel per dp.
  */
 
 /** How a screen is shown: the ink, light or dark, the font scale and, if set, a window. */

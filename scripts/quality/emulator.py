@@ -29,10 +29,10 @@ import check
 
 API_LEVEL, TARGET, ARCH, CORES = "30", "google_apis", "x86_64", "2"
 PACKAGE = f"system-images;android-{API_LEVEL};{TARGET};{ARCH}"
-# A Pixel 6 or 7's, or Android Studio's Medium Phone's, about 411x914 dp (the emulator rounds
-# the width to a multiple of 4), drawn at mdpi, one pixel per dp, to keep swiftshader's work
-# small on CI's two cores.
-SCREEN = "412x914"
+# The even width nearest a 411x914 dp phone (a Pixel 6 or 7, Android Studio's Medium Phone),
+# at avdmanager's default density, mdpi: one pixel per dp keeps swiftshader's work small on
+# CI's two cores. scripts/check refuses a device whose `wm size` or `wm density` differs.
+SCREEN, DENSITY = "412x914", "160"
 EMULATOR_OPTIONS = ("-no-window", "-gpu", "swiftshader_indirect", "-no-snapshot", "-noaudio", "-no-boot-anim",
                     "-skin", SCREEN)
 ANIMATION_SCALES = ("window_animation_scale", "transition_animation_scale", "animator_duration_scale")

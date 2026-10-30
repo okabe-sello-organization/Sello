@@ -67,12 +67,14 @@ class CheckTests(unittest.TestCase):
         self.summary = self.root / "summary.md"
         self.environ = {"GITHUB_STEP_SUMMARY": str(self.summary)}
         self.attached, self.api = ["emulator-5580"], "30"
+        self.screen = ("Physical size: 412x914\n", "Physical density: 160\n")
 
     def check(self, *argv, environ=None):
         self.out = io.StringIO()
         return check.main(list(argv), root=self.root, execute=self.fake, out=self.out,
                           environ=self.environ if environ is None else environ,
-                          devices=lambda root: self.attached, api=lambda root, serial: self.api)
+                          devices=lambda root: self.attached, api=lambda root, serial: self.api,
+                          screen=lambda root, serial: self.screen)
 
     def usage_error(self, *argv):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
@@ -205,6 +207,31 @@ class CheckTests(unittest.TestCase):
         self.api = "34"
         self.assertEqual(2, self.check("--device", environ={"ANDROID_SERIAL": "emulator-5580"}))
         self.assertEqual([], self.fake.ran)
+
+    def test_device_runs_need_cis_screen_and_refuse_before_building(self):
+        named = {"ANDROID_SERIAL": "emulator-5580"}
+        self.assertEqual(0, self.check("--device", "support", environ=named))
+        self.assertIn("PASSED", self.out.getvalue())
+        ran = len(self.fake.ran)
+        refused = {
+            "a smaller screen": ("Physical size: 320x640\n", "Physical density: 160\n"),
+            "another density": ("Physical size: 412x914\n", "Physical density: 420\n"),
+            "an overridden size": ("Physical size: 412x914\nOverride size: 1080x1920\n", "Physical density: 160\n"),
+            "an overridden density": ("Physical size: 412x914\n", "Physical density: 160\nOverride density: 320\n"),
+            "no answer": ("", ""),
+        }
+        for case, self.screen in refused.items():
+            with self.subTest(case):
+                self.assertEqual(2, self.check("--device", "support", environ=named))
+                self.assertIn("REFUSED: emulator-5580 does not have CI's 412x914 screen at density 160",
+                              self.out.getvalue())
+        self.assertEqual(ran, len(self.fake.ran))
+
+    def test_reads_the_physical_and_override_values_wm_prints(self):
+        self.assertEqual(["412x914", "1080x1920"],
+                         check.screen_values("Physical size: 412x914\r\nOverride size: 1080x1920\r\n"))
+        self.assertEqual(["160"], check.screen_values("Physical density: 160\n"))
+        self.assertEqual([], check.screen_values("error: device offline\n"))
 
     def test_on_ci_the_only_attached_emulator_is_used(self):
         self.assertEqual(0, self.check("--device", "support", environ={"GITHUB_ACTIONS": "true"}))

@@ -162,12 +162,13 @@ scripts/emulator stop "$ANDROID_SERIAL"   # shut it down and delete its AVD
 Run the device tests you wrote or changed on your own emulator, made with
 `scripts/emulator` so it matches CI's ([setup](setup.md#device-smoke));
 the pull request runs the rest. A device run asks only the device in `ANDROID_SERIAL`
-and refuses to start without it. Output stays under `build/`; nothing is committed.
+and refuses to start without it, or when its API level, `wm size` or `wm density`
+differs from CI's. Output stays under `build/`; nothing is committed.
 
 ## Release gate
 
 `scripts/check --release`, on the owner's machine with the `sello.signing.*` entries
-and an API-30 emulator in `ANDROID_SERIAL`, runs G1, every device suite whole, then
+and an emulator from `scripts/emulator start` in `ANDROID_SERIAL`, runs G1, every device suite whole, then
 the licence list, the production signature checks and installing and opening the
 signed APK. CI runs the same checks with a throwaway key; only the owner's run proves
 the production signing. A release ticket says in its pull request that the owner ran
@@ -185,6 +186,7 @@ result of each job, so the jobs that passed are not repeated.
 | --- | --- |
 | `REFUSED: name your own emulator with ANDROID_SERIAL` | Start your own with `export ANDROID_SERIAL="$(scripts/emulator start)"`; assembling test APKs is not a device run. |
 | `REFUSED: ... is not an API-30 device, or did not answer` | Use an emulator from `scripts/emulator start`. |
+| `REFUSED: ... does not have CI's 412x914 screen at density 160 (it reports ...)` | `wm size` or `wm density` differs from CI's, or overrides it. Use an emulator from `scripts/emulator start`. |
 | A journey passes on CI but fails on your emulator | Your AVD differs from CI's: another screen size, or a phone profile's navigation bar (#224). Stop it and use `scripts/emulator start`. |
 | `FAILED: ktlint exited 1` | Run `./gradlew ktlintFormat` and review the diff. |
 | `ExpenseEntryScreenshotTest > ... FAILED` (any `*ScreenshotTest`) | A capture no longer matches its baseline. Open the diff in the host artifact; if the change is intended, run `./gradlew :app:recordRoborazziDebug --no-build-cache --rerun-tasks` (or `:design-system:`) and commit the new images. |
