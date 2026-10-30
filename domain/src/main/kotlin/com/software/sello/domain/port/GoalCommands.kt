@@ -208,14 +208,15 @@ sealed interface GoalRejection {
  * again, for a celebration; it is null for a replay, which is never celebrated again,
  * and for changes that cannot earn one. For [RecordGoalMovements] it is one change for
  * the whole receipt. [movementIds] are the movements [RecordGoalMovements] recorded, in
- * line order, for that command and its replay; empty for every other change and when the
- * receipt is found by asking, since its lines are not kept with it.
+ * line order, for that command and its replay, and empty for every other change. They are
+ * null for a receipt found by [GoalCommands.find]: its lines are not kept with it, so which
+ * movements it wrote is not known there; replay the command to learn them.
  */
 data class CommittedGoal(
     val receipt: OperationReceipt,
     val goalId: GoalId,
     val change: GoalChange?,
-    val movementIds: List<GoalMovementId> = emptyList()
+    val movementIds: List<GoalMovementId>? = emptyList()
 )
 
 typealias GoalCommandOutcome = CommandOutcome<CommittedGoal, GoalRejection>

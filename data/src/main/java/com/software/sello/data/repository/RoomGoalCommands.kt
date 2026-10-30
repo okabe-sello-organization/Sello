@@ -154,7 +154,7 @@ class RoomGoalCommands internal constructor(
 
     private fun StoredReceipt.committed(
         change: GoalChange?,
-        movementIds: List<GoalMovementId> = emptyList()
+        movementIds: List<GoalMovementId>? = emptyList()
     ) = CommittedGoal(receipt, checkNotNull(goalId) { "Not a goal receipt" }, change, movementIds)
 
     /**
@@ -767,7 +767,9 @@ class RoomGoalCommands internal constructor(
                 is Outcome.Failure -> receipt
 
                 is Outcome.Success ->
-                    Outcome.Success(receipt.value.goalId?.let { receipt.value.committed(null) })
+                    Outcome.Success(
+                        receipt.value.goalId?.let { receipt.value.committed(null, null) }
+                    )
             }
         }
 }

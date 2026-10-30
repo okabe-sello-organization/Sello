@@ -149,7 +149,7 @@ class GoalReceiptContractTest {
 
         // Recorded 1 Aug +750.000 (750.000, the quarter), 1 Sep −300.000 (450.000),
         // 9 Oct +750.000: 1.200.000 of 3.000.000 is 40 %, the quarter earned once.
-        val ids = saved.movementIds.map { it.value }
+        val ids = saved.movementIds!!.map { it.value }
         assertEquals(3, ids.toSet().size)
         assertEquals(
             listOf(
@@ -209,7 +209,7 @@ class GoalReceiptContractTest {
         // 30 × 1.000 = 30.000.
         val saved = committed(submit(receipt(*Array(30) { aporte(1_000) })))
 
-        assertEquals(30, saved.movementIds.size)
+        assertEquals(30, saved.movementIds!!.size)
         assertEquals(Money.cop(30_000), summary().progress.saved)
         assertEquals(2L, ledger.revision())
     }
@@ -253,6 +253,20 @@ class GoalReceiptContractTest {
         val outcome = submit(receipt(aporte(1_000), aporte(1_000, day(10, 10)), aporte(1_000)))
 
         assertEquals(Rejected(Specific(GoalRejection.LineFutureDate(1, today))), outcome)
+        assertUnchanged(before)
+    }
+
+    @Test
+    fun aDateTheStoredTextCannotHoldNamesItsLineAndWritesNothing() = runBlocking {
+        started()
+        val before = snapshot()
+
+        // Year -1 would be stored as "-0001-01-01" and never read back.
+        val outcome = submit(
+            receipt(aporte(1_000), aporte(1_000, LocalDate.of(-1, 1, 1)), aporte(1_000))
+        )
+
+        assertEquals(Rejected(Specific(GoalRejection.LineInvalidDate(1))), outcome)
         assertUnchanged(before)
     }
 
@@ -320,6 +334,8 @@ class GoalReceiptContractTest {
 
         val found = (ledger.goals.find(command.operationId) as Outcome.Success).value!!
         assertEquals(first.receipt to viaje, found.receipt to found.goalId)
+        // Its lines are not kept with the receipt: which movements it wrote is not known.
+        assertNull(found.movementIds)
         assertEquals(Outcome.Success(null), ledger.goals.find(unsent))
         assertEquals(
             Committed(first.copy(change = null), replayed = true),
@@ -351,6 +367,31 @@ class GoalReceiptContractTest {
         )
         assertUnchanged(before)
         assertEquals(Outcome.Success(null), ledger.goals.find(command.operationId))
+    }
+
+    @Test
+    fun aDamagedHistoryRefusesTheReceiptWithNothingWritten() = runBlocking {
+        started(saved = 200_000)
+        val command = receipt(aporte(1_000), retiro(1_000))
+        val damaged = ledger.rows("goal_event", "id", "kind")
+            .single { it.endsWith("|contribution") }
+            .substringBefore("|")
+        ledger.database.openHelper.writableDatabase.execSQL(
+            "UPDATE goal_event SET kind = 'gift' WHERE id = '$damaged'"
+        )
+        val before = snapshot()
+
+        val outcome = submit(command)
+
+        assertEquals(
+            Rejected(
+                CommandRejection.StorageFailed(
+                    StorageFailure.Integrity("goal_event", damaged, "kind")
+                )
+            ),
+            outcome
+        )
+        assertUnchanged(before)
     }
 
     @Test
@@ -401,10 +442,11 @@ class GoalReceiptContractTest {
         assertEquals(Money.cop(1_000_000), summary().progress.saved)
         val found = (ledger.goals.find(command.operationId) as Outcome.Success).value
         assertEquals(OperationKind.RecordGoalMovements, found!!.receipt.kind)
+        assertNull(found.movementIds)
         val replayed = committed(submit(command))
         assertEquals(found.receipt, replayed.receipt)
         assertEquals(
-            replayed.movementIds.map { it.value }.toSet(),
+            replayed.movementIds!!.map { it.value }.toSet(),
             ledger.rows("goal_event", "id", "kind").filter { it.endsWith("contribution") }
                 .map { it.substringBefore("|") }.toSet()
         )
