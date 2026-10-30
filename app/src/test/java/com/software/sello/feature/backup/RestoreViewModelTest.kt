@@ -430,6 +430,56 @@ class RestoreViewModelTest {
     }
 
     @Test
+    fun aConfirmedRestoreThatDidNotCommitBeforeTheProcessDiedSaysItWasNotReplaced() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        restores.stageAnswer = Outcome.Success(staged)
+        restores.replaceGate = CompletableDeferred()
+        val (model) = model(handle, process)
+        choose(model)
+        model.onAction(RestoreAction.Confirm)
+        runCurrent()
+        assertEquals(RestoreStep.Replacing(staged), model.state.value.step)
+
+        // The receipt reads and says it did not commit; the staging says it was attempted.
+        restores.stagedAnswer = StagedLookup.Waiting(staged, attempted = true)
+        val restored = afterProcessDeath(handle, process)
+
+        assertEquals(
+            RestoreStep.Previewing(staged, notReplaced = true),
+            restored.state.value.step
+        )
+        assertFalse(restored.state.value.replaced)
+        assertEquals(1, read.size)
+
+        // The preview is the staging's own, so confirming again replaces under the same
+        // operation, and only once.
+        restores.replaceGate = null
+        restores.replaceAnswer = done
+        restored.onAction(RestoreAction.Confirm)
+        restored.onAction(RestoreAction.Confirm)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done), restored.state.value.step)
+        assertEquals(1, restores.replaced)
+    }
+
+    @Test
+    fun aPreviewNeverConfirmedBeforeTheProcessDiedComesBackWithoutANote() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        restores.stageAnswer = Outcome.Success(staged)
+        val (model) = model(handle, process)
+        choose(model)
+
+        restores.stagedAnswer = StagedLookup.Waiting(staged, attempted = false)
+        val restored = afterProcessDeath(handle, process)
+
+        assertEquals(RestoreStep.Previewing(staged), restored.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
     fun aPreviewBroughtBackIsReplacedOnlyOnceAndOnlyOnConfirmation() = runTest {
         val handle = SavedStateHandle()
         val process = CoroutineScope(backgroundScope.coroutineContext + Job())

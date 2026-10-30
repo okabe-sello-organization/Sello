@@ -263,6 +263,22 @@ class LegacyImportRestoreTest {
         assertEquals(BackupSummary(2, 2, 1, 1, 1, 1), resumed?.replacement)
     }
 
+    /** Marking a confirmation in the manifest keeps the report written beside it. */
+    @Test
+    fun theReportOfAConfirmedLegacyFileSurvivesARestart() = runBlocking {
+        currentHistory()
+        val staged = restores().stage(legacy.toByteArray()).valueOrFail()
+        // Refused as stale, after the confirmation was marked.
+        assertEquals(
+            RestoreOutcome.Stale,
+            restores().replace(staged.copy(revision = staged.revision + 1))
+        )
+
+        ledger.reopen()
+
+        assertEquals(StagedLookup.Waiting(staged, attempted = true), restores().staged())
+    }
+
     @Test
     fun aCanceledOrRefusedLegacyFileChangesNothingAndIsNotKept() = runBlocking {
         currentHistory()

@@ -60,8 +60,9 @@ import kotlinx.coroutines.withContext
  * - `staged.json` and `staged.properties`: a checked file and the operation it will
  *   be replaced under, its history position and when it was staged, and for a
  *   FinanceTracker backup what its translation changed and left out (ADR 0019): the
- *   file kept is then the translated Sello backup. Nothing financial has changed while
- *   only these exist.
+ *   file kept is then the translated Sello backup. `attempted` is added just before a
+ *   replacement starts, so a later look can tell a confirmed file from one only
+ *   previewed. Nothing financial has changed while only these exist.
  * - `restored.json`: the history was replaced from it; its preferences are not all
  *   applied yet. `applied` lists the groups that are. The folder empties once all are.
  *
@@ -198,7 +199,8 @@ class RoomRestores(
         val plan = codec.read(bytes) as? Outcome.Success
             ?: return StagedLookup.NotReplaced(manifest.operation).also { discard() }
         return StagedLookup.Waiting(
-            position.preview(manifest.operation, plan.value.contents, manifest.report)
+            position.preview(manifest.operation, plan.value.contents, manifest.report),
+            attempted = manifest.attempted
         )
     }
 
@@ -217,6 +219,7 @@ class RoomRestores(
         val contents = (codec.read(bytes) as? Outcome.Success)?.value?.contents
             ?: return RestoreOutcome.Failed
         val digest = digest(staged, bytes)
+        markAttempted(staged.operationId)
         val run = database.runCommand { write(staged, contents, digest) }
         return when (run) {
             is CommandRun.Finished -> when (run.value) {
@@ -492,8 +495,29 @@ class RoomRestores(
         val operation: OperationId,
         val generation: Long,
         val stagedAt: Instant,
-        val report: LegacyImportReport?
+        val report: LegacyImportReport?,
+        val attempted: Boolean
     )
+
+    /**
+     * Records in the manifest that [operation]'s replacement is starting. If it cannot
+     * be written the replacement still goes ahead: a later look then shows the file
+     * without saying it was confirmed, never anything untrue.
+     */
+    private suspend fun markAttempted(operation: OperationId) {
+        io {
+            try {
+                if (!manifest.exists()) return@io
+                val properties = Properties().apply { manifest.inputStream().use(::load) }
+                if (properties.getProperty(OPERATION) != operation.value) return@io
+                if (properties.getProperty(ATTEMPTED) == true.toString()) return@io
+                properties.setProperty(ATTEMPTED, true.toString())
+                writeAtomically(manifest, properties.text())
+            } catch (_: IOException) {
+                // Left unmarked; see above.
+            }
+        }
+    }
 
     private suspend fun readManifest(): Manifest? = io {
         if (!manifest.exists() || !staged.exists()) return@io null
@@ -517,7 +541,9 @@ class RoomRestores(
             } else {
                 // A report that cannot be read makes the staging unusable, not complete.
                 properties.report() ?: return@io null
-            }
+            },
+            // A manifest written before this key existed was never attempted from it.
+            attempted = properties.getProperty(ATTEMPTED) == true.toString()
         )
     }
 
@@ -579,6 +605,7 @@ class RoomRestores(
         const val OPERATION = "operation"
         const val GENERATION = "generation"
         const val STAGED_AT = "stagedAt"
+        const val ATTEMPTED = "attempted"
         const val LEGACY_LINES = "legacy.lines"
         const val LEGACY_LINE = "legacy."
         const val APPEARANCE = "appearance"

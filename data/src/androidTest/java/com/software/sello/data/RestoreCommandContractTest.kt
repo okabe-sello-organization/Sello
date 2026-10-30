@@ -365,6 +365,92 @@ class RestoreCommandContractTest {
         assertEquals(StagedLookup.Waiting(staged), again)
     }
 
+    /**
+     * As if the process died in the middle of the replacement: the transaction never
+     * commits, its writes roll back, and the database is opened again.
+     */
+    private suspend fun diedWhileReplacing(staged: StagedRestore) {
+        whenStamped = { throw IllegalStateException("The process died") }
+        assertEquals(RestoreOutcome.Failed, restores().replace(staged))
+        whenStamped = {}
+        ledger.reopen()
+    }
+
+    private fun restoreReceipts() =
+        ledger.rows("operation_receipt", "operation_id", "kind").filter {
+            it.endsWith("|history.restore")
+        }
+
+    @Test
+    fun aConfirmedFileThatDidNotCommitIsFoundAttemptedAndReplacedUnderItsOperation() = runBlocking {
+        currentHistory()
+        val before = everyRow()
+        val staged = stage()
+
+        diedWhileReplacing(staged)
+
+        assertEquals(StagedLookup.Waiting(staged, attempted = true), restores().staged())
+        assertEquals(before, everyRow())
+        assertEquals(emptyList<String>(), restoreReceipts())
+
+        // Confirming again replaces once, under the operation staged with the file.
+        assertTrue(restores().replace(staged) is RestoreOutcome.Restored)
+        assertEquals(
+            listOf("${staged.operationId.value}|history.restore"),
+            restoreReceipts()
+        )
+        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun aFileOnlyPreviewedIsNotFoundAttemptedAfterARestart() = runBlocking {
+        currentHistory()
+        val staged = stage()
+
+        ledger.reopen()
+
+        // Staging writes the manifest as before the key existed: no `attempted` in it.
+        assertFalse(File(files.restoreFolder, "staged.properties").readText().contains("attempted"))
+        assertEquals(StagedLookup.Waiting(staged, attempted = false), restores().staged())
+    }
+
+    @Test
+    fun anAttemptedFileExpiresOnlyOnceItsReceiptReads() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        diedWhileReplacing(staged)
+        val kept = stagingFiles()
+        ledger.database.openHelper.writableDatabase
+            .execSQL("ALTER TABLE operation_receipt RENAME TO operation_receipt_away")
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+        ledger.reopen()
+
+        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
+        assertEquals(kept, stagingFiles())
+
+        ledger.database.openHelper.writableDatabase
+            .execSQL("ALTER TABLE operation_receipt_away RENAME TO operation_receipt")
+        ledger.reopen()
+
+        assertEquals(StagedLookup.NotReplaced(staged.operationId), restores().staged())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun anAttemptedFileIsLeftBehindWhenTheHistoryMovesToANewGeneration() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        diedWhileReplacing(staged)
+
+        ledger.database.openHelper.writableDatabase
+            .execSQL("UPDATE profile SET generation = generation + 1")
+        ledger.reopen()
+
+        assertEquals(StagedLookup.NotReplaced(staged.operationId), restores().staged())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
     @Test
     fun aChangeAfterThePreviewRefusesTheReplacementUntilPreviewedAgain() = runBlocking {
         currentHistory()

@@ -177,8 +177,11 @@ sealed interface StagedLookup {
     /** No file is staged. */
     data object None : StagedLookup
 
-    /** A file not replaced yet and still valid for the current history. */
-    data class Waiting(val staged: StagedRestore) : StagedLookup
+    /**
+     * A file not replaced yet and still valid for the current history. [attempted]: its
+     * replacement was started before, as after a confirmation, and did not commit.
+     */
+    data class Waiting(val staged: StagedRestore, val attempted: Boolean = false) : StagedLookup
 
     /**
      * A file whose replacement did not commit and that cannot be offered now: it

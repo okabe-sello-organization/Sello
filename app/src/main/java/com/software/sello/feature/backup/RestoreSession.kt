@@ -33,7 +33,8 @@ sealed interface RestoreStep {
 
     /**
      * Waiting for the person to confirm. [refreshed]: the history changed and this is a
-     * new count. [notReplaced]: a check after an unknown outcome found it did not happen.
+     * new count. [notReplaced]: it was confirmed before, and a check after an unknown
+     * outcome or a look after a restart found it did not happen.
      */
     data class Previewing(
         val staged: StagedRestore,
@@ -84,7 +85,8 @@ class RestoreSession(
 
     /**
      * On opening the screen: a replacement still pending, one an earlier process died
-     * in the middle of (restored, or not known yet), or a staged file still waiting.
+     * in the middle of (restored, or not known yet), or a staged file still waiting,
+     * saying it was not replaced if it had been confirmed.
      * Failing all, [chosen], a file an earlier process was given but had not finished
      * with, is checked again; it is never replaced without a confirmation.
      */
@@ -97,9 +99,13 @@ class RestoreSession(
                 if (state.value != RestoreStep.Idle) return@withLock
                 val next = restores.pending()?.let { RestoreStep.Restored(it) }
                     ?: when (val found = restores.staged()) {
-                        is StagedLookup.Waiting -> RestoreStep.Previewing(found.staged)
+                        is StagedLookup.Waiting ->
+                            RestoreStep.Previewing(found.staged, notReplaced = found.attempted)
+
                         is StagedLookup.Replaced -> replaced(found.operationId)
+
                         is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
+
                         StagedLookup.None, is StagedLookup.NotReplaced -> null
                     }
                 when {
