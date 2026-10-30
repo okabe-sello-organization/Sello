@@ -9,6 +9,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.software.sello.R
 import com.software.sello.designsystem.component.ConfirmSlip
+import com.software.sello.designsystem.component.MoneySign
+import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.feature.goals.CelebrationTicket
 import com.software.sello.feature.goals.celebrationLine
@@ -243,6 +245,33 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
             }
         }
 
+        is CorrectionNotice.GoalMovementsRecorded -> {
+            val net = notice.net
+            val count = notice.count
+            val message = net?.let {
+                pluralStringResource(
+                    R.plurals.notice_goal_movements,
+                    count,
+                    count,
+                    it.signedDigits()
+                )
+            } ?: pluralStringResource(R.plurals.notice_goal_movements_plain, count, count)
+            val spoken = net?.let {
+                pluralStringResource(R.plurals.notice_goal_movements, count, count, it.spoken)
+            } ?: message
+            val line = notice.celebration?.let { celebrationLine(it) }
+            if (line != null) {
+                SelloNotice(
+                    message = stringResource(R.string.goal_celebration_notice, message, line),
+                    modifier = tagged,
+                    spoken = stringResource(R.string.goal_celebration_notice, spoken, line),
+                    confirmation = true
+                )
+            } else {
+                SelloNotice(message, tagged, spoken = spoken, confirmation = true)
+            }
+        }
+
         is CorrectionNotice.GoalTargetChanged -> {
             val message = stringResource(R.string.notice_goal_target_changed)
             val line = celebrationLine(notice.celebration)
@@ -396,3 +425,10 @@ internal fun CorrectionQuestionSlip(
 }
 
 const val CORRECTION_QUESTION_TAG = "correction:question"
+
+/** "+130.000" or "−50.000", as a receipt's net is written in a sentence. */
+private fun MoneyTextValue.signedDigits(): String = when (sign) {
+    MoneySign.Plus -> "+$digits"
+    MoneySign.Minus -> "−$digits"
+    MoneySign.None -> digits
+}

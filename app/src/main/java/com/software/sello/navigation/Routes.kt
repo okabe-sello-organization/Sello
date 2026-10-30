@@ -69,6 +69,13 @@ data class GoalMovementRoute(
     val movementId: String? = null
 )
 
+/**
+ * Aportar varios: several aportes and retiros of [goalId] on one receipt. The screen reads
+ * the goal itself.
+ */
+@Serializable
+data class GoalBulkRoute(val goalId: String)
+
 /** Nonfinancial controls reachable from Recibo's settings action. */
 @Serializable
 data object SettingsRoute

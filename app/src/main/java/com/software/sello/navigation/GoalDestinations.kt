@@ -28,6 +28,7 @@ import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.feature.goals.CompletionState
+import com.software.sello.feature.goals.GoalBulkRoot
 import com.software.sello.feature.goals.GoalDetailAction
 import com.software.sello.feature.goals.GoalDetailScreen
 import com.software.sello.feature.goals.GoalDetailState
@@ -125,9 +126,9 @@ internal fun MetasDestination(
 
 /**
  * One goal, titled with its name and never a month. The star on the band chooses it for
- * Recibo. [onEdit], [onContribute] and [onWithdraw] are offered only once their screens
- * exist, and never on a completed goal, which can only be deleted. A deleted goal
- * leaves through [onBack].
+ * Recibo. [onEdit], [onContribute], [onWithdraw] and [onBulk] (Aportar varios) are offered
+ * only once their screens exist, and never on a completed goal, which can only be deleted.
+ * A deleted goal leaves through [onBack].
  */
 @Composable
 internal fun GoalDestination(
@@ -139,6 +140,7 @@ internal fun GoalDestination(
     onContribute: (() -> Unit)? = null,
     onWithdraw: (() -> Unit)? = null,
     onEditMovement: ((String) -> Unit)? = null,
+    onBulk: (() -> Unit)? = null,
     notice: (@Composable () -> Unit)? = null,
     celebration: GoalCelebration? = null
 ) {
@@ -181,6 +183,7 @@ internal fun GoalDestination(
             padding = padding,
             onWithdraw = onWithdraw,
             onEditMovement = onEditMovement.takeIf { active },
+            onBulk = onBulk.takeIf { active },
             landing = celebration?.earned.orEmpty().toSet(),
             relighting = celebration?.relit.orEmpty().toSet()
         )
@@ -254,6 +257,7 @@ internal fun NavGraphBuilder.goalDestinations(
                     launchSingleTop = true
                 }
             },
+            onBulk = { navigation.navigate(GoalBulkRoute(id)) { launchSingleTop = true } },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } },
             celebration = remember(notice) {
                 notice?.celebration?.takeIf { it.goalId == id && lands(it) }
@@ -272,6 +276,13 @@ internal fun NavGraphBuilder.goalDestinations(
                     navigation.popBackStack()
                 }
             }
+        }
+    }
+    composable<GoalBulkRoute> {
+        GoalBulkRoot(viewModels) {
+            val onReceipt =
+                navigation.currentBackStackEntry?.destination?.hasRoute<GoalBulkRoute>()
+            if (onReceipt == true) navigation.popBackStack()
         }
     }
     composable<GoalMovementRoute> {

@@ -1011,6 +1011,28 @@
     <string name="goal_movement_changed">La meta cambió mientras escribías. Revisa y vuelve a intentarlo.</string>
     <string name="goal_movement_completed">Esta meta ya está lograda: no se puede cambiar.</string>
     <string name="goal_movement_not_deleted">No se borró. El movimiento sigue ahí.</string>
+    <string name="goal_bulk_title">Aportar varios</string>
+    <plurals name="goal_bulk_lines"><item quantity="one">%d renglón</item><item quantity="other">%d renglones</item></plurals>
+    <string name="goal_bulk_kind">Tipo</string>
+    <string name="goal_bulk_kind_line">Tipo · renglón %d</string>
+    <string name="goal_bulk_no_kind">Sin tipo</string>
+    <string name="goal_bulk_choose_kind">Elige Aportar o Retirar</string>
+    <plurals name="goal_bulk_missing"><item quantity="one">Falta %d tipo</item><item quantity="other">Faltan %d tipos</item></plurals>
+    <plurals name="goal_bulk_review"><item quantity="one">Revisa %d renglón</item><item quantity="other">Revisa %d renglones</item></plurals>
+    <string name="goal_bulk_limit">Máximo 30 por recibo</string>
+    <string name="goal_bulk_available">Solo hay %s disponibles</string>
+    <string name="goal_bulk_future_date">La fecha no puede ser posterior a hoy</string>
+    <string name="goal_bulk_total">Total</string>
+    <plurals name="goal_bulk_submit"><item quantity="one">Anotar movimiento</item><item quantity="other">Anotar %d movimientos</item></plurals>
+    <string name="goal_bulk_not_saved">No se guardó. Tu borrador sigue aquí.</string>
+    <plurals name="goal_bulk_discard_title"><item quantity="one">¿Descartar %d renglón?</item><item quantity="other">¿Descartar %d renglones?</item></plurals>
+    <string name="goal_bulk_discard_message">Se borra lo que escribiste en este recibo. Esto no se puede deshacer.</string>
+    <string name="goal_bulk_keep_editing">Seguir anotando</string>
+    <string name="goal_bulk_removed">Quitaste el renglón de %s</string>
+    <string name="goal_bulk_removed_untyped">Quitaste un renglón</string>
+    <string name="goal_bulk_note_kind">Movimiento</string>
+    <plurals name="notice_goal_movements"><item quantity="one">%1$d movimiento anotado: %2$s</item><item quantity="other">%1$d movimientos anotados: %2$s</item></plurals>
+    <plurals name="notice_goal_movements_plain"><item quantity="one">%d movimiento anotado</item><item quantity="other">%d movimientos anotados</item></plurals>
     <!-- Nueva meta and Editar meta (SELLO-090) -->
     <string name="goal_icon_home">Casa</string>
     <string name="goal_icon_flight">Viaje</string>
