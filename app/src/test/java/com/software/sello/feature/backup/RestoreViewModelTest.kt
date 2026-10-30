@@ -637,7 +637,7 @@ class RestoreViewModelTest {
     fun aCommittedReplacementIsShownRestoredWhenTheStartUpApplyIsStillRunning() = runTest {
         val startUp = CompletableDeferred<Unit>()
         val screen = CompletableDeferred<Unit>()
-        committed.applyGates += listOf(startUp, screen)
+        committed.readGates += listOf(startUp, screen)
 
         // Respaldo opens while the start-up apply is still reading.
         val model = restartedOn(backgroundScope)
@@ -651,9 +651,66 @@ class RestoreViewModelTest {
     }
 
     @Test
+    fun theStartUpApplyAndTheScreenNeverWriteThePreferencesTwice() = runTest {
+        val startUp = CompletableDeferred<Unit>()
+        val screenWrite = CompletableDeferred<Unit>()
+        committed.readGates += listOf(startUp, null)
+        committed.writeGates += listOf(null, screenWrite)
+
+        // The screen's apply has read and is about to write when the start-up one reads.
+        val model = restartedOn(backgroundScope)
+        startUp.complete(Unit)
+        runCurrent()
+        screenWrite.complete(Unit)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done), model.state.value.step)
+        assertEquals(1, committed.written)
+    }
+
+    @Test
+    fun twoScreensOpeningTogetherShowTheCommittedReplacementRestored() = runTest {
+        val firstLook = CompletableDeferred<Unit>()
+        val secondLook = CompletableDeferred<Unit>()
+        val firstApply = CompletableDeferred<Unit>()
+        committed.stagedGates += listOf(firstLook, secondLook)
+        committed.readGates += listOf(null, firstApply)
+        val session = RestoreSession(committed, reader, backgroundScope, 10 * 1024 * 1024)
+
+        // Tus datos and Respaldo each resume; the second looks before the first applied.
+        val (tusDatos) = model(session = session)
+        val (respaldo) = model(session = session)
+        firstLook.complete(Unit)
+        runCurrent()
+        secondLook.complete(Unit)
+        runCurrent()
+        firstApply.complete(Unit)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done), respaldo.state.value.step)
+        assertEquals(RestoreStep.Restored(done), tusDatos.state.value.step)
+        assertEquals(1, committed.written)
+    }
+
+    @Test
+    fun aStepWaitingForTheStartUpApplyIsNotLeftBusyWhenCancelled() = runTest {
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        committed.readGates += CompletableDeferred<Unit>()
+        val model = restartedOn(process)
+        choose(model)
+        assertEquals(RestoreStep.Checking, model.state.value.step)
+
+        process.cancel()
+        runCurrent()
+
+        assertEquals(RestoreStep.Idle, model.state.value.step)
+        assertTrue(read.isEmpty())
+    }
+
+    @Test
     fun aCancelledStartUpApplyLeavesTheCommittedReplacementToTheScreen() = runTest {
         val startUp = CompletableDeferred<Unit>()
-        committed.applyGates += startUp
+        committed.readGates += startUp
 
         val model = restartedOn(backgroundScope)
         startUp.completeExceptionally(CancellationException("cancelled"))
@@ -664,9 +721,9 @@ class RestoreViewModelTest {
     }
 
     @Test
-    fun theProcessDyingDuringTheStartUpApplyShowsItRestoredNextTime() = runTest {
+    fun theProcessDyingBeforeTheStartUpApplyReadsShowsItRestoredNextTime() = runTest {
         val process = CoroutineScope(backgroundScope.coroutineContext + Job())
-        committed.applyGates += CompletableDeferred<Unit>()
+        committed.readGates += CompletableDeferred<Unit>()
         restartedOn(process)
 
         process.cancel()

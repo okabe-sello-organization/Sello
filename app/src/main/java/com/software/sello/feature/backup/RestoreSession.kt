@@ -11,6 +11,7 @@ import com.software.sello.domain.port.Restores
 import com.software.sello.domain.port.StageFailure
 import com.software.sello.domain.port.StagedLookup
 import com.software.sello.domain.port.StagedRestore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Where a restore stands. Only [Restored] means the history was replaced. */
 sealed interface RestoreStep {
@@ -57,9 +60,9 @@ sealed interface RestoreStep {
 /**
  * One restore at a time, for as long as the process lives, so leaving the screen
  * never cuts a replacement or a preference write short. Created with the graph: a
- * replacement left with preferences pending by an earlier process is resumed then,
- * and nothing else here reads or writes the restore until that is over, so two
- * applies never overlap and the second never finds the first one's work gone.
+ * replacement left with preferences pending by an earlier process is resumed then.
+ * Nothing else here reads or writes the restore until that is over, and screens
+ * opening together look in turn, so a look never finds another one's work half done.
  */
 class RestoreSession(
     private val restores: Restores,
@@ -77,6 +80,8 @@ class RestoreSession(
         }
     }
 
+    private val resuming = Mutex()
+
     /**
      * On opening the screen: a replacement still pending, one an earlier process died
      * in the middle of (restored, or not known yet), or a staged file still waiting.
@@ -85,17 +90,22 @@ class RestoreSession(
      */
     fun resume(chosen: DocumentSource? = null) {
         if (state.value != RestoreStep.Idle) return
-        afterStartUp {
-            val next = restores.pending()?.let { RestoreStep.Restored(it) }
-                ?: when (val found = restores.staged()) {
-                    is StagedLookup.Waiting -> RestoreStep.Previewing(found.staged)
-                    is StagedLookup.Replaced -> replaced(found.operationId)
-                    is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
-                    StagedLookup.None, is StagedLookup.NotReplaced -> null
+        scope.launch {
+            startUp.join()
+            resuming.withLock {
+                // Another screen's look may have found it first.
+                if (state.value != RestoreStep.Idle) return@withLock
+                val next = restores.pending()?.let { RestoreStep.Restored(it) }
+                    ?: when (val found = restores.staged()) {
+                        is StagedLookup.Waiting -> RestoreStep.Previewing(found.staged)
+                        is StagedLookup.Replaced -> replaced(found.operationId)
+                        is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
+                        StagedLookup.None, is StagedLookup.NotReplaced -> null
+                    }
+                when {
+                    next != null -> state.compareAndSet(RestoreStep.Idle, next)
+                    chosen != null -> choose(chosen)
                 }
-            when {
-                next != null -> state.compareAndSet(RestoreStep.Idle, next)
-                chosen != null -> choose(chosen)
             }
         }
     }
@@ -149,8 +159,9 @@ class RestoreSession(
         val current = state.value as? RestoreStep.Unknown ?: return
         val checking = current.copy(checking = true)
         if (current.checking || !state.compareAndSet(current, checking)) return
-        afterStartUp {
+        scope.launch {
             try {
+                startUp.join()
                 state.compareAndSet(checking, checked(current.operationId))
             } finally {
                 state.compareAndSet(checking, current)
@@ -196,8 +207,9 @@ class RestoreSession(
     fun applyPreferences() {
         val current = state.value as? RestoreStep.Restored ?: return
         if (current.applying || current.outcome.preferences.done) return
-        state.value = current.copy(applying = true)
-        afterStartUp {
+        val applying = current.copy(applying = true)
+        state.value = applying
+        afterStartUp(busy = applying, before = current) {
             val outcome = restores.applyPending() ?: current.outcome
             state.value = RestoreStep.Restored(outcome)
         }
@@ -226,22 +238,31 @@ class RestoreSession(
         from: (RestoreStep) -> Boolean,
         work: suspend () -> RestoreStep
     ) {
-        var started = false
+        var before: RestoreStep? = null
         state.update { current ->
             if (from(current)) {
-                started = true
+                before = current
                 busy
             } else {
+                before = null
                 current
             }
         }
-        if (started) afterStartUp { state.value = work() }
+        before?.let { afterStartUp(busy, before = it) { state.value = work() } }
     }
 
-    /** Runs [work] once the start-up apply is over, cancelled or not. */
-    private fun afterStartUp(work: suspend () -> Unit) {
+    /**
+     * Runs [work] once the start-up apply is over, cancelled or not. Cancelled while it
+     * waits, the [busy] step shown meanwhile goes back to [before].
+     */
+    private fun afterStartUp(busy: RestoreStep, before: RestoreStep, work: suspend () -> Unit) {
         scope.launch {
-            startUp.join()
+            try {
+                startUp.join()
+            } catch (cancelled: CancellationException) {
+                state.compareAndSet(busy, before)
+                throw cancelled
+            }
             work()
         }
     }

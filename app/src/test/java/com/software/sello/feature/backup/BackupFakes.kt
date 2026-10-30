@@ -138,15 +138,19 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
 /**
  * The store as a new process finds it when a replacement committed and the process died
  * before its staged file was renamed, behaving as the real one does: looking at the
- * staged file renames it, and applying the pending preferences writes them and, with
- * none left, forgets the replacement, so a later look or apply finds nothing. Each
- * [applyPending] waits for the next of [applyGates], if any, before it reads.
+ * staged file renames it, a look before the preferences are applied cannot rename it
+ * again, and applying them writes them and, with none left, forgets the replacement,
+ * so a later look or apply finds nothing. The nth [staged] waits for the nth of
+ * [stagedGates]; the nth [applyPending], for the nth of [readGates] before it reads and
+ * the nth of [writeGates] before it writes. A missing or null gate does not wait.
  */
 class CommittedBeforeRename(
     private val operation: OperationId,
     private val outcome: RestoreOutcome.Restored
 ) : Restores {
-    val applyGates = ArrayDeque<CompletableDeferred<Unit>>()
+    val stagedGates = ArrayDeque<CompletableDeferred<Unit>?>()
+    val readGates = ArrayDeque<CompletableDeferred<Unit>?>()
+    val writeGates = ArrayDeque<CompletableDeferred<Unit>?>()
     private var renamed = false
     private var forgotten = false
 
@@ -157,9 +161,12 @@ class CommittedBeforeRename(
         Outcome.Failure(StageFailure.Storage)
 
     override suspend fun staged(): StagedLookup {
-        if (renamed || forgotten) return StagedLookup.None
-        renamed = true
-        return StagedLookup.Replaced(operation)
+        stagedGates.removeFirstOrNull()?.await()
+        return when {
+            forgotten -> StagedLookup.None
+            renamed -> StagedLookup.Unknown(operation)
+            else -> StagedLookup.Replaced(operation).also { renamed = true }
+        }
     }
 
     override suspend fun discard() = Unit
@@ -170,8 +177,10 @@ class CommittedBeforeRename(
         outcome.takeIf { renamed && !forgotten }
 
     override suspend fun applyPending(): RestoreOutcome.Restored? {
-        applyGates.removeFirstOrNull()?.await()
+        val write = writeGates.removeFirstOrNull()
+        readGates.removeFirstOrNull()?.await()
         if (pending() == null) return null
+        write?.await()
         written++
         forgotten = true
         return outcome.copy(preferences = PendingPreferences(null, null))
