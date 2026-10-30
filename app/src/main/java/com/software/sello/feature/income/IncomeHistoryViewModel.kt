@@ -112,15 +112,21 @@ sealed interface IncomePlanState {
 sealed interface IncomeHistoryState {
     data object Loading : IncomeHistoryState
 
+    /** Nothing of the month was read: a refresh that fails after a read is [Ready.stale]. */
     data object Failed : IncomeHistoryState
 
+    /**
+     * [stale] says the last refresh failed and these are the figures as last read; Más
+     * still reads on from where they end.
+     */
     data class Ready(
         val month: YearMonth,
         val total: MoneyTextValue,
         val lines: List<IncomeLine>,
         val more: Boolean,
         val busy: Boolean = false,
-        val pageFailed: Boolean = false
+        val pageFailed: Boolean = false,
+        val stale: Boolean = false
     ) : IncomeHistoryState
 }
 
@@ -322,13 +328,14 @@ class IncomeHistoryViewModel(
             combine(session.selectedMonth, attempts) { month, _ -> month }
                 .flatMapLatest(reads::observeMonth).collectLatest { state ->
                     val epoch = ++epoch
-                    cursor = null
-                    snapshot = null
                     // Only the first load of a month shows Loading: a change after that
-                    // updates the list in place and reads the loaded pages again.
+                    // updates the list in place and reads the loaded pages again. Until that
+                    // read succeeds, the cursor and snapshot stay those of the shown list.
                     val loaded = (shown.value as? IncomeHistoryState.Ready)
                         ?.takeIf { it.month == session.selectedMonthNow }
                     if (loaded == null) {
+                        cursor = null
+                        snapshot = null
                         shown.value = IncomeHistoryState.Loading
                     } else {
                         shown.value = loaded.copy(busy = true, pageFailed = false)
@@ -336,10 +343,13 @@ class IncomeHistoryViewModel(
                     when (state) {
                         ReadState.Loading -> Unit
 
-                        is ReadState.Failed -> shown.value = IncomeHistoryState.Failed
+                        is ReadState.Failed -> {
+                            shown.value =
+                                loaded?.copy(busy = false, pageFailed = false, stale = true)
+                                    ?: IncomeHistoryState.Failed
+                        }
 
                         is ReadState.Ready -> {
-                            snapshot = state.value
                             val restore = loaded?.lines?.size ?: 0
                             page(state.value, first = true, epoch, restore)
                         }
@@ -375,7 +385,8 @@ class IncomeHistoryViewModel(
 
     /**
      * Reads a page of [expected]'s month. The first page of a refresh keeps reading until
-     * [restore] lines are back, so the pages loaded with Más survive a change.
+     * [restore] lines are back, so the pages loaded with Más survive a change. A refresh
+     * that fails keeps the shown list, marked as older; a Más page that fails says so.
      */
     private suspend fun page(expected: IncomeMonth, first: Boolean, epoch: Int, restore: Int = 0) {
         val incomes = mutableListOf<Income>()
@@ -392,17 +403,18 @@ class IncomeHistoryViewModel(
             }
         } while (!failed && first && next != null && incomes.size < restore)
         val checked = reads.month(expected.month)
-        if (this.epoch != epoch || snapshot != expected ||
+        if (this.epoch != epoch || (!first && snapshot != expected) ||
             session.selectedMonthNow != expected.month
         ) {
             return
         }
         if (checked is Outcome.Failure || failed) {
-            val previous = shown.value as? IncomeHistoryState.Ready
-            shown.value = if (first || previous == null) {
-                IncomeHistoryState.Failed
-            } else {
-                previous.copy(busy = false, pageFailed = true)
+            val previous = (shown.value as? IncomeHistoryState.Ready)
+                ?.takeIf { it.month == expected.month }
+            shown.value = when {
+                previous == null -> IncomeHistoryState.Failed
+                first -> previous.copy(busy = false, pageFailed = false, stale = true)
+                else -> previous.copy(busy = false, pageFailed = true)
             }
             return
         }
@@ -411,11 +423,9 @@ class IncomeHistoryViewModel(
             attempts.update { it + 1 }
             return
         }
-        val previous = if (first) {
-            emptyList()
-        } else {
-            (shown.value as? IncomeHistoryState.Ready)?.lines.orEmpty()
-        }
+        val shownNow = shown.value as? IncomeHistoryState.Ready
+        val previous = if (first) emptyList() else shownNow?.lines.orEmpty()
+        snapshot = expected
         cursor = next
         shown.value = IncomeHistoryState.Ready(
             expected.month,
@@ -430,7 +440,9 @@ class IncomeHistoryViewModel(
                     it.note?.value
                 )
             },
-            more = next != null
+            more = next != null,
+            // Only a refresh that succeeds clears the older marker, not a Más page.
+            stale = !first && shownNow?.stale == true
         )
     }
 

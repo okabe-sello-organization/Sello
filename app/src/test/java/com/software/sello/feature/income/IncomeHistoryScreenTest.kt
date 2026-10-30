@@ -6,8 +6,11 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.filterToOne
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -274,6 +277,28 @@ class IncomeHistoryScreenTest {
         rule.onNodeWithText("Reintentar").performClick()
 
         assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.Retry), actions)
+    }
+
+    @Test
+    fun olderFiguresStayWithANoticeAndAWayToReadAgain() {
+        show(ready().copy(stale = true), split)
+
+        rule.onNodeWithText(
+            "No pudimos leer tus ingresos de nuevo. Te mostramos los de la última lectura."
+        ).assertIsDisplayed()
+        rule.onNodeWithTag("income.line.i1").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("No pudimos leer tus ingresos").assertDoesNotExist()
+        rule.onNodeWithTag("income.stale").onChildren()
+            .filterToOne(hasText("Reintentar")).performClick()
+
+        assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.Retry), actions)
+    }
+
+    @Test
+    fun freshFiguresHaveNoOlderNotice() {
+        show(ready(), split)
+
+        rule.onNodeWithTag("income.stale").assertDoesNotExist()
     }
 
     // --- Plan del mes ---

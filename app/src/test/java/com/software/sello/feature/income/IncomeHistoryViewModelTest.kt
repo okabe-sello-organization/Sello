@@ -35,6 +35,7 @@ import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -89,12 +90,20 @@ class IncomeHistoryViewModelTest {
     private val gated = object : IncomeReads by reads {
         var gate: CompletableDeferred<Unit>? = null
 
+        /** Page reads cancelled while held back. */
+        var cancelled = 0
+
         override suspend fun inMonth(
             month: YearMonth,
             after: IncomeCursor?,
             limit: Int
         ): Outcome<IncomePage, StorageFailure> {
-            gate?.await()
+            try {
+                gate?.await()
+            } catch (cancellation: CancellationException) {
+                cancelled++
+                throw cancellation
+            }
             return reads.inMonth(month, after, limit)
         }
     }
@@ -222,8 +231,7 @@ class IncomeHistoryViewModelTest {
     fun failuresAreNotAnEmptyMonthAndChangingMonthDoesNotKeepOldRows() {
         reads.stored[incomeId(1)] = storedIncome(1, "2026-10-01", 150_000)
         val model = history()
-        reads.publish(october)
-        assertEquals(1, (model.state.value as IncomeHistoryState.Ready).lines.size)
+        // Nothing of October was ever read: only then is a failure the error screen.
         reads.of(october).value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         assertEquals(IncomeHistoryState.Failed, model.state.value)
         val september = YearMonth.of(2026, 9)
@@ -231,6 +239,164 @@ class IncomeHistoryViewModelTest {
         assertEquals(IncomeHistoryState.Loading, model.state.value)
         reads.publish(september)
         assertEquals(emptyList<IncomeLine>(), (model.state.value as IncomeHistoryState.Ready).lines)
+    }
+
+    // --- A refresh that fails keeps the last good figures, marked as older (#219) ---
+
+    @Test
+    fun aMonthReadThatFailsAfterTheListKeepsItsFiguresMarkedOlder() {
+        reads.stored[incomeId(1)] = storedIncome(1, "2026-10-01", 150_000)
+        val model = history()
+        reads.publish(october)
+
+        reads.of(october).value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
+
+        val older = model.state.value as IncomeHistoryState.Ready
+        assertTrue(older.stale)
+        assertFalse(older.busy)
+        assertEquals(listOf(incomeId(1).value), older.lines.map { it.id })
+        assertEquals("150.000 pesos", older.total.spoken)
+    }
+
+    @Test
+    fun aPageReadThatFailsDuringARefreshKeepsTheFiguresMarkedOlder() {
+        reads.stored[incomeId(1)] = storedIncome(1, "2026-10-01", 150_000)
+        val model = history()
+        reads.publish(october)
+
+        // An income lands, and reading the list again fails.
+        reads.failure = StorageFailure.Unavailable("x")
+        reads.stored[incomeId(2)] = storedIncome(2, "2026-10-02", 50_000)
+        reads.publish(october, revision = 2)
+
+        val older = model.state.value as IncomeHistoryState.Ready
+        assertTrue(older.stale)
+        assertFalse(older.busy)
+        assertFalse(older.pageFailed)
+        assertEquals(listOf(incomeId(1).value), older.lines.map { it.id })
+        assertEquals("150.000 pesos", older.total.spoken)
+    }
+
+    @Test
+    fun aSuccessfulRetryReplacesTheOlderFigures() {
+        reads.stored[incomeId(1)] = storedIncome(1, "2026-10-01", 150_000)
+        val model = history()
+        reads.publish(october)
+        reads.failure = StorageFailure.Unavailable("x")
+        reads.stored[incomeId(2)] = storedIncome(2, "2026-10-02", 50_000)
+        reads.publish(october, revision = 2)
+        val older = model.state.value as IncomeHistoryState.Ready
+
+        reads.failure = null
+        model.onAction(IncomeHistoryAction.Retry)
+
+        assertTrue(older.stale)
+        val fresh = model.state.value as IncomeHistoryState.Ready
+        assertFalse(fresh.stale)
+        assertEquals(listOf(incomeId(2).value, incomeId(1).value), fresh.lines.map { it.id })
+        assertEquals("200.000 pesos", fresh.total.spoken)
+    }
+
+    @Test
+    fun moreAfterAFailedListRefreshNeverStartsAgainFromTheFirstPage() {
+        repeat(51) { index ->
+            reads.stored[incomeId(index + 1)] = storedIncome(index + 1, "2026-10-01", 1_000)
+        }
+        val model = history()
+        reads.publish(october)
+        // Reading the list again fails at the same revision, so the shown list stays current.
+        reads.failure = StorageFailure.Unavailable("x")
+        model.onAction(IncomeHistoryAction.Retry)
+        val older = model.state.value as IncomeHistoryState.Ready
+        reads.failure = null
+
+        model.onAction(IncomeHistoryAction.More)
+
+        assertTrue(older.stale)
+        assertEquals(50, older.lines.size)
+        // It read on from where the shown list ends, never the first page again.
+        assertEquals(2L, reads.pages.last().first?.sequence)
+        val all = model.state.value as IncomeHistoryState.Ready
+        assertEquals(51, all.lines.size)
+        assertEquals(51, all.lines.map { it.id }.distinct().size)
+        // Only a refresh that succeeds clears the older marker, not a Más page.
+        assertTrue(all.stale)
+    }
+
+    @Test
+    fun moreAfterAFailedMonthReadContinuesTheShownListAndRecoversWithoutDoubling() {
+        repeat(51) { index ->
+            reads.stored[incomeId(index + 1)] = storedIncome(index + 1, "2026-10-01", 1_000)
+        }
+        val model = history()
+        reads.publish(october)
+        reads.of(october).value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
+
+        // The month still cannot be read, so the next page cannot be checked against it.
+        model.onAction(IncomeHistoryAction.More)
+
+        val failedPage = model.state.value as IncomeHistoryState.Ready
+        assertTrue(failedPage.stale)
+        assertTrue(failedPage.pageFailed)
+        assertFalse(failedPage.busy)
+        assertEquals(50, failedPage.lines.size)
+        // It read on from where the shown list ends, never the first page again.
+        assertEquals(2L, reads.pages.last().first?.sequence)
+
+        reads.publish(october)
+        val fresh = model.state.value as IncomeHistoryState.Ready
+        assertFalse(fresh.stale)
+        assertEquals(50, fresh.lines.size)
+        model.onAction(IncomeHistoryAction.More)
+        val all = model.state.value as IncomeHistoryState.Ready
+        assertEquals(51, all.lines.size)
+        assertEquals(51, all.lines.map { it.id }.distinct().size)
+    }
+
+    @Test
+    fun changingMonthWhileTheFiguresAreOlderReadsTheNewMonthAfresh() {
+        reads.stored[incomeId(1)] = storedIncome(1, "2026-10-01", 150_000)
+        val model = history()
+        reads.publish(october)
+        reads.of(october).value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
+        val september = YearMonth.of(2026, 9)
+
+        session.select(september)
+        val loading = model.state.value
+        reads.of(september).value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
+        val failed = model.state.value
+        reads.publish(september)
+
+        assertEquals(IncomeHistoryState.Loading, loading)
+        // Nothing of September was ever read, so October's figures are not kept for it.
+        assertEquals(IncomeHistoryState.Failed, failed)
+        val fresh = model.state.value as IncomeHistoryState.Ready
+        assertEquals(september, fresh.month)
+        assertFalse(fresh.stale)
+        assertEquals(emptyList<IncomeLine>(), fresh.lines)
+    }
+
+    @Test
+    fun aRefreshOvertakenByANewerChangeIsCancelledNotShownAsOlder() {
+        reads.stored[incomeId(1)] = storedIncome(1, "2026-10-01", 150_000)
+        val model = history()
+        reads.publish(october)
+        val gate = CompletableDeferred<Unit>()
+        gated.gate = gate
+
+        reads.stored[incomeId(2)] = storedIncome(2, "2026-10-02", 50_000)
+        reads.publish(october, revision = 2)
+        reads.stored[incomeId(3)] = storedIncome(3, "2026-10-03", 25_000)
+        reads.publish(october, revision = 3)
+        gate.complete(Unit)
+
+        assertEquals(1, gated.cancelled)
+        val fresh = model.state.value as IncomeHistoryState.Ready
+        assertFalse(fresh.stale)
+        assertFalse(fresh.pageFailed)
+        assertFalse(fresh.busy)
+        assertEquals(3, fresh.lines.size)
+        assertEquals("225.000 pesos", fresh.total.spoken)
     }
 
     // --- Where it went: the same summary Resumen shows ---

@@ -90,6 +90,7 @@ fun IncomeHistoryScreen(
             }
 
             is IncomeHistoryState.Ready -> if (state.lines.isEmpty() && !state.more) {
+                staleItem(state, onAction)
                 item {
                     EmptySlip(
                         title = stringResource(
@@ -105,6 +106,7 @@ fun IncomeHistoryScreen(
                 }
                 planItem(plan, today, onAction)
             } else {
+                staleItem(state, onAction)
                 item { CameIn(state, split, months.inSentence(state.month)) }
                 planItem(plan, today, onAction)
                 assign?.let { item { AssignNote(it, onAssign, onAction) } }
@@ -153,6 +155,21 @@ fun IncomeHistoryScreen(
                 }
             }
         }
+    }
+}
+
+/** The last refresh failed: these are the figures as last read, and Reintentar reads again. */
+private fun LazyListScope.staleItem(
+    state: IncomeHistoryState.Ready,
+    onAction: (IncomeHistoryAction) -> Unit
+) {
+    if (!state.stale) return
+    item {
+        ErrorSlip(
+            stringResource(R.string.income_stale),
+            { onAction(IncomeHistoryAction.Retry) },
+            Modifier.testTag("income.stale")
+        )
     }
 }
 
