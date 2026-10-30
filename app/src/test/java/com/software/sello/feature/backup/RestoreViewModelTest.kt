@@ -623,6 +623,61 @@ class RestoreViewModelTest {
         assertEquals(0, restores.replaced)
     }
 
+    /** A replacement committed before the process died, its file not renamed yet. */
+    private val committed = CommittedBeforeRename(
+        operation,
+        done.copy(preferences = PendingPreferences(AppearancePreference(), null))
+    )
+
+    private fun TestScope.restartedOn(scope: CoroutineScope) =
+        model(scope = scope, session = RestoreSession(committed, reader, scope, 10 * 1024 * 1024))
+            .first
+
+    @Test
+    fun aCommittedReplacementIsShownRestoredWhenTheStartUpApplyIsStillRunning() = runTest {
+        val startUp = CompletableDeferred<Unit>()
+        val screen = CompletableDeferred<Unit>()
+        committed.applyGates += listOf(startUp, screen)
+
+        // Respaldo opens while the start-up apply is still reading.
+        val model = restartedOn(backgroundScope)
+        startUp.complete(Unit)
+        runCurrent()
+        screen.complete(Unit)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done), model.state.value.step)
+        assertEquals(1, committed.written)
+    }
+
+    @Test
+    fun aCancelledStartUpApplyLeavesTheCommittedReplacementToTheScreen() = runTest {
+        val startUp = CompletableDeferred<Unit>()
+        committed.applyGates += startUp
+
+        val model = restartedOn(backgroundScope)
+        startUp.completeExceptionally(CancellationException("cancelled"))
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done), model.state.value.step)
+        assertEquals(1, committed.written)
+    }
+
+    @Test
+    fun theProcessDyingDuringTheStartUpApplyShowsItRestoredNextTime() = runTest {
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        committed.applyGates += CompletableDeferred<Unit>()
+        restartedOn(process)
+
+        process.cancel()
+        runCurrent()
+
+        val restored = restartedOn(CoroutineScope(backgroundScope.coroutineContext + Job()))
+
+        assertEquals(RestoreStep.Restored(done), restored.state.value.step)
+        assertEquals(1, committed.written)
+    }
+
     @Test
     fun theProcessDyingWhileCheckingNamesTheUnknownOutcomeAgain() = runTest {
         val handle = SavedStateHandle()

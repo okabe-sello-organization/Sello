@@ -1,5 +1,6 @@
 package com.software.sello.feature.backup
 
+import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.BackupExports
 import com.software.sello.domain.port.BackupPreparationFailure
@@ -10,6 +11,7 @@ import com.software.sello.domain.port.DocumentDestination
 import com.software.sello.domain.port.DocumentWrite
 import com.software.sello.domain.port.DocumentWriter
 import com.software.sello.domain.port.LastBackup
+import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
@@ -130,5 +132,48 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
         events?.add("apply")
         applied++
         return applyAnswer
+    }
+}
+
+/**
+ * The store as a new process finds it when a replacement committed and the process died
+ * before its staged file was renamed, behaving as the real one does: looking at the
+ * staged file renames it, and applying the pending preferences writes them and, with
+ * none left, forgets the replacement, so a later look or apply finds nothing. Each
+ * [applyPending] waits for the next of [applyGates], if any, before it reads.
+ */
+class CommittedBeforeRename(
+    private val operation: OperationId,
+    private val outcome: RestoreOutcome.Restored
+) : Restores {
+    val applyGates = ArrayDeque<CompletableDeferred<Unit>>()
+    private var renamed = false
+    private var forgotten = false
+
+    /** How many times the preferences were written. */
+    var written = 0
+
+    override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> =
+        Outcome.Failure(StageFailure.Storage)
+
+    override suspend fun staged(): StagedLookup {
+        if (renamed || forgotten) return StagedLookup.None
+        renamed = true
+        return StagedLookup.Replaced(operation)
+    }
+
+    override suspend fun discard() = Unit
+
+    override suspend fun replace(staged: StagedRestore): RestoreOutcome = RestoreOutcome.Failed
+
+    override suspend fun pending(): RestoreOutcome.Restored? =
+        outcome.takeIf { renamed && !forgotten }
+
+    override suspend fun applyPending(): RestoreOutcome.Restored? {
+        applyGates.removeFirstOrNull()?.await()
+        if (pending() == null) return null
+        written++
+        forgotten = true
+        return outcome.copy(preferences = PendingPreferences(null, null))
     }
 }
