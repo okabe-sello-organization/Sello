@@ -29,7 +29,6 @@ private val schemes = listOf(false, true).map { SelloInk.Cobalto to it }
  */
 fun ComposeContentTestRule.inEveryScheme(
     reducedMotion: Boolean = true,
-    fontScale: Float = 1f,
     width: Dp = 360.dp,
     densityScale: Float = 1f,
     reset: () -> Unit = {},
@@ -40,7 +39,7 @@ fun ComposeContentTestRule.inEveryScheme(
     setContent {
         val density = LocalDensity.current
         CompositionLocalProvider(
-            LocalDensity provides Density(density.density * densityScale, fontScale)
+            LocalDensity provides Density(density.density * densityScale)
         ) {
             SelloTheme(
                 ink = scheme.first,

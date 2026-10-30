@@ -97,7 +97,7 @@ import org.robolectric.annotation.Config
  * Inversiones as it is drawn (docs/design/v2/inversiones.html; investment examples):
  * no month, no Anotar and no dock until its screens exist; the answer, its return and
  * dates; dollars in dollars with the rate named; and every figure whole on a narrow
- * phone, a tablet and an expanded window, at 1.0, 1.3 and 2.0 font scales, in all four
+ * phone, a tablet and an expanded window, in all four
  * themes. Loading and failure are never "no investments".
  */
 @RunWith(AndroidJUnit4::class)
@@ -397,13 +397,13 @@ class InversionesScreenTest {
     @Test
     // A screen larger than every window below, so each window is laid out whole.
     @Config(qualifiers = "w900dp-h900dp-mdpi")
-    fun everyFigureStaysWholeInEveryThemeSizeAndWindow() {
+    fun everyFigureStaysWholeInEveryThemeAndWindow() {
         val shown = InvestmentsRenderModel(
             money
         ).overview(ReadState.Ready(largest()), today)
-        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, SweepWindow(320, 640)))
         rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
+            CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
                     Box(
                         Modifier.requiredSize(

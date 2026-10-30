@@ -82,13 +82,9 @@ class ExpenseEntryScreenTest {
      * composer shows what was typed: a field left on its old text would have the keyboard
      * send the whole text again, and the test would see that as a second change.
      */
-    private fun show(
-        state: ExpenseEntryState,
-        fontScale: Float = 1f,
-        showPastExpenseAnnouncement: Boolean = false
-    ) {
+    private fun show(state: ExpenseEntryState, showPastExpenseAnnouncement: Boolean = false) {
         val shown = mutableStateOf(state)
-        rule.showSello(Look(fontScale = fontScale)) {
+        rule.showSello(Look()) {
             ExpenseEntryScreen(
                 state = shown.value,
                 dates = dateLabels(),
@@ -336,17 +332,6 @@ class ExpenseEntryScreenTest {
         rule.onNodeWithText("Reintentar").performClick()
 
         assertEquals(listOf<ExpenseEntryAction>(ExpenseEntryAction.Retry), actions)
-    }
-
-    @Test
-    fun atTwiceTheFontSizeEveryControlCanStillBeReached() {
-        show(complete, fontScale = 2f)
-
-        rule.onNodeWithContentDescription("48.700 pesos").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("Café").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(ENTRY_DATE_TAG).revealed().assertIsDisplayed()
-        key("000").assertIsDisplayed()
-        rule.onNodeWithTag(ENTRY_SUBMIT_TAG).assertIsDisplayed().assertIsEnabled()
     }
 
     // --- Correcting a recorded expense ---

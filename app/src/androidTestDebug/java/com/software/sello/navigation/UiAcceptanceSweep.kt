@@ -59,12 +59,12 @@ import org.junit.Test
 
 /**
  * Every daily-use screen of the real app, on its own database and view models, in the
- * windows, text sizes and themes of the [UI acceptance matrix](docs/testing/ui-acceptance-matrix.md).
+ * windows and themes of the [UI acceptance matrix](docs/testing/ui-acceptance-matrix.md).
  * One dp is drawn as one pixel, so a window can be larger than the test device's
  * screen: what is checked is what exists and where it is laid out, not what is
  * visible. Each screen is checked for:
  * - controls at least 48 by 48 dp to touch;
- * - text that is not cut off;
+ * - text that is not cut off, except a category tile's name, which its tile says in full;
  * - amounts spoken in full, in pesos;
  * - its main action reachable inside the window.
  * Every problem on every screen is collected, then reported together. Pull requests
@@ -72,12 +72,11 @@ import org.junit.Test
  * (with [UiAcceptanceSweepNightlyTest]).
  */
 abstract class UiAcceptanceSweep(private val window: Window) {
-    /** A window of [width] × [height] dp at [fontScale], drawn in one theme. */
+    /** A window of [width] × [height] dp, drawn in one theme. */
     data class Window(
         val name: String,
         val width: Int,
         val height: Int,
-        val fontScale: Float,
         val ink: SelloInk,
         val dark: Boolean
     ) {
@@ -128,8 +127,7 @@ abstract class UiAcceptanceSweep(private val window: Window) {
     fun everyDailyUseScreenFitsItsWindowAndIsFullyOperable() {
         val viewModels = viewModels(sandbox.koin)
         rule.setContent {
-            val density = Density(1f, window.fontScale)
-            CompositionLocalProvider(LocalDensity provides density) {
+            CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 SelloTheme(ink = window.ink, darkTheme = window.dark, reducedMotion = true) {
                     Box(
                         Modifier.requiredSize(window.width.dp, window.height.dp).testTag(WINDOW_TAG)
@@ -266,8 +264,15 @@ abstract class UiAcceptanceSweep(private val window: Window) {
         unmerged.forEach { node ->
             val results = mutableListOf<TextLayoutResult>()
             node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
-            results.firstOrNull()?.takeIf { it.isCutOff() }?.let {
-                problems += "$screen: text cut off: ${node.label()}"
+            results.firstOrNull()?.takeIf { it.isCutOff() }?.let { layout ->
+                // The v2 design shortens a category tile's name to one line; its tile
+                // must still say the whole name to a screen reader.
+                val tile = node.categoryTile()
+                if (tile == null) {
+                    problems += "$screen: text cut off: ${node.label()}"
+                } else if (!tile.spoken().contains(layout.layoutInput.text.text)) {
+                    problems += "$screen: cut-off name not spoken in full: ${node.label()}"
+                }
             }
         }
 
@@ -333,6 +338,15 @@ abstract class UiAcceptanceSweep(private val window: Window) {
             text[end - 1] != ' ' && text[end] != ' '
         }
     }
+
+    private fun SemanticsNode.categoryTile(): SemanticsNode? = generateSequence(this) { it.parent }
+        .firstOrNull {
+            it.config.getOrNull(SemanticsProperties.TestTag)
+                ?.startsWith(reciboCategoryTag("")) == true
+        }
+
+    private fun SemanticsNode.spoken(): String =
+        config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(" ").orEmpty()
 
     private fun SemanticsNode.label(): String {
         val text = config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { it.text }

@@ -95,7 +95,7 @@ import org.robolectric.annotation.Config
 /**
  * Metas and a goal as they are drawn: the tab's own green dock only once its screen
  * exists, never a month or Anotar, and every figure whole on a narrow phone, a tablet
- * and an expanded window, at 1.0, 1.3 and 2.0 font scales, in all four themes.
+ * and an expanded window, in all four themes.
  */
 @RunWith(AndroidJUnit4::class)
 class MetasScreenTest {
@@ -286,7 +286,7 @@ class MetasScreenTest {
     @Test
     // A screen larger than every window below, so each window is laid out whole.
     @Config(qualifiers = "w900dp-h900dp-mdpi")
-    fun metasAndTheDetailKeepEveryFigureWholeInEveryThemeSizeAndWindow() {
+    fun metasAndTheDetailKeepEveryFigureWholeInEveryThemeAndWindow() {
         val render = GoalsRenderModel(money)
         val metas = render.metas(ReadState.Ready(board), today)
         val detail = render.detail(
@@ -294,10 +294,10 @@ class MetasScreenTest {
             board.goals[1].history.goal.id.value,
             today
         )
-        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, SweepWindow(320, 640)))
         var showDetail by mutableStateOf(false)
         rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
+            CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
                     Box(
                         Modifier.requiredSize(

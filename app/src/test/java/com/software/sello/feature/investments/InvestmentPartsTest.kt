@@ -232,7 +232,7 @@ class InvestmentPartsTest {
     @Test
     fun theValuesChartNamesItsMonthsItsLinesAndEveryRecordedValue() {
         var chosen: String? = null
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             RecordedValuesChart(
                 values = listOf(
                     RecordedMark("a", 0f, 0.5f, "3 may 2025: 3.000.000 pesos"),

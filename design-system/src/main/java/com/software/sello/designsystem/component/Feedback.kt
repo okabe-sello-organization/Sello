@@ -110,8 +110,8 @@ fun ConfirmSlip(
 
 /**
  * [ConfirmSlip] with any [content] under the title, such as points to read before
- * saving a file. The content scrolls when the slip would not fit, as at large text,
- * the buttons stay in view and go one above the other when a label would not fit.
+ * saving a file. The content scrolls when the slip would not fit; the buttons stay
+ * in view and go one above the other when a label would not fit.
  */
 @Composable
 fun ConfirmSlip(
@@ -178,7 +178,7 @@ fun ConfirmSlip(
  * applies to the next ones too: [firstLabel] outlined, [secondLabel] filled, and
  * [backLabel] under them to go back without answering. The slip is [ConfirmSlip]'s.
  * Back and a tap outside are [onBack]. The answers stand one above the other when they
- * do not fit side by side, as at large text. While [busy] the answer given shows a
+ * do not fit side by side. While [busy] the answer given shows a
  * spinner and nothing can be pressed or dismissed, so it is requested once.
  */
 @Composable
@@ -256,8 +256,8 @@ fun ChoiceSlip(
 
 /**
  * [ChoiceSlip] with any [content] under the title, such as a choice of format and the
- * points to read before acting. The content scrolls when the slip would not fit, as at
- * large text; the answers stay in view.
+ * points to read before acting. The content scrolls when the slip would not fit; the
+ * answers stay in view.
  */
 @Composable
 fun ChoiceSlip(

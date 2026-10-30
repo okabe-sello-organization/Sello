@@ -57,7 +57,7 @@ the v2 full-width **+ Anotar** button, read as "Anotar un gasto", and the tab ba
 passes its own dock, **+ Anotar ingreso** (read "Anotar un ingreso"), and its own title,
 "Ingresos de octubre" (SELLO-071); every other screen's dock records an expense. On Recibo
 and Resumen the top bar is the v2 `MonthBar` (SELLO-068): **Octubre** large, a small
-**2026** that hides from font scale 1.3, and the chevron; the button keeps the spoken
+**2026** and the chevron; the button keeps the spoken
 "Cambiar de mes. Mes actual: …" label and opens the same picker. Pushed screens with a
 back arrow (Configuración, income history, a category opened on a phone) keep their
 titled `MonthSwitcher` bar. The month

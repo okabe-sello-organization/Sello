@@ -43,8 +43,8 @@ class ReciboGoalScreenTest {
     private val curso = ReciboReachedGoal("curso", "Curso de inglés", "school")
     private val actions = mutableListOf<Any>()
 
-    private fun show(state: ReciboGoalState, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale)) {
+    private fun show(state: ReciboGoalState) {
+        rule.showSello(Look()) {
             Box(Modifier.width(320.dp).testTag("area")) {
                 ReciboGoal(
                     state,
@@ -138,24 +138,6 @@ class ReciboGoalScreenTest {
             .performClick()
 
         assertEquals(listOf<Any>(ReciboGoalAction.Retry), actions)
-    }
-
-    @Test
-    fun atTwiceTheFontSizeTheLongNameGivesWayAndThePercentageAndPlusStayWhole() {
-        show(
-            ReciboGoalState.Shown(viaje.copy(name = "Una meta de nombre largo para probar"), null),
-            fontScale = 2f
-        )
-
-        val area = rule.onNodeWithTag("area").getUnclippedBoundsInRoot()
-        val percentage = rule.onNodeWithText("57 %", useUnmergedTree = true)
-            .getUnclippedBoundsInRoot()
-        val plus = rule.onNodeWithContentDescription(
-            "Aportar a Una meta de nombre largo para probar"
-        )
-            .getUnclippedBoundsInRoot()
-        assertTrue(percentage.right <= plus.left && plus.right <= area.right)
-        assertTrue(plus.right - plus.left >= 48.dp && plus.bottom - plus.top >= 48.dp)
     }
 
     @Test

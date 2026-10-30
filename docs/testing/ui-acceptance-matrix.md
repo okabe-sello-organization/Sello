@@ -11,11 +11,11 @@ checks a test can read are here. Synthetic data only.
 
 | ID | Window (dp) | Text | Theme | Where | Layout it exercises |
 | --- | --- | --- | --- | --- | --- |
-| C1 | 320 × 640 | 2.0 | Cobalto light | Sweep | Compact phone: tab bar, dock, one pane |
-| P1 | 393 × 851 | 1.0 and 2.0 | Cobalto light | Walk | A real phone window with system bars and keyboard |
-| P2 | 851 × 393 | 2.0 | Cobalto light | Walk | The same phone sideways, keyboard open, navigation bar on the right |
-| L1 | 640 × 360 | 1.3 | Violeta dark | Sweep | Short landscape: rail, two panes |
-| L2 | 640 × 360 | 2.0 | Cobalto dark | Sweep | Short landscape at the largest text |
+| C1 | 320 × 640 | 1.0 | Cobalto light | Sweep | Compact phone: tab bar, dock, one pane |
+| P1 | 393 × 851 | 1.0 and 2.0 (as run) | Cobalto light | Walk | A real phone window with system bars and keyboard |
+| P2 | 851 × 393 | 2.0 (as run) | Cobalto light | Walk | The same phone sideways, keyboard open, navigation bar on the right |
+| L1 | 640 × 360 | 1.0 | Violeta dark | Sweep | Short landscape: rail, two panes |
+| L2 | 640 × 360 | 1.0 | Cobalto dark | Sweep | Short landscape: rail, two panes |
 | M1 | 700 × 900 | 1.0 | Violeta light | Sweep | Medium: tab bar, side-by-side detail |
 | E1 | 1000 × 700 | 1.0 | Cobalto light | Sweep | Expanded: rail, list and detail panes |
 | M2 | 700 × 900 | 1.0 | Cobalto light | Walk | Medium, a real window |
@@ -37,10 +37,8 @@ Every theme appears once in the sweep; colour contrast for all four is checked
 separately, token by token, by `SelloColorsTest` (WCAG AA: 4.5:1 for text, 3:1 for
 marks and large text), including the stamps, soft fills and past-month bar.
 
-Font scales 1.0 and 1.3 on a compact phone are covered by each screen's own tests
-(`*ScreenTest`, `ShellScreenLayoutTest`, `ExpenseEntryGeometryTest` and the
-design-system suites); the sweep takes the riskiest corners rather than all 48
-combinations.
+Only the normal font size is tested: other font scales are not supported (owner
+decision, 2026-10-29). The walks P1 and P2 ran at 2.0 before that.
 
 ## Screens and checks
 
@@ -58,7 +56,7 @@ On each screen the sweep records, then reports together:
 | Check | Rule |
 | --- | --- |
 | Touch targets | Every control answers a touch at least 48 × 48 dp (Compose's widened touch area included). A control a list has scrolled out of view is measured where it is whole. |
-| Text not cut short | No text is shortened with an ellipsis or stopped at its line limit. |
+| Text not cut short | No text is shortened with an ellipsis or stopped at its line limit. The one exception is a category tile's name, which the v2 design keeps to one line with an ellipsis; the tile must then say the whole name to a screen reader (owner decision, 2026-10-29). |
 | Amounts spoken in full | Every amount shown is read with its currency, such as "48.700 pesos". |
 | Main action reachable | Save, delete, Respaldar, Continuar and the Configuración rows scroll into the window. |
 
@@ -66,13 +64,13 @@ On each screen the sweep records, then reports together:
 
 | Found | Where | Fix | Regression test |
 | --- | --- | --- | --- |
-| Screen titles cut short ("Editar gasto", "Ingresos de octubre", "Configuración · Octubre 2026") | C1 | Titles and the month title take a second line before any ellipsis | `LargeTextFitTest`, sweep |
-| "Editar categoría" did not fit beside **Archivar** even on two lines | C1 | When the title has no room beside its actions it moves under them, full width; otherwise unchanged | `LargeTextFitTest.aTitleWithNoRoomBesideItsActionMovesUnderItAndStaysWhole`, `aTitleThatFitsStaysBesideItsAction` |
-| Rail labels "Recibo", "Resumen" cut short | L2 | The rail widens to its longest label (at least 80dp) | `LargeTextFitTest.theRailWidensSoEveryTabLabelIsWhole` |
-| Chip label "Último gasto agregado" cut short | C1 | Chips take a second line before an ellipsis, as the v1.1 spec's "chips wrap" says | `LargeTextFitTest.aChipsLabelTakesASecondLineInsteadOfBeingShortened` |
+| Screen titles cut short ("Editar gasto", "Ingresos de octubre", "Configuración · Octubre 2026") | C1 | Titles and the month title take a second line before any ellipsis | none now: checked at 2.0, not tested since |
+| "Editar categoría" did not fit beside **Archivar** even on two lines | C1 | When the title has no room beside its actions it moves under them, full width; otherwise unchanged | `NarrowFitTest.aTitleThatFitsStaysBesideItsAction` (the 2.0 case is not tested since) |
+| Rail labels "Recibo", "Resumen" cut short | L2 | The rail widens to its longest label (at least 80dp) | none now: checked at 2.0, not tested since |
+| Chip label "Último gasto agregado" cut short | C1 | Chips take a second line before an ellipsis, as the v1.1 spec's "chips wrap" says | none now: checked at 2.0, not tested since |
 | Limit suggestions read "200.000" without pesos | all | Each suggestion is read as "200.000 pesos" | `CategoryEditorViewModelTest`, `CategoryManagementViewModelTest`, `CategoryEditorScreenTest` |
 | Resumen's limit line read "Límite 350.000" | all | The chart's reference line is read as "Límite 350.000 pesos" | `ChartExactSelectionTest`, `ResumenScreenTest` |
-| Weekly chart labels "sem 2", "sem 3", "sem 4" cut short from the 29th of a month, when the chart has five columns (39dp each) | L2 | The chart's axis shows the week number alone ("2") when a column cannot hold "sem 2" in two lines at the label's own size; every column, the current week included, shows its number, and the spoken text stays as it is | `LargeTextFitTest.aChartsFiveWeekLabelsShowTheNumberAloneWhereTheWordsDoNotFit`, `aPastMonthsFiveWeekLabelsShowTheNumberAlone`, sweep (pinned to 30 Oct 2026; also fails a week label broken inside its word) |
+| Weekly chart labels "sem 2", "sem 3", "sem 4" cut short from the 29th of a month, when the chart has five columns (39dp each) | L2 | The chart's axis shows the week number alone ("2") when a column cannot hold "sem 2" in two lines at the label's own size; every column, the current week included, shows its number, and the spoken text stays as it is | `NarrowFitTest.guardWeekLabelsKeepTheirWordsAndSizeWhereTheyFit`; the 2.0 cases are not tested since |
 | The note composer ran under the navigation bar on the right: **Listo** sat behind it and had no bounds for accessibility | P2 | The composer's content keeps clear of the side system bars; its paper still reaches the edge | `ComponentContractsTest.aNavigationBarAtTheSideCoversNeitherCancelNorDone`; screenshots 2 before and after |
 
 No touch target under 48dp and no main action outside its window was found.

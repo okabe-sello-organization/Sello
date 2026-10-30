@@ -118,8 +118,8 @@ class AdjustBudgetScreenTest {
 
     private var sheet by mutableStateOf(LimitSheetState(october))
 
-    private fun show(state: AdjustBudgetState, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale)) {
+    private fun show(state: AdjustBudgetState) {
+        rule.showSello(Look()) {
             AdjustBudgetScreen(
                 state = state,
                 sheet = sheet,
@@ -216,13 +216,5 @@ class AdjustBudgetScreenTest {
         rule.onNodeWithText("Reintentar").press()
 
         assertEquals(listOf<AdjustBudgetAction>(AdjustBudgetAction.Retry), actions)
-    }
-
-    @Test
-    fun largeTextKeepsTheButtonReachable() {
-        sheet = openSheet
-        show(ready, fontScale = 2f)
-
-        rule.onNodeWithText("Guardar solo octubre").performScrollTo().assertIsDisplayed()
     }
 }

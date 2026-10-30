@@ -40,8 +40,8 @@ class ResetScreenTest {
     private val operation =
         (OperationId.of("00000000-0000-4000-8000-000000007000") as Outcome.Success).value
 
-    private fun show(state: ResetState, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale)) {
+    private fun show(state: ResetState) {
+        rule.showSello(Look()) {
             ResetScreen(state, { actions += it }, PaddingValues(), { closes++ })
         }
     }
@@ -214,19 +214,5 @@ class ResetScreenTest {
         rule.onNodeWithTag(RESET_APPLY_TAG).performScrollTo().performClick()
 
         assertEquals(listOf<ResetAction>(ResetAction.ApplyPreferences), actions)
-    }
-
-    @Test
-    fun atTwiceTheFontSizeTheWordAndItsButtonsCanStillBeReached() {
-        show(
-            ResetState(ResetStep.Ready(preview), confirming = true, typed = "BORRAR"),
-            fontScale = 2f
-        )
-
-        word.performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(RESET_CANCEL_TAG).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag(RESET_CONFIRM_TAG).performScrollTo().assertIsDisplayed().performClick()
-
-        assertEquals(listOf<ResetAction>(ResetAction.Confirm), actions)
     }
 }

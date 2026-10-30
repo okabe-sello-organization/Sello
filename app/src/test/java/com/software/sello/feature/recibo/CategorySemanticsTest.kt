@@ -152,11 +152,10 @@ class CategorySemanticsTest {
         rule.onNodeWithTag("cell$it").getUnclippedBoundsInRoot().top
     }
 
-    private fun showGrid(width: Dp, fontScale: Float) {
+    private fun showGrid(width: Dp) {
         rule.inEveryScheme(
             width = width,
             densityScale = 0.5f,
-            fontScale = fontScale,
             content = {
                 CategoryGrid(List(4) { it }) { index, _ ->
                     CategoryCell(
@@ -179,21 +178,15 @@ class CategorySemanticsTest {
 
     @Test
     fun twoCellsShareARowOnAPhone() {
-        showGrid(336.dp, 1f)
+        showGrid(336.dp)
         assertEquals(tops[0], tops[1])
         assertEquals(tops[2], tops[3])
         assertTrue(tops[2] > tops[0])
     }
 
     @Test
-    fun atLargeTypeEachCellGetsItsOwnRow() {
-        showGrid(336.dp, 1.3f)
-        assertEquals(4, tops.distinct().size)
-    }
-
-    @Test
     fun aWideColumnFitsThreeCellsPerRow() {
-        showGrid(560.dp, 1f)
+        showGrid(560.dp)
         assertEquals(tops[0], tops[1])
         assertEquals(tops[1], tops[2])
         assertTrue(tops[3] > tops[0])

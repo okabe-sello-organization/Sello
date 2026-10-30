@@ -47,7 +47,7 @@ import org.robolectric.annotation.Config
  * Anotar movimiento as it is drawn from state given by hand: the type chips and the
  * investment chips each keep one row, each type draws its own sign, a retiro above the
  * value says so in the label's place and waits with Anotar el valor de hoy, the comma key
- * is there only for dollars, and the figures stay whole at 2.0 font scale on 320dp.
+ * is there only for dollars, and the figures stay whole on 320dp.
  */
 @RunWith(AndroidJUnit4::class)
 class InvestmentMovementScreenTest {
@@ -251,15 +251,15 @@ class InvestmentMovementScreenTest {
     @Test
     // A screen larger than every window below, so each window is laid out whole.
     @Config(qualifiers = "w900dp-h900dp-mdpi")
-    fun theFiguresAndTheActionStayWholeAtLargeTextOnANarrowPhone() {
+    fun theFiguresAndTheActionStayWholeOnANarrowPhone() {
         val largest = aporte.copy(
             investmentId = "u",
             amount = dollars("9.999.999.999,99"),
             fact = InvestmentMovementFact.Contributed(dollars("1.000,00"), "Acciones EE. UU.")
         )
-        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, 1f, SweepWindow(320, 640)))
+        var look by mutableStateOf(SweepLook(SelloInk.Cobalto, false, SweepWindow(320, 640)))
         rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, look.scale)) {
+            CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 SelloTheme(ink = look.ink, darkTheme = look.dark, reducedMotion = true) {
                     Box(
                         Modifier.requiredSize(
@@ -273,7 +273,7 @@ class InvestmentMovementScreenTest {
             }
         }
         val windows = listOf(SweepWindow(320, 640), SweepWindow(600, 640))
-        for (each in sweepLooks(windows, scales = listOf(1f, 2f))) {
+        for (each in sweepLooks(windows)) {
             look = each
             rule.waitForIdle()
             val window = rule.onNodeWithTag("window").getUnclippedBoundsInRoot()

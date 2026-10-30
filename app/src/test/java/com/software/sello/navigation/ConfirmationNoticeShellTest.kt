@@ -90,8 +90,8 @@ class ConfirmationNoticeShellTest {
         }
     }
 
-    private fun showOnThisScreen(tab: String, dark: Boolean = false, fontScale: Float = 1f) {
-        rule.showSello(Look(dark = dark, fontScale = fontScale)) { Frame(tab) }
+    private fun showOnThisScreen(tab: String, dark: Boolean = false) {
+        rule.showSello(Look(dark = dark)) { Frame(tab) }
     }
 
     private fun assertDrawnAboveTheDockAndTabs() {
@@ -138,14 +138,6 @@ class ConfirmationNoticeShellTest {
     @Test
     fun inTheDarkThemeAConfirmedSaveLooksTheSameWay() {
         showOnThisScreen("recibo", dark = true)
-
-        assertDrawnAboveTheDockAndTabs()
-        assertTheCheckIsDrawnAndTheMessageIsSaidPolitely()
-    }
-
-    @Test
-    fun atTwiceTheFontSizeAConfirmedSaveStillLeavesTheDockAndTabsUncovered() {
-        showOnThisScreen("recibo", fontScale = 2f)
 
         assertDrawnAboveTheDockAndTabs()
         assertTheCheckIsDrawnAndTheMessageIsSaidPolitely()

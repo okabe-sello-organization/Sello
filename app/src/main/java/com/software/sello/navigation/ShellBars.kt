@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -33,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -59,8 +56,8 @@ import com.software.sello.designsystem.theme.SelloTheme
 /**
  * The tab's top bar on the band: the month, its year and a chevron form one button that
  * opens the month picker; [actions] (settings, add) sit at the trailing edge as round
- * 48dp icon buttons. From font scale 1.3 the year is left out so the month keeps its room;
- * [description] still says it. [buttonModifier] goes on the month button itself.
+ * 48dp icon buttons. [description] says the month and year to a screen reader;
+ * [buttonModifier] goes on the month button itself.
  */
 @Composable
 internal fun MonthBar(
@@ -73,7 +70,6 @@ internal fun MonthBar(
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     val colors = SelloTheme.colors
-    val large = LocalDensity.current.fontScale >= 1.3f
     Row(
         modifier.fillMaxWidth().background(colors.band).heightIn(min = 56.dp)
             .padding(start = SelloTheme.spacing.lg, end = 6.dp),
@@ -97,20 +93,18 @@ internal fun MonthBar(
             Text(
                 month,
                 style = MaterialTheme.typography.headlineSmall.copy(
-                    fontSize = if (large) 19.sp else 24.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.W800,
                     letterSpacing = (-0.02).em
                 ),
                 color = colors.onBand
             )
-            if (!large) {
-                Text(
-                    year,
-                    Modifier.padding(start = 6.dp),
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W600),
-                    color = colors.onBand.copy(alpha = 0.8f)
-                )
-            }
+            Text(
+                year,
+                Modifier.padding(start = 6.dp),
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W600),
+                color = colors.onBand.copy(alpha = 0.8f)
+            )
             Icon(SelloIcon.KeyboardArrowDown.painter(), null, tint = colors.onBand)
         }
         Spacer(Modifier.weight(1f))
@@ -132,11 +126,10 @@ internal fun TitleBar(
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     val colors = SelloTheme.colors
-    val scale = LocalDensity.current.fontScale
     val width = LocalWindowInfo.current.containerSize.width
     // The chip keeps its label while the title fits on its line beside it; when it
-    // would not, as at large text or on a narrow window, it is the round + alone.
-    var compact by remember(title, scale, width) { mutableStateOf(false) }
+    // would not, as on a narrow window, it is the round + alone.
+    var compact by remember(title, width) { mutableStateOf(false) }
     Row(
         modifier.fillMaxWidth().background(colors.band).heightIn(min = 56.dp)
             .padding(start = SelloTheme.spacing.lg, end = 6.dp),
@@ -146,7 +139,7 @@ internal fun TitleBar(
             title,
             Modifier.weight(1f).semantics { heading() },
             style = MaterialTheme.typography.headlineSmall.copy(
-                fontSize = if (scale >= 1.3f) 19.sp else 24.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.W800,
                 letterSpacing = (-0.02).em
             ),
@@ -169,9 +162,7 @@ internal fun TitleBar(
 /**
  * Says which past month is shown and goes back in one tap. A translucent pill meant to
  * sit on the band, under the [MonthBar]. Bold spans in [message] name the month. Plain
- * presentation data only; no selected-month or clock logic. At large text the return
- * goes under the message, which keeps the width; beside it the message would be
- * squeezed into a column of letters.
+ * presentation data only; no selected-month or clock logic.
  */
 @Composable
 internal fun PastMonthRibbon(
@@ -181,20 +172,28 @@ internal fun PastMonthRibbon(
     modifier: Modifier = Modifier
 ) {
     val colors = SelloTheme.colors
-    val stacked = LocalDensity.current.fontScale >= 1.3f
-    val info: @Composable (Modifier) -> Unit = { textModifier ->
+    Row(
+        modifier.fillMaxWidth()
+            .background(colors.onBand.copy(alpha = 0.16f), CircleShape)
+            .padding(
+                start = SelloTheme.spacing.md,
+                top = SelloTheme.spacing.xs,
+                end = SelloTheme.spacing.xs,
+                bottom = SelloTheme.spacing.xs
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
+    ) {
         Icon(SelloIcon.Event.painter(), null, Modifier.size(20.dp), tint = colors.onBand)
         Text(
             message,
             color = colors.onBand,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = textModifier.semantics { liveRegion = LiveRegionMode.Polite }
+            modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite }
         )
-    }
-    val back: @Composable (Modifier) -> Unit = { buttonModifier ->
         Text(
             returnLabel,
-            modifier = buttonModifier
+            modifier = Modifier
                 .minimumInteractiveComponentSize()
                 .heightIn(min = 40.dp)
                 .clip(CircleShape)
@@ -207,36 +206,6 @@ internal fun PastMonthRibbon(
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1
         )
-    }
-    if (stacked) {
-        Column(
-            modifier.fillMaxWidth()
-                .background(colors.onBand.copy(alpha = 0.16f), RoundedCornerShape(20.dp))
-                .padding(SelloTheme.spacing.md),
-            verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
-            ) { info(Modifier.weight(1f)) }
-            back(Modifier.align(Alignment.End))
-        }
-    } else {
-        Row(
-            modifier.fillMaxWidth()
-                .background(colors.onBand.copy(alpha = 0.16f), CircleShape)
-                .padding(
-                    start = SelloTheme.spacing.md,
-                    top = SelloTheme.spacing.xs,
-                    end = SelloTheme.spacing.xs,
-                    bottom = SelloTheme.spacing.xs
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
-        ) {
-            info(Modifier.weight(1f))
-            back(Modifier)
-        }
     }
 }
 
@@ -254,7 +223,7 @@ internal fun MonthSwitcher(label: String, onClick: () -> Unit, modifier: Modifie
         Text(
             text = label,
             style = MaterialTheme.typography.titleLarge.copy(fontSize = 21.sp, lineHeight = 24.sp),
-            // A second line before an ellipsis, as for any screen title at large text.
+            // A second line before an ellipsis, as for any long screen title.
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )

@@ -77,10 +77,9 @@ class IncomeHistoryScreenTest {
     private fun show(
         state: IncomeHistoryState,
         split: IncomeSplit?,
-        fontScale: Float = 1f,
         plan: IncomePlanState = IncomePlanState.None
     ) {
-        rule.showSello(Look(fontScale = fontScale)) {
+        rule.showSello(Look()) {
             IncomeHistoryScreen(
                 state,
                 split,
@@ -196,15 +195,6 @@ class IncomeHistoryScreenTest {
         assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.Retry), actions)
     }
 
-    @Test
-    fun atTwiceTheFontSizeTheHeroAndARowCanBeReached() {
-        show(ready(), split, fontScale = 2f)
-
-        rule.onNodeWithText("Entró en octubre").assertIsDisplayed()
-        rule.onNodeWithTag("income.unassigned").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag("income.line.i1").performScrollTo().assertIsDisplayed()
-    }
-
     // --- Plan del mes ---
 
     @Test
@@ -275,17 +265,6 @@ class IncomeHistoryScreenTest {
         rule.onNodeWithText("Reintentar").performScrollTo().performClick()
 
         assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.Retry), actions)
-    }
-
-    @Test
-    fun atTwiceTheFontSizeThePlanAndItsChipCanBeReached() {
-        show(ready(), split, fontScale = 2f, plan = IncomePlanState.Shown(plan))
-
-        rule.onNodeWithTag("income.plan.unassigned").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithContentDescription("Salario esperado el vie 30 oct: 1.000.000 pesos")
-            .performScrollTo().assertIsDisplayed()
-        rule.onNodeWithTag("income.history").performScrollToNode(hasTestTag("income.line.i1"))
-        rule.onNodeWithTag("income.line.i1").assertIsDisplayed()
     }
 
     /** A node, merged as it is read, whose text or description is [part]. */

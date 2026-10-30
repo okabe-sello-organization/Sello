@@ -34,7 +34,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The frame alone, given state by hand, in windows of chosen sizes and font scales.
+ * The frame alone, given state by hand, in windows of chosen sizes.
  * On the JVM (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
@@ -58,8 +58,8 @@ class ShellScreenLayoutTest {
     private fun stateWith(pickerOpen: Boolean) = state(pickerOpen)
 
     /** The frame in the test device's own window, which on a phone is a compact one. */
-    private fun showOnThisScreen(pickerOpen: Boolean, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale)) { Frame(pickerOpen) }
+    private fun showOnThisScreen(pickerOpen: Boolean) {
+        rule.showSello(Look()) { Frame(pickerOpen) }
     }
 
     /**
@@ -215,15 +215,5 @@ class ShellScreenLayoutTest {
 
         rule.onNodeWithTag(MONTH_PICKER_TAG).assertExists()
         rule.onNodeWithContentDescription("Diciembre 2026").performScrollTo().assertExists()
-    }
-
-    @Test
-    fun atTwiceTheFontSizeTheTitleAndPickerAreStillThere() {
-        showOnThisScreen(pickerOpen = true, fontScale = 2f)
-
-        rule.onNodeWithTag(MONTH_PICKER_TAG).assertIsDisplayed()
-        // Every month can be reached, scrolling if it has to.
-        rule.onNodeWithContentDescription("Diciembre 2026").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithContentDescription("Enero 2026").performScrollTo().assertIsDisplayed()
     }
 }

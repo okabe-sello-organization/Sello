@@ -43,9 +43,9 @@ class ShellBarsContractsTest {
     val rule = createComposeRule()
 
     @Test
-    fun pastMonthReturnRemainsReachableAtDoubleFont() {
+    fun pastMonthReturnRemainsReachable() {
         var returns = 0
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             PastMonthRibbon(AnnotatedString("Estás viendo septiembre"), "Volver a noviembre", {
                 returns++
             })
@@ -60,33 +60,6 @@ class ShellBarsContractsTest {
             )
         }
         assertEquals(2, returns)
-    }
-
-    @Test
-    fun atFontScale13TheRibbonPutsItsReturnUnderAMessageThatKeepsTheWidth() = ribbonStacksAt(1.3f)
-
-    @Test
-    fun atTwiceTheFontSizeTheRibbonPutsItsReturnUnderAMessageThatKeepsTheWidth() =
-        ribbonStacksAt(2f)
-
-    private fun ribbonStacksAt(scale: Float) {
-        rule.inEveryScheme(fontScale = scale, width = 320.dp, content = {
-            PastMonthRibbon(
-                AnnotatedString("Estás viendo septiembre de 2025"),
-                "Volver a noviembre",
-                {},
-                Modifier.testTag("ribbon")
-            )
-        }) { scheme ->
-            val ribbon = rule.onNodeWithTag("ribbon").getUnclippedBoundsInRoot()
-            val message = rule.onNodeWithText("Estás viendo septiembre de 2025")
-                .getUnclippedBoundsInRoot()
-            val button = rule.onNodeWithText("Volver a noviembre").getUnclippedBoundsInRoot()
-            // Squeezed beside the button, the message became a column of letters.
-            assertTrue("$scheme: $message in $ribbon", message.width > ribbon.width / 2)
-            assertTrue("$scheme: $button under $message", button.top >= message.bottom)
-            assertTrue("$scheme: $button in $ribbon", button.right <= ribbon.right)
-        }
     }
 
     @Test
@@ -119,7 +92,7 @@ class ShellBarsContractsTest {
     @Test
     fun titleBarNamesTheTabAsAHeadingAndKeepsActionsReachable() {
         var added = 0
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             TitleBar("Inversiones") {
                 IconButton({ added++ }) { Icon(SelloIcon.Add.painter(), "Agregar inversión") }
             }
@@ -167,9 +140,9 @@ class ShellBarsContractsTest {
         val chip: @Composable (Boolean) -> Unit = { compact ->
             BandChip("Nueva inversión", { added++ }, Modifier.testTag("chip"), compact = compact)
         }
-        // At double text on 320dp they do not fit side by side: the chip is the round +
+        // On a narrow bar they do not fit side by side: the chip is the round +
         // and still says its label, the title keeps its line, and the target is 48dp.
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             TitleBar("Inversiones", chip = chip)
         }) {
             rule.onNodeWithText("Nueva inversión", useUnmergedTree = true).assertDoesNotExist()

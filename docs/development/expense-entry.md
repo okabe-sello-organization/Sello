@@ -122,8 +122,7 @@ form without resizing or flipping it.
 **No key moves.** The button sits 8dp above the pad, both held from the bottom, and
 everything the form says (what is missing, why a save failed) is laid out above the
 button. A message appearing or going changes the space above the button, never where
-the button or a key is. At twice the font size the two-line "Comprobar si se guardó"
-button lifts the keys, which are off then.
+the button or a key is.
 
 ## Leaving
 

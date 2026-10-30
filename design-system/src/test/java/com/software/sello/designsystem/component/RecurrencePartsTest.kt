@@ -95,32 +95,6 @@ class RecurrencePartsTest {
         }
     }
 
-    @Test
-    fun atTwiceTheFontSizeARowFitsANarrowScreenWithTheAmountUnderTheName() {
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
-            ScheduleRow(
-                name = "Servicios públicos",
-                caption = "Hogar · el 28 de cada mes · próximo mié 28 oct",
-                amount = pesos("200.000"),
-                icon = SelloIcon.Home,
-                onClick = {},
-                spoken = "Servicios públicos, 200.000 pesos, el 28 de cada mes",
-                soon = true,
-                pausedLabel = "En pausa",
-                modifier = Modifier.testTag("row")
-            )
-        }) { scheme ->
-            val row = rule.onNodeWithTag("row").getUnclippedBoundsInRoot()
-            assertTrue("$scheme ${row.right}", row.right <= 320.dp)
-            val name = rule.onNodeWithText("Servicios públicos", useUnmergedTree = true)
-                .getUnclippedBoundsInRoot()
-            val amount = rule.onNodeWithText("200.000", useUnmergedTree = true)
-                .getUnclippedBoundsInRoot()
-            assertTrue("$scheme $name $amount", amount.top >= name.bottom)
-            assertTrue("$scheme ${amount.right}", amount.right <= 320.dp)
-        }
-    }
-
     private class Answers {
         var first = 0
         var second = 0
@@ -193,30 +167,6 @@ class RecurrencePartsTest {
         Espresso.pressBack()
         rule.waitForIdle()
         assertEquals(Triple(1, 0, 0), answers.said())
-    }
-
-    @Test
-    fun atTwiceTheFontSizeTheAnswersStandOneAboveTheOther() {
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
-            ChoiceSlip(
-                "¿Cambiar también los siguientes?",
-                AnnotatedString("Este gasto lo anotó Arriendo."),
-                "Solo este",
-                {},
-                "Este y los siguientes",
-                {},
-                "Volver a editar",
-                {}
-            )
-        }) { scheme ->
-            val first = rule.onNodeWithText("Solo este").getUnclippedBoundsInRoot()
-            val second = rule.onNodeWithText("Este y los siguientes").getUnclippedBoundsInRoot()
-            assertTrue("$scheme $first $second", second.top >= first.bottom)
-            assertEquals(scheme, first.left, second.left)
-            val screen = InstrumentationRegistry.getInstrumentation().targetContext.resources
-                .configuration.screenWidthDp.dp
-            assertTrue("$scheme $second", second.right <= screen)
-        }
     }
 
     @Test

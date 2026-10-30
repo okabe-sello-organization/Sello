@@ -32,7 +32,7 @@ data class Look(
     /** Pixels per dp; null keeps the screen's. Pin it when a test asserts pixel sizes. */
     val density: Float? = null
 ) {
-    /** A short name for a screenshot file, such as `cobalto-dark-font2.0`. */
+    /** A short name for a screenshot file, such as `cobalto-dark-font1.0`. */
     val label get() = "${ink.name.lowercase()}-${if (dark) "dark" else "light"}-font$fontScale"
 }
 

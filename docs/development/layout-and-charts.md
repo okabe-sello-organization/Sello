@@ -55,7 +55,7 @@ Resumen, Metas, Inversiones) with the Anotar dock above them; its
   `CategoryCell` shows the exact amount
   the app formatted and speaks the full `description` the app wrote, so an overspend
   far beyond the limit still reads exactly. `CategoryGrid` uses two columns, three from
-  560dp, one from font scale 1.3.
+  560dp.
 
 ## Charts
 

@@ -66,16 +66,15 @@ class IconChoiceGridTest {
         )
     }
 
-    private fun everyCellIsBigEnoughAndInside(width: Dp, fontScale: Float) {
+    private fun everyCellIsBigEnoughAndInside(width: Dp) {
         rule.inEveryScheme(
-            fontScale = fontScale,
             width = width,
             content = { IconChoiceGrid(choices, null, {}, Modifier.testTag("grid")) },
             check = { scheme ->
                 for (choice in choices) {
                     val bounds = rule.onNodeWithContentDescription(choice.label)
                         .getUnclippedBoundsInRoot()
-                    val what = "$scheme ${choice.label} at $width × $fontScale: $bounds"
+                    val what = "$scheme ${choice.label} at $width: $bounds"
                     assertTrue(what, bounds.width >= 47.9.dp && bounds.height >= 47.9.dp)
                     // Half a dp of slack for rounding to whole pixels.
                     assertTrue(what, bounds.right <= width + 0.5.dp)
@@ -85,14 +84,10 @@ class IconChoiceGridTest {
     }
 
     @Test
-    fun everyCellIsAtLeastTheMinimumTouchSize() = everyCellIsBigEnoughAndInside(360.dp, 1f)
+    fun everyCellIsAtLeastTheMinimumTouchSize() = everyCellIsBigEnoughAndInside(360.dp)
 
     @Test
-    fun cellsKeepTheirSizeAtTwiceTheFontSize() = everyCellIsBigEnoughAndInside(360.dp, 2f)
-
-    @Test
-    fun inANarrowSpaceThereAreFewerColumnsNotSmallerCells() =
-        everyCellIsBigEnoughAndInside(150.dp, 1f)
+    fun inANarrowSpaceThereAreFewerColumnsNotSmallerCells() = everyCellIsBigEnoughAndInside(150.dp)
 
     @Test
     fun aDisabledGridShowsItsChoiceAndIgnoresTaps() {

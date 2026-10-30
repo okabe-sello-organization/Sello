@@ -50,15 +50,12 @@ private val MediumContentWidth = 560.dp
 
 /**
  * Category cells per row for the [width] they are given: two, three once the column is
- * as wide as a medium window's, and one from font scale 1.3 so names have room.
+ * as wide as a medium window's.
  */
-fun categoryColumns(width: Dp, fontScale: Float): Int = when {
-    fontScale >= LARGE_TYPE_SCALE -> 1
+fun categoryColumns(width: Dp): Int = when {
     width >= MediumContentWidth -> 3
     else -> 2
 }
-
-private const val LARGE_TYPE_SCALE = 1.3f
 
 /**
  * How much of a chart's height a value takes, from 0 to 1. This is geometry: it may

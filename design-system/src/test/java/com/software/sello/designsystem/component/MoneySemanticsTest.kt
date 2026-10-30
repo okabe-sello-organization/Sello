@@ -67,14 +67,13 @@ class MoneySemanticsTest {
     }
 
     @Test
-    fun theLargestAmountWrapsInsideANarrowSlipAtDoubleFontSize() {
+    fun theLargestAmountWrapsInsideANarrowSlip() {
         val max = cop(
             MoneySign.Minus,
             "9.223.372.036.854.775.808",
             "menos 9.223.372.036.854.775.808 pesos"
         )
         rule.inEveryScheme(
-            fontScale = 2f,
             width = 320.dp,
             content = {
                 Slip {
@@ -94,13 +93,7 @@ class MoneySemanticsTest {
                 val bounds = rule.onNodeWithTag(tag).getUnclippedBoundsInRoot()
                 assertTrue("$it $tag is ${bounds.width} wide", bounds.width <= 288.dp)
                 rule.onNodeWithTag(tag).assertContentDescriptionEquals(max.spoken)
-                rule.onNodeWithTag(tag).assertTextEquals(
-                    if (tag == "hero") {
-                        "\u22129.223.372.036.854.775.808"
-                    } else {
-                        "\u22129.223.372.036.854.775.808"
-                    }
-                )
+                rule.onNodeWithTag(tag).assertTextEquals("−9.223.372.036.854.775.808")
             }
             val hero = rule.onNodeWithTag("hero").getUnclippedBoundsInRoot().height
             assertTrue(

@@ -39,7 +39,7 @@ class ReservedPartsTest {
     @Test
     fun theFootnoteIsOneButtonAt48dpThatSaysItsSentenceAndOpensWhatItNames() {
         var opened = 0
-        rule.inEveryScheme(fontScale = 2f, width = 320.dp, content = {
+        rule.inEveryScheme(width = 320.dp, content = {
             Footnote(
                 AnnotatedString("Incluye 200.000 separado para 1 pago previsto"),
                 { opened++ },

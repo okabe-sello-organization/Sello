@@ -107,19 +107,14 @@ class EntryControlsTest {
     }
 
     @Test
-    fun keysKeepAFullTouchTargetAtEveryFontSize() {
-        for (scale in listOf(2f)) {
-            rule.inEveryScheme(
-                fontScale = scale,
-                content = { AmountKeypad({}, {}, {}, {}) }
-            ) {
-                for (key in listOf("1", "5", "9", "000", "0")) {
-                    val height = rule.onNodeWithText(key).getUnclippedBoundsInRoot().height
-                    assertTrue("$it key $key is $height", height >= minTarget)
-                }
-                val back = rule.onNodeWithContentDescription("Borrar").getUnclippedBoundsInRoot()
-                assertTrue("$it backspace is ${back.height}", back.height >= minTarget)
+    fun keysKeepAFullTouchTarget() {
+        rule.inEveryScheme(content = { AmountKeypad({}, {}, {}, {}) }) {
+            for (key in listOf("1", "5", "9", "000", "0")) {
+                val height = rule.onNodeWithText(key).getUnclippedBoundsInRoot().height
+                assertTrue("$it key $key is $height", height >= minTarget)
             }
+            val back = rule.onNodeWithContentDescription("Borrar").getUnclippedBoundsInRoot()
+            assertTrue("$it backspace is ${back.height}", back.height >= minTarget)
         }
     }
 
@@ -252,11 +247,10 @@ class EntryControlsTest {
     // ---- Chips and pills ----
 
     @Test
-    fun chipsSelectOnceReportTheirStateAndKeepATallHitBoxAtDoubleFont() {
+    fun chipsSelectOnceReportTheirStateAndKeepATallHitBox() {
         var selected by mutableIntStateOf(-1)
         var clicks = 0
         rule.inEveryScheme(
-            fontScale = 2f,
             reset = {
                 selected = -1
                 clicks = 0

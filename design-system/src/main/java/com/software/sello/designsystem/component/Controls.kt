@@ -227,7 +227,7 @@ fun BandChip(
             color = content,
             fontWeight = FontWeight.W800,
             style = MaterialTheme.typography.bodyMedium,
-            // On a narrow slip at large text the label wraps rather than being cut.
+            // On a narrow slip the label wraps rather than being cut.
             maxLines = if (onPaper) 2 else 1
         )
     }

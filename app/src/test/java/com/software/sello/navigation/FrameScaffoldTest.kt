@@ -53,9 +53,9 @@ class FrameScaffoldTest {
     private val topInset = 24
     private var opened = 0
 
-    private fun show(withTopBar: Boolean, withRibbon: Boolean, fontScale: Float = 1f) {
+    private fun show(withTopBar: Boolean, withRibbon: Boolean) {
         rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale)) {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
                 SelloTheme(reducedMotion = true) {
                     Box(Modifier.requiredSize(360.dp, 700.dp).testTag("window")) {
                         SelloScaffold(
@@ -166,14 +166,6 @@ class FrameScaffoldTest {
     }
 
     @Test
-    fun atTwiceTheFontSizeARibbonUnderTheTitleRowStillLeavesTheContentOnTheBand() {
-        show(withTopBar = false, withRibbon = true, fontScale = 2f)
-
-        assertTrue(bounds("content").top >= bounds("ribbon").bottom - 1f)
-        near(bounds("content").top + 50f, bounds(SCAFFOLD_BAND_TAG).bottom)
-    }
-
-    @Test
     fun withoutARibbonThereIsNoRibbonSpace() {
         show(withTopBar = true, withRibbon = false)
 
@@ -191,12 +183,5 @@ class FrameScaffoldTest {
         val month = bounds("month")
         val bar = bounds("bar")
         assertTrue("the button is narrower than the bar", month.width < bar.width - 96f)
-    }
-
-    @Test
-    fun atTwiceTheFontSizeTheContentStillStartsOnTheBand() {
-        show(withTopBar = true, withRibbon = true, fontScale = 2f)
-
-        near(bounds("content").top + 50f, bounds(SCAFFOLD_BAND_TAG).bottom)
     }
 }

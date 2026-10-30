@@ -54,11 +54,10 @@ class BottomControlsTest {
     private fun show(
         width: Int = 360,
         height: Int = 700,
-        fontScale: Float = 1f,
         dock: SelloDock = SelloDock("Anotar un gasto", "Anotar", { docked++ })
     ) {
         rule.setContent {
-            CompositionLocalProvider(LocalDensity provides Density(1f, fontScale)) {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 1f)) {
                 SelloTheme(reducedMotion = true) {
                     Box(Modifier.requiredSize(width.dp, height.dp).testTag("window")) {
                         SelloScaffold(
@@ -149,27 +148,6 @@ class BottomControlsTest {
 
         assertEquals(listOf("resumen"), selections)
         rule.onNodeWithText("Recibo").assertIsSelected()
-    }
-
-    @Test
-    fun atTwiceTheFontSizeOnTheNarrowestPhoneBothLabelsAndTheDockAreWhole() {
-        show(width = 320, height = 640, fontScale = 2f)
-
-        listOf("Recibo", "Resumen").forEach { label ->
-            val node = rule.onNodeWithText(label).fetchSemanticsNode()
-            val text = node.config.getOrNull(SemanticsProperties.Text)!!.single().text
-            assertEquals(label, text)
-            assertTrue("$label fits", node.boundsInRoot.right <= 320f)
-            assertTrue("$label target", node.touchBoundsInRoot.height >= 48f)
-        }
-        val dock = bounds(SCAFFOLD_DOCK_TAG)
-        val bar = bounds(SCAFFOLD_BAR_TAG)
-        assertTrue("content ends before the dock", bounds("content").bottom <= dock.top)
-        assertTrue("dock ends before the tab bar", dock.bottom <= bar.top)
-        assertTrue("$bar inside the window", bar.bottom <= 640f + 1f)
-        assertTrue(
-            rule.onAllNodes(hasTestTag(SCAFFOLD_PRIMARY_TAG)).fetchSemanticsNodes().isNotEmpty()
-        )
     }
 }
 

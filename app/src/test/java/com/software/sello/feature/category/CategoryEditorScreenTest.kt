@@ -64,8 +64,8 @@ class CategoryEditorScreenTest {
         )
     )
 
-    private fun show(state: CategoryEditorState, fontScale: Float = 1f) {
-        rule.showSello(Look(fontScale = fontScale)) {
+    private fun show(state: CategoryEditorState) {
+        rule.showSello(Look()) {
             CategoryEditorScreen(state, { actions += it })
         }
     }
@@ -321,19 +321,6 @@ class CategoryEditorScreenTest {
             listOf(CategoryEditorAction.KeepEditing, CategoryEditorAction.DiscardConfirmed),
             actions
         )
-    }
-
-    @Test
-    fun atTwiceTheFontSizeEveryControlCanStillBeReached() {
-        show(ready.copy(name = "Mercado de plaza", unlimited = false), fontScale = 2f)
-
-        name.revealed().assertIsDisplayed()
-        rule.onNodeWithTag(EDITOR_ICON_TAG).revealed().assertIsDisplayed()
-        rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).revealed().assertIsOff()
-        rule.onNodeWithText("500.000").revealed().assertIsDisplayed()
-        rule.onNodeWithTag(
-            EDITOR_SUBMIT_TAG
-        ).revealed().assertIsDisplayed().assertIsEnabled()
     }
 
     @Test

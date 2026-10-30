@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -93,7 +92,6 @@ internal fun CategoryCell(
     archived: Boolean = false
 ) {
     val colors = SelloTheme.colors
-    val largeType = LocalDensity.current.fontScale >= LARGE_NAME_SCALE
     var menuOpen by remember { mutableStateOf(false) }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -137,7 +135,7 @@ internal fun CategoryCell(
                 text = name,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W600),
                 color = colors.ink,
-                maxLines = if (largeType) 2 else 1,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             MoneyText(
@@ -162,11 +160,9 @@ internal fun CategoryCell(
     }
 }
 
-private const val LARGE_NAME_SCALE = 1.3f
-
 /**
  * Lays [items] out in rows of [categoryColumns] for the width it is given: two columns,
- * three when wide, one at large type. Not lazy; a month has a handful of categories.
+ * three when wide. Not lazy; a month has a handful of categories.
  */
 @Composable
 internal fun <T> CategoryGrid(
@@ -174,9 +170,8 @@ internal fun <T> CategoryGrid(
     modifier: Modifier = Modifier,
     cell: @Composable (index: Int, item: T) -> Unit
 ) {
-    val fontScale = LocalDensity.current.fontScale
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
-        val columns = categoryColumns(maxWidth, fontScale)
+        val columns = categoryColumns(maxWidth)
         Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
             items.withIndex().chunked(columns).forEach { row ->
                 Row(horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {

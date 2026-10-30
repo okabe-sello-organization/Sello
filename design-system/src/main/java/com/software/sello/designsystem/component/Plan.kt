@@ -131,7 +131,7 @@ fun ExpectedChip(
             .clearAndSetSemantics { contentDescription = spoken }
     ) {
         Icon(SelloIcon.Event.painter(), null, Modifier.size(16.dp), colors.brand)
-        // The text wraps, never the amount, so large text keeps the whole figure in the pill.
+        // The text wraps, never the amount, so the whole figure stays in the pill.
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
