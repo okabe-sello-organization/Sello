@@ -113,6 +113,11 @@ internal fun NavGraphBuilder.reciboDestinations(
                     launchSingleTop = true
                 }
             },
+            // Resumen shows what the shared selection says, so pick the month first.
+            onOpenClosedMonth = { month ->
+                onShell(ShellAction.PickMonth(month))
+                tabs.onSelect(ShellTab.Resumen.id)
+            },
             onEditCategory = { id ->
                 navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString())) {
                     launchSingleTop = true
@@ -242,6 +247,7 @@ private fun ReciboDestination(
     onOpenRecorded: () -> Unit,
     onOpenReserved: () -> Unit,
     onAdjustBudget: () -> Unit,
+    onOpenClosedMonth: (YearMonth) -> Unit,
     onSetMonthLimit: (String, YearMonth) -> Unit,
     onCreateCategory: () -> Unit
 ) {
@@ -332,6 +338,10 @@ private fun ReciboDestination(
                         ReciboAction.OpenReserved -> onOpenReserved()
 
                         ReciboAction.AdjustBudget -> onAdjustBudget()
+
+                        is ReciboAction.OpenInvitation -> onOpenClosedMonth(action.month)
+
+                        is ReciboAction.DismissInvitation -> Unit
 
                         is ReciboAction.SetMonthLimit ->
                             onSetMonthLimit(action.categoryId, action.month)

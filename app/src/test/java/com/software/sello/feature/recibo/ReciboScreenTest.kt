@@ -631,6 +631,45 @@ class ReciboScreenTest {
         assertEquals(listOf<ReciboAction>(ReciboAction.AdjustBudget), actions)
     }
 
+    // --- Invitation to the month just closed (SELLO-084) ---
+
+    private fun invited() = overspent(shown = categories.take(1))
+        .copy(invitation = ReciboInvitation(YearMonth.of(2026, 10)))
+
+    @Test
+    fun theInvitationNamesTheMonthAndOpensIt() {
+        show(invited())
+
+        rule.onNodeWithTag(RECIBO_INVITATION_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithContentDescription(
+            "Ver cómo cerraste octubre, abre el resumen de ese mes"
+        ).performClick()
+
+        assertEquals(
+            listOf<ReciboAction>(ReciboAction.OpenInvitation(YearMonth.of(2026, 10))),
+            actions
+        )
+    }
+
+    @Test
+    fun theCrossDismissesWithoutOpeningAnything() {
+        show(invited())
+
+        rule.onNodeWithContentDescription("Descartar invitación").performScrollTo().performClick()
+
+        assertEquals(
+            listOf<ReciboAction>(ReciboAction.DismissInvitation(YearMonth.of(2026, 10))),
+            actions
+        )
+    }
+
+    @Test
+    fun withoutAnInvitationThereIsNoLine() {
+        show(overspent(shown = categories.take(1)))
+
+        rule.onNodeWithTag(RECIBO_INVITATION_TAG).assertDoesNotExist()
+    }
+
     // --- Payments reserved (SELLO-101) ---
 
     private fun reservedMonth(summary: ReciboSummary) =

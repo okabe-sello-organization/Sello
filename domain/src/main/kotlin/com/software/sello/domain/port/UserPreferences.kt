@@ -12,6 +12,7 @@ import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.ThemePreference
 import java.time.Instant
+import java.time.YearMonth
 import kotlinx.coroutines.flow.Flow
 
 /** A preference could not be read or written; it is never a financial-storage failure. */
@@ -64,6 +65,15 @@ interface CorrectionAnnouncementPreferences {
 interface SuggestionPreferences {
     fun observeDismissedSuggestion(): Flow<PreferenceRead<DismissedSuggestion?>>
     suspend fun dismissSuggestion(dismissed: DismissedSuggestion): PreferenceWrite
+}
+
+/**
+ * The latest closed month whose Recibo invitation was opened or dismissed; null before the
+ * first time. A later month's invitation is a new one, so only the latest is kept.
+ */
+interface ClosedMonthInvitePreferences {
+    fun observeHandled(): Flow<PreferenceRead<YearMonth?>>
+    suspend fun markHandled(month: YearMonth): PreferenceWrite
 }
 
 /**

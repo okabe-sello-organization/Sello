@@ -6,6 +6,7 @@ import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.BackupRecords
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.ClosedMonthInvitePreferences
 import com.software.sello.domain.port.CorrectionAnnouncementPreferences
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.PreferenceReset
@@ -25,6 +26,7 @@ fun preferencesModule(fileName: String = StorageNames.Normal.preferences): Modul
     single<InvestmentPreferences> { get<DataStoreUserPreferences>() }
     single<CorrectionAnnouncementPreferences> { get<DataStoreUserPreferences>() }
     single<SuggestionPreferences> { get<DataStoreUserPreferences>() }
+    single<ClosedMonthInvitePreferences> { get<DataStoreUserPreferences>() }
     single<CatchUpNoticePreferences> { get<DataStoreUserPreferences>() }
     single<BackupRecords> { get<DataStoreUserPreferences>() }
     single<PreferenceReset> { get<DataStoreUserPreferences>() }

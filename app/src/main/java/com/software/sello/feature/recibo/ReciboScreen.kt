@@ -70,6 +70,7 @@ import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.TearLine
+import com.software.sello.designsystem.component.dashedOutline
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -145,6 +146,13 @@ fun ReciboScreen(
                     onAdjust = { onAction(ReciboAction.AdjustBudget) },
                     onReserved = { onAction(ReciboAction.OpenReserved) }
                 )
+                state.invitation?.let { invitation ->
+                    ClosedMonthInvitation(
+                        invitation,
+                        onOpen = { onAction(ReciboAction.OpenInvitation(invitation.month)) },
+                        onDismiss = { onAction(ReciboAction.DismissInvitation(invitation.month)) }
+                    )
+                }
                 goal()
                 CategoriesSlip(
                     state.categories,
@@ -306,6 +314,70 @@ private fun AdjustBudgetLink(onClick: () -> Unit) {
             color = ink
         )
         Icon(SelloIcon.ChevronRight.painter(), null, Modifier.size(20.dp), tint = ink)
+    }
+}
+
+/**
+ * "Ver cómo cerraste octubre ›": one dashed line in the first week of a month. The line
+ * opens that month in Resumen; the × at its end puts it away for good.
+ */
+@Composable
+internal fun ClosedMonthInvitation(
+    invitation: ReciboInvitation,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val colors = SelloTheme.colors
+    val month = monthNames().inSentence(invitation.month)
+    val text = stringResource(R.string.recibo_invitation, month)
+    val spoken = stringResource(R.string.recibo_invitation_description, month)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag(RECIBO_INVITATION_TAG)
+            .dashedOutline(colors.rule, 1.5.dp, 14.dp)
+            .heightIn(min = 52.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = 52.dp)
+                .clickable(role = Role.Button, onClick = onOpen)
+                .padding(start = 14.dp, end = SelloTheme.spacing.xs)
+                .clearAndSetSemantics {
+                    contentDescription = spoken
+                    role = Role.Button
+                    onClick(label = null) {
+                        onOpen()
+                        true
+                    }
+                }
+        ) {
+            Icon(SelloIcon.Insights.painter(), null, Modifier.size(24.dp), colors.brand)
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.W700,
+                color = colors.ink,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(SelloIcon.ChevronRight.painter(), null, Modifier.size(20.dp), colors.outline)
+        }
+        IconButton(
+            onClick = onDismiss,
+            modifier = Modifier.testTag(RECIBO_INVITATION_DISMISS_TAG)
+        ) {
+            Icon(
+                SelloIcon.Close.painter(),
+                stringResource(R.string.recibo_invitation_dismiss),
+                Modifier.size(20.dp),
+                colors.outline
+            )
+        }
     }
 }
 
@@ -532,6 +604,8 @@ const val RECIBO_SHORTFALL_TAG = "recibo:shortfall"
 const val RECIBO_RESERVED_TAG = "recibo:reserved"
 private const val AMOUNT_MARK = "\u0000"
 const val RECIBO_PER_DAY_TAG = "recibo:per-day"
+const val RECIBO_INVITATION_TAG = "recibo:invitation"
+const val RECIBO_INVITATION_DISMISS_TAG = "recibo:invitation:dismiss"
 const val RECIBO_CLOSED_TAG = "recibo:closed"
 const val RECIBO_CATEGORIES_TAG = "recibo:categories"
 const val RECIBO_CATEGORIES_HEADING_TAG = "recibo:categories:heading"
