@@ -12,6 +12,7 @@ import com.software.sello.domain.model.InvestmentOrder
 import com.software.sello.domain.model.InvestmentPreference
 import com.software.sello.domain.model.ThemePreference
 import java.time.Instant
+import java.time.YearMonth
 import kotlinx.coroutines.flow.Flow
 
 /** A preference could not be read or written; it is never a financial-storage failure. */
@@ -64,6 +65,16 @@ interface CorrectionAnnouncementPreferences {
 interface SuggestionPreferences {
     fun observeDismissedSuggestion(): Flow<PreferenceRead<DismissedSuggestion?>>
     suspend fun dismissSuggestion(dismissed: DismissedSuggestion): PreferenceWrite
+}
+
+/**
+ * The month whose "assign income to a category" suggestion on the income screen was
+ * dismissed; a new dismissal replaces it. The suggestion may come back in a later month
+ * while income is still unassigned. Nonfinancial: it hides advice, never a figure.
+ */
+interface IncomeSuggestionPreferences {
+    fun observeDismissedIncomeSuggestion(): Flow<PreferenceRead<YearMonth?>>
+    suspend fun dismissIncomeSuggestion(month: YearMonth): PreferenceWrite
 }
 
 /**

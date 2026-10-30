@@ -875,4 +875,18 @@ class CategoryEditorViewModelTest {
 
         assertEquals("", restored.limitText)
     }
+
+    @Test
+    fun theKeypadHoldsExactlyWhatASuggestedLimitMay() {
+        val editor = editor()
+        repeat(12) { editor.onAction(CategoryEditorAction.LimitDigit(9)) }
+        val full = editor.state.value.limitText
+        editor.onAction(CategoryEditorAction.LimitDigit(9))
+
+        // The twelfth digit is the last the keypad takes, as it is the last a suggestion may have.
+        assertEquals("999999999999", full)
+        assertEquals(full, editor.state.value.limitText)
+        assertEquals(full, editor(suggested(full)).state.value.limitText)
+        assertEquals("", editor(suggested("1000000000000")).state.value.limitText)
+    }
 }

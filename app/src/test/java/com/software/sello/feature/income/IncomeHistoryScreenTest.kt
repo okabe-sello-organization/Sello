@@ -185,11 +185,14 @@ class IncomeHistoryScreenTest {
     }
 
     @Test
-    fun theSuggestionHasNoWayToBeDismissedBecauseNothingRemembersIt() {
+    fun theCrossDismissesTheSuggestionAndOnlyAsksForIt() {
         show(ready(), split, IncomePlanState.Shown(plan), assign = offer)
 
         rule.onNodeWithTag("income.assign").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithContentDescription("Descartar sugerencia").assertDoesNotExist()
+        rule.onNodeWithContentDescription("Descartar sugerencia").performClick()
+
+        assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.DismissAssign), actions)
+        assertEquals(emptyList<String?>(), assigned)
     }
 
     @Test

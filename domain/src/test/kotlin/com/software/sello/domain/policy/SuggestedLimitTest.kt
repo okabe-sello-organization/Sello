@@ -37,4 +37,20 @@ class SuggestedLimitTest {
             "1000000000000", "99999999999999999999"
         ).forEach { assertFalse(it, SuggestedLimit.accepts(it)) }
     }
+
+    @Test
+    fun theKeypadAndTheSuggestionShareOneDefinitionOfWhatFits() {
+        // The keypad builds on digits with no leading zero, up to twelve of them.
+        assertTrue(LimitKeypad.fits("1"))
+        assertTrue(LimitKeypad.fits("999999999999"))
+        listOf("", "0", "05", "1000000000000", "1.000", "-1", "a").forEach {
+            assertFalse(it, LimitKeypad.fits(it))
+        }
+        // Whatever is suggested (zero apart) is something the keypad fits.
+        listOf(1L, 50_000L, 999_999_999_999L).forEach {
+            assertTrue(LimitKeypad.fits(SuggestedLimit.of(Money.cop(it))!!))
+        }
+        // Zero is a real limit the keypad types as 0, and the suggestion keeps it.
+        assertEquals("0", SuggestedLimit.of(Money.cop(0)))
+    }
 }

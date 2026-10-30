@@ -17,9 +17,9 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * What the month's income looks like with the suggestion to assign what is unassigned, kept as
- * committed images (ADR 0022): Cobalto light, Cobalto dark at twice the font size, and Violeta
- * light. See ExpenseEntryScreenshotTest.
+ * What the month's income looks like, without and with the suggestion to assign what is
+ * unassigned, kept as committed images (ADR 0022): Cobalto light, Cobalto dark at twice the font
+ * size, and Violeta light. See ExpenseEntryScreenshotTest.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -44,13 +44,14 @@ class IncomeHistoryScreenshotTest {
         allocatedShare = 2f / 3f
     )
 
-    private fun capture(look: Look) {
+    /** [name] is the baseline's name; [assign] is the suggestion drawn, if any. */
+    private fun capture(look: Look, name: String, assign: AssignSuggestion?) {
         rule.showSello(look) {
             IncomeHistoryScreen(
                 state,
                 split,
                 IncomePlanState.None,
-                AssignSuggestion(pesos("50.000"), "50000"),
+                assign,
                 today,
                 {},
                 {},
@@ -59,15 +60,28 @@ class IncomeHistoryScreenshotTest {
                 PaddingValues(12.dp)
             )
         }
-        rule.captureStill("src/test/screenshots/income-history-${look.label}.png")
+        rule.captureStill("src/test/screenshots/$name-${look.label}.png")
     }
 
-    @Test
-    fun cobaltoLight() = capture(Look())
+    private val suggestion = AssignSuggestion(pesos("50.000"), "50000")
 
     @Test
-    fun cobaltoDark() = capture(Look(dark = true))
+    fun cobaltoLight() = capture(Look(), "income-history", null)
 
     @Test
-    fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+    fun cobaltoDark() = capture(Look(dark = true), "income-history", null)
+
+    @Test
+    fun violetaLight() = capture(Look(ink = SelloInk.Violeta), "income-history", null)
+
+    @Test
+    fun suggestionCobaltoLight() = capture(Look(), "income-history-suggestion", suggestion)
+
+    @Test
+    fun suggestionCobaltoDark() =
+        capture(Look(dark = true), "income-history-suggestion", suggestion)
+
+    @Test
+    fun suggestionVioletaLight() =
+        capture(Look(ink = SelloInk.Violeta), "income-history-suggestion", suggestion)
 }

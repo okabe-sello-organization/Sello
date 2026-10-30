@@ -1,6 +1,9 @@
 package com.software.sello.data
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.domain.model.GoalMovementKind
+import com.software.sello.domain.model.GoalName
+import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
@@ -11,11 +14,13 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.IncomeCommandOutcome
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
@@ -200,6 +205,51 @@ class ResumenSnapshotContractTest {
             assertEquals(Money.cop(spent), snapshot.history.last().spent)
         }
         assertEquals(37L, seen.last().budget.revision)
+    }
+
+    @Test
+    fun goalAndInvestmentRecordsNeverAssignIncomeSoUnassignedStaysTheSame() = runBlocking {
+        // ADR 0012 BG4: 150.000 came in and one category takes 100.000, so 50.000 is unassigned.
+        category()
+        income(150_000)
+        val before = read()
+        assertEquals(Money.cop(50_000), before.unallocated)
+
+        // A goal with a contribution of 30.000 and an investment of 20.000 are only tracked.
+        assertTrue(
+            ledger.goals.submit(
+                CreateGoal(
+                    ledger.operation(),
+                    1,
+                    GoalName.of("Viaje").valueOrFail(),
+                    IconKey.of("flight").valueOrFail(),
+                    transactionPesos(300_000),
+                    YearMonth.of(2026, 12)
+                )
+            ) is CommandOutcome.Committed
+        )
+        val goal = ledger.goalReads.board().valueOrFail().goals.single().history.goal
+        assertTrue(
+            ledger.goals.submit(
+                RecordGoalMovement(
+                    ledger.operation(),
+                    1,
+                    goal.id,
+                    goal.version,
+                    GoalMovementKind.Contribution,
+                    transactionPesos(30_000),
+                    LocalDate.of(2026, 10, 2),
+                    null
+                )
+            ) is CommandOutcome.Committed
+        )
+        ledger.created(ledger.createInvestment("Fondo", pesos(20_000), "2026-10-03"))
+
+        val after = read()
+        assertEquals(Money.cop(50_000), after.unallocated)
+        assertEquals(Money.cop(100_000), after.allocated)
+        assertEquals(before.income, after.income)
+        assertEquals(before.netFlow, after.netFlow)
     }
 
     @Test

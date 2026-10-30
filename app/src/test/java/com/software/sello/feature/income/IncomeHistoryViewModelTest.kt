@@ -16,6 +16,10 @@ import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomePage
 import com.software.sello.domain.port.IncomeReads
+import com.software.sello.domain.port.IncomeSuggestionPreferences
+import com.software.sello.domain.port.PreferenceFailure
+import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.domain.port.ResumenSnapshots
@@ -34,7 +38,10 @@ import java.time.YearMonth
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
@@ -89,8 +96,29 @@ class IncomeHistoryViewModelTest {
         }
     }
 
+    /** The dismissed month as stored; [answer] is what a write reports. */
+    private class HandSuggestions : IncomeSuggestionPreferences {
+        val stored = MutableStateFlow<PreferenceRead<YearMonth?>>(PreferenceRead.Ready(null))
+        val written = mutableListOf<YearMonth>()
+        var answer: PreferenceWrite = PreferenceWrite.Saved
+
+        /** Until it is false the read never answers, as a slow preference file does. */
+        var slow = false
+
+        override fun observeDismissedIncomeSuggestion(): Flow<PreferenceRead<YearMonth?>> =
+            if (slow) flow { awaitCancellation() } else stored
+
+        override suspend fun dismissIncomeSuggestion(month: YearMonth): PreferenceWrite {
+            written += month
+            if (answer == PreferenceWrite.Saved) stored.value = PreferenceRead.Ready(month)
+            return answer
+        }
+    }
+
+    private val suggestions = HandSuggestions()
+
     private fun history() =
-        IncomeHistoryViewModel(gated, session, snapshots, schedules, money, clock)
+        IncomeHistoryViewModel(gated, session, snapshots, schedules, suggestions, money, clock)
 
     @Before
     fun main() = Dispatchers.setMain(UnconfinedTestDispatcher())
@@ -507,5 +535,123 @@ class IncomeHistoryViewModelTest {
 
         assertEquals("50000", before!!.limit)
         assertNull(model.assign.value)
+    }
+
+    // --- Dismissing the suggestion (SELLO-083, owner decision 2026-10-29) ---
+
+    @Test
+    fun dismissingHidesTheSuggestionForTheMonthAndKeepsItAcrossARestart() {
+        val model = history()
+        summary(october).value = snapshot(150_000)
+        assertEquals("50.000 pesos", model.assign.value!!.unassigned.spoken)
+
+        model.onAction(IncomeHistoryAction.DismissAssign)
+
+        assertNull(model.assign.value)
+        assertEquals(listOf(october), suggestions.written)
+        // A new screen after a restart reads the same stored month.
+        val restarted = history()
+        assertNull(restarted.assign.value)
+        // Dismissing is advice only: the split still says what is unassigned.
+        assertEquals("50.000 pesos", restarted.split.value!!.unallocated.spoken)
+    }
+
+    @Test
+    fun aDismissedMonthIsOfferedAgainNextMonthWhileIncomeIsStillUnassigned() {
+        suggestions.stored.value = PreferenceRead.Ready(october)
+        val model = history()
+        summary(october).value = snapshot(150_000)
+        val november = YearMonth.of(2026, 11)
+        summary(november).value = snapshot(120_000)
+        assertNull(model.assign.value)
+
+        clock.goTo("2026-11-03")
+
+        assertEquals("20.000 pesos", model.assign.value!!.unassigned.spoken)
+        assertEquals("20000", model.assign.value!!.limit)
+    }
+
+    @Test
+    fun aFailedWriteStillHidesTheSuggestionForTheSession() {
+        suggestions.answer = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
+        val model = history()
+        summary(october).value = snapshot(150_000)
+
+        model.onAction(IncomeHistoryAction.DismissAssign)
+
+        assertNull(model.assign.value)
+        assertEquals(listOf(october), suggestions.written)
+        // Nothing was kept: a screen opened later offers it again.
+        assertEquals("50.000 pesos", history().assign.value!!.unassigned.spoken)
+    }
+
+    @Test
+    fun aResetBringsTheDismissedSuggestionBack() {
+        val model = history()
+        summary(october).value = snapshot(150_000)
+        model.onAction(IncomeHistoryAction.DismissAssign)
+        assertNull(model.assign.value)
+
+        // A reset clears every preference: nothing is dismissed any more.
+        suggestions.stored.value = PreferenceRead.Ready(null)
+
+        assertEquals("50.000 pesos", model.assign.value!!.unassigned.spoken)
+    }
+
+    @Test
+    fun aSlowPreferenceReadDoesNotDelayTheSuggestionAndAFailedOneHidesNothing() {
+        suggestions.slow = true
+        val slow = history()
+        summary(october).value = snapshot(150_000)
+        assertEquals("50.000 pesos", slow.assign.value!!.unassigned.spoken)
+
+        suggestions.slow = false
+        suggestions.stored.value =
+            PreferenceRead.Failed(PreferenceFailure.Unavailable, lastGood = null)
+        assertEquals("50.000 pesos", history().assign.value!!.unassigned.spoken)
+    }
+
+    @Test
+    fun dismissingWhileNothingIsOfferedWritesNothing() {
+        val model = history()
+        summary(october).value = snapshot(100_000)
+
+        model.onAction(IncomeHistoryAction.DismissAssign)
+
+        assertEquals(emptyList<YearMonth>(), suggestions.written)
+    }
+
+    @Test
+    fun reintentarBringsTheSuggestionBackAfterAFailedRead() {
+        var healthy = false
+        val flaky = object : ResumenSnapshots {
+            override suspend fun read(month: YearMonth) = error("The history observes")
+
+            override fun observe(month: YearMonth): Flow<ResumenSnapshotState> = flow {
+                emit(
+                    if (healthy) {
+                        snapshot(150_000)
+                    } else {
+                        ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+                    }
+                )
+                awaitCancellation()
+            }
+        }
+        val model = IncomeHistoryViewModel(
+            gated,
+            session,
+            flaky,
+            schedules,
+            suggestions,
+            money,
+            clock
+        )
+        assertNull(model.assign.value)
+
+        healthy = true
+        model.onAction(IncomeHistoryAction.Retry)
+
+        assertEquals("50.000 pesos", model.assign.value!!.unassigned.spoken)
     }
 }

@@ -66,7 +66,9 @@ internal fun NavGraphBuilder.incomeDestinations(
                 today,
                 model::onAction,
                 { navigation.navigate(IncomeEntryRoute()) },
-                { navigation.navigate(CategoryEditorRoute(limit = it)) },
+                {
+                    navigation.navigate(CategoryEditorRoute(limit = it)) { launchSingleTop = true }
+                },
                 { navigation.navigate(IncomeEditRoute(it)) },
                 padding
             )

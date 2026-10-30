@@ -107,7 +107,7 @@ fun IncomeHistoryScreen(
             } else {
                 item { CameIn(state, split, months.inSentence(state.month)) }
                 planItem(plan, today, onAction)
-                assign?.let { item { AssignNote(it, onAssign) } }
+                assign?.let { item { AssignNote(it, onAssign, onAction) } }
                 item {
                     Slip(Modifier.fillMaxWidth().testTag("income.list"), pinked = false) {
                         Text(
@@ -158,10 +158,15 @@ fun IncomeHistoryScreen(
 
 /**
  * "{monto} de lo que entró aún no tiene un presupuesto": the offer to give it a category of
- * its own. It opens the new-category form and changes nothing by itself.
+ * its own. It opens the new-category form and changes nothing by itself; the × hides it for
+ * the month.
  */
 @Composable
-private fun AssignNote(assign: AssignSuggestion, onAssign: (String?) -> Unit) {
+private fun AssignNote(
+    assign: AssignSuggestion,
+    onAssign: (String?) -> Unit,
+    onAction: (IncomeHistoryAction) -> Unit
+) {
     SuggestionNote(
         title = stringResource(R.string.income_assign_title),
         evidence = stringResource(R.string.income_assign_evidence, assign.unassigned.digits),
@@ -169,7 +174,9 @@ private fun AssignNote(assign: AssignSuggestion, onAssign: (String?) -> Unit) {
         advice = stringResource(R.string.income_assign_advice),
         actionLabel = stringResource(R.string.income_assign_action),
         onAction = { onAssign(assign.limit) },
-        modifier = Modifier.testTag("income.assign")
+        modifier = Modifier.testTag("income.assign"),
+        dismissLabel = stringResource(R.string.income_assign_dismiss),
+        onDismiss = { onAction(IncomeHistoryAction.DismissAssign) }
     )
 }
 
