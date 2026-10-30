@@ -1,19 +1,22 @@
-<!-- Title: <Epic number> - <Task number> | <Ticket description>
-     Example: E01 - SELLO-004 | Install CI, quality gates and architecture enforcement -->
+<!-- Title: E01 - SELLO-004 | Short title, or fix | … / test | … / docs | … / ci | … / app | …
+     Readable at a glance: short lines, no paragraphs, about 25 lines in all.
+     Details belong in the ticket, the commits and the code, not here. -->
 
-<!-- Link to the ticket file, docs/tickets/<epic>/SELLO-0NN.md, or the issue it closes -->
+<!-- One line: the ticket file (docs/tickets/<epic>/SELLO-0NN.md) or "Closes #N". -->
 
-## Description
-<!-- What this ticket is about, in plain language. Five lines at most. -->
+**What:** <!-- One sentence: what this does for the person using Sello, or for us. -->
 
-## Solution
-<!-- What was done, as simply as possible. -->
+| | Before | Now |
+| --- | --- | --- |
+| <!-- thing --> | <!-- a few words --> | <!-- a few words --> |
+<!-- One to five rows, the changes that matter. A new feature's Before is "—". -->
 
-## Things that changed
-<!-- One to five items, the most important only: what changed and why. -->
-- [ ] 
+**Screens:** <!-- Only when something looks different: before and after images side by side.
+     Otherwise delete this line. -->
 
-## Evidence
-<!-- Required: image, video, test results or other real proof that the work does what it says. -->
+**Proof:** <!-- One line each, three at most: tests added or changed, a device run, a review verdict.
+     CI's quality check proves the checks passed; never claim a run that did not happen. -->
 
-**Not covered:** <!-- Anything skipped, not tested or left for later. Write "Nothing" if so. -->
+**Not covered:** <!-- What is skipped, untested or left for later, or "Nothing". -->
+
+**Merges:** <!-- owner or agent, per AGENTS "Who merges", and why in a few words. -->

@@ -122,8 +122,9 @@ ARCHITECTURE §4–§5 have the detail. The short version:
 
 ## Records
 
-- The pull request description says what changed, why, and the proof (tests,
-  screenshots).
+- The pull request description reads at a glance: one line on what it does, a
+  before-and-now table, before and after screenshots when something looks different,
+  the proof and what isn't covered. No paragraphs; details live in the ticket and code.
 - A lasting architecture or policy decision gets a short ADR in `docs/decisions/`.
 - The pull request that closes an epic refreshes [HANDOFF](docs/development/HANDOFF.md).
 - Share the pull request's details (what changed, what the owner will see, the proof,
