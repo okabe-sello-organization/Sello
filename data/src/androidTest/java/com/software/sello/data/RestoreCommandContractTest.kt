@@ -1080,6 +1080,39 @@ class RestoreCommandContractTest {
     }
 
     @Test
+    fun aFileChosenBesideAManifestCutShortWhoseReplacementCommittedIsRefused() = runBlocking {
+        currentHistory()
+        committedBeforeTheRename()
+        manifestCutShort()
+        val kept = stagingFiles()
+
+        assertEquals(Outcome.Failure(StageFailure.Unsettled), restores().stage(g01(other)))
+        assertEquals(kept, stagingFiles())
+    }
+
+    @Test
+    fun aFileChosenBesideAManifestNamingNoOperationIsRefused() = runBlocking {
+        currentHistory()
+        stage()
+        File(files.restoreFolder, "staged.properties").writeText("operation=unreadable\n")
+        val kept = stagingFiles()
+
+        assertEquals(Outcome.Failure(StageFailure.Storage), restores().stage(g01(other)))
+        assertEquals(kept, stagingFiles())
+    }
+
+    @Test
+    fun aFileChosenBesideAManifestCutShortThatDidNotCommitTakesItsPlace() = runBlocking {
+        currentHistory()
+        stage()
+        manifestCutShort()
+
+        val next = restores().stage(g01(other)).valueOrFail()
+
+        assertEquals(StagedLookup.Waiting(next), restores().staged())
+    }
+
+    @Test
     fun aManifestThatCannotBeReadWholeIsKeptWhileItsReceiptCannotBeRead() = runBlocking {
         currentHistory()
         stage()

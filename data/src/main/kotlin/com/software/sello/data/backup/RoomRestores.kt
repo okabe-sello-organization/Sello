@@ -141,12 +141,20 @@ class RoomRestores(
         // A file that may have replaced the history is looked at before another takes its
         // place (ARCHITECTURE §5). Read before `restored.json`: a look renaming it between
         // the two is then still seen.
+        // A manifest beside its file that cannot be read whole still names its operation;
+        // one that names none cannot be told apart from a committed one.
         val earlier = try {
-            readManifest()
+            if (io { manifest.exists() && staged.exists() }) {
+                readManifest()?.operation
+                    ?: io { manifestOperation() }
+                    ?: return Outcome.Failure(StageFailure.Storage)
+            } else {
+                null
+            }
         } catch (_: IOException) {
             return Outcome.Failure(StageFailure.Storage)
         }
-        if (earlier != null && committed(earlier.operation) != false) {
+        if (earlier != null && committed(earlier) != false) {
             return Outcome.Failure(StageFailure.Unsettled)
         }
         // A replacement whose preferences are still pending is finished first.

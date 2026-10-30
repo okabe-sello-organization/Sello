@@ -642,6 +642,42 @@ class RestoreViewModelTest {
     }
 
     @Test
+    fun aFileChosenOverAStagedOneIsCheckedAgainAfterTheRestartNotTheStagedOne() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        readGate = CompletableDeferred()
+        val (model) = model(handle, process)
+        choose(model)
+        assertEquals(RestoreStep.Checking, model.state.value.step)
+
+        // An earlier file is still staged and could be offered.
+        readGate = null
+        restores.stagedAnswer = StagedLookup.Waiting(staged.copy(operationId = otherOperation))
+        restores.stageAnswer = Outcome.Success(staged)
+        val restored = afterProcessDeath(handle, process)
+
+        assertEquals(RestoreStep.Previewing(staged), restored.state.value.step)
+        assertEquals(List(2) { "content://provider/document/7" }, read)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun aFileChosenWhileAnotherIsPreviewedTakesItsPlace() = runTest {
+        val earlier = staged.copy(operationId = otherOperation)
+        restores.stageAnswer = Outcome.Success(earlier)
+        val (model) = model()
+        choose(model)
+        assertEquals(RestoreStep.Previewing(earlier), model.state.value.step)
+
+        restores.stageAnswer = Outcome.Success(staged)
+        choose(model)
+
+        assertEquals(RestoreStep.Previewing(staged), model.state.value.step)
+        assertEquals(2, restores.staged.size)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
     fun aPreviewNeverConfirmedBeforeTheProcessDiedComesBackWithoutANote() = runTest {
         val handle = SavedStateHandle()
         val process = CoroutineScope(backgroundScope.coroutineContext + Job())

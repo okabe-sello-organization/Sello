@@ -100,7 +100,8 @@ class RestoreSession(
      * saying it was not replaced if it had been confirmed; a confirmed file that can no
      * longer be offered is shown as not restored.
      * Failing all, [chosen], a file an earlier process was given but had not finished
-     * with, is checked again; it is never replaced without a confirmation.
+     * with, is checked again; it is never replaced without a confirmation. A staged file
+     * still waiting is not previewed then: the person chose another since.
      */
     fun resume(chosen: DocumentSource? = null) {
         if (state.value != RestoreStep.Idle) return
@@ -122,8 +123,10 @@ class RestoreSession(
     private suspend fun look(chosen: DocumentSource?): RestoreStep? =
         restores.pending()?.let { RestoreStep.Restored(it) }
             ?: when (val found = restores.staged()) {
-                is StagedLookup.Waiting ->
-                    RestoreStep.Previewing(found.staged, notReplaced = found.attempted)
+                is StagedLookup.Waiting -> RestoreStep.Previewing(
+                    found.staged,
+                    notReplaced = found.attempted
+                ).takeIf { chosen == null }
 
                 is StagedLookup.Replaced -> replaced(found.operationId)
 
@@ -293,8 +296,10 @@ class RestoreSession(
         }
     }
 
+    /** A file chosen while another is previewed takes its place, as staging allows. */
     private fun choosable(step: RestoreStep) =
-        step == RestoreStep.Idle || step is RestoreStep.Rejected || step == RestoreStep.Failed
+        step == RestoreStep.Idle || step is RestoreStep.Rejected || step == RestoreStep.Failed ||
+            step is RestoreStep.Previewing
 
     /** Moves to [busy] only from a state [from] accepts, then runs [work] and shows its result. */
     private fun begin(
