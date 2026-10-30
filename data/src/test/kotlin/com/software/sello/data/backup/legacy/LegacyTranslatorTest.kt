@@ -373,6 +373,19 @@ class LegacyTranslatorTest {
     }
 
     @Test
+    fun `a 13-digit limit from the old app is imported exactly, as no cap applied then`() {
+        val text = legacy("\"categories\": [" + category(1, "Viaje", "1000000000000") + "]")
+
+        val result = translated(text)
+
+        assertEquals(
+            listOf(AutomaticBudget.Limit(finite(1_000_000_000_000))),
+            result.contents.financial.defaultLimits.map { it.budget }
+        )
+        assertTrue(result.report.lines.isEmpty())
+    }
+
+    @Test
     fun `an empty export translates to an empty history with nothing to report`() {
         val result = translated(legacy())
 

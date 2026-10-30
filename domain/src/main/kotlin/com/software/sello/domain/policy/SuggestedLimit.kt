@@ -19,13 +19,14 @@ object LimitKeypad {
 
 /**
  * The limit another screen suggests for a new category, as the pesos the limit field shows.
- * Only an amount the keypad could hold ([LimitKeypad], or zero) that is a valid finite limit
- * is taken; anything else is left out, never clipped or repaired, and the limit starts empty.
+ * Only an amount the keypad could hold ([LimitKeypad], or zero) that is a limit one could set
+ * ([BudgetLimit.entered]) is taken; anything else is left out, never clipped or repaired,
+ * and the limit starts empty.
  */
 object SuggestedLimit {
     /** [amount] as pesos text, or null when it is not a limit the field can hold. */
     fun of(amount: Money): String? {
-        if (BudgetLimit.finite(amount) !is Outcome.Success) return null
+        if (BudgetLimit.entered(amount) !is Outcome.Success) return null
         return amount.minorUnits.toString().takeIf(::accepts)
     }
 
@@ -33,6 +34,6 @@ object SuggestedLimit {
     fun accepts(text: String): Boolean {
         if (text != "0" && !LimitKeypad.fits(text)) return false
         val money = (CopAmountInput.parse(text) as? Outcome.Success)?.value ?: return false
-        return BudgetLimit.finite(money) is Outcome.Success
+        return BudgetLimit.entered(money) is Outcome.Success
     }
 }

@@ -5,6 +5,7 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthLimit
+import com.software.sello.domain.model.Outcome
 import java.time.YearMonth
 
 /** What a category's budget is in one month. */
@@ -55,9 +56,10 @@ object CategoryBudgetPolicy {
     }
 
     /**
-     * The [count] limits offered as shortcuts, smallest first: the finite, non-zero
-     * limits the categories in use have most often, the smaller first when equally
-     * common, topped up from [fallback] while there are fewer than [count].
+     * The [count] limits offered as shortcuts, smallest first: the non-zero limits one
+     * could set ([BudgetLimit.entered]) that the categories in use have most often, the
+     * smaller first when equally common, topped up from [fallback] while there are fewer
+     * than [count].
      */
     fun suggestedLimits(
         categories: List<CategoryInMonth>,
@@ -68,7 +70,7 @@ object CategoryBudgetPolicy {
             .filter { !it.category.archived }
             .mapNotNull { ((it.state as? MonthBudgetState.Limited)?.limit as? BudgetLimit.Finite) }
             .map { it.amount }
-            .filter { it.minorUnits > 0 }
+            .filter { it.minorUnits > 0 && BudgetLimit.entered(it) is Outcome.Success }
             .groupingBy { it }
             .eachCount()
             .entries

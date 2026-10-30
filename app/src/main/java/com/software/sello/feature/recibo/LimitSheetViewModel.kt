@@ -198,7 +198,7 @@ class LimitSheetViewModel(
         val id = mutable.value.categoryId ?: return
         val categoryId = (CategoryId.of(id) as? Outcome.Success)?.value
         val pesos = digits()?.toLongOrNull()
-        val limit = pesos?.let { (BudgetLimit.finite(Money.cop(it)) as? Outcome.Success)?.value }
+        val limit = pesos?.let { (BudgetLimit.entered(Money.cop(it)) as? Outcome.Success)?.value }
         val month = snapshot
         val line = month?.categories?.firstOrNull { it.category.id.value == id }
         val chips = if (month != null &&
@@ -241,16 +241,20 @@ class LimitSheetViewModel(
                 chosen = saved.get<String>(KEY_CHOSEN)
                     ?.let { name -> ChipKind.entries.firstOrNull { it.name == name } },
                 fact = fact
-            ).let { it.copy(canSave = canSave(it, pesos)) }
+            ).let { it.copy(canSave = canSave(it, limit?.amount?.minorUnits)) }
         }
     }
 
+    /** [pesos] is the limit typed, null while there is none that can be set. */
     private fun canSave(state: LimitSheetState, pesos: Long?): Boolean =
         state.categoryId != null && !state.loading && !state.loadFailed && !state.busy &&
             pesos != null && pesos != currentLimit?.minorUnits &&
             (state.error == null || state.error == LimitSheetError.NotSaved)
 
-    /** The shortcuts for one category, without one equal to its limit or to another. */
+    /**
+     * The shortcuts for one category, without one equal to its limit or to another, or
+     * one above what a limit can be set to.
+     */
     private fun chips(month: MonthlySnapshot, categoryId: CategoryId): List<LimitChip> {
         val shortcuts = (LimitAdjustmentPolicy.shortcuts(month, categoryId) as? Outcome.Success)
             ?.value ?: return emptyList()
@@ -261,6 +265,7 @@ class LimitSheetViewModel(
             shortcuts.coverPayments?.let { ChipKind.CoverPayments to it }
         )
             .filter { (_, amount) -> amount.minorUnits != currentLimit?.minorUnits }
+            .filter { (_, amount) -> BudgetLimit.entered(amount) is Outcome.Success }
             .distinctBy { (_, amount) -> amount.minorUnits }
             .map { (kind, amount) -> LimitChip(kind, money.format(amount), amount.minorUnits) }
     }
@@ -275,7 +280,7 @@ class LimitSheetViewModel(
         val generation = generation ?: return
         val version = version ?: return
         val pesos = digits()?.toLongOrNull() ?: return
-        val limit = (BudgetLimit.finite(Money.cop(pesos)) as? Outcome.Success)?.value ?: return
+        val limit = (BudgetLimit.entered(Money.cop(pesos)) as? Outcome.Success)?.value ?: return
         mutable.update { it.copy(busy = true, canSave = false, error = null) }
         val scope = now.scope
         viewModelScope.launch {

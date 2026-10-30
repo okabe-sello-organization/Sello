@@ -87,6 +87,16 @@ class BackupValidatorTest {
     }
 
     @Test
+    fun `a 13-digit limit set before the cap on setting limits is restored exactly`() {
+        val plan = accepted(variant("\"amount\": 40000,", "\"amount\": 1000000000000,"))
+
+        assertEquals(
+            finite(1_000_000_000_000),
+            plan.contents.financial.monthLimits.single().limit
+        )
+    }
+
+    @Test
     fun `an amount is a bare whole number, written one way`() {
         for (written in listOf("\"10000\"", "1e4", "10000.0", "-10000", "010000", "true")) {
             assertEquals(

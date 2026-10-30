@@ -169,6 +169,7 @@ class CategoryManagementViewModel(
             iconKey = typed.icon,
             unlimited = typed.unlimited,
             limitText = typed.limit,
+            limitError = limitReason(typed.unlimited, typed.limit),
             suggestions = LimitFigures(money).suggestions(null),
             targetMonth = targetMonth,
             historical = targetMonth < currentMonth
@@ -454,7 +455,19 @@ class CategoryManagementViewModel(
 
     private fun setLimit(unlimited: Boolean, text: String) {
         remember(typed.copy(unlimited = unlimited, limit = text))
-        render { it.copy(unlimited = unlimited, limitText = text, limitError = null) }
+        val reason = limitReason(unlimited, text)
+        render { it.copy(unlimited = unlimited, limitText = text, limitError = reason) }
+    }
+
+    /**
+     * [LimitEntry.reason], except for the stored limit, which is not being set: one stored
+     * above the maximum is shown with no reason and left as it is.
+     */
+    private fun limitReason(unlimited: Boolean, text: String): LimitError? {
+        val stored = (original?.limit as? StoredLimit.Finite)?.pesos
+        val written = (CopAmountInput.parse(text) as? Outcome.Success)?.value?.minorUnits
+        if (written != null && written == stored) return null
+        return LimitEntry.reason(unlimited, text)
     }
 
     /** Said while typing: a name another category has, however it is written, cannot be saved. */
@@ -639,8 +652,13 @@ class CategoryManagementViewModel(
 
                 StoredLimit.Unlimited -> BudgetLimit.Unlimited
 
-                is StoredLimit.Finite ->
-                    (BudgetLimit.finite(Money.cop(asked.pesos)) as Outcome.Success).value
+                // Only a changed limit is set: one stored above the maximum still reads.
+                is StoredLimit.Finite -> when (val entered = LimitEntry.limit(state.limitText)) {
+                    is Outcome.Success -> entered.value
+
+                    is Outcome.Failure ->
+                        return mutable.update { it.copy(limitError = entered.error) }
+                }
             }
         } else {
             null

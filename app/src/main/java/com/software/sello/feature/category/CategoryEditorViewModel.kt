@@ -8,7 +8,6 @@ import com.software.sello.domain.model.CategoryName
 import com.software.sello.domain.model.IconKey
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TextError
-import com.software.sello.domain.policy.CopAmountInput
 import com.software.sello.domain.policy.SuggestedLimit
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
@@ -83,6 +82,7 @@ class CategoryEditorViewModel(
             unlimited = typed.unlimited,
             limitText = typed.limit,
             limitAmount = figures.amount(typed.limit),
+            limitError = LimitEntry.reason(typed.unlimited, typed.limit),
             suggestions = LimitFigures(money).suggestions(null),
             result = saved.get<String>(KEY_CREATED)?.let(EditorResult::Created)
         )
@@ -192,7 +192,7 @@ class CategoryEditorViewModel(
                 unlimited = unlimited,
                 limitText = text,
                 limitAmount = figures.amount(text),
-                limitError = null,
+                limitError = LimitEntry.reason(unlimited, text),
                 limitTotal = figures.total(budget, null, unlimited, text)
             )
         }
@@ -263,11 +263,11 @@ class CategoryEditorViewModel(
             state.limitText.isBlank() ->
                 return mutable.update { it.copy(limitError = LimitError.Required) }
 
-            else -> {
-                val money = CopAmountInput.parse(state.limitText) as? Outcome.Success
-                val finite = money?.let { BudgetLimit.finite(it.value) } as? Outcome.Success
-                finite?.value
-                    ?: return mutable.update { it.copy(limitError = LimitError.NotAnAmount) }
+            else -> when (val entered = LimitEntry.limit(state.limitText)) {
+                is Outcome.Success -> entered.value
+
+                is Outcome.Failure ->
+                    return mutable.update { it.copy(limitError = entered.error) }
             }
         }
         val icon = (IconKey.of(state.iconKey) as? Outcome.Success)?.value ?: return

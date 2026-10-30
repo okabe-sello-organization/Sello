@@ -625,6 +625,7 @@ private fun NameError.text() = when (this) {
 private fun LimitError.text() = when (this) {
     LimitError.Required -> R.string.category_editor_limit_required
     LimitError.NotAnAmount -> R.string.category_editor_limit_invalid
+    LimitError.TooLarge -> R.string.expense_entry_amount_too_large
 }
 
 private fun EditPart.text() = when (this) {
