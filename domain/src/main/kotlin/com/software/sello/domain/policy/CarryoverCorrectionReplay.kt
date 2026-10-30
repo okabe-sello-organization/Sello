@@ -10,22 +10,31 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ReservedPayment
 import com.software.sello.domain.model.SettledBalance
 import com.software.sello.domain.model.SpendingHistory
+import com.software.sello.domain.model.toCarryover
 import java.math.BigInteger
 import java.time.YearMonth
 
-/** One month of one category's chain, as it is before and after a correction. */
+/**
+ * One month of one category's chain, as it is before and after a correction.
+ * [capacityChange] is `after.capacity − before.capacity`, "by how much" (CP20), signed.
+ */
 data class CarryMonthChange(
     val categoryId: CategoryId,
     val month: YearMonth,
     val before: CarryMonth,
-    val after: CarryMonth
+    val after: CarryMonth,
+    val capacityChange: Money
 )
 
-/** A balance a chain settled when it ended (CP12) that a correction changes. */
+/**
+ * A balance a chain settled when it ended (CP12) that a correction changes, by
+ * [balanceChange], `after.balance − before.balance`, signed.
+ */
 data class SettledBalanceChange(
     val categoryId: CategoryId,
     val before: SettledBalance,
-    val after: SettledBalance
+    val after: SettledBalance,
+    val balanceChange: Money
 )
 
 /** One category's input as it is and as it would be with the correction applied. */
@@ -94,8 +103,13 @@ object CarryoverCorrectionReplay {
                 is Outcome.Success -> read.value
                 is Outcome.Failure -> return read
             }
-            compare(id, before, after, months, edited, overall)
-            settled += settledChanges(id, before, after)
+            compare(id, before, after, months, edited, overall)?.let {
+                return Outcome.Failure(it)
+            }
+            settled += when (val changes = settledChanges(id, before, after)) {
+                is Outcome.Success -> changes.value
+                is Outcome.Failure -> return changes
+            }
         }
         val byMonthThenCategory = compareBy<CarryMonthChange>({ it.month }, { it.categoryId.value })
         val capacity = HashMap<YearMonth, Money>()
@@ -155,6 +169,7 @@ object CarryoverCorrectionReplay {
         return preview(currentMonth, listOf(CategoryCorrection(before, after)))
     }
 
+    /** Adds [id]'s changed months to the lists; a change that does not fit fails (CP23). */
     private fun compare(
         id: CategoryId,
         before: CarryReplay,
@@ -162,28 +177,39 @@ object CarryoverCorrectionReplay {
         months: MutableList<CarryMonthChange>,
         edited: MutableList<CarryMonthChange>,
         overall: MutableMap<YearMonth, BigInteger>
-    ) {
+    ): CarryoverFailure? {
         val later = after.months.associateBy { it.month }
         for (was in before.months) {
             val now = later[was.month] ?: continue
             if (was == now) continue
-            val change = CarryMonthChange(id, was.month, was, now)
+            val delta = when (val moved = now.capacity - was.capacity) {
+                is Outcome.Success -> moved.value
+                is Outcome.Failure -> return moved.error.toCarryover()
+            }
+            val change = CarryMonthChange(id, was.month, was, now, delta)
             if (was.carryIn != now.carryIn) months += change else edited += change
-            val delta =
-                now.capacity.minorUnits.toBigInteger() - was.capacity.minorUnits.toBigInteger()
-            overall[was.month] = (overall[was.month] ?: BigInteger.ZERO) + delta
+            overall[was.month] =
+                (overall[was.month] ?: BigInteger.ZERO) + delta.minorUnits.toBigInteger()
         }
+        return null
     }
 
     private fun settledChanges(
         id: CategoryId,
         before: CarryReplay,
         after: CarryReplay
-    ): List<SettledBalanceChange> {
+    ): Outcome<List<SettledBalanceChange>, CarryoverFailure> {
         val later = after.settled.associateBy { it.chainStart }
-        return before.settled.mapNotNull { was ->
+        val changes = ArrayList<SettledBalanceChange>()
+        for (was in before.settled) {
             val now = later[was.chainStart]
-            if (now == null || now == was) null else SettledBalanceChange(id, was, now)
+            if (now == null || now == was) continue
+            val delta = when (val moved = now.balance - was.balance) {
+                is Outcome.Success -> moved.value
+                is Outcome.Failure -> return Outcome.Failure(moved.error.toCarryover())
+            }
+            changes += SettledBalanceChange(id, was, now, delta)
         }
+        return Outcome.Success(changes)
     }
 }

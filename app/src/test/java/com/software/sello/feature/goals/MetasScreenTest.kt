@@ -65,6 +65,7 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
+import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.navigation.MetasDestination
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
@@ -206,7 +207,9 @@ class MetasScreenTest {
                         HandInvestmentCommands(),
                         { Duration.ZERO },
                         ids,
-                        CoroutineScope(Dispatchers.Main)
+                        CoroutineScope(Dispatchers.Main),
+                        HandCategoryReads(),
+                        money
                     )
                 ) { false }
             }

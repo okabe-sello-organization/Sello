@@ -3,11 +3,14 @@ package com.software.sello.feature.recibo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.money.MoneyFormatter
+import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
@@ -27,7 +31,8 @@ class ReciboViewModel(
     session: MonthSession,
     private val snapshots: MonthlySnapshots,
     preferences: CategoryOrderingPreferences,
-    money: MoneyFormatter
+    money: MoneyFormatter,
+    private val categories: CategoryReads
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val attempt = MutableStateFlow(0)
@@ -47,13 +52,33 @@ class ReciboViewModel(
 
     val state: StateFlow<ReciboState> =
         combine(session.selectedMonth, attempt) { month, _ -> month }
-            .flatMapLatest(snapshots::observe)
-            .combine(ordering) { snapshot, preference -> render.recibo(snapshot, preference) }
+            .flatMapLatest { month ->
+                snapshots.observe(month)
+                    .combine(ordering) { snapshot, preference ->
+                        render.recibo(snapshot, preference)
+                    }
+                    .mapLatest { named(it, month) }
+            }
             .stateIn(
                 viewModelScope,
                 SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
                 ReciboState.Loading
             )
+
+    /**
+     * A carry failure with no earlier read to take the name from: the category is named
+     * from the month's categories, so the repair can say which one. Without them it is
+     * said without a name, never left out.
+     */
+    private suspend fun named(state: ReciboState, month: YearMonth): ReciboState {
+        val failed = state as? ReciboState.CarryFailed ?: return state
+        if (failed.problem.name != null) return state
+        val name = (categories.monthBudget(month) as? Outcome.Success)?.value?.categories
+            ?.firstOrNull {
+                it.category.id.value == failed.problem.categoryId
+            }?.category?.name?.value
+        return failed.copy(problem = failed.problem.copy(name = name))
+    }
 
     fun onAction(action: ReciboAction) {
         when (action) {
@@ -65,7 +90,8 @@ class ReciboViewModel(
             is ReciboAction.OpenCategory,
             is ReciboAction.EditCategory,
             ReciboAction.OpenReserved,
-            ReciboAction.AdjustBudget -> Unit
+            ReciboAction.AdjustBudget,
+            is ReciboAction.SetMonthLimit -> Unit
         }
     }
 

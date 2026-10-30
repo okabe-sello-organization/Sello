@@ -1,6 +1,7 @@
 package com.software.sello.domain.policy
 
 import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.CarryBreakdown
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryMonth
 import com.software.sello.domain.model.ExactTotal
@@ -26,11 +27,18 @@ data class AdjustOrder(val limited: List<CategoryMonth>, val open: List<Category
 data class LimitShortcuts(val spent: Money?, val coverMonth: Money?, val coverPayments: Money?)
 
 /**
- * The month were one category's limit changed: its [total] finite limit, and what
- * would be [left] after what was spent, and after reserved payments too when
- * [afterPayments]. A negative [left] is what would still be missing.
+ * The month were one category's base limit changed: its [total] of finite base limits, and
+ * what would be [left] after what was spent, and after reserved payments too when
+ * [afterPayments]. A negative [left] is what would still be missing. While any category
+ * carries, [carry] splits the month's capacity: [total] as its base, the month's carry-in
+ * and the capacity `Σ base + Σ K` that [left] is taken from (ADR 0020 CP16).
  */
-data class LimitPreview(val total: Money, val left: Money, val afterPayments: Boolean)
+data class LimitPreview(
+    val total: Money,
+    val left: Money,
+    val afterPayments: Boolean,
+    val carry: CarryBreakdown? = null
+)
 
 /**
  * Adjusting one category's limit from Recibo (the AJ examples in
@@ -50,23 +58,39 @@ object LimitAdjustmentPolicy {
             .sortedWith(bySpent)
     )
 
+    /**
+     * The sheet edits the base, so every shortcut is a base (SELLO-038 consumer boundary):
+     * Lo gastado is the base that makes `C = S`, which is `S − K`, offered while `S > C`;
+     * Cubre el mes is `base − R` of the overall month; Cubre tus pagos is `base +` the
+     * shortfall. Without carry `K` is 0 and the base is the limit.
+     */
     fun shortcuts(
         snapshot: MonthlySnapshot,
         categoryId: CategoryId
     ): Outcome<LimitShortcuts, SnapshotFailure> {
         val line = snapshot.categories.firstOrNull { it.category.id == categoryId }
             ?: return Outcome.Success(LimitShortcuts(null, null, null))
-        val limit = line.budget?.limit ?: Money.cop(0)
-        val spent = line.spent.takeIf { it.minorUnits > limit.minorUnits }
+        val zero = Money.cop(0)
+        val base = line.budget?.base ?: zero
+        val capacity = line.budget?.limit ?: zero
+        val carry = line.budget?.carry?.carryIn ?: zero
+        val spent = if (line.spent.minorUnits > capacity.minorUnits) {
+            when (val reached = sum(line.spent, minus = carry)) {
+                is Outcome.Failure -> return reached
+                is Outcome.Success -> reached.value
+            }
+        } else {
+            null
+        }
         val overall = snapshot.overall as? OverallBudget.Limited
         val reservation = overall?.reservation
         val overrun = overall?.budget?.remaining?.takeIf {
             reservation == null && it.minorUnits < 0
         }
-        val coverMonth = overrun?.let { sum(limit, minus = it) }
+        val coverMonth = overrun?.let { sum(base, minus = it) }
         val coverPayments = reservation?.shortfall
             ?.takeIf { reservation.standing == ReservedStanding.Short }
-            ?.let { sum(limit, plus = it) }
+            ?.let { sum(base, plus = it) }
         if (coverMonth is Outcome.Failure) return coverMonth
         if (coverPayments is Outcome.Failure) return coverPayments
         return Outcome.Success(
@@ -78,6 +102,11 @@ object LimitAdjustmentPolicy {
         )
     }
 
+    /**
+     * The month with [categoryId]'s base set to [limit]: the bases' total, and what is left
+     * of the capacity `Σ base + Σ K` (CP16). A category's carry-in comes from earlier
+     * months, so a new base this month leaves every `K` as it is.
+     */
     fun preview(
         snapshot: MonthlySnapshot,
         categoryId: CategoryId,
@@ -97,14 +126,29 @@ object LimitAdjustmentPolicy {
                 total.value
                     ?: return Outcome.Failure(SnapshotFailure.Unrepresentable)
         }
-        val reserved = (snapshot.overall as? OverallBudget.Limited)?.reservation?.total
-        var left = ExactTotal.of(total.currency, listOf(total)) - snapshot.spent
+        val overall = snapshot.overall as? OverallBudget.Limited
+        val carried = overall?.budget?.carry?.carryIn
+        val capacity = if (carried == null) {
+            total
+        } else {
+            when (val sum = sum(total, plus = carried)) {
+                is Outcome.Failure -> return sum
+                is Outcome.Success -> sum.value
+            }
+        }
+        val reserved = overall?.reservation?.total
+        var left = ExactTotal.of(capacity.currency, listOf(capacity)) - snapshot.spent
         if (reserved != null) left -= reserved
         return when (val money = left.toMoney()) {
             is Outcome.Failure -> Outcome.Failure(SnapshotFailure.Unrepresentable)
 
             is Outcome.Success -> Outcome.Success(
-                LimitPreview(total, money.value, reserved != null)
+                LimitPreview(
+                    total,
+                    money.value,
+                    reserved != null,
+                    carried?.let { CarryBreakdown(total, it, capacity, chainStart = null) }
+                )
             )
         }
     }

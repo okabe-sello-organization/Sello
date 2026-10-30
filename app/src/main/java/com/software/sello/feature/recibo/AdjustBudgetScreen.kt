@@ -40,8 +40,10 @@ import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.LeaderLine
+import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
@@ -166,8 +168,21 @@ private fun MonthSlip(state: AdjustBudgetState.Ready, onReserved: () -> Unit) {
     ) {
         summary.shortfall?.let { ShortfallNote(it) }
         TearLine()
-        state.limit?.let { limit ->
-            LeaderLine(stringResource(R.string.adjust_limit_line, month)) { MoneyText(limit) }
+        val carry = state.carry
+        if (carry != null) {
+            // The capacity, with its base and carry beside it (CP27).
+            LeaderLine(
+                stringResource(R.string.adjust_carry_limit_line, month),
+                caption = stringResource(
+                    R.string.adjust_carry_parts,
+                    carry.base.digits,
+                    carry.carry.signedText()
+                )
+            ) { MoneyText(carry.capacity) }
+        } else {
+            state.limit?.let { limit ->
+                LeaderLine(stringResource(R.string.adjust_limit_line, month)) { MoneyText(limit) }
+            }
         }
         LeaderLine(stringResource(R.string.adjust_spent_line)) { MoneyText(state.spent) }
         summary.reserved?.let { ReservedFootnote(it, onReserved) }
@@ -220,8 +235,14 @@ private fun CategoryRow(row: AdjustRow, onOpen: (AdjustRow) -> Unit) {
     val limit = row.limit
     val caption = when {
         row.archived -> stringResource(R.string.adjust_archived_caption)
+
+        limit != null && row.carried ->
+            stringResource(R.string.adjust_row_carry_caption, row.spent.digits, limit.text())
+
         limit != null -> stringResource(R.string.adjust_row_caption, row.spent.digits, limit.digits)
+
         row.unlimited -> stringResource(R.string.recibo_cell_unlimited_caption)
+
         else -> stringResource(R.string.adjust_open_caption)
     }
     val spoken = when {
@@ -231,7 +252,11 @@ private fun CategoryRow(row: AdjustRow, onOpen: (AdjustRow) -> Unit) {
             stringResource(R.string.adjust_row_open_spoken, row.name, row.spent.spoken)
 
         row.overBy != null -> stringResource(
-            R.string.adjust_row_over_spoken,
+            if (row.carried) {
+                R.string.adjust_row_carry_over_spoken
+            } else {
+                R.string.adjust_row_over_spoken
+            },
             row.name,
             row.overBy.spoken,
             row.spent.spoken,
@@ -239,7 +264,11 @@ private fun CategoryRow(row: AdjustRow, onOpen: (AdjustRow) -> Unit) {
         )
 
         else -> stringResource(
-            R.string.adjust_row_left_spoken,
+            if (row.carried) {
+                R.string.adjust_row_carry_left_spoken
+            } else {
+                R.string.adjust_row_left_spoken
+            },
             row.name,
             row.remaining?.spoken.orEmpty(),
             row.spent.spoken,
@@ -269,7 +298,17 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
     val colors = SelloTheme.colors
     val locked = sheet.busy || sheet.error == LimitSheetError.Unknown
     RepeatSheet(
-        title = stringResource(R.string.limit_sheet_title, sheet.name),
+        // With carry the sheet edits the base (CP16, CP27).
+        title = stringResource(
+            if (sheet.carry !=
+                null
+            ) {
+                R.string.limit_sheet_title_base
+            } else {
+                R.string.limit_sheet_title
+            },
+            sheet.name
+        ),
         onDismiss = { onSheet(LimitSheetAction.Close) },
         modifier = Modifier.testTag(LIMIT_SHEET_TAG)
     ) {
@@ -282,7 +321,14 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             )
             Text(
                 text = sheet.spent?.let { spent ->
-                    sheet.current?.let {
+                    sheet.carry?.let {
+                        stringResource(
+                            R.string.limit_sheet_carry,
+                            it.signedText(),
+                            spent.digits,
+                            month
+                        )
+                    } ?: sheet.current?.let {
                         stringResource(R.string.limit_sheet_spent, spent.digits, it.digits, month)
                     } ?: stringResource(R.string.limit_sheet_spent_open, spent.digits, month)
                 }.orEmpty(),
@@ -336,7 +382,15 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
         ) {
             Row {
                 Text(
-                    stringResource(R.string.limit_sheet_amount),
+                    stringResource(
+                        if (sheet.carry !=
+                            null
+                        ) {
+                            R.string.limit_sheet_amount_base
+                        } else {
+                            R.string.limit_sheet_amount
+                        }
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.inkSoft
                 )
@@ -456,6 +510,11 @@ private fun factText(fact: LimitFact, month: String, spoken: Boolean): String {
             stringResource(R.string.limit_sheet_fact_over, left)
         }
     }
+    val capacity = fact.capacity
+    if (capacity != null) {
+        val figure = if (spoken) capacity.spoken else capacity.text()
+        return stringResource(R.string.limit_sheet_fact_capacity, month, figure) + " " + outcome
+    }
     return stringResource(R.string.limit_sheet_fact_total, month, total) + " " + outcome
 }
 
@@ -483,6 +542,10 @@ private fun errorText(error: LimitSheetError, sheet: LimitSheetState): String = 
             names.inSentence(sheet.month.plusMonths(1))
         )
     }
+
+    LimitSheetError.LimitAboveCap -> stringResource(R.string.carry_limit_cap, sheet.name)
+
+    LimitSheetError.CarryUnavailable -> stringResource(R.string.carry_unavailable_save, sheet.name)
 }
 
 const val ADJUST_TAG = "adjust"
@@ -490,3 +553,10 @@ const val LIMIT_SHEET_TAG = "adjust:sheet"
 const val LIMIT_KEYPAD_TAG = "adjust:keypad"
 
 fun adjustRowTag(id: String) = "adjust:row:$id"
+
+/** A carry as a sentence writes it: "+80.000", "−150.000". */
+private fun MoneyTextValue.signedText(): String = when (sign) {
+    MoneySign.Minus -> "−$digits"
+    MoneySign.Plus -> "+$digits"
+    MoneySign.None -> digits
+}

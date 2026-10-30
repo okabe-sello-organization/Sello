@@ -49,7 +49,12 @@ data class DetailInsights(
     val weeks: List<DetailWeek>,
     val historicalAverage: MoneyTextValue?,
     val history: List<DetailHistoryMonth>,
-    val comparisonDirection: DetailComparisonDirection = DetailComparisonDirection.Equal
+    val comparisonDirection: DetailComparisonDirection = DetailComparisonDirection.Equal,
+    /**
+     * While nothing can be spent per day because the category is over: by how much, so a
+     * zero allowance never hides the deficit (ADR 0020 CP15).
+     */
+    val allowanceDeficit: MoneyTextValue? = null
 )
 
 class CategoryInsightsRenderModel(private val money: MoneyFormatter) {
@@ -84,7 +89,11 @@ class CategoryInsightsRenderModel(private val money: MoneyFormatter) {
             1 -> DetailComparisonDirection.Higher
             -1 -> DetailComparisonDirection.Lower
             else -> DetailComparisonDirection.Equal
-        }
+        },
+        allowanceDeficit = snapshot.budget.categories
+            .singleOrNull { it.category.id == snapshot.categoryId }?.budget?.remaining
+            ?.takeIf { it.minorUnits < 0 && snapshot.allowance?.amount?.minorUnits == 0L }
+            ?.let(money::magnitude)
     )
 
     private fun history(snapshot: CategoryInsights): List<DetailHistoryMonth> {

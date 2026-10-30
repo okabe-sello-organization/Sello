@@ -3,9 +3,6 @@ package com.software.sello.data
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.data.backup.BackupCodec
 import com.software.sello.data.backup.BackupExport
-import com.software.sello.data.backup.BackupExportFailure
-import com.software.sello.data.backup.BackupRejection
-import com.software.sello.data.backup.CarryChainSupport
 import com.software.sello.data.backup.RoomBackupSnapshots
 import com.software.sello.data.backup.RoomRestores
 import com.software.sello.data.reset.RoomResets
@@ -18,7 +15,6 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
-import com.software.sello.domain.port.BackupPreparationFailure
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
@@ -113,7 +109,6 @@ class CarryBackupRestoreTest {
     }
 
     private val preferences = Preferences()
-    private val accepting = BackupCodec(carryChains = CarryChainSupport.Accepted)
     private var nextId = 5_000
 
     /** A version 6 file as Sello wrote it before: no chains and no financial month. */
@@ -125,7 +120,7 @@ class CarryBackupRestoreTest {
 
     private fun cop(pesos: Long) = Money.cop(pesos)
 
-    private fun export(source: TestLedger, codec: BackupCodec = accepting) = BackupExport(
+    private fun export(source: TestLedger, codec: BackupCodec = BackupCodec()) = BackupExport(
         RoomBackupSnapshots(source.database),
         preferences,
         preferences,
@@ -146,7 +141,7 @@ class CarryBackupRestoreTest {
     private fun restoresInto(
         target: TestLedger,
         folder: DatabaseFiles,
-        codec: BackupCodec = accepting
+        codec: BackupCodec = BackupCodec()
     ) = RoomRestores(
         target.database,
         folder.restoreFolder,
@@ -358,7 +353,7 @@ class CarryBackupRestoreTest {
     fun sc45ARestoreOfAFileWithNoChainsEndsTheChainsOfTheHistoryItReplaces() = runBlocking {
         CarryHistories(ledger).sc01()
         val withoutChains = BackupCodec().encode(
-            accepting.read(backup()).valueOrFail().contents.let {
+            BackupCodec().read(backup()).valueOrFail().contents.let {
                 it.copy(financial = it.financial.copy(carryChains = emptyList()))
             }
         ).valueOrFail()
@@ -396,18 +391,16 @@ class CarryBackupRestoreTest {
         assertEquals(0L, other.long("SELECT COUNT(*) FROM category"))
     }
 
-    // The customer gate until SELLO-041.
+    // The app's own paths: SELLO-041 replaced SELLO-040's refusal of a file with a chain.
 
     @Test
-    fun theCustomerPathRefusesAFileWithAChainBeforeAnyChange() = runBlocking {
+    fun theAppsOwnRestoresTakeAFileWithAChainAndReplaySc01() = runBlocking {
         CarryHistories(ledger).sc01()
         val bytes = backup()
-        CarryHistories(other).sc01()
-        val before = everyRow(other)
+        other.goTo("2027-04-05")
 
         // The composition's own restores, the way the app builds them, with its default codec.
-        val storage = other.storage()
-        val restores = storage.restores(
+        val restores = other.storage().restores(
             preferences,
             preferences,
             investments,
@@ -416,44 +409,25 @@ class CarryBackupRestoreTest {
             { other.audit },
             dispatchers
         )
-        val refused = restores.stage(bytes)
-        val direct = restoresInto(other, fresh, BackupCodec()).stage(bytes)
+        val outcome = restores.replace(restores.stage(bytes).valueOrFail())
 
-        val expected = Outcome.Failure(StageFailure.Rejected(RestoreRejection.CarryNotSupported))
-        assertEquals(expected, refused)
-        assertEquals(expected, direct)
-        assertEquals(before, everyRow(other))
-        assertEquals(emptyList<String>(), stagingFiles(fresh))
-        assertNull(restores.staged())
-        assertNull(restores.pending())
+        assertTrue("$outcome", outcome is RestoreOutcome.Restored)
+        assertEquals(listOf("${uuid(100)}|2027-01|null"), other.chainRows())
+        assertEquals(sc01, comida(other, "2027-04").replay.months.map { it.text() })
     }
 
     @Test
-    fun theCustomerPathStillRestoresAFileWithNoChain() = runBlocking {
+    fun theAppsOwnPathStillRestoresAFileWithNoChain() = runBlocking {
         CarryHistories(ledger).sc01()
         val withoutChains = String(backup()).asVersion5()
         other.goTo("2027-04-05")
 
-        val restores = restoresInto(other, fresh, BackupCodec())
+        val restores = restoresInto(other, fresh)
         val outcome = restores.replace(restores.stage(withoutChains.toByteArray()).valueOrFail())
 
         assertTrue("$outcome", outcome is RestoreOutcome.Restored)
         assertEquals(3L, other.long("SELECT COUNT(*) FROM expense"))
         assertEquals(emptyList<String>(), other.chainRows())
-    }
-
-    @Test
-    fun theCustomerPathMakesNoBackupOfAHistoryItCouldNotRestore() = runBlocking {
-        CarryHistories(ledger).sc01()
-
-        val created = export(ledger, BackupCodec()).create()
-        val prepared = export(ledger, BackupCodec()).prepare()
-
-        assertEquals(
-            Outcome.Failure(BackupExportFailure.Unrestorable(BackupRejection.CarryNotSupported)),
-            created
-        )
-        assertEquals(Outcome.Failure(BackupPreparationFailure.Unrestorable), prepared)
     }
 
     // Validation before any change.

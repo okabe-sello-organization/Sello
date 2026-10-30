@@ -175,12 +175,6 @@ sealed interface BackupRejection {
 
     /** A carry chain that breaks a rule of ADR 0020 CP26, named by [fault]. */
     data class InvalidChain(val path: String, val fault: ChainFault) : BackupRejection
-
-    /**
-     * A valid backup in which a category carries its balance. This version of Sello
-     * cannot show carry yet, so it refuses the file whole, before anything changes.
-     */
-    data object CarryNotSupported : BackupRejection
 }
 
 /** What is wrong with a carry chain in a file; the chain itself is named by the path. */
@@ -202,13 +196,4 @@ enum class ChainFault {
      * starts in the current month (CP3) and a chain ends by a command, never ahead of time.
      */
     AfterFinancialMonth
-}
-
-/** Whether a codec accepts a backup in which categories carry their balance (CP26). */
-enum class CarryChainSupport {
-    /** The customer app until SELLO-041: such a file is refused before any change. */
-    Refused,
-
-    /** Test and developer paths: chains are read, written and restored. */
-    Accepted
 }

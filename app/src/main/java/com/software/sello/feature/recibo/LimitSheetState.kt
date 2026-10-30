@@ -23,7 +23,9 @@ data class LimitFact(
     val total: MoneyTextValue,
     val left: MoneyTextValue,
     val outcome: FactOutcome,
-    val afterPayments: Boolean
+    val afterPayments: Boolean,
+    /** While a category carries: the month's limit with carry it would have (CP16). */
+    val capacity: MoneyTextValue? = null
 )
 
 /** Why the sheet cannot save, or did not. */
@@ -46,7 +48,13 @@ enum class LimitSheetError {
     Archived,
 
     /** The month the screen was opened on is over; nothing was written. */
-    MonthEnded
+    MonthEnded,
+
+    /** While it carries, a base is at most 999.999.999.999 (ADR 0020 CP25). */
+    LimitAboveCap,
+
+    /** The change would leave a month whose carry cannot be calculated (CP23). */
+    CarryUnavailable
 }
 
 /**
@@ -70,7 +78,9 @@ data class LimitSheetState(
     val loadFailed: Boolean = false,
     val busy: Boolean = false,
     val canSave: Boolean = false,
-    val error: LimitSheetError? = null
+    val error: LimitSheetError? = null,
+    /** While it carries: its carry into the month, signed; the sheet edits the base. */
+    val carry: MoneyTextValue? = null
 )
 
 sealed interface LimitSheetAction {

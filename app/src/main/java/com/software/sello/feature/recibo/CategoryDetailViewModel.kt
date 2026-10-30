@@ -16,6 +16,7 @@ import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
+import com.software.sello.presentation.carry.carryProblem
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.DeleteResult
 import com.software.sello.presentation.money.MoneyFormatter
@@ -159,6 +160,9 @@ class CategoryDetailViewModel(
                     DeleteResult.DataChanged -> DeleteProblem.DataChanged
 
                     DeleteResult.Failed -> DeleteProblem.Failed
+
+                    // The list of later months is shown above every screen (CP20).
+                    DeleteResult.AwaitsConfirmation -> null
                 }
             } finally {
                 deleting -= expenseId
@@ -174,8 +178,20 @@ class CategoryDetailViewModel(
     ): Flow<CategoryDetailState> {
         val (snapshot, stale) = when (state) {
             ReadState.Loading -> return flowOf(CategoryDetailState.Loading)
+
             is ReadState.Ready -> state.value to false
-            is ReadState.Failed -> (state.lastGood ?: return flowOf(Failed)) to true
+
+            is ReadState.Failed -> (
+                state.lastGood ?: return flowOf(
+                    carryProblem(state.failure)?.let(CategoryDetailState::CarryFailed) ?: Failed
+                )
+                ) to true
+        }
+        val problem = (state as? ReadState.Failed)?.failure?.let { failure ->
+            carryProblem(
+                failure,
+                snapshot.categories.associate { it.category.id to it.category.name.value }
+            )
         }
         val line = render.categories(snapshot).firstOrNull { it.id == shown.categoryId }
             ?: return flowOf(CategoryDetailState.Gone)
@@ -185,6 +201,7 @@ class CategoryDetailViewModel(
             today = snapshot.asOf,
             stale = stale,
             canRecord = !line.archived && snapshot.month == YearMonth.from(snapshot.asOf),
+            carryProblem = problem,
             insights = when (insights) {
                 ReadState.Loading -> DetailInsightsState.Loading
 

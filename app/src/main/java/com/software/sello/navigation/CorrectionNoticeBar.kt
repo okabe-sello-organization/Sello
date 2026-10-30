@@ -5,13 +5,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.software.sello.R
+import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.feature.goals.CelebrationTicket
 import com.software.sello.feature.goals.celebrationLine
 import com.software.sello.feature.investments.InvestmentMovementNoticeBar
+import com.software.sello.presentation.carry.CarryCorrectionContent
+import com.software.sello.presentation.corrections.CorrectionKind
 import com.software.sello.presentation.corrections.CorrectionNotice
+import com.software.sello.presentation.corrections.CorrectionQuestion
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.corrections.InvestmentMovementNotice
 import com.software.sello.presentation.corrections.ScheduleChange
@@ -37,12 +42,15 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
     val tagged = Modifier.testTag(CORRECTION_NOTICE_TAG)
     when (notice) {
         is CorrectionNotice.Deleted -> SelloNotice(
-            message = stringResource(
-                if (notice.undoFailed) {
-                    R.string.correction_undo_failed
-                } else {
-                    R.string.correction_deleted
-                }
+            message = withCarryMonths(
+                stringResource(
+                    if (notice.undoFailed) {
+                        R.string.correction_undo_failed
+                    } else {
+                        R.string.correction_deleted
+                    }
+                ),
+                notice.carryMonths
             ),
             modifier = tagged,
             actionLabel = stringResource(R.string.correction_undo).takeIf { notice.canUndo },
@@ -56,6 +64,9 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
                 }
             )
         )
+
+        CorrectionNotice.NotDeleted ->
+            SelloNotice(stringResource(R.string.correction_not_deleted), tagged)
 
         CorrectionNotice.Restored ->
             SelloNotice(stringResource(R.string.correction_restored), tagged)
@@ -337,3 +348,48 @@ internal fun StampNoticeBar(
 }
 
 const val CORRECTION_NOTICE_TAG = "shell:correction-notice"
+
+/** "Gasto borrado · cambió el límite con arrastre de 3 meses" when a deletion changed later months. */
+@Composable
+private fun withCarryMonths(message: String, months: Int?): String =
+    if (months == null || months == 0) {
+        message
+    } else {
+        stringResource(
+            R.string.carry_with_change,
+            message,
+            pluralStringResource(R.plurals.carry_changed_months, months, months)
+        )
+    }
+
+/** The list of later months a deletion, or undoing one, changes; asked before it is sent. */
+@Composable
+internal fun CorrectionQuestionSlip(
+    question: CorrectionQuestion,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    ConfirmSlip(
+        title = stringResource(
+            when (question.kind) {
+                CorrectionKind.Delete -> R.string.carry_correct_delete_title
+                CorrectionKind.Undo -> R.string.carry_correct_undo_title
+            }
+        ),
+        confirmLabel = stringResource(
+            when (question.kind) {
+                CorrectionKind.Delete -> R.string.carry_correct_delete
+                CorrectionKind.Undo -> R.string.carry_correct_undo
+            }
+        ),
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        modifier = Modifier.testTag(CORRECTION_QUESTION_TAG),
+        destructive = question.kind == CorrectionKind.Delete,
+        busy = question.busy
+    ) {
+        CarryCorrectionContent(question.list, question.changed)
+    }
+}
+
+const val CORRECTION_QUESTION_TAG = "correction:question"

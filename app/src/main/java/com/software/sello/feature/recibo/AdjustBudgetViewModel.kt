@@ -13,6 +13,7 @@ import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
+import com.software.sello.presentation.carry.carryFigures
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -81,7 +82,9 @@ class AdjustBudgetViewModel(
             open = order.open.filterNot { it.category.archived }.map(::row),
             stale = stale,
             // Archived ones last and apart, in the same order as above.
-            archived = (order.limited + order.open).filter { it.category.archived }.map(::row)
+            archived = (order.limited + order.open).filter { it.category.archived }.map(::row),
+            carry = (snapshot.overall as? OverallBudget.Limited)?.budget
+                ?.let { money.carryFigures(it, snapshot.month, withSpent = false) }
         )
     }
 
@@ -98,7 +101,8 @@ class AdjustBudgetViewModel(
             fraction = budget?.let(render::fill),
             over = budget != null && budget.remaining.minorUnits < 0,
             archived = line.category.archived,
-            unlimited = (line.state as? MonthBudgetState.Limited)?.limit == BudgetLimit.Unlimited
+            unlimited = (line.state as? MonthBudgetState.Limited)?.limit == BudgetLimit.Unlimited,
+            carried = budget?.carry != null
         )
     }
 

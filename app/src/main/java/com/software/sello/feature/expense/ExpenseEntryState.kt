@@ -1,6 +1,7 @@
 package com.software.sello.feature.expense
 
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.presentation.carry.CarryCorrectionList
 import com.software.sello.presentation.recurrence.FollowingSchedule
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatUi
@@ -55,8 +56,17 @@ enum class EntryError {
     EndTooEarly,
 
     /** The following payments' new terms were refused; nothing was written. */
-    FollowingNotSaved
+    FollowingNotSaved,
+
+    /** Saving would leave a month whose carry cannot be calculated (ADR 0020 CP23). */
+    CarryUnavailable
 }
+
+/**
+ * The later months saving this expense changes, shown before it is saved (ADR 0020 CP20,
+ * CP21). With [changed] the list was read again because the data moved (SC34).
+ */
+data class EntryCorrection(val list: CarryCorrectionList, val changed: Boolean)
 
 data class EntryCategory(val id: String, val name: String, val iconKey: String)
 
@@ -113,7 +123,9 @@ data class ExpenseEntryState(
     val askFollowing: Boolean = false,
     val following: FollowingSchedule? = null,
     /** The following payments already took the new terms; this expense did not yet. */
-    val followingSaved: Boolean = false
+    val followingSaved: Boolean = false,
+    /** Saving waits for the list of later months it changes to be confirmed. */
+    val correction: EntryCorrection? = null
 ) {
     val canSubmit: Boolean
         get() = !loading && !loadFailed && !busy && missing == null && error !in Blocking &&
@@ -194,4 +206,10 @@ sealed interface ExpenseEntryAction {
 
     /** Volver a editar: nothing is saved. */
     data object FollowingDismissed : ExpenseEntryAction
+
+    /** The list of later months is confirmed: the same change is saved with it. */
+    data object CorrectionConfirmed : ExpenseEntryAction
+
+    /** The list is not confirmed: nothing is saved and the draft stays. */
+    data object CorrectionDismissed : ExpenseEntryAction
 }

@@ -58,6 +58,7 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.SpendingDirection
+import com.software.sello.presentation.carry.CarryBreakdownSection
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.dateLabels
 
@@ -378,18 +379,25 @@ private fun ChartSlips(
                 style = MoneyStyle.Title,
                 modifier = Modifier.testTag("resumen.history.selected")
             )
-            point.detail?.let { limit ->
-                LeaderLine(stringResource(R.string.resumen_month_limit)) { MoneyText(limit) }
+            // The month read with its carry: the capacity with its base and carry (CP27).
+            val carry = state.carry?.takeIf { point.chart.id == state.month }
+            if (carry != null) {
+                CarryBreakdownSection(carry, footnote = null)
+            } else {
+                point.detail?.let { limit ->
+                    LeaderLine(stringResource(R.string.resumen_month_limit)) { MoneyText(limit) }
+                }
             }
         }
         val inProgress = stringResource(R.string.resumen_month_in_progress)
         val highest = state.history.maxOfOrNull { it.chart.value }
-        val limitLabel = state.monthLimit?.let {
-            stringResource(R.string.resumen_limit_line, chartLabel(it.value))
+        val limitLine = if (state.monthLimit?.carried == true) {
+            R.string.resumen_carry_limit_line
+        } else {
+            R.string.resumen_limit_line
         }
-        val limitSpoken = state.monthLimit?.let {
-            stringResource(R.string.resumen_limit_line, it.amount.spoken)
-        }
+        val limitLabel = state.monthLimit?.let { stringResource(limitLine, chartLabel(it.value)) }
+        val limitSpoken = state.monthLimit?.let { stringResource(limitLine, it.amount.spoken) }
         ChartWidth(state.history.size, "resumen.history.chart") { modifier ->
             ColumnsChart(
                 state.history.map { point ->

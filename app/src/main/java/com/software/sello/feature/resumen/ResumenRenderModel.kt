@@ -2,10 +2,12 @@ package com.software.sello.feature.resumen
 
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
+import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.model.ResumenSnapshot
 import com.software.sello.domain.model.WeekdayPattern
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
+import com.software.sello.presentation.carry.carryFigures
 import com.software.sello.presentation.money.MoneyFormatter
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -40,6 +42,8 @@ class ResumenRenderModel(private val money: MoneyFormatter) {
         } else {
             snapshot.history.drop(firstRecordedMonth)
         }
+        val carry = (budget.overall as? OverallBudget.Limited)?.budget
+            ?.let { money.carryFigures(it, budget.month, withSpent = false) }
         return ResumenState.Ready(
             month = budget.month.toString(),
             hero = hero(snapshot),
@@ -76,8 +80,9 @@ class ResumenRenderModel(private val money: MoneyFormatter) {
                 )
             },
             monthLimit = snapshot.history.lastOrNull { it.month == budget.month }?.limit?.let {
-                ResumenLimit(it.minorUnits, money.format(it))
+                ResumenLimit(it.minorUnits, money.format(it), carried = carry != null)
             },
+            carry = carry,
             categories = budget.categories.filter { it.expenseCount > 0 }
                 .sortedByDescending { it.spent.minorUnits }.map { category ->
                     ResumenCategory(

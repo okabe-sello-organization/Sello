@@ -35,9 +35,12 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.domain.model.Category
+import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.AuditClock
+import com.software.sello.domain.port.CarryoverReads
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.FinancialClock
@@ -47,6 +50,9 @@ import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.ScheduleRecordReads
 import com.software.sello.domain.port.ScheduleRecordsState
+import com.software.sello.presentation.carry.CarryCorrectionContent
+import com.software.sello.presentation.carry.CarryCorrectionList
+import com.software.sello.presentation.carry.CarryCorrectionText
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
@@ -89,11 +95,27 @@ sealed interface CatchUpNoticeState {
     /** What was recorded could not be read: never shown as nothing. */
     data object Failed : CatchUpNoticeState
 
-    /** [items] since the notice was last dismissed; none means there is no notice. */
-    data class Ready(val items: List<RecordedItem>, val today: LocalDate) : CatchUpNoticeState {
+    /**
+     * [items] since the notice was last dismissed; none means there is no notice. [carry] is
+     * what recording the payments did to carry chains, null when it reached none (CP18).
+     */
+    data class Ready(
+        val items: List<RecordedItem>,
+        val today: LocalDate,
+        val carry: CatchUpCarry? = null
+    ) : CatchUpNoticeState {
         val payments: Int get() = items.count { !it.income }
         val incomes: Int get() = items.count { it.income }
     }
+}
+
+/** What recording catch-up's payments did to carry chains (ADR 0020 CP18). */
+sealed interface CatchUpCarry {
+    /** Each month whose remaining or limit with carry moved, by category. */
+    data class Changed(val list: CarryCorrectionList) : CatchUpCarry
+
+    /** It could not be worked out: said so, never shown as no change (CP8). */
+    data object Failed : CatchUpCarry
 }
 
 /**
@@ -109,8 +131,11 @@ class CatchUpNoticeViewModel(
     private val categories: CategoryReads,
     clock: FinancialClock,
     private val audit: AuditClock,
-    private val money: MoneyFormatter
+    private val money: MoneyFormatter,
+    private val carryover: CarryoverReads
 ) : ViewModel() {
+    private val correctionText = CarryCorrectionText(money)
+
     private val attempts = MutableStateFlow(0)
     private val closing = MutableStateFlow(false)
 
@@ -161,7 +186,7 @@ class CatchUpNoticeViewModel(
             is Outcome.Failure -> return CatchUpNoticeState.Failed
         }
         return CatchUpNoticeState.Ready(
-            records.map { record ->
+            items = records.map { record ->
                 when (record) {
                     is ScheduleRecord.Payment -> {
                         val category = names[record.expense.categoryId]?.category
@@ -191,8 +216,36 @@ class CatchUpNoticeViewModel(
                     )
                 }
             },
-            today
+            today = today,
+            carry = carry(records, names.mapValues { it.value.category })
         )
+    }
+
+    /**
+     * The carry chains the recorded payments reach, derived from those still recorded
+     * (CP18): a payment deleted since is no longer in it.
+     */
+    private suspend fun carry(
+        records: List<ScheduleRecord>,
+        names: Map<CategoryId, Category>
+    ): CatchUpCarry? {
+        val payments = records.filterIsInstance<ScheduleRecord.Payment>().map { it.expense.id }
+        if (payments.isEmpty()) return null
+        val notice = when (val read = carryover.catchUpNotice(payments)) {
+            is Outcome.Failure -> return CatchUpCarry.Failed
+            is Outcome.Success -> read.value
+        }
+        val changed = notice.categories.filter {
+            it.months.isNotEmpty() || it.edited.isNotEmpty() ||
+                it.settled.isNotEmpty()
+        }
+        return if (changed.isEmpty()) {
+            null
+        } else {
+            CatchUpCarry.Changed(
+                correctionText.list(changed, names)
+            )
+        }
     }
 }
 
@@ -231,10 +284,16 @@ fun CatchUpNoticeBar(state: CatchUpNoticeState, onTimeout: () -> Unit, onView: (
         timeUp()
     }
     val count = ready.items.size
-    val message = when {
+    val recorded = when {
         ready.incomes == 0 -> pluralStringResource(R.plurals.catch_up_payments, count, count)
         ready.payments == 0 -> pluralStringResource(R.plurals.catch_up_incomes, count, count)
         else -> pluralStringResource(R.plurals.catch_up_both, count, count)
+    }
+    // A change of availability is never silent (CP18): Ver lists it.
+    val message = if (ready.carry is CatchUpCarry.Changed) {
+        stringResource(R.string.catch_up_carry_bar, recorded)
+    } else {
+        recorded
     }
     SelloNotice(
         message = message,
@@ -347,10 +406,38 @@ fun CatchUpRecordedScreen(
                         }
                     }
                 }
+                state.carry?.let { carry -> item { CatchUpCarrySlip(carry, onRetry) } }
             }
         }
     }
 }
 
+/** What recording the payments did to carry chains, or that it could not be worked out. */
+@Composable
+private fun CatchUpCarrySlip(carry: CatchUpCarry, onRetry: () -> Unit) {
+    when (carry) {
+        is CatchUpCarry.Changed -> Slip(
+            pinked = false,
+            modifier = Modifier.testTag(CATCH_UP_CARRY_TAG)
+        ) {
+            Text(
+                stringResource(R.string.catch_up_carry_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() }
+            )
+            CarryCorrectionContent(carry.list, changed = false, saved = true)
+        }
+
+        CatchUpCarry.Failed -> ErrorSlip(
+            message = stringResource(R.string.catch_up_carry_failed),
+            onRetry = onRetry,
+            modifier = Modifier.testTag(CATCH_UP_CARRY_TAG),
+            title = stringResource(R.string.catch_up_carry_failed_title),
+            icon = SelloIcon.Error
+        )
+    }
+}
+
+const val CATCH_UP_CARRY_TAG = "catch-up:carry"
 const val CATCH_UP_BAR_TAG = "catch-up:bar"
 const val CATCH_UP_LIST_TAG = "catch-up:list"

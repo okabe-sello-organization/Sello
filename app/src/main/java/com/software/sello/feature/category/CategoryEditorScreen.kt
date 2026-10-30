@@ -187,7 +187,21 @@ fun CategoryEditorScreen(
                     }
                 },
                 amount = { Limit(state, onAction) },
-                choices = { Said(state) },
+                choices = {
+                    Said(state)
+                    CarrySection(state, onAction)
+                    // Without the card (a past month), a carry refusal is said here.
+                    if (state.carry == null) {
+                        state.carryProblem?.let { problem ->
+                            state.targetMonth?.let { month ->
+                                FieldMessageText(
+                                    FieldMessage(carryProblemText(problem, state.name, month)),
+                                    Modifier.testTag(EDITOR_CARRY_PROBLEM_TAG)
+                                )
+                            }
+                        }
+                    }
+                },
                 action = { Action(state, onAction) },
                 keypad = {
                     if (!state.limitLocked) {
@@ -223,6 +237,7 @@ fun CategoryEditorScreen(
         )
     }
     state.archiveQuestion?.let { question -> ArchiveConfirmation(state.name, question, onAction) }
+    state.carryQuestion?.let { question -> CarryQuestionSlip(state, question, onAction) }
 }
 
 /**

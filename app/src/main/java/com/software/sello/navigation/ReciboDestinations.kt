@@ -55,6 +55,7 @@ import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
+import java.time.YearMonth
 
 /**
  * Recibo, the screens opened from it (every expense of a category, the budget adjustment, the
@@ -114,6 +115,11 @@ internal fun NavGraphBuilder.reciboDestinations(
             },
             onEditCategory = { id ->
                 navigation.navigate(CategoryEditRoute(id, state.selectedMonth.toString())) {
+                    launchSingleTop = true
+                }
+            },
+            onSetMonthLimit = { id, month ->
+                navigation.navigate(CategoryEditRoute(id, month.toString())) {
                     launchSingleTop = true
                 }
             }
@@ -236,6 +242,7 @@ private fun ReciboDestination(
     onOpenRecorded: () -> Unit,
     onOpenReserved: () -> Unit,
     onAdjustBudget: () -> Unit,
+    onSetMonthLimit: (String, YearMonth) -> Unit,
     onCreateCategory: () -> Unit
 ) {
     val recibo: ReciboViewModel = viewModel(factory = viewModels)
@@ -300,6 +307,7 @@ private fun ReciboDestination(
                         onEditExpense = onEditExpense,
                         onEditCategory = { onEditCategory(id) },
                         onShowAllExpenses = { onShowAllExpenses(id) },
+                        onSetMonthLimit = onSetMonthLimit,
                         showPastLimitAnnouncement = !announcements.loading &&
                             !announcements.preference.pastLimitSeen,
                         onDismissPastLimitAnnouncement = onDismissPastLimit,
@@ -314,11 +322,19 @@ private fun ReciboDestination(
                 onAction = { action ->
                     when (action) {
                         ReciboAction.CreateCategory -> onCreateCategory()
+
                         is ReciboAction.OpenCategory -> onShell(ShellAction.OpenCategory(action.id))
+
                         is ReciboAction.EditCategory -> onEditCategory(action.id)
+
                         ReciboAction.Retry -> Unit
+
                         ReciboAction.OpenReserved -> onOpenReserved()
+
                         ReciboAction.AdjustBudget -> onAdjustBudget()
+
+                        is ReciboAction.SetMonthLimit ->
+                            onSetMonthLimit(action.categoryId, action.month)
                     }
                     recibo.onAction(action)
                 },
