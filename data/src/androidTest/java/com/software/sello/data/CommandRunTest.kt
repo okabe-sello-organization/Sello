@@ -52,6 +52,25 @@ class CommandRunTest {
     }
 
     @Test
+    fun aRefusedCommitIsUnknownAndTheNextCommandOnTheSameHandleIsSaved() = runBlocking {
+        val database = files.open()
+
+        val refused = database.runCommand {
+            // A deferred check refuses the transaction only when it commits.
+            database.openHelper.writableDatabase.execSQL("PRAGMA defer_foreign_keys = ON")
+            database.expenseDao().insert(expense(100, 1, "2026-10-09", 1, 5_000).toEntity())
+        }
+        val next = database.runCommand {
+            database.categoryDao().insert(category(1, "Mercado").toEntity())
+        }
+
+        assertEquals(CommandRun.Unknown, refused)
+        assertEquals(CommandRun.Finished(Unit), next)
+        assertEquals(1, database.count("category"))
+        assertEquals(0, database.count("expense"))
+    }
+
+    @Test
     fun anyOtherArithmeticFaultIsNotDressedUpAsAStorageFailure() {
         val database = files.open()
 

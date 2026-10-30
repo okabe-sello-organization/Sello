@@ -426,6 +426,40 @@ class EntryBatchCommandContractTest {
     }
 
     @Test
+    fun afterAFailureAtTheCommitTheSameHandleChecksAndSavesTheReceiptWithoutARestart() =
+        runBlocking {
+            startWithCategories()
+            var once = true
+            ledger.whenAnIdIsTaken = {
+                if (once) {
+                    once = false
+                    raw("PRAGMA defer_foreign_keys = ON")
+                    raw("DELETE FROM category")
+                }
+            }
+            val unknown = ledger.expenseBatches.create(expenses())
+            ledger.whenAnIdIsTaken = {}
+            ledger.nextRecord = 102
+
+            val found = ledger.expenseBatches.find(receiptOp)
+            val retried = ledger.expenseBatches.create(expenses())
+
+            assertEquals(CommandOutcome.OutcomeUnknown(receiptOp), unknown)
+            assertEquals(Outcome.Success(null), found)
+            assertEquals(Committed(committedExpenses(3, 102, 103, 104), replayed = false), retried)
+            assertEquals(
+                listOf(
+                    storedExpense(102, 100, 1, 8_000, "Pan"),
+                    storedExpense(103, 101, 2, 30_000, null),
+                    storedExpense(104, 100, 3, 12_500, "Leche")
+                ),
+                expenseRows()
+            )
+            assertEquals(2L, ledger.long("SELECT COUNT(*) FROM category"))
+            assertEquals(3, ledger.revision())
+        }
+
+    @Test
     fun aCallerCancelledWhileSavingGetsTheCancellationAndRecoversTheReceipt() = runBlocking {
         startWithCategories()
         lateinit var caller: Job
