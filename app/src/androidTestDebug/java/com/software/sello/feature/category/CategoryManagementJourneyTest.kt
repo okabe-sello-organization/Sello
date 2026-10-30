@@ -6,7 +6,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -106,7 +108,9 @@ class CategoryManagementJourneyTest {
     }
 
     private fun edit() {
-        rule.awaitTag(CATEGORY_DETAIL_EDIT_TAG)
+        // The action shows as soon as the detail opens, but works only once its category
+        // has been read; a tap before that does nothing.
+        rule.await(hasTestTag(CATEGORY_DETAIL_EDIT_TAG) and isEnabled())
         rule.onNodeWithTag(CATEGORY_DETAIL_EDIT_TAG).assertIsDisplayed().performClick()
         rule.awaitText("Editar categoría")
         rule.awaitDescription("Nombre")
