@@ -34,6 +34,7 @@ Zone: America/Bogota for all. Amounts in pesos.
 | `metas@1` | Ahorro para metas | 1 Apr 2026 → 24 Oct 2026 | Goals with aportes, a retiro, a faded stamp, a target change, one marked lograda and one on Recibo |
 | `inversiones@1` | Inversiones con dólares | 3 May 2025 → 24 Oct 2026 | The v2 page's four investments over 18 months with values and dividends, and one in USD with a rate |
 | `pagos-fijos@1` | Pagos fijos y dos semanas fuera | 1 Jul 2026 → 24 Oct 2026 | Schedules with catch-up, a day-31 payment, a weekly one, a pause, a twice-monthly salary, two weeks away, reserved payments and Plan del mes |
+| `seis-meses@1` | Seis meses con todo | 1 Apr 2026 → 24 Oct 2026 | Someone who has used every feature for over six months: schedules, extra income, corrections, limit changes, an archived category, goals and investments in pesos and dollars |
 
 ### Un año normal (`un-ano@1`)
 
@@ -105,6 +106,46 @@ Checked by `HistoryLoadTest.fixedPaymentsAndTwoWeeksAway`:
   planned, 400.000 unassigned in the plan; recorded unassigned −1.600.000.
 - The gym on 31 July, 31 August and 30 September; the classes only on 10 July and 10
   August. September spent 2.285.000.
+
+### Seis meses con todo (`seis-meses@1`)
+
+Hogar 1.500.000, Mercado 800.000 (900.000 from July), Transporte 250.000, Salidas
+300.000 (600.000 for August only), Salud with no limit, Gimnasio 150.000, Mascota
+200.000, Tecnología 200.000 and Ocio 150.000, archived on 1 August.
+
+- **Schedules from 1 April:** rent 1.200.000 on the 5th, internet 95.000 on the 28th,
+  the gym 120.000 on the 15th (paused 1 July, resumed 1 September), a bus 30.000 every
+  Wednesday, Luna's food 90.000 every 28 days, a phone instalment 150.000 on the 20th
+  from 20 April to 20 September, and a quincena of 2.200.000 on the 15th and 30th.
+- **Extra income:** freelance 800.000 (20 May) and 650.000 (28 August), a transfer of
+  300.000 (24 July), passive income 150.000 (1 October).
+- **By hand:** Mercado twice a month, a meal out, Farmacia or the dentist some months,
+  Cine while Ocio is open. In September a meal entered twice is deleted and a Mercado
+  of 305.000 typed as 350.000 is corrected.
+- **Goals:** Viaje a Cartagena (4.000.000) 300.000 a month with a retiro of 400.000 on
+  10 August; Fondo de emergencia (6.000.000) 500.000 a month, chosen for Recibo in
+  October; Regalo de Navidad (600.000) 150.000 from May to August, lograda 1 September.
+- **Investments:** CDT Banco 5.000.000, valued 5.180.000 on 1 October; Fondo de
+  inversión 2.000.000 + 500.000 in May and July, valued 3.080.000 on 15 July, a retiro of
+  300.000 in September, valued 2.820.000 on 12 October; Acciones EE. UU. USD 500,00 on 1
+  May at 3.950,00, USD 200,00 more in June, a dividend of USD 4,20, valued USD 765,00 on
+  30 September. Dollar rates 4.025,00 (June), 4.100,75 (August), 4.050,50 (24 October).
+
+Checked by `HistoryLoadTest.sixMonthsOfEverything`:
+
+- October to the 24th: spent 1.200.000 + 120.000 + 3 × 30.000 + 90.000 + 750.000 +
+  230.000 + 45.000 = 2.525.000 of 3.500.000, 975.000 left; set aside 125.000 (internet
+  and the bus on the 28th), margin 850.000. Income 2.350.000, net −175.000,
+  unassigned −1.150.000; Plan del mes expects 2.200.000 on the 30th, 4.550.000 planned,
+  1.050.000 unassigned.
+- August: 3.020.000 of 3.950.000 (Ocio, archived that month, keeps its 150.000), 930.000
+  left; Salidas 60.000 left of its 600.000; income 5.050.000. September: 2.820.000,
+  680.000 left.
+- The gym on 15 April, May, June, September and October; six phone instalments, the
+  last on 20 September.
+- Viaje 1.400.000; Fondo de emergencia 3.500.000 on Recibo; Regalo 600.000, lograda.
+- CDT +180.000, +3,6 %; Fondo 2.820.000 of 12 October, +120.000, +4,0 %; Acciones
+  +USD 69,20; dólar a 4.050,50 del 24 oct.
 
 ## Tests
 
