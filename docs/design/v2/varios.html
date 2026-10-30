@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sello v2 · Anotar varios</title>
+  <link rel="stylesheet" href="sello.css">
+  <style>
+    /* Drawn at 412 × 914 dp, the size CI's emulator uses (the receipt needs the height). */
+    .phone{width:412px;height:914px}
+    .frame-card{width:412px}
+    .frame-card.wide{width:auto}
+
+    /* The receipt: a pinked slip between the bar and the chips. Lines scroll inside it; the foot stays. */
+    .rc{flex:1;min-height:0;display:flex;flex-direction:column;margin:0 12px 10px;padding:8px 12px 20px}
+    .rc-head{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:40px;flex:none}
+    .rc-head .t{display:grid;line-height:1.2}
+    .rc-head .t b{font-weight:800}
+    .rc-head .t small{color:var(--soft);font-size:.86em}
+    .rc-head .bad{display:flex;align-items:center;gap:6px;color:var(--loss);font-weight:700;font-size:.93em}
+    .rc-head .bad .icon{width:1.4em;height:1.4em;flex:none}
+    .rc-head .date-pill{margin-right:-6px}
+    .rc-lines{flex:1;min-height:0;overflow:auto;scrollbar-width:none;margin:2px -6px 0;padding:2px 6px;display:flex;flex-direction:column;gap:3px}
+    .rc-lines.fade-top{-webkit-mask:linear-gradient(180deg,transparent,#000 18px);mask:linear-gradient(180deg,transparent,#000 18px)}
+    .rc-lines.fade-bottom{-webkit-mask:linear-gradient(0deg,transparent,#000 18px);mask:linear-gradient(0deg,transparent,#000 18px)}
+    .rc-lines.fade-top.fade-bottom{-webkit-mask:linear-gradient(180deg,transparent,#000 18px,#000 calc(100% - 18px),transparent);mask:linear-gradient(180deg,transparent,#000 18px,#000 calc(100% - 18px),transparent)}
+    .rc-row{position:relative;flex:none;border-radius:12px;overflow:hidden}
+    .rc-line{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:2px 10px;width:100%;min-height:54px;padding:6px 10px 6px 8px;border:0;border-radius:12px;background:var(--paper);color:var(--ink);text-align:left;box-shadow:inset 0 -1px 0 var(--rule)}
+    .rc-row:last-child .rc-line{box-shadow:none}
+    .rc-line.hl{background:var(--alt);outline:2px solid var(--ink);outline-offset:-2px;box-shadow:none}
+    .rc-line.bad{outline:2px solid var(--loss);outline-offset:-2px;box-shadow:none}
+    .rc-mark{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:none}
+    .rc-mark .icon{width:20px;height:20px}
+    .rc-mark.cat{background:var(--brand);color:var(--paper)}
+    .rc-mark.gain{background:var(--gainsoft);color:var(--gain)}
+    .rc-mark.out{background:var(--dim);color:var(--soft)}
+    .rc-mark.val{background:var(--brandsoft);color:var(--onbrandsoft)}
+    .rc-mark.none{border:2px dashed var(--outline);color:var(--outline);font-weight:900;font-size:1.1em}
+    .rc-line.bad .rc-mark.none{border-color:var(--loss);color:var(--loss)}
+    .rc-txt{display:grid;min-width:0;line-height:1.25}
+    .rc-txt b{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .rc-txt b.soft{color:var(--soft);font-weight:600}
+    .rc-txt small{color:var(--soft);font-size:.86em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .rc-txt small.bad{color:var(--loss);font-weight:700;white-space:normal}
+    .rc-amt{font-weight:800;font-size:1.07em;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .rc-amt.gain{color:var(--gain)}
+    .rc-amt.ph{color:var(--outline)}
+    .rc-line .date-pill{grid-column:2/4;justify-self:start;margin:0;min-height:36px}
+    .rc-del{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;padding:0 18px;background:var(--loss);color:#fff;font-weight:800}
+    .app[data-theme=dark] .rc-del{color:#3a0a0d}
+    .rc-del .icon{width:1.4em;height:1.4em}
+    .rc .tear{margin:6px -12px 2px;flex:none}
+    .rc-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;min-height:46px}
+    .rc-foot .text-btn{margin-left:-4px}
+    .rc-foot .text-btn:disabled{color:var(--outline);opacity:.7}
+    .rc-total{display:flex;align-items:baseline;gap:8px;color:var(--soft);font-weight:600}
+    .rc-total b{font-size:1.35em;font-weight:900;color:var(--ink);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+    .rc-total b.gain{color:var(--gain)}
+    .entry-mid.rc-mid{flex:none;overflow:visible;padding-bottom:2px}
+    .rc-mid .note-pill{margin-top:8px;min-height:46px}
+    .rc-mid .chips.one-row{grid-template-rows:auto}
+    .rc-mid .skel{margin:0}
+    .rc-mid .read-fail{display:flex;align-items:center;gap:8px;min-height:36px;color:var(--soft);font-size:.93em}
+    .bar-title{flex:1;margin-left:4px;display:grid;line-height:1.2;min-width:0}
+    .bar-title b{font-size:1.2em;font-weight:800}
+    .bar-title small{color:var(--soft);font-size:.86em}
+    .varios-btn{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 12px 0 8px;border:0;border-radius:99px;background:var(--brandsoft);color:var(--onbrandsoft);font-weight:800;font-size:.93em;flex:none}
+    .varios-btn .icon{width:1.4em;height:1.4em}
+    .seg+.varios-btn{margin-left:8px}
+    .varios-btn:disabled{opacity:.45}
+    /* The review page's section headings must not reach the confirm slip's title. */
+    .review .section .app .confirm h2{margin:0 0 8px;font-size:1.4em}
+    .confirm-actions .go{border:0;background:var(--brand);color:var(--onbrand)}
+    .toast.low{bottom:300px}
+    .legend-line{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:#434e72;margin:0 0 10px}
+    .origin-foot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .spec{max-width:900px;margin:0 0 6px;padding-left:20px;font-size:13.5px;line-height:1.5;color:#262f52}
+    .open-list{max-width:900px;font-size:13.5px;line-height:1.5;color:#262f52}
+    .open-list li{margin-bottom:5px}
+    .grid-block{display:grid;gap:3px}
+    .app .cat-cell{display:flex;align-items:center;gap:10px;min-height:60px;padding:6px 0;min-width:0}
+  </style>
+</head>
+<body class="review">
+  <script src="icons.js?v=4"></script>
+  <header>
+    <h1><small>Sello v2 · E23 · SELLO-126 · pending the owner’s approval</small>Anotar varios</h1>
+    <form class="controls" onsubmit="return false" aria-label="Review controls">
+      <label>Ink<select id="ink"><option value="cobalt">Cobalto</option><option value="violet">Violeta</option></select></label>
+      <label>Theme<select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+    </form>
+  </header>
+  <div class="section">
+    <p class="lede"><b>For approval:</b> one bulk receipt for expenses, incomes, one goal and one investment, redrawn from the v1.1 <a href="../sello-spec.html#s-varios">Anotar varios and Varios movimientos</a> in the style of the locked <a href="entry.html">entry sheet</a>. A sheet, not a screen of its own: ✕ and the switch, a pinked <b>receipt</b> where the amount slip sits (the lines scroll inside it, the total stays at its foot), the chips and note row for the highlighted line, the action, the Sello pad. Saving, the failure and the unknown outcome say what entry says, and nothing offers undo after saving. Synthetic figures, drawn at 412 × 914 dp. The choices the ticket left open are in section 8.</p>
+    <h2>1 · Where it opens from</h2>
+    <p class="lede">A <b>Varios</b> pill takes the place of the empty slot in the Anotar sheet’s bar (expense and income alike). Each list a receipt adds to carries <b>Anotar varios</b> at its foot: a category, a goal, an investment and the income list. The receipts they open are in sections 2–5.</p>
+    <div class="frames" id="entries"></div>
+    <h2>2 · Anotar varios · gastos</h2>
+    <p class="lede">The loop: type an amount, optionally pick a category and a note, then <b>Otro renglón</b>; a new line copies the category above it. One date for the whole receipt, in its header. The button counts the lines with an amount.</p>
+    <div class="frames" id="expense"></div>
+    <h2>3 · Anotar varios · ingresos</h2>
+    <p class="lede">The Gasto / Ingreso switch sets the kind of the whole receipt: lines are never mixed. Amounts are gain green with a +. <b>Otro</b> asks the line’s source name through the note composer.</p>
+    <div class="frames" id="income"></div>
+    <h2>4 · Aportar varios · una meta</h2>
+    <p class="lede">From the goal. Each line has its own type (Aportar or Retirar) and date; the highlighted line carries its date pill. A new line copies the type and date above it. The total is what the goal gains: aportes minus retiros.</p>
+    <div class="frames" id="goal"></div>
+    <h2>5 · Varios movimientos · una inversión</h2>
+    <p class="lede">From the investment. Each line has one of the four types of the single movement and its own date. The foot adds only what puts money in or takes it out (<b>Aportado</b> = aportes − retiros): dividends and valuations do not add up with them. A USD investment’s lines and foot are in dollars, with the comma key.</p>
+    <div class="frames" id="invest"></div>
+    <h2>6 · After saving</h2>
+    <p class="lede">The sheet closes and the screen it was opened from shows one confirmation, ink on paper like entry’s, with its figures already updated. No undo. A wrong line is deleted afterwards from the list, with the usual six seconds.</p>
+    <div class="frames" id="saved"></div>
+    <h2>7 · More states</h2>
+    <div class="frames" id="more"></div>
+    <h2>8 · Open for the owner</h2>
+    <ul class="open-list" id="open"></ul>
+  </div>
+  <script src="kit.js"></script>
+  <script src="varios.js"></script>
+</body>
+</html>

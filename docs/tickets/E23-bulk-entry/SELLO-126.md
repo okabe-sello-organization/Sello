@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Ready
+- **Status:** In Progress
 - **Depends on:** None
 - **Gate:** G0
 
