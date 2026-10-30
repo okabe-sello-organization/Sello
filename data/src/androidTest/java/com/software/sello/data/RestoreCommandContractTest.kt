@@ -552,7 +552,9 @@ class RestoreCommandContractTest {
         whenStamped = { replacing.cancel() }
         runCatching { replacing.await() }
         whenStamped = {}
-        // Something already sits where the file would move to, so the rename fails.
+        // Something already sits where the file would move to, so the rename fails. The
+        // blocker also makes `restored.exists()` true, which stops `discard()` from deleting
+        // anything: this test cannot tell whether a failed rename discards the staging.
         val blocker = File(files.restoreFolder, "restored.json").apply { mkdirs() }
         File(blocker, "in-the-way").writeText("x")
         val kept = stagingFiles()

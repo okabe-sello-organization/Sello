@@ -592,10 +592,12 @@ class RestoreViewModelTest {
         restores.stagedGate = null
         restores.stagedAnswer = StagedLookup.Replaced(operation)
         restores.applyAnswer = done
+        val applied = restores.applied
         restored.onAction(RestoreAction.Check)
         runCurrent()
 
         assertEquals(RestoreStep.Restored(done), restored.state.value.step)
+        assertEquals(applied + 1, restores.applied)
         assertEquals(0, restores.replaced)
     }
 
