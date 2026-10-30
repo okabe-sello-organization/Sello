@@ -12,23 +12,47 @@ run only, the delegation, branches, pull requests, comments and merges described
 - **Orchestrator** (the owner's session): before dispatching anything, asks the owner
   every money, privacy, design or release decision the epic leaves open, and records
   the owner's own answers in the epic README's *Decisions* section (creating it if
-  missing). Then it dispatches one
-  implementer per ticket in dependency order, starts a fresh reviewer for every review
+  missing). Then it dispatches one planner per ticket in dependency order, dispatches
+  the implementer the planner's route names, starts a fresh reviewer for every review
   that [AGENTS.md](../../AGENTS.md#pull-requests-and-merging) requires, posts the
   findings, rules on disputes and reports to the owner. It writes no ticket code and
   owns the epic's status and order. When a check fails because of a defect already on
   `main`, it opens an issue, dispatches a fix pull request and tells the owner. It may
   start a successor ticket early on its predecessor's branch; that pull request waits
   until the predecessor merges.
-- **Implementer** (the model the owner picks: Claude Sonnet 5.5 at high effort, or
-  Claude Opus 5.5 at high effort for money, storage, recovery or other hard tickets;
-  own worktree; branch from `origin/main` unless stacked): delivers one ticket, opens the pull request, tells the orchestrator,
-  then looks after it: answers every finding and comment with a fix or a reason, fixes
-  red checks, and merges as below. It owns its branch and ticket file only, starts no
-  subagents and never counts its own review as approval.
+- **Planner** (Claude Opus 5.5: high effort for a ticket that needs the adversarial
+  review below, medium for any other; own worktree; writes nothing until it routes):
+  reads the ticket and the code, plans the change and routes it. It forwards the ticket
+  only when all of these hold; otherwise it implements the ticket itself:
+  - the ticket needs no adversarial review;
+  - the plan leaves no open choice: files, State and Action shapes, test cases with
+    hand-worked money values, and the components to reuse;
+  - the plan is clearly shorter than the code it describes.
+
+  To forward, it writes the plan to `~/.cache/sello-plans/SELLO-0NN.md`, never inside
+  a repository, and reports the route and that path to the orchestrator in one line.
+- **Implementer** (the planner itself, or Claude Sonnet 5.5 at high effort for a
+  forwarded ticket; own worktree; branch from `origin/main` unless stacked): delivers
+  one ticket, opens the pull request, tells the orchestrator, then looks after it:
+  answers every finding and comment with a fix or a reason, fixes red checks, and
+  merges as below. It owns its branch and ticket file only, starts no subagents and
+  never counts its own review as approval.
+  - A forwarded implementer gets the plan's path in its brief, never its text. When
+    the plan doesn't match the code, it stops and reports instead of improvising.
+  - Before opening the pull request it records the plan's decisions and the route
+    (planned by, implemented by) in the description, then deletes the plan file. The
+    orchestrator checks that the file is gone when the pull request is reported.
+  - The orchestrator hands a forwarded ticket to a Claude Opus 5.5 implementer at
+    medium effort (high for a plan that turned out to touch adversarial-review areas)
+    when its implementer reports a mismatch, or when a review asks twice for changes
+    beyond a small fix. Before the pull request opens it passes the plan's path;
+    after, the pull request and its findings.
 - **Reviewer** (Claude Opus 5.5, read-only): high effort for the adversarial review
   below, medium for the lighter review [AGENTS.md](../../AGENTS.md#pull-requests-and-merging)
-  asks of other code. Every agent is started with its model and effort set explicitly.
+  asks of other code.
+
+Every agent is started with its model and effort set explicitly. The owner may set
+other models for a run in the epic's *Decisions*; those win over this page.
 
 ### Merging in a run
 
