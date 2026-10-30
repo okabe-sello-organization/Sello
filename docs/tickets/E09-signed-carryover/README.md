@@ -32,3 +32,15 @@ orchestrated run started. SELLO-037 holds the policy they approve
 - **Design:** SELLO-041's design is delegated: concept screenshots in its pull request,
   reviewed by the adversarial reviewer. Merging approves.
 - **Release:** stop before SELLO-043; the owner starts the release.
+
+**Owner direction (2026-10-29):** the owner's answers when the run restarted for
+SELLO-041 and SELLO-042 under the new [AGENTS.md](../../../AGENTS.md).
+
+- **SELLO-041:** reduced motion and large-font/adaptive layouts are dropped from its
+  criteria (AGENTS.md: large text is not supported; reduced motion and tablet layouts
+  are separate tasks).
+- **SELLO-042:** the sandbox is debug-only, not a critical path, so it adds no device
+  tests. Scenarios, resume and checkpoints are tested on the JVM through the real
+  commands; release isolation uses the existing release-artifact check. Carry storage,
+  replay, restore and reset already run on real Room from SELLO-039 and SELLO-040.
+  Device sandbox journeys are a separate low-priority task (#248).
