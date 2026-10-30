@@ -47,6 +47,7 @@ import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentEdit
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.RecordGoalMovement
+import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.RestoreExpense
@@ -250,6 +251,7 @@ internal val GoalCommand.kind: OperationKind
         is EditGoal -> OperationKind.EditGoal
         is ChangeGoalTarget -> OperationKind.ChangeGoalTarget
         is RecordGoalMovement -> OperationKind.RecordGoalMovement
+        is RecordGoalMovements -> OperationKind.RecordGoalMovements
         is EditGoalMovement -> OperationKind.EditGoalMovement
         is DeleteGoalMovement -> OperationKind.DeleteGoalMovement
         is RestoreGoalMovement -> OperationKind.RestoreGoalMovement
@@ -288,6 +290,13 @@ internal fun inputDigest(command: GoalCommand): String {
 
         is RecordGoalMovement -> listOf(command.kind.name, command.date.toString()) +
             command.amount.fields + command.note.fields
+
+        // The count first, then each line in the order sent: the same lines in another
+        // order are another receipt, since the IDs come back in line order.
+        is RecordGoalMovements -> listOf(command.lines.size.toString()) +
+            command.lines.flatMap {
+                listOf(it.kind.name, it.date.toString()) + it.amount.fields + it.note.fields
+            }
 
         is EditGoalMovement -> listOf(
             command.movementId.value,

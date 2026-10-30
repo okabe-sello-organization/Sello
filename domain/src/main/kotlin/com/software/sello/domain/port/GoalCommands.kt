@@ -5,6 +5,7 @@ import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovementId
 import com.software.sello.domain.model.GoalMovementKind
+import com.software.sello.domain.model.GoalMovementLine
 import com.software.sello.domain.model.GoalName
 import com.software.sello.domain.model.GoalProgress
 import com.software.sello.domain.model.IconKey
@@ -75,6 +76,19 @@ data class RecordGoalMovement(
     val amount: TransactionAmount,
     val date: LocalDate,
     val note: Note?
+) : GoalEdit
+
+/**
+ * Up to [com.software.sello.domain.policy.GoalPolicy.MAX_RECEIPT_LINES] aportes and
+ * retiros on one receipt, all recorded or none. The lines are recorded after the history
+ * by date, a tie in line order, and checked in that order.
+ */
+data class RecordGoalMovements(
+    override val operationId: OperationId,
+    override val generation: Long,
+    override val goalId: GoalId,
+    override val expectedVersion: Long,
+    val lines: List<GoalMovementLine>
 ) : GoalEdit
 
 /** A correction in place (rule 6): the movement keeps its kind and recording position. */
@@ -164,6 +178,21 @@ sealed interface GoalRejection {
      */
     data class AboveSaved(val withdrawal: GoalMovementId, val available: Money) : GoalRejection
 
+    /** A receipt of several movements has no line or more than its limit; [count] were sent. */
+    data class LineCount(val count: Int) : GoalRejection
+
+    /** The receipt's line [line], by its 0-based position as sent, is dated after [today]. */
+    data class LineFutureDate(val line: Int, val today: LocalDate) : GoalRejection
+
+    /** The receipt's line [line] has a date that cannot be stored. */
+    data class LineInvalidDate(val line: Int) : GoalRejection
+
+    /**
+     * The retiro on the receipt's line [line] would take more than the [available] saved
+     * before it: the history, then the receipt's lines dated earlier or on an earlier line.
+     */
+    data class LineAboveSaved(val line: Int, val available: Money) : GoalRejection
+
     /** A total would not fit an exact amount. */
     data object Unrepresentable : GoalRejection
 
@@ -177,9 +206,17 @@ sealed interface GoalRejection {
 /**
  * A committed goal change and its receipt. [change] says which stamps it earned or lit
  * again, for a celebration; it is null for a replay, which is never celebrated again,
- * and for changes that cannot earn one.
+ * and for changes that cannot earn one. For [RecordGoalMovements] it is one change for
+ * the whole receipt. [movementIds] are the movements [RecordGoalMovements] recorded, in
+ * line order, for that command and its replay; empty for every other change and when the
+ * receipt is found by asking, since its lines are not kept with it.
  */
-data class CommittedGoal(val receipt: OperationReceipt, val goalId: GoalId, val change: GoalChange?)
+data class CommittedGoal(
+    val receipt: OperationReceipt,
+    val goalId: GoalId,
+    val change: GoalChange?,
+    val movementIds: List<GoalMovementId> = emptyList()
+)
 
 typealias GoalCommandOutcome = CommandOutcome<CommittedGoal, GoalRejection>
 

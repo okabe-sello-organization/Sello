@@ -10,6 +10,7 @@ import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementId
 import com.software.sello.domain.model.GoalMovementKind
+import com.software.sello.domain.model.GoalMovementLine
 import com.software.sello.domain.model.GoalName
 import com.software.sello.domain.model.GoalOverview
 import com.software.sello.domain.model.GoalPlace.Half
@@ -894,6 +895,75 @@ class GoalPolicyTest {
         assertEquals(
             goal.progress(),
             GoalPolicy.withTarget(goal.history(), amount(3_000_000), today).valueOrFail()
+        )
+    }
+
+    // ---- A receipt of several movements (SELLO-128) ----
+
+    private fun line(kind: GoalMovementKind, pesos: Long, date: LocalDate) =
+        GoalMovementLine(kind, amount(pesos), date, null)
+
+    private fun aporteLine(pesos: Long, date: LocalDate) =
+        line(GoalMovementKind.Contribution, pesos, date)
+
+    private fun retiroLine(pesos: Long, date: LocalDate) =
+        line(GoalMovementKind.Withdrawal, pesos, date)
+
+    /** Records [lines] after the history in the order the policy gives, as storage does. */
+    private fun Recorder.receipt(lines: List<GoalMovementLine>) {
+        GoalPolicy.recordingOrder(lines).map(lines::get).forEach {
+            when (it.kind) {
+                GoalMovementKind.Contribution -> aporte(it.amount.money.minorUnits, it.date)
+                GoalMovementKind.Withdrawal -> retiro(it.amount.money.minorUnits, it.date)
+            }
+        }
+    }
+
+    @Test
+    fun aReceiptsLinesAreRecordedByDateATieInLineOrder() {
+        val lines = listOf(
+            aporteLine(1_000, day(10, 9)),
+            aporteLine(2_000, day(8, 1)),
+            retiroLine(500, day(9, 15)),
+            aporteLine(3_000, day(8, 1))
+        )
+
+        assertEquals(listOf(1, 3, 2, 0), GoalPolicy.recordingOrder(lines))
+    }
+
+    @Test
+    fun aRetiroUsesAnAporteOfTheSameReceiptDatedBeforeItOnALaterLine() {
+        // 500.000 on 1 September, then 200.000 out on 10 September: 300.000 saved, 10 %.
+        val goal = viaje().apply {
+            receipt(listOf(retiroLine(200_000, day(9, 10)), aporteLine(500_000, day(9, 1))))
+        }
+
+        val progress = goal.progress()
+        assertEquals(Money.cop(300_000), progress.saved)
+        assertEquals(10L, progress.percentage)
+    }
+
+    @Test
+    fun aRetiroDatedBeforeTheReceiptsAporteFindsNothingSavedYet() {
+        val goal = viaje().apply {
+            receipt(listOf(aporteLine(500_000, day(9, 10)), retiroLine(200_000, day(9, 1))))
+        }
+
+        val refusal = goal.refusal() as GoalHistoryError.WithdrawalAboveSaved
+        assertEquals(Money.cop(0), refusal.available)
+    }
+
+    @Test
+    fun aWholeReceiptEarnsItsStampsAsOneChange() {
+        // 0 → 750.000 → 1.500.000 of 3.000.000: the quarter and the half, both at once.
+        val before = viaje().progress()
+        val goal = viaje().apply {
+            receipt(listOf(aporteLine(750_000, day(9, 1)), aporteLine(750_000, day(10, 1))))
+        }
+
+        assertEquals(
+            GoalChange(listOf(Quarter, Half), emptyList(), false),
+            GoalPolicy.change(before, goal.progress())
         )
     }
 

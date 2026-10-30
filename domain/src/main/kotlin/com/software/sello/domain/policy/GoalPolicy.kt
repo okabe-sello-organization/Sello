@@ -9,6 +9,7 @@ import com.software.sello.domain.model.GoalHistoryError
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementKind
+import com.software.sello.domain.model.GoalMovementLine
 import com.software.sello.domain.model.GoalOverview
 import com.software.sello.domain.model.GoalPace
 import com.software.sello.domain.model.GoalPlace
@@ -37,6 +38,9 @@ object GoalPolicy {
 
     /** How many months Aportes por mes shows at most. */
     const val CHART_MONTHS = 6
+
+    /** How many lines one receipt of several movements may hold. */
+    const val MAX_RECEIPT_LINES = 30
 
     /** The history replayed in recording order, and the event that first reached each place. */
     private class Replay(
@@ -171,6 +175,15 @@ object GoalPolicy {
         }
         return progress(history.copy(events = events))
     }
+
+    /**
+     * The 0-based positions of a receipt's [lines] in the order they are recorded after
+     * the history: by date, a tie in line order. Stamps and the check that no retiro takes
+     * more than is saved follow this order, so a retiro may use an aporte of the same
+     * receipt dated before it.
+     */
+    fun recordingOrder(lines: List<GoalMovementLine>): List<Int> =
+        lines.indices.sortedWith(compareBy({ lines[it].date }, { it }))
 
     /** What [after] changed against [before]: a goal with no [before] earned nothing yet. */
     fun change(before: GoalProgress?, after: GoalProgress): GoalChange {

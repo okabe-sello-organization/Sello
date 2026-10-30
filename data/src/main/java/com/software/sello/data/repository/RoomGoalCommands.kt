@@ -50,11 +50,13 @@ import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalUndoOffer
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.RecordGoalMovement
+import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.UndoGoalCompletion
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 import kotlin.time.Duration
 
 /**
@@ -141,6 +143,8 @@ class RoomGoalCommands internal constructor(
 
         is RecordGoalMovement -> database.runOutcome(command.operationId) { decide(command) }
 
+        is RecordGoalMovements -> database.runOutcome(command.operationId) { decide(command) }
+
         is EditGoalMovement -> database.runOutcome(command.operationId) { decide(command) }
 
         is DeleteGoal -> database.runOutcome(command.operationId) { decide(command) }
@@ -148,12 +152,18 @@ class RoomGoalCommands internal constructor(
         is FeatureGoal -> database.runOutcome(command.operationId) { decide(command) }
     }
 
-    private fun StoredReceipt.committed(change: GoalChange?) =
-        CommittedGoal(receipt, checkNotNull(goalId) { "Not a goal receipt" }, change)
+    private fun StoredReceipt.committed(
+        change: GoalChange?,
+        movementIds: List<GoalMovementId> = emptyList()
+    ) = CommittedGoal(receipt, checkNotNull(goalId) { "Not a goal receipt" }, change, movementIds)
 
-    /** Steps 1 and 2 of every command. [proceed] runs only for an operation not seen before. */
+    /**
+     * Steps 1 and 2 of every command. [proceed] runs only for an operation not seen
+     * before; a replay is [replayed] from its receipt.
+     */
     private suspend inline fun starting(
         command: GoalCommand,
+        replayed: (StoredReceipt) -> CommittedGoal = { it.committed(null) },
         proceed: (FinancialProfile) -> GoalCommandOutcome
     ): GoalCommandOutcome {
         val profile = database.proceedOr(
@@ -161,7 +171,7 @@ class RoomGoalCommands internal constructor(
             command.generation,
             command.kind,
             inputDigest(command),
-            { it.committed(null) }
+            replayed
         ) { return it }
         return proceed(profile)
     }
@@ -409,6 +419,99 @@ class RoomGoalCommands internal constructor(
             val receipt = commit(profile, command, goal.row.id, now)
             Committed(receipt.committed(GoalPolicy.change(goal.progress, after)), replayed = false)
         }
+
+    /**
+     * The movements a receipt records, in line order. They are made from the operation
+     * and the line's position, never drawn, so a replay names the same movements without
+     * a column to keep them in; one operation commits once, so they are new.
+     */
+    private fun movementIds(command: RecordGoalMovements): List<GoalMovementId> =
+        command.lines.indices.map { line ->
+            val name = "${command.kind.key}:${command.operationId.value}:$line"
+            when (
+                val id = GoalMovementId.of(
+                    UUID.nameUUIDFromBytes(name.toByteArray(Charsets.UTF_8)).toString()
+                )
+            ) {
+                is Outcome.Success -> id.value
+                is Outcome.Failure -> error("A name-based UUID is always canonical")
+            }
+        }
+
+    /**
+     * Every line is checked before the first write: the count, each date in line order,
+     * then the history with the lines in recording order, so the first retiro that takes
+     * more than is saved is named by its line. One version, one revision and one receipt
+     * for the whole receipt, and one change worked out after its last line.
+     */
+    private suspend fun decide(command: RecordGoalMovements): GoalCommandOutcome {
+        val ids = movementIds(command)
+        return starting(command, { it.committed(null, ids) }) { profile ->
+            if (command.lines.size !in 1..GoalPolicy.MAX_RECEIPT_LINES) {
+                return Rejected(Specific(GoalRejection.LineCount(command.lines.size)))
+            }
+            val goal = when (val load = load(command)) {
+                is Load.Found -> load.goal
+                is Load.Refused -> return load.outcome
+            }
+            command.lines.forEachIndexed { line, entry ->
+                when (val refused = dateRejection(entry.date)) {
+                    null -> Unit
+
+                    is GoalRejection.FutureDate ->
+                        return Rejected(Specific(GoalRejection.LineFutureDate(line, refused.today)))
+
+                    else -> return Rejected(Specific(GoalRejection.LineInvalidDate(line)))
+                }
+            }
+            val now = audit.now()
+            val recordedOn = today()
+            var sequence = goal.row.nextSequence
+            val movements = GoalPolicy.recordingOrder(command.lines).map { line ->
+                val entry = command.lines[line]
+                val movement = GoalMovement(
+                    id = ids[line],
+                    kind = entry.kind,
+                    amount = entry.amount,
+                    date = entry.date,
+                    sequence = sequence,
+                    recordedOn = recordedOn,
+                    note = entry.note,
+                    version = 1,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                sequence = nextCounter(sequence, GoalEntity.TABLE, goal.row.id, "next_sequence")
+                movement
+            }
+            val history = goal.history.copy(events = goal.history.events + movements)
+            val after = when (val worked = checked(history)) {
+                is Outcome.Success -> worked.value
+
+                is Outcome.Failure -> {
+                    val reason = worked.error
+                    val above = (reason as? Specific)?.reason as? GoalRejection.AboveSaved
+                    val line = above?.let { ids.indexOf(it.withdrawal) } ?: -1
+                    return Rejected(
+                        if (above != null && line >= 0) {
+                            Specific(GoalRejection.LineAboveSaved(line, above.available))
+                        } else {
+                            reason
+                        }
+                    )
+                }
+            }
+            movements.forEach {
+                database.goalDao().insertEvent(it.toEntity(goal.history.goal.id))
+            }
+            write(goal.row, now, goal.row.copy(nextSequence = sequence))
+            val receipt = commit(profile, command, goal.row.id, now)
+            Committed(
+                receipt.committed(GoalPolicy.change(goal.progress, after), ids),
+                replayed = false
+            )
+        }
+    }
 
     /** The movement [id] of [goal], as stored, or why it cannot be changed. */
     private suspend fun movement(
