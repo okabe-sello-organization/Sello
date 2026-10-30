@@ -26,8 +26,8 @@ Extend the existing developer tooling rather than creating a second simulation e
   customer histories are never manipulated by sandbox commands.
 
 ### Tests
-Real-Room command/replay/checkpoint suites and connected sandbox journeys before/
-after restart, interruption, restoration and reset. Assert independently reviewed
+JVM command/replay/checkpoint suites through the real commands before/after restart,
+interruption, restoration and reset; no new device tests (see the epic's Decisions). Assert independently reviewed
 exact snapshot/graph values; no arbitrary sleeps or fabricated financial success; G2.
 
 ### Working checkpoint
@@ -47,8 +47,8 @@ audit and monotonic clocks remain distinct.
    step only the injected financial clock.
 4. Expose existing sandbox progress/read failures and exact graph/snapshot provenance;
    document reset/replay and isolate scenario storage.
-5. Execute replay/reopen/restore/reset device cases and release artifact isolation;
-   run G2 and publish reusable regression/runbook evidence.
+5. Execute replay/reopen/restore/reset cases on the JVM and the release-artifact
+   isolation check; run G2 and publish reusable regression/runbook evidence.
 
 ### Concrete cases and pitfalls
 - A scenario that writes precomputed carry/graph arrays cannot prove production replay.
@@ -56,5 +56,5 @@ audit and monotonic clocks remain distinct.
 - Month stepping alone cannot serve as proof of real audit/undo timing correctness.
 
 ### Verification recipe
-Run carryover scenario regression tests, connected sandbox journeys and G2. Retain
+Run carryover scenario regression tests and G2. Retain
 scenario IDs, reviewed expected values, real receipt/reopen checkpoints and release checks.

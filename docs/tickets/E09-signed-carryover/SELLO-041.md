@@ -24,13 +24,13 @@ restoration. Reusable primitives and real catalog examples follow Sello's visual
   mode and existing journeys remain usable; labels never claim a verified bank balance.
 - Historical corrections expose the approved downstream impact before confirmation
   and refresh one consistent revision after commit. Draft/version conflicts recover.
-- Loading/empty/error/busy/restored states, themes, reduced motion and large-font/adaptive
-  layouts work; catalog fixtures/controls stay outside customer artifacts.
+- Loading/empty/error/busy/restored states and themes work; catalog fixtures/controls
+  stay outside customer artifacts.
 
 ### Tests
 ViewModel and connected Compose flows for activation/transitions, exact breakdown,
 historical impact, duplicate submission, stale draft, read/commit errors and recreation.
-TalkBack/large-font/adaptive/theme checks and actual catalog interactions; G2.
+TalkBack/theme checks and actual catalog interactions; G2.
 
 ### Working checkpoint
 Carryover is now a complete customer journey with recovery support, not a toggle
