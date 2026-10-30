@@ -1000,14 +1000,18 @@ class RestoreCommandContractTest {
         assertEquals(emptyList<String>(), stagingFiles())
     }
 
+    /**
+     * Confirmed once already, then refused as stale, and the process died taking the mark
+     * back before its rename: confirming again rewrites nothing, so no write replaces it.
+     */
     @Test
     fun aConfirmationCutShortLeavesNoCopyOfTheManifestOnceReplaced() = runBlocking {
         currentHistory()
         val staged = stage()
-        copyLeftOf("staged.properties", "operation=${staged.operationId.value}\nattempted=true\n")
-        ledger.reopen()
+        diedWhileReplacing(staged)
+        copyLeftOf("staged.properties", "operation=${staged.operationId.value}\n")
 
-        assertEquals(StagedLookup.Waiting(staged, attempted = false), restores().staged())
+        assertEquals(StagedLookup.Waiting(staged, attempted = true), restores().staged())
         assertTrue(restores().replace(staged) is RestoreOutcome.Restored)
         assertEquals(emptyList<String>(), stagingFiles())
     }
@@ -1024,18 +1028,128 @@ class RestoreCommandContractTest {
         assertEquals(emptyList<String>(), stagingFiles())
     }
 
+    /**
+     * Every preference was applied and the process died marking the notice before its
+     * rename. After the restart the notice cannot be marked, so no write replaces the copy.
+     */
     @Test
     fun anAppliedGroupCutShortLeavesNoCopyOnceEveryPreferenceIsApplied() = runBlocking {
         currentHistory()
-        preferences.failAppearance = true
+        preferences.failOrdering = true
+        notice.fail = true
         restores().replace(stage())
-        copyLeftOf("applied", "ordering\nnotice\nappearance")
+        // Then ordering was applied, and the death came marking the notice.
+        val applied = File(files.restoreFolder, "applied")
+        applied.appendText("\nordering")
+        copyLeftOf("applied", "${applied.readText()}\nnotice")
         ledger.reopen()
 
-        preferences.failAppearance = false
+        preferences.failOrdering = false
         val done = restores().applyPending()
 
         assertEquals(PendingPreferences(null, null), done?.preferences)
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun aFileThatCannotTakeItsPlaceLeavesNoCopyOfTheBackupBehind() = runBlocking {
+        currentHistory()
+        // Something sits where the staged file goes, so the copy cannot be renamed over it.
+        val blocker = File(files.restoreFolder, "staged.json").apply { mkdirs() }
+        File(blocker, "in-the-way").writeText("x")
+
+        assertEquals(Outcome.Failure(StageFailure.Storage), restores().stage(g01()))
+        assertFalse(File(files.restoreFolder, "staged.json.tmp").exists())
+    }
+
+    /** The manifest without its `stagedAt`: its operation still reads, the rest does not. */
+    private fun manifestCutShort() {
+        val key = File(files.restoreFolder, "staged.properties")
+        key.writeText(key.readLines().filterNot { it.startsWith("stagedAt=") }.joinToString("\n"))
+    }
+
+    @Test
+    fun aManifestThatCannotBeReadWholeIsKeptWhileItsReplacementCommitted() = runBlocking {
+        currentHistory()
+        committedBeforeTheRename()
+        manifestCutShort()
+        val kept = stagingFiles()
+
+        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(kept, stagingFiles())
+    }
+
+    @Test
+    fun aManifestThatCannotBeReadWholeIsKeptWhileItsReceiptCannotBeRead() = runBlocking {
+        currentHistory()
+        stage()
+        manifestCutShort()
+        val kept = stagingFiles()
+        ledger.database.openHelper.writableDatabase
+            .execSQL("ALTER TABLE operation_receipt RENAME TO operation_receipt_away")
+        ledger.reopen()
+
+        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(kept, stagingFiles())
+    }
+
+    @Test
+    fun aManifestThatCannotBeReadWholeIsClearedOnceItsReplacementIsKnownNotCommitted() =
+        runBlocking {
+            currentHistory()
+            stage()
+            manifestCutShort()
+
+            assertEquals(StagedLookup.None, restores().staged())
+            assertEquals(emptyList<String>(), stagingFiles())
+        }
+
+    /** A clean-up cut short by an earlier version, then a file staged by that version too. */
+    @Test
+    fun anAppliedListBesideAFileAnEarlierVersionStagedIsNotThisRestores() = runBlocking {
+        cleanUpDue()
+        diedInTheCleanUp("applied", "staged.properties")
+        val stale = File(files.restoreFolder, "applied").readText()
+        val staged = stage(g01(other))
+        File(files.restoreFolder, "applied").writeText(stale)
+        ledger.reopen()
+        val marks = notice.marks.size
+
+        assertTrue(restores().replace(staged) is RestoreOutcome.Restored)
+
+        assertEquals(
+            listOf<Any>(
+                ThemePreference.Light,
+                InkPreference.Cobalto,
+                CategoryOrder.Limit,
+                CategoryOrderDirection.Descending
+            ),
+            preferences.written.takeLast(4)
+        )
+        assertEquals(marks + 1, notice.marks.size)
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    /** Committed before the rename, beside an earlier replacement's `applied` list. */
+    @Test
+    fun aReplacementFoundCommittedAppliesItsOwnPreferencesBesideAnOldAppliedList() = runBlocking {
+        currentHistory()
+        val staged = committedBeforeTheRename()
+        File(files.restoreFolder, "applied").writeText("appearance\nordering\nnotice")
+
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertTrue(restores().applyPending()!!.preferences.done)
+
+        assertEquals(
+            listOf<Any>(
+                ThemePreference.Dark,
+                InkPreference.Violeta,
+                CategoryOrder.Alphabetical,
+                CategoryOrderDirection.Ascending
+            ),
+            preferences.written
+        )
+        assertEquals(1, notice.marks.size)
         assertEquals(emptyList<String>(), stagingFiles())
     }
 

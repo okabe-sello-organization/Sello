@@ -105,7 +105,10 @@ fun RestoreSection(state: RestoreState, onAction: (RestoreAction) -> Unit) {
 
         is RestoreStep.Unknown -> ErrorSlip(
             title = stringResource(R.string.restore_unknown_title),
-            message = stringResource(R.string.restore_unknown_body),
+            message = listOfNotNull(
+                stringResource(R.string.restore_unknown_body),
+                chosenSetAside(step.chosenSetAside)
+            ).joinToString("\n\n"),
             retryLabel = stringResource(
                 if (step.checking) {
                     R.string.restore_unknown_checking
@@ -121,11 +124,17 @@ fun RestoreSection(state: RestoreState, onAction: (RestoreAction) -> Unit) {
         is RestoreStep.Restored -> RestoredSlip(
             step.outcome,
             step.applying,
+            note = chosenSetAside(step.chosenSetAside),
             onApply = { onAction(RestoreAction.ApplyPreferences) },
             onLeave = { onAction(RestoreAction.Leave) }
         )
     }
 }
+
+/** That a file chosen meanwhile was not checked, if it was set aside. */
+@Composable
+private fun chosenSetAside(setAside: Boolean): String? =
+    if (setAside) stringResource(R.string.restore_chosen_set_aside) else null
 
 /** Why a preview is shown again, if it is. */
 private fun RestoreStep.Previewing.note(): Int? = when {

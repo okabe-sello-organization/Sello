@@ -132,7 +132,10 @@ class RestoreViewModelTest {
 
         choose(model)
 
-        assertEquals(RestoreStep.Unknown(operation), model.state.value.step)
+        assertEquals(
+            RestoreStep.Unknown(operation, chosenSetAside = true),
+            model.state.value.step
+        )
         assertEquals(0, restores.replaced)
     }
 
@@ -145,19 +148,114 @@ class RestoreViewModelTest {
 
         choose(model)
 
-        assertEquals(RestoreStep.Restored(done), model.state.value.step)
+        assertEquals(
+            RestoreStep.Restored(done, chosenSetAside = true),
+            model.state.value.step
+        )
         assertEquals(0, restores.replaced)
     }
 
     @Test
-    fun aFileRefusedForAnEarlierOneThatIsGoneByTheLookSaysNothingWasRestored() = runTest {
+    fun aFileRefusedAgainAfterTheEarlierOneIsGoneSaysNothingWasRestored() = runTest {
         restores.stageAnswer = Outcome.Failure(StageFailure.Unsettled)
         val (model) = model()
 
         choose(model)
 
         assertEquals(RestoreStep.Failed, model.state.value.step)
+        assertEquals(List(2) { 2_297 }, restores.staged)
         assertEquals(0, restores.replaced)
+    }
+
+    private val chosen = staged.copy(operationId = otherOperation)
+
+    @Test
+    fun aFileRefusedForAnEarlierOneFoundNotReplacedIsStagedAgainNeverTheEarlierOne() = runTest {
+        val (model) = model()
+        restores.stagedAnswer = StagedLookup.Waiting(staged, attempted = true)
+        restores.stageAnswers += listOf(
+            Outcome.Failure(StageFailure.Unsettled),
+            Outcome.Success(chosen)
+        )
+
+        choose(model)
+
+        assertEquals(RestoreStep.Previewing(chosen), model.state.value.step)
+        assertEquals(List(2) { 2_297 }, restores.staged)
+    }
+
+    @Test
+    fun anEarlierFileFoundNotReplacedIsNeverPreviewedForANewChoice() = runTest {
+        val (model) = model()
+        restores.stagedAnswer = StagedLookup.Waiting(staged, attempted = true)
+        restores.stageAnswer = Outcome.Failure(StageFailure.Unsettled)
+
+        choose(model)
+
+        assertEquals(RestoreStep.Failed, model.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun aReplacementStillPendingIsShownInsteadOfStagingTheChosenFile() = runTest {
+        val (model) = model()
+        val pending = done.copy(preferences = PendingPreferences(AppearancePreference(), null))
+        restores.pendingAnswer = pending
+        restores.stageAnswer = Outcome.Success(staged)
+
+        choose(model)
+
+        assertEquals(pending, (model.state.value.step as RestoreStep.Restored).outcome)
+        assertTrue(restores.staged.isEmpty())
+    }
+
+    @Test
+    fun theSetAsideNoteStaysWhileTheEarlierRestoreIsAppliedOrChecked() = runTest {
+        val (model) = model()
+        val pending = done.copy(preferences = PendingPreferences(AppearancePreference(), null))
+        restores.pendingAnswer = pending
+        choose(model)
+        assertEquals(RestoreStep.Restored(pending, chosenSetAside = true), model.state.value.step)
+
+        restores.applyAnswer = done
+        model.onAction(RestoreAction.ApplyPreferences)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done, chosenSetAside = true), model.state.value.step)
+    }
+
+    @Test
+    fun aCheckAfterASetAsideNeverPreviewsTheEarlierFile() = runTest {
+        restores.stageAnswer = Outcome.Failure(StageFailure.Unsettled)
+        val (model) = model()
+        restores.stagedAnswer = StagedLookup.Unknown(operation)
+        choose(model)
+        assertEquals(
+            RestoreStep.Unknown(operation, chosenSetAside = true),
+            model.state.value.step
+        )
+
+        restores.stagedAnswer = StagedLookup.Waiting(staged)
+        model.onAction(RestoreAction.Check)
+        runCurrent()
+
+        assertEquals(RestoreStep.Failed, model.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun aCheckAfterASetAsideThatFindsItRestoredStillSaysSo() = runTest {
+        restores.stageAnswer = Outcome.Failure(StageFailure.Unsettled)
+        val (model) = model()
+        restores.stagedAnswer = StagedLookup.Unknown(operation)
+        choose(model)
+
+        restores.stagedAnswer = StagedLookup.Replaced(operation)
+        restores.applyAnswer = done
+        model.onAction(RestoreAction.Check)
+        runCurrent()
+
+        assertEquals(RestoreStep.Restored(done, chosenSetAside = true), model.state.value.step)
     }
 
     @Test
@@ -833,7 +931,7 @@ class RestoreViewModelTest {
         startUp.complete(Unit)
         runCurrent()
 
-        assertEquals(RestoreStep.Restored(done), model.state.value.step)
+        assertEquals(RestoreStep.Restored(done, chosenSetAside = true), model.state.value.step)
         assertEquals(1, committed.written)
         assertEquals(1, read.size)
     }

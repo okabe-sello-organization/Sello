@@ -193,7 +193,7 @@ class RoomRestores(
             // A crash came between the commit and the rename that follows it. Replaced
             // only once [pending] can read it; otherwise it stays to look at again.
             true -> {
-                val moved = io { staged.renameTo(restored) && restored.isFile }
+                val moved = io { moveToRestored() && restored.isFile }
                 return if (moved) {
                     StagedLookup.Replaced(manifest.operation)
                 } else {
@@ -223,6 +223,16 @@ class RoomRestores(
         )
     }
 
+    /**
+     * The staged file becomes the restored one. Until then an `applied` list can only be
+     * an earlier replacement's, left by a clean-up cut short, even one an earlier version
+     * staged beside; it is not this one's.
+     */
+    private fun moveToRestored(): Boolean {
+        if (!restored.exists()) clear(applied)
+        return staged.renameTo(restored)
+    }
+
     override suspend fun discard() {
         io {
             if (!restored.exists()) {
@@ -236,8 +246,14 @@ class RoomRestores(
      * With no replacement pending and no usable staging, what is in the folder is what a
      * stage, discard or clean-up cut short left: a file without its manifest or the
      * reverse, an `applied` list, temporary copies. None says what became of a replacement.
+     * A manifest beside its file that cannot be read whole is not a leftover: it is kept
+     * unless the operation it names is known not to have committed.
      */
     private suspend fun clearLeftovers() {
+        if (io { manifest.exists() && staged.exists() }) {
+            val operation = io { manifestOperation() } ?: return
+            if (committed(operation) != false) return
+        }
         io {
             if (!restored.exists()) {
                 clear(staged)
@@ -258,7 +274,7 @@ class RoomRestores(
         return when (run) {
             is CommandRun.Finished -> when (run.value) {
                 Replacement.Done, Replacement.AlreadyDone -> {
-                    io { this.staged.renameTo(restored) }
+                    io { moveToRestored() }
                     applyPending() ?: RestoreOutcome.Restored(
                         contents.financial.summary(),
                         PendingPreferences(null, null)
@@ -568,6 +584,13 @@ class RoomRestores(
         }
     }
 
+    /** The operation the manifest names, if it names a well-formed one. */
+    private fun manifestOperation(): OperationId? {
+        val properties = Properties().apply { manifest.inputStream().use(::load) }
+        return (OperationId.of(properties.getProperty(OPERATION).orEmpty()) as? Outcome.Success)
+            ?.value
+    }
+
     private suspend fun readManifest(): Manifest? = io {
         if (!manifest.exists() || !staged.exists()) return@io null
         val properties = Properties().apply { manifest.inputStream().use(::load) }
@@ -636,15 +659,20 @@ class RoomRestores(
     /** File work off the main thread; any I/O error is null or false, never a crash. */
     private suspend fun <T> io(block: () -> T): T = withContext(dispatchers.io) { block() }
 
-    private fun writeAtomically(target: File, bytes: ByteArray): Boolean = try {
+    /** A write that fails takes its temporary copy with it, which may hold part of a backup. */
+    private fun writeAtomically(target: File, bytes: ByteArray): Boolean {
         val temporary = target.temporary()
-        FileOutputStream(temporary).use { stream ->
-            stream.write(bytes)
-            stream.fd.sync()
+        val written = try {
+            FileOutputStream(temporary).use { stream ->
+                stream.write(bytes)
+                stream.fd.sync()
+            }
+            temporary.renameTo(target)
+        } catch (_: IOException) {
+            false
         }
-        temporary.renameTo(target)
-    } catch (_: IOException) {
-        false
+        if (!written && temporary.isFile) temporary.delete()
+        return written
     }
 
     private fun File.temporary() = File(parentFile, "$name.tmp")

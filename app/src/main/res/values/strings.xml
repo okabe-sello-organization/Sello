@@ -827,6 +827,7 @@
     <string name="restore_unknown_body">Sello no pudo confirmar si reemplazó tus datos. Compruébalo antes de seguir; no se reemplazará dos veces.</string>
     <string name="restore_unknown_action">Comprobar</string>
     <string name="restore_unknown_checking">Comprobando…</string>
+    <string name="restore_chosen_set_aside">No revisamos el archivo que elegiste: primero había que resolver esta restauración.</string>
     <string name="restore_done_title">Tus datos</string>
     <string name="restore_done_stamp">Restaurado</string>
     <string name="restore_done_body">Se restauró el respaldo: %1$s.</string>
