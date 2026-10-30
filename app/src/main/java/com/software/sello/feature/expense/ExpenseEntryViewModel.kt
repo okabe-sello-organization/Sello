@@ -171,10 +171,15 @@ class ExpenseEntryViewModel(
     private val repeat = RepeatDraft(saved, "expense")
 
     init {
-        // A deletion asked here can be confirmed on the list shown above every screen.
+        // A deletion asked here can be confirmed on the list shown above every screen. Only
+        // one confirmed after this form opened closes it: an earlier one, since undone or
+        // replaced by a restore, is what the form found, not its answer.
+        val openedAfter = corrections.confirmedDeletion.value
         viewModelScope.launch {
             corrections.confirmedDeletion.collect { deleted ->
-                if (deleted != null && deleted == editedExpense) {
+                if (deleted != null && deleted != openedAfter &&
+                    deleted.expenseId == editedExpense
+                ) {
                     progress.update { it.copy(busy = false, closed = true) }
                 }
             }
@@ -534,7 +539,9 @@ class ExpenseEntryViewModel(
 
                 DeleteResult.DataChanged -> EntryError.DataChanged
 
-                DeleteResult.Failed, DeleteResult.Unknown -> EntryError.NotDeleted
+                DeleteResult.Failed -> EntryError.NotDeleted
+
+                DeleteResult.Unknown -> EntryError.DeleteUnknown
 
                 // The list of later months is shown above the form; it stays open (CP20).
                 DeleteResult.AwaitsConfirmation -> return@launch progress.update {

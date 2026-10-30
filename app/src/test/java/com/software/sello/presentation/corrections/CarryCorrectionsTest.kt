@@ -380,7 +380,7 @@ class CarryCorrectionsTest {
         corrections.confirmQuestion()
         runCurrent()
 
-        assertEquals(expenseId(101), corrections.confirmedDeletion.value)
+        assertEquals(expenseId(101), corrections.confirmedDeletion.value?.expenseId)
     }
 
     @Test
@@ -402,5 +402,48 @@ class CarryCorrectionsTest {
 
         // Null, drawn as "Una categoría": never a blank heading.
         assertNull(unnamed.question.value!!.list.groups.single().name)
+    }
+
+    @Test
+    fun theBarsDeshacerIsHeldWhileItsListIsOpenAndWhileTheConfirmedUndoIsInFlight() = test {
+        offerFor6Seconds()
+        corrections.delete(expenseId(101), 3, 7)
+        commands.restoreAnswer = { unconfirmed() }
+        corrections.undo()
+        runCurrent()
+        assertEquals(1, commands.restored.size)
+
+        // List open: a second Deshacer on the bar sends nothing.
+        corrections.undo()
+        runCurrent()
+        assertEquals(1, commands.restored.size)
+
+        commands.hold = CompletableDeferred()
+        commands.restoreAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(
+                    it.operationId,
+                    expenseId(101),
+                    com.software.sello.domain.model.OperationKind.RestoreExpense
+                ),
+                replayed = false
+            )
+        }
+        corrections.confirmQuestion()
+        runCurrent()
+        // In flight: the bar says it is being undone, and Deshacer sends nothing more.
+        assertEquals(
+            CorrectionNotice.Deleted(canUndo = true, undoing = true, carryMonths = null),
+            corrections.notice.value
+        )
+        corrections.undo()
+        runCurrent()
+        assertEquals(2, commands.restored.size)
+        assertEquals(confirmation, commands.restored.last().confirmation)
+
+        commands.hold!!.complete(Unit)
+        runCurrent()
+        assertEquals(2, commands.restored.size)
+        assertEquals(CorrectionNotice.Restored, corrections.notice.value)
     }
 }

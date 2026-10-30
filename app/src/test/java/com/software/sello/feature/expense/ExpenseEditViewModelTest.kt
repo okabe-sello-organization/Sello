@@ -34,6 +34,7 @@ import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
 import com.software.sello.domain.port.StoredSchedule
+import com.software.sello.domain.port.UndoOffer
 import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
@@ -54,6 +55,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -774,5 +776,67 @@ class ExpenseEditViewModelTest {
 
         assertEquals(carryConfirmation, commands.deleted.last().confirmation)
         assertTrue(form.now.closed)
+    }
+
+    /** Deletes [bread] from its form once its list is confirmed; the deletion can be undone. */
+    private fun deleteBreadAfterItsList() {
+        commands.deleteAnswer = { refusedForList() }
+        commands.offer = {
+            commands.deleted.lastOrNull()?.let {
+                UndoOffer(it.operationId, it.expenseId, 6.seconds)
+            }
+        }
+        val form = opened()
+        form.onAction(ExpenseEntryAction.Delete)
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
+                replayed = false
+            )
+        }
+        corrections.confirmQuestion()
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun aFormOpenedAfterTheConfirmedDeletionWasUndoneStaysOpen() {
+        deleteBreadAfterItsList()
+        commands.restoreAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, bread.id, OperationKind.RestoreExpense),
+                replayed = false
+            )
+        }
+
+        corrections.undo()
+
+        assertEquals(CorrectionNotice.Restored, corrections.notice.value)
+        assertNull(corrections.confirmedDeletion.value)
+        val again = opened()
+        assertFalse(again.now.closed)
+        assertTrue(again.now.canDelete)
+    }
+
+    @Test
+    fun aFormOpenedAfterTheExpenseCameBackByARestoreStaysOpen() {
+        deleteBreadAfterItsList()
+        // A backup restore puts the same expense back without telling the corrections.
+
+        val again = opened()
+
+        assertFalse(again.now.closed)
+    }
+
+    @Test
+    fun aDeletionWhoseOutcomeCannotBeFoundIsSaidToBeUnknown() {
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        val form = opened()
+
+        form.onAction(ExpenseEntryAction.Delete)
+
+        assertEquals(EntryError.DeleteUnknown, form.now.error)
+        assertFalse(form.now.closed)
+        assertEquals(1, commands.deleted.size)
     }
 }

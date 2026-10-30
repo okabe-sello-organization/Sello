@@ -717,6 +717,8 @@ private fun EntryError.text(editing: Boolean) = when (this) {
 
     EntryError.NotDeleted -> R.string.expense_edit_not_deleted
 
+    EntryError.DeleteUnknown -> R.string.correction_delete_unknown
+
     EntryError.StartTooEarly -> R.string.repeat_start_too_early
 
     EntryError.EndTooEarly -> R.string.repeat_end_too_early

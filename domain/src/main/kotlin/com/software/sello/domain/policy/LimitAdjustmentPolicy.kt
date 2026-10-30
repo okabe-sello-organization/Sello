@@ -67,8 +67,9 @@ object LimitAdjustmentPolicy {
 
     /**
      * The sheet edits the base, so every shortcut is a base (SELLO-038 consumer boundary):
-     * Lo gastado is the base that makes `C = S`, which is `S − K`, offered while `S > C`;
-     * Cubre el mes is `base − R` of the overall month; Cubre tus pagos is `base +` the
+     * while `S > C`, Lo gastado ([LimitShortcuts.spent]) is `S` without carry; with carry it
+     * is [LimitShortcuts.coverSpent], "Base que cubre lo gastado", the base that makes
+     * `C = S`, which is `S − K`; Cubre el mes is `base − R` of the overall month; Cubre tus pagos is `base +` the
      * shortfall. Without carry `K` is 0 and the base is the limit.
      */
     fun shortcuts(

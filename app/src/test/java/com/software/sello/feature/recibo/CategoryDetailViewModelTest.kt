@@ -3,8 +3,10 @@ package com.software.sello.feature.recibo
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
@@ -687,5 +689,18 @@ class CategoryDetailViewModelTest {
         assertEquals(refusals.map { it.second }, said)
         assertEquals(null, viewModel.ready.deleteProblem)
         assertEquals(2, viewModel.rows.rows.size)
+    }
+
+    @Test
+    fun aDeletionWhoseOutcomeCannotBeFoundIsUnknownNeverFailed() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+
+        assertEquals(DeleteProblem.Unknown, viewModel.ready.deleteProblem)
     }
 }

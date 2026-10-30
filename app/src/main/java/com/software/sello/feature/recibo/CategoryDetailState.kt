@@ -52,7 +52,10 @@ enum class DeleteProblem {
     DataChanged,
 
     /** Storage failed and nothing was deleted. */
-    Failed
+    Failed,
+
+    /** Whether it was deleted could not be found out. */
+    Unknown
 }
 
 /** The expenses listed. An empty list and a list that could not be read are different. */

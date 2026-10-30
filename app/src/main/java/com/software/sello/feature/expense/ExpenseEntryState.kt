@@ -49,6 +49,9 @@ enum class EntryError {
     /** Deleting failed and the expense is still there. */
     NotDeleted,
 
+    /** Whether the deletion was saved could not be found out. */
+    DeleteUnknown,
+
     /** A schedule starts today or later; the date was earlier. */
     StartTooEarly,
 

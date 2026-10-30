@@ -249,6 +249,9 @@ data class GoalCelebration(
     val missing: MoneyTextValue? = null
 )
 
+/** An expense deleted once its list was confirmed; [number] tells one deletion from the next. */
+data class ConfirmedDeletion(val expenseId: ExpenseId, val number: Long)
+
 /** How a deletion ended. Only [Deleted] means the expense is gone. */
 enum class DeleteResult {
     Deleted,
@@ -322,14 +325,16 @@ class Corrections(
     /** A list waiting to be confirmed before a deletion, or its undoing, is sent. */
     val question: StateFlow<CorrectionQuestion?> = asking
 
-    private val confirmedDeleted = MutableStateFlow<ExpenseId?>(null)
+    private val confirmedDeleted = MutableStateFlow<ConfirmedDeletion?>(null)
+    private var confirmedCount = 0L
 
     /**
-     * The last expense deleted once its list was confirmed, kept as state: a form still open
-     * on it closes (the deletion was not its own answer). An expense deleted is never shown
-     * again, so this never closes another form.
+     * The last expense deleted once its list was confirmed, kept as state: a form open on it
+     * when it happened closes (the deletion was not its own answer). Each deletion has its
+     * own [ConfirmedDeletion.number], so a form compares with what it saw when it opened and
+     * never closes for one that came before it; undoing the deletion clears it.
      */
-    val confirmedDeletion: StateFlow<ExpenseId?> = confirmedDeleted
+    val confirmedDeletion: StateFlow<ConfirmedDeletion?> = confirmedDeleted
 
     /**
      * The deletion on offer. [undoOperation] names every attempt to undo it, so an
@@ -476,7 +481,9 @@ class Corrections(
         if (!committed) return DeleteResult.Failed
         asked = null
         asking.value = null
-        if (confirmation != null) confirmedDeleted.value = expenseId
+        if (confirmation != null) {
+            confirmedDeleted.value = ConfirmedDeletion(expenseId, ++confirmedCount)
+        }
         val until = commands.undoOffer()?.takeIf { it.deletionId == operation }?.until
         return deleted(Kind.Expense, operation, generation, until, carryMonths = months)
     }
@@ -527,8 +534,16 @@ class Corrections(
 
             CorrectionKind.Undo -> {
                 val offered = pending ?: return undoListExpired()
-                // Once confirmed, the answer decides what is said, not the time running out.
+                // Once confirmed, the answer decides what is said, not the time running out,
+                // and the bar's Deshacer is held: the same operation is never sent twice.
                 ending?.cancel()
+                this.shown.value = offer(
+                    offered.kind,
+                    canUndo = true,
+                    undoing = true,
+                    goalName = offered.goalName,
+                    carryMonths = offered.carryMonths
+                )
                 scope.launch { settle(offered, restore(offered, askedUndo)) }
             }
         }
@@ -622,6 +637,8 @@ class Corrections(
         val offered = pending ?: return
         val (canUndo, undoing) = offerShown() ?: return
         if (!canUndo || undoing) return
+        // Its list is open: the answer is given there, not by a second Deshacer.
+        if (asking.value?.kind == CorrectionKind.Undo) return
         // Once asked, the answer decides what is said next, not the time running out.
         ending?.cancel()
         shown.value =
@@ -762,15 +779,25 @@ class Corrections(
                 offered.until
             )
 
-            outcome == Undone.Restored -> said(
-                when (kind) {
-                    Kind.Expense -> CorrectionNotice.Restored
-                    Kind.Income -> CorrectionNotice.IncomeRestored
-                    Kind.GoalMovement -> CorrectionNotice.GoalMovementRestored
-                    Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndone(offered.goalName)
-                    Kind.InvestmentMovement -> CorrectionNotice.InvestmentMovementRestored
-                }
-            )
+            outcome == Undone.Restored -> {
+                // The expense is back: no form should close for its earlier deletion.
+                if (kind == Kind.Expense) confirmedDeleted.value = null
+                said(
+                    when (kind) {
+                        Kind.Expense -> CorrectionNotice.Restored
+
+                        Kind.Income -> CorrectionNotice.IncomeRestored
+
+                        Kind.GoalMovement -> CorrectionNotice.GoalMovementRestored
+
+                        Kind.GoalCompletion -> CorrectionNotice.GoalCompletionUndone(
+                            offered.goalName
+                        )
+
+                        Kind.InvestmentMovement -> CorrectionNotice.InvestmentMovementRestored
+                    }
+                )
+            }
 
             outcome == Undone.Blocked -> said(
                 when (kind) {

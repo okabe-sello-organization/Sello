@@ -231,7 +231,8 @@ class CategoryExpensesViewModel(
                     DeleteResult.Gone -> DeleteProblem.Gone
                     DeleteResult.Changed -> DeleteProblem.Changed
                     DeleteResult.DataChanged -> DeleteProblem.DataChanged
-                    DeleteResult.Failed, DeleteResult.Unknown -> DeleteProblem.Failed
+                    DeleteResult.Failed -> DeleteProblem.Failed
+                    DeleteResult.Unknown -> DeleteProblem.Unknown
                     DeleteResult.AwaitsConfirmation -> null
                 }
             } finally {
