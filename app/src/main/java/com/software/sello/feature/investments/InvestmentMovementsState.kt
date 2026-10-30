@@ -84,6 +84,8 @@ enum class InvestmentMovementsError {
 data class InvestmentMovementsState(
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
+    /** The last read failed: the receipt works from the investment as it was read before. */
+    val stale: Boolean = false,
     val name: String = "",
     val usd: Boolean = false,
     val lines: List<MovementLineModel>,

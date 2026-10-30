@@ -39,10 +39,12 @@ import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import com.software.sello.presentation.submission.typed
 import java.time.LocalDate
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -59,6 +61,7 @@ import kotlinx.serialization.Serializable
  * draft stays; an investment that changed meanwhile is read again and sent again only
  * when asked.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class InvestmentMovementsViewModel(
     private val saved: SavedStateHandle,
     reads: InvestmentReads,
@@ -117,7 +120,8 @@ class InvestmentMovementsViewModel(
 
     private val draft = MutableStateFlow(restored() ?: opening())
     private val progress = MutableStateFlow(Progress())
-    private val board = reads.observeBoard()
+    private val attempts = MutableStateFlow(0)
+    private val board = attempts.flatMapLatest { reads.observeBoard() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
     private val composer = SavedNoteComposer(saved, PREFIX, viewModelScope)
 
@@ -250,10 +254,13 @@ class InvestmentMovementsViewModel(
             InvestmentMovementsAction.Submit -> if (now.canSubmit) submit()
 
             InvestmentMovementsAction.Retry -> if (!now.busy) {
-                if (submission.pending) {
-                    viewModelScope.launch { recover() }
-                } else {
-                    progress.update { it.copy(error = null) }
+                when {
+                    submission.pending -> viewModelScope.launch { recover() }
+
+                    // Reintentar after a failed first read reads the board again.
+                    now.loadFailed -> attempts.update { it + 1 }
+
+                    else -> progress.update { it.copy(error = null) }
                 }
             }
 
@@ -334,13 +341,7 @@ class InvestmentMovementsViewModel(
         // A refusal answers the receipt as it was sent: any change may answer it.
         if (edited) {
             progress.update {
-                it.copy(
-                    refusals = emptyMap(),
-                    error = it.error.takeUnless { error ->
-                        error ==
-                            InvestmentMovementsError.NotSaved
-                    }
-                )
+                it.copy(refusals = emptyMap(), error = it.error.takeUnless { e -> e in Answered })
             }
         }
         draft.value = next
@@ -469,6 +470,7 @@ class InvestmentMovementsViewModel(
         return InvestmentMovementsState(
             loading = board is ReadState.Loading,
             loadFailed = board is ReadState.Failed && read == null,
+            stale = board is ReadState.Failed && read != null,
             name = summary?.history?.investment?.name?.value.orEmpty(),
             usd = currency == Currency.USD,
             lines = lines,
@@ -627,12 +629,14 @@ class InvestmentMovementsViewModel(
         }
     }
 
+    /**
+     * The receipt was saved. It may be answered before the board is read (a restored
+     * receipt), so the lines sent are counted by what was typed, in either currency.
+     */
     private fun committed() {
         val summary = summary(readable(board.value))
         corrections.investmentMovementsRecorded(
-            count = draft.value.lines.count { line ->
-                typedMoney(line, summary?.history?.investment?.currency ?: Currency.COP) != null
-            },
+            count = draft.value.lines.count { it.pesos != AmountDraft.Empty || !it.dollars.empty },
             investmentName = summary?.history?.investment?.name?.value
         )
         drafts.clear()
@@ -642,6 +646,10 @@ class InvestmentMovementsViewModel(
     companion object {
         /** A value of 0 pesos, as typed on Valor de hoy (rule 2). */
         private val ZeroPesos = AmountDraft.Digits("0")
+
+        /** The errors a change to the receipt answers. */
+        private val Answered =
+            setOf(InvestmentMovementsError.NotSaved, InvestmentMovementsError.Changed)
         private const val ZERO = "0"
 
         /** The route argument: the investment the receipt is for. */

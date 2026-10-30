@@ -1,21 +1,17 @@
 package com.software.sello.feature.investments
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.component.BULK_RECEIPT_LINES_TAG
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.component.SelloDock
+import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.domain.model.GainDirection
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.InvestmentMovementKind.Contribution
@@ -23,7 +19,12 @@ import com.software.sello.domain.model.InvestmentMovementKind.Dividend
 import com.software.sello.domain.model.InvestmentMovementKind.Valuation
 import com.software.sello.domain.model.InvestmentMovementKind.Withdrawal
 import com.software.sello.domain.model.InvestmentReturn
+import com.software.sello.navigation.CorrectionNoticeBar
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.ShellState
+import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import com.software.sello.testing.pesos
 import java.time.LocalDate
@@ -66,7 +67,8 @@ class InvestmentMovementsScreenshotTest {
         name: String = "Ecopetrol",
         usd: Boolean = false,
         busy: Boolean = false,
-        error: InvestmentMovementsError? = null
+        error: InvestmentMovementsError? = null,
+        stale: Boolean = false
     ) = InvestmentMovementsState(
         loading = false,
         name = name,
@@ -76,7 +78,8 @@ class InvestmentMovementsScreenshotTest {
         contributed = contributed,
         today = today,
         busy = busy,
-        error = error
+        error = error,
+        stale = stale
     )
 
     /** An aporte of 500.000 on 3 oct, a dividend of 89.000 on 29 sep, today's value 3.600.000. */
@@ -115,6 +118,8 @@ class InvestmentMovementsScreenshotTest {
             pesos("3.500.000", minus = true),
             error = InvestmentMovementsError.NotSaved
         ),
+        // The last read failed: the receipt works from the investment as read before.
+        "stale" to receipt(three, 2, pesos("500.000"), stale = true),
         "saving" to receipt(three, 2, pesos("500.000"), busy = true),
         "unknown" to receipt(three, 2, pesos("500.000"), error = InvestmentMovementsError.Unknown),
         // 250,50 + 300,00 = 550,50 aportado; the dividend of 12,40 stays out.
@@ -194,9 +199,32 @@ class InvestmentMovementsScreenshotTest {
             ),
             today = today
         )
+        // As the app frames it (InvestmentDestination), with the receipt's confirmation.
+        val saved = CorrectionNotice.InvestmentMovementsRecorded(3, "Ecopetrol")
         rule.showSello(Look(dark = dark)) {
-            Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk)) {
-                InvestmentDetailScreen(state, {}, dateLabels(), PaddingValues(horizontal = 12.dp))
+            ShellScreen(
+                state = ShellState(
+                    currentMonth = YearMonth.of(2026, 10),
+                    selectedMonth = YearMonth.of(2026, 10),
+                    monthPickerOpen = false,
+                    pickerYear = 2026,
+                    pendingEntry = null
+                ),
+                names = monthNames(),
+                onAction = {},
+                notice = { CorrectionNoticeBar(saved) {} },
+                onBack = {},
+                titleOnly = "Ecopetrol",
+                entryDock = false,
+                dock = SelloDock(
+                    "Anotar movimiento",
+                    "Anotar movimiento",
+                    {},
+                    tone = ButtonTone.Ink,
+                    icon = SelloIcon.Add
+                )
+            ) { padding ->
+                InvestmentDetailScreen(state, {}, dateLabels(), padding)
             }
         }
         val theme = if (dark) "oscuro" else "claro"
@@ -238,6 +266,10 @@ class InvestmentMovementsScreenshotTest {
     @Test fun unknownClaro() = capture("unknown", dark = false)
 
     @Test fun unknownOscuro() = capture("unknown", dark = true)
+
+    @Test fun staleClaro() = capture("stale", dark = false)
+
+    @Test fun staleOscuro() = capture("stale", dark = true)
 
     @Test fun usdClaro() = capture("usd", dark = false)
 

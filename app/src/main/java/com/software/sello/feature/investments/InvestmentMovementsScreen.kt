@@ -341,6 +341,7 @@ private fun Choices(
             stringResource(R.string.investment_movement_type)
         },
         Modifier.semantics { heading() },
+        color = SelloTheme.colors.ink,
         style = MaterialTheme.typography.titleSmall
     )
     ChipRows(Kinds.size, Modifier.testTag(INVESTMENT_MOVEMENTS_KINDS_TAG), rows = 1) { index ->
@@ -383,10 +384,16 @@ private fun Removed(
     )
 }
 
-/** What stopped the save, then the one button: Anotar, Guardando… or Comprobar si se guardó. */
+/** That the investment is as read before, what stopped the save, then the one button: Anotar, Guardando… or Comprobar si se guardó. */
 @Composable
 private fun Action(state: InvestmentMovementsState, onAction: (InvestmentMovementsAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
+        if (state.stale) {
+            FieldMessageText(
+                FieldMessage(stringResource(R.string.investment_stale), isError = false),
+                Modifier.testTag(INVESTMENT_MOVEMENTS_STALE_TAG)
+            )
+        }
         state.error?.let { error ->
             FieldMessageText(
                 FieldMessage(
@@ -481,6 +488,7 @@ const val INVESTMENT_MOVEMENTS_KINDS_TAG = "investment.movements.kinds"
 const val INVESTMENT_MOVEMENTS_KIND_TAG = "investment.movements.kind"
 const val INVESTMENT_MOVEMENTS_NOTE_TAG = "investment.movements.note"
 const val INVESTMENT_MOVEMENTS_REMOVED_TAG = "investment.movements.removed"
+const val INVESTMENT_MOVEMENTS_STALE_TAG = "investment.movements.stale"
 const val INVESTMENT_MOVEMENTS_ERROR_TAG = "investment.movements.error"
 const val INVESTMENT_MOVEMENTS_KEYPAD_TAG = "investment.movements.keypad"
 const val INVESTMENT_MOVEMENTS_SUBMIT_TAG = "investment.movements.submit"

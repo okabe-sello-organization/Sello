@@ -15,9 +15,11 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
+import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.ReadState
@@ -34,10 +36,13 @@ import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -574,9 +579,12 @@ class InvestmentMovementsViewModelTest {
         val good = reads.board.value as ReadState.Ready
         reads.board.value = ReadState.Failed(StorageFailure.Unavailable("hand"), good.value)
         assertFalse(model.now.loadFailed)
+        assertTrue(model.now.stale)
         assertEquals("Ecopetrol", model.now.name)
         model.threeLines()
         assertTrue(model.now.canSubmit)
+        reads.board.value = good
+        assertFalse(model.now.stale)
 
         reads.board.value = ReadState.Failed(StorageFailure.Unavailable("hand"), null)
         val never = model()
@@ -649,6 +657,141 @@ class InvestmentMovementsViewModelTest {
         assertFalse(restored.now.editable)
         assertEquals(3, restored.now.counted)
         assertEquals(1, sent.size)
+    }
+
+    @Test
+    fun aRestoredUsdReceiptFoundSavedBeforeTheBoardIsReadCountsItsLines() = runTest {
+        val saved = SavedStateHandle(mapOf(InvestmentMovementsViewModel.KEY_INVESTMENT to acciones))
+        val first = model(acciones, saved)
+        first.act(InvestmentMovementsAction.Kind(Contribution))
+        first.keys("2", "5", "0", ",", "5")
+        first.act(InvestmentMovementsAction.AddLine, InvestmentMovementsAction.Kind(Dividend))
+        first.keys("1", "2", ",", "4")
+        hand.answers += CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        hand.found = Outcome.Failure(StorageFailure.Unavailable("hand"))
+        first.act(InvestmentMovementsAction.Submit)
+        val operation = sent.single().operationId
+
+        // After process death the board is still being read when the answer comes.
+        reads.board.value = ReadState.Loading
+        hand.found = Outcome.Success(
+            committedInvestment(operation, OperationKind.RecordInvestmentMovements, acciones)
+                .value.copy(movementIds = null)
+        )
+        val restored = model(acciones, saved)
+
+        assertTrue(restored.now.closed)
+        assertEquals(1, sent.size)
+        val notice = corrections.notice.value as CorrectionNotice.InvestmentMovementsRecorded
+        assertEquals(2, notice.count)
+    }
+
+    @Test
+    fun aSendCancelledMidwayLeavesTheOperationToAskAboutAfterTheRestart() = runTest {
+        val saved =
+            SavedStateHandle(mapOf(InvestmentMovementsViewModel.KEY_INVESTMENT to ecopetrol))
+        val first = model(saved = saved)
+        first.threeLines()
+        val gate = CompletableDeferred<Unit>()
+        commands.gate = gate
+        first.act(InvestmentMovementsAction.Submit)
+        gate.completeExceptionally(CancellationException("process ending"))
+
+        hand.found = Outcome.Success(null)
+        val restored = model(saved = saved)
+
+        // It is only asked about, with its own operation, and never sent again by itself.
+        assertTrue(sent.isEmpty())
+        assertEquals(1, hand.asked.size)
+        assertEquals(InvestmentMovementsError.NotSaved, restored.now.error)
+        assertEquals(3, restored.now.counted)
+        assertTrue(restored.now.canSubmit)
+    }
+
+    @Test
+    fun aGenericRefusalIsNotSavedAndAMissingInvestmentIsGone() = runTest {
+        val model = model()
+        model.threeLines()
+        hand.answers += CommandOutcome.Rejected(
+            CommandRejection.StorageFailed(StorageFailure.Unavailable("hand"))
+        )
+
+        model.act(InvestmentMovementsAction.Submit)
+
+        assertEquals(InvestmentMovementsError.NotSaved, model.now.error)
+        assertEquals(3, model.now.counted)
+        assertTrue(model.now.canSubmit)
+
+        hand.answers += CommandOutcome.Rejected(
+            CommandRejection.Specific(InvestmentRejection.InvestmentMissing)
+        )
+        model.act(InvestmentMovementsAction.Submit)
+
+        assertEquals(InvestmentMovementsError.Gone, model.now.error)
+        assertFalse(model.now.editable)
+        assertFalse(model.now.closed)
+        assertEquals(2, sent.size)
+    }
+
+    @Test
+    fun thirtyOfTheLargestAportesAreAportadoInFull() = runTest {
+        val model = model()
+        model.act(InvestmentMovementsAction.Kind(Contribution))
+        repeat(30) { line ->
+            if (line > 0) model.act(InvestmentMovementsAction.AddLine)
+            repeat(12) { model.keys("9") }
+            // A thirteenth digit is refused, never wrapped.
+            model.keys("9")
+        }
+
+        assertEquals(30, model.now.counted)
+        assertEquals("999.999.999.999", model.now.current.amount?.digits)
+        // 30 × 999.999.999.999 = 29.999.999.999.970, written whole, not clipped.
+        assertEquals("29.999.999.999.970", model.now.contributed?.digits)
+    }
+
+    @Test
+    fun editingAfterTheInvestmentChangedClearsTheMessage() = runTest {
+        val model = model()
+        model.threeLines()
+        hand.answers += CommandOutcome.Rejected(CommandRejection.VersionConflict(7))
+        model.act(InvestmentMovementsAction.Submit)
+        assertEquals(InvestmentMovementsError.Changed, model.now.error)
+
+        model.keys("<")
+
+        assertNull(model.now.error)
+        assertTrue(model.now.canSubmit)
+    }
+
+    @Test
+    fun reintentarAfterAFailedFirstReadReadsAgain() = runTest {
+        val failed = ReadState.Failed(StorageFailure.Unavailable("hand"), null)
+        val answers = ArrayDeque(listOf(failed, board(3, ecopetrolAcciones)))
+        val once = object : InvestmentReads by reads {
+            var reads = 0
+
+            override fun observeBoard(): Flow<InvestmentBoardState> {
+                reads++
+                return flowOf(answers.removeFirst())
+            }
+        }
+        val model = InvestmentMovementsViewModel(
+            SavedStateHandle(mapOf(InvestmentMovementsViewModel.KEY_INVESTMENT to ecopetrol)),
+            once,
+            commands,
+            clock,
+            ids,
+            testMoney(),
+            corrections
+        )
+        assertTrue(model.now.loadFailed)
+
+        model.act(InvestmentMovementsAction.Retry)
+
+        assertEquals(2, once.reads)
+        assertFalse(model.now.loadFailed)
+        assertEquals("Ecopetrol", model.now.name)
     }
 
     @Test
