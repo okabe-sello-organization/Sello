@@ -153,8 +153,12 @@ data class ExpenseEntryState(
      */
     val editable: Boolean get() = !busy && error !in Blocking && recorded == null
 
-    /** Varios is offered for a new expense, not one repeating or being corrected. */
-    val canOpenSeveral: Boolean get() = !editing && editable && repeat.choice == null
+    /**
+     * Varios is offered for a new expense, not one repeating or being corrected, and not
+     * while a pasted amount is refused: it would be lost on the way.
+     */
+    val canOpenSeveral: Boolean
+        get() = !editing && editable && repeat.choice == null && amountText == null
 
     /** A recorded expense can be deleted from here once it has been read. */
     val canDelete: Boolean get() = editing && !loading && !loadFailed && editable

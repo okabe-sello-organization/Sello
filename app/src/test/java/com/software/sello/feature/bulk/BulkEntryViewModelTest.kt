@@ -1,7 +1,6 @@
 package com.software.sello.feature.bulk
 
 import androidx.lifecycle.SavedStateHandle
-import com.software.sello.designsystem.component.BULK_RECEIPT_MAX_LINES
 import com.software.sello.domain.model.CarryMonth
 import com.software.sello.domain.model.CarryVerdict
 import com.software.sello.domain.model.CarryoverFailure
@@ -15,6 +14,7 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.Verdict
 import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.policy.CarryMonthChange
+import com.software.sello.domain.policy.EntryBatchPolicy
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedExpenses
@@ -306,7 +306,7 @@ class BulkEntryViewModelTest {
     @Test
     fun thirtyLinesIsTheMostAndOtroRenglonThenWaits() {
         val bulk = ready()
-        repeat(BULK_RECEIPT_MAX_LINES) {
+        repeat(EntryBatchPolicy.MAX_LINES) {
             bulk.type("4500")
             bulk.pick(3)
             bulk.add()
@@ -324,6 +324,42 @@ class BulkEntryViewModelTest {
     }
 
     @Test
+    fun aRestoredFullReceiptKeepsAsManyLinesAsStorageTakes() {
+        val saved = SavedStateHandle()
+        val bulk = ready(saved)
+        repeat(EntryBatchPolicy.MAX_LINES) {
+            bulk.type("4500")
+            bulk.pick(3)
+            bulk.add()
+        }
+        assertEquals(30, bulk.now.lines.size)
+
+        val restored = ready(saved.afterProcessDeath())
+
+        assertEquals(30, restored.now.lines.size)
+        assertTrue(restored.now.atLineLimit)
+        restored.submit()
+        assertTrue(EntryBatchPolicy.holds(commands.created.single().lines.size))
+    }
+
+    @Test
+    fun otroRenglonWaitsForTheLastLineNotTheHighlightedOne() {
+        val bulk = ready()
+        bulk.type("18400")
+        bulk.pick(1)
+        bulk.add()
+        assertEquals(2, bulk.now.lines.size)
+
+        // Line one has an amount, but the new last line is still empty.
+        bulk.onAction(BulkEntryAction.Select(0))
+
+        assertFalse(bulk.now.canAdd)
+        bulk.add()
+        assertEquals(2, bulk.now.lines.size)
+        assertEquals(0, bulk.now.highlighted)
+    }
+
+    @Test
     fun twelveDigitsIsTheMostALineTakes() {
         val bulk = ready()
         bulk.type("999999999999")
@@ -336,7 +372,7 @@ class BulkEntryViewModelTest {
     @Test
     fun thirtyLinesOfTheLargestAmountStillAddUpExactly() {
         val bulk = ready()
-        repeat(BULK_RECEIPT_MAX_LINES) {
+        repeat(EntryBatchPolicy.MAX_LINES) {
             bulk.type("999999999999")
             bulk.pick(1)
             bulk.add()
@@ -366,6 +402,25 @@ class BulkEntryViewModelTest {
 
         assertEquals(listOf("18.400", "75.100", "32.500"), bulk.digits)
         assertEquals(1, bulk.now.highlighted)
+        assertNull(bulk.now.removed)
+    }
+
+    @Test
+    fun fillingTheReceiptAgainEndsTheDeshacerOffer() {
+        val bulk = ready()
+        repeat(EntryBatchPolicy.MAX_LINES) {
+            bulk.type("4500")
+            bulk.pick(3)
+            bulk.add()
+        }
+        bulk.onAction(BulkEntryAction.Remove(0))
+        assertEquals(29, bulk.now.lines.size)
+        assertEquals("Comida", bulk.now.removed?.categoryName)
+
+        bulk.add()
+
+        assertEquals(30, bulk.now.lines.size)
+        // Deshacer could no longer put the line back, so it is no longer offered.
         assertNull(bulk.now.removed)
     }
 

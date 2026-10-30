@@ -14,8 +14,8 @@ import kotlinx.coroutines.flow.getAndUpdate
 
 /**
  * Sandbox only: lets the owner reach an unknown outcome on an Anotar varios receipt by hand.
- * Once [arm]ed, the next receipt is really saved, but the sheet is told its outcome is
- * unknown and the first question about it fails too, as if storage stopped answering. The
+ * Once [arm]ed, the next receipt that is really saved is reported to the sheet as unknown,
+ * and the first question about it fails too, as if storage stopped answering. The
  * next **Comprobar si se guardó** then finds the receipt with the same operation.
  */
 class ReceiptOutcomes {
@@ -50,11 +50,12 @@ class FencedExpenseBatchCommands(
     private val outcomes: ReceiptOutcomes?
 ) : ExpenseBatchCommands {
     override suspend fun create(command: CreateExpenses): ExpenseBatchOutcome {
-        val unknown = outcomes?.take() == true
         val outcome = fence.write { commands.create(command) }
         if (outcome is CommandOutcome.Committed && !outcome.replayed) saved()
-        if (unknown && outcome is CommandOutcome.Committed) {
-            outcomes?.hide(command.operationId)
+        // Only a saved receipt uses the switch up: a refused one, such as one asking to
+        // confirm later months first, leaves it for the receipt that is then saved.
+        if (outcome is CommandOutcome.Committed && outcomes?.take() == true) {
+            outcomes.hide(command.operationId)
             return CommandOutcome.OutcomeUnknown(command.operationId)
         }
         return outcome

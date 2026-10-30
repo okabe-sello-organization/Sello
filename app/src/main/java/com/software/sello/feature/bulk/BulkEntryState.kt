@@ -1,8 +1,8 @@
 package com.software.sello.feature.bulk
 
 import androidx.compose.runtime.Immutable
-import com.software.sello.designsystem.component.BULK_RECEIPT_MAX_LINES
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.policy.EntryBatchPolicy
 import com.software.sello.presentation.carry.CarryCorrectionList
 import java.time.LocalDate
 
@@ -65,7 +65,7 @@ data class RemovedLine(val categoryName: String?)
 
 /**
  * Anotar varios for expenses: several lines on one receipt, one date, saved together.
- * There is always at least one line and at most [BULK_RECEIPT_MAX_LINES]; [highlighted] is
+ * There is always at least one line and at most [EntryBatchPolicy.MAX_LINES]; [highlighted] is
  * always one of them, the line the pad, the chips and the note apply to.
  */
 @Immutable
@@ -113,12 +113,11 @@ data class BulkEntryState(
         get() = editable && !loading && !readFailed && count > 0 && missingCategories == 0 &&
             refusedLines == 0 && correction == null
 
-    /** Another line can be added: there is room, and the highlighted one has an amount. */
+    /** Another line can be added: there is room, and the last one has an amount. */
     val canAdd: Boolean
-        get() = editable && lines.size < BULK_RECEIPT_MAX_LINES &&
-            lines[highlighted].amount != null
+        get() = editable && lines.size < EntryBatchPolicy.MAX_LINES && lines.last().amount != null
 
-    val atLineLimit: Boolean get() = lines.size >= BULK_RECEIPT_MAX_LINES
+    val atLineLimit: Boolean get() = lines.size >= EntryBatchPolicy.MAX_LINES
 
     /** Lines with something typed, which leaving would lose. */
     val typedLines: Int get() = lines.count { it.amount != null || it.note.isNotBlank() }

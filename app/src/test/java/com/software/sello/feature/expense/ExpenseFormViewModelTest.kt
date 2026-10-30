@@ -870,6 +870,23 @@ class ExpenseFormViewModelTest {
         assertNull(form.now.several)
     }
 
+    @Test
+    fun variosWaitsWhileAPastedAmountIsRefusedAndNeverDropsIt() {
+        val form = ready().chosen()
+        form.onAction(ExpenseEntryAction.Paste("12.34"))
+
+        form.onAction(ExpenseEntryAction.Several)
+
+        assertFalse(form.now.canOpenSeveral)
+        assertNull(form.now.several)
+        assertEquals("12.34", form.now.amountText)
+        assertEquals(AmountProblem.NotAnAmount, form.now.amountProblem)
+
+        form.type("7")
+        form.onAction(ExpenseEntryAction.Several)
+        assertEquals("7", form.now.several?.amount)
+    }
+
     // --- Se repite: a schedule instead of one expense (SELLO-100) ---
 
     private fun ExpenseEntryViewModel.repeat(action: RepeatAction) =

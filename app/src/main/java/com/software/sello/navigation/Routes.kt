@@ -6,6 +6,10 @@ import kotlinx.serialization.Serializable
 /*
  * Routes are identifiers only. A route never carries an amount, a record or a result:
  * a screen that needs data gets an identifier and reads the data itself.
+ *
+ * One exception: a route may carry what the person typed on the screen it came from, as
+ * hints the next screen checks like any input and is free to ignore (as [ExpenseEntryRoute]
+ * carries an amount and [ExpenseBulkRoute] an amount, note and date).
  */
 
 /** The start destination and the place Back returns to before leaving the app. */

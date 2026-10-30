@@ -3,7 +3,6 @@ package com.software.sello.feature.bulk
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.software.sello.designsystem.component.BULK_RECEIPT_MAX_LINES
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.ExactTotal
@@ -13,6 +12,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.AmountDraft
+import com.software.sello.domain.policy.EntryBatchPolicy
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedExpenses
 import com.software.sello.domain.port.CorrectionConfirmation
@@ -205,7 +205,7 @@ class BulkEntryViewModel(
 
     /** A restored draft always has 1 to 30 lines and highlights one of them. */
     private fun sane(draft: Draft): Draft {
-        val lines = draft.lines.take(BULK_RECEIPT_MAX_LINES)
+        val lines = draft.lines.take(EntryBatchPolicy.MAX_LINES)
         if (lines.isEmpty()) return opening()
         return draft.copy(
             lines = lines,
@@ -290,7 +290,11 @@ class BulkEntryViewModel(
                         nextKey = it.nextKey + 1
                     )
                 }
-                progress.update { it.copy(atLimit = false) }
+                // A full receipt has no room for the line just removed: Deshacer ends.
+                val full = draft.value.lines.size >= EntryBatchPolicy.MAX_LINES
+                progress.update {
+                    it.copy(atLimit = false, removed = it.removed.takeUnless { full })
+                }
             }
 
             BulkEntryAction.OpenDatePicker ->
@@ -397,7 +401,7 @@ class BulkEntryViewModel(
     private fun undoRemove() {
         val removed = progress.value.removed ?: return
         val now = draft.value
-        if (now.lines.size >= BULK_RECEIPT_MAX_LINES) return
+        if (now.lines.size >= EntryBatchPolicy.MAX_LINES) return
         val at = removed.index.coerceIn(0, now.lines.size)
         edit {
             it.copy(
