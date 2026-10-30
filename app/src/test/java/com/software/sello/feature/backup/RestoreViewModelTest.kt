@@ -488,6 +488,26 @@ class RestoreViewModelTest {
     }
 
     @Test
+    fun aFileChosenAfterAnUnrestoredConfirmationIsCheckedAgainAfterTheRestart() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        readGate = CompletableDeferred()
+        val (model) = model(handle, process)
+        choose(model)
+        assertEquals(RestoreStep.Checking, model.state.value.step)
+
+        // An earlier confirmed file is still staged and can no longer be offered.
+        readGate = null
+        restores.stagedAnswer = StagedLookup.NotReplaced(otherOperation, attempted = true)
+        restores.stageAnswer = Outcome.Success(staged)
+        val restored = afterProcessDeath(handle, process)
+
+        assertEquals(RestoreStep.Previewing(staged), restored.state.value.step)
+        assertEquals(List(2) { "content://provider/document/7" }, read)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
     fun aPreviewNeverConfirmedBeforeTheProcessDiedComesBackWithoutANote() = runTest {
         val handle = SavedStateHandle()
         val process = CoroutineScope(backgroundScope.coroutineContext + Job())

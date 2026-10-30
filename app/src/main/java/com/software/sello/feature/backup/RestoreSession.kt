@@ -107,9 +107,10 @@ class RestoreSession(
 
                         is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
 
-                        // A confirmed file that can no longer be offered: say it did not happen.
+                        // A confirmed file that can no longer be offered: say it did not
+                        // happen, unless a file chosen since is still to be checked.
                         is StagedLookup.NotReplaced ->
-                            RestoreStep.Failed.takeIf { found.attempted }
+                            RestoreStep.Failed.takeIf { found.attempted && chosen == null }
 
                         StagedLookup.None -> null
                     }
