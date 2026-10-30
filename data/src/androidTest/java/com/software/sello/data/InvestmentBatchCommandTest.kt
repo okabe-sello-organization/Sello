@@ -505,8 +505,6 @@ class InvestmentBatchCommandTest {
         val outcome = submit(command)
 
         assertEquals(CommandOutcome.OutcomeUnknown(command.operationId), outcome)
-        // The refused commit leaves this handle's transaction open (#281); a restart clears it.
-        ledger.reopen()
         assertEquals(Outcome.Success(null), ledger.investments.find(command.operationId))
         assertEquals(before, state())
         val saved = committed(submit(command))
