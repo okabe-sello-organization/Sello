@@ -18,8 +18,9 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * What the month's income looks like, without and with the suggestion to assign what is
- * unassigned, kept as committed images (ADR 0022): Cobalto light, Cobalto dark at twice the font
- * size, and Violeta light. See ExpenseEntryScreenshotTest.
+ * unassigned, and as last read after a refresh that failed, kept as committed images
+ * (ADR 0022): Cobalto light, Cobalto dark at twice the font size, and Violeta light. See
+ * ExpenseEntryScreenshotTest.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -44,11 +45,19 @@ class IncomeHistoryScreenshotTest {
         allocatedShare = 2f / 3f
     )
 
-    /** [name] is the baseline's name; [assign] is the suggestion drawn, if any. */
-    private fun capture(look: Look, name: String, assign: AssignSuggestion?) {
+    /**
+     * [name] is the baseline's name; [assign] is the suggestion drawn, if any; [stale] draws
+     * the figures as last read, after a refresh that failed.
+     */
+    private fun capture(
+        look: Look,
+        name: String,
+        assign: AssignSuggestion?,
+        stale: Boolean = false
+    ) {
         rule.showSello(look) {
             IncomeHistoryScreen(
-                state,
+                state.copy(stale = stale),
                 split,
                 IncomePlanState.None,
                 assign,
@@ -84,4 +93,14 @@ class IncomeHistoryScreenshotTest {
     @Test
     fun suggestionVioletaLight() =
         capture(Look(ink = SelloInk.Violeta), "income-history-suggestion", suggestion)
+
+    @Test
+    fun staleCobaltoLight() = capture(Look(), "income-history-stale", null, stale = true)
+
+    @Test
+    fun staleCobaltoDark() = capture(Look(dark = true), "income-history-stale", null, stale = true)
+
+    @Test
+    fun staleVioletaLight() =
+        capture(Look(ink = SelloInk.Violeta), "income-history-stale", null, stale = true)
 }
