@@ -18,10 +18,12 @@ import com.software.sello.domain.model.InvestmentFigures
 import com.software.sello.domain.model.InvestmentHistory
 import com.software.sello.domain.model.InvestmentHistoryError
 import com.software.sello.domain.model.InvestmentId
+import com.software.sello.domain.model.InvestmentLineError
 import com.software.sello.domain.model.InvestmentMovement
 import com.software.sello.domain.model.InvestmentMovementId
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.OperationId
+import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.UsdRateEntry
@@ -51,10 +53,13 @@ import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentUndoOffer
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RecordInvestmentMovement
+import com.software.sello.domain.port.RecordInvestmentMovements
+import com.software.sello.domain.port.RefusedInvestmentLine
 import com.software.sello.domain.port.RestoreInvestmentMovement
 import com.software.sello.domain.port.SetUsdRate
 import java.time.Instant
 import java.time.LocalDate
+import java.util.UUID
 
 /**
  * Investments and the USD rate, by the steps of [RoomGoalCommands]: check the
@@ -104,6 +109,10 @@ class RoomInvestmentCommands internal constructor(
             is EditInvestment -> database.runOutcome(command.operationId) { decide(command) }
 
             is RecordInvestmentMovement -> database.runOutcome(command.operationId) {
+                decide(command)
+            }
+
+            is RecordInvestmentMovements -> database.runOutcome(command.operationId) {
                 decide(command)
             }
 
@@ -407,6 +416,67 @@ class RoomInvestmentCommands internal constructor(
             committed(profile, command, loaded.row.id, now)
         }
 
+    /**
+     * Every line at the next recording positions, in line order, with one version raise,
+     * one revision and one receipt, or nothing (SELLO-129). Each line's own amount and
+     * date are checked first, every refused line named; then the history with all of
+     * them, which names the one line at fault.
+     */
+    private suspend fun decide(command: RecordInvestmentMovements): InvestmentCommandOutcome {
+        val movementIds = command.lines.indices.map { lineMovementId(command.operationId, it) }
+        val profile = database.proceedOr(
+            command.operationId,
+            command.generation,
+            command.kind,
+            inputDigest(command),
+            { it.committed().copy(movementIds = movementIds) }
+        ) { return it }
+        if (command.lines.size !in 1..RecordInvestmentMovements.MAX_LINES) {
+            return Rejected(Specific(InvestmentRejection.LineCount(command.lines.size)))
+        }
+        val loaded = when (val load = load(command)) {
+            is Load.Found -> load.investment
+            is Load.Refused -> return load.outcome
+        }
+        val investment = loaded.history.investment
+        val refused = command.lines.mapIndexedNotNull { position, line ->
+            val reason = amountRejection(line.kind, line.amount, investment.currency)
+                ?: dateRejection(line.date)
+            reason?.let { RefusedInvestmentLine(position, it) }
+        }
+        if (refused.isNotEmpty()) {
+            return Rejected(Specific(InvestmentRejection.LinesRefused(refused)))
+        }
+        val now = audit.now()
+        var sequence = loaded.row.nextSequence
+        val movements = command.lines.mapIndexed { position, line ->
+            if (position > 0) {
+                sequence =
+                    nextCounter(sequence, InvestmentEntity.TABLE, loaded.row.id, "next_sequence")
+            }
+            InvestmentMovement(
+                id = movementIds[position],
+                kind = line.kind,
+                amount = line.amount,
+                date = line.date,
+                sequence = sequence,
+                note = line.note,
+                version = 1,
+                createdAt = now,
+                updatedAt = now
+            )
+        }
+        when (val worked = InvestmentPolicy.withLines(loaded.history, movements)) {
+            is Outcome.Success -> Unit
+            is Outcome.Failure -> return Rejected(Specific(worked.error.toRejection()))
+        }
+        movements.forEach { database.investmentDao().insertMovement(it.toEntity(investment.id)) }
+        val next = nextCounter(sequence, InvestmentEntity.TABLE, loaded.row.id, "next_sequence")
+        write(loaded.row, now, loaded.row.copy(nextSequence = next))
+        val receipt = commit(profile, command, loaded.row.id, now)
+        return Committed(receipt.committed().copy(movementIds = movementIds), replayed = false)
+    }
+
     /** The movement [id] of [investment], as stored, or why it cannot be changed. */
     private fun movement(
         investment: Loaded,
@@ -602,6 +672,28 @@ class RoomInvestmentCommands internal constructor(
             is Outcome.Success -> Outcome.Success(receipt.value.committedOrNull())
         }
     }
+}
+
+/**
+ * The movement the line at [position] of the batch [operation] writes. It is made from
+ * both, so a replay names the same movements without a stored list. It is a name-based
+ * (version 3) UUID, so it never equals a random one from [RecordIdSource].
+ */
+private fun lineMovementId(operation: OperationId, position: Int): InvestmentMovementId {
+    val name = "${OperationKind.RecordInvestmentMovements.key}/${operation.value}/$position"
+    val made = UUID.nameUUIDFromBytes(name.toByteArray(Charsets.UTF_8)).toString()
+    return when (val id = InvestmentMovementId.of(made)) {
+        is Outcome.Success -> id.value
+        is Outcome.Failure -> error("A name-based identifier was not canonical")
+    }
+}
+
+/** A batch's history refusal, naming its line; a total that does not fit names none. */
+private fun InvestmentLineError.toRejection(): InvestmentRejection {
+    val reason = error.toRejection()
+    return position?.let {
+        InvestmentRejection.LinesRefused(listOf(RefusedInvestmentLine(it, reason)))
+    } ?: reason
 }
 
 /** Why a candidate history may not be written, as the port names it. */

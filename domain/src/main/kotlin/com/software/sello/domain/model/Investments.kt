@@ -150,6 +150,13 @@ sealed interface InvestmentHistoryError {
     data object Unrepresentable : InvestmentHistoryError
 }
 
+/**
+ * Why a history with new lines added does not work out: [error], and the 0-based
+ * [position] of the line at fault, or null when no single line is (a total that does not
+ * fit). [error] may name a recorded movement that a line left short.
+ */
+data class InvestmentLineError(val position: Int?, val error: InvestmentHistoryError)
+
 sealed interface UsdRateError {
     /** Below 1,00 or above 100.000,00 pesos per dollar (rule 11). */
     data object OutOfBounds : UsdRateError

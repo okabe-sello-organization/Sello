@@ -35,6 +35,9 @@ enum class OperationKind(val key: String) {
     CreateInvestment("investment.create"),
     EditInvestment("investment.edit"),
     RecordInvestmentMovement("investment.record_movement"),
+
+    /** Several movements of one investment, saved together or not at all. */
+    RecordInvestmentMovements("investment.record_movements"),
     EditInvestmentMovement("investment.edit_movement"),
     DeleteInvestmentMovement("investment.delete_movement"),
     RestoreInvestmentMovement("investment.restore_movement"),
