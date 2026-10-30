@@ -91,6 +91,9 @@ class HandBackupRecords(initial: BackupRecord = BackupRecord()) : BackupRecords 
 class HandRestores(private val events: MutableList<String>? = null) : Restores {
     var stageAnswer: Outcome<StagedRestore, StageFailure> =
         Outcome.Failure(StageFailure.Storage)
+
+    /** Answered in turn before [stageAnswer]. */
+    val stageAnswers = ArrayDeque<Outcome<StagedRestore, StageFailure>>()
     var replaceAnswer: RestoreOutcome = RestoreOutcome.Failed
     var stagedAnswer: StagedLookup = StagedLookup.None
     var pendingAnswer: RestoreOutcome.Restored? = null
@@ -109,7 +112,7 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
     override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
         events?.add("stage ${bytes.toList()}")
         staged += bytes.size
-        return stageAnswer
+        return stageAnswers.removeFirstOrNull() ?: stageAnswer
     }
 
     override suspend fun staged(): StagedLookup {
@@ -161,8 +164,9 @@ class CommittedBeforeRename(
     /** How many times the preferences were written. */
     var written = 0
 
+    /** Refused until a look finds the replacement; staging is never offered after that. */
     override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> =
-        Outcome.Failure(StageFailure.Storage)
+        Outcome.Failure(if (renamed) StageFailure.Storage else StageFailure.Unsettled)
 
     override suspend fun staged(): StagedLookup {
         stagedGates.removeFirstOrNull()?.await()

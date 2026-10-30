@@ -49,13 +49,24 @@ sealed interface RestoreStep {
 
     /**
      * The replacement under [operationId] may have committed. Checking reads its receipt
-     * again, never replaces; [checking] while that runs.
+     * again, never replaces; [checking] while that runs. [chosenSetAside]: a file chosen
+     * meanwhile was not checked, because this one had to be settled first.
      */
-    data class Unknown(val operationId: OperationId, val checking: Boolean = false) : RestoreStep
+    data class Unknown(
+        val operationId: OperationId,
+        val checking: Boolean = false,
+        val chosenSetAside: Boolean = false
+    ) : RestoreStep
 
-    /** Replaced. Preferences that are not done yet are named in [outcome]. */
-    data class Restored(val outcome: RestoreOutcome.Restored, val applying: Boolean = false) :
-        RestoreStep
+    /**
+     * Replaced. Preferences that are not done yet are named in [outcome]. [chosenSetAside]:
+     * a file chosen meanwhile was not checked, because this one had to be finished first.
+     */
+    data class Restored(
+        val outcome: RestoreOutcome.Restored,
+        val applying: Boolean = false,
+        val chosenSetAside: Boolean = false
+    ) : RestoreStep
 }
 
 /**
@@ -89,7 +100,8 @@ class RestoreSession(
      * saying it was not replaced if it had been confirmed; a confirmed file that can no
      * longer be offered is shown as not restored.
      * Failing all, [chosen], a file an earlier process was given but had not finished
-     * with, is checked again; it is never replaced without a confirmation.
+     * with, is checked again; it is never replaced without a confirmation. A staged file
+     * still waiting is not previewed then: the person chose another since.
      */
     fun resume(chosen: DocumentSource? = null) {
         if (state.value != RestoreStep.Idle) return
@@ -98,22 +110,7 @@ class RestoreSession(
             resuming.withLock {
                 // Another screen's look may have found it first.
                 if (state.value != RestoreStep.Idle) return@withLock
-                val next = restores.pending()?.let { RestoreStep.Restored(it) }
-                    ?: when (val found = restores.staged()) {
-                        is StagedLookup.Waiting ->
-                            RestoreStep.Previewing(found.staged, notReplaced = found.attempted)
-
-                        is StagedLookup.Replaced -> replaced(found.operationId)
-
-                        is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
-
-                        // A confirmed file that can no longer be offered: say it did not
-                        // happen, unless a file chosen since is still to be checked.
-                        is StagedLookup.NotReplaced ->
-                            RestoreStep.Failed.takeIf { found.attempted && chosen == null }
-
-                        StagedLookup.None -> null
-                    }
+                val next = look(chosen)
                 when {
                     next != null -> state.compareAndSet(RestoreStep.Idle, next)
                     chosen != null -> choose(chosen)
@@ -122,22 +119,80 @@ class RestoreSession(
         }
     }
 
-    fun choose(source: DocumentSource) = begin(RestoreStep.Checking, from = ::choosable) {
-        when (val read = reader.read(source, maxBytes)) {
-            DocumentRead.Failed -> RestoreStep.Rejected(RestoreRejection.Unreadable)
+    /** What [resume] finds, called with [resuming] held; null when there is nothing to show. */
+    private suspend fun look(chosen: DocumentSource?): RestoreStep? =
+        restores.pending()?.let { RestoreStep.Restored(it) }
+            ?: when (val found = restores.staged()) {
+                is StagedLookup.Waiting -> RestoreStep.Previewing(
+                    found.staged,
+                    notReplaced = found.attempted
+                ).takeIf { chosen == null }
 
-            is DocumentRead.TooLarge -> RestoreStep.Rejected(RestoreRejection.TooLarge)
+                is StagedLookup.Replaced -> replaced(found.operationId)
 
-            is DocumentRead.Read -> when (val staged = restores.stage(read.bytes)) {
-                is Outcome.Success -> RestoreStep.Previewing(staged.value)
+                is StagedLookup.Unknown -> RestoreStep.Unknown(found.operationId)
 
-                is Outcome.Failure -> when (val failure = staged.error) {
-                    is StageFailure.Rejected -> RestoreStep.Rejected(failure.reason)
-                    StageFailure.Storage -> RestoreStep.Failed
-                }
+                // A confirmed file that can no longer be offered: say it did not
+                // happen, unless a file chosen since is still to be checked.
+                is StagedLookup.NotReplaced ->
+                    RestoreStep.Failed.takeIf { found.attempted && chosen == null }
+
+                StagedLookup.None -> null
+            }
+
+    /**
+     * Stages [source] in turn with the looks. A replacement still pending, or a file
+     * staged earlier that may have replaced the history, comes first: it is shown as it
+     * is found, restored or not known yet, saying the chosen file was not checked. Found
+     * not replaced, the chosen file is staged once more; the earlier file is never
+     * previewed in answer to this choice.
+     */
+    fun choose(source: DocumentSource) = begin(RestoreStep.Checking, from = ::choosable) { before ->
+        val read = reader.read(source, maxBytes)
+        resuming.withLock {
+            when (read) {
+                DocumentRead.Failed ->
+                    RestoreStep.Rejected(RestoreRejection.Unreadable).also { forget(before) }
+
+                is DocumentRead.TooLarge ->
+                    RestoreStep.Rejected(RestoreRejection.TooLarge).also { forget(before) }
+
+                // A look that found it may have lost its turn to this choice.
+                is DocumentRead.Read ->
+                    restores.pending()?.let { RestoreStep.Restored(it, chosenSetAside = true) }
+                        ?: stage(read.bytes, again = true, over = before)
             }
         }
     }
+
+    /**
+     * A file chosen over a preview that did not stage: the previewed file is forgotten,
+     * so it never comes back after another was picked. Called with [resuming] held.
+     */
+    private suspend fun forget(before: RestoreStep) {
+        if (before is RestoreStep.Previewing) restores.discard()
+    }
+
+    /** Called with [resuming] held. */
+    private suspend fun stage(bytes: ByteArray, again: Boolean, over: RestoreStep): RestoreStep =
+        when (val staged = restores.stage(bytes)) {
+            is Outcome.Success -> RestoreStep.Previewing(staged.value)
+
+            is Outcome.Failure -> when (val failure = staged.error) {
+                is StageFailure.Rejected -> RestoreStep.Rejected(failure.reason).also {
+                    forget(over)
+                }
+
+                StageFailure.Storage -> RestoreStep.Failed.also { forget(over) }
+
+                // Nothing is forgotten here: the file staged may have replaced the history.
+                StageFailure.Unsettled -> when (val earlier = look(chosen = null)) {
+                    is RestoreStep.Restored -> earlier.copy(chosenSetAside = true)
+                    is RestoreStep.Unknown -> earlier.copy(chosenSetAside = true)
+                    else -> if (again) stage(bytes, again = false, over) else RestoreStep.Failed
+                }
+            }
+        }
 
     fun confirm() {
         val staged = (state.value as? RestoreStep.Previewing)?.staged ?: return
@@ -174,7 +229,11 @@ class RestoreSession(
         scope.launch {
             try {
                 startUp.join()
-                state.compareAndSet(checking, checked(current.operationId))
+                val next = checked(current.operationId)
+                state.compareAndSet(
+                    checking,
+                    if (current.chosenSetAside) next.withChosenSetAside() else next
+                )
             } finally {
                 state.compareAndSet(checking, current)
             }
@@ -196,6 +255,17 @@ class RestoreSession(
             is StagedLookup.NotReplaced -> RestoreStep.Failed
             is StagedLookup.Unknown, StagedLookup.None -> RestoreStep.Unknown(operation)
         }
+    }
+
+    /**
+     * Still about the earlier file, after a file chosen meanwhile was set aside: it keeps
+     * saying so, and it is never previewed, which could pass for the chosen file.
+     */
+    private fun RestoreStep.withChosenSetAside(): RestoreStep = when (this) {
+        is RestoreStep.Restored -> copy(chosenSetAside = true)
+        is RestoreStep.Unknown -> copy(chosenSetAside = true)
+        is RestoreStep.Previewing -> RestoreStep.Failed
+        else -> this
     }
 
     private fun StagedLookup.operationId(): OperationId? = when (this) {
@@ -223,7 +293,7 @@ class RestoreSession(
         state.value = applying
         afterStartUp(busy = applying, before = current) {
             val outcome = restores.applyPending() ?: current.outcome
-            state.value = RestoreStep.Restored(outcome)
+            state.value = RestoreStep.Restored(outcome, chosenSetAside = current.chosenSetAside)
         }
     }
 
@@ -241,14 +311,16 @@ class RestoreSession(
         }
     }
 
+    /** A file chosen while another is previewed takes its place, as staging allows. */
     private fun choosable(step: RestoreStep) =
-        step == RestoreStep.Idle || step is RestoreStep.Rejected || step == RestoreStep.Failed
+        step == RestoreStep.Idle || step is RestoreStep.Rejected || step == RestoreStep.Failed ||
+            step is RestoreStep.Previewing
 
     /** Moves to [busy] only from a state [from] accepts, then runs [work] and shows its result. */
     private fun begin(
         busy: RestoreStep,
         from: (RestoreStep) -> Boolean,
-        work: suspend () -> RestoreStep
+        work: suspend (before: RestoreStep) -> RestoreStep
     ) {
         var before: RestoreStep? = null
         state.update { current ->
@@ -260,7 +332,7 @@ class RestoreSession(
                 current
             }
         }
-        before?.let { afterStartUp(busy, before = it) { state.value = work() } }
+        before?.let { from -> afterStartUp(busy, before = from) { state.value = work(from) } }
     }
 
     /**

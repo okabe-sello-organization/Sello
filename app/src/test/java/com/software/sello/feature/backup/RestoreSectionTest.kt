@@ -10,6 +10,8 @@ import com.software.sello.Look
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.BackupSummary
+import com.software.sello.domain.port.PendingPreferences
+import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.StagedRestore
 import com.software.sello.showSello
 import java.time.Instant
@@ -28,6 +30,11 @@ class RestoreSectionTest {
     private val operation = OperationId.of("00000000-0000-4000-8000-000000005000")
         .let { (it as Outcome.Success).value }
 
+    private companion object {
+        const val SET_ASIDE =
+            "No revisamos el archivo que elegiste: primero había que resolver esta restauración."
+    }
+
     private fun show(step: RestoreStep) {
         rule.showSello(Look()) { RestoreSection(RestoreState(step = step), { actions += it }) }
     }
@@ -40,6 +47,37 @@ class RestoreSectionTest {
         rule.onNodeWithText("Comprobar").performClick()
 
         assertEquals(listOf<RestoreAction>(RestoreAction.Check), actions)
+    }
+
+    @Test
+    fun anUnknownOutcomeShownForAnEarlierRestoreSaysTheChosenFileWasNotChecked() {
+        show(RestoreStep.Unknown(operation, chosenSetAside = true))
+
+        rule.onNodeWithText("No sabemos si se restauró").assertIsDisplayed()
+        rule.onNodeWithText(SET_ASIDE, substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun anEarlierRestoreShownRestoredSaysTheChosenFileWasNotChecked() {
+        show(
+            RestoreStep.Restored(
+                RestoreOutcome.Restored(
+                    BackupSummary(2, 3, 1, 0, 0),
+                    PendingPreferences(null, null)
+                ),
+                chosenSetAside = true
+            )
+        )
+
+        rule.onNodeWithText("Ir al recibo").assertIsDisplayed()
+        rule.onNodeWithText(SET_ASIDE).assertIsDisplayed()
+    }
+
+    @Test
+    fun anUnknownOutcomeWithoutASetAsideSaysNothingAboutAChosenFile() {
+        show(RestoreStep.Unknown(operation))
+
+        rule.onNodeWithText(SET_ASIDE, substring = true).assertDoesNotExist()
     }
 
     @Test

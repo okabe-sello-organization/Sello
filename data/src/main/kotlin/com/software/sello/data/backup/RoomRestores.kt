@@ -65,6 +65,8 @@ import kotlinx.coroutines.withContext
  *   previewed. Nothing financial has changed while only these exist.
  * - `restored.json`: the history was replaced from it; its preferences are not all
  *   applied yet. `applied` lists the groups that are. The folder empties once all are.
+ * - `<file>.tmp`: a write in progress, renamed over its file once synced. A death before
+ *   the rename leaves it; it goes with its file, or with what a look finds left over.
  *
  * Files are only ever read or written outside a transaction. A restore whose receipt
  * exists is committed whatever the files say, so a crash between the commit and the
@@ -136,6 +138,25 @@ class RoomRestores(
     private fun rejected(reason: RestoreRejection) = Outcome.Failure(StageFailure.Rejected(reason))
 
     private suspend fun stagingPosition(): Outcome<Position, StageFailure> {
+        // A file that may have replaced the history is looked at before another takes its
+        // place (ARCHITECTURE §5). Read before `restored.json`: a look renaming it between
+        // the two is then still seen.
+        // A manifest beside its file that cannot be read whole still names its operation;
+        // one that names none cannot be told apart from a committed one.
+        val earlier = try {
+            if (io { manifest.exists() && staged.exists() }) {
+                readManifest()?.operation
+                    ?: io { manifestOperation() }
+                    ?: return Outcome.Failure(StageFailure.Storage)
+            } else {
+                null
+            }
+        } catch (_: IOException) {
+            return Outcome.Failure(StageFailure.Storage)
+        }
+        if (earlier != null && committed(earlier) != false) {
+            return Outcome.Failure(StageFailure.Unsettled)
+        }
         // A replacement whose preferences are still pending is finished first.
         if (io { restored.exists() }) return Outcome.Failure(StageFailure.Storage)
         return when (val read = position()) {
@@ -163,8 +184,10 @@ class RoomRestores(
                 report?.let { write(it) }
             }
             // The old manifest goes first: a stage cut short then finds nothing, never this
-            // file under another file's operation or confirmation.
+            // file under another file's operation or confirmation. An `applied` list here
+            // is an earlier replacement's whose clean-up was cut short; it is not this one's.
             (!manifest.exists() || manifest.delete()) &&
+                clear(applied) &&
                 writeAtomically(staged, bytes) &&
                 writeAtomically(manifest, properties.text())
         }
@@ -173,12 +196,12 @@ class RoomRestores(
     }
 
     override suspend fun staged(): StagedLookup {
-        val manifest = readManifest() ?: return StagedLookup.None
+        val manifest = readManifest() ?: return withoutStaging()
         when (committed(manifest.operation)) {
             // A crash came between the commit and the rename that follows it. Replaced
             // only once [pending] can read it; otherwise it stays to look at again.
             true -> {
-                val moved = io { staged.renameTo(restored) && restored.isFile }
+                val moved = io { moveToRestored() && restored.isFile }
                 return if (moved) {
                     StagedLookup.Replaced(manifest.operation)
                 } else {
@@ -208,13 +231,45 @@ class RoomRestores(
         )
     }
 
+    /**
+     * The staged file becomes the restored one. Until then an `applied` list can only be
+     * an earlier replacement's, left by a clean-up cut short, even one an earlier version
+     * staged beside; it is not this one's.
+     */
+    private fun moveToRestored(): Boolean {
+        if (!restored.exists()) clear(applied)
+        return staged.renameTo(restored)
+    }
+
     override suspend fun discard() {
         io {
             if (!restored.exists()) {
-                staged.delete()
-                manifest.delete()
+                clear(staged)
+                clear(manifest)
             }
         }
+    }
+
+    /**
+     * With no replacement pending and no usable staging, what is in the folder is what a
+     * stage, discard or clean-up cut short left: a file without its manifest or the
+     * reverse, an `applied` list, temporary copies. None says what became of a replacement.
+     * A manifest beside its file that cannot be read whole is not a leftover: it is kept,
+     * and its replacement is unknown, unless the operation it names did not commit.
+     */
+    private suspend fun withoutStaging(): StagedLookup {
+        if (io { manifest.exists() && staged.exists() }) {
+            val operation = io { manifestOperation() } ?: return StagedLookup.None
+            if (committed(operation) != false) return StagedLookup.Unknown(operation)
+        }
+        io {
+            if (!restored.exists()) {
+                clear(staged)
+                clear(manifest)
+                clear(applied)
+            }
+        }
+        return StagedLookup.None
     }
 
     override suspend fun replace(staged: StagedRestore): RestoreOutcome {
@@ -228,7 +283,7 @@ class RoomRestores(
         return when (run) {
             is CommandRun.Finished -> when (run.value) {
                 Replacement.Done, Replacement.AlreadyDone -> {
-                    io { this.staged.renameTo(restored) }
+                    io { moveToRestored() }
                     applyPending() ?: RestoreOutcome.Restored(
                         contents.financial.summary(),
                         PendingPreferences(null, null)
@@ -287,10 +342,12 @@ class RoomRestores(
         reviewRestoredEntries()
         val left = PendingPreferences(appearanceLeft, orderingLeft, investmentsLeft)
         if (left.done) {
+            // The manifest first and `applied` last: a death between them leaves either this
+            // replacement with every group applied, finished again quietly, or a list with no
+            // replacement, which nothing reads and a later look or stage clears.
             io {
-                restored.delete()
-                applied.delete()
-                manifest.delete()
+                clear(manifest)
+                if (restored.delete() || !restored.exists()) clear(applied)
             }
         }
         return RestoreOutcome.Restored(pending.summary, left)
@@ -536,6 +593,13 @@ class RoomRestores(
         }
     }
 
+    /** The operation the manifest names, if it names a well-formed one. */
+    private fun manifestOperation(): OperationId? {
+        val properties = Properties().apply { manifest.inputStream().use(::load) }
+        return (OperationId.of(properties.getProperty(OPERATION).orEmpty()) as? Outcome.Success)
+            ?.value
+    }
+
     private suspend fun readManifest(): Manifest? = io {
         if (!manifest.exists() || !staged.exists()) return@io null
         val properties = Properties().apply { manifest.inputStream().use(::load) }
@@ -604,15 +668,30 @@ class RoomRestores(
     /** File work off the main thread; any I/O error is null or false, never a crash. */
     private suspend fun <T> io(block: () -> T): T = withContext(dispatchers.io) { block() }
 
-    private fun writeAtomically(target: File, bytes: ByteArray): Boolean = try {
-        val temporary = File(target.parentFile, "${target.name}.tmp")
-        FileOutputStream(temporary).use { stream ->
-            stream.write(bytes)
-            stream.fd.sync()
+    /** A write that fails takes its temporary copy with it, which may hold part of a backup. */
+    private fun writeAtomically(target: File, bytes: ByteArray): Boolean {
+        val temporary = target.temporary()
+        val written = try {
+            FileOutputStream(temporary).use { stream ->
+                stream.write(bytes)
+                stream.fd.sync()
+            }
+            temporary.renameTo(target)
+        } catch (_: IOException) {
+            false
         }
-        temporary.renameTo(target)
-    } catch (_: IOException) {
-        false
+        if (!written && temporary.isFile) temporary.delete()
+        return written
+    }
+
+    private fun File.temporary() = File(parentFile, "$name.tmp")
+
+    /** Deletes [file] and its temporary copy; true when neither is left. */
+    private fun clear(file: File): Boolean {
+        val temporary = file.temporary()
+        temporary.delete()
+        file.delete()
+        return !temporary.exists() && !file.exists()
     }
 
     private fun Properties.text(): ByteArray =

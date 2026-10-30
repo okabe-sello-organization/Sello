@@ -21,6 +21,8 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.BackupSummary
+import com.software.sello.domain.port.PendingPreferences
+import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.StagedRestore
 import com.software.sello.feature.backup.RestoreSection
 import com.software.sello.feature.backup.RestoreState
@@ -161,6 +163,30 @@ class FeatureComponentsScreenshotTest {
         RestoreSection(RestoreState(RestoreStep.Unknown(operation), zone = zone), onAction = {})
         RestoreSection(
             RestoreState(RestoreStep.Previewing(staged, notReplaced = true), zone = zone),
+            onAction = {}
+        )
+    }
+
+    /** Respaldo showing an earlier restore instead of checking the file just chosen. */
+    @Test
+    fun restoreChosenSetAside() = capture("restore-chosen-set-aside") {
+        val operation = (OperationId.of(uuid(5_000)) as Outcome.Success).value
+        val zone = ZoneId.of("America/Bogota")
+        RestoreSection(
+            RestoreState(RestoreStep.Unknown(operation, chosenSetAside = true), zone = zone),
+            onAction = {}
+        )
+        RestoreSection(
+            RestoreState(
+                RestoreStep.Restored(
+                    RestoreOutcome.Restored(
+                        BackupSummary(2, 3, 1, 0, 0),
+                        PendingPreferences(null, null)
+                    ),
+                    chosenSetAside = true
+                ),
+                zone = zone
+            ),
             onAction = {}
         )
     }

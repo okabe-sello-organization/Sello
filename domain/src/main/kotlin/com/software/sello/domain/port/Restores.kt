@@ -146,6 +146,13 @@ sealed interface StageFailure {
 
     /** The current data or the private staging area could not be read or written. */
     data object Storage : StageFailure
+
+    /**
+     * A file staged earlier may have replaced the history: its replacement committed and
+     * was not finished, or whether it committed cannot be read. Nothing was staged; that
+     * file is looked at again first.
+     */
+    data object Unsettled : StageFailure
 }
 
 /** The backup's preferences that still have to be applied; null when that group is done. */
@@ -209,7 +216,8 @@ interface Restores {
 
     /**
      * A file staged earlier and what became of it, read again from its operation's
-     * receipt each time. It is never replaced from here.
+     * receipt each time. It is never replaced from here. With none, what an interrupted
+     * stage or clean-up left is cleared.
      */
     suspend fun staged(): StagedLookup
 

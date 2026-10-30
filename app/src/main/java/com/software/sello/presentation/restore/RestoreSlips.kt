@@ -50,24 +50,26 @@ import com.software.sello.presentation.investments.newInvestmentLabel
 
 /**
  * A replaced history: Restaurado when every preference was applied too, otherwise D09's
- * slip naming only the preferences still pending. Also shown at start-up.
+ * slip naming only the preferences still pending. Also shown at start-up. [note], when
+ * given, is one more line before the buttons.
  */
 @Composable
 internal fun RestoredSlip(
     outcome: RestoreOutcome.Restored,
     applying: Boolean,
     onApply: () -> Unit,
-    onLeave: () -> Unit
+    onLeave: () -> Unit,
+    note: String? = null
 ) {
     if (outcome.preferences.done) {
-        Restored(outcome.summary, onLeave)
+        Restored(outcome.summary, note, onLeave)
     } else {
-        Pending(outcome.preferences, applying, onApply, onLeave)
+        Pending(outcome.preferences, applying, note, onApply, onLeave)
     }
 }
 
 @Composable
-private fun Restored(summary: BackupSummary, onLeave: () -> Unit) {
+private fun Restored(summary: BackupSummary, note: String?, onLeave: () -> Unit) {
     Slip(Modifier.fillMaxWidth().testTag(RESTORE_DONE_TAG), pinked = false) {
         FlowRow(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -93,6 +95,7 @@ private fun Restored(summary: BackupSummary, onLeave: () -> Unit) {
                 )
             )
         )
+        note?.let { RestoreBody(it) }
         GoToRecibo(onLeave)
     }
 }
@@ -102,6 +105,7 @@ private fun Restored(summary: BackupSummary, onLeave: () -> Unit) {
 private fun Pending(
     preferences: PendingPreferences,
     applying: Boolean,
+    note: String?,
     onApply: () -> Unit,
     onLeave: () -> Unit
 ) {
@@ -143,6 +147,7 @@ private fun Pending(
             ),
             Modifier.padding(top = SelloTheme.spacing.sm)
         )
+        note?.let { RestoreBody(it) }
         SelloButton(
             text = stringResource(
                 applyLabel(preferences)
