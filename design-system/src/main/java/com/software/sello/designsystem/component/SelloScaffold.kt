@@ -210,12 +210,12 @@ fun SelloScaffold(
                             val first = layout.listPaneWidth
                                 ?.let { Modifier.width(it) } ?: Modifier.weight(1f)
                             Box(first.fillMaxHeight().testTag(SCAFFOLD_PRIMARY_TAG)) {
-                                content(padding)
+                                OnDesk { content(padding) }
                             }
                             Box(
                                 Modifier.weight(1f).fillMaxHeight().testTag(SCAFFOLD_SECONDARY_TAG)
                             ) {
-                                secondaryPane(padding)
+                                OnDesk { secondaryPane(padding) }
                             }
                         }
                     } else {
@@ -225,7 +225,7 @@ fun SelloScaffold(
                                 .widthIn(max = layout.contentMaxWidth ?: Dp.Unspecified)
                                 .fillMaxSize()
                                 .testTag(SCAFFOLD_PRIMARY_TAG)
-                        ) { content(padding) }
+                        ) { OnDesk { content(padding) } }
                     }
                     if (notice != null) {
                         // Over the content, so what it says never moves what is under it.
@@ -378,3 +378,9 @@ const val SCAFFOLD_DOCK_TAG = "sello:scaffold:dock"
 internal const val SCAFFOLD_NOTICE_TAG = "sello:scaffold:notice"
 const val SCAFFOLD_PRIMARY_TAG = "sello:scaffold:primary"
 const val SCAFFOLD_SECONDARY_TAG = "sello:scaffold:secondary"
+
+/** The panes sit on the desk, so text that names no colour writes in the theme's ink. */
+@Composable
+private fun OnDesk(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalContentColor provides SelloTheme.colors.ink, content = content)
+}
