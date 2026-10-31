@@ -3,6 +3,7 @@ package com.software.sello.feature.bulk
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -583,7 +584,9 @@ private fun SwitchSlip(state: BulkEntryState, onAction: (BulkEntryAction) -> Uni
         destructive = false,
         dismissLabel = stringResource(
             if (toIncome) R.string.bulk_switch_keep_expenses else R.string.bulk_switch_keep_incomes
-        )
+        ),
+        // "Seguir con gastos" and "Seguir con ingresos" stay on one line, as designed.
+        buttonPadding = PaddingValues(horizontal = 8.dp)
     )
 }
 

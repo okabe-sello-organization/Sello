@@ -1,5 +1,9 @@
 package com.software.sello.feature.bulk
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
@@ -11,6 +15,8 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
@@ -183,6 +189,26 @@ class BulkIncomesScreenTest {
         rule.onNodeWithText("Pasar a ingreso").performClick()
 
         assertEquals(listOf(BulkEntryAction.SwitchDismissed, BulkEntryAction.SwitchConfirmed), sent)
+    }
+
+    /** How many lines [text] takes where it is drawn. */
+    private fun linesOf(text: String): Int {
+        val layouts = mutableListOf<TextLayoutResult>()
+        rule.onNodeWithText(text).performSemanticsAction(SemanticsActions.GetTextLayoutResult) {
+            it(layouts)
+        }
+        return layouts.single().lineCount
+    }
+
+    @Test
+    fun seguirConGastosAndSeguirConIngresosStayOnOneLine() {
+        var shown by mutableStateOf(switching)
+        rule.showSello(claro) { BulkEntryScreen(shown, dateLabels(), {}) }
+        val expenses = linesOf("Seguir con gastos")
+        shown = three.copy(confirmSwitch = true)
+        rule.waitForIdle()
+
+        assertEquals(1 to 1, expenses to linesOf("Seguir con ingresos"))
     }
 
     @Test
