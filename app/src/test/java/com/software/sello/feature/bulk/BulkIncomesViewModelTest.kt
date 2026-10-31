@@ -361,7 +361,8 @@ class BulkIncomesViewModelTest {
         val bulk = incomeSheet(saved)
         bulk.threeIncomes()
 
-        val restored = incomeSheet(saved.afterProcessDeath())
+        // Without the route's hint: the kind comes from the saved receipt itself.
+        val restored = incomeSheet(saved.afterProcessDeath().apply { remove<Boolean>("income") })
 
         assertEquals(BulkKind.Income, restored.now.kind)
         assertEquals(listOf("450.000", "120.000", "850.000"), restored.digits)
@@ -601,7 +602,8 @@ class BulkIncomesViewModelTest {
         bulk.threeIncomes()
         bulk.onAction(BulkEntryAction.Select(1))
 
-        val restored = incomeSheet(saved.afterProcessDeath())
+        // Without the route's hint: the kind comes from the saved receipt itself.
+        val restored = incomeSheet(saved.afterProcessDeath().apply { remove<Boolean>("income") })
 
         assertEquals(BulkKind.Income, restored.now.kind)
         assertEquals(listOf("450.000", "120.000", "850.000"), restored.digits)
