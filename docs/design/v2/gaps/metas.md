@@ -53,7 +53,7 @@ Missing = nothing exists.
 | Movimientos, stamp in place of +, **Retirar dinero** in the header | Present | `MovementRow(milestone = …)`; catalog *Contributions and withdrawals*; no device test |
 | Faded kept stamp with "sigue siendo tuyo" | Present | `MilestoneState.Kept` with `caption`; `reducedMotionRetainsTheEarnedMilestoneMeaningAfterWithdrawal` |
 | Dock **Aportar a esta meta** | Partial | Same as the tab's dock |
-| Completed goal, read-only, red **Borrar esta meta** | Present | `DangerSlip`, `ConfirmSlip` |
+| Completed goal, read-only, **Borrar meta** in the ⋮ | Present | `MoreMenu`, `ConfirmSlip` |
 
 ## Aportar / Retirar
 
@@ -77,7 +77,7 @@ Missing = nothing exists.
 | Amount card "Cuánto necesitas", pad with **Listo** | Partial | `AmountKeypad(onSubmit)` and `EntryAmountSlip` exist; a pad that slides up over a form is not built |
 | **Para cuándo**, Elegir mes / Sin fecha, "Son 769.231 al mes durante 26 meses" | Partial | `SelloChip`, `MonthGrid` exist; the whole-peso rule is SELLO-086's |
 | Tus sellos with projected months | Present | `MilestoneSpec.caption`; catalog *Milestone states and projections* |
-| **¿Ya la lograste?** and **Borrar esta meta** cards, confirm slip | Present | `Slip`, `DangerSlip`, `ConfirmSlip` |
+| **¿Ya la lograste?** card, **Borrar meta** in the ⋮, confirm slip | Present | `Slip`, `MoreMenu`, `ConfirmSlip` |
 
 ## Celebrations
 

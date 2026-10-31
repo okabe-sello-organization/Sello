@@ -7,6 +7,7 @@
     <string name="sello_decimal_comma">Coma decimal</string>
     <string name="sello_clear_all">Borrar todo</string>
     <string name="sello_paste">Pegar</string>
+    <string name="sello_more_options">Más opciones</string>
     <string name="sello_amount_empty">Sin monto</string>
     <string name="sello_bulk_add_line">Otro renglón</string>
     <string name="sello_bulk_remove">Quitar</string>

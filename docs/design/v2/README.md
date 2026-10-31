@@ -334,8 +334,8 @@ The v1.1 Metas screen, kept close to the original on purpose, in its own tab.
   50 % sigue siendo tuyo: lo lograste en octubre." Percentage and bar show the honest
   figure; the next stamp to earn is the first one not yet earned.
 - **Completed goal (read-only):** four stamps, "Meta lograda el 30 sep" and the history.
-  No edit, no Aportar dock, no Retirar dinero and no star. Its only action is a red
-  **Borrar esta meta** card at the bottom, with the same confirm slip as editing.
+  No edit, no Aportar dock, no Retirar dinero and no star. Its only action is **Borrar
+  meta** in the top bar's ⋮, with the same confirm slip as editing.
 - Removed from v1.1: "Llegas en …", "Al mes …" and "Cada mes aportas más" (projections).
 
 **Aportar / Retirar** reuses the locked entry screen almost unchanged: pinked amount slip,
@@ -377,11 +377,11 @@ no live preview, and the same saving / rejected / unknown-outcome / restore beha
   name, an icon and an amount, and the line above it says which is missing first
   ("Elige un ícono.", "Escribe un nombre.", "Escribe cuánto necesitas."), as on Anotar.
 - **Editing:** earned stamps show "logrado"; the rest show their month at the new pace.
-  Two separate decisions follow, each in its own card: **¿Ya la lograste?** with
-  **Marcar como lograda** (for goals reached outside Sello), and **Borrar esta meta**, a
-  red-outlined card that says what is lost ("Se borran la meta y sus 6 movimientos. Esto no
-  se puede deshacer."). **Borrar meta** opens a confirm slip: "¿Borrar Viaje a la
-  costa?", **Cancelar** and a red **Borrar**.
+  **¿Ya la lograste?** follows in its own card, with **Marcar como lograda** (for goals
+  reached outside Sello). **Borrar meta** waits in the top bar's ⋮ (owner, 2026-10-31:
+  the red card it replaced took too much of the screen) and opens a confirm slip that says
+  what is lost: "¿Borrar Viaje a la costa?", "Se borran la meta y sus 6 movimientos. Esto
+  no se puede deshacer.", **Cancelar** and a red **Borrar**.
 - Automatic monthly contributions wait for recurrence.
 
 **Nueva categoría matches it** (owner, 2026-10-26): the same identity card in Sello blue,
@@ -515,8 +515,8 @@ figure the pad types into is edged in ink and said as such; the others step back
 tap gives one the pad, scrolling it into view. Nothing above the figures is pinned: they
 and the identity scroll together over the button and the pad. A line above **Crear
 inversión** says what is missing first. Editing changes name, description and icon only,
-with no pad; movements are edited from their list. **Borrar esta inversión** is its own
-card with the confirm slip.
+with no pad; movements are edited from their list. **Borrar inversión** waits in the top
+bar's ⋮ and opens the confirm slip.
 
 ### Dólares y la tasa
 
@@ -672,8 +672,8 @@ keeps everything on opening, with no notification or background work.
 - **Changing a schedule:** tapping a row opens the entry layout titled **Pago fijo /
   Ingreso fijo**: amount, category or source, note, Se repite, "Los cambios aplican desde
   mañana. Lo que ya se anotó no cambia.", **Pausar** (with the next date) or, while
-  paused, an **En pausa** slip with **Reanudar**, and a danger card **Borrar este pago
-  fijo** whose confirm slip says "Los gastos ya anotados no se borran." A schedule paused
+  paused, an **En pausa** slip with **Reanudar**; **Borrar pago fijo** waits in the top
+  bar's ⋮ and its confirm slip says "Los gastos ya anotados no se borran." A schedule paused
   by archiving its category says so.
 - **Editing a recorded entry (owner):** saving a new amount, category or note on an entry
   a schedule recorded asks **¿Cambiar también los siguientes?** with **Solo este** and

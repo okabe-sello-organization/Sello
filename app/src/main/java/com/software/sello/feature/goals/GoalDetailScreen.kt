@@ -41,7 +41,6 @@ import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
 import com.software.sello.designsystem.component.ColumnsChart
 import com.software.sello.designsystem.component.ConfirmSlip
-import com.software.sello.designsystem.component.DangerSlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FittedMoneyText
@@ -62,8 +61,8 @@ import com.software.sello.presentation.month.MonthNames
 
 /**
  * One goal: what it holds and its stamps, its facts, aportes by month and its
- * movements. A completed goal is read-only; deleting it is its only action, after the
- * confirm slip. [onWithdraw] is the movements' Retirar dinero, offered only once that
+ * movements. A completed goal is read-only; deleting it, from the top bar's ⋮, is its
+ * only action, after the confirm slip. [onWithdraw] is the movements' Retirar dinero, offered only once that
  * screen exists.
  */
 @Composable
@@ -173,18 +172,10 @@ private fun ColumnScope.Ready(
         onBulk.takeIf { goal.completedOn == null }
     )
     if (goal.completedOn != null) {
-        val consequences = deleteConsequencesText(goal.movements.size)
-        DangerSlip(
-            title = stringResource(R.string.goal_delete_title),
-            consequences = consequences,
-            actionLabel = stringResource(R.string.goal_delete_action),
-            onAction = { onAction(GoalDetailAction.AskToDelete) },
-            modifier = Modifier.testTag("goal.delete")
-        )
         if (state.confirmingDelete) {
             ConfirmSlip(
                 title = stringResource(R.string.goal_delete_confirm_title, goal.name),
-                message = consequences,
+                message = deleteConsequencesText(goal.movements.size),
                 confirmLabel = stringResource(R.string.goal_delete_confirm),
                 onConfirm = { onAction(GoalDetailAction.Delete) },
                 onDismiss = { onAction(GoalDetailAction.CancelDelete) },

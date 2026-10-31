@@ -24,6 +24,7 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.presentation.date.dateLabels
@@ -304,9 +305,8 @@ class ScheduleScreensTest {
         ).performScrollTo().assertIsDisplayed()
         rule.onNodeWithTag(SCHEDULE_SAVE_TAG).assertIsNotEnabled()
         rule.onNodeWithTag(SCHEDULE_PAUSE_TAG).performScrollTo().performClick()
-        rule.onNode(
-            hasText("Borrar") and hasAnyAncestor(hasTestTag(SCHEDULE_DELETE_TAG))
-        ).performScrollTo().performClick()
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+        rule.onNodeWithText("Borrar pago fijo").performClick()
 
         assertEquals(listOf(ScheduleEditorAction.Pause, ScheduleEditorAction.Delete), editorActions)
     }

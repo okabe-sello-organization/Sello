@@ -49,7 +49,6 @@ function stamps(s) {
 }
 
 const doneAsk = () => `<section class="slip done-ask"><h2>¿Ya la lograste?</h2><p>Si llegaste a tu meta por fuera de Sello, márcala como lograda.</p><button class="outline-btn gain wide">${icon("check")}Marcar como lograda</button></section>`;
-const danger = () => `<section class="slip danger"><h2>Borrar esta meta</h2><p>Se borran la meta y sus <b>6 movimientos</b>. Esto no se puede deshacer.</p><button class="outline-btn loss wide">Borrar meta</button></section>`;
 const confirmSlip = () => `<div class="scrim center"><div class="confirm" role="alertdialog" aria-label="Borrar meta"><h2>¿Borrar Viaje a la costa?</h2><p>Se borran la meta y sus <b>6 movimientos</b>. Esto no se puede deshacer.</p><div class="tear" aria-hidden="true"></div><div class="confirm-actions"><button class="ghost">Cancelar</button><button class="del">Borrar</button></div></div></div>`;
 const pad = () => `<div class="pad" role="group" aria-label="Teclado de Sello">${["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0"].map(k => `<button class="${k === "000" ? "k000" : ""}">${k}</button>`).join("")}<button class="del" aria-label="Borrar">${icon("backspace")}</button></div>`;
 
@@ -58,8 +57,8 @@ function form(s, { confirm = false } = {}) {
   const ok = s.name && !tooLong && s.icon && s.amount;
   const missing = !s.icon ? "Elige un ícono." : !s.name ? "Escribe un nombre." : !s.amount ? "Escribe cuánto necesitas." : "";
   const action = `<div class="entry-action">${missing ? `<p class="caption" style="margin:0 2px 6px">${missing}</p>` : ""}<button class="primary goal" ${ok ? "" : "disabled"}>${icon("flag")}${s.edit ? "Guardar cambios" : "Crear meta"}</button></div>${pad()}`;
-  const extra = s.edit ? doneAsk() + danger() : "";
-  return `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button><b style="flex:1;font-size:1.2em;margin-left:4px">${s.edit ? "Editar meta" : "Nueva meta"}</b></div></div><div class="entry-mid" style="padding-top:2px">${identity(s)}${plan(s)}${stamps(s)}${extra}</div>${action}<div class="gesture" style="background:var(--desk)"></div>${confirm ? confirmSlip() : ""}`;
+  const extra = s.edit ? doneAsk() : "";
+  return `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button><b style="flex:1;font-size:1.2em;margin-left:4px">${s.edit ? "Editar meta" : "Nueva meta"}</b>${s.edit ? moreMenu("Borrar meta") : ""}</div></div><div class="entry-mid" style="padding-top:2px">${identity(s)}${plan(s)}${stamps(s)}${extra}</div>${action}<div class="gesture" style="background:var(--desk)"></div>${confirm ? confirmSlip() : ""}`;
 }
 
 const phone = (o, inner, tall) => `<div class="phone ${tall ? "tall" : ""}"><div class="app" data-ink="${o.ink}" data-theme="${o.theme}">${inner}</div></div>`;

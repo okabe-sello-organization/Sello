@@ -23,6 +23,8 @@ import androidx.navigation.toRoute
 import com.software.sello.R
 import com.software.sello.designsystem.component.BandChip
 import com.software.sello.designsystem.component.ButtonTone
+import com.software.sello.designsystem.component.MoreMenu
+import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.SelloDock
 import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
@@ -127,7 +129,8 @@ internal fun MetasDestination(
 /**
  * One goal, titled with its name and never a month. The star on the band chooses it for
  * Recibo. [onEdit], [onContribute], [onWithdraw] and [onBulk] (Aportar varios) are offered
- * only once their screens exist, and never on a completed goal, which can only be deleted.
+ * only once their screens exist, and never on a completed goal, which can only be deleted,
+ * from the top bar's ⋮.
  * A deleted goal leaves through [onBack].
  */
 @Composable
@@ -169,6 +172,19 @@ internal fun GoalDestination(
                     Icon(SelloIcon.EditNote.painter(), stringResource(R.string.goal_edit))
                 }
             }
+            if (ready != null && !active) {
+                MoreMenu(
+                    listOf(
+                        MoreMenuItem(
+                            stringResource(R.string.goal_delete_action),
+                            SelloIcon.Delete,
+                            { model.onAction(GoalDetailAction.AskToDelete) },
+                            loss = true,
+                            tag = GOAL_DELETE_TAG
+                        )
+                    )
+                )
+            }
         },
         entryDock = false,
         dock = onContribute?.takeIf { active }?.let {
@@ -198,6 +214,7 @@ private fun goalDock(label: String, onClick: () -> Unit) =
     SelloDock(label, label, onClick, tone = ButtonTone.Gain, icon = SelloIcon.Flag)
 
 const val GOAL_EDIT_TAG = "goal.edit"
+const val GOAL_DELETE_TAG = "goal.delete"
 
 /** Metas, one goal, its editor and its movements. */
 internal fun NavGraphBuilder.goalDestinations(

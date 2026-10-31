@@ -49,14 +49,14 @@ function middle(s, extra = "", scrolled = false) {
 
 const pad = () => `<div class="pad" role="group" aria-label="Teclado de Sello">${["1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "0"].map(k => `<button class="${k === "000" ? "k000" : ""}" aria-label="${k === "000" ? "Tres ceros" : k}">${k}</button>`).join("")}<button class="del" aria-label="Borrar (mantén para borrar todo)">${icon("backspace")}</button></div>`;
 
-function entry(s, { sheet, choice, title, seg = true, action, extra = "", scrolled = false } = {}) {
+function entry(s, { sheet, choice, title, seg = true, action, extra = "", scrolled = false, menu = false } = {}) {
   const income = s.mode === "income";
   const head = seg
     ? `<div class="seg" role="group" aria-label="Tipo"><button aria-pressed="${!income}">Gasto</button><button aria-pressed="${income}">Ingreso</button></div>`
     : `<h1 class="sub-title" style="margin:0;color:var(--ink)">${title}</h1>`;
   const label = action ?? (s.repeat ? (income ? "Guardar ingreso fijo" : "Guardar pago fijo") : (income ? "Anotar ingreso" : "Anotar gasto"));
   const ready = s.amount !== null && s.category;
-  let h = `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button>${head}<span class="spacer"></span></div></div>`;
+  let h = `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button>${head}${seg ? `<span class="spacer"></span>` : moreMenu("Borrar pago fijo", !!menu)}</div></div>`;
   h += amountSlip(s) + middle(s, extra, scrolled) + `<div class="entry-action"><button class="primary" ${ready && !s.unchanged ? "" : "disabled"}>${s.repeat || !seg ? icon("autorenew") : icon("add")}${label}</button></div>` + pad() + `<div class="gesture" style="background:var(--desk)"></div>`;
   if (sheet) h += `<div class="scrim">${sheet}</div>`;
   if (choice) h += `<div class="scrim center">${choice}</div>`;
@@ -123,7 +123,6 @@ function scheduleExtras({ paused, archived } = {}) {
   } else {
     h += `<button class="note-pill" style="margin-top:12px">${icon("pause")}<span>Pausar</span><span class="edit" style="color:var(--soft);font-weight:600">Próximo: jue 5 nov</span></button>`;
   }
-  h += `<section class="slip danger" style="margin:12px 0 4px"><h2>Borrar este pago fijo</h2><p>Deja de anotarse. Lo que ya se anotó se queda: <b>2 gastos</b>.</p><button class="danger-link">Borrar</button></section>`;
   return h;
 }
 
@@ -199,7 +198,8 @@ function render() {
     card("Changing Arriendo", "Tapping a row opens the entry layout for the schedule: amount, category, note and Se repite. Changes apply from tomorrow; Guardar waits for a change.", phone(o, entry({ ...ARRIENDO, unchanged: true }, { seg: false, title: "Pago fijo", action: "Guardar cambios", scrolled: true, extra: scheduleExtras() }))) +
     card("Paused", "En pausa, and Reanudar. Nothing paused is recorded or reserved, and the pause is not caught up later (RE21).", phone(o, entry({ ...ARRIENDO, unchanged: true, repeat: "Cada mes, el 5 · en pausa" }, { seg: false, title: "Pago fijo", action: "Guardar cambios", scrolled: true, extra: scheduleExtras({ paused: true }) }))) +
     card("Paused by archiving its category", "Archiving a category pauses its payments and says why; unarchiving does not resume them (RE23).", phone(o, entry({ mode: "expense", amount: 99900, category: "Gimnasio", note: "Gimnasio", repeat: "Cada mes, el 15 · en pausa", label: "Pago fijo", date: "Desde jue 15 oct", unchanged: true }, { seg: false, title: "Pago fijo", action: "Guardar cambios", scrolled: true, extra: scheduleExtras({ paused: true, archived: true }) }))) +
-    card("Deleting", "A confirm slip. What was recorded stays as ordinary expenses (RE24).", phone(o, entry({ ...ARRIENDO, unchanged: true }, { seg: false, title: "Pago fijo", action: "Guardar cambios", scrolled: true, extra: scheduleExtras(), choice: confirmDelete }))) +
+    card("Más opciones", "Deleting waits in the top bar's ⋮, out of the form's way (owner, 2026-10-31).", phone(o, entry({ ...ARRIENDO, unchanged: true }, { seg: false, title: "Pago fijo", action: "Guardar cambios", scrolled: true, extra: scheduleExtras(), menu: true }))) +
+    card("Deleting", "Borrar pago fijo, then a confirm slip. What was recorded stays as ordinary expenses (RE24).", phone(o, entry({ ...ARRIENDO, unchanged: true }, { seg: false, title: "Pago fijo", action: "Guardar cambios", scrolled: true, extra: scheduleExtras(), choice: confirmDelete }))) +
     card("Large text · 200%", "", phone(o, entry({ ...ARRIENDO }, { seg: false, title: "Pago fijo", action: "Guardar cambios", scrolled: true, extra: scheduleExtras() }), { large: true })) +
     card("Dark", "", phone(o, entry({ ...ARRIENDO }, { seg: false, title: "Pago fijo", action: "Guardar cambios", scrolled: true, extra: scheduleExtras({ paused: true }) }), { theme: "dark" })));
 

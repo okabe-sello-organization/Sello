@@ -1016,7 +1016,6 @@
     <plurals name="goal_movements_all"><item quantity="one">Ver el movimiento</item><item quantity="other">Ver los %d</item></plurals>
     <string name="goal_pin_on">En tu Recibo</string>
     <string name="goal_pin_off">Mostrar en Recibo</string>
-    <string name="goal_delete_title">Borrar esta meta</string>
     <string name="goal_delete_consequences">Se borran la meta y %s. Esto no se puede deshacer.</string>
     <plurals name="goal_delete_movements"><item quantity="one">su movimiento</item><item quantity="other">sus %d movimientos</item></plurals>
     <string name="goal_delete_consequences_none">Se borra la meta. Esto no se puede deshacer.</string>
@@ -1232,9 +1231,8 @@
     <string name="schedule_paused_by_archive">En pausa porque %1$s está archivada</string>
     <string name="schedule_paused_body">Mientras está en pausa no se anota ni se separa nada. Al reanudar, sigue desde ese día; lo de la pausa no se anota.</string>
     <string name="schedule_resume">Reanudar</string>
-    <string name="schedule_delete_payment">Borrar este pago fijo</string>
-    <string name="schedule_delete_income">Borrar este ingreso fijo</string>
-    <string name="schedule_delete_body">Deja de anotarse. Lo que ya se anotó se queda.</string>
+    <string name="schedule_delete_payment">Borrar pago fijo</string>
+    <string name="schedule_delete_income">Borrar ingreso fijo</string>
     <string name="schedule_delete_action">Borrar</string>
     <string name="schedule_delete_confirm_title">¿Borrarlo?</string>
     <string name="schedule_delete_confirm_payment">Sello deja de anotarlo desde hoy. Los gastos ya anotados no se borran.</string>
@@ -1545,7 +1543,6 @@
     <string name="investment_editor_discard_message">Lo que escribiste en esta inversión no se guardará.</string>
     <string name="investment_editor_discard_confirm">Descartar</string>
     <string name="investment_editor_discard_keep">Seguir editando</string>
-    <string name="investment_delete_title">Borrar esta inversión</string>
     <string name="investment_delete_consequences">Se borran la inversión y %s. Esto no se puede deshacer.</string>
     <plurals name="investment_delete_movements"><item quantity="one">su movimiento</item><item quantity="other">sus %d movimientos</item></plurals>
     <string name="investment_delete_action">Borrar inversión</string>
