@@ -20,6 +20,7 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -59,6 +60,7 @@ import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -350,29 +352,45 @@ private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) 
 
             state.loading -> SlipSkeleton(Modifier.testTag(BULK_LOADING_TAG), lines = 2)
 
-            income -> ChipRows(state.sources.size, Modifier.testTag(BULK_SOURCES_TAG)) { index ->
-                val key = state.sources[index]
-                SelloChip(
-                    label = incomeSourceLabel(key),
-                    selected = key == state.highlightedLine.source?.key,
-                    onClick = { onAction(BulkEntryAction.SourcePicked(key)) },
-                    modifier = Modifier.testTag("$BULK_SOURCES_TAG.$key"),
-                    enabled = state.editable
-                )
+            // Each line starts over, so the highlighted line's choice comes first.
+            income -> key(state.highlightedLine.key) {
+                val order = rememberSelectedFirst(
+                    state.sources,
+                    state.highlightedLine.source?.key
+                ) { it }
+                ChipRows(order.items.size, Modifier.testTag(BULK_SOURCES_TAG)) { index ->
+                    val key = order.items[index]
+                    SelloChip(
+                        label = incomeSourceLabel(key),
+                        selected = key == state.highlightedLine.source?.key,
+                        onClick = {
+                            order.picked()
+                            onAction(BulkEntryAction.SourcePicked(key))
+                        },
+                        modifier = Modifier.testTag("$BULK_SOURCES_TAG.$key"),
+                        enabled = state.editable
+                    )
+                }
             }
 
-            else -> ChipRows(
-                state.categories.size,
-                Modifier.testTag(BULK_CATEGORIES_TAG)
-            ) { index ->
-                val category = state.categories[index]
-                SelloChip(
-                    label = category.name,
-                    selected = category.id == state.highlightedLine.category?.id,
-                    onClick = { onAction(BulkEntryAction.CategoryPicked(category.id)) },
-                    icon = CategoryIcons.iconFor(category.iconKey),
-                    enabled = state.editable
-                )
+            else -> key(state.highlightedLine.key) {
+                val order = rememberSelectedFirst(
+                    state.categories,
+                    state.highlightedLine.category?.id
+                ) { it.id }
+                ChipRows(order.items.size, Modifier.testTag(BULK_CATEGORIES_TAG)) { index ->
+                    val category = order.items[index]
+                    SelloChip(
+                        label = category.name,
+                        selected = category.id == state.highlightedLine.category?.id,
+                        onClick = {
+                            order.picked()
+                            onAction(BulkEntryAction.CategoryPicked(category.id))
+                        },
+                        icon = CategoryIcons.iconFor(category.iconKey),
+                        enabled = state.editable
+                    )
+                }
             }
         }
         val source = state.highlightedLine.source

@@ -47,6 +47,7 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -212,12 +213,16 @@ private fun Choices(
     onAction: (ScheduleEditorAction) -> Unit
 ) {
     if (state.income) {
-        ChipRows(state.sourceKeys.size) { index ->
-            val key = state.sourceKeys[index]
+        val order = rememberSelectedFirst(state.sourceKeys, state.sourceKey) { it }
+        ChipRows(order.items.size) { index ->
+            val key = order.items[index]
             SelloChip(
                 incomeSourceLabel(key),
                 state.sourceKey == key,
-                { onAction(ScheduleEditorAction.SourcePicked(key)) },
+                {
+                    order.picked()
+                    onAction(ScheduleEditorAction.SourcePicked(key))
+                },
                 enabled = state.editable
             )
         }
@@ -234,12 +239,16 @@ private fun Choices(
             )
         }
     } else {
-        ChipRows(state.categories.size) { index ->
-            val category = state.categories[index]
+        val order = rememberSelectedFirst(state.categories, state.categoryId) { it.id }
+        ChipRows(order.items.size) { index ->
+            val category = order.items[index]
             SelloChip(
                 label = category.name,
                 selected = category.id == state.categoryId,
-                onClick = { onAction(ScheduleEditorAction.CategoryPicked(category.id)) },
+                onClick = {
+                    order.picked()
+                    onAction(ScheduleEditorAction.CategoryPicked(category.id))
+                },
                 icon = CategoryIcons.iconFor(category.iconKey),
                 enabled = state.editable
             )

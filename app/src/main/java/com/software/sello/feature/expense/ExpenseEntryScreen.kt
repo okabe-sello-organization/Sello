@@ -82,6 +82,7 @@ import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.component.TotalLine
+import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.component.selloWindowLayout
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -420,9 +421,10 @@ private fun Choices(
     announcementFailed: Boolean
 ) {
     val addNew = onCreateCategory.takeIf { !state.editing }
-    val count = state.categories.size + if (addNew != null) 1 else 0
+    val order = rememberSelectedFirst(state.categories, state.categoryId) { it.id }
+    val count = order.items.size + if (addNew != null) 1 else 0
     ChipRows(count, Modifier.testTag(ENTRY_CATEGORIES_TAG)) { index ->
-        val category = state.categories.getOrNull(index)
+        val category = order.items.getOrNull(index)
         if (category == null) {
             AddChip(
                 stringResource(R.string.expense_entry_new_category),
@@ -434,7 +436,10 @@ private fun Choices(
             SelloChip(
                 label = category.name,
                 selected = category.id == state.categoryId,
-                onClick = { onAction(ExpenseEntryAction.CategoryPicked(category.id)) },
+                onClick = {
+                    order.picked()
+                    onAction(ExpenseEntryAction.CategoryPicked(category.id))
+                },
                 icon = CategoryIcons.iconFor(category.iconKey),
                 enabled = state.editable
             )

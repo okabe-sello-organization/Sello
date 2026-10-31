@@ -40,6 +40,7 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.date.dateLabels
@@ -215,12 +216,16 @@ private fun Choices(state: GoalMovementState, onAction: (GoalMovementAction) -> 
     if (state.goals.isEmpty()) {
         FactLine(AnnotatedString(stringResource(R.string.goal_movement_no_goals)))
     } else {
-        ChipRows(state.goals.size, Modifier.testTag(GOAL_MOVEMENT_GOALS_TAG)) { index ->
-            val goal = state.goals[index]
+        val order = rememberSelectedFirst(state.goals, state.goalId) { it.id }
+        ChipRows(order.items.size, Modifier.testTag(GOAL_MOVEMENT_GOALS_TAG)) { index ->
+            val goal = order.items[index]
             SelloChip(
                 goal.name,
                 state.goalId == goal.id,
-                { onAction(GoalMovementAction.GoalPicked(goal.id)) },
+                {
+                    order.picked()
+                    onAction(GoalMovementAction.GoalPicked(goal.id))
+                },
                 icon = goalIcon(goal.iconKey),
                 enabled = state.editable && !state.editing,
                 trailing = stringResource(R.string.goal_percent, goal.percentage),
