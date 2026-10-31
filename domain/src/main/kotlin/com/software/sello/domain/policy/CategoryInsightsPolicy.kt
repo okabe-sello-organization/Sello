@@ -9,6 +9,7 @@ import com.software.sello.domain.model.CategoryWeek
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ReservedPayment
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.port.FinancialDay
 import java.math.BigDecimal
@@ -33,13 +34,19 @@ object CategoryInsightsPolicy {
     fun monthsEndingIn(month: YearMonth): List<YearMonth> =
         (6 downTo 0).map { month.minusMonths(it.toLong()) }.filter { it.year >= 0 }
 
+    /**
+     * [reserved] is what the month in progress reserves, read with [inputs]: this
+     * category's payments in it are taken off what is left before the daily figure and the
+     * week's remaining allowance are worked out (SELLO-135), as Recibo does for the month.
+     */
     fun snapshot(
         id: CategoryId,
         month: YearMonth,
         today: FinancialDay,
         generation: Long,
         revision: Long,
-        inputs: List<CategoryHistoryInput>
+        inputs: List<CategoryHistoryInput>,
+        reserved: List<ReservedPayment> = emptyList()
     ): Outcome<CategoryInsights, SnapshotFailure> {
         if (month > YearMonth.from(today.date)) {
             return Outcome.Failure(SnapshotFailure.FutureMonth(YearMonth.from(today.date)))
@@ -55,6 +62,7 @@ object CategoryInsightsPolicy {
                     revision,
                     listOfNotNull(input.category),
                     input.expenses.filter { it.categoryId == id },
+                    reserved = reserved.filter { it.categoryId == id },
                     carryover = listOfNotNull(input.carryover)
                 )
             ) {
@@ -67,7 +75,9 @@ object CategoryInsightsPolicy {
         val elapsed = if (current) today.date.dayOfMonth else month.lengthOfMonth()
         val counted = actuals(selected, id, elapsed)
         val spent = budget.spent.minorUnits.toBigInteger()
-        val remaining = budget.categories.singleOrNull()?.budget?.remaining
+        val line = budget.categories.singleOrNull()
+        // What the category's payments still to come leave, when any is reserved.
+        val remaining = line?.reservation?.margin ?: line?.budget?.remaining
         val allowance = remaining?.takeIf { current }?.let {
             MonthlyBudgetPolicy.allowance(it, month.lengthOfMonth() - elapsed + 1)
         }

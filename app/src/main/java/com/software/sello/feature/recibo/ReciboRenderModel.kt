@@ -183,7 +183,33 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
             over = budget?.isOverspent ?: false,
             expenseCount = line.expenseCount,
             carry = budget?.let { money.carryFigures(it, month) },
-            why = budget?.let { why(it, line.category.name.value, month, overall = false) }
+            why = budget?.let { why(it, line.category.name.value, month, overall = false) },
+            reserved = budget?.let { reserved(line, it) }
+        )
+    }
+
+    /** The category's own reservation, worded as [summary] words the month's. */
+    private fun reserved(line: CategoryMonth, budget: LimitedBudget): CategoryReserved? {
+        val reservation = line.reservation ?: return null
+        val short = reservation.standing == ReservedStanding.Short
+        return CategoryReserved(
+            figure = BudgetFigure(
+                headline = if (short) ReciboHeadline.ShortForPayments else ReciboHeadline.Remaining,
+                amount = money.format(reservation.shortfall ?: reservation.margin),
+                stamp = when (reservation.standing) {
+                    ReservedStanding.NoMargin -> ReciboStamp.NoMargin
+                    ReservedStanding.Short -> ReciboStamp.Review
+                    ReservedStanding.Enough -> figure(budget).stamp
+                }
+            ),
+            footnote = ReciboReserved(money.format(reservation.total), reservation.payments.size),
+            shortfall = reservation.takeIf { short }?.let {
+                ReciboShortfall(
+                    left = money.format(it.overLimitBy ?: budget.remaining),
+                    over = it.overLimitBy != null,
+                    reserved = money.format(it.total)
+                )
+            }
         )
     }
 

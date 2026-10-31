@@ -109,6 +109,10 @@ internal fun NavGraphBuilder.reciboDestinations(
             onOpenReserved = {
                 navigation.navigate(UpcomingPaymentsRoute) { launchSingleTop = true }
             },
+            onOpenSchedule = { id ->
+                navigation.navigate(ScheduleRoute(id)) { launchSingleTop = true }
+            },
+            onAllSchedules = { navigation.navigate(SchedulesRoute()) { launchSingleTop = true } },
             onAdjustBudget = {
                 navigation.navigate(AdjustBudgetRoute(state.selectedMonth.toString())) {
                     launchSingleTop = true
@@ -248,6 +252,8 @@ private fun ReciboDestination(
     onRecordSeveral: (String) -> Unit,
     onOpenRecorded: () -> Unit,
     onOpenReserved: () -> Unit,
+    onOpenSchedule: (String) -> Unit,
+    onAllSchedules: () -> Unit,
     onAdjustBudget: () -> Unit,
     onOpenClosedMonth: (YearMonth) -> Unit,
     onSetMonthLimit: (String, YearMonth) -> Unit,
@@ -316,6 +322,9 @@ private fun ReciboDestination(
                         onEditCategory = { onEditCategory(id) },
                         onShowAllExpenses = { onShowAllExpenses(id) },
                         onSetMonthLimit = onSetMonthLimit,
+                        onOpenSchedule = onOpenSchedule,
+                        onAllSchedules = onAllSchedules,
+                        onAdjustBudget = onAdjustBudget,
                         onRecordSeveral = { onRecordSeveral(id) },
                         showPastLimitAnnouncement = !announcements.loading &&
                             !announcements.preference.pastLimitSeen,

@@ -95,6 +95,17 @@ internal fun NavGraphBuilder.resumenDestinations(
                 onSetMonthLimit = { categoryId, month ->
                     navigation.navigate(CategoryEditRoute(categoryId, month.toString()))
                 },
+                onOpenSchedule = { scheduleId ->
+                    navigation.navigate(ScheduleRoute(scheduleId)) { launchSingleTop = true }
+                },
+                onAllSchedules = {
+                    navigation.navigate(SchedulesRoute()) { launchSingleTop = true }
+                },
+                onAdjustBudget = {
+                    navigation.navigate(AdjustBudgetRoute(state.selectedMonth.toString())) {
+                        launchSingleTop = true
+                    }
+                },
                 contentPadding = padding,
                 onEditExpense = { navigation.navigate(ExpenseEditRoute(it)) },
                 onEditCategory = {

@@ -22,6 +22,7 @@ import com.software.sello.feature.expense.uuid
 import com.software.sello.feature.goals.HandGoalCommands
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
+import com.software.sello.feature.recurrence.HandScheduleReads
 import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
@@ -88,7 +89,8 @@ class CategoryDetailViewModelTest {
                 reads,
                 testMoney(),
                 corrections,
-                insights
+                insights,
+                HandScheduleReads()
             )
         // Something has to be watching for the state to be kept up to date.
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {

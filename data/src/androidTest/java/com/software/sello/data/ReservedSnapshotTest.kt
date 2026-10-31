@@ -92,4 +92,57 @@ class ReservedSnapshotTest {
         assertEquals(Money.cop(400_000), recorded.budget.remaining)
         assertEquals(Money.cop(100_000), recorded.allowance?.amount)
     }
+
+    /**
+     * SELLO-135: category detail reads its category's reserved payments with the rest of
+     * the category, at one revision, and works its daily figure out from what they leave.
+     */
+    @Test
+    fun categoryDetailReservesItsOwnPaymentAndAgreesWithTheMonth() = runBlocking {
+        ledger.goTo("2026-10-01")
+        ledger.categories.submit(
+            ledger.createCategory("Hogar", BudgetLimit.finite(Money.cop(1_000_000)).valueOrFail())
+        )
+        assertTrue(
+            ledger.schedules.submit(
+                CreateSchedule(
+                    ledger.operation(),
+                    1,
+                    ScheduledEntry.Payment(
+                        ledger.categoryId(100),
+                        TransactionAmount.of(Money.cop(200_000)).valueOrFail(),
+                        Note.of("Arriendo").valueOrFail()
+                    ),
+                    RepeatRule.Monthly.of(28).valueOrFail(),
+                    LocalDate.parse("2026-10-01"),
+                    null
+                )
+            ) is CommandOutcome.Committed
+        )
+        ledger.goTo("2026-10-22")
+        assertTrue(
+            ledger.expenses.create(ledger.createExpense(100, "2026-10-05", 400_000)) is
+                CommandOutcome.Committed
+        )
+
+        // R 600.000, Q 200.000: 400.000 over ten days, 40.000 per day.
+        val insights = ledger.categoryInsights.read(ledger.categoryId(100), october).valueOrFail()
+        val line = insights.budget.categories.single()
+        assertEquals(Money.cop(400_000), line.reservation?.margin)
+        assertEquals(Money.cop(40_000), insights.allowance?.amount)
+        val month = ledger.snapshots.read(october).valueOrFail()
+        assertEquals(line.reservation, month.categories.single().reservation)
+        assertEquals(month.revision, insights.budget.revision)
+
+        // 28 Oct, recorded by catch-up: nothing reserved, 400.000 over four days, 100.000.
+        ledger.goTo("2026-10-28")
+        val batch = RoomScheduleCatchUp(ledger.database, {
+            ledger.audit
+        }, { uuid(ledger.nextRecord++) })
+            .recordDue(LocalDate.parse("2026-10-28"), 50)
+        assertTrue(batch is CatchUpBatch.Recorded)
+        val after = ledger.categoryInsights.read(ledger.categoryId(100), october).valueOrFail()
+        assertNull(after.budget.categories.single().reservation)
+        assertEquals(Money.cop(100_000), after.allowance?.amount)
+    }
 }

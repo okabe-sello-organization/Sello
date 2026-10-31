@@ -148,13 +148,28 @@ object MonthlyBudgetPolicy {
                 line.state is MonthBudgetState.Limited ||
                 of.isNotEmpty()
             if (shown) {
+                val upcoming = if (isCurrent) {
+                    reserved.filter { it.categoryId == line.category.id }
+                } else {
+                    emptyList()
+                }
+                val reservation = budget?.let {
+                    when (val reserving = ReservationPolicy.reservation(it.remaining, upcoming)) {
+                        is Outcome.Success -> reserving.value
+
+                        is Outcome.Failure ->
+                            return Outcome.Failure(SnapshotFailure.Unrepresentable)
+                    }
+                }
                 lines += CategoryMonth(
                     category = line.category,
                     state = line.state,
                     spent = spent,
                     budget = budget,
                     expenseCount = of.size,
-                    newestExpenseAddition = of.maxOfOrNull { it.createdAt }
+                    newestExpenseAddition = of.maxOfOrNull { it.createdAt },
+                    upcoming = upcoming,
+                    reservation = reservation
                 )
             }
         }
