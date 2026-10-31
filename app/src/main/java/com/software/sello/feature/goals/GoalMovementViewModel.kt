@@ -84,7 +84,8 @@ class GoalMovementViewModel(
         val limitPulse: Int = 0,
         val atLimit: Boolean = false,
         /** The later retiro a deletion was refused for. */
-        val deleteBlockedBy: GoalMovementId? = null
+        val deleteBlockedBy: GoalMovementId? = null,
+        val several: GoalSeveral? = null
     )
 
     private val movementId: String? = saved[KEY_MOVEMENT]
@@ -209,6 +210,21 @@ class GoalMovementViewModel(
             }
 
             GoalMovementAction.Delete -> if (now.canDelete) delete()
+
+            GoalMovementAction.Several -> now.goal?.takeIf { now.canOpenSeveral }?.let { goal ->
+                val typed = draft.value
+                progress.update {
+                    it.copy(
+                        several = GoalSeveral(
+                            goalId = goal.id,
+                            withdrawal = typed.withdrawal,
+                            amount = (typed.amount as? AmountDraft.Digits)?.digits,
+                            note = typed.note.takeIf { note -> note.isNotBlank() },
+                            date = typed.date
+                        )
+                    )
+                }
+            }
 
             GoalMovementAction.Back -> when {
                 now.busy || submission.pending -> Unit
@@ -355,7 +371,8 @@ class GoalMovementViewModel(
             busy = progress.busy,
             error = progress.error,
             confirmDiscard = progress.confirmDiscard,
-            closed = progress.closed
+            closed = progress.closed,
+            several = progress.several
         )
     }
 

@@ -829,4 +829,123 @@ class InvestmentMovementsViewModelTest {
             return delegate.submit(command)
         }
     }
+
+    // From Anotar movimiento
+
+    private fun fromSheet(investment: String, vararg hints: Pair<String, Any?>) =
+        SavedStateHandle(mapOf(InvestmentMovementsViewModel.KEY_INVESTMENT to investment, *hints))
+
+    @Test
+    fun whatAnotarMovimientoHadTypedIsLineOneAndLineTwoWaitsWithItsTypeAndDate() = runTest {
+        val model = model(
+            saved = fromSheet(
+                ecopetrol,
+                "kind" to "dividend",
+                "amount" to "89000",
+                "note" to "Dividendo de junio",
+                "date" to "2026-09-29"
+            )
+        )
+
+        assertEquals(2, model.now.lines.size)
+        assertEquals(1, model.now.highlighted)
+        val first = model.now.lines[0]
+        assertEquals(
+            listOf(Dividend, "89.000", "Dividendo de junio", day("2026-09-29")),
+            listOf(first.kind, first.amount?.digits, first.note, first.date)
+        )
+        assertTrue(first.valid)
+        val second = model.now.current
+        assertEquals(
+            listOf(Dividend, null, "", day("2026-09-29")),
+            listOf(second.kind, second.amount, second.note, second.date)
+        )
+        assertTrue(hand.sent.isEmpty())
+
+        model.act(InvestmentMovementsAction.Submit)
+        assertEquals(listOf(Money.cop(89_000)), sent.single().lines.map { it.amount.money })
+    }
+
+    @Test
+    fun aUsdAmountKeepsItsCents() = runTest {
+        val model = model(
+            acciones,
+            fromSheet(acciones, "kind" to "contribution", "amount" to "25050", "usd" to true)
+        )
+
+        assertEquals("USD" to "250,50", model.now.lines[0].amount?.let { it.symbol to it.digits })
+        // 250,50 aportado.
+        assertEquals("250,50", model.now.contributed?.digits)
+        model.act(InvestmentMovementsAction.Submit)
+        assertEquals(
+            listOf(Money(25_050, Currency.USD)),
+            sent.single().lines.map { it.amount.money }
+        )
+    }
+
+    @Test
+    fun aValueOfZeroIsKeptButAnAporteOfZeroIsDropped() = runTest {
+        val value = model(saved = fromSheet(ecopetrol, "kind" to "valuation", "amount" to "0"))
+        assertEquals(2, value.now.lines.size)
+        assertEquals("0", value.now.lines[0].amount?.digits)
+        assertTrue(value.now.lines[0].valid)
+
+        val aporte = model(saved = fromSheet(ecopetrol, "kind" to "contribution", "amount" to "0"))
+        assertEquals(1, aporte.now.lines.size)
+        assertEquals(Contribution to null, aporte.now.current.kind to aporte.now.current.amount)
+    }
+
+    @Test
+    fun hintsThatAreNotValidAreDroppedNotShownAsErrors() = runTest {
+        val model = model(
+            saved = fromSheet(
+                ecopetrol,
+                "kind" to "bono",
+                "amount" to "-5000",
+                "note" to "x".repeat(200),
+                "date" to "2026-10-23"
+            )
+        )
+
+        assertEquals(1, model.now.lines.size)
+        val line = model.now.current
+        assertNull(line.kind)
+        assertNull(line.amount)
+        assertEquals("", line.note)
+        // Tomorrow is not a date a movement can have: today instead.
+        assertEquals(day("2026-10-22"), line.date)
+
+        val garbled = model(saved = fromSheet(ecopetrol, "amount" to "12a", "date" to "ayer"))
+        assertNull(garbled.now.current.amount)
+        assertEquals(day("2026-10-22"), garbled.now.current.date)
+
+        // USD 9.999.999.999,99 is the most; a cent more, or 20 digits, is dropped.
+        val most = model(
+            acciones,
+            fromSheet(acciones, "kind" to "contribution", "amount" to "999999999999", "usd" to true)
+        )
+        assertEquals("9.999.999.999,99", most.now.lines[0].amount?.digits)
+        for (tooLarge in listOf("1000000000000", "99999999999999999999")) {
+            val dropped = model(
+                acciones,
+                fromSheet(acciones, "kind" to "contribution", "amount" to tooLarge, "usd" to true)
+            )
+            assertEquals(1, dropped.now.lines.size)
+            assertNull(dropped.now.current.amount)
+        }
+    }
+
+    @Test
+    fun aRestoredReceiptKeepsWhatWasTypedOnItAndNeverTakesTheHintsAgain() = runTest {
+        val saved = fromSheet(ecopetrol, "kind" to "contribution", "amount" to "500000")
+        val first = model(saved = saved)
+        first.keys("1", "000")
+        first.act(InvestmentMovementsAction.Select(0), InvestmentMovementsAction.ClearAmount)
+
+        val restored = model(saved = saved)
+
+        assertEquals(listOf(null, "1.000"), restored.now.lines.map { it.amount?.digits })
+        assertEquals(0, restored.now.highlighted)
+        assertTrue(hand.sent.isEmpty())
+    }
 }

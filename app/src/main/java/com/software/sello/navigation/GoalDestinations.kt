@@ -39,6 +39,7 @@ import com.software.sello.feature.goals.GoalEditorResult
 import com.software.sello.feature.goals.GoalEditorRoot
 import com.software.sello.feature.goals.GoalMovementRoot
 import com.software.sello.feature.goals.GoalPin
+import com.software.sello.feature.goals.GoalSeveral
 import com.software.sello.feature.goals.LogradaMoment
 import com.software.sello.feature.goals.METAS_CREATE_TAG
 import com.software.sello.feature.goals.MetasAction
@@ -303,10 +304,20 @@ internal fun NavGraphBuilder.goalDestinations(
         }
     }
     composable<GoalMovementRoute> {
-        GoalMovementRoot(viewModels) {
+        GoalMovementRoot(
+            viewModels,
+            onSeveral = { several ->
+                navigation.navigate(several.route()) {
+                    popUpTo<GoalMovementRoute> { inclusive = true }
+                }
+            }
+        ) {
             val onForm =
                 navigation.currentBackStackEntry?.destination?.hasRoute<GoalMovementRoute>()
             if (onForm == true) navigation.popBackStack()
         }
     }
 }
+
+/** Aportar varios with what was typed in Aportar or Retirar as its first line. */
+internal fun GoalSeveral.route() = GoalBulkRoute(goalId, withdrawal, amount, note, date.toString())

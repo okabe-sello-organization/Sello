@@ -6,6 +6,21 @@ import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.presentation.movement.MovementNoteProblem
 import java.time.LocalDate
 
+/**
+ * What is typed so far, handed to Varios movimientos for [investmentId] to become its line
+ * one: the type, the amount in minor units of the investment's currency ([usd] for cents),
+ * the note and the date. The amount and note may be missing.
+ */
+@Immutable
+data class InvestmentSeveral(
+    val investmentId: String,
+    val kind: InvestmentMovementKind,
+    val amount: Long?,
+    val usd: Boolean,
+    val note: String?,
+    val date: LocalDate
+)
+
 /** An investment offered to anotar a movement in, in the overview's order. */
 @Immutable
 data class InvestmentChoice(
@@ -121,7 +136,9 @@ data class InvestmentMovementState(
     val error: InvestmentMovementError? = null,
     val confirmDiscard: Boolean = false,
     /** The form is finished and should close. */
-    val closed: Boolean = false
+    val closed: Boolean = false,
+    /** Varios was pressed: the form gives way to Varios movimientos with what is typed. */
+    val several: InvestmentSeveral? = null
 ) {
     val investment: InvestmentChoice? get() = investments.firstOrNull { it.id == investmentId }
 
@@ -138,6 +155,14 @@ data class InvestmentMovementState(
             (!editing || changed)
 
     val canDelete: Boolean get() = editing && !loading && !loadFailed && editable
+
+    /**
+     * Varios is offered for a new movement once an investment is chosen, and not while a
+     * pasted amount is refused: it would be lost on the way.
+     */
+    val canOpenSeveral: Boolean
+        get() = !editing && !loading && !loadFailed && editable && investment != null &&
+            amountText == null
 
     /** "Anotar el valor de hoy" is offered where a retiro waits for a value. */
     val offersValue: Boolean
@@ -194,6 +219,9 @@ sealed interface InvestmentMovementAction {
     data object Retry : InvestmentMovementAction
 
     data object Delete : InvestmentMovementAction
+
+    /** Varios: continue on Varios movimientos, with what is typed as its line one. */
+    data object Several : InvestmentMovementAction
 
     data object Back : InvestmentMovementAction
 

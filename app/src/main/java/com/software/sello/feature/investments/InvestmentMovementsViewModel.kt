@@ -39,6 +39,7 @@ import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import com.software.sello.presentation.submission.typed
 import java.time.LocalDate
+import java.time.format.DateTimeParseException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -280,11 +281,57 @@ class InvestmentMovementsViewModel(
         }
     }
 
-    private fun opening() = Draft(
-        lines = listOf(blank(0, null, clock.today.value.date)),
-        highlighted = 0,
-        nextKey = 1
-    )
+    /**
+     * The first draft: what was typed in Anotar movimiento becomes line one and a second
+     * line, of the same type and date, waits for the next amount; otherwise one line, of the
+     * type it was opened from, if any. A hint that is not valid is dropped, not shown as an
+     * error the person did not make.
+     */
+    private fun opening(): Draft {
+        val today = clock.today.value.date
+        val kind = saved.get<String>(KEY_PREFILL_KIND)?.let(::kindOf)
+        val note = saved.get<String>(KEY_PREFILL_NOTE)
+            ?.takeIf { Note.of(it) is Outcome.Success }.orEmpty()
+        val date = saved.get<String>(KEY_PREFILL_DATE)?.let(::parseDate)
+            ?.takeIf { InvestmentPolicy.acceptsDate(it, today) } ?: today
+        val first = prefilled(blank(0, kind, date), kind)
+        return if (first != null) {
+            Draft(
+                lines = listOf(first.copy(note = note), blank(1, kind, date)),
+                highlighted = 1,
+                nextKey = 2
+            )
+        } else {
+            Draft(listOf(blank(0, kind, date).copy(note = note)), highlighted = 0, nextKey = 1)
+        }
+    }
+
+    /**
+     * [line] holding the hinted amount, in the currency it was typed in, when it is one an
+     * investment may hold for [kind]; null when there is none.
+     */
+    private fun prefilled(line: Line, kind: InvestmentMovementKind?): Line? {
+        val units = saved.get<String>(KEY_PREFILL_AMOUNT)?.toLongOrNull() ?: return null
+        val usd = saved.get<Boolean>(KEY_PREFILL_USD) == true
+        val typed = Money(units, if (usd) Currency.USD else Currency.COP)
+        val amount = if (kind == InvestmentMovementKind.Valuation) {
+            InvestmentAmount.ofValue(typed)
+        } else {
+            InvestmentAmount.of(typed)
+        }
+        if (amount !is Outcome.Success) return null
+        return when {
+            usd -> line.copy(dollars = DecimalDraft.of(units, MAX_WHOLE))
+            units == 0L -> line.copy(pesos = ZeroPesos)
+            else -> line.copy(pesos = AmountDraft.Digits(units.toString()))
+        }
+    }
+
+    private fun parseDate(text: String): LocalDate? = try {
+        LocalDate.parse(text)
+    } catch (_: DateTimeParseException) {
+        null
+    }
 
     private fun blank(key: Long, kind: InvestmentMovementKind?, date: LocalDate) = Line(
         key = key.toString(),
@@ -654,6 +701,16 @@ class InvestmentMovementsViewModel(
 
         /** The route argument: the investment the receipt is for. */
         const val KEY_INVESTMENT = "investmentId"
+
+        /**
+         * Route hints: what Anotar movimiento had typed, checked like any input. The amount
+         * is in minor units, cents when [KEY_PREFILL_USD] is true.
+         */
+        const val KEY_PREFILL_KIND = "kind"
+        const val KEY_PREFILL_AMOUNT = "amount"
+        const val KEY_PREFILL_USD = "usd"
+        const val KEY_PREFILL_NOTE = "note"
+        const val KEY_PREFILL_DATE = "date"
 
         /** USD 9.999.999.999,99 is ten whole digits (rule 2, IN34). */
         private const val MAX_WHOLE = 10

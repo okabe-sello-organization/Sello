@@ -1,6 +1,6 @@
 # SELLO-E25 — Varios from every entry sheet
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person reaches a bulk receipt from any entry sheet, and a receipt holds one kind of entry with nothing to switch.
 - **Exit:** Aportar/Retirar and Anotar movimiento offer the Varios pill as Anotar does, and the expense and income receipt has no Gasto/Ingreso switch.

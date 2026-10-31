@@ -106,7 +106,8 @@ class InvestmentMovementViewModel(
         /** The later retiro a deletion was refused for, and what it would have been worth. */
         val deleteBlockedBy: Pair<InvestmentMovementId, Money?>? = null,
         /** The earliest aporte the command said the movement is dated before. */
-        val firstContribution: LocalDate? = null
+        val firstContribution: LocalDate? = null,
+        val several: InvestmentSeveral? = null
     )
 
     /** What the history says about the movement as it would be recorded. */
@@ -301,6 +302,8 @@ class InvestmentMovementViewModel(
 
             InvestmentMovementAction.Delete -> if (now.canDelete) delete()
 
+            InvestmentMovementAction.Several -> if (now.canOpenSeveral) several()
+
             InvestmentMovementAction.Back -> when {
                 now.busy || submission.pending -> Unit
                 typed(now) -> progress.update { it.copy(confirmDiscard = true) }
@@ -408,6 +411,25 @@ class InvestmentMovementViewModel(
         val ids = overview.items.map { it.history.investment.id }
         return board.investments.sortedBy { summary ->
             ids.indexOf(summary.history.investment.id).takeIf { it >= 0 } ?: Int.MAX_VALUE
+        }
+    }
+
+    /** Hands what is typed to Varios movimientos, for the investment chosen. */
+    private fun several() {
+        val current = draft.value
+        val investment = summary(readable(board.value), current.investmentId)
+            ?.history?.investment ?: return
+        progress.update {
+            it.copy(
+                several = InvestmentSeveral(
+                    investmentId = investment.id.value,
+                    kind = current.kind,
+                    amount = amount(current, investment.currency)?.money?.minorUnits,
+                    usd = investment.currency == Currency.USD,
+                    note = current.note.takeIf { note -> note.isNotBlank() },
+                    date = current.date
+                )
+            )
         }
     }
 
@@ -608,7 +630,8 @@ class InvestmentMovementViewModel(
             busy = progress.busy,
             error = progress.error,
             confirmDiscard = progress.confirmDiscard,
-            closed = progress.closed
+            closed = progress.closed,
+            several = progress.several
         )
     }
 

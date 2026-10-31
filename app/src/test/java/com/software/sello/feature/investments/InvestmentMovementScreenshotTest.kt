@@ -41,7 +41,7 @@ class InvestmentMovementScreenshotTest {
 
     private fun capture(look: Look) {
         rule.showSello(look) {
-            InvestmentMovementScreen(aporte) {}
+            InvestmentMovementScreen(aporte, severalOffered = true) {}
         }
         rule.captureStill("src/test/screenshots/investment-movement-${look.label}.png")
     }

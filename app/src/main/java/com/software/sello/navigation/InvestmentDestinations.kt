@@ -26,6 +26,7 @@ import com.software.sello.designsystem.component.SelloDock
 import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
+import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.feature.investments.InversionesAction
 import com.software.sello.feature.investments.InversionesScreen
 import com.software.sello.feature.investments.InversionesState
@@ -36,7 +37,9 @@ import com.software.sello.feature.investments.InvestmentDetailState
 import com.software.sello.feature.investments.InvestmentDetailViewModel
 import com.software.sello.feature.investments.InvestmentEditorRoot
 import com.software.sello.feature.investments.InvestmentMovementRoot
+import com.software.sello.feature.investments.InvestmentMovementViewModel
 import com.software.sello.feature.investments.InvestmentMovementsRoot
+import com.software.sello.feature.investments.InvestmentSeveral
 import com.software.sello.feature.investments.UsdRateAction
 import com.software.sello.feature.investments.UsdRateEntryRoot
 import com.software.sello.feature.investments.UsdRateScreen
@@ -303,7 +306,14 @@ internal fun NavGraphBuilder.investmentDestinations(
         )
     }
     composable<InvestmentMovementRoute> {
-        InvestmentMovementRoot(viewModels) {
+        InvestmentMovementRoot(
+            viewModels,
+            onSeveral = { several ->
+                navigation.navigate(several.route()) {
+                    popUpTo<InvestmentMovementRoute> { inclusive = true }
+                }
+            }
+        ) {
             val onForm = navigation.currentBackStackEntry?.destination
                 ?.hasRoute<InvestmentMovementRoute>()
             if (onForm == true) navigation.popBackStack()
@@ -333,4 +343,22 @@ internal fun NavGraphBuilder.investmentDestinations(
             if (onForm == true) navigation.popBackStack()
         }
     }
+}
+
+/** Varios movimientos with what was typed in Anotar movimiento as its first line. */
+internal fun InvestmentSeveral.route() = InvestmentMovementsRoute(
+    investmentId,
+    kind.routeKey(),
+    amount?.toString(),
+    usd,
+    note,
+    date.toString()
+)
+
+/** The type as routes carry it, the keys Anotar movimiento's route takes. */
+private fun InvestmentMovementKind.routeKey() = when (this) {
+    InvestmentMovementKind.Contribution -> InvestmentMovementViewModel.KIND_CONTRIBUTION
+    InvestmentMovementKind.Valuation -> InvestmentMovementViewModel.KIND_VALUATION
+    InvestmentMovementKind.Withdrawal -> InvestmentMovementViewModel.KIND_WITHDRAWAL
+    InvestmentMovementKind.Dividend -> InvestmentMovementViewModel.KIND_DIVIDEND
 }

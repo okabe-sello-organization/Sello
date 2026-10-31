@@ -44,6 +44,7 @@ import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import java.time.Instant
 import java.time.LocalDate
+import java.time.format.DateTimeParseException
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -217,11 +218,40 @@ class GoalBulkViewModel(
         }
     }
 
-    private fun opening() = Draft(
-        listOf(LineDraft("1", AmountDraft.Empty, null, clock.today.value.date, "")),
-        highlighted = 0,
-        nextKey = 2
-    )
+    /**
+     * The first draft: what was typed in Aportar or Retirar becomes line one and a second
+     * line, of the same type and date, waits for the next amount; otherwise one line, of the
+     * type it was opened from, if any. A hint that is not valid is dropped, not shown as an
+     * error the person did not make.
+     */
+    private fun opening(): Draft {
+        val today = clock.today.value.date
+        val withdrawal = saved.get<Boolean>(KEY_PREFILL_WITHDRAWAL)
+        val amount = saved.get<String>(KEY_PREFILL_AMOUNT)?.let(AmountDraft::paste)
+            ?.takeIf { it.toTransactionAmount() is Outcome.Success }
+        val note = saved.get<String>(KEY_PREFILL_NOTE)
+            ?.takeIf { Note.of(it) is Outcome.Success }.orEmpty()
+        val date = saved.get<String>(KEY_PREFILL_DATE)?.let(::parseDate)
+            ?.takeIf { GoalPolicy.acceptsDate(it, today) } ?: today
+        return if (amount != null) {
+            Draft(
+                listOf(
+                    LineDraft("1", amount, withdrawal, date, note),
+                    LineDraft("2", AmountDraft.Empty, withdrawal, date, "")
+                ),
+                highlighted = 1,
+                nextKey = 3
+            )
+        } else {
+            Draft(listOf(LineDraft("1", AmountDraft.Empty, withdrawal, date, note)), 0, 2)
+        }
+    }
+
+    private fun parseDate(text: String): LocalDate? = try {
+        LocalDate.parse(text)
+    } catch (_: DateTimeParseException) {
+        null
+    }
 
     /** A stored draft this screen could not have written is treated as none. */
     private fun wellFormed(draft: Draft): Boolean =
@@ -577,6 +607,12 @@ class GoalBulkViewModel(
     companion object {
         /** Route argument: the goal the receipt is for. */
         const val KEY_GOAL = "goalId"
+
+        /** Route hints: what Aportar or Retirar had typed, checked like any input. */
+        const val KEY_PREFILL_WITHDRAWAL = "withdrawal"
+        const val KEY_PREFILL_AMOUNT = "amount"
+        const val KEY_PREFILL_NOTE = "note"
+        const val KEY_PREFILL_DATE = "date"
 
         /** How long a removed line can be put back. */
         val UNDO_WINDOW = 4.seconds

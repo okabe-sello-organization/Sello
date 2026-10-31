@@ -159,7 +159,7 @@ expenses, incomes, goal movements or investment movements, saved whole or not at
 the entry sheet's language redrawn from v1.1's [Anotar varios and Varios
 movimientos](../sello-spec.html#s-varios). The owner approved it as drawn, including every choice the page lists for them.
 **Changed 2026-10-31 by the owner** ([E25](../../tickets/E25-varios-everywhere/README.md)): no Gasto/Ingreso
-switch on the receipt; where it opens from sets its kind.
+switch on the receipt; where it opens from sets its kind; the Varios pill on every entry sheet.
 
 **Order, top to bottom:** ✕ and the title (**Varios gastos** or **Varios ingresos**; for a
 goal or an investment, its title and name) → the **receipt**, a pinked slip that takes the free
@@ -188,7 +188,8 @@ pad. The lines scroll inside the receipt; the foot, chips, action and pad never 
   guardó** and no second write). A refused line is marked with its reason and the draft stays.
 - **Saved:** the sheet closes and the screen it came from shows one confirmation, for example
   **3 gastos anotados: 126.000**, with its figures already updated. No undo.
-- **Opens from:** a **Varios** pill in the Anotar bar (what is typed becomes line one), and
+- **Opens from:** a **Varios** pill in the Anotar bar, and since 2026-10-31 in the Aportar/Retirar
+  and Anotar movimiento bars for the chosen goal or investment (what is typed becomes line one), and
   **Anotar varios** at the foot of a category's latest expenses (every new line starts in that
   category), the goal's movements, the investment's movements and the income list.
 - **Leaving** with lines asks **¿Descartar 3 renglones?**

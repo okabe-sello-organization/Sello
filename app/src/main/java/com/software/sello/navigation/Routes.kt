@@ -9,7 +9,8 @@ import kotlinx.serialization.Serializable
  *
  * One exception: a route may carry what the person typed on the screen it came from, as
  * hints the next screen checks like any input and is free to ignore (as [ExpenseEntryRoute]
- * carries an amount and [BulkEntryRoute] an amount, note, date and income source).
+ * carries an amount and [BulkEntryRoute] an amount, note, date and income source, and
+ * [GoalBulkRoute] and [InvestmentMovementsRoute] what their entry sheets had typed).
  */
 
 /** The start destination and the place Back returns to before leaving the app. */
@@ -46,9 +47,20 @@ data class InvestmentMovementRoute(
     val movementId: String? = null
 )
 
-/** Varios movimientos: several movements of [investmentId] on one receipt. */
+/**
+ * Varios movimientos: several movements of [investmentId] on one receipt. From Anotar
+ * movimiento, [kind] (as [InvestmentMovementRoute] takes it), [amount] (minor units, cents
+ * when [usd]), [note] and [date] are what was typed there, to become line one.
+ */
 @Serializable
-data class InvestmentMovementsRoute(val investmentId: String)
+data class InvestmentMovementsRoute(
+    val investmentId: String,
+    val kind: String? = null,
+    val amount: String? = null,
+    val usd: Boolean = false,
+    val note: String? = null,
+    val date: String? = null
+)
 
 /** Dólar: the current USD rate and the earlier ones, from Configuración or Inversiones. */
 @Serializable
@@ -79,10 +91,17 @@ data class GoalMovementRoute(
 
 /**
  * Aportar varios: several aportes and retiros of [goalId] on one receipt. The screen reads
- * the goal itself.
+ * the goal itself. From Aportar or Retirar, [withdrawal], [amount], [note] and [date] are
+ * what was typed there, to become line one.
  */
 @Serializable
-data class GoalBulkRoute(val goalId: String)
+data class GoalBulkRoute(
+    val goalId: String,
+    val withdrawal: Boolean? = null,
+    val amount: String? = null,
+    val note: String? = null,
+    val date: String? = null
+)
 
 /** Nonfinancial controls reachable from Recibo's settings action. */
 @Serializable
