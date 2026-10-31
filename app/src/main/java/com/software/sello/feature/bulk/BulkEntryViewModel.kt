@@ -59,8 +59,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * Anotar varios: several expenses or several incomes typed on one receipt and saved through
- * [ExpenseBatchCommands] or [IncomeBatchCommands] as one operation, every line or none. The
- * Gasto/Ingreso switch sets the kind of the whole receipt; lines are never mixed.
+ * [ExpenseBatchCommands] or [IncomeBatchCommands] as one operation, every line or none. Where
+ * it was opened from sets the kind of the whole receipt for good; lines are never mixed.
  *
  * The lines, the highlighted line, the date and the operation of a save in progress are
  * kept in [saved], so rotation or the process being killed neither loses the receipt nor
@@ -123,7 +123,6 @@ class BulkEntryViewModel(
         val busy: Boolean = false,
         val error: BulkError? = null,
         val confirmDiscard: Boolean = false,
-        val confirmSwitch: Boolean = false,
         val removed: Removed? = null,
         /** Lines storage refused, by key, until they change. */
         val refused: Map<Int, LineProblem> = emptyMap(),
@@ -316,21 +315,6 @@ class BulkEntryViewModel(
             BulkEntryAction.OpenSourceName ->
                 if (now.editable && now.highlightedLine.source?.other == true) openSourceName()
 
-            is BulkEntryAction.KindPicked -> if (now.editable && action.kind != now.kind) {
-                if (now.typedLines > 0) {
-                    progress.update { it.copy(confirmSwitch = true) }
-                } else {
-                    switchKind()
-                }
-            }
-
-            BulkEntryAction.SwitchConfirmed -> if (now.confirmSwitch) {
-                progress.update { it.copy(confirmSwitch = false) }
-                if (now.editable) switchKind()
-            }
-
-            BulkEntryAction.SwitchDismissed -> progress.update { it.copy(confirmSwitch = false) }
-
             is BulkEntryAction.Select -> if (now.editable && action.index in now.lines.indices) {
                 edit { it.copy(highlighted = action.index) }
                 progress.update { it.copy(atLimit = false) }
@@ -447,34 +431,6 @@ class BulkEntryViewModel(
     private fun openSourceName() {
         saved[KEY_COMPOSING_NAME] = true
         saved[KEY_NOTE_DRAFT] = draft.value.lines[draft.value.highlighted].otherName
-    }
-
-    /**
-     * Turns the whole receipt into the other kind. Amounts and notes stay; every category
-     * and source goes, so nothing is filed where the person did not put it. What was refused,
-     * the list of later months and the line Deshacer would bring back belong to the old kind.
-     */
-    private fun switchKind() {
-        edit { now ->
-            now.copy(
-                kind = if (now.kind == BulkKind.Expense) BulkKind.Income else BulkKind.Expense,
-                lines = now.lines.map {
-                    it.copy(categoryId = null, sourceKey = null, otherName = "")
-                },
-                highlighted = 0
-            )
-        }
-        confirmation = null
-        saved[KEY_NOTE_DRAFT] = null
-        progress.update {
-            it.copy(
-                atLimit = false,
-                error = null,
-                removed = null,
-                refused = emptyMap(),
-                correction = null
-            )
-        }
     }
 
     private fun key(change: AmountDraft.Change) {
@@ -689,7 +645,7 @@ class BulkEntryViewModel(
     /** Asks storage how the saved operation ended, with its own ID. Only a receipt counts. */
     private suspend fun recover() {
         progress.update { it.copy(busy = true, error = null) }
-        // The kind cannot change while a save is pending: it is the kind that was sent.
+        // The kind never changes: it is the kind that was sent.
         when (draft.value.kind) {
             BulkKind.Expense -> settle(submission.recover(commands::find))
             BulkKind.Income -> settle(submission.recover(incomes::find))
@@ -812,7 +768,6 @@ class BulkEntryViewModel(
             busy = progress.busy,
             error = progress.error,
             confirmDiscard = progress.confirmDiscard,
-            confirmSwitch = progress.confirmSwitch,
             removed = progress.removed?.let { removed ->
                 RemovedLine(
                     categories.firstOrNull { it.id == removed.line.categoryId }?.name,

@@ -3,7 +3,6 @@ package com.software.sello.feature.bulk
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -54,7 +53,6 @@ import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.NoteComposer
-import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloNotice
@@ -105,28 +103,15 @@ fun BulkEntryScreen(
     modifier: Modifier = Modifier
 ) {
     SelloScaffold(
-        title = stringResource(R.string.expense_entry_title),
+        // Where it was opened from sets the kind of the whole receipt, for good.
+        title = stringResource(
+            if (state.kind == BulkKind.Income) {
+                R.string.bulk_title_incomes
+            } else {
+                R.string.bulk_title_expenses
+            }
+        ),
         modifier = modifier,
-        // Beside ✕, the kind of the whole receipt: switching asks first when lines are typed.
-        titleContent = {
-            SegmentedSwitch(
-                listOf(
-                    stringResource(R.string.entry_expense),
-                    stringResource(R.string.entry_income)
-                ),
-                if (state.kind == BulkKind.Income) 1 else 0,
-                { picked ->
-                    onAction(
-                        BulkEntryAction.KindPicked(
-                            if (picked == 1) BulkKind.Income else BulkKind.Expense
-                        )
-                    )
-                },
-                // Centred on the screen, as wide on its right as ✕ is on its left.
-                Modifier.padding(end = KIND_SWITCH_END).testTag(BULK_KIND_TAG),
-                enabled = state.editable
-            )
-        },
         navigationIcon = {
             IconButton(onClick = { onAction(BulkEntryAction.Back) }, enabled = !state.busy) {
                 Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
@@ -179,7 +164,6 @@ fun BulkEntryScreen(
             dismissLabel = stringResource(R.string.expense_entry_discard_keep)
         )
     }
-    if (state.confirmSwitch) SwitchSlip(state, onAction)
     if (state.datePickerOpen) DayPicker(state.date, state.today, onAction)
     state.noteDraft?.let { NoteSheet(state, it, onAction) }
     state.correction?.let { correction ->
@@ -565,49 +549,6 @@ private fun SourceNameSheet(
     )
 }
 
-/**
- * ¿Pasar a ingresos? / ¿Pasar a gastos?: the typed lines keep their amounts and notes and
- * lose their category or source.
- */
-@Composable
-private fun SwitchSlip(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
-    val toIncome = state.kind == BulkKind.Expense
-    val lines = pluralStringResource(R.plurals.bulk_lines, state.typedLines, state.typedLines)
-    val text = pluralStringResource(
-        if (toIncome) {
-            R.plurals.bulk_switch_to_incomes_message
-        } else {
-            R.plurals.bulk_switch_to_expenses_message
-        },
-        state.typedLines,
-        state.typedLines,
-        lines
-    )
-    val bold = SpanStyle(fontWeight = FontWeight.Bold)
-    val message = buildAnnotatedString {
-        append(text)
-        val at = text.indexOf(lines)
-        if (at >= 0) addStyle(bold, at, at + lines.length)
-    }
-    ConfirmSlip(
-        title = stringResource(
-            if (toIncome) R.string.bulk_switch_to_incomes else R.string.bulk_switch_to_expenses
-        ),
-        message = message,
-        confirmLabel = stringResource(
-            if (toIncome) R.string.bulk_switch_go_income else R.string.bulk_switch_go_expense
-        ),
-        onConfirm = { onAction(BulkEntryAction.SwitchConfirmed) },
-        onDismiss = { onAction(BulkEntryAction.SwitchDismissed) },
-        destructive = false,
-        dismissLabel = stringResource(
-            if (toIncome) R.string.bulk_switch_keep_expenses else R.string.bulk_switch_keep_incomes
-        ),
-        // "Seguir con gastos" and "Seguir con ingresos" stay on one line, as designed.
-        buttonPadding = PaddingValues(horizontal = 8.dp)
-    )
-}
-
 /** Days after [today] cannot be chosen. The picker works in whole days, with no time or zone. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -664,9 +605,6 @@ private fun BulkError.text() = when (this) {
     BulkError.Unknown -> R.string.expense_entry_unknown
 }
 
-/** The room ✕ takes at the start, kept free at the switch's end. */
-private val KIND_SWITCH_END = 48.dp
-
 /** How long Deshacer is offered after a line is removed. */
 private const val REMOVED_NOTICE_MILLIS = 6_000L
 
@@ -676,7 +614,6 @@ const val BULK_DATE_CONFIRM_TAG = "bulk:date-confirm"
 const val BULK_CATEGORIES_TAG = "bulk:categories"
 const val BULK_SOURCES_TAG = "bulk:sources"
 const val BULK_SOURCE_NAME_TAG = "bulk:source-name"
-const val BULK_KIND_TAG = "bulk:kind"
 const val BULK_LOADING_TAG = "bulk:loading"
 const val BULK_READ_FAILED_TAG = "bulk:read-failed"
 const val BULK_NOTE_TAG = "bulk:note"

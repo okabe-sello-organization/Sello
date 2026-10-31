@@ -1,9 +1,5 @@
 package com.software.sello.feature.bulk
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasAnyAncestor
@@ -15,8 +11,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performSemanticsAction
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
@@ -34,7 +28,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Anotar varios switched to Ingreso, drawn from State given by hand on CI's phone size, and
+ * Varios ingresos, drawn from State given by hand on CI's phone size, and
  * kept as committed images in Claro and Oscuro (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
@@ -81,39 +75,6 @@ class BulkIncomesScreenTest {
         missingCategories = 1
     )
 
-    /** The expense receipt just switched: 18.400 + 75.100 + 32.500 = 126.000, no sources. */
-    private val switched = three.copy(
-        lines = listOf(
-            BulkLineUi("1", null, pesos("18.400"), "Uber", LineProblem.NoSource),
-            BulkLineUi("2", null, pesos("75.100"), "Farmacia Pasteur", LineProblem.NoSource),
-            BulkLineUi("3", null, pesos("32.500"), "Carulla", LineProblem.NoSource)
-        ),
-        highlighted = 0,
-        total = pesos("126.000"),
-        missingCategories = 3
-    )
-
-    private val transport = BulkCategory("t", "Transporte", "directions_bus")
-    private val health = BulkCategory("s", "Salud", "medical_services")
-    private val food = BulkCategory("c", "Comida", "restaurant")
-
-    /** The expense receipt asking before it becomes a receipt of incomes. */
-    private val switching = BulkEntryState(
-        lines = listOf(
-            BulkLineUi("1", transport, pesos("18.400"), "Uber"),
-            BulkLineUi("2", health, pesos("75.100"), "Farmacia Pasteur"),
-            BulkLineUi("3", food, pesos("32.500"), "Carulla")
-        ),
-        highlighted = 2,
-        date = today,
-        today = today,
-        loading = false,
-        categories = listOf(transport, health, food),
-        total = pesos("126.000"),
-        count = 3,
-        confirmSwitch = true
-    )
-
     /** Otro chosen on line 3: its name being written. */
     private val naming = three.copy(
         lines = three.lines.toMutableList().also {
@@ -147,14 +108,12 @@ class BulkIncomesScreenTest {
         rule.onNode(hasText("Freelance") and hasAnyAncestor(hasTestTag(BULK_SOURCES_TAG)))
             .performClick()
         rule.onNodeWithTag(BULK_SOURCE_NAME_TAG).performClick()
-        rule.onNodeWithText("Gasto").performClick()
+        // Opened for incomes, the receipt stays one of incomes: no Gasto to switch to.
+        rule.onNodeWithText("Varios ingresos").assertExists()
+        rule.onNodeWithText("Gasto").assertDoesNotExist()
 
         assertEquals(
-            listOf(
-                BulkEntryAction.SourcePicked("freelance"),
-                BulkEntryAction.OpenSourceName,
-                BulkEntryAction.KindPicked(BulkKind.Expense)
-            ),
+            listOf(BulkEntryAction.SourcePicked("freelance"), BulkEntryAction.OpenSourceName),
             sent
         )
     }
@@ -177,41 +136,6 @@ class BulkIncomesScreenTest {
     }
 
     @Test
-    fun switchingAsksFirstAndSaysWhatStays() {
-        val sent = mutableListOf<BulkEntryAction>()
-        show(switching) { sent += it }
-
-        rule.onNodeWithText("¿Pasar a ingresos?").assertExists()
-        rule.onNodeWithText(
-            "Tus 3 renglones conservan monto y nota. Tendrás que elegir el origen de cada uno."
-        ).assertExists()
-        rule.onNodeWithText("Seguir con gastos").performClick()
-        rule.onNodeWithText("Pasar a ingreso").performClick()
-
-        assertEquals(listOf(BulkEntryAction.SwitchDismissed, BulkEntryAction.SwitchConfirmed), sent)
-    }
-
-    /** How many lines [text] takes where it is drawn. */
-    private fun linesOf(text: String): Int {
-        val layouts = mutableListOf<TextLayoutResult>()
-        rule.onNodeWithText(text).performSemanticsAction(SemanticsActions.GetTextLayoutResult) {
-            it(layouts)
-        }
-        return layouts.single().lineCount
-    }
-
-    @Test
-    fun seguirConGastosAndSeguirConIngresosStayOnOneLine() {
-        var shown by mutableStateOf(switching)
-        rule.showSello(claro) { BulkEntryScreen(shown, dateLabels(), {}) }
-        val expenses = linesOf("Seguir con gastos")
-        shown = three.copy(confirmSwitch = true)
-        rule.waitForIdle()
-
-        assertEquals(1 to 1, expenses to linesOf("Seguir con ingresos"))
-    }
-
-    @Test
     fun threeLinesClaro() = capture("three-lines", three, claro)
 
     @Test
@@ -222,18 +146,6 @@ class BulkIncomesScreenTest {
 
     @Test
     fun missingSourceOscuro() = capture("missing-source", missing, oscuro)
-
-    @Test
-    fun switchingClaro() = capture("switching", switching, claro)
-
-    @Test
-    fun switchingOscuro() = capture("switching", switching, oscuro)
-
-    @Test
-    fun afterSwitchingClaro() = capture("after-switching", switched, claro)
-
-    @Test
-    fun afterSwitchingOscuro() = capture("after-switching", switched, oscuro)
 
     @Test
     fun otroNameClaro() = capture("otro-name", naming, claro)

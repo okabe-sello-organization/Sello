@@ -7,7 +7,7 @@ import com.software.sello.domain.policy.EntryBatchPolicy
 import com.software.sello.presentation.carry.CarryCorrectionList
 import java.time.LocalDate
 
-/** What every line of the receipt is: the Gasto/Ingreso switch sets it for the whole receipt. */
+/** What every line of the receipt is: where it was opened from sets it for the whole receipt. */
 enum class BulkKind { Expense, Income }
 
 /** A category a line can be put in. */
@@ -131,8 +131,6 @@ data class BulkEntryState(
     val busy: Boolean = false,
     val error: BulkError? = null,
     val confirmDiscard: Boolean = false,
-    /** Switching Gasto/Ingreso with lines typed waits for this to be confirmed. */
-    val confirmSwitch: Boolean = false,
     val removed: RemovedLine? = null,
     val correction: BulkCorrection? = null,
     /** Storage confirmed the receipt; nothing can be sent again. */
@@ -169,15 +167,6 @@ sealed interface BulkEntryAction {
     data object ClearAmount : BulkEntryAction
 
     data class CategoryPicked(val id: String) : BulkEntryAction
-
-    /** The Gasto/Ingreso switch: asks first when lines are typed. */
-    data class KindPicked(val kind: BulkKind) : BulkEntryAction
-
-    /** Pasar a ingreso / Pasar a gasto: amounts and notes stay; categories and sources go. */
-    data object SwitchConfirmed : BulkEntryAction
-
-    /** Seguir con gastos / Seguir con ingresos. */
-    data object SwitchDismissed : BulkEntryAction
 
     /** An income source chip; Otro opens the composer for its name. */
     data class SourcePicked(val key: String) : BulkEntryAction
