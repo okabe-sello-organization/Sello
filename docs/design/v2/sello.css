@@ -509,7 +509,6 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .monthly b{color:var(--ink)}
 .preview-card{pointer-events:none}
 .pad-done{display:flex;justify-content:flex-end;padding:0 12px 4px;background:var(--desk)}
-.danger-link{display:flex;justify-content:center;gap:6px;width:100%;min-height:48px;border:0;background:none;color:var(--loss);font-weight:800;margin-top:4px}
 .entry-mid .amount-slip{margin:0 0 14px}
 
 /* ---------- Create a goal, round 2 (v1.1 blend) ---------- */
@@ -532,10 +531,8 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .stamps-plan .v1-places{margin-top:10px}
 .stamp-when{display:grid;justify-items:center;gap:4px;font-size:.78em;color:var(--soft);font-weight:700}
 .stamp-when .v1-place{font-size:.92em}
-.danger{border:2px solid var(--losssoft)}
-.danger h2,.done-ask h2{margin:0 0 4px;font-size:1.05em;font-weight:800}
-.danger p,.done-ask p{margin:0 0 12px;color:var(--soft);font-size:.9em;line-height:1.4}
-.danger p b{color:var(--ink)}
+.done-ask h2{margin:0 0 4px;font-size:1.05em;font-weight:800}
+.done-ask p{margin:0 0 12px;color:var(--soft);font-size:.9em;line-height:1.4}
 .outline-btn.loss{border-color:var(--loss);color:var(--loss)}
 .outline-btn.gain{border-color:var(--gain);color:var(--gain)}
 .outline-btn.wide{width:100%}

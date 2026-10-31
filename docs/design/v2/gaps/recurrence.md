@@ -71,7 +71,7 @@ Missing = nothing exists.
 | --- | --- | --- | --- |
 | List of schedules, Gastos / Ingresos, monthly total, still to come dimmed, **+** | Missing | v1.1 *Lo que se repite*: reached from Resumen and Configuración; `SegmentedSwitch`, `LeaderLine`, `ActionLine` can carry it | SELLO-114, SELLO-100 |
 | Creating a schedule | Missing | v1.1 adds **Se repite** to Anotar; the locked v2 entry has no such control | SELLO-114, SELLO-100 |
-| Editing, pausing (**En pausa** stamp), ending, deleting ("Los gastos ya creados no se borran.") | Missing | v1.1 only; `ConfirmSlip`, `DangerSlip`, `Stamp` exist | SELLO-114, SELLO-100 |
+| Editing, pausing (**En pausa** stamp), ending, deleting ("Los gastos ya creados no se borran.") | Missing | v1.1 only; `ConfirmSlip`, `MoreMenu`, `Stamp` exist | SELLO-114, SELLO-100 |
 | Editing a recorded occurrence | Partial | `ExpenseEditRoute` and `IncomeEditRoute` edit it on its own; v1.1 offered "Solo este" / "Este y los siguientes" | SELLO-114, SELLO-100 |
 | Notice after catching up, each item opening its entry | Partial | `SelloNotice` (message and one action) and the edit routes exist; no list of what was recorded | SELLO-114, SELLO-103 |
 | Sello pad for schedule amounts | Present | `AmountKeypad`, `EntryAmountSlip` | — (used by SELLO-100) |

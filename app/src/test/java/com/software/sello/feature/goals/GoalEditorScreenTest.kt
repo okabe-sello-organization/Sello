@@ -240,18 +240,30 @@ class GoalEditorScreenTest {
 
     @Test
     fun aCompletedGoalOffersOnlyDeletion() {
+        val completed = planned.copy(
+            name = "Viaje a la costa",
+            editing = true,
+            completed = true,
+            movementCount = 4
+        )
+        var state by mutableStateOf(completed)
         rule.showSello {
-            GoalEditorScreen(
-                planned.copy(editing = true, completed = true, movementCount = 4)
-            ) {
+            GoalEditorScreen(state) {
                 actions += it
             }
         }
+        val consequences = "Se borran la meta y sus 4 movimientos. Esto no se puede deshacer."
 
         rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).assertDoesNotExist()
         rule.onNodeWithTag(GOAL_EDITOR_AMOUNT_TAG).assertDoesNotExist()
         rule.onNodeWithTag(MORE_MENU_TAG).performClick()
         rule.onNodeWithText("Borrar meta").performClick()
         assertEquals(listOf(GoalEditorAction.AskToDelete), actions)
+
+        // What is lost is said once, when it asks.
+        state = completed.copy(confirmDelete = true)
+        rule.waitForIdle()
+        rule.onNodeWithText("¿Borrar Viaje a la costa?").assertExists()
+        rule.onNodeWithText(consequences).assertExists()
     }
 }

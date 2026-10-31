@@ -76,7 +76,7 @@ function render() {
     card("While another goal is on Recibo", "Outlined pill with an empty star: tapping it moves Home’s goal here.", frame(o, body("normal", {}, o), { featured: false })));
   set("states",
     card("After a withdrawal", "The 50 % stamp stays, faded, with one line saying it is still yours. Progress shows the honest 43 %; the next stamp to earn is 75 %.", frame(o, body("keep", {}, o))) +
-    card("Completed goal", "Read-only: four stamps, “Meta lograda el 30 sep”, the history stays. No edit, no Aportar dock, no Retirar and no star; Borrar esta meta (with the confirm slip) is its only action.", frame(o, body("done", {}, o), { done: true, title: "Vacunas de Luna", tall: true })) +
+    card("Completed goal", "Read-only: four stamps, “Meta lograda el 30 sep”, the history stays. No edit, no Aportar dock, no Retirar and no star; Borrar meta in the top bar’s ⋮ (with the confirm slip) is its only action.", frame(o, body("done", {}, o), { done: true, title: "Vacunas de Luna", tall: true })) +
     card("Loading", "Skeleton slip.", frame(o, body("normal", { state: "loading" }, o), { pin: false })) +
     card("Failed read", "Never shown as an empty goal.", frame(o, body("normal", { state: "failed" }, o), { pin: false })));
 }
