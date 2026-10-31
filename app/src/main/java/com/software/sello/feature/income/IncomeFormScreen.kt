@@ -68,6 +68,7 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.Stamp
 import com.software.sello.designsystem.component.StampInk
+import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.component.selloWindowLayout
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -284,12 +285,16 @@ private fun IncomeAmount(state: IncomeFormState, onAction: (IncomeFormAction) ->
 /** Source chips (words only), Otro's name, the note, and what a correction changes. */
 @Composable
 private fun IncomeChoices(state: IncomeFormState, onAction: (IncomeFormAction) -> Unit) {
-    ChipRows(state.sourceKeys.size, Modifier.testTag("income.sources")) { index ->
-        val key = state.sourceKeys[index]
+    val order = rememberSelectedFirst(state.sourceKeys, state.sourceKey) { it }
+    ChipRows(order.items.size, Modifier.testTag("income.sources")) { index ->
+        val key = order.items[index]
         SelloChip(
             incomeSourceLabel(key),
             state.sourceKey == key,
-            { onAction(IncomeFormAction.SourcePicked(key)) },
+            {
+                order.picked()
+                onAction(IncomeFormAction.SourcePicked(key))
+            },
             enabled = state.editable,
             modifier = Modifier.testTag("income.source.$key")
         )

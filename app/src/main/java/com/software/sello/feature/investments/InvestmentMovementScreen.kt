@@ -40,6 +40,7 @@ import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.InvestmentMovementKind
@@ -241,16 +242,20 @@ private fun Choices(state: InvestmentMovementState, onAction: (InvestmentMovemen
     if (state.investments.isEmpty()) {
         FactLine(AnnotatedString(stringResource(R.string.investment_movement_none)))
     } else {
+        val order = rememberSelectedFirst(state.investments, state.investmentId) { it.id }
         ChipRows(
-            state.investments.size,
+            order.items.size,
             Modifier.testTag(INVESTMENT_MOVEMENT_INVESTMENTS_TAG),
             rows = 1
         ) { index ->
-            val investment = state.investments[index]
+            val investment = order.items[index]
             SelloChip(
                 investment.name,
                 state.investmentId == investment.id,
-                { onAction(InvestmentMovementAction.InvestmentPicked(investment.id)) },
+                {
+                    order.picked()
+                    onAction(InvestmentMovementAction.InvestmentPicked(investment.id))
+                },
                 icon = InvestmentIcons.iconFor(investment.iconKey),
                 enabled = state.editable && !state.editing,
                 modifier = Modifier.testTag("$INVESTMENT_MOVEMENT_INVESTMENT_TAG.${investment.id}")
