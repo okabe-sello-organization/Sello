@@ -161,12 +161,19 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
                 } else {
                     stringResource(R.string.carry_setting_help)
                 }
-                // While the form has changes, the switch waits and says why under the setting.
-                val subtitle = if (state.changed) {
-                    setting + "\n" + stringResource(R.string.carry_wait_changes)
+                val spoken = if (card is CarryCard.On) {
+                    stringResource(
+                        R.string.carry_on_summary_spoken,
+                        dates.monthYear(card.since),
+                        card.carry.spoken,
+                        card.capacity.spoken
+                    )
                 } else {
                     setting
                 }
+                // While the form has changes, the switch waits and says why under the setting.
+                val wait = stringResource(R.string.carry_wait_changes)
+                val subtitle = if (state.changed) "$setting\n$wait" else setting
                 SwitchRow(
                     title = stringResource(R.string.carry_setting),
                     checked = on,
@@ -181,7 +188,8 @@ internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAc
                     },
                     modifier = Modifier.testTag(EDITOR_CARRY_SWITCH_TAG),
                     subtitle = subtitle,
-                    enabled = state.canChangeCarry
+                    enabled = state.canChangeCarry,
+                    spokenSubtitle = if (state.changed) "$spoken. $wait" else spoken
                 )
                 CarryMessages(state)
             }

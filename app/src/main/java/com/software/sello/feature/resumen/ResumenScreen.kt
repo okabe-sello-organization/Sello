@@ -630,7 +630,7 @@ private fun ChartWidth(count: Int, tag: String, chart: @Composable (Modifier) ->
 
 private val ResumenTwoPaneWidth = 600.dp
 
-/** ". Límite con arrastre 230.000; límite base 150.000, arrastre más 80.000." for a carried month. */
+/** ". Límite del mes 230.000; límite base 150.000, de meses anteriores más 80.000." for a carried month. */
 @Composable
 private fun carrySpoken(point: ResumenPoint): String {
     val carry = point.carry ?: return ""

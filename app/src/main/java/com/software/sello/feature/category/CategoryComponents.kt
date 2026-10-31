@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -42,7 +44,8 @@ internal fun SwitchRow(
     modifier: Modifier = Modifier,
     icon: SelloIcon? = null,
     subtitle: String? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    spokenSubtitle: String? = null
 ) {
     val colors = SelloTheme.colors
     Row(
@@ -65,7 +68,17 @@ internal fun SwitchRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, color = colors.ink)
             if (subtitle != null) {
-                Text(subtitle, style = MaterialTheme.typography.labelMedium, color = colors.inkSoft)
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = colors.inkSoft,
+                    // Amounts are read in words ("menos 40.000 pesos"), not as glyphs.
+                    modifier = if (spokenSubtitle != null) {
+                        Modifier.semantics { contentDescription = spokenSubtitle }
+                    } else {
+                        Modifier
+                    }
+                )
             }
         }
         val spec = if (SelloTheme.reducedMotion) snap() else SelloMotion.standard<Dp>()

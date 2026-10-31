@@ -631,8 +631,8 @@ const val RECIBO_FAILED_TAG = "recibo:failed"
 internal fun MoneyTextValue.text(): String = (if (sign == MoneySign.Minus) "−" else "") + digits
 
 /**
- * Why the verdict is Excedido when an earlier deficit made it so (CP14): "Tu límite con
- * arrastre es 400.000: Comida trae −150.000 de meses anteriores.", or, when the capacity is
+ * Why the verdict is Excedido when an earlier deficit made it so (CP14): "Tu límite del
+ * mes es 400.000: Comida trae −150.000 de meses anteriores.", or, when the capacity is
  * not above zero, "Te pasaste 150.000 en meses anteriores y tu límite base es 100.000:
  * febrero empezó en −50.000."
  */

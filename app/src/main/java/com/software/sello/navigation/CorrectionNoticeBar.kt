@@ -421,7 +421,7 @@ internal fun StampNoticeBar(
 
 const val CORRECTION_NOTICE_TAG = "shell:correction-notice"
 
-/** "Gasto borrado · cambió el límite con arrastre de 3 meses" when a deletion changed later months. */
+/** "Gasto borrado · cambió el límite de 3 meses" when a deletion changed later months. */
 @Composable
 private fun withCarryMonths(message: String, months: Int?): String =
     if (months == null || months == 0) {

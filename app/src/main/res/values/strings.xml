@@ -1553,13 +1553,13 @@
     <string name="carry_deficit">Te pasaste %1$s en meses anteriores</string>
     <string name="carry_zero">Empieza en 0 este mes</string>
     <string name="carry_words_of">%1$s · %2$s</string>
-    <string name="carry_from_source">Viene del restante de %1$s · pasas lo que sobra desde %2$s</string>
-    <string name="carry_since">Pasas lo que sobra desde %1$s</string>
+    <string name="carry_from_source">Viene del restante de %1$s · pasas lo que sobra o falta desde %2$s</string>
+    <string name="carry_since">Pasas lo que sobra o falta desde %1$s</string>
     <string name="carry_read_on">%1$s · cifras al %2$s</string>
-    <string name="carry_overall_one">%1$s pasa lo que sobra desde %2$s · cifras al %3$s</string>
+    <string name="carry_overall_one">%1$s pasa lo que sobra o falta desde %2$s · cifras al %3$s</string>
     <plurals name="carry_overall_many">
-        <item quantity="one">%1$d categoría pasa lo que sobra · cifras al %2$s</item>
-        <item quantity="other">%1$d categorías pasan lo que sobra · cifras al %2$s</item>
+        <item quantity="one">%1$d categoría pasa lo que sobra o falta · cifras al %2$s</item>
+        <item quantity="other">%1$d categorías pasan lo que sobra o falta · cifras al %2$s</item>
     </plurals>
     <string name="carry_cell_surplus">con sobrante</string>
     <string name="carry_cell_deficit">con faltante</string>
@@ -1619,8 +1619,9 @@
     <string name="carry_enable_after">Desde %1$s, lo que te sobre o te pases pasa al mes siguiente. Puedes apagarlo cuando quieras.</string>
     <string name="carry_enable_confirm">Activar</string>
     <string name="carry_on_summary">Desde %1$s · trae %2$s · este mes %3$s</string>
-    <string name="carry_enabled">%1$s pasa lo que sobra desde %2$s.</string>
-    <string name="carry_disabled">%1$s ya no pasa lo que sobra.</string>
+    <string name="carry_on_summary_spoken">Desde %1$s. Trae %2$s. Límite de este mes: %3$s.</string>
+    <string name="carry_enabled">%1$s pasa lo que sobra o falta desde %2$s.</string>
+    <string name="carry_disabled">%1$s ya no pasa lo que sobra o falta.</string>
     <string name="carry_wait_changes">Guarda o descarta tus cambios para cambiar esto.</string>
     <string name="carry_read_failed">No pudimos leer si esta categoría pasa lo que sobra.</string>
     <string name="carry_refused_default">Para pasar lo que sobra, %1$s necesita un límite mensual. %2$s tiene su propio límite, pero desde %3$s quedaría sin límite y no habría con qué calcularlo. Quita Sin límite y guarda; luego podrás activarlo.</string>
@@ -1628,8 +1629,8 @@
     <string name="carry_refused_no_limit">%1$s no tiene límite en %2$s. Ponle un límite para poder pasar lo que sobra.</string>
     <string name="carry_refused_archived">%1$s está archivada. Desarchívala para poder pasar lo que sobra.</string>
     <string name="carry_refused_cap">Para pasar lo que sobra, el límite puede ser hasta 999.999.999.999. Baja el límite y guarda; luego podrás activarlo.</string>
-    <string name="carry_limit_cap">No se guardó: mientras %1$s pasa lo que sobra, su límite puede ser hasta 999.999.999.999. Tu cambio sigue aquí.</string>
-    <string name="carry_month_unlimited">No se guardó: %1$s no puede quedar sin límite. %2$s pasaba lo que sobra ese mes y quedaría un hueco. Ponle un límite.</string>
+    <string name="carry_limit_cap">No se guardó: mientras %1$s pasa lo que sobra o falta, su límite puede ser hasta 999.999.999.999. Tu cambio sigue aquí.</string>
+    <string name="carry_month_unlimited">No se guardó: %1$s no puede quedar sin límite. %2$s pasaba lo que sobra o falta ese mes y quedaría un hueco. Ponle un límite.</string>
     <string name="carry_unavailable_save">No se guardó: con este cambio Sello no podría calcular lo que sobra o falta en %1$s. Tu borrador sigue aquí.</string>
     <string name="carry_unavailable_save_any">No se guardó: con este cambio Sello no podría calcular lo que sobra o falta. Tu borrador sigue aquí.</string>
     <string name="carry_unavailable_drop">No se puede apagar mientras Sello no pueda calcular lo que sobra o falta en %1$s. Corrige o borra el gasto que lo impide.</string>

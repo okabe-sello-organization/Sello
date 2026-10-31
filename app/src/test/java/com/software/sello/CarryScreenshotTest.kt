@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -143,6 +144,8 @@ class CarryScreenshotTest {
             ReciboScreen(render.recibo(ReadState.Ready(sc11)), {}, PaddingValues(12.dp))
         }
         rule.captureStill("src/test/screenshots/carry-deficit-cobalto-light-font1.0.png")
+        // The carrying cell names the direction: a deficit is never "con sobrante".
+        rule.onNodeWithText("con faltante", useUnmergedTree = true).assertExists()
     }
 
     @Test

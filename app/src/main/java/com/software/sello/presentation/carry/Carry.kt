@@ -151,8 +151,8 @@ fun CarryBreakdownSection(
 private fun String.lowercaseFirst() = replaceFirstChar { it.lowercase() }
 
 /**
- * Where a category's carry comes from (CP27): "Viene del restante de ene 2027 · arrastras
- * desde ene 2027", or only the start in the chain's first month; with [asOf], the day read.
+ * Where a category's carry comes from (CP27): "Viene del restante de ene 2027 · pasas lo que
+ * sobra o falta desde ene 2027", or only the start in the chain's first month; with [asOf], the day read.
  */
 @Composable
 fun categoryCarryFootnote(figures: CarryFigures, asOf: LocalDate? = null): String? {

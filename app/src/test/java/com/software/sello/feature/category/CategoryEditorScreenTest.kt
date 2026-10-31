@@ -657,4 +657,25 @@ class CategoryEditorScreenTest {
             "No pudimos leer si esta categoría pasa lo que sobra."
         ).assertIsDisplayed()
     }
+
+    @Test
+    fun anArchivedCategoryStillShowsTheSwitchUnderItsLockedLimit() {
+        show(editing.copy(archived = true, limitLocked = true, carry = CarryCard.Off(october)))
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOff().assertIsDisplayed()
+    }
+
+    @Test
+    fun aScreenReaderHearsTheCarryAmountsInWords() {
+        show(editing.copy(carry = carryOn))
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.ContentDescription,
+                listOf("Desde sep 2026. Trae menos 40.000 pesos. Límite de este mes: 60.000 pesos.")
+            )
+        )
+    }
 }
