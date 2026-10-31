@@ -194,20 +194,6 @@ class BulkIncomesViewModelTest {
         name("Venta de la bicicleta")
     }
 
-    /** The mock's expenses: Transporte 18.400 Uber, Salud 75.100, Comida 32.500 Carulla. */
-    private fun BulkEntryViewModel.threeExpenses() {
-        type("18400")
-        onAction(BulkEntryAction.CategoryPicked(uuid(1)))
-        note("Uber")
-        add()
-        type("75100")
-        onAction(BulkEntryAction.CategoryPicked(uuid(2)))
-        add()
-        type("32500")
-        onAction(BulkEntryAction.CategoryPicked(uuid(3)))
-        note("Carulla")
-    }
-
     // Sources
 
     @Test
@@ -366,167 +352,20 @@ class BulkIncomesViewModelTest {
         assertEquals(IncomeSource.Salary, incomes.created.single().lines.single().source)
     }
 
-    // The switch
+    // The kind
 
     @Test
-    fun withNothingTypedTheSwitchChangesAtOnce() {
-        val bulk = expenseSheet()
-        bulk.onAction(BulkEntryAction.CategoryPicked(uuid(1)))
-
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Income))
-
-        assertFalse(bulk.now.confirmSwitch)
-        assertEquals(BulkKind.Income, bulk.now.kind)
-        assertNull(bulk.now.lines.single().category)
-    }
-
-    @Test
-    fun withLinesTypedTheSwitchAsksFirstAndSeguirKeepsEverything() {
-        val bulk = expenseSheet()
-        bulk.threeExpenses()
-
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Income))
-
-        assertTrue(bulk.now.confirmSwitch)
-        assertEquals(BulkKind.Expense, bulk.now.kind)
-        bulk.onAction(BulkEntryAction.SwitchDismissed)
-        assertFalse(bulk.now.confirmSwitch)
-        assertEquals(BulkKind.Expense, bulk.now.kind)
-        assertEquals(
-            listOf("Transporte", "Salud", "Comida"),
-            bulk.now.lines.map { it.category?.name }
-        )
-    }
-
-    @Test
-    fun pasarAIngresoKeepsAmountsAndNotesAndClearsCategories() {
-        val bulk = expenseSheet()
-        bulk.threeExpenses()
-
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Income))
-        bulk.onAction(BulkEntryAction.SwitchConfirmed)
-
-        assertEquals(BulkKind.Income, bulk.now.kind)
-        assertEquals(listOf("18.400", "75.100", "32.500"), bulk.digits)
-        assertEquals(listOf("Uber", "", "Carulla"), bulk.now.lines.map { it.note })
-        assertTrue(bulk.now.lines.all { it.category == null && it.source == null })
-        assertTrue(bulk.now.lines.all { it.problem == LineProblem.NoSource })
-        assertEquals(3, bulk.now.missingCategories)
-        // 18.400 + 75.100 + 32.500 = 126.000
-        assertEquals("126.000", bulk.now.total.digits)
-        assertEquals(0, bulk.now.highlighted)
-        assertFalse(bulk.now.canSubmit)
-        assertTrue(expenses.created.isEmpty() && incomes.created.isEmpty())
-    }
-
-    @Test
-    fun switchingBackToGastoClearsSourcesAndOtroNames() {
-        val bulk = incomeSheet()
+    fun theReceiptKeepsTheKindItWasOpenedWithEvenAfterARestart() {
+        assertEquals(BulkKind.Expense, expenseSheet().now.kind)
+        val saved = SavedStateHandle(mapOf("income" to true))
+        val bulk = incomeSheet(saved)
         bulk.threeIncomes()
 
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Expense))
-        bulk.onAction(BulkEntryAction.SwitchConfirmed)
+        // Without the route's hint: the kind comes from the saved receipt itself.
+        val restored = incomeSheet(saved.afterProcessDeath().apply { remove<Boolean>("income") })
 
-        assertEquals(BulkKind.Expense, bulk.now.kind)
-        assertEquals(listOf("450.000", "120.000", "850.000"), bulk.digits)
-        assertTrue(bulk.now.lines.all { it.source == null && it.category == null })
-        assertEquals(3, bulk.now.missingCategories)
-        assertEquals(listOf("Transporte", "Salud", "Comida"), bulk.now.categories.map { it.name })
-
-        // And back again: Otro's old name does not come back.
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Income))
-        bulk.onAction(BulkEntryAction.SwitchConfirmed)
-        bulk.onAction(BulkEntryAction.Select(2))
-        bulk.source("other")
-        assertEquals("", bulk.now.noteDraft)
-    }
-
-    @Test
-    fun aSwitchedReceiptIsSavedOnlyAsItsNewKind() {
-        val bulk = expenseSheet()
-        bulk.threeExpenses()
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Income))
-        bulk.onAction(BulkEntryAction.SwitchConfirmed)
-        bulk.onAction(BulkEntryAction.Select(0))
-        bulk.source("salary")
-        bulk.onAction(BulkEntryAction.Select(1))
-        bulk.source("salary")
-        bulk.onAction(BulkEntryAction.Select(2))
-        bulk.source("transfer")
-
-        bulk.submit()
-
-        assertTrue(expenses.created.isEmpty())
-        val sent = incomes.created.single()
-        assertEquals(
-            listOf(18_400L, 75_100L, 32_500L),
-            sent.lines.map {
-                it.amount.money.minorUnits
-            }
-        )
-        assertEquals(
-            listOf(IncomeSource.Salary, IncomeSource.Salary, IncomeSource.Transfer),
-            sent.lines.map { it.source }
-        )
-    }
-
-    @Test
-    fun theSwitchEndsDeshacerSoNoExpenseLineComesBackOnAReceiptOfIncomes() {
-        val bulk = expenseSheet()
-        bulk.threeExpenses()
-        bulk.onAction(BulkEntryAction.Remove(1))
-        assertTrue(bulk.now.removed != null)
-
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Income))
-        bulk.onAction(BulkEntryAction.SwitchConfirmed)
-        bulk.onAction(BulkEntryAction.UndoRemove)
-
-        assertNull(bulk.now.removed)
-        assertEquals(2, bulk.now.lines.size)
-        assertTrue(bulk.now.lines.all { it.category == null })
-    }
-
-    @Test
-    fun theSwitchWaitsWhileSavingAndWhileTheOutcomeIsUnknown() {
-        val gate = CompletableDeferred<Unit>()
-        incomes.hold = gate
-        val bulk = incomeSheet()
-        bulk.threeIncomes()
-        bulk.submit()
-
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Expense))
-        assertFalse(bulk.now.confirmSwitch)
-        assertEquals(BulkKind.Income, bulk.now.kind)
-        incomes.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
-        incomes.found = { Outcome.Failure(StorageFailure.Unavailable("still unknown")) }
-        gate.complete(Unit)
-
-        assertEquals(BulkError.Unknown, bulk.now.error)
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Expense))
-        assertFalse(bulk.now.confirmSwitch)
-        assertEquals(BulkKind.Income, bulk.now.kind)
-    }
-
-    @Test
-    fun aRefusalOfTheOldKindNoLongerHoldsAfterTheSwitch() {
-        val bulk = incomeSheet()
-        bulk.threeIncomes()
-        incomes.answer = {
-            CommandOutcome.Rejected(
-                CommandRejection.Specific(
-                    IncomeBatchRejection.Lines(listOf(RefusedLine(2, LineRefusal.MonthTotalFull)))
-                )
-            )
-        }
-        bulk.submit()
-        assertEquals(LineProblem.MonthFull, bulk.now.lines[2].problem)
-
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Expense))
-        bulk.onAction(BulkEntryAction.SwitchConfirmed)
-
-        assertNull(bulk.now.error)
-        assertEquals(0, bulk.now.refusedLines)
-        assertEquals(LineProblem.NoCategory, bulk.now.lines[2].problem)
+        assertEquals(BulkKind.Income, restored.now.kind)
+        assertEquals(listOf("450.000", "120.000", "850.000"), restored.digits)
     }
 
     // Saving
@@ -763,7 +602,8 @@ class BulkIncomesViewModelTest {
         bulk.threeIncomes()
         bulk.onAction(BulkEntryAction.Select(1))
 
-        val restored = incomeSheet(saved.afterProcessDeath())
+        // Without the route's hint: the kind comes from the saved receipt itself.
+        val restored = incomeSheet(saved.afterProcessDeath().apply { remove<Boolean>("income") })
 
         assertEquals(BulkKind.Income, restored.now.kind)
         assertEquals(listOf("450.000", "120.000", "850.000"), restored.digits)
@@ -773,22 +613,6 @@ class BulkIncomesViewModelTest {
         )
         assertEquals("Venta de la bicicleta", restored.now.lines[2].source?.name)
         assertEquals(1, restored.now.highlighted)
-    }
-
-    @Test
-    fun aSwitchedReceiptStaysSwitchedAfterARestart() {
-        val saved = SavedStateHandle()
-        readMonth()
-        val bulk = sheet(saved)
-        bulk.threeExpenses()
-        bulk.onAction(BulkEntryAction.KindPicked(BulkKind.Income))
-        bulk.onAction(BulkEntryAction.SwitchConfirmed)
-
-        val restored = sheet(saved.afterProcessDeath())
-
-        assertEquals(BulkKind.Income, restored.now.kind)
-        assertEquals(listOf("18.400", "75.100", "32.500"), restored.digits)
-        assertTrue(restored.now.lines.all { it.category == null && it.source == null })
     }
 
     @Test
@@ -867,7 +691,6 @@ class BulkIncomesViewModelTest {
 
         assertEquals(BulkError.Unknown, restored.now.error)
         restored.submit()
-        restored.onAction(BulkEntryAction.KindPicked(BulkKind.Expense))
         assertEquals(1, incomes.created.size)
         assertEquals(BulkKind.Income, restored.now.kind)
     }
@@ -934,7 +757,6 @@ class BulkIncomesViewModelTest {
         val category = incomeSheet(
             SavedStateHandle(mapOf("income" to true, "categoryId" to uuid(1)))
         )
-        category.onAction(BulkEntryAction.KindPicked(BulkKind.Expense))
         assertNull(category.now.lines.single().category)
     }
 }

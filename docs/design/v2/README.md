@@ -158,9 +158,11 @@ paper-slip note dialog, and placing the note beside the date or under the amount
 expenses, incomes, goal movements or investment movements, saved whole or not at all. It is
 the entry sheet's language redrawn from v1.1's [Anotar varios and Varios
 movimientos](../sello-spec.html#s-varios). The owner approved it as drawn, including every choice the page lists for them.
+**Changed 2026-10-31 by the owner** ([E25](../../tickets/E25-varios-everywhere/README.md)): no Gasto/Ingreso
+switch on the receipt; where it opens from sets its kind.
 
-**Order, top to bottom:** ✕ and the Gasto/Ingreso switch (a title and the goal's or
-investment's name instead, for those two) → the **receipt**, a pinked slip that takes the free
+**Order, top to bottom:** ✕ and the title (**Varios gastos** or **Varios ingresos**; for a
+goal or an investment, its title and name) → the **receipt**, a pinked slip that takes the free
 height: header (**Anotar varios**, the line count, the date pill), the lines, a tear line,
 **Otro renglón** and the total → chips and note row for the highlighted line → action → Sello
 pad. The lines scroll inside the receipt; the foot, chips, action and pad never move.
@@ -170,7 +172,7 @@ pad. The lines scroll inside the receipt; the foot, chips, action and pad never 
   types into has a dark edge; tapping a line highlights it. A new line copies the category,
   source or type (and the date, for goals and investments) above it. Opening has one empty line.
 - **Kinds:** expenses and incomes share **one date** for the receipt (the pill in its header);
-  the switch sets the kind of the whole receipt. A goal's or an investment's lines each carry a
+  where the receipt opens from sets the kind of all of it, for good. A goal's or an investment's lines each carry a
   type and a date, the date as a pill on the highlighted line. A USD investment's lines and foot
   are in dollars, with the comma key.
 - **Total:** the sum of the lines; a goal shows its net (aportes − retiros); an investment shows
@@ -189,11 +191,11 @@ pad. The lines scroll inside the receipt; the foot, chips, action and pad never 
 - **Opens from:** a **Varios** pill in the Anotar bar (what is typed becomes line one), and
   **Anotar varios** at the foot of a category's latest expenses (every new line starts in that
   category), the goal's movements, the investment's movements and the income list.
-- **Leaving** with lines asks **¿Descartar 3 renglones?** Switching Gasto/Ingreso with lines
-  typed asks first and keeps amounts and notes, clearing categories and sources.
+- **Leaving** with lines asks **¿Descartar 3 renglones?**
 
 **Rejected:** v1.1's long press on the dock and the investment's overflow menu as ways in; a
-total that adds dividends and valuations; mixing expenses and incomes on one receipt; a
+total that adds dividends and valuations; mixing expenses and incomes on one receipt; switching a receipt between Gasto and Ingreso
+(dropped 2026-10-31); a
 **Nueva** chip (creating categories is outside E23).
 
 ## Shared: the selected month
