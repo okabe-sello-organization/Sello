@@ -145,7 +145,7 @@ data class ReciboCarry(
 data class CarriedCategory(val name: String, val since: YearMonth)
 
 /**
- * "Tu límite con arrastre es [capacity]: [category] trae [carry] de meses anteriores." With
+ * "Tu límite del mes es [capacity]: [category] trae [carry] de meses anteriores." With
  * no [category], several carry. With [base] and [month], the capacity is not above zero:
  * "Te pasaste … y tu límite base es [base]: [month] empezó en [capacity]."
  */

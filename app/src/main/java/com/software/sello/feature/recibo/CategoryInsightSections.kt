@@ -32,6 +32,7 @@ import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.presentation.carry.carryLabel
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
@@ -318,7 +319,7 @@ private fun CategoryHistory(categoryId: String, figures: DetailInsights) {
             if (entry.limit != null && carry != null) {
                 // Never the capacity alone: base and carry beside it (CP27).
                 LeaderLine(stringResource(R.string.carry_base)) { MoneyText(carry.base) }
-                LeaderLine(stringResource(R.string.carry_in)) { MoneyText(carry.carry) }
+                LeaderLine(carryLabel(carry.carry)) { MoneyText(carry.carry) }
                 LeaderLine(stringResource(R.string.carry_capacity)) { MoneyText(entry.limit) }
             } else {
                 entry.limit?.let { value ->

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -28,7 +29,7 @@ import com.software.sello.feature.category.CategoryEditorScreen
 import com.software.sello.feature.category.CategoryEditorState
 import com.software.sello.feature.category.DropFigures
 import com.software.sello.feature.category.DropReason
-import com.software.sello.feature.category.EDITOR_CARRY_TAG
+import com.software.sello.feature.category.EDITOR_CARRY_SWITCH_TAG
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.storedExpense
@@ -143,6 +144,8 @@ class CarryScreenshotTest {
             ReciboScreen(render.recibo(ReadState.Ready(sc11)), {}, PaddingValues(12.dp))
         }
         rule.captureStill("src/test/screenshots/carry-deficit-cobalto-light-font1.0.png")
+        // The carrying cell names the direction: a deficit is never "con sobrante".
+        rule.onNodeWithText("con faltante", useUnmergedTree = true).assertExists()
     }
 
     @Test
@@ -192,8 +195,17 @@ class CarryScreenshotTest {
     @Test
     fun editorCarrying() {
         rule.showSello(Look()) { CategoryEditorScreen(carrying, {}) }
-        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).performScrollTo()
         rule.captureStill("src/test/screenshots/carry-editor-cobalto-light-font1.0.png")
+    }
+
+    @Test
+    fun editorCarryOff() {
+        rule.showSello(Look()) {
+            CategoryEditorScreen(carrying.copy(carry = CarryCard.Off(abr)), {})
+        }
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).performScrollTo()
+        rule.captureStill("src/test/screenshots/carry-editor-off-cobalto-light-font1.0.png")
     }
 
     @Test

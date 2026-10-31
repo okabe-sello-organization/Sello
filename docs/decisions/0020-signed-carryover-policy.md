@@ -218,15 +218,19 @@ are not used (ADR 0012 and architecture §4).
 
 | Meaning | Wording |
 | --- | --- |
-| Setting | **Arrastrar al mes siguiente**; help: "Lo que te sobra o te pasas en el mes pasa al siguiente. Empieza en 0 este mes." |
+| Setting | Switch **Pasar lo que sobre al mes siguiente**; off: "Si te pasas, se descuenta del mes siguiente. Empieza en 0 este mes."; on: "Desde ene 2027 · trae −40.000 · este mes 60.000" |
 | Base | **Límite base** 100.000 |
-| Carry-in, positive | **Arrastre** +80.000 · "Te sobró 80.000 de meses anteriores" |
-| Carry-in, negative | **Arrastre** −20.000 · "Te pasaste 20.000 en meses anteriores" |
-| Effective capacity | **Límite con arrastre** 80.000 (always with base and arrastre beside it) |
+| Carry-in, 0 or more | **Sobrante** +80.000 · "Te sobró 80.000 de meses anteriores" |
+| Carry-in, negative | **Faltante** −20.000 · "Te pasaste 20.000 en meses anteriores" |
+| Carry-in, in a sentence | "lo que sobra o falta"; "de meses anteriores" beside a signed amount |
+| Effective capacity | **Límite del mes** 80.000 (always with base and sobrante or faltante beside it) |
 | Remaining | **Restante del presupuesto** (signed; Excedido by the exact amount when negative) |
-| Drop | "¿Dejar de arrastrar −20.000?" · "Este mes el límite vuelve a ser el base. No se borra ningún gasto." · **Dejar de arrastrar** / **Cancelar** |
-| Catch-up notice | "Al registrar tus pagos pendientes cambió el límite con arrastre" · "mar 2027: 1.200.000 → 1.000.000 (−200.000)" |
-| Correction | "Esto cambia el límite con arrastre de 3 meses" · "mar 2027: 210.000 → 230.000 (+20.000)" · **Guardar** / **Cancelar** |
+| Drop | "¿Olvidar el faltante de 20.000?" / "¿Olvidar el sobrante de 80.000?" · "Este mes el límite vuelve a ser el base. No se borra ningún gasto." · **Apagar** / **Cancelar** |
+| Catch-up notice | "Al registrar tus pagos pendientes cambió lo que sobra o falta" · "mar 2027: 1.200.000 → 1.000.000 (−200.000)" |
+| Correction | "Esto cambia el límite de 3 meses" · "mar 2027: 210.000 → 230.000 (+20.000)" · **Guardar** / **Cancelar** |
+
+The owner replaced "arrastre" with Sobrante / Faltante on 2026-10-31: the label names the
+direction, so a negative carry never reads as money left over.
 
 ## Effect on existing meanings
 

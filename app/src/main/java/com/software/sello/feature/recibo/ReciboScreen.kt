@@ -75,6 +75,7 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.carry.CarryBreakdownSection
+import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.carry.CarryProblemSlip
 import com.software.sello.presentation.carry.overallCarryFootnote
 import com.software.sello.presentation.category.CategoryIcons
@@ -504,8 +505,17 @@ private fun CategoriesSlip(
                 over = category.over,
                 amountCaption = when {
                     category.unlimited -> stringResource(R.string.recibo_cell_unlimited_caption)
+
                     category.limit == null -> stringResource(R.string.recibo_cell_spent_caption)
-                    category.carry != null -> stringResource(R.string.carry_cell)
+
+                    category.carry != null -> stringResource(
+                        if (category.carry.direction == CarryDirection.Deficit) {
+                            R.string.carry_cell_deficit
+                        } else {
+                            R.string.carry_cell_surplus
+                        }
+                    )
+
                     else -> null
                 },
                 staggerIndex = index,
@@ -621,8 +631,8 @@ const val RECIBO_FAILED_TAG = "recibo:failed"
 internal fun MoneyTextValue.text(): String = (if (sign == MoneySign.Minus) "−" else "") + digits
 
 /**
- * Why the verdict is Excedido when an earlier deficit made it so (CP14): "Tu límite con
- * arrastre es 400.000: Comida trae −150.000 de meses anteriores.", or, when the capacity is
+ * Why the verdict is Excedido when an earlier deficit made it so (CP14): "Tu límite del
+ * mes es 400.000: Comida trae −150.000 de meses anteriores.", or, when the capacity is
  * not above zero, "Te pasaste 150.000 en meses anteriores y tu límite base es 100.000:
  * febrero empezó en −50.000."
  */

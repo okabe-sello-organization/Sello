@@ -317,7 +317,7 @@ class RestoreJourneyTest {
             useUnmergedTree = true
         ).performScrollTo().assertExists()
         rule.onNodeWithText(
-            "Límite con arrastre",
+            "Límite del mes",
             substring = true,
             useUnmergedTree = true
         ).assertExists()

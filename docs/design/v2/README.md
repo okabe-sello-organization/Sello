@@ -604,7 +604,7 @@ whole screen, opening the full category editor from each row, reserved amounts i
 categories, a shortcut that raises later months silently, and naming next month's limit
 in the scope line (it would need a read of a month that has not started).
 
-## Arrastre
+## Arrastre (Sobrante / Faltante)
 
 Delegated by the owner 2026-10-28 for SELLO-041; merging its pull request approves it. The page
 is the concept; where it differs, the app's screenshots (`app/src/test/screenshots/carry-*`)
@@ -613,31 +613,34 @@ are what ships. Large text and reduced motion are out of scope (owner, 2026-10-2
 [SC example](../../testing/signed-carryover-examples.md). A person who never turns carry on
 sees every locked screen unchanged.
 
-- **Turning on:** its own card, **Arrastrar al mes siguiente**, under Límite mensual in
-  Editar categoría, with its own command (never saved with the form). **Activar desde
-  {mes}** asks once: carry starts at 0 and the whole month counts from day 1. A refusal
-  (CP3, CP25) comes back from the command and is said in the card, with what to do.
+- **Turning on:** a switch, **Pasar lo que sobre al mes siguiente**, at the foot of the
+  Límite mensual slip under a tear line in Editar categoría, with its own command (never
+  saved with the form; owner, 2026-10-31, replacing the separate card). Turning it on asks
+  once: carry starts at 0 and the whole month counts from day 1. On, its caption says
+  "Desde ene 2027 · trae −40.000 · este mes 60.000". A refusal (CP3, CP25) comes back from
+  the command and is said under the switch, with what to do.
 - **Breakdowns:** Recibo, category detail and Resumen's selected month give **Límite base**,
-  signed **Arrastre** with its words, **Límite con arrastre** and **Gastado** as receipt
-  lines, plus the month it comes from, the chain's start and the day read (CP27). A
-  carrying category's cell says "con arrastre". A negative capacity is Excedido with one
-  sentence why; 0 por día sits beside the signed deficit (CP14, CP15).
-- **Dropping:** turning off, archiving (after its own slip) or Sin límite with arrastre ≠ 0
-  asks "¿Dejar de arrastrar −20.000?" with this month's capacity and remaining before and
-  after, as the command answered them; a moved arrastre brings the slip back with the new
-  figures. Arrastre 0 asks nothing.
+  signed **Sobrante** (0 or more) or **Faltante** (negative) with its words, **Límite del
+  mes** and **Gastado** as receipt lines, plus the month it comes from, the chain's start
+  and the day read (CP27). A carrying category's cell says "con sobrante" or "con
+  faltante". A negative capacity is Excedido with one sentence why; 0 por día sits beside
+  the signed deficit (CP14, CP15).
+- **Dropping:** turning off, archiving (after its own slip) or Sin límite with a carry ≠ 0
+  asks "¿Olvidar el faltante de 20.000?" (or el sobrante) with this month's capacity and
+  remaining before and after, as the command answered them; a moved amount brings the slip
+  back with the new figures. A carry of 0 asks nothing.
 - **Corrections:** a change reaching a closed chain month (including delete and Deshacer)
   first lists each later month as "mar 2027: 210.000 → 230.000 (+20.000)" with its remaining
   and any verdict that flips, grouped by category, and any dropped balance it changes. The
   change in brackets is worked out by the domain, never on screen. A stale list is refused
   and shown again.
 - **Catch-up:** the notice bar names the carry change; Lo que Sello anotó lists the lines
-  under "Al registrar tus pagos pendientes cambió el límite con arrastre", with no question,
+  under "Al registrar tus pagos pendientes cambió lo que sobra o falta", with no question,
   and says so when they cannot be worked out (CP18).
 - **Cannot calculate:** never 0 or the base alone; the slip names the category and offers
   the repair that works: the editor on a chain month without a base, Reintentar for a
   failed read, a restore for a damaged chain.
-- **Resumen:** the chart's line is the month's Límite con arrastre; Sin asignar uses base
+- **Resumen:** the chart's line is the month's Límite del mes; Sin asignar uses base
   limits only and says why.
 
 ## Pagos e ingresos fijos

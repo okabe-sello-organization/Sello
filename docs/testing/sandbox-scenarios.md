@@ -35,13 +35,13 @@ Zone: America/Bogota for all. Amounts in pesos.
 | `inversiones@1` | Inversiones con dólares | 3 May 2025 → 24 Oct 2026 | The v2 page's four investments over 18 months with values and dividends, and one in USD with a rate |
 | `pagos-fijos@1` | Pagos fijos y dos semanas fuera | 1 Jul 2026 → 24 Oct 2026 | Schedules with catch-up, a day-31 payment, a weekly one, a pause, a twice-monthly salary, two weeks away, reserved payments and Plan del mes |
 | `seis-meses@2` | Seis meses con todo | 1 Apr 2026 → 24 Oct 2026 | Someone who has used every feature for over six months: schedules, extra income, corrections, limit changes, an archived category, signed carry, goals and investments in pesos and dollars |
-| `arrastre-cadenas@1` | Arrastre: superávit y déficit | 1 Jan 2027 → 12 Apr 2027 | Five categories that carry from January: a surplus, repeated overspend, a deficit beyond the next base, skipped months and a 28-day February (SC01–SC05) |
-| `arrastre-bisiesto@1` | Arrastre: fin de año y bisiesto | 1 Dec 2027 → 22 Feb 2028 | A chain across the new year into a 29-day February, 8 days left (SC41) |
-| `arrastre-transiciones@1` | Arrastre: apagar, archivar y volver a encender | 1 Jan 2027 → 20 Apr 2027 | Turning carry off, archiving and making a limit unlimited with a balance, turning it on mid-month, whole month from day 1 (SC07, SC17–SC21) |
-| `arrastre-correcciones@1` | Arrastre: para corregir el pasado | 1 Jan 2027 → 10 Apr 2027 | Two chains with nothing spent in April yet, to correct closed months by hand (SC25–SC31, SC34) |
-| `arrastre-corregido@1` | Arrastre: un gasto olvidado de enero | 1 Jan 2027 → 12 Apr 2027 | A forgotten January expense recorded on 2 April, listed and confirmed in the script (SC30) |
-| `arrastre-pagos@1` | Arrastre: un pago de febrero llega en marzo | 1 Jan 2027 → 10 Mar 2027 | A 200.000 payment of 5 February recorded by catch-up on 10 March (SC37) |
-| `arrastre-pagos-grandes@1` | Arrastre: un pago que deja febrero excedido | 1 Jan 2027 → 10 Mar 2027 | The same with 300.000 (SC47) |
+| `arrastre-cadenas@1` | Sobrante y faltante: varios casos | 1 Jan 2027 → 12 Apr 2027 | Five categories that carry from January: a surplus, repeated overspend, a deficit beyond the next base, skipped months and a 28-day February (SC01–SC05) |
+| `arrastre-bisiesto@1` | Sobrante: fin de año y bisiesto | 1 Dec 2027 → 22 Feb 2028 | A chain across the new year into a 29-day February, 8 days left (SC41) |
+| `arrastre-transiciones@1` | Sobrante: apagar, archivar y volver a encender | 1 Jan 2027 → 20 Apr 2027 | Turning carry off, archiving and making a limit unlimited with a balance, turning it on mid-month, whole month from day 1 (SC07, SC17–SC21) |
+| `arrastre-correcciones@1` | Sobrante: para corregir el pasado | 1 Jan 2027 → 10 Apr 2027 | Two chains with nothing spent in April yet, to correct closed months by hand (SC25–SC31, SC34) |
+| `arrastre-corregido@1` | Sobrante: un gasto olvidado de enero | 1 Jan 2027 → 12 Apr 2027 | A forgotten January expense recorded on 2 April, listed and confirmed in the script (SC30) |
+| `arrastre-pagos@1` | Sobrante: un pago de febrero llega en marzo | 1 Jan 2027 → 10 Mar 2027 | A 200.000 payment of 5 February recorded by catch-up on 10 March (SC37) |
+| `arrastre-pagos-grandes@1` | Sobrante: un pago que deja febrero excedido | 1 Jan 2027 → 10 Mar 2027 | The same with 300.000 (SC47) |
 
 ### Un año normal (`un-ano@1`)
 

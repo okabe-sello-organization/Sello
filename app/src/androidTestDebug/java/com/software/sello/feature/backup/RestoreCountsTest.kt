@@ -32,7 +32,7 @@ class RestoreCountsTest {
         show(BackupSummary(7, 10, 1, 0, 0), BackupSummary(8, 12, 1, 0, 0, carryChains = 4))
 
         // One row, its two cells said together: Ahora 0, Respaldo 4.
-        rule.onNodeWithText("Arrastres").assertIsDisplayed()
+        rule.onNodeWithText("Sobrantes y faltantes").assertIsDisplayed()
             .assert(hasContentDescription("Ahora 0") and hasContentDescription("Respaldo 4"))
         assertEquals(0, rule.onAllNodesWithTextCount("Inversiones"))
     }
@@ -41,7 +41,7 @@ class RestoreCountsTest {
     fun withNoChainOnEitherSideThereIsNoRow() {
         show(BackupSummary(2, 10, 1, 0, 0), BackupSummary(3, 12, 1, 0, 0))
 
-        assertEquals(0, rule.onAllNodesWithTextCount("Arrastres"))
+        assertEquals(0, rule.onAllNodesWithTextCount("Sobrantes y faltantes"))
     }
 
     private fun ComposeContentTestRule.onAllNodesWithTextCount(text: String) =
