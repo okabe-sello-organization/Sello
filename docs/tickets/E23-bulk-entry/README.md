@@ -1,6 +1,6 @@
 # SELLO-E23 — Anotar varios: several entries at once
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person records several expenses, incomes, goal movements or investment movements in one go, on one receipt that is saved whole or not at all.
 - **Exit:** Expense, income, goal and investment entry each open a bulk receipt drawn in the approved v2 design; a receipt saves every line in one recoverable operation or none; drafts survive process death; single entry works as before.

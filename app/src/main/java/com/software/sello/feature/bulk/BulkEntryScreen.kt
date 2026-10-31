@@ -3,6 +3,7 @@ package com.software.sello.feature.bulk
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -37,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.software.sello.R
 import com.software.sello.designsystem.component.AmountKeypad
+import com.software.sello.designsystem.component.BulkAmountTone
 import com.software.sello.designsystem.component.BulkCaption
 import com.software.sello.designsystem.component.BulkLine
 import com.software.sello.designsystem.component.BulkMarkTone
@@ -49,7 +51,9 @@ import com.software.sello.designsystem.component.EntryLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.NoteComposer
+import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloNotice
@@ -59,10 +63,12 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Note
+import com.software.sello.domain.model.SourceName
 import com.software.sello.presentation.carry.CarryCorrectionContent
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.income.incomeSourceLabel
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -99,6 +105,26 @@ fun BulkEntryScreen(
     SelloScaffold(
         title = stringResource(R.string.expense_entry_title),
         modifier = modifier,
+        // Beside ✕, the kind of the whole receipt: switching asks first when lines are typed.
+        titleContent = {
+            SegmentedSwitch(
+                listOf(
+                    stringResource(R.string.entry_expense),
+                    stringResource(R.string.entry_income)
+                ),
+                if (state.kind == BulkKind.Income) 1 else 0,
+                { picked ->
+                    onAction(
+                        BulkEntryAction.KindPicked(
+                            if (picked == 1) BulkKind.Income else BulkKind.Expense
+                        )
+                    )
+                },
+                // Centred on the screen, as wide on its right as ✕ is on its left.
+                Modifier.padding(end = KIND_SWITCH_END).testTag(BULK_KIND_TAG),
+                enabled = state.editable
+            )
+        },
         navigationIcon = {
             IconButton(onClick = { onAction(BulkEntryAction.Back) }, enabled = !state.busy) {
                 Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
@@ -106,8 +132,10 @@ fun BulkEntryScreen(
         },
         notice = state.removed?.let { removed ->
             {
+                val name = removed.categoryName
+                    ?: removed.source?.let { incomeSourceLabel(it.key, it.name) }
                 SelloNotice(
-                    message = removed.categoryName?.let {
+                    message = name?.let {
                         stringResource(R.string.bulk_removed, it)
                     } ?: stringResource(R.string.bulk_removed_plain),
                     actionLabel = stringResource(R.string.correction_undo),
@@ -149,6 +177,7 @@ fun BulkEntryScreen(
             dismissLabel = stringResource(R.string.expense_entry_discard_keep)
         )
     }
+    if (state.confirmSwitch) SwitchSlip(state, onAction)
     if (state.datePickerOpen) DayPicker(state.date, state.today, onAction)
     state.noteDraft?.let { NoteSheet(state, it, onAction) }
     state.correction?.let { correction ->
@@ -173,19 +202,48 @@ private fun Receipt(
     onAction: (BulkEntryAction) -> Unit,
     modifier: Modifier
 ) {
+    val income = state.kind == BulkKind.Income
     val noCategory = stringResource(R.string.bulk_no_category)
+    val noSource = stringResource(R.string.bulk_no_source)
+    val other = stringResource(R.string.income_other)
     val lines = state.lines.map { line ->
-        val category = line.category
-        BulkLine(
-            key = line.key,
-            mark = category?.let { CategoryIcons.iconFor(it.iconKey) },
-            markTone = BulkMarkTone.Category,
-            title = category?.name ?: line.note.ifBlank { noCategory },
-            titleSoft = category == null && line.note.isBlank(),
-            amount = line.amount,
-            detail = line.note.takeIf { category != null && it.isNotBlank() },
-            reason = line.problem?.let { stringResource(it.text()) }
-        )
+        val reason = line.problem?.let { stringResource(it.text()) }
+        if (income) {
+            // An income in gain green with a plus; Otro's name is its title, "Otro" under it.
+            val source = line.source
+            BulkLine(
+                key = line.key,
+                mark = source?.let { SelloIcon.Add },
+                markTone = BulkMarkTone.Gain,
+                title = source?.let { incomeSourceLabel(it.key, it.name) }
+                    ?: line.note.ifBlank { noSource },
+                titleSoft = source == null && line.note.isBlank(),
+                amount = line.amount?.copy(sign = MoneySign.Plus),
+                detail = source?.let {
+                    listOfNotNull(
+                        other.takeIf { _ ->
+                            it.other && it.name != null
+                        },
+                        line.note.ifBlank { null }
+                    )
+                        .joinToString(" · ").ifBlank { null }
+                },
+                amountTone = BulkAmountTone.Gain,
+                reason = reason
+            )
+        } else {
+            val category = line.category
+            BulkLine(
+                key = line.key,
+                mark = category?.let { CategoryIcons.iconFor(it.iconKey) },
+                markTone = BulkMarkTone.Category,
+                title = category?.name ?: line.note.ifBlank { noCategory },
+                titleSoft = category == null && line.note.isBlank(),
+                amount = line.amount,
+                detail = line.note.takeIf { category != null && it.isNotBlank() },
+                reason = reason
+            )
+        }
     }
     val caption = when {
         state.atLineLimit -> BulkCaption.Problem(
@@ -195,7 +253,7 @@ private fun Receipt(
 
         state.missingCategories > 0 -> BulkCaption.Problem(
             pluralStringResource(
-                R.plurals.bulk_missing_categories,
+                if (income) R.plurals.bulk_missing_sources else R.plurals.bulk_missing_categories,
                 state.missingCategories,
                 state.missingCategories
             )
@@ -220,7 +278,15 @@ private fun Receipt(
         lines = lines,
         highlighted = state.highlighted,
         caption = caption,
-        total = BulkTotal(stringResource(R.string.bulk_total), state.total),
+        total = if (income && state.count > 0) {
+            BulkTotal(
+                stringResource(R.string.bulk_total),
+                state.total.copy(sign = MoneySign.Plus),
+                BulkAmountTone.Gain
+            )
+        } else {
+            BulkTotal(stringResource(R.string.bulk_total), state.total)
+        },
         onSelect = { onAction(BulkEntryAction.Select(it)) },
         onRemove = { onAction(BulkEntryAction.Remove(it)) },
         onAdd = { onAction(BulkEntryAction.AddLine) },
@@ -241,15 +307,21 @@ private fun Receipt(
     )
 }
 
-/** The highlighted line's category chips, in two rows, and its note. */
+/** The highlighted line's category or source chips, in two rows, Otro's name and its note. */
 @Composable
 private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
+    val income = state.kind == BulkKind.Income
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = if (state.lines.size > 1) {
-                stringResource(R.string.bulk_categories_heading_line, state.highlighted + 1)
-            } else {
-                stringResource(R.string.bulk_categories_heading)
+            text = when {
+                state.lines.size <= 1 -> stringResource(
+                    if (income) R.string.bulk_sources_heading else R.string.bulk_categories_heading
+                )
+
+                income -> stringResource(R.string.bulk_sources_heading_line, state.highlighted + 1)
+
+                else ->
+                    stringResource(R.string.bulk_categories_heading_line, state.highlighted + 1)
             }.uppercase(),
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W800),
             color = SelloTheme.colors.inkSoft,
@@ -258,7 +330,15 @@ private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) 
         when {
             state.readFailed -> {
                 FieldMessageText(
-                    FieldMessage(stringResource(R.string.bulk_read_failed)),
+                    FieldMessage(
+                        stringResource(
+                            if (income) {
+                                R.string.bulk_read_failed_incomes
+                            } else {
+                                R.string.bulk_read_failed
+                            }
+                        )
+                    ),
                     Modifier.testTag(BULK_READ_FAILED_TAG)
                 )
                 SelloButton(
@@ -269,6 +349,17 @@ private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) 
             }
 
             state.loading -> SlipSkeleton(Modifier.testTag(BULK_LOADING_TAG), lines = 2)
+
+            income -> ChipRows(state.sources.size, Modifier.testTag(BULK_SOURCES_TAG)) { index ->
+                val key = state.sources[index]
+                SelloChip(
+                    label = incomeSourceLabel(key),
+                    selected = key == state.highlightedLine.source?.key,
+                    onClick = { onAction(BulkEntryAction.SourcePicked(key)) },
+                    modifier = Modifier.testTag("$BULK_SOURCES_TAG.$key"),
+                    enabled = state.editable
+                )
+            }
 
             else -> ChipRows(
                 state.categories.size,
@@ -283,6 +374,18 @@ private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) 
                     enabled = state.editable
                 )
             }
+        }
+        val source = state.highlightedLine.source
+        if (source?.other == true && !state.loading && !state.readFailed) {
+            EntryLine(
+                text = source.name ?: stringResource(R.string.income_source_name),
+                icon = SelloIcon.AccountBalance,
+                onClick = { onAction(BulkEntryAction.OpenSourceName) },
+                modifier = Modifier.testTag(BULK_SOURCE_NAME_TAG),
+                action = stringResource(R.string.income_source_change),
+                placeholder = source.name == null,
+                enabled = state.editable
+            )
         }
         val note = state.highlightedLine.note
         EntryLine(
@@ -325,7 +428,15 @@ private fun Action(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
                 text = if (state.busy) {
                     stringResource(R.string.expense_entry_saving)
                 } else {
-                    pluralStringResource(R.plurals.bulk_submit, state.count, state.count)
+                    pluralStringResource(
+                        if (state.kind == BulkKind.Income) {
+                            R.plurals.bulk_submit_incomes
+                        } else {
+                            R.plurals.bulk_submit
+                        },
+                        state.count,
+                        state.count
+                    )
                 },
                 onClick = { onAction(BulkEntryAction.Submit) },
                 modifier = Modifier.fillMaxWidth().testTag(BULK_SUBMIT_TAG),
@@ -340,23 +451,27 @@ private fun Action(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
 /** The highlighted line's note, in the composer docked above the keyboard. */
 @Composable
 private fun NoteSheet(state: BulkEntryState, draft: String, onAction: (BulkEntryAction) -> Unit) {
+    if (state.composing == BulkComposer.SourceName) return SourceNameSheet(state, draft, onAction)
     val line = state.highlightedLine
     val position = state.highlighted + 1
     val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)
     val context = buildAnnotatedString {
         append(stringResource(R.string.bulk_note_context, position))
-        line.category?.let {
+        val name = line.category?.name ?: line.source?.let { incomeSourceLabel(it.key, it.name) }
+        name?.let {
             append(" · ")
-            withStyle(facts) { append(it.name) }
+            withStyle(facts) { append(it) }
         }
         line.amount?.let {
             append(" · ")
-            withStyle(facts) { append(it.digits) }
+            withStyle(facts) {
+                append(if (state.kind == BulkKind.Income) "+" + it.digits else it.digits)
+            }
         }
     }
     val spoken = listOfNotNull(
         stringResource(R.string.bulk_note_spoken, position),
-        line.category?.name,
+        line.category?.name ?: line.source?.let { incomeSourceLabel(it.key, it.name) },
         line.amount?.spoken
     ).joinToString(", ")
     NoteComposer(
@@ -378,9 +493,100 @@ private fun NoteSheet(state: BulkEntryState, draft: String, onAction: (BulkEntry
         cancelLabel = stringResource(R.string.expense_entry_note_cancel),
         onDone = { onAction(BulkEntryAction.NoteDone) },
         onCancel = { onAction(BulkEntryAction.NoteCancelled) },
-        contextIcon =
-            line.category?.let { CategoryIcons.iconFor(it.iconKey) } ?: SelloIcon.ReceiptLong,
+        contextIcon = when {
+            line.category != null -> CategoryIcons.iconFor(line.category.iconKey)
+            state.kind == BulkKind.Income -> SelloIcon.AccountBalance
+            else -> SelloIcon.ReceiptLong
+        },
         contextDescription = spoken
+    )
+}
+
+/** Otro's name for the highlighted line, in the same composer: "Renglón 3 · Origen Otro · nombre". */
+@Composable
+private fun SourceNameSheet(
+    state: BulkEntryState,
+    draft: String,
+    onAction: (BulkEntryAction) -> Unit
+) {
+    val position = state.highlighted + 1
+    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)
+    val context = buildAnnotatedString {
+        append(stringResource(R.string.bulk_source_name_context, position))
+        append(" ")
+        withStyle(facts) { append(stringResource(R.string.income_other)) }
+        append(" · ")
+        append(stringResource(R.string.bulk_source_name_context_end))
+    }
+    NoteComposer(
+        context = context,
+        value = draft,
+        onValueChange = { onAction(BulkEntryAction.NoteDraftChanged(it)) },
+        counter = stringResource(
+            R.string.expense_entry_note_counter,
+            state.noteDraftLength,
+            SourceName.MAX_CODE_POINTS
+        ),
+        hint = stringResource(R.string.income_source_hint),
+        error = when {
+            state.noteDraftTooLong -> stringResource(R.string.income_source_composer_too_long)
+
+            state.noteDraftNotAllowed -> stringResource(R.string.income_text_not_allowed)
+
+            state.noteDraftRequired && draft.isNotEmpty() ->
+                stringResource(R.string.income_missing_source)
+
+            else -> null
+        },
+        doneLabel = stringResource(R.string.expense_entry_note_done),
+        cancelLabel = stringResource(R.string.expense_entry_note_cancel),
+        onDone = { onAction(BulkEntryAction.NoteDone) },
+        onCancel = { onAction(BulkEntryAction.NoteCancelled) },
+        contextIcon = SelloIcon.AccountBalance,
+        contextDescription = stringResource(R.string.bulk_source_name_spoken, position)
+    )
+}
+
+/**
+ * ¿Pasar a ingresos? / ¿Pasar a gastos?: the typed lines keep their amounts and notes and
+ * lose their category or source.
+ */
+@Composable
+private fun SwitchSlip(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
+    val toIncome = state.kind == BulkKind.Expense
+    val lines = pluralStringResource(R.plurals.bulk_lines, state.typedLines, state.typedLines)
+    val text = pluralStringResource(
+        if (toIncome) {
+            R.plurals.bulk_switch_to_incomes_message
+        } else {
+            R.plurals.bulk_switch_to_expenses_message
+        },
+        state.typedLines,
+        state.typedLines,
+        lines
+    )
+    val bold = SpanStyle(fontWeight = FontWeight.Bold)
+    val message = buildAnnotatedString {
+        append(text)
+        val at = text.indexOf(lines)
+        if (at >= 0) addStyle(bold, at, at + lines.length)
+    }
+    ConfirmSlip(
+        title = stringResource(
+            if (toIncome) R.string.bulk_switch_to_incomes else R.string.bulk_switch_to_expenses
+        ),
+        message = message,
+        confirmLabel = stringResource(
+            if (toIncome) R.string.bulk_switch_go_income else R.string.bulk_switch_go_expense
+        ),
+        onConfirm = { onAction(BulkEntryAction.SwitchConfirmed) },
+        onDismiss = { onAction(BulkEntryAction.SwitchDismissed) },
+        destructive = false,
+        dismissLabel = stringResource(
+            if (toIncome) R.string.bulk_switch_keep_expenses else R.string.bulk_switch_keep_incomes
+        ),
+        // "Seguir con gastos" and "Seguir con ingresos" stay on one line, as designed.
+        buttonPadding = PaddingValues(horizontal = 8.dp)
     )
 }
 
@@ -424,6 +630,8 @@ private fun day(utcMillis: Long): LocalDate =
 
 private fun LineProblem.text() = when (this) {
     LineProblem.NoCategory -> R.string.bulk_choose_category
+    LineProblem.NoSource -> R.string.bulk_choose_source
+    LineProblem.NoSourceName -> R.string.bulk_name_source
     LineProblem.CategoryArchived -> R.string.bulk_category_archived
     LineProblem.CategoryMissing -> R.string.bulk_category_missing
     LineProblem.MonthFull -> R.string.bulk_month_full
@@ -438,6 +646,9 @@ private fun BulkError.text() = when (this) {
     BulkError.Unknown -> R.string.expense_entry_unknown
 }
 
+/** The room ✕ takes at the start, kept free at the switch's end. */
+private val KIND_SWITCH_END = 48.dp
+
 /** How long Deshacer is offered after a line is removed. */
 private const val REMOVED_NOTICE_MILLIS = 6_000L
 
@@ -445,6 +656,9 @@ const val BULK_RECEIPT_TAG = "bulk:receipt"
 const val BULK_DATE_TAG = "bulk:date"
 const val BULK_DATE_CONFIRM_TAG = "bulk:date-confirm"
 const val BULK_CATEGORIES_TAG = "bulk:categories"
+const val BULK_SOURCES_TAG = "bulk:sources"
+const val BULK_SOURCE_NAME_TAG = "bulk:source-name"
+const val BULK_KIND_TAG = "bulk:kind"
 const val BULK_LOADING_TAG = "bulk:loading"
 const val BULK_READ_FAILED_TAG = "bulk:read-failed"
 const val BULK_NOTE_TAG = "bulk:note"

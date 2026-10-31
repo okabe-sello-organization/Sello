@@ -7,8 +7,10 @@ import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateExpenses
+import com.software.sello.domain.port.CreateIncomes
 import com.software.sello.domain.port.ExpenseBatchRejection
 import com.software.sello.feature.bulk.HandExpenseBatchCommands
+import com.software.sello.feature.bulk.HandIncomeBatchCommands
 import java.time.LocalDate
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -55,5 +57,21 @@ class ReceiptOutcomesTest {
         inner.found = { Outcome.Success(stored) }
         assertTrue(commands.find(operation) is Outcome.Failure)
         assertEquals(Outcome.Success(stored), commands.find(operation))
+    }
+
+    @Test
+    fun aReceiptOfIncomesIsReportedUnknownOnceAndThenFound() = runTest {
+        val incomes = HandIncomeBatchCommands()
+        val fenced = FencedIncomeBatchCommands(incomes, WriteFence(), { saved++ }, outcomes)
+        val receipt = CreateIncomes(operation, 7, LocalDate.parse("2026-09-30"), emptyList())
+        outcomes.arm()
+
+        assertEquals(CommandOutcome.OutcomeUnknown(operation), fenced.create(receipt))
+        assertFalse(outcomes.armed.value)
+        assertEquals(1, saved)
+        val stored = incomes.committed(operation, 0)
+        incomes.found = { Outcome.Success(stored) }
+        assertTrue(fenced.find(operation) is Outcome.Failure)
+        assertEquals(Outcome.Success(stored), fenced.find(operation))
     }
 }

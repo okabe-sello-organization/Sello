@@ -55,9 +55,9 @@ its own "today". They and the figures their tests check are in
 ## Anotar varios: an unknown outcome
 
 In the sandbox the tools' **Anotar varios** section has **Ocultar el resultado del
-próximo recibo**. The next receipt of several expenses is really saved, but the sheet is
-told its outcome is unknown and the first check fails too: it shows **Aún no sabemos si
-se guardó** with only **Comprobar si se guardó**. Pressing it asks again with the same
+próximo recibo**. The next receipt of several expenses or incomes is really saved, but
+the sheet is told its outcome is unknown and the first check fails too: it shows **Aún
+no sabemos si se guardó** with only **Comprobar si se guardó**. Pressing it asks again with the same
 operation, finds the receipt and closes with the usual confirmation; nothing is written
 twice. The switch lives in memory only and is off after a restart.
 

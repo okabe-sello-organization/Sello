@@ -2,17 +2,38 @@ package com.software.sello.feature.bulk
 
 import androidx.compose.runtime.Immutable
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.policy.EntryBatchPolicy
 import com.software.sello.presentation.carry.CarryCorrectionList
 import java.time.LocalDate
 
+/** What every line of the receipt is: the Gasto/Ingreso switch sets it for the whole receipt. */
+enum class BulkKind { Expense, Income }
+
 /** A category a line can be put in. */
 data class BulkCategory(val id: String, val name: String, val iconKey: String)
+
+/**
+ * A line's income source: one of [IncomeSource.keys]. [name] is Otro's name, null while it
+ * has none or for any other source.
+ */
+data class BulkSource(val key: String, val name: String?) {
+    val other: Boolean get() = key == IncomeSource.Other.KEY
+}
+
+/** What the composer above the keyboard is writing for the highlighted line. */
+enum class BulkComposer { Note, SourceName }
 
 /** Why one line cannot be saved as it is. */
 enum class LineProblem {
     /** It has an amount and no category. */
     NoCategory,
+
+    /** An income with an amount and no source. */
+    NoSource,
+
+    /** An income with an amount whose source is Otro, still without a name. */
+    NoSourceName,
 
     /** Storage refused it: its category is archived. */
     CategoryArchived,
@@ -47,29 +68,32 @@ enum class BulkError {
 
 /**
  * One line of the receipt as the screen shows it. [category] is null while it has none
- * that can take an expense; [amount] is null while nothing is typed.
+ * that can take an expense, [source] while it has no income source (each is null on a
+ * receipt of the other kind); [amount] is null while nothing is typed.
  */
 data class BulkLineUi(
     val key: String,
     val category: BulkCategory?,
     val amount: MoneyTextValue?,
     val note: String,
-    val problem: LineProblem? = null
+    val problem: LineProblem? = null,
+    val source: BulkSource? = null
 )
 
 /** The later months saving the receipt changes, shown before it is saved (ADR 0020 CP20). */
 data class BulkCorrection(val list: CarryCorrectionList, val changed: Boolean)
 
 /** A line just removed from the draft, which Deshacer puts back. */
-data class RemovedLine(val categoryName: String?)
+data class RemovedLine(val categoryName: String?, val source: BulkSource? = null)
 
 /**
- * Anotar varios for expenses: several lines on one receipt, one date, saved together.
- * There is always at least one line and at most [EntryBatchPolicy.MAX_LINES]; [highlighted] is
- * always one of them, the line the pad, the chips and the note apply to.
+ * Anotar varios: several expenses or several incomes ([kind]) on one receipt, one date,
+ * saved together. There is always at least one line and at most [EntryBatchPolicy.MAX_LINES];
+ * [highlighted] is always one of them, the line the pad, the chips and the note apply to.
  */
 @Immutable
 data class BulkEntryState(
+    val kind: BulkKind = BulkKind.Expense,
     val lines: List<BulkLineUi>,
     val highlighted: Int,
     val date: LocalDate,
@@ -79,11 +103,13 @@ data class BulkEntryState(
     /** Reading the categories failed; the lines stay. */
     val readFailed: Boolean = false,
     val categories: List<BulkCategory> = emptyList(),
+    /** The income sources a line can take, in the approved order; empty for expenses. */
+    val sources: List<String> = emptyList(),
     /** The sum of the lines with an amount. */
     val total: MoneyTextValue,
     /** Lines with an amount: the ones that would be saved. */
     val count: Int = 0,
-    /** Lines with an amount and no category. */
+    /** Lines with an amount and no category, or no source (or Otro without a name). */
     val missingCategories: Int = 0,
     /** Lines storage refused, still as they were refused. */
     val refusedLines: Int = 0,
@@ -91,14 +117,22 @@ data class BulkEntryState(
     val atLimit: Boolean = false,
     val limitPulse: Int = 0,
     val datePickerOpen: Boolean = false,
-    /** The highlighted line's note being written, or null while the composer is closed. */
+    /**
+     * The highlighted line's note, or Otro's name ([composing]), being written; null while
+     * the composer is closed.
+     */
     val noteDraft: String? = null,
+    val composing: BulkComposer = BulkComposer.Note,
     val noteDraftTooLong: Boolean = false,
     val noteDraftNotAllowed: Boolean = false,
+    /** Otro's name is empty: it needs one. */
+    val noteDraftRequired: Boolean = false,
     val noteDraftLength: Int = 0,
     val busy: Boolean = false,
     val error: BulkError? = null,
     val confirmDiscard: Boolean = false,
+    /** Switching Gasto/Ingreso with lines typed waits for this to be confirmed. */
+    val confirmSwitch: Boolean = false,
     val removed: RemovedLine? = null,
     val correction: BulkCorrection? = null,
     /** Storage confirmed the receipt; nothing can be sent again. */
@@ -135,6 +169,21 @@ sealed interface BulkEntryAction {
     data object ClearAmount : BulkEntryAction
 
     data class CategoryPicked(val id: String) : BulkEntryAction
+
+    /** The Gasto/Ingreso switch: asks first when lines are typed. */
+    data class KindPicked(val kind: BulkKind) : BulkEntryAction
+
+    /** Pasar a ingreso / Pasar a gasto: amounts and notes stay; categories and sources go. */
+    data object SwitchConfirmed : BulkEntryAction
+
+    /** Seguir con gastos / Seguir con ingresos. */
+    data object SwitchDismissed : BulkEntryAction
+
+    /** An income source chip; Otro opens the composer for its name. */
+    data class SourcePicked(val key: String) : BulkEntryAction
+
+    /** Cambiar on Otro's name. */
+    data object OpenSourceName : BulkEntryAction
 
     /** Tapping a line: the pad, the chips and the note now apply to it. */
     data class Select(val index: Int) : BulkEntryAction

@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  *
  * One exception: a route may carry what the person typed on the screen it came from, as
  * hints the next screen checks like any input and is free to ignore (as [ExpenseEntryRoute]
- * carries an amount and [ExpenseBulkRoute] an amount, note and date).
+ * carries an amount and [BulkEntryRoute] an amount, note, date and income source).
  */
 
 /** The start destination and the place Back returns to before leaving the app. */
@@ -158,17 +158,21 @@ data class ExpenseEntryRoute(
 )
 
 /**
- * Anotar varios: several expenses on one receipt. The arguments are hints for the first
- * draft from where it was opened: the category every new line starts in, or what was
- * typed in Anotar ([amount], [note], [date]), which becomes line one. The sheet checks them
- * like any other input and reads its categories itself.
+ * Anotar varios: several expenses, or several incomes when [income], on one receipt. The
+ * arguments are hints for the first draft from where it was opened: the category every new
+ * line starts in, or what was typed in Anotar ([amount], [note], [date], and an income's
+ * [source] with Otro's [sourceName]), which becomes line one. The sheet checks them like any
+ * other input and reads its categories itself.
  */
 @Serializable
-data class ExpenseBulkRoute(
+data class BulkEntryRoute(
     val categoryId: String? = null,
     val amount: String? = null,
     val note: String? = null,
-    val date: String? = null
+    val date: String? = null,
+    val income: Boolean = false,
+    val source: String? = null,
+    val sourceName: String? = null
 )
 
 /**

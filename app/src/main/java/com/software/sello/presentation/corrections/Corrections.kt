@@ -147,6 +147,9 @@ sealed interface CorrectionNotice {
      */
     data class ExpensesRecorded(val count: Int, val total: MoneyTextValue) : CorrectionNotice
 
+    /** The same for a receipt of several new incomes: "3 ingresos anotados: 1.420.000". */
+    data class IncomesRecorded(val count: Int, val total: MoneyTextValue) : CorrectionNotice
+
     /**
      * A new schedule storage confirmed, as it was read back: "Pago fijo guardado: Arriendo,
      * el 5 de cada mes". [name] is its note, else its category or the name of an Otro
@@ -966,6 +969,9 @@ class Corrections(
 
     /** A screen reports a new income its receipt confirmed, read back from storage. */
     fun incomeRecorded(notice: CorrectionNotice.IncomeRecorded) = said(notice)
+
+    /** A screen reports a receipt of several incomes storage confirmed. */
+    fun incomesRecorded(notice: CorrectionNotice.IncomesRecorded) = said(notice)
 
     /** A screen reports a new schedule its receipt confirmed, read back from storage. */
     fun scheduleSaved(notice: CorrectionNotice.ScheduleSaved) = said(notice)

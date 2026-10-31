@@ -31,6 +31,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -86,10 +88,12 @@ import java.time.ZoneOffset
 fun IncomeFormRoot(
     viewModels: ViewModelProvider.Factory,
     onClosed: () -> Unit,
-    onExpense: (() -> Unit)? = null
+    onExpense: (() -> Unit)? = null,
+    onSeveral: ((IncomeSeveral) -> Unit)? = null
 ) {
     val model: IncomeFormViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
+    LaunchedEffect(state.several) { state.several?.let { onSeveral?.invoke(it) } }
     // Once per saved income and before the form closes; the caller says what was saved.
     val haptics = LocalHapticFeedback.current
     var acknowledged by rememberSaveable { mutableStateOf<String?>(null) }
@@ -108,7 +112,12 @@ fun IncomeFormRoot(
     BackHandler(enabled = state.repeat.sheet != null) {
         model.onAction(IncomeFormAction.Repeat(RepeatAction.Dismiss))
     }
-    IncomeFormScreen(state, model::onAction, onExpense = onExpense)
+    IncomeFormScreen(
+        state,
+        model::onAction,
+        onExpense = onExpense,
+        severalOffered = onSeveral != null
+    )
 }
 
 @Composable
@@ -116,7 +125,8 @@ fun IncomeFormScreen(
     state: IncomeFormState,
     onAction: (IncomeFormAction) -> Unit,
     modifier: Modifier = Modifier,
-    onExpense: (() -> Unit)? = null
+    onExpense: (() -> Unit)? = null,
+    severalOffered: Boolean = false
 ) {
     SelloScaffold(
         title = stringResource(
@@ -129,6 +139,19 @@ fun IncomeFormScreen(
             }
         },
         actions = {
+            // Anotar varios, taking what is typed so far as its first line.
+            if (severalOffered && !state.editing && !state.loading && !state.loadFailed) {
+                val description = stringResource(R.string.expense_entry_several_description)
+                FieldPill(
+                    text = stringResource(R.string.expense_entry_several),
+                    icon = SelloIcon.ReceiptLong,
+                    onClick = { onAction(IncomeFormAction.Several) },
+                    modifier = Modifier
+                        .testTag(INCOME_SEVERAL_TAG)
+                        .semantics { contentDescription = description },
+                    enabled = state.canOpenSeveral
+                )
+            }
             if (state.editing) {
                 SelloButton(
                     stringResource(R.string.expense_edit_delete),
@@ -482,3 +505,5 @@ private fun IncomeDatePicker(state: IncomeFormState, onAction: (IncomeFormAction
         }
     ) { DatePicker(picker) }
 }
+
+const val INCOME_SEVERAL_TAG = "income.several"

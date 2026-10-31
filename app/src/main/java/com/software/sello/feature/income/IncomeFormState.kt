@@ -59,6 +59,19 @@ enum class IncomeFormError {
 }
 
 /**
+ * What is typed so far, handed to Anotar varios to become its line one: the amount's
+ * digits, the source the person picked with Otro's name, the note and the date. Each
+ * may be missing.
+ */
+data class IncomeSeveral(
+    val amount: String?,
+    val sourceKey: String?,
+    val otherName: String?,
+    val note: String?,
+    val date: LocalDate
+)
+
+/**
  * The income form. [amount] is present only for a valid amount; [amountText] is what
  * was pasted when it could not be used. [sourceKey] is one of [sourceKeys]; [otherName]
  * is what was typed for "Otro" and is kept, but not sent, while another source is chosen.
@@ -112,7 +125,9 @@ data class IncomeFormState(
     val askFollowing: Boolean = false,
     val following: FollowingSchedule? = null,
     /** The following incomes already took the new terms; this income did not yet. */
-    val followingSaved: Boolean = false
+    val followingSaved: Boolean = false,
+    /** Varios was pressed: the form gives way to Anotar varios with what is typed. */
+    val several: IncomeSeveral? = null
 ) {
     val canSubmit: Boolean
         get() = !loading && !loadFailed && !busy && !generationChanged && missing == null &&
@@ -123,6 +138,13 @@ data class IncomeFormState(
         recorded == null
 
     val canDelete: Boolean get() = editing && !loading && !loadFailed && editable
+
+    /**
+     * Varios is offered for a new income, not one repeating or being corrected, and not
+     * while a pasted amount is refused: it would be lost on the way.
+     */
+    val canOpenSeveral: Boolean
+        get() = !editing && editable && repeat.choice == null && amountText == null
 
     val needsOtherName: Boolean get() = sourceKey == OTHER
 
@@ -172,6 +194,9 @@ sealed interface IncomeFormAction {
 
     /** Close the composer; the text stays as it was. */
     data object ComposerCancelled : IncomeFormAction
+
+    /** Varios: continue on Anotar varios, with what is typed as its line one. */
+    data object Several : IncomeFormAction
 
     data object Submit : IncomeFormAction
 

@@ -70,7 +70,8 @@ internal fun NavGraphBuilder.incomeDestinations(
                     navigation.navigate(CategoryEditorRoute(limit = it)) { launchSingleTop = true }
                 },
                 { navigation.navigate(IncomeEditRoute(it)) },
-                padding
+                padding,
+                onRecordSeveral = { navigation.navigate(BulkEntryRoute(income = true)) }
             )
         }
     }
@@ -88,8 +89,8 @@ internal fun NavGraphBuilder.incomeDestinations(
                 announcements::retry
             },
             announcementFailed = announcementState.failure != null,
-            onSeveral = { several ->
-                navigation.navigate(several.route()) {
+            onSeveral = { route ->
+                navigation.navigate(route) {
                     popUpTo<IncomeEntryRoute> { inclusive = true }
                 }
             }

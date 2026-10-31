@@ -52,4 +52,16 @@ class IncomeFormScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    /** Opened where Anotar varios is reachable: the Varios pill in the bar. */
+    private fun captureVarios(look: Look, label: String) {
+        rule.showSello(look) { IncomeFormScreen(ready, {}, severalOffered = true) }
+        rule.captureStill("src/test/screenshots/income-form-varios-$label.png")
+    }
+
+    @Test
+    fun variosClaro() = captureVarios(Look(), "claro")
+
+    @Test
+    fun variosOscuro() = captureVarios(Look(dark = true), "oscuro")
 }
