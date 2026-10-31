@@ -189,7 +189,6 @@ fun CategoryEditorScreen(
                 amount = { Limit(state, onAction) },
                 choices = {
                     Said(state)
-                    CarrySection(state, onAction)
                     // Without the card (a past month), a carry refusal is said here.
                     if (state.carry == null) {
                         state.carryProblem?.let { problem ->
@@ -434,6 +433,7 @@ private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -
                 color = SelloTheme.colors.inkSoft,
                 modifier = Modifier.padding(top = SelloTheme.spacing.sm)
             )
+            CarrySwitch(state, onAction)
         }
         return
     }
@@ -479,6 +479,7 @@ private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -
             color = SelloTheme.colors.inkSoft,
             modifier = Modifier.padding(top = SelloTheme.spacing.sm).testTag(EDITOR_SCOPE_TAG)
         )
+        CarrySwitch(state, onAction)
     }
 }
 

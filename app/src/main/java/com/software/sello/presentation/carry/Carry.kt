@@ -96,6 +96,12 @@ fun MoneyFormatter.carryFigures(parts: CarryParts, month: YearMonth, spent: Mone
         source = parts.chainStart?.takeIf { it < month }?.let { month.minusMonths(1) }
     )
 
+/** "Sobrante" for a carry of 0 or more, "Faltante" below 0: the word says the direction. */
+@Composable
+fun carryLabel(carry: MoneyTextValue): String = stringResource(
+    if (carry.sign == MoneySign.Minus) R.string.carry_in_deficit else R.string.carry_in_surplus
+)
+
 /** "Te sobró 80.000 de meses anteriores", "Te pasaste 20.000 en meses anteriores". */
 @Composable
 fun carryWords(figures: CarryFigures): String = when (figures.direction) {
@@ -129,7 +135,7 @@ fun CarryBreakdownSection(
     }
     val lines = buildList {
         add(CarryLine(stringResource(R.string.carry_base), figures.base))
-        add(CarryLine(stringResource(R.string.carry_in), figures.carry, words))
+        add(CarryLine(carryLabel(figures.carry), figures.carry, words))
         add(
             CarryLine(
                 stringResource(R.string.carry_capacity),

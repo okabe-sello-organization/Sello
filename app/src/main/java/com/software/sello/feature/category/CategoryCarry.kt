@@ -11,21 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
-import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.CarryBreakdown
-import com.software.sello.designsystem.component.CarryLine
 import com.software.sello.designsystem.component.ChangeRow
 import com.software.sello.designsystem.component.ConfirmSlip
-import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.designsystem.component.SelloButton
-import com.software.sello.designsystem.component.Slip
+import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.carry.CarryCorrectionContent
 import com.software.sello.presentation.carry.CarryCorrectionList
@@ -131,95 +125,66 @@ private fun MoneyTextValue.text() = (
     }
     ) + digits
 
-/** The card under Límite mensual: the setting, its own action and what it said last. */
+/**
+ * The carry switch at the foot of the Límite mensual slip, under a tear line: the setting,
+ * what it carries this month and what it said last. Flipping it sends the switch's own
+ * command (CP28), which asks first; the switch shows the stored setting, never the tap.
+ */
 @Composable
-internal fun CarrySection(state: CategoryEditorState, onAction: (CategoryEditorAction) -> Unit) {
+internal fun CarrySwitch(state: CategoryEditorState, onAction: (CategoryEditorAction) -> Unit) {
     val card = state.carry ?: return
     val dates = dateLabels()
-    val months = monthNames()
-    Slip(Modifier.fillMaxWidth().padding(top = 12.dp).testTag(EDITOR_CARRY_TAG), pinked = false) {
-        Text(
-            stringResource(R.string.carry_setting),
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.semantics { heading() }
-        )
+    Column(Modifier.fillMaxWidth().testTag(EDITOR_CARRY_TAG)) {
+        TearLine(verticalMargin = 12.dp)
         when (card) {
-            is CarryCard.Off -> {
+            CarryCard.Unreadable -> {
                 Text(
-                    stringResource(R.string.carry_setting_help),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SelloTheme.colors.inkSoft,
-                    modifier = Modifier.padding(vertical = 6.dp)
+                    stringResource(R.string.carry_setting),
+                    style = MaterialTheme.typography.bodyLarge
                 )
-                CarryMessages(state)
-                SelloButton(
-                    text = stringResource(R.string.carry_enable, months.inSentence(card.month)),
-                    onClick = { onAction(CategoryEditorAction.EnableCarry) },
-                    kind = ButtonKind.Outlined,
-                    enabled = state.canChangeCarry,
-                    modifier = Modifier.fillMaxWidth().testTag(EDITOR_CARRY_ENABLE_TAG)
+                Text(
+                    stringResource(R.string.carry_read_failed),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = SelloTheme.colors.semantic.loss
                 )
             }
 
-            is CarryCard.On -> {
-                Text(
-                    stringResource(R.string.carry_on_since, dates.monthYear(card.since)),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 4.dp).testTag(EDITOR_CARRY_ON_TAG)
-                )
-                CarryBreakdown(
-                    listOf(
-                        CarryLine(stringResource(R.string.carry_base), card.base),
-                        CarryLine(
-                            stringResource(R.string.carry_in),
-                            card.carry,
-                            when (card.direction) {
-                                CarryDirection.Surplus ->
-                                    stringResource(
-                                        R.string.carry_surplus,
-                                        card.carryMagnitude.digits
-                                    )
-
-                                CarryDirection.Deficit ->
-                                    stringResource(
-                                        R.string.carry_deficit,
-                                        card.carryMagnitude.digits
-                                    )
-
-                                CarryDirection.Zero -> stringResource(R.string.carry_zero)
-                            }
-                        ),
-                        CarryLine(
-                            stringResource(R.string.carry_capacity),
-                            card.capacity,
-                            emphasis = LineEmphasis.Strong
-                        )
+            else -> {
+                val on = card is CarryCard.On
+                val setting = if (card is CarryCard.On) {
+                    stringResource(
+                        R.string.carry_on_summary,
+                        dates.monthYear(card.since),
+                        card.carry.text(),
+                        card.capacity.digits
                     )
+                } else {
+                    stringResource(R.string.carry_setting_help)
+                }
+                // While the form has changes, the switch waits and says why under the setting.
+                val subtitle = if (state.changed) {
+                    setting + "\n" + stringResource(R.string.carry_wait_changes)
+                } else {
+                    setting
+                }
+                SwitchRow(
+                    title = stringResource(R.string.carry_setting),
+                    checked = on,
+                    onCheckedChange = {
+                        onAction(
+                            if (on) {
+                                CategoryEditorAction.DisableCarry
+                            } else {
+                                CategoryEditorAction.EnableCarry
+                            }
+                        )
+                    },
+                    modifier = Modifier.testTag(EDITOR_CARRY_SWITCH_TAG),
+                    subtitle = subtitle,
+                    enabled = state.canChangeCarry
                 )
                 CarryMessages(state)
-                SelloButton(
-                    text = stringResource(R.string.carry_disable),
-                    onClick = { onAction(CategoryEditorAction.DisableCarry) },
-                    kind = ButtonKind.Outlined,
-                    enabled = state.canChangeCarry,
-                    modifier = Modifier.fillMaxWidth().testTag(EDITOR_CARRY_DISABLE_TAG)
-                )
             }
-
-            CarryCard.Unreadable -> Text(
-                stringResource(R.string.carry_read_failed),
-                style = MaterialTheme.typography.bodyMedium,
-                color = SelloTheme.colors.semantic.loss,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-        if (state.changed && card !is CarryCard.Unreadable) {
-            Text(
-                stringResource(R.string.carry_wait_changes),
-                style = MaterialTheme.typography.bodySmall,
-                color = SelloTheme.colors.inkSoft,
-                modifier = Modifier.padding(top = 4.dp)
-            )
         }
     }
 }
@@ -341,7 +306,14 @@ internal fun CarryQuestionSlip(
         is CarryQuestion.Drop -> {
             val figures = question.figures
             ConfirmSlip(
-                title = stringResource(R.string.carry_drop_title, figures.carry.text()),
+                title = stringResource(
+                    if (figures.carry.sign == MoneySign.Minus) {
+                        R.string.carry_drop_title_deficit
+                    } else {
+                        R.string.carry_drop_title_surplus
+                    },
+                    figures.carry.digits
+                ),
                 confirmLabel = stringResource(
                     when (question.reason) {
                         DropReason.Disable -> R.string.carry_drop_confirm
@@ -451,9 +423,7 @@ private fun BeforeAfter(
 }
 
 const val EDITOR_CARRY_TAG = "editor:carry"
-const val EDITOR_CARRY_ENABLE_TAG = "editor:carry.enable"
-const val EDITOR_CARRY_DISABLE_TAG = "editor:carry.disable"
-const val EDITOR_CARRY_ON_TAG = "editor:carry.on"
+const val EDITOR_CARRY_SWITCH_TAG = "editor:carry.switch"
 const val EDITOR_CARRY_PROBLEM_TAG = "editor:carry.problem"
 const val EDITOR_CARRY_DONE_TAG = "editor:carry.done"
 const val EDITOR_CARRY_QUESTION_TAG = "editor:carry.question"

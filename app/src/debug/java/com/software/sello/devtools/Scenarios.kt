@@ -575,7 +575,7 @@ object Scenarios {
             today = day(2026, 10, 24),
             title = "Seis meses con todo",
             summary = "Desde abril: pagos fijos, quincena, metas, inversiones en pesos y " +
-                "dólares, límites cambiados, Ocio archivado, arrastre en Mascota y Ocio y " +
+                "dólares, límites cambiados, Ocio archivado, sobrante en Mascota y Ocio y " +
                 "correcciones. Octubre 2.525.000 de 3.620.000.",
             steps = steps
         )
@@ -595,9 +595,9 @@ object Scenarios {
         zone = Bogota,
         start = day(2027, 1, 1),
         today = day(2027, 4, 12),
-        title = "Arrastre: superávit y déficit",
-        summary = "Cinco categorías que arrastran desde enero: lo que sobra, repetir exceso, " +
-            "un déficit mayor que el límite, meses sin gastos y febrero corto. Hoy 12 abr.",
+        title = "Sobrante y faltante: varios casos",
+        summary = "Cinco categorías que pasan lo que sobra desde enero: un sobrante, repetir " +
+            "exceso, un déficit mayor que el límite, meses sin gastos y febrero corto. Hoy 12 abr.",
         steps = listOf(
             Category("comida", "Comida", "restaurant", 100_000),
             Category("transporte", "Transporte", "directions_bus", 100_000),
@@ -637,9 +637,9 @@ object Scenarios {
         zone = Bogota,
         start = day(2027, 12, 1),
         today = day(2028, 2, 22),
-        title = "Arrastre: fin de año y bisiesto",
-        summary = "Comida arrastra desde diciembre, pasa el año nuevo y llega al 22 de febrero " +
-            "de 2028 (29 días): quedan 8 días en el mes.",
+        title = "Sobrante: fin de año y bisiesto",
+        summary = "Comida pasa lo que sobra desde diciembre, cruza el año nuevo y llega al 22 " +
+            "de febrero de 2028 (29 días): quedan 8 días en el mes.",
         steps = listOf(
             Category("comida", "Comida", "restaurant", 100_000),
             EnableCarry("comida", 1),
@@ -668,8 +668,8 @@ object Scenarios {
         zone = Bogota,
         start = day(2027, 1, 1),
         today = day(2027, 4, 20),
-        title = "Arrastre: apagar, archivar y volver a encender",
-        summary = "Dejar de arrastrar −20.000 el 10 feb, archivar Hogar el 12 feb, Salud sin " +
+        title = "Sobrante: apagar, archivar y volver a encender",
+        summary = "Olvidar el faltante de 20.000 el 10 feb, archivar Hogar el 12 feb, Salud sin " +
             "límite el 5 feb con 80.000, encender Ocio el 17 feb y Comida el 3 abr en cero.",
         steps = listOf(
             Category("comida", "Comida", "restaurant", 100_000),
@@ -720,9 +720,9 @@ object Scenarios {
         zone = Bogota,
         start = day(2027, 1, 1),
         today = day(2027, 4, 10),
-        title = "Arrastre: para corregir el pasado",
-        summary = "Comida y Transporte arrastran desde enero; hoy 10 abr, sin gastos en abril. " +
-            "Sirve para borrar, mover y agregar gastos de meses cerrados.",
+        title = "Sobrante: para corregir el pasado",
+        summary = "Comida y Transporte pasan lo que sobra desde enero; hoy 10 abr, sin gastos " +
+            "en abril. Sirve para borrar, mover y agregar gastos de meses cerrados.",
         steps = listOf(
             Category("comida", "Comida", "restaurant", 100_000),
             Category("transporte", "Transporte", "directions_bus", 50_000),
@@ -752,9 +752,9 @@ object Scenarios {
         zone = Bogota,
         start = day(2027, 1, 1),
         today = day(2027, 4, 12),
-        title = "Arrastre: un gasto olvidado de enero",
-        summary = "Comida arrastra desde enero y el 2 abr se registra un gasto de 200.000 de " +
-            "enero: febrero, marzo y abril se recalculan a la vez.",
+        title = "Sobrante: un gasto olvidado de enero",
+        summary = "Comida pasa lo que sobra desde enero y el 2 abr se registra un gasto de " +
+            "200.000 de enero: febrero, marzo y abril se recalculan a la vez.",
         steps = listOf(
             Category("comida", "Comida", "restaurant", 100_000),
             EnableCarry("comida", 1),
@@ -814,18 +814,18 @@ object Scenarios {
     /** SC37: a payment of 200.000 from February is recorded on 10 March. */
     val CarryPayments = carryPayment(
         "arrastre-pagos",
-        "Arrastre: un pago de febrero llega en marzo",
-        "Hogar arrastra; un pago de 200.000 del 5 feb se registra al volver el 10 mar y " +
-            "baja el límite con arrastre de marzo.",
+        "Sobrante: un pago de febrero llega en marzo",
+        "Hogar pasa lo que sobra; un pago de 200.000 del 5 feb se registra al volver el " +
+            "10 mar y baja el límite de marzo.",
         200_000
     )
 
     /** SC47: as [CarryPayments] with 300.000, which turns February into an overspend. */
     val CarryBigPayments = carryPayment(
         "arrastre-pagos-grandes",
-        "Arrastre: un pago que deja febrero excedido",
-        "Hogar arrastra; un pago de 300.000 del 5 feb se registra el 10 mar y febrero pasa " +
-            "de 200.000 a −100.000.",
+        "Sobrante: un pago que deja febrero excedido",
+        "Hogar pasa lo que sobra; un pago de 300.000 del 5 feb se registra el 10 mar y " +
+            "febrero pasa de 200.000 a −100.000.",
         300_000
     )
 

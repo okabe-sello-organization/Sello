@@ -129,7 +129,7 @@ class ResetScreenTest {
 
         rule.onNodeWithText(
             "Se borran 2 categorías, 10 gastos, 1 ingreso, 3 metas, 2 pagos e ingresos fijos, " +
-                "1 inversión y 2 arrastres entre meses, con sus límites y notas.",
+                "1 inversión y 2 periodos con sobrante o faltante, con sus límites y notas.",
             substring = true
         ).assertIsDisplayed()
     }

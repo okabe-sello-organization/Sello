@@ -75,6 +75,7 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.carry.CarryBreakdownSection
+import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.carry.CarryProblemSlip
 import com.software.sello.presentation.carry.overallCarryFootnote
 import com.software.sello.presentation.category.CategoryIcons
@@ -504,8 +505,17 @@ private fun CategoriesSlip(
                 over = category.over,
                 amountCaption = when {
                     category.unlimited -> stringResource(R.string.recibo_cell_unlimited_caption)
+
                     category.limit == null -> stringResource(R.string.recibo_cell_spent_caption)
-                    category.carry != null -> stringResource(R.string.carry_cell)
+
+                    category.carry != null -> stringResource(
+                        if (category.carry.direction == CarryDirection.Deficit) {
+                            R.string.carry_cell_deficit
+                        } else {
+                            R.string.carry_cell_surplus
+                        }
+                    )
+
                     else -> null
                 },
                 staggerIndex = index,

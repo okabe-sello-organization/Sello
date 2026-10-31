@@ -216,7 +216,7 @@ class CarryCorrectionsTest {
         assertEquals(confirmation, commands.deleted.last().confirmation)
         assertNotEquals(commands.deleted.first().operationId, commands.deleted.last().operationId)
         assertNull(corrections.question.value)
-        // "Gasto borrado · cambió el límite con arrastre de 3 meses", with Deshacer.
+        // "Gasto borrado · cambió el límite de 3 meses", with Deshacer.
         assertEquals(
             CorrectionNotice.Deleted(canUndo = true, carryMonths = 3),
             corrections.notice.value

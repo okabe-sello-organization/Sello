@@ -37,6 +37,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.revealed
 import com.software.sello.showSello
@@ -592,6 +593,68 @@ class CategoryEditorScreenTest {
         rule.waitForIdle()
         rule.onNodeWithText(
             "Vuelve a aceptar gastos. Su límite de octubre sigue como estaba y nada más cambia."
+        ).assertIsDisplayed()
+    }
+
+    private fun minus(digits: String) =
+        MoneyTextValue(MoneySign.Minus, "", digits, "menos $digits pesos")
+
+    private val carryOn = CarryCard.On(
+        since = october.minusMonths(1),
+        base = pesos("100.000"),
+        carry = minus("40.000"),
+        carryMagnitude = pesos("40.000"),
+        direction = CarryDirection.Deficit,
+        capacity = pesos("60.000")
+    )
+
+    @Test
+    fun carryOffIsASwitchInTheLimitSlipThatAsksToTurnItOn() {
+        show(editing.copy(carry = CarryCard.Off(october)))
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOff().assertIsEnabled()
+        rule.onNode(hasTestTag(EDITOR_CARRY_TAG) and hasAnyAncestor(hasTestTag(EDITOR_LIMIT_TAG)))
+            .assertExists()
+        rule.onNodeWithText("Pasar lo que sobre al mes siguiente").assertIsDisplayed()
+        rule.onNodeWithText("Si te pasas, se descuenta del mes siguiente. Empieza en 0 este mes.")
+            .assertIsDisplayed()
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).performClick()
+        assertEquals(listOf(CategoryEditorAction.EnableCarry), actions)
+    }
+
+    @Test
+    fun carryOnSaysSinceWhenWhatItBringsAndThisMonthsLimitAndAsksToTurnItOff() {
+        show(editing.copy(carry = carryOn))
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOn()
+        rule.onNodeWithText("Desde sep 2026 · trae −40.000 · este mes 60.000").assertIsDisplayed()
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).performClick()
+        assertEquals(listOf(CategoryEditorAction.DisableCarry), actions)
+    }
+
+    @Test
+    fun carryCannotBeSwitchedWhileOtherChangesWaitToBeSaved() {
+        show(editing.copy(carry = carryOn, changed = true))
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOn().assertIsNotEnabled()
+        rule.onNodeWithText("Guarda o descarta tus cambios para cambiar esto.", substring = true)
+            .assertIsDisplayed()
+        rule.onNodeWithText("trae −40.000 · este mes 60.000", substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun anUnreadableCarryIsSaidWithoutASwitch() {
+        show(editing.copy(carry = CarryCard.Unreadable))
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertDoesNotExist()
+        rule.onNodeWithText(
+            "No pudimos leer si esta categoría pasa lo que sobra."
         ).assertIsDisplayed()
     }
 }

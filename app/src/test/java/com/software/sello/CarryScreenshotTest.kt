@@ -28,7 +28,7 @@ import com.software.sello.feature.category.CategoryEditorScreen
 import com.software.sello.feature.category.CategoryEditorState
 import com.software.sello.feature.category.DropFigures
 import com.software.sello.feature.category.DropReason
-import com.software.sello.feature.category.EDITOR_CARRY_TAG
+import com.software.sello.feature.category.EDITOR_CARRY_SWITCH_TAG
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.storedExpense
@@ -192,8 +192,17 @@ class CarryScreenshotTest {
     @Test
     fun editorCarrying() {
         rule.showSello(Look()) { CategoryEditorScreen(carrying, {}) }
-        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).performScrollTo()
         rule.captureStill("src/test/screenshots/carry-editor-cobalto-light-font1.0.png")
+    }
+
+    @Test
+    fun editorCarryOff() {
+        rule.showSello(Look()) {
+            CategoryEditorScreen(carrying.copy(carry = CarryCard.Off(abr)), {})
+        }
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).performScrollTo()
+        rule.captureStill("src/test/screenshots/carry-editor-off-cobalto-light-font1.0.png")
     }
 
     @Test
