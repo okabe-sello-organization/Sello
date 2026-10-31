@@ -1,6 +1,8 @@
 package com.software.sello
 
 import android.app.Activity
+import android.os.ParcelFileDescriptor
+import android.view.Choreographer
 import android.view.WindowInsets
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
@@ -19,6 +21,8 @@ import androidx.test.runner.lifecycle.ActivityLifecycleMonitorRegistry
 import androidx.test.runner.lifecycle.Stage
 import com.software.sello.composition.SelloApplication
 import com.software.sello.composition.StartupState
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -101,6 +105,28 @@ private fun keyboardShown(): Boolean {
             ?.isVisible(WindowInsets.Type.ime()) == true
     }
     return shown
+}
+
+/**
+ * Whether the system still means to show the keyboard, asked of its input method service.
+ * The window learns of a hide only once the keyboard app has acted on it, which a busy
+ * device can take seconds to do, or never; the service learns of a direct hide at once.
+ * A field left puts the keyboard away two frames on, so this lets the app draw three first.
+ */
+fun systemKeyboardRequested(): Boolean {
+    repeat(3) {
+        val drawn = CountDownLatch(1)
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            Choreographer.getInstance().postFrameCallback { drawn.countDown() }
+        }
+        check(drawn.await(PATIENCE_MILLIS, TimeUnit.MILLISECONDS)) { "No frame was drawn" }
+    }
+    val dump = InstrumentationRegistry.getInstrumentation().uiAutomation
+        .executeShellCommand("dumpsys input_method")
+        .let { ParcelFileDescriptor.AutoCloseInputStream(it) }
+        .bufferedReader()
+        .use { it.readText() }
+    return "mShowRequested=true" in dump || "mInputShown=true" in dump
 }
 
 /** Waits until the installed app's data has opened or failed; see [SelloTestRunner]. */

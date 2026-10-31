@@ -29,8 +29,10 @@ import com.software.sello.hideKeyboard
 import com.software.sello.navigation.CORRECTION_NOTICE_TAG
 import com.software.sello.press
 import com.software.sello.revealed
+import com.software.sello.systemKeyboardRequested
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -73,6 +75,10 @@ class BulkExpensesJourneyTest {
         rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).revealed().press()
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).press()
         rule.awaitTag(RECIBO_CATEGORIES_TAG)
+        // The editor is gone and Recibo has no field: nothing may still ask for the
+        // keyboard, which would hide the dock (#292).
+        rule.waitForIdle()
+        assertFalse(systemKeyboardRequested())
 
         // Anotar, with one expense typed, then Varios: it becomes line one.
         rule.awaitDescription("Anotar un gasto")
