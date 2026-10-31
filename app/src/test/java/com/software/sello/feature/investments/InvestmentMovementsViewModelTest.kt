@@ -918,6 +918,21 @@ class InvestmentMovementsViewModelTest {
         val garbled = model(saved = fromSheet(ecopetrol, "amount" to "12a", "date" to "ayer"))
         assertNull(garbled.now.current.amount)
         assertEquals(day("2026-10-22"), garbled.now.current.date)
+
+        // USD 9.999.999.999,99 is the most; a cent more, or 20 digits, is dropped.
+        val most = model(
+            acciones,
+            fromSheet(acciones, "kind" to "contribution", "amount" to "999999999999", "usd" to true)
+        )
+        assertEquals("9.999.999.999,99", most.now.lines[0].amount?.digits)
+        for (tooLarge in listOf("1000000000000", "99999999999999999999")) {
+            val dropped = model(
+                acciones,
+                fromSheet(acciones, "kind" to "contribution", "amount" to tooLarge, "usd" to true)
+            )
+            assertEquals(1, dropped.now.lines.size)
+            assertNull(dropped.now.current.amount)
+        }
     }
 
     @Test

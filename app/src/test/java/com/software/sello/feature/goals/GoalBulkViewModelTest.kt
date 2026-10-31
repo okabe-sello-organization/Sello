@@ -841,6 +841,15 @@ class GoalBulkViewModelTest {
         val garbled = model(saved = fromSheet("amount" to "12a", "date" to "ayer")).state.value
         assertNull(garbled.line.amount)
         assertEquals(today, garbled.line.date)
+
+        // 999.999.999.999 is the most an amount can be; one more, or 20 digits, is dropped.
+        val most = model(saved = fromSheet("amount" to "999999999999")).state.value
+        assertEquals("999.999.999.999", most.lines[0].amount!!.digits)
+        for (tooLarge in listOf("1000000000000", "99999999999999999999")) {
+            val dropped = model(saved = fromSheet("amount" to tooLarge)).state.value
+            assertEquals(1, dropped.lines.size)
+            assertNull(dropped.line.amount)
+        }
     }
 
     @Test
