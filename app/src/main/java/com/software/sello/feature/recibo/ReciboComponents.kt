@@ -198,7 +198,6 @@ internal class LineAction(val label: String, val onClick: () -> Unit)
  * The line does not remove itself. After a swipe it returns to its place, and it is
  * gone when what it stands for is.
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun ActionLine(
     label: String,
@@ -209,13 +208,28 @@ internal fun ActionLine(
     swipeAway: LineAction? = null,
     value: @Composable () -> Unit
 ) {
+    ActionRow(onClick, actions, modifier, swipeAway) { pressable ->
+        LeaderLine(label = label, caption = caption, value = value, modifier = pressable)
+    }
+}
+
+/**
+ * What makes an [ActionLine] act, around a [line] drawn any other way: [line] puts the
+ * modifier it is given on its outermost layout, and is then read as one node.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+internal fun ActionRow(
+    onClick: () -> Unit,
+    actions: List<LineAction>,
+    modifier: Modifier = Modifier,
+    swipeAway: LineAction? = null,
+    content: @Composable (Modifier) -> Unit
+) {
     var menuOpen by remember { mutableStateOf(false) }
     val line: @Composable () -> Unit = {
-        LeaderLine(
-            label = label,
-            caption = caption,
-            value = value,
-            modifier = modifier
+        content(
+            modifier
                 .background(SelloTheme.colors.paper)
                 .heightIn(min = SelloTheme.spacing.minTouchTarget)
                 .combinedClickable(
