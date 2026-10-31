@@ -142,6 +142,15 @@ sealed interface CorrectionNotice {
     data class IncomeRecorded(val amount: MoneyTextValue?) : CorrectionNotice
 
     /**
+     * A receipt of several new expenses storage confirmed: "3 gastos anotados: 126.000",
+     * the [count] of lines and their [total].
+     */
+    data class ExpensesRecorded(val count: Int, val total: MoneyTextValue) : CorrectionNotice
+
+    /** The same for a receipt of several new incomes: "3 ingresos anotados: 1.420.000". */
+    data class IncomesRecorded(val count: Int, val total: MoneyTextValue) : CorrectionNotice
+
+    /**
      * A new schedule storage confirmed, as it was read back: "Pago fijo guardado: Arriendo,
      * el 5 de cada mes". [name] is its note, else its category or the name of an Otro
      * source; an income without either is named by [sourceKey]. [rule] and [start] are
@@ -195,6 +204,16 @@ sealed interface CorrectionNotice {
         val celebration: GoalCelebration? = null
     ) : CorrectionNotice
 
+    /**
+     * A receipt of [count] aportes and retiros storage confirmed: "3 movimientos anotados:
+     * +130.000", [net] being aportes minus retiros. [net] is null when it could not be worked out.
+     */
+    data class GoalMovementsRecorded(
+        val count: Int,
+        val net: MoneyTextValue?,
+        val celebration: GoalCelebration? = null
+    ) : CorrectionNotice
+
     /** A new target, storage confirmed, that earned or relit a stamp (rule 7, MT18). */
     data class GoalTargetChanged(val celebration: GoalCelebration) : CorrectionNotice
 
@@ -221,6 +240,13 @@ sealed interface CorrectionNotice {
         val kind: InvestmentMovementKind,
         val amount: MoneyTextValue?
     ) : InvestmentMovementNotice
+
+    /**
+     * A receipt of [count] movements storage confirmed (SELLO-134): "3 movimientos
+     * anotados en Ecopetrol". [investmentName] is null when it could not be read back.
+     */
+    data class InvestmentMovementsRecorded(val count: Int, val investmentName: String?) :
+        InvestmentMovementNotice
 }
 
 /** What is said about an investment's movement (SELLO-110), drawn in its own words. */
@@ -230,6 +256,7 @@ sealed interface InvestmentMovementNotice : CorrectionNotice
 val CorrectionNotice.celebration: GoalCelebration?
     get() = when (this) {
         is CorrectionNotice.GoalMovementRecorded -> celebration
+        is CorrectionNotice.GoalMovementsRecorded -> celebration
         is CorrectionNotice.GoalTargetChanged -> celebration
         else -> null
     }
@@ -874,6 +901,10 @@ class Corrections(
     fun investmentMovementRecorded(notice: CorrectionNotice.InvestmentMovementRecorded) =
         said(notice)
 
+    /** A screen reports a receipt of several investment movements its receipt confirmed. */
+    fun investmentMovementsRecorded(count: Int, investmentName: String?) =
+        said(CorrectionNotice.InvestmentMovementsRecorded(count, investmentName))
+
     /**
      * Marks a goal lograda and offers Deshacer, in its name, for the time [command] asked.
      * It runs to its end even if the caller is cancelled meanwhile.
@@ -899,6 +930,9 @@ class Corrections(
 
     /** A screen reports a new aporte or retiro its receipt confirmed, read back from storage. */
     fun goalMovementRecorded(notice: CorrectionNotice.GoalMovementRecorded) = said(notice)
+
+    /** A screen reports a receipt of several aportes and retiros its receipt confirmed. */
+    fun goalMovementsRecorded(notice: CorrectionNotice.GoalMovementsRecorded) = said(notice)
 
     /**
      * Whether [celebration]'s stamps come down now: only the first time a screen asks, so
@@ -930,8 +964,14 @@ class Corrections(
     /** A screen reports a new expense its receipt confirmed, read back from storage. */
     fun recorded(notice: CorrectionNotice.ExpenseRecorded) = said(notice)
 
+    /** A screen reports a receipt of several expenses storage confirmed. */
+    fun expensesRecorded(notice: CorrectionNotice.ExpensesRecorded) = said(notice)
+
     /** A screen reports a new income its receipt confirmed, read back from storage. */
     fun incomeRecorded(notice: CorrectionNotice.IncomeRecorded) = said(notice)
+
+    /** A screen reports a receipt of several incomes storage confirmed. */
+    fun incomesRecorded(notice: CorrectionNotice.IncomesRecorded) = said(notice)
 
     /** A screen reports a new schedule its receipt confirmed, read back from storage. */
     fun scheduleSaved(notice: CorrectionNotice.ScheduleSaved) = said(notice)

@@ -14,8 +14,11 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import com.software.sello.feature.bulk.BulkEntryRoot
 import com.software.sello.feature.expense.ExpenseEntryRoot
+import com.software.sello.feature.expense.ExpenseSeveral
 import com.software.sello.feature.income.IncomeFormRoot
+import com.software.sello.feature.income.IncomeSeveral
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,11 +43,22 @@ internal fun NavGraphBuilder.expenseDestinations(
             } else {
                 announcements::retry
             },
-            announcementFailed = announcementState.failure != null
+            announcementFailed = announcementState.failure != null,
+            onSeveral = { route ->
+                navigation.navigate(route) {
+                    popUpTo<ExpenseEntryRoute> { inclusive = true }
+                }
+            }
         ) {
             val onEntry =
                 navigation.currentBackStackEntry?.destination?.hasRoute<ExpenseEntryRoute>()
             if (onEntry == true) navigation.popBackStack()
+        }
+    }
+    composable<BulkEntryRoute> {
+        BulkEntryRoot(viewModels) {
+            val onBulk = navigation.currentBackStackEntry?.destination?.hasRoute<BulkEntryRoute>()
+            if (onBulk == true) navigation.popBackStack()
         }
     }
     // The same form: the route's identifier makes it correct that expense.
@@ -76,6 +90,7 @@ internal fun EntryDestination(
     onDismissPastExpense: () -> Unit,
     announcementFailed: Boolean,
     result: SavedStateHandle? = null,
+    onSeveral: ((BulkEntryRoute) -> Unit)? = null,
     onClosed: () -> Unit
 ) {
     var income by rememberSaveable { mutableStateOf(startsWithIncome) }
@@ -86,7 +101,12 @@ internal fun EntryDestination(
         }
         ).collectAsStateWithLifecycle()
     if (income) {
-        IncomeFormRoot(viewModels, onClosed, onExpense = { income = false })
+        IncomeFormRoot(
+            viewModels,
+            onClosed,
+            onExpense = { income = false },
+            onSeveral = onSeveral?.let { go -> { several -> go(several.route()) } }
+        )
     } else {
         ExpenseEntryRoot(
             viewModels,
@@ -97,7 +117,21 @@ internal fun EntryDestination(
             announcementFailed = announcementFailed,
             createdCategoryId = created,
             onCreatedCategoryTaken = { result?.set(CREATED_CATEGORY_RESULT, null) },
+            onSeveral = onSeveral?.let { go -> { several -> go(several.route()) } },
             onClosed = onClosed
         )
     }
 }
+
+/** Anotar varios with what was typed in Anotar as its first line. */
+internal fun ExpenseSeveral.route() = BulkEntryRoute(categoryId, amount, note, date.toString())
+
+/** Anotar varios for incomes, with what was typed in Anotar as its first line. */
+internal fun IncomeSeveral.route() = BulkEntryRoute(
+    amount = amount,
+    note = note,
+    date = date.toString(),
+    income = true,
+    source = sourceKey,
+    sourceName = otherName
+)

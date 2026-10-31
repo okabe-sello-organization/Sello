@@ -132,7 +132,8 @@ class ExpenseEntryViewModel(
         /** Saving waits for Solo este or Este y los siguientes. */
         val askFollowing: Boolean = false,
         /** Saving waits for the list of later months to be confirmed (CP20). */
-        val correction: EntryCorrection? = null
+        val correction: EntryCorrection? = null,
+        val several: ExpenseSeveral? = null
     )
 
     /** The recorded expense as the form first read it. Notes are compared as stored. */
@@ -424,6 +425,20 @@ class ExpenseEntryViewModel(
                             eligible(read.value).any { it.id.value == action.id }
                     }
                     if (state.value.editable) setCategory(action.id)
+                }
+            }
+
+            ExpenseEntryAction.Several -> if (now.canOpenSeveral && !now.loading) {
+                val typed = draft.value
+                progress.update {
+                    it.copy(
+                        several = ExpenseSeveral(
+                            amount = (typed.amount as? AmountDraft.Digits)?.digits,
+                            categoryId = now.categoryId,
+                            note = typed.note.takeIf { note -> note.isNotBlank() },
+                            date = typed.date
+                        )
+                    )
                 }
             }
 
@@ -933,6 +948,7 @@ class ExpenseEntryViewModel(
             repeat = repeating,
             askFollowing = progress.askFollowing,
             correction = progress.correction,
+            several = progress.several,
             following = progress.following?.let { following ->
                 val payment = following.schedule.entry as? ScheduledEntry.Payment
                 FollowingSchedule(

@@ -1,5 +1,8 @@
 package com.software.sello.designsystem.component
 
+import android.view.Choreographer
+import android.view.View
+import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -22,6 +26,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
@@ -53,6 +58,8 @@ fun FormField(
 ) {
     val colors = SelloTheme.colors
     var focused by remember { mutableStateOf(false) }
+    val view = LocalView.current
+    DisposableEffect(view) { onDispose { if (focused) view.putKeyboardAwayIfUnused() } }
     val isError = message?.isError == true
     val line = when {
         isError -> colors.semantic.loss
@@ -76,7 +83,10 @@ fun FormField(
             visualTransformation = visualTransformation,
             modifier = Modifier
                 .fillMaxWidth()
-                .onFocusChanged { focused = it.isFocused }
+                .onFocusChanged {
+                    if (focused && !it.isFocused) view.putKeyboardAwayIfUnused()
+                    focused = it.isFocused
+                }
                 .semantics {
                     contentDescription = label
                     if (isError) error(message.text)
@@ -109,6 +119,27 @@ fun FormField(
                         color = if (isError) colors.semantic.loss else colors.inkSoft
                     )
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Puts the system keyboard away once no field takes input. Compose puts it away too, but
+ * from API 30, once the window controls the keyboard, only through the window's insets,
+ * which the system hears of once the keyboard app has acted on them. The field's input
+ * restarts before then, the system shows the keyboard again for no field, and a busy
+ * keyboard app can leave it there, over a screen with nothing to type in (#292). So this
+ * asks the system directly. It waits two frames: Compose applies a field's input changes
+ * on the next one, so by then a field that took over is taking input.
+ */
+private fun View.putKeyboardAwayIfUnused() {
+    val choreographer = Choreographer.getInstance()
+    choreographer.postFrameCallback {
+        choreographer.postFrameCallback {
+            if (isAttachedToWindow && !onCheckIsTextEditor()) {
+                context.getSystemService(InputMethodManager::class.java)
+                    ?.hideSoftInputFromWindow(windowToken, 0)
             }
         }
     }

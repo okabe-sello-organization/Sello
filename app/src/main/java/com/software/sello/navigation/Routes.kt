@@ -6,6 +6,10 @@ import kotlinx.serialization.Serializable
 /*
  * Routes are identifiers only. A route never carries an amount, a record or a result:
  * a screen that needs data gets an identifier and reads the data itself.
+ *
+ * One exception: a route may carry what the person typed on the screen it came from, as
+ * hints the next screen checks like any input and is free to ignore (as [ExpenseEntryRoute]
+ * carries an amount and [BulkEntryRoute] an amount, note, date and income source).
  */
 
 /** The start destination and the place Back returns to before leaving the app. */
@@ -42,6 +46,10 @@ data class InvestmentMovementRoute(
     val movementId: String? = null
 )
 
+/** Varios movimientos: several movements of [investmentId] on one receipt. */
+@Serializable
+data class InvestmentMovementsRoute(val investmentId: String)
+
 /** Dólar: the current USD rate and the earlier ones, from Configuración or Inversiones. */
 @Serializable
 data object UsdRateRoute
@@ -68,6 +76,13 @@ data class GoalMovementRoute(
     val withdrawal: Boolean = false,
     val movementId: String? = null
 )
+
+/**
+ * Aportar varios: several aportes and retiros of [goalId] on one receipt. The screen reads
+ * the goal itself.
+ */
+@Serializable
+data class GoalBulkRoute(val goalId: String)
 
 /** Nonfinancial controls reachable from Recibo's settings action. */
 @Serializable
@@ -140,6 +155,24 @@ data class ExpenseEntryRoute(
     val categoryId: String? = null,
     val amount: String? = null,
     val repeat: Boolean = false
+)
+
+/**
+ * Anotar varios: several expenses, or several incomes when [income], on one receipt. The
+ * arguments are hints for the first draft from where it was opened: the category every new
+ * line starts in, or what was typed in Anotar ([amount], [note], [date], and an income's
+ * [source] with Otro's [sourceName]), which becomes line one. The sheet checks them like any
+ * other input and reads its categories itself.
+ */
+@Serializable
+data class BulkEntryRoute(
+    val categoryId: String? = null,
+    val amount: String? = null,
+    val note: String? = null,
+    val date: String? = null,
+    val income: Boolean = false,
+    val source: String? = null,
+    val sourceName: String? = null
 )
 
 /**

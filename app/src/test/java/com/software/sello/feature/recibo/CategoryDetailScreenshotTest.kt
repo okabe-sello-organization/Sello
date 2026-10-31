@@ -106,7 +106,11 @@ class CategoryDetailScreenshotTest {
         insights = DetailInsightsState.Ready(insights)
     )
 
-    private fun capture(look: Look) {
+    private fun capture(
+        look: Look,
+        file: String = "category-detail-${look.label}",
+        several: Boolean = false
+    ) {
         rule.showSello(look) {
             CategoryDetailScreen(
                 state = ready,
@@ -115,11 +119,19 @@ class CategoryDetailScreenshotTest {
                 showName = false,
                 onAction = {},
                 onRecordHere = {},
-                contentPadding = PaddingValues(12.dp)
+                contentPadding = PaddingValues(12.dp),
+                onRecordSeveral = if (several) ({}) else null
             )
         }
-        rule.captureStill("src/test/screenshots/category-detail-${look.label}.png")
+        rule.captureStill("src/test/screenshots/$file.png")
     }
+
+    /** Anotar varios at the foot of the latest expenses (SELLO-131). */
+    @Test
+    fun variosClaro() = capture(Look(), "category-detail-varios-claro", several = true)
+
+    @Test
+    fun variosOscuro() = capture(Look(dark = true), "category-detail-varios-oscuro", several = true)
 
     @Test
     fun cobaltoLight() = capture(Look())

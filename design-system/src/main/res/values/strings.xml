@@ -8,4 +8,9 @@
     <string name="sello_clear_all">Borrar todo</string>
     <string name="sello_paste">Pegar</string>
     <string name="sello_amount_empty">Sin monto</string>
+    <string name="sello_bulk_add_line">Otro renglón</string>
+    <string name="sello_bulk_remove">Quitar</string>
+    <string name="sello_bulk_remove_line">Quitar renglón</string>
+    <string name="sello_bulk_line_position">Renglón %1$d de %2$d</string>
+    <string name="sello_bulk_release_to_remove">Suelta para quitar</string>
 </resources>

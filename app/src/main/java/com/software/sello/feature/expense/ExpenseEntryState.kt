@@ -74,6 +74,17 @@ data class EntryCorrection(val list: CarryCorrectionList, val changed: Boolean)
 data class EntryCategory(val id: String, val name: String, val iconKey: String)
 
 /**
+ * What is typed so far, handed to Anotar varios to become its line one: the amount's
+ * digits, the chosen category, the note and the date. Each may be missing.
+ */
+data class ExpenseSeveral(
+    val amount: String?,
+    val categoryId: String?,
+    val note: String?,
+    val date: LocalDate
+)
+
+/**
  * The entry form. [amount] is present only for a valid amount; [amountText] is what
  * was pasted when it could not be used. Nothing typed is ever changed into something else.
  */
@@ -128,7 +139,9 @@ data class ExpenseEntryState(
     /** The following payments already took the new terms; this expense did not yet. */
     val followingSaved: Boolean = false,
     /** Saving waits for the list of later months it changes to be confirmed. */
-    val correction: EntryCorrection? = null
+    val correction: EntryCorrection? = null,
+    /** Varios was pressed: the form gives way to Anotar varios with what is typed. */
+    val several: ExpenseSeveral? = null
 ) {
     val canSubmit: Boolean
         get() = !loading && !loadFailed && !busy && missing == null && error !in Blocking &&
@@ -139,6 +152,13 @@ data class ExpenseEntryState(
      * be gone or changed underneath this form, the draft must not change.
      */
     val editable: Boolean get() = !busy && error !in Blocking && recorded == null
+
+    /**
+     * Varios is offered for a new expense, not one repeating or being corrected, and not
+     * while a pasted amount is refused: it would be lost on the way.
+     */
+    val canOpenSeveral: Boolean
+        get() = !editing && editable && repeat.choice == null && amountText == null
 
     /** A recorded expense can be deleted from here once it has been read. */
     val canDelete: Boolean get() = editing && !loading && !loadFailed && editable
@@ -186,6 +206,9 @@ sealed interface ExpenseEntryAction {
 
     /** The category editor, opened from Nueva, created this category: choose it. */
     data class CategoryCreated(val id: String) : ExpenseEntryAction
+
+    /** Varios: continue on Anotar varios, with what is typed as its line one. */
+    data object Several : ExpenseEntryAction
 
     data object Submit : ExpenseEntryAction
 

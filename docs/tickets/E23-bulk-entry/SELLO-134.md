@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-129, SELLO-130
 - **Gate:** G2
 

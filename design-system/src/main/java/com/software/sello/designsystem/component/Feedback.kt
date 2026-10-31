@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -59,7 +61,8 @@ import com.software.sello.designsystem.theme.SelloTheme
  * A confirmation for something that cannot be undone. [message] says what is affected
  * and how much, with the consequence in bold. Back and a tap outside cancel. While
  * [busy] the action shows a spinner and nothing can be pressed or dismissed, so the
- * action is requested once.
+ * action is requested once. A slip whose labels are long can narrow [buttonPadding] so
+ * each stays on one line.
  */
 @Composable
 fun ConfirmSlip(
@@ -70,7 +73,8 @@ fun ConfirmSlip(
     onDismiss: () -> Unit,
     destructive: Boolean = true,
     busy: Boolean = false,
-    dismissLabel: String = stringResource(R.string.sello_cancel)
+    dismissLabel: String = stringResource(R.string.sello_cancel),
+    buttonPadding: PaddingValues = ButtonDefaults.ContentPadding
 ) {
     Dialog(onDismissRequest = { if (!busy) onDismiss() }) {
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
@@ -94,6 +98,7 @@ fun ConfirmSlip(
                     onClick = onDismiss,
                     kind = ButtonKind.Outlined,
                     enabled = !busy,
+                    contentPadding = buttonPadding,
                     modifier = Modifier.weight(1f)
                 )
                 SelloButton(
@@ -101,6 +106,7 @@ fun ConfirmSlip(
                     onClick = onConfirm,
                     tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
                     loading = busy,
+                    contentPadding = buttonPadding,
                     modifier = Modifier.weight(1f)
                 )
             }

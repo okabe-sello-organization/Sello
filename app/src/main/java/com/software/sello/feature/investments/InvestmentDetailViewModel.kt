@@ -62,7 +62,8 @@ class InvestmentDetailViewModel(
             // Handled by the root, which owns navigation.
             InvestmentDetailAction.Edit,
             InvestmentDetailAction.RecordValue,
-            is InvestmentDetailAction.OpenMovement -> Unit
+            is InvestmentDetailAction.OpenMovement,
+            InvestmentDetailAction.RecordSeveral -> Unit
         }
     }
 

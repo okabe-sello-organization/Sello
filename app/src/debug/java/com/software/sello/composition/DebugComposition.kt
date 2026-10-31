@@ -6,12 +6,15 @@ import com.software.sello.data.FinancialStorage
 import com.software.sello.data.StorageNames
 import com.software.sello.devtools.ControlledFinancialClock
 import com.software.sello.devtools.FencedCategoryCommands
+import com.software.sello.devtools.FencedExpenseBatchCommands
 import com.software.sello.devtools.FencedExpenseCommands
 import com.software.sello.devtools.FencedGoalCommands
+import com.software.sello.devtools.FencedIncomeBatchCommands
 import com.software.sello.devtools.FencedIncomeCommands
 import com.software.sello.devtools.FencedInvestmentCommands
 import com.software.sello.devtools.FencedScheduleCatchUp
 import com.software.sello.devtools.FencedScheduleCommands
+import com.software.sello.devtools.ReceiptOutcomes
 import com.software.sello.devtools.SandboxBadges
 import com.software.sello.devtools.SandboxProfiles
 import com.software.sello.devtools.SandboxRegistry
@@ -29,10 +32,12 @@ import com.software.sello.devtools.WriteFence
 import com.software.sello.devtools.restartApp
 import com.software.sello.domain.model.FinancialProfile
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.ExpenseBatchCommands
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.GoalCommands
+import com.software.sello.domain.port.IncomeBatchCommands
 import com.software.sello.domain.port.IncomeCommands
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.ScheduleCatchUpStore
@@ -122,7 +127,9 @@ class DebugComposition(
         val held = if (time == null) heldTime(profile) else null
         val saved: () -> Unit = { time?.markChanged() }
         val profiles = SandboxProfiles(store, fence, restart)
-        publish(SandboxTools(profiles, time))
+        // Only the sandbox can be told to hide a receipt's outcome.
+        val receipts = if (time != null) ReceiptOutcomes() else null
+        publish(SandboxTools(profiles, time, receipts = receipts))
         return listOf(
             module {
                 single<ExpenseCommands> {
@@ -130,6 +137,22 @@ class DebugComposition(
                         get<FinancialStorage>().expenseCommands(get(), get(), get(), get()),
                         fence,
                         saved
+                    )
+                }
+                single<ExpenseBatchCommands> {
+                    FencedExpenseBatchCommands(
+                        get<FinancialStorage>().expenseBatchCommands(get(), get(), get()),
+                        fence,
+                        saved,
+                        receipts
+                    )
+                }
+                single<IncomeBatchCommands> {
+                    FencedIncomeBatchCommands(
+                        get<FinancialStorage>().incomeBatchCommands(get(), get(), get()),
+                        fence,
+                        saved,
+                        receipts
                     )
                 }
                 single<IncomeCommands> {
@@ -193,7 +216,7 @@ class DebugComposition(
                             store,
                             scope
                         ).also {
-                            publish(SandboxTools(profiles, time, it))
+                            publish(SandboxTools(profiles, time, it, receipts))
                             it.resume()
                         }
                     }

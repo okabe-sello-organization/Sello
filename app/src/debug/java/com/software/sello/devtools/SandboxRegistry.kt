@@ -9,7 +9,8 @@ package com.software.sello.devtools
 class SandboxTools(
     val profiles: SandboxProfiles,
     val time: SandboxTime?,
-    val scenarios: ScenarioRunner? = null
+    val scenarios: ScenarioRunner? = null,
+    val receipts: ReceiptOutcomes? = null
 )
 
 object SandboxRegistry {

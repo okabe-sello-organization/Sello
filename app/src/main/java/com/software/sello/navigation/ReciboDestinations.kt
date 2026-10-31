@@ -104,6 +104,7 @@ internal fun NavGraphBuilder.reciboDestinations(
             },
             // Opened from the month on screen: that is the month whose limit it edits.
             onShowAllExpenses = { id -> navigation.navigate(CategoryExpensesRoute(id)) },
+            onRecordSeveral = { id -> navigation.navigate(BulkEntryRoute(categoryId = id)) },
             onOpenRecorded = { navigation.navigate(CatchUpRoute) { launchSingleTop = true } },
             onOpenReserved = {
                 navigation.navigate(UpcomingPaymentsRoute) { launchSingleTop = true }
@@ -248,6 +249,7 @@ private fun ReciboDestination(
     onEditExpense: (String) -> Unit,
     onEditCategory: (String) -> Unit,
     onShowAllExpenses: (String) -> Unit,
+    onRecordSeveral: (String) -> Unit,
     onOpenRecorded: () -> Unit,
     onOpenReserved: () -> Unit,
     onOpenSchedule: (String) -> Unit,
@@ -323,6 +325,7 @@ private fun ReciboDestination(
                         onOpenSchedule = onOpenSchedule,
                         onAllSchedules = onAllSchedules,
                         onAdjustBudget = onAdjustBudget,
+                        onRecordSeveral = { onRecordSeveral(id) },
                         showPastLimitAnnouncement = !announcements.loading &&
                             !announcements.preference.pastLimitSeen,
                         onDismissPastLimitAnnouncement = onDismissPastLimit,

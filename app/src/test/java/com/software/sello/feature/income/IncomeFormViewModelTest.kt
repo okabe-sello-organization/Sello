@@ -824,4 +824,65 @@ class IncomeFormViewModelTest {
         assertTrue(schedules.submitted.isEmpty())
         assertEquals(pesos(1_200_000), commands.edited.single().amount)
     }
+
+    // --- Varios: Anotar varios with what is typed as its line one (SELLO-132) ---
+
+    @Test
+    fun variosHandsWhatIsTypedToAnotarVariosAndSavesNothing() {
+        val form = ready()
+        form.type("850000")
+        form.onAction(IncomeFormAction.SourcePicked("other"))
+        form.onAction(IncomeFormAction.OtherNameChanged("Diseño"))
+        form.onAction(IncomeFormAction.NoteChanged("Logo"))
+        form.onAction(IncomeFormAction.DatePicked(LocalDate.parse("2026-10-20")))
+
+        form.onAction(IncomeFormAction.Several)
+
+        assertEquals(
+            IncomeSeveral("850000", "other", "Diseño", "Logo", LocalDate.parse("2026-10-20")),
+            form.now.several
+        )
+        assertEquals(emptyList<CreateIncome>(), commands.created)
+    }
+
+    @Test
+    fun variosWithNothingTypedStillOpensWithTheDate() {
+        val form = ready()
+
+        form.onAction(IncomeFormAction.Several)
+
+        assertEquals(
+            IncomeSeveral(null, null, null, null, LocalDate.parse("2026-10-22")),
+            form.now.several
+        )
+    }
+
+    @Test
+    fun variosHandsOverOnlyASourceThePersonPickedEvenAfterTheProcessIsKilled() {
+        val saved = SavedStateHandle()
+        val form = ready(saved)
+        form.type("1500000")
+        form.onAction(IncomeFormAction.Several)
+        val preselected = form.now.several
+        form.onAction(IncomeFormAction.SourcePicked("salary"))
+        val restored = ready(saved.afterProcessDeath())
+
+        restored.onAction(IncomeFormAction.Several)
+
+        assertEquals(null, preselected?.sourceKey)
+        assertEquals("salary", restored.now.several?.sourceKey)
+    }
+
+    @Test
+    fun variosIsNotOfferedWhileSeRepiteIsOn() {
+        val form = ready()
+        form.type("1000000")
+        form.repeat(RepeatAction.Open)
+        form.repeat(RepeatAction.Done)
+
+        form.onAction(IncomeFormAction.Several)
+
+        assertFalse(form.now.canOpenSeveral)
+        assertNull(form.now.several)
+    }
 }
