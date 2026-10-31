@@ -126,6 +126,7 @@ fun systemKeyboardRequested(): Boolean {
         .let { ParcelFileDescriptor.AutoCloseInputStream(it) }
         .bufferedReader()
         .use { it.readText() }
+    check("mInputShown=" in dump) { "dumpsys input_method no longer reports mInputShown" }
     return "mShowRequested=true" in dump || "mInputShown=true" in dump
 }
 
