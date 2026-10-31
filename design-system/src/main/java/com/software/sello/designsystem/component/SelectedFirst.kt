@@ -36,7 +36,7 @@ fun <T> rememberSelectedFirst(
 private class Settled(val front: Any?)
 
 /** [items] with the one whose [key] is [front] moved to the front, the rest in order. */
-fun <T> selectedFirst(items: List<T>, front: Any?, key: (T) -> Any): List<T> {
+internal fun <T> selectedFirst(items: List<T>, front: Any?, key: (T) -> Any): List<T> {
     val index = if (front == null) -1 else items.indexOfFirst { key(it) == front }
     if (index <= 0) return items
     return listOf(items[index]) + items.subList(0, index) + items.subList(index + 1, items.size)
