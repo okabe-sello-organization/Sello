@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -53,12 +54,17 @@ import com.software.sello.presentation.movement.MovementNoteLine
 import com.software.sello.presentation.movement.MovementPane
 
 @Composable
-fun InvestmentMovementRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit) {
+fun InvestmentMovementRoot(
+    viewModels: ViewModelProvider.Factory,
+    onSeveral: ((InvestmentSeveral) -> Unit)? = null,
+    onClosed: () -> Unit
+) {
     val model: InvestmentMovementViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.closed) { if (state.closed) onClosed() }
+    LaunchedEffect(state.several) { state.several?.let { onSeveral?.invoke(it) } }
     BackHandler { model.onAction(InvestmentMovementAction.Back) }
-    InvestmentMovementScreen(state, model::onAction)
+    InvestmentMovementScreen(state, severalOffered = onSeveral != null, onAction = model::onAction)
 }
 
 /** The kinds in the order the chips offer them (v2 `TYPES`). */
@@ -96,6 +102,7 @@ private val MoneyTextValue.written: String
 @Composable
 fun InvestmentMovementScreen(
     state: InvestmentMovementState,
+    severalOffered: Boolean = false,
     onAction: (InvestmentMovementAction) -> Unit
 ) {
     SelloScaffold(
@@ -107,6 +114,20 @@ fun InvestmentMovementScreen(
             )
         },
         actions = {
+            // Varios movimientos for the chosen investment, taking what is typed so far as
+            // its first line.
+            if (severalOffered && !state.editing && !state.loading && !state.loadFailed) {
+                val description = stringResource(R.string.investment_movements_title)
+                FieldPill(
+                    text = stringResource(R.string.expense_entry_several),
+                    icon = SelloIcon.ReceiptLong,
+                    onClick = { onAction(InvestmentMovementAction.Several) },
+                    modifier = Modifier
+                        .testTag(INVESTMENT_MOVEMENT_SEVERAL_TAG)
+                        .semantics { contentDescription = description },
+                    enabled = state.canOpenSeveral
+                )
+            }
             if (state.editing) {
                 SelloButton(
                     stringResource(R.string.expense_edit_delete),
@@ -494,6 +515,7 @@ private fun Composer(state: InvestmentMovementState, onAction: (InvestmentMoveme
 
 const val INVESTMENT_MOVEMENT_CLOSE_TAG = "investment.movement.close"
 const val INVESTMENT_MOVEMENT_DELETE_TAG = "investment.movement.delete"
+const val INVESTMENT_MOVEMENT_SEVERAL_TAG = "investment.movement.several"
 const val INVESTMENT_MOVEMENT_LOADING_TAG = "investment.movement.loading"
 const val INVESTMENT_MOVEMENT_FAILED_TAG = "investment.movement.failed"
 const val INVESTMENT_MOVEMENT_KINDS_TAG = "investment.movement.kinds"

@@ -677,4 +677,79 @@ class InvestmentMovementViewModelTest {
         assertFalse(typed.now.closed)
         assertTrue(typed.now.confirmDiscard)
     }
+
+    // Varios
+
+    @Test
+    fun variosHandsVariosMovimientosTheInvestmentTheTypeAndWhatIsTyped() = runTest {
+        val model = model(investment = ecopetrol)
+        model.onAction(InvestmentMovementAction.Kind(Dividend))
+        model.keys("8", "9", "000")
+        model.onAction(InvestmentMovementAction.DatePicked(day("2026-09-29")))
+        model.onAction(InvestmentMovementAction.OpenComposer)
+        model.onAction(InvestmentMovementAction.ComposerChanged("Dividendo de junio"))
+        model.onAction(InvestmentMovementAction.ComposerDone)
+        assertTrue(model.now.canOpenSeveral)
+
+        model.onAction(InvestmentMovementAction.Several)
+
+        assertEquals(
+            InvestmentSeveral(
+                ecopetrol,
+                Dividend,
+                89_000,
+                usd = false,
+                "Dividendo de junio",
+                day("2026-09-29")
+            ),
+            model.now.several
+        )
+        assertTrue(commands.sent.isEmpty())
+        assertFalse(model.now.closed)
+    }
+
+    @Test
+    fun variosHandsDollarsAsCents() = runTest {
+        val model = model(investment = acciones)
+        model.keys("2", "5", "0", ",", "5")
+
+        model.onAction(InvestmentMovementAction.Several)
+
+        // USD 250,5 is 25.050 cents.
+        val several = model.now.several!!
+        assertEquals(
+            Triple(Contribution, 25_050L, true),
+            Triple(several.kind, several.amount, several.usd)
+        )
+    }
+
+    @Test
+    fun anAmountTheTypeCannotHoldIsNotHandedOn() = runTest {
+        val model = model(investment = ecopetrol, kind = "contribution")
+        model.keys("0")
+
+        model.onAction(InvestmentMovementAction.Several)
+
+        assertNull(model.now.several!!.amount)
+    }
+
+    @Test
+    fun variosWaitsForAnInvestmentAndForARefusedPasteAndIsNotForACorrection() = runTest {
+        val tab = model()
+        assertFalse(tab.now.canOpenSeveral)
+        tab.onAction(InvestmentMovementAction.Several)
+        assertNull(tab.now.several)
+        tab.onAction(InvestmentMovementAction.InvestmentPicked(ecopetrol))
+        assertTrue(tab.now.canOpenSeveral)
+
+        tab.onAction(InvestmentMovementAction.Paste("doce"))
+        assertFalse(tab.now.canOpenSeveral)
+        tab.onAction(InvestmentMovementAction.Several)
+        assertNull(tab.now.several)
+
+        val correcting = model(investment = prueba, movement = movementId(35).value)
+        assertFalse(correcting.now.canOpenSeveral)
+        correcting.onAction(InvestmentMovementAction.Several)
+        assertNull(correcting.now.several)
+    }
 }

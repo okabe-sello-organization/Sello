@@ -15,6 +15,19 @@ data class GoalChoice(
     val saved: MoneyTextValue
 )
 
+/**
+ * What is typed so far, handed to Aportar varios for [goalId] to become its line one: Aportar
+ * or Retirar, the amount's digits, the note and the date. The amount and note may be missing.
+ */
+@Immutable
+data class GoalSeveral(
+    val goalId: String,
+    val withdrawal: Boolean,
+    val amount: String?,
+    val note: String?,
+    val date: LocalDate
+)
+
 /** The later retiro that a correction would leave short (MT15). */
 @Immutable
 data class BlockingWithdrawal(val amount: MoneyTextValue, val date: LocalDate)
@@ -74,7 +87,9 @@ data class GoalMovementState(
     val error: GoalMovementError? = null,
     val confirmDiscard: Boolean = false,
     /** The form is finished and should close. */
-    val closed: Boolean = false
+    val closed: Boolean = false,
+    /** Varios was pressed: the form gives way to Aportar varios with what is typed. */
+    val several: GoalSeveral? = null
 ) {
     val goal: GoalChoice? get() = goals.firstOrNull { it.id == goalId }
 
@@ -87,6 +102,14 @@ data class GoalMovementState(
             overSaved == null && blockedBy == null && (!editing || changed)
 
     val canDelete: Boolean get() = editing && !loading && !loadFailed && editable
+
+    /**
+     * Varios is offered for a new movement once a goal is chosen, and not while a pasted
+     * amount is refused: it would be lost on the way.
+     */
+    val canOpenSeveral: Boolean
+        get() = !editing && !loading && !loadFailed && editable && goal != null &&
+            amountText == null
 
     private companion object {
         val Blocking = setOf(
@@ -133,6 +156,9 @@ sealed interface GoalMovementAction {
     data object Retry : GoalMovementAction
 
     data object Delete : GoalMovementAction
+
+    /** Varios: continue on Aportar varios, with what is typed as its line one. */
+    data object Several : GoalMovementAction
 
     data object Back : GoalMovementAction
 

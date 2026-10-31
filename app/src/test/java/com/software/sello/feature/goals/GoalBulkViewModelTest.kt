@@ -768,4 +768,96 @@ class GoalBulkViewModelTest {
         assertTrue(typed.state.value.closed)
         assertEquals(emptyList<GoalCommand>(), commands.sent)
     }
+
+    // From Aportar or Retirar
+
+    private fun fromSheet(vararg hints: Pair<String, Any?>) =
+        SavedStateHandle(mapOf("goalId" to viaje, *hints))
+
+    @Test
+    fun whatAportarHadTypedIsLineOneAndLineTwoWaitsWithItsTypeAndDate() = runTest {
+        val model = model(
+            saved = fromSheet(
+                "withdrawal" to true,
+                "amount" to "50000",
+                "note" to "Arreglo del carro",
+                "date" to "2026-10-16"
+            )
+        )
+
+        val state = model.state.value
+        val sixteenth = LocalDate.of(2026, 10, 16)
+        assertEquals(2, state.lines.size)
+        assertEquals(1, state.highlighted)
+        val first = state.lines[0]
+        assertEquals(
+            listOf(true, "50.000", "Arreglo del carro", sixteenth),
+            listOf(first.withdrawal, first.amount!!.digits, first.note, first.date)
+        )
+        val second = state.lines[1]
+        assertEquals(
+            listOf(true, null, "", sixteenth),
+            listOf(second.withdrawal, second.amount, second.note, second.date)
+        )
+        // −50.000 on one line: the net is −50.000.
+        assertEquals(MoneySign.Minus to "50.000", state.total!!.sign to state.total!!.digits)
+        assertEquals(1, state.counted)
+        assertEquals(emptyList<GoalCommand>(), commands.sent)
+    }
+
+    @Test
+    fun withNothingTypedTheOneLineKeepsTheTypeTheNoteAndTheDate() = runTest {
+        val model = model(
+            saved = fromSheet("withdrawal" to false, "note" to "Prima", "date" to "2026-10-20")
+        )
+
+        val state = model.state.value
+        assertEquals(1, state.lines.size)
+        assertEquals(
+            listOf(false, null, "Prima", LocalDate.of(2026, 10, 20)),
+            listOf(state.line.withdrawal, state.line.amount, state.line.note, state.line.date)
+        )
+    }
+
+    @Test
+    fun hintsThatAreNotValidAreDroppedNotShownAsErrors() = runTest {
+        val model = model(
+            saved = fromSheet(
+                "amount" to "0",
+                "note" to "x".repeat(200),
+                "date" to "2026-10-24"
+            )
+        )
+
+        val state = model.state.value
+        assertEquals(1, state.lines.size)
+        assertNull(state.line.amount)
+        assertNull(state.line.withdrawal)
+        assertEquals("", state.line.note)
+        // Tomorrow is not a date a movement can have: today instead.
+        assertEquals(today, state.line.date)
+        assertFalse(state.line.futureDate)
+
+        val garbled = model(saved = fromSheet("amount" to "12a", "date" to "ayer")).state.value
+        assertNull(garbled.line.amount)
+        assertEquals(today, garbled.line.date)
+    }
+
+    @Test
+    fun aRestoredReceiptKeepsWhatWasTypedOnItAndNeverTakesTheHintsAgain() = runTest {
+        val saved = fromSheet("withdrawal" to false, "amount" to "100000")
+        val first = model(saved = saved)
+        first.type("80000")
+        first.onAction(GoalBulkAction.Select(0))
+        first.onAction(GoalBulkAction.ClearAmount)
+
+        val restored = model(saved = saved.afterProcessDeath()).state.value
+
+        assertEquals(listOf(null, "80.000"), restored.lines.map { it.amount?.digits })
+        assertEquals(0, restored.highlighted)
+        assertEquals(emptyList<GoalCommand>(), commands.sent)
+    }
+
+    private fun SavedStateHandle.afterProcessDeath() =
+        SavedStateHandle(keys().associateWith { get<Any?>(it) })
 }

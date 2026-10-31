@@ -492,4 +492,55 @@ class GoalMovementViewModelTest {
         assertTrue(model.state.value.closed)
         assertNull((corrections.notice.value as CorrectionNotice.GoalMovementRecorded).celebration)
     }
+
+    // Varios
+
+    @Test
+    fun variosHandsAportarVariosTheGoalTheTypeAndWhatIsTyped() = runTest {
+        val model = model(goal = viaje, withdrawal = true)
+        model.keys("5", "0", "000")
+        model.onAction(GoalMovementAction.DatePicked(LocalDate.of(2026, 10, 16)))
+        model.onAction(GoalMovementAction.OpenComposer)
+        model.onAction(GoalMovementAction.ComposerChanged("Arreglo del carro"))
+        model.onAction(GoalMovementAction.ComposerDone)
+        assertTrue(model.state.value.canOpenSeveral)
+
+        model.onAction(GoalMovementAction.Several)
+
+        assertEquals(
+            GoalSeveral(viaje, true, "50000", "Arreglo del carro", LocalDate.of(2026, 10, 16)),
+            model.state.value.several
+        )
+        assertEquals(emptyList<GoalCommand>(), commands.sent)
+        assertFalse(model.state.value.closed)
+    }
+
+    @Test
+    fun variosWithNothingTypedHandsOnlyTheGoalTheTypeAndToday() = runTest {
+        val model = model(goal = celular)
+
+        model.onAction(GoalMovementAction.Several)
+
+        assertEquals(GoalSeveral(celular, false, null, null, today), model.state.value.several)
+    }
+
+    @Test
+    fun variosWaitsForAGoalAndForARefusedPasteAndIsNotForACorrection() = runTest {
+        val tab = model()
+        assertFalse(tab.state.value.canOpenSeveral)
+        tab.onAction(GoalMovementAction.Several)
+        assertNull(tab.state.value.several)
+        tab.onAction(GoalMovementAction.GoalPicked(celular))
+        assertTrue(tab.state.value.canOpenSeveral)
+
+        tab.onAction(GoalMovementAction.Paste("doce"))
+        assertFalse(tab.state.value.canOpenSeveral)
+        tab.onAction(GoalMovementAction.Several)
+        assertNull(tab.state.value.several)
+
+        val correcting = model(goal = viaje, movement = movementId(12).value)
+        assertFalse(correcting.state.value.canOpenSeveral)
+        correcting.onAction(GoalMovementAction.Several)
+        assertNull(correcting.state.value.several)
+    }
 }

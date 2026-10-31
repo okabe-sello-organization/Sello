@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
@@ -52,12 +53,17 @@ import com.software.sello.presentation.movement.MovementNoteLine
 import com.software.sello.presentation.movement.MovementPane
 
 @Composable
-fun GoalMovementRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit) {
+fun GoalMovementRoot(
+    viewModels: ViewModelProvider.Factory,
+    onSeveral: ((GoalSeveral) -> Unit)? = null,
+    onClosed: () -> Unit
+) {
     val model: GoalMovementViewModel = viewModel(factory = viewModels)
     val state by model.state.collectAsStateWithLifecycle()
     LaunchedEffect(state.closed) { if (state.closed) onClosed() }
+    LaunchedEffect(state.several) { state.several?.let { onSeveral?.invoke(it) } }
     BackHandler { model.onAction(GoalMovementAction.Back) }
-    GoalMovementScreen(state, model::onAction)
+    GoalMovementScreen(state, severalOffered = onSeveral != null, onAction = model::onAction)
 }
 
 /**
@@ -67,7 +73,11 @@ fun GoalMovementRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit
  * movement uses the same form with Borrar.
  */
 @Composable
-fun GoalMovementScreen(state: GoalMovementState, onAction: (GoalMovementAction) -> Unit) {
+fun GoalMovementScreen(
+    state: GoalMovementState,
+    severalOffered: Boolean = false,
+    onAction: (GoalMovementAction) -> Unit
+) {
     SelloScaffold(
         title = stringResource(
             when {
@@ -84,6 +94,19 @@ fun GoalMovementScreen(state: GoalMovementState, onAction: (GoalMovementAction) 
             )
         },
         actions = {
+            // Aportar varios for the chosen goal, taking what is typed so far as its first line.
+            if (severalOffered && !state.editing && !state.loading && !state.loadFailed) {
+                val description = stringResource(R.string.goal_bulk_title)
+                FieldPill(
+                    text = stringResource(R.string.expense_entry_several),
+                    icon = SelloIcon.ReceiptLong,
+                    onClick = { onAction(GoalMovementAction.Several) },
+                    modifier = Modifier
+                        .testTag(GOAL_MOVEMENT_SEVERAL_TAG)
+                        .semantics { contentDescription = description },
+                    enabled = state.canOpenSeveral
+                )
+            }
             if (state.editing) {
                 SelloButton(
                     stringResource(R.string.expense_edit_delete),
@@ -354,6 +377,7 @@ private fun Composer(state: GoalMovementState, onAction: (GoalMovementAction) ->
 
 const val GOAL_MOVEMENT_CLOSE_TAG = "goal.movement.close"
 const val GOAL_MOVEMENT_DELETE_TAG = "goal.movement.delete"
+const val GOAL_MOVEMENT_SEVERAL_TAG = "goal.movement.several"
 const val GOAL_MOVEMENT_KIND_TAG = "goal.movement.kind"
 const val GOAL_MOVEMENT_AMOUNT_TAG = "goal.movement.amount"
 const val GOAL_MOVEMENT_DATE_TAG = "goal.movement.date"

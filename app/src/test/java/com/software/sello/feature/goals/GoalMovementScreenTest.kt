@@ -81,6 +81,20 @@ class GoalMovementScreenTest {
     }
 
     @Test
+    fun variosOpensAportarVariosOnceAGoalIsChosenAndNotForACorrection() {
+        var shown by mutableStateOf(aporte.copy(goalId = null))
+        rule.showSello { GoalMovementScreen(shown, severalOffered = true) { actions += it } }
+
+        rule.onNodeWithTag(GOAL_MOVEMENT_SEVERAL_TAG).assertIsNotEnabled()
+        shown = aporte
+        rule.onNodeWithTag(GOAL_MOVEMENT_SEVERAL_TAG).assertIsEnabled().performClick()
+        assertEquals(listOf<GoalMovementAction>(GoalMovementAction.Several), actions)
+
+        shown = aporte.copy(editing = true)
+        rule.onNodeWithTag(GOAL_MOVEMENT_SEVERAL_TAG).assertDoesNotExist()
+    }
+
+    @Test
     fun mt08ARetiroAboveWhatIsSavedSaysSoInTheLabelsPlaceAndWaits() {
         show(
             aporte.copy(

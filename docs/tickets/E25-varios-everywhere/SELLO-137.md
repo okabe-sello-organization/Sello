@@ -2,7 +2,7 @@
 
 - **Type:** Story
 - **Priority:** P1
-- **Status:** Ready
+- **Status:** Done
 - **Depends on:** None
 - **Gate:** G1
 
@@ -21,3 +21,8 @@ goal's or investment's bulk receipt, with what they typed as line one.
 - A restored receipt never takes the hints again, and nothing is saved until the receipt's
   own button is pressed.
 - ViewModel JVM tests cover the hints, a bad hint and the restored receipt.
+
+### Notes
+The sheet's Aportar/Retirar or movement type always goes to line one, even with nothing
+typed: the person chose it on the sheet they came from. The investment amount travels as
+minor units with its currency; an investment's currency cannot change after it is made.

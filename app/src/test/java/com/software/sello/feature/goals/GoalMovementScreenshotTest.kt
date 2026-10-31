@@ -42,7 +42,7 @@ class GoalMovementScreenshotTest {
 
     private fun capture(look: Look) {
         rule.showSello(look) {
-            GoalMovementScreen(aporte) {}
+            GoalMovementScreen(aporte, severalOffered = true) {}
         }
         rule.captureStill("src/test/screenshots/goal-movement-${look.label}.png")
     }

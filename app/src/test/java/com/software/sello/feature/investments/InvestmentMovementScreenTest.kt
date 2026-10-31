@@ -86,6 +86,20 @@ class InvestmentMovementScreenTest {
         .getUnclippedBoundsInRoot()
 
     @Test
+    fun variosOpensVariosMovimientosOnceAnInvestmentIsChosenAndNotForACorrection() {
+        var shown by mutableStateOf(aporte.copy(investmentId = null))
+        rule.showSello { InvestmentMovementScreen(shown, severalOffered = true) { actions += it } }
+
+        rule.onNodeWithTag(INVESTMENT_MOVEMENT_SEVERAL_TAG).assertIsNotEnabled()
+        shown = aporte
+        rule.onNodeWithTag(INVESTMENT_MOVEMENT_SEVERAL_TAG).assertIsEnabled().performClick()
+        assertEquals(listOf<InvestmentMovementAction>(InvestmentMovementAction.Several), actions)
+
+        shown = aporte.copy(editing = true)
+        rule.onNodeWithTag(INVESTMENT_MOVEMENT_SEVERAL_TAG).assertDoesNotExist()
+    }
+
+    @Test
     fun theTypeChipsAndTheInvestmentChipsEachKeepOneRow() {
         show(aporte)
 
