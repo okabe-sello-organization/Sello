@@ -15,6 +15,7 @@ import com.software.sello.MainActivity
 import com.software.sello.TestData
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
+import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.hideKeyboard
 import com.software.sello.presentation.recurrence.REPEAT_SHEET_TAG
 import com.software.sello.press
@@ -102,11 +103,10 @@ class ScheduleJourneyTest {
 
         rule.onNodeWithTag("schedules.row.$id").performClick()
         rule.awaitTag(SCHEDULE_RESUME_TAG)
-        rule.onNode(hasText("Borrar") and hasAnyAncestor(hasTestTag(SCHEDULE_DELETE_TAG)))
-            .performScrollTo().press()
+        rule.onNodeWithTag(MORE_MENU_TAG).press()
+        rule.onNodeWithTag(SCHEDULE_DELETE_TAG).press()
         rule.onNodeWithText("¿Borrarlo?").assertExists()
-        rule.onNode(hasText("Borrar") and !hasAnyAncestor(hasTestTag(SCHEDULE_DELETE_TAG)))
-            .press()
+        rule.onNodeWithText("Borrar").press()
         rule.awaitText("Ingreso fijo borrado. Lo ya anotado se queda.")
         assertEquals(0L, TestData.count("schedule"))
         assertEquals(0L, TestData.count("schedule_pause"))

@@ -2,7 +2,6 @@ package com.software.sello.designsystem.component
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -454,33 +453,5 @@ fun Footnote(
             color = SelloTheme.colors.inkSoft
         )
         Icon(SelloIcon.ChevronRight.painter(), null, tint = SelloTheme.colors.outline)
-    }
-}
-
-@Composable
-fun DangerSlip(
-    title: String,
-    consequences: AnnotatedString,
-    actionLabel: String,
-    onAction: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Slip(
-        modifier.fillMaxWidth().border(
-            1.5.dp,
-            SelloTheme.colors.semantic.loss,
-            SelloTheme.shapes.control
-        ),
-        pinked = false
-    ) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
-        Text(consequences, Modifier.padding(vertical = 8.dp))
-        SelloButton(
-            actionLabel,
-            onAction,
-            Modifier.fillMaxWidth(),
-            kind = ButtonKind.Outlined,
-            tone = ButtonTone.Loss
-        )
     }
 }

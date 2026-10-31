@@ -11,7 +11,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
@@ -21,6 +20,7 @@ import com.software.sello.TestCommands
 import com.software.sello.TestData
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
+import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.hideKeyboard
 import com.software.sello.navigation.GOAL_EDIT_TAG
@@ -137,9 +137,10 @@ class GoalEditorJourneyTest {
         rule.onNodeWithTag("metas.goal.$viaje").performClick()
         rule.awaitTag(GOAL_EDIT_TAG)
         rule.onNodeWithTag(GOAL_EDIT_TAG).performClick()
-        rule.awaitTag(GOAL_EDITOR_DELETE_TAG)
+        rule.awaitTag(MORE_MENU_TAG)
 
-        rule.onNodeWithText("Borrar meta").performScrollTo().performClick()
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+        rule.onNodeWithTag(GOAL_EDITOR_DELETE_TAG).performClick()
         rule.awaitText("¿Borrar Viaje a la costa?")
         assertEquals(1L, TestData.count("goal"))
         rule.onNodeWithText("Borrar").press()

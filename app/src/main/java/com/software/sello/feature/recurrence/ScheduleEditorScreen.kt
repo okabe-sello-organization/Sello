@@ -31,7 +31,6 @@ import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.ConfirmSlip
-import com.software.sello.designsystem.component.DangerSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.EntryLine
@@ -39,6 +38,8 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.MoreMenu
+import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.NoteComposer
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
@@ -84,7 +85,7 @@ fun ScheduleEditorRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Un
 /**
  * One schedule in the entry's layout (docs/design/v2/fijos.html): its amount, category or
  * source, note and Se repite; that changes apply from tomorrow; Pausar or, while paused,
- * Reanudar; and a danger card to delete it, keeping what it recorded.
+ * Reanudar; and, in the top bar's ⋮, deleting it, keeping what it recorded.
  */
 @Composable
 fun ScheduleEditorScreen(
@@ -100,6 +101,27 @@ fun ScheduleEditorScreen(
         navigationIcon = {
             IconButton(onClick = { onAction(ScheduleEditorAction.Back) }) {
                 Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
+            }
+        },
+        actions = {
+            if (!state.loading && !state.loadFailed) {
+                MoreMenu(
+                    listOf(
+                        MoreMenuItem(
+                            stringResource(
+                                if (state.income) {
+                                    R.string.schedule_delete_income
+                                } else {
+                                    R.string.schedule_delete_payment
+                                }
+                            ),
+                            SelloIcon.Delete,
+                            { onAction(ScheduleEditorAction.Delete) },
+                            loss = true,
+                            tag = SCHEDULE_DELETE_TAG
+                        )
+                    )
+                )
             }
         }
     ) { padding ->
@@ -320,15 +342,6 @@ private fun Choices(
             enabled = state.editable
         )
     }
-    DangerSlip(
-        title = stringResource(
-            if (state.income) R.string.schedule_delete_income else R.string.schedule_delete_payment
-        ),
-        consequences = AnnotatedString(stringResource(R.string.schedule_delete_body)),
-        actionLabel = stringResource(R.string.schedule_delete_action),
-        onAction = { onAction(ScheduleEditorAction.Delete) },
-        modifier = Modifier.padding(top = SelloTheme.spacing.sm).testTag(SCHEDULE_DELETE_TAG)
-    )
 }
 
 @Composable

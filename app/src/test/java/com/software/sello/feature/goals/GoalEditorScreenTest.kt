@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.SweepLook
 import com.software.sello.SweepWindow
+import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
@@ -135,6 +136,8 @@ class GoalEditorScreenTest {
         rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).assertIsNotEnabled()
         rule.onNodeWithTag(GOAL_EDITOR_MISSING_TAG).assertIsDisplayed()
         rule.onNodeWithText("Elige un ícono.").assertIsDisplayed()
+        // A new goal has nothing to delete.
+        rule.onNodeWithTag(MORE_MENU_TAG).assertDoesNotExist()
         rule.onNode(hasText("7") and hasAnyAncestor(hasTestTag(GOAL_EDITOR_PAD_TAG)))
             .performClick()
 
@@ -237,19 +240,30 @@ class GoalEditorScreenTest {
 
     @Test
     fun aCompletedGoalOffersOnlyDeletion() {
+        val completed = planned.copy(
+            name = "Viaje a la costa",
+            editing = true,
+            completed = true,
+            movementCount = 4
+        )
+        var state by mutableStateOf(completed)
         rule.showSello {
-            GoalEditorScreen(
-                planned.copy(editing = true, completed = true, movementCount = 4)
-            ) {
+            GoalEditorScreen(state) {
                 actions += it
             }
         }
+        val consequences = "Se borran la meta y sus 4 movimientos. Esto no se puede deshacer."
 
         rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).assertDoesNotExist()
         rule.onNodeWithTag(GOAL_EDITOR_AMOUNT_TAG).assertDoesNotExist()
-        rule.onNodeWithText("Se borran la meta y sus 4 movimientos. Esto no se puede deshacer.")
-            .assertExists()
-        rule.onNodeWithText("Borrar meta").revealed().performClick()
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+        rule.onNodeWithText("Borrar meta").performClick()
         assertEquals(listOf(GoalEditorAction.AskToDelete), actions)
+
+        // What is lost is said once, when it asks.
+        state = completed.copy(confirmDelete = true)
+        rule.waitForIdle()
+        rule.onNodeWithText("¿Borrar Viaje a la costa?").assertExists()
+        rule.onNodeWithText(consequences).assertExists()
     }
 }

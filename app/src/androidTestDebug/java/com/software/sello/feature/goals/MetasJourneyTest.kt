@@ -9,7 +9,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
@@ -20,6 +19,7 @@ import com.software.sello.TestData
 import com.software.sello.await
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
+import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.designsystem.component.SCAFFOLD_DOCK_TAG
 import com.software.sello.navigation.MONTH_SWITCHER_TAG
 import com.software.sello.press
@@ -142,12 +142,13 @@ class MetasJourneyTest {
             METAS_LIST_TAG
         ).performScrollToNode(hasTestTag("metas.completed.$vacunas"))
         rule.onNodeWithTag("metas.completed.$vacunas").performClick()
-        rule.awaitTag("goal.delete")
+        rule.awaitTag(MORE_MENU_TAG)
         rule.onNodeWithTag("goal.pin").assertDoesNotExist()
         rule.onNodeWithTag("goal.facts").assertDoesNotExist()
         rule.onNodeWithTag(SCAFFOLD_DOCK_TAG).assertDoesNotExist()
 
-        rule.onNodeWithText("Borrar meta").performScrollTo().performClick()
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+        rule.onNodeWithText("Borrar meta").performClick()
         rule.awaitText("¿Borrar Vacunas de Luna?")
         // The question survives recreation; nothing is deleted yet.
         scenario?.recreate()

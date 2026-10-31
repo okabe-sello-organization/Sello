@@ -55,7 +55,6 @@ import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ConfirmSlip
-import com.software.sello.designsystem.component.DangerSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.ErrorSlip
@@ -69,6 +68,8 @@ import com.software.sello.designsystem.component.IconChoiceSheetContent
 import com.software.sello.designsystem.component.IconPickerCircle
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.MoreMenu
+import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
@@ -117,7 +118,7 @@ fun InvestmentEditorRoot(
  * (Primer aporte with its date, Vale hoy when it is another value, the rate first for
  * dollars) are typed on the Sello pad, which is always there: the figure it types into
  * is edged in ink, and tapping another figure moves the pad to it. Editing changes name,
- * description and icon only and adds Borrar esta inversión.
+ * description and icon only and adds Borrar inversión to the top bar's ⋮.
  */
 @Composable
 fun InvestmentEditorScreen(
@@ -145,6 +146,21 @@ fun InvestmentEditorScreen(
             ) {
                 Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
             }
+        },
+        actions = {
+            if (state.editing && !state.loading && !state.loadFailed) {
+                MoreMenu(
+                    listOf(
+                        MoreMenuItem(
+                            stringResource(R.string.investment_delete_action),
+                            SelloIcon.Delete,
+                            { onAction(InvestmentEditorAction.AskToDelete) },
+                            loss = true,
+                            tag = INVESTMENT_EDITOR_DELETE_TAG
+                        )
+                    )
+                )
+            }
         }
     ) { padding ->
         when {
@@ -166,16 +182,7 @@ fun InvestmentEditorScreen(
                             Modifier.testTag("investment.editor.failed")
                         )
 
-                        else -> {
-                            identity()
-                            DangerSlip(
-                                title = stringResource(R.string.investment_delete_title),
-                                consequences = deleteConsequences(state.movementCount),
-                                actionLabel = stringResource(R.string.investment_delete_action),
-                                onAction = { onAction(InvestmentEditorAction.AskToDelete) },
-                                modifier = Modifier.testTag(INVESTMENT_EDITOR_DELETE_TAG)
-                            )
-                        }
+                        else -> identity()
                     }
                 }
                 if (state.editing && !state.loading && !state.loadFailed) {

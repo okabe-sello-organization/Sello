@@ -2,6 +2,8 @@
 const fmt = n => (n < 0 ? "−" : "") + Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 const spoken = n => (n < 0 ? "menos " : "") + fmt(Math.abs(n)) + " pesos";
 const icon = (name, cls = "") => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
+// The top bar's ⋮ (MoreMenu, owner 2026-10-31): deleting lives here, out of the screen's way.
+const moreMenu = (label, open = false) => `<span class="more-wrap"><button class="icon-btn" aria-label="Más opciones" aria-expanded="${open}">${icon("more_vert")}</button>${open ? `<span class="more-pop" role="menu"><button role="menuitem">${icon("delete")}${label}</button></span>` : ""}</span>`;
 const money = (n, cls = "") => `<span class="money ${n < 0 ? "neg" : ""} ${cls}" aria-label="${spoken(n)}">${fmt(n)}</span>`;
 const statusbar = () => `<div class="statusbar"><span>9:41</span><span>▲ ● ▮</span></div>`;
 const reviewOptions = ids => Object.fromEntries(ids.map(id => [id, document.getElementById(id).value]));

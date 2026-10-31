@@ -47,7 +47,6 @@ import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ConfirmSlip
-import com.software.sello.designsystem.component.DangerSlip
 import com.software.sello.designsystem.component.EntryAmountSlip
 import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.ErrorSlip
@@ -61,6 +60,8 @@ import com.software.sello.designsystem.component.IconPickerCircle
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MonthCell
 import com.software.sello.designsystem.component.MonthGrid
+import com.software.sello.designsystem.component.MoreMenu
+import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
@@ -91,8 +92,8 @@ fun GoalEditorRoot(viewModels: ViewModelProvider.Factory, onFinished: (GoalEdito
  * the icon as a large circle beside the name, opening the icons to choose from; the amount
  * as the big number on the Sello pad, which is always there, with Para cuándo in the
  * slip's corner; and the stamps with the month each could arrive at that pace, centred,
- * a plan with its assumption. Editing adds ¿Ya la lograste? and Borrar esta meta; a
- * completed goal shows only that it can be deleted.
+ * a plan with its assumption. Editing adds ¿Ya la lograste? and, in the top bar's ⋮,
+ * Borrar meta; a completed goal shows only that it can be deleted from there.
  */
 @Composable
 fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit) {
@@ -111,6 +112,21 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
                 modifier = Modifier.testTag(GOAL_EDITOR_CLOSE_TAG)
             ) {
                 Icon(SelloIcon.Close.painter(), stringResource(R.string.goal_editor_close))
+            }
+        },
+        actions = {
+            if (state.editing && !state.loading && !state.loadFailed) {
+                MoreMenu(
+                    listOf(
+                        MoreMenuItem(
+                            stringResource(R.string.goal_delete_action),
+                            SelloIcon.Delete,
+                            { onAction(GoalEditorAction.AskToDelete) },
+                            loss = true,
+                            tag = GOAL_EDITOR_DELETE_TAG
+                        )
+                    )
+                )
             }
         }
     ) { padding ->
@@ -133,7 +149,6 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
                     else -> {
                         SaveError(state, onAction)
                         FactLine(AnnotatedString(stringResource(R.string.goal_editor_completed)))
-                        Delete(state, onAction)
                     }
                 }
             }
@@ -151,10 +166,7 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
                 amount = { Plan(state, onAction, dates) },
                 choices = {
                     Stamps(state, dates)
-                    if (state.editing) {
-                        DoneAsk(state, onAction)
-                        Delete(state, onAction)
-                    }
+                    if (state.editing) DoneAsk(state, onAction)
                 },
                 action = { Action(state, onAction) },
                 keypad = {
@@ -222,18 +234,6 @@ private fun SaveError(state: GoalEditorState, onAction: (GoalEditorAction) -> Un
                 R.string.goal_error_retry
             }
         )
-    )
-}
-
-@Composable
-private fun Delete(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit) {
-    if (!state.editing) return
-    DangerSlip(
-        title = stringResource(R.string.goal_delete_title),
-        consequences = deleteConsequencesText(state.movementCount),
-        actionLabel = stringResource(R.string.goal_delete_action),
-        onAction = { onAction(GoalEditorAction.AskToDelete) },
-        modifier = Modifier.testTag(GOAL_EDITOR_DELETE_TAG)
     )
 }
 

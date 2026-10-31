@@ -81,7 +81,7 @@ Missing = nothing exists.
 | Optional description | Partial | `FormField` exists; Crear meta has no description field to copy |
 | **Primer aporte** with its date | Present | Crear meta's slip and `FieldPill` |
 | **Vale hoy**: Lo mismo que aporté / Otro valor | Partial | `SelloChip` pair or `SegmentedSwitch`; `ChoiceSlip` is a dialog, not this |
-| Danger card and confirm slip | Present | `DangerSlip`, `ConfirmSlip`; `GoalEditorScreenTest` |
+| Delete in the ⋮ menu and confirm slip | Present | `MoreMenu`, `ConfirmSlip`; `GoalEditorScreenTest` |
 
 ## Consequences for the tickets
 

@@ -43,6 +43,10 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .month{display:flex;align-items:center;gap:2px;background:none;border:0;padding:0;min-height:48px;font-size:1.5em;font-weight:800;letter-spacing:-.02em;color:#fff}
 .month small{font-size:.6em;font-weight:600;opacity:.8;margin-left:6px;letter-spacing:0}
 .icon-btn{width:48px;height:48px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:inherit;padding:0}
+.more-wrap{position:relative;margin-left:auto}
+.more-pop{position:absolute;right:4px;top:44px;z-index:5;background:var(--paper);border-radius:6px;box-shadow:0 4px 16px #0003;padding:8px 0;min-width:180px}
+.more-pop button{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 16px;border:0;background:none;color:var(--loss);font:inherit;font-size:1.05em;text-align:left;white-space:nowrap}
+.more-pop .icon{width:22px;height:22px}
 .content{flex:1;overflow:auto;position:relative;padding:0 12px 16px;scrollbar-width:none}
 .content::before{content:"";position:absolute;inset:0 0 auto 0;height:72px;background:var(--band)}
 .content>*{position:relative}
@@ -505,7 +509,6 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .monthly b{color:var(--ink)}
 .preview-card{pointer-events:none}
 .pad-done{display:flex;justify-content:flex-end;padding:0 12px 4px;background:var(--desk)}
-.danger-link{display:flex;justify-content:center;gap:6px;width:100%;min-height:48px;border:0;background:none;color:var(--loss);font-weight:800;margin-top:4px}
 .entry-mid .amount-slip{margin:0 0 14px}
 
 /* ---------- Create a goal, round 2 (v1.1 blend) ---------- */
@@ -528,10 +531,8 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .stamps-plan .v1-places{margin-top:10px}
 .stamp-when{display:grid;justify-items:center;gap:4px;font-size:.78em;color:var(--soft);font-weight:700}
 .stamp-when .v1-place{font-size:.92em}
-.danger{border:2px solid var(--losssoft)}
-.danger h2,.done-ask h2{margin:0 0 4px;font-size:1.05em;font-weight:800}
-.danger p,.done-ask p{margin:0 0 12px;color:var(--soft);font-size:.9em;line-height:1.4}
-.danger p b{color:var(--ink)}
+.done-ask h2{margin:0 0 4px;font-size:1.05em;font-weight:800}
+.done-ask p{margin:0 0 12px;color:var(--soft);font-size:.9em;line-height:1.4}
 .outline-btn.loss{border-color:var(--loss);color:var(--loss)}
 .outline-btn.gain{border-color:var(--gain);color:var(--gain)}
 .outline-btn.wide{width:100%}

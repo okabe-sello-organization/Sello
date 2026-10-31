@@ -34,6 +34,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.SweepLook
 import com.software.sello.SweepWindow
+import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
@@ -123,10 +124,13 @@ class InvestmentEditorScreenTest {
         assertEquals(listOf(InvestmentEditorAction.CurrencyPicked(Currency.USD)), actions)
         rule.onNodeWithText("Primer aporte").performScrollTo()
         rule.onNodeWithText("Crear inversión").assertExists()
+        // Nothing is recorded yet, so there is nothing to delete.
+        rule.onNodeWithTag(MORE_MENU_TAG).assertDoesNotExist()
 
         state = ecopetrol
         rule.waitForIdle()
         rule.onNodeWithText("Editar inversión").assertExists()
+        rule.onNodeWithTag(MORE_MENU_TAG).assertExists()
         rule.onNodeWithTag(INVESTMENT_EDITOR_CURRENCY_TAG).assertDoesNotExist()
         rule.onNodeWithText("Dólares").assertDoesNotExist()
         rule.onNodeWithTag(INVESTMENT_EDITOR_FIRST_TAG).assertDoesNotExist()
@@ -216,15 +220,16 @@ class InvestmentEditorScreenTest {
             InvestmentEditorScreen(state) { actions += it }
         }
         val consequences = "Se borran la inversión y sus 9 movimientos. Esto no se puede deshacer."
-        rule.onNodeWithText("Borrar esta inversión").performScrollTo()
-        rule.onNodeWithText(consequences).assertExists()
-        rule.onNodeWithText("Borrar inversión").performScrollTo().performClick()
+        // Deleting waits in the top bar's menu; what it loses is said when it asks.
+        rule.onNodeWithText(consequences).assertDoesNotExist()
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+        rule.onNodeWithText("Borrar inversión").performClick()
         assertEquals(listOf(InvestmentEditorAction.AskToDelete), actions)
 
         state = ecopetrol.copy(confirmDelete = true)
         rule.waitForIdle()
         rule.onNodeWithText("¿Borrar Ecopetrol?").assertExists()
-        rule.onAllNodesWithText(consequences).assertCountEquals(2)
+        rule.onNodeWithText(consequences).assertExists()
         rule.onNodeWithText("Borrar").performClick()
         assertEquals(InvestmentEditorAction.Delete, actions.last())
     }
