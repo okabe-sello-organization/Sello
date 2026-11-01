@@ -2,6 +2,7 @@ package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -21,7 +22,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,7 +64,8 @@ internal fun ExpenseStubLine(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .width(STUB_WIDTH)
-                .clearAndSetSemantics { contentDescription = day }
+                // Read after the note, as the whole day, below; "HOY" and "21" alone say less.
+                .clearAndSetSemantics {}
         ) {
             Text(
                 weekday.uppercase(Locale.forLanguageTag("es-CO")),
@@ -111,6 +115,7 @@ internal fun ExpenseStubLine(
                     color = colors.inkSoft
                 )
             }
+            Box(Modifier.semantics { text = AnnotatedString(day) })
             if (future) {
                 Text(
                     stringResource(R.string.category_detail_not_counted_short),

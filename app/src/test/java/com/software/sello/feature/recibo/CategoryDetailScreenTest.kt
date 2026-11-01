@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
@@ -121,8 +122,7 @@ class CategoryDetailScreenTest {
         hasText(text) and hasAnyAncestor(hasTestTag(categoryExpenseTag(id)))
 
     // The stub shows "HOY" over "21" but is read as the whole day.
-    private fun dayOf(id: String, day: String) =
-        hasContentDescription(day) and hasAnyAncestor(hasTestTag(categoryExpenseTag(id)))
+    private fun dayOf(id: String, day: String) = inRow(id, day)
 
     private fun heroText(text: String) = rule.onNode(
         hasText(text) and hasAnyAncestor(hasTestTag(CATEGORY_DETAIL_HEADER_TAG)),
@@ -667,6 +667,18 @@ class CategoryDetailScreenTest {
                 hasAnyAncestor(hasTestTag(categoryExpenseTag("1"))),
             useUnmergedTree = true
         ).assertExists()
+    }
+
+    @Test
+    fun aScreenReaderHearsTheNoteTheWholeDayWhetherItCountsAndTheAmount() {
+        show(ready(ExpenseListState.Rows(rows, more = false)))
+
+        fun spoken(id: String) = rule.onNodeWithTag(categoryExpenseTag(id)).fetchSemanticsNode()
+            .config[SemanticsProperties.Text].map { it.text }
+
+        assertEquals(listOf("Rappi, almuerzo", "Hoy, mié 21 oct", "20.600"), spoken("1"))
+        assertEquals(listOf("Sin nota", "mar 20 oct", "33.500"), spoken("2"))
+        assertEquals(listOf("Adelantado", "mié 28 oct", "Aún no cuenta", "1.000"), spoken("3"))
     }
 
     @Test

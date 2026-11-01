@@ -59,13 +59,13 @@ class CategoryExpensesScreenTest {
         }
 
         rule.onNode(hasText("Adelantado") and inRow("1"), useUnmergedTree = true).assertExists()
-        rule.onNode(hasContentDescription("mié 28 oct") and inRow("1"), useUnmergedTree = true)
+        rule.onNode(hasText("mié 28 oct") and inRow("1"), useUnmergedTree = true)
             .assertExists()
         rule.onNode(hasText("Aún no cuenta") and inRow("1"), useUnmergedTree = true).assertExists()
         rule.onNode(hasContentDescription("1.000 pesos") and inRow("1"), useUnmergedTree = true)
             .assertExists()
         rule.onNode(hasText("Sin nota") and inRow("2"), useUnmergedTree = true).assertExists()
-        rule.onNode(hasContentDescription("Hoy, mié 21 oct") and inRow("2"), useUnmergedTree = true)
+        rule.onNode(hasText("Hoy, mié 21 oct") and inRow("2"), useUnmergedTree = true)
             .assertExists()
         rule.onNode(hasText("Aún no cuenta") and inRow("2"), useUnmergedTree = true)
             .assertDoesNotExist()
