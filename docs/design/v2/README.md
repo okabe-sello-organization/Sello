@@ -505,9 +505,9 @@ Dividendo, Aporte, Retiro). Dock: Anotar movimiento.
 **Anotar movimiento** reuses the locked entry screen: pinked amount slip, Sello pad, the
 action above the pad, note row, one plain fact and no live preview.
 
-- Top bar: ✕ and **Movimiento**, on the ink band of the entry forms. The type is a row
-  of chips, **Aporte · Valor de hoy · Retiro · Dividendo o renta**, above the investment
-  chips, which take two rows as the categories and goals do (owner, 2026-10-31).
+- Top bar: ✕ and **Movimiento**, on an ink band (the ink of Inversiones' dock). The type
+  is a row of chips, **Aporte · Valor de hoy · Retiro · Dividendo o renta**, above the
+  investment chips, which take two rows as the categories and goals do (owner, 2026-10-31).
 - Aporte "+", Valor de hoy without a sign (it replaces the last value, it is not added),
   Retiro "−", Dividendo o renta "+" (counts in the gain, not in the value). Buttons in
   ink: Anotar aporte / valor / retiro / dividendo.

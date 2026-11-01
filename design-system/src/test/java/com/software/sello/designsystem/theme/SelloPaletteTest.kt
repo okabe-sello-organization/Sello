@@ -1,5 +1,6 @@
 package com.software.sello.designsystem.theme
 
+import com.software.sello.designsystem.component.bandTrough
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
@@ -80,6 +81,10 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
             add(Triple(c.band, c.onBand, text))
             add(Triple(c.goalBand, c.onBand, text))
             add(Triple(c.investmentBand, c.onBand, text))
+            // The side of a band's switch not chosen: white on the lighter trough.
+            listOf(c.band, c.goalBand, c.investmentBand).forEach {
+                add(Triple(c.onBand, bandTrough(it, c.onBand), text))
+            }
             listOf(c.desk, c.paper).forEach {
                 add(Triple(s.gain, it, text))
                 add(Triple(s.loss, it, text))

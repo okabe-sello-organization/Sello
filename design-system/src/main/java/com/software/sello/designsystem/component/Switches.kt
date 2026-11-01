@@ -48,7 +48,7 @@ fun SegmentedSwitch(
     band: Color? = null
 ) {
     val colors = SelloTheme.colors
-    val trough = band?.let { lerp(it, colors.onBand, BAND_TROUGH) } ?: colors.paperDim
+    val trough = band?.let { bandTrough(it, colors.onBand) } ?: colors.paperDim
     val marker = if (band != null) colors.onBand else colors.paper
     val chosenText = band ?: colors.ink
     val otherText = if (band != null) colors.onBand else colors.inkSoft
@@ -100,8 +100,8 @@ fun SegmentedSwitch(
 
 private val SegmentInset = 3.dp
 
-/** How far a band's trough leans towards the band's ink: a lighter shade of the band. */
-private const val BAND_TROUGH = 0.16f
+/** A switch's trough on [band]: a lighter shade of it, leaning 16 % towards [onBand]. */
+internal fun bandTrough(band: Color, onBand: Color): Color = lerp(band, onBand, 0.16f)
 
 private val SegmentHeight = 42.dp
 

@@ -62,6 +62,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 @OptIn(ExperimentalTestApi::class, ExperimentalComposeUiApi::class)
@@ -353,10 +354,11 @@ class EntryControlsTest {
 
     // ---- Band ----
 
-    @Test
-    fun theBandRunsEdgeToEdgeDownToTheMiddleOfTheAmount() {
-        val band = Color(0xFFFF0000)
-        val desk = Color(0xFF00FF00)
+    private val band = Color(0xFFFF0000)
+    private val desk = Color(0xFF00FF00)
+
+    /** An entry on a padded desk, with a 40dp header and a 100dp amount. */
+    private fun showBandedEntry() {
         rule.setContent {
             Box(Modifier.fillMaxSize().background(desk).testTag("window")) {
                 EntryLayout(
@@ -366,10 +368,15 @@ class EntryControlsTest {
                     amount = { Spacer(Modifier.fillMaxWidth().height(100.dp).testTag("amount")) },
                     choices = {},
                     action = {},
-                    keypad = {}
+                    keypad = { Spacer(Modifier.fillMaxWidth().height(200.dp).testTag("keypad")) }
                 )
             }
         }
+    }
+
+    @Test
+    fun theBandRunsEdgeToEdgeDownToTheMiddleOfTheAmount() {
+        showBandedEntry()
         val window = rule.onNodeWithTag("window").drawnBitmap()
         val amount = rule.onNodeWithTag("amount").fetchSemanticsNode().boundsInRoot
         val middle = (amount.top + amount.bottom) / 2
@@ -388,6 +395,26 @@ class EntryControlsTest {
                 window.getPixel(x, middle.toInt() + 3)
             )
         }
+    }
+
+    @Test
+    @Config(qualifiers = "w740dp-h360dp-mdpi")
+    fun inTwoPanesTheBandStopsAtTheAmountsPane() {
+        showBandedEntry()
+        val window = rule.onNodeWithTag("window").drawnBitmap()
+        val amount = rule.onNodeWithTag("amount").fetchSemanticsNode().boundsInRoot
+        val keypad = rule.onNodeWithTag("keypad").fetchSemanticsNode().boundsInRoot
+        val above = amount.center.y.toInt() - 3
+        assertTrue("two panes: keypad $keypad beside amount $amount", keypad.left > amount.right)
+
+        assertEquals("left edge", band.toArgb(), window.getPixel(1, above))
+        assertEquals(
+            "behind the amount",
+            band.toArgb(),
+            window.getPixel(amount.center.x.toInt(), above)
+        )
+        assertEquals("over the action's pane", desk.toArgb(), window.getPixel(window.width - 2, 2))
+        assertEquals("below the middle", desk.toArgb(), window.getPixel(1, above + 6))
     }
 
     @Test
