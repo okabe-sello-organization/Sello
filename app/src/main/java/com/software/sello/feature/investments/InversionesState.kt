@@ -48,8 +48,9 @@ data class PortfolioTotalModel(
 
 /**
  * One row. [value] and [valuedOn] are null without a recorded value, and then
- * [contributed] says what was put in. [share] is its part of the bar, 0 without a value.
- * Amounts are in the investment's own currency.
+ * [contributed] says what was put in. [share] is its part of the bar, 0 without a value,
+ * and [percent] the same part as written, null without a value or a total. Amounts are in
+ * the investment's own currency.
  */
 @Immutable
 data class InvestmentRowModel(
@@ -62,8 +63,17 @@ data class InvestmentRowModel(
     val valuedOn: LocalDate?,
     val `return`: InvestmentReturn?,
     val contributed: MoneyTextValue,
-    val share: Float
+    val share: Float,
+    val percent: SharePercent? = null
 )
+
+/** A row's part of the total in whole percent, half up; above zero but under 1 % is "<1 %". */
+@Immutable
+sealed interface SharePercent {
+    data class Whole(val value: Int) : SharePercent
+
+    data object UnderOne : SharePercent
+}
 
 /** "Dólar a 4.150,25 · tasa del 20 oct": the rate the total used. */
 @Immutable

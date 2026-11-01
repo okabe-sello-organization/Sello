@@ -2,6 +2,7 @@ package com.software.sello.feature.investments
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -31,12 +32,12 @@ import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.theme.InvestmentInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.inEveryScheme
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -130,18 +131,21 @@ class InvestmentPartsTest {
     }
 
     @Test
-    fun theShadesRepeatAfterTheFourth() {
-        val shades = mutableListOf<Color>()
+    fun theBrandLeadsAndTheInksRepeatAfterTheSixth() {
+        val inks = mutableListOf<InvestmentInk>()
+        var brand = Color.Unspecified
         rule.setContent {
             SelloTheme {
-                shades.clear()
-                (0..5).forEach { shades += investmentShade(it) }
+                brand = SelloTheme.colors.brand
+                inks.clear()
+                (0..7).forEach { inks += investmentInk(it) }
             }
         }
         rule.waitForIdle()
-        assertEquals(shades[0], shades[4])
-        assertEquals(shades[1], shades[5])
-        assertNotEquals(shades[0], shades[3])
+        assertEquals(brand, inks[0].fill)
+        assertEquals(6, inks.take(6).map { it.fill }.distinct().size)
+        assertEquals(inks[0], inks[6])
+        assertEquals(inks[1], inks[7])
     }
 
     @Test
@@ -174,13 +178,43 @@ class InvestmentPartsTest {
     }
 
     @Test
+    fun aLabelIsWrittenOnlyWhereItFitsWhole() {
+        val fill = Color(0xFF1F3BE0)
+        val on = Color.White
+        rule.inEveryScheme(content = {
+            // 200dp less one 3dp gap: the slices are about 170 and 30dp wide, and
+            // "100,0 %" needs more than 30dp, so the second one stays plain.
+            SplitBar(
+                listOf(
+                    SplitSegment(170f, "a", fill, label = "90 %", labelColor = on),
+                    SplitSegment(30f, "b", fill, label = "100,0 %", labelColor = on)
+                ),
+                Modifier.width(200.dp).testTag("bar"),
+                gap = 3.dp,
+                height = 22.dp
+            )
+        }) { scheme ->
+            val pixels = rule.onNodeWithTag("bar").captureToImage().toPixelMap()
+            val dp = pixels.width / 200f
+            fun written(from: Int, to: Int) =
+                ((from * dp).toInt() until (to * dp).toInt()).any { x ->
+                    (pixels.height / 4 until pixels.height * 3 / 4).any { y ->
+                        pixels[x, y].let { it.red > 0.8f && it.green > 0.8f && it.blue > 0.8f }
+                    }
+                }
+            assertTrue("$scheme: the wide slice says its label", written(40, 130))
+            assertFalse("$scheme: the narrow slice stays plain", written(172, 198))
+        }
+    }
+
+    @Test
     fun aRowWithoutAValueSaysSoWhole() {
         rule.inEveryScheme(content = {
             InvestmentRow(
                 name = "Cripto",
                 detail = "Criptomoneda · sin valor anotado",
                 icon = SelloIcon.Insights,
-                shade = Color.Unspecified,
+                shade = InvestmentInk(Color.Unspecified, Color.Unspecified),
                 value = null,
                 missingLabel = "Sin valor",
                 secondary = "aportaste 2.000.000",

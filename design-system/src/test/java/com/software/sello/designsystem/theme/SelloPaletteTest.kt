@@ -43,6 +43,17 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
     }
 
     @Test
+    fun investmentNeighboursDifferInLightnessEvenWhereTheCycleRestarts() {
+        assertEquals(c.brand, c.investmentInk(0).fill)
+        assertEquals(c.investmentInk(0), c.investmentInk(6))
+        (0..5).forEach { rank ->
+            val here = c.investmentInk(rank).fill
+            val next = c.investmentInk(rank + 1).fill
+            assertTrue("$ink dark=$dark: inks $rank and ${rank + 1}", contrast(here, next) >= 1.7)
+        }
+    }
+
+    @Test
     fun eachEntryBandStandsApart() {
         // Expense, goal and investment forms are told apart by their band at a glance.
         val bands = listOf(c.band, c.goalBand, c.investmentBand)
@@ -109,6 +120,11 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
             }
             c.categories.forEach { category ->
                 listOf(c.desk, c.paper, c.paperAlt).forEach { add(Triple(category, it, mark)) }
+            }
+            // Investment inks are drawn on a slip: the percent is written on each fill.
+            (0..5).map(c::investmentInk).forEach { ink ->
+                add(Triple(ink.on, ink.fill, text))
+                listOf(c.paper, c.paperAlt).forEach { add(Triple(ink.fill, it, mark)) }
             }
         }
         val failures = pairs.filter { (fg, bg, need) -> contrast(fg, bg) < need }

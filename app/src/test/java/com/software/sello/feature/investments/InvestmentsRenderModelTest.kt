@@ -185,6 +185,42 @@ class InvestmentsRenderModelTest {
     }
 
     @Test
+    fun eachValuedRowSaysItsWholePercentOfTheTotal() {
+        // 19.000.000 and 5.242.000 of 24.242.000: 78,38 % and 21,62 %.
+        val state = ready(board(fondo(), parqueadero(), cripto()))
+        assertEquals(
+            listOf(SharePercent.Whole(78), SharePercent.Whole(22), null),
+            state.rows.map { it.percent }
+        )
+    }
+
+    @Test
+    fun aHalfPercentRoundsUpAndAShareUnderOneSaysSo() {
+        fun valued(name: String, units: Long) = investment(
+            name,
+            null,
+            // An aporte is never 0, so one worth nothing put in 1.000.
+            listOf(
+                Triple(aporte, units.coerceAtLeast(1_000), "2026-01-05"),
+                Triple(valor, units, "2026-01-05")
+            )
+        )
+        // 875 and 125 of 1.000: 87,5 % and 12,5 % each round up, to 88 and 13.
+        val halves = ready(board(valued("A", 875), valued("B", 125)))
+        assertEquals(
+            listOf(SharePercent.Whole(88), SharePercent.Whole(13)),
+            halves.rows.map { it.percent }
+        )
+        // 4.000 of 1.004.000 is 0,40 %: never written as 0 %. 0 of it is.
+        val small =
+            ready(board(valued("Grande", 1_000_000), valued("Poco", 4_000), valued("Nada", 0)))
+        assertEquals(
+            listOf(SharePercent.Whole(100), SharePercent.UnderOne, SharePercent.Whole(0)),
+            small.rows.map { it.percent }
+        )
+    }
+
+    @Test
     fun in28_dollarsStayInDollarsAndTheTotalNamesItsRate() {
         val state = ready(board(parqueadero(), acciones(), rate = rate))
         val usd = state.rows.single { it.dollars }

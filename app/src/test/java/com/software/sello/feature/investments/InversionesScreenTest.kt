@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -346,7 +347,14 @@ class InversionesScreenTest {
         val list = rule.onNodeWithTag(INVERSIONES_LIST_TAG)
         list.performScrollToNode(hasTestTag("inversiones.rows"))
 
-        rule.onNodeWithText("Finca raíz · valor del 12 jun", useUnmergedTree = true).assertExists()
+        // 19.000.000, 5.242.000 and 4.359.838 of 28.601.838: 66,43 %, 18,33 % and 15,24 %.
+        rule.onNodeWithText("66 % · Finca raíz · valor del 12 jun", useUnmergedTree = true)
+            .assertExists()
+        rule.onNodeWithText("18 % · Fondo colectivo · valor del 14 oct", useUnmergedTree = true)
+            .assertExists()
+        rule.onNodeWithTag("inversiones.bar").assertContentDescriptionEquals(
+            "Parqueadero, 66 %. Fondo de acciones, 18 %. Acciones EE. UU., 15 %"
+        )
         rule.onNodeWithText("1.050,50", useUnmergedTree = true).assertExists()
         rule.onNodeWithText("+5,1 %", useUnmergedTree = true).assertExists()
         rule.onNodeWithText("Criptomoneda · sin valor anotado", useUnmergedTree = true)

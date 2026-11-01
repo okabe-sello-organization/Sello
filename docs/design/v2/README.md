@@ -484,9 +484,12 @@ benchmark, value target or interest accrual. COP and USD with one rate the perso
   2025"). Under the tear: Aportaste, Retiraste, Dividendos y rentas and Ganancia as
   receipt lines, and a quiet line "Valores anotados entre el 12 jun y el 14 oct" (a link
   until SELLO-106 dropped it: each row carries its own date).
-- **Dónde está, de mayor a menor:** the income split bar with one shade of the ink per
-  investment, then a row per investment: icon in its shade, name, description and "valor
-  del 12 jun", value and signed %. Tapping a row opens it.
+- **Dónde está, de mayor a menor:** the split bar, 22dp tall with 3dp gaps, one colour per
+  investment (the ink first, then amber, slate, sky, plum and teal, light and deep in turn so
+  neighbours differ; owner, 2026-11-01, replacing the shades of one ink, which could not be
+  told apart). Each slice says its whole percent where it fits. Then a row per investment:
+  icon on its colour, name, "66 % · description · valor del 12 jun", value and signed %. A
+  part above zero that rounds to nothing says "<1 %". Tapping a row opens it.
 - **An investment without a recorded value:** no message on the overview (owner decision).
   Its row says **Sin valor** and "aportaste 2.000.000"; it is left out of the bar and the
   total, never counted as 0.

@@ -27,7 +27,8 @@ internal val CobaltoLight = SelloColors(
     pastBarSoft = Color(0xFFE1E7F6),
     onPastBarSoft = Color(0xFF17203C),
     semantic = LightSemantic,
-    categories = LightCategories
+    categories = LightCategories,
+    investments = LightInvestments
 )
 
 internal val CobaltoDark = SelloColors(
@@ -54,5 +55,6 @@ internal val CobaltoDark = SelloColors(
     pastBarSoft = Color(0xFF2A3560),
     onPastBarSoft = Color(0xFFE1E7F6),
     semantic = DarkSemantic,
-    categories = DarkCategories
+    categories = DarkCategories,
+    investments = DarkInvestments
 )

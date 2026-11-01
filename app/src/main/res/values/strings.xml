@@ -1338,6 +1338,10 @@
     <string name="inversiones_rate_line">Dólar a %1$s · tasa del %2$s</string>
     <string name="inversiones_where">Dónde está, de mayor a menor</string>
     <string name="inversiones_list">Tus inversiones</string>
+    <string name="investment_share">%1$d %%</string>
+    <string name="investment_share_under_one" formatted="false">&lt;1 %</string>
+    <string name="investment_row_share">%1$s · %2$s</string>
+    <string name="investment_bar_share">%1$s, %2$s</string>
     <string name="investment_row_detail">%1$s · valor del %2$s</string>
     <string name="investment_row_valued">valor del %1$s</string>
     <string name="investment_row_no_value_detail">%1$s · sin valor anotado</string>
