@@ -87,6 +87,7 @@ fun GoalMovementScreen(
                 else -> R.string.goal_movement_edit_contribution
             }
         ),
+        band = SelloTheme.colors.goalBand,
         navigationIcon = {
             MovementCloseButton(
                 { onAction(GoalMovementAction.Back) },
@@ -113,6 +114,7 @@ fun GoalMovementScreen(
                     { onAction(GoalMovementAction.Delete) },
                     kind = ButtonKind.Text,
                     enabled = state.canDelete,
+                    tone = ButtonTone.OnBand,
                     modifier = Modifier.testTag(GOAL_MOVEMENT_DELETE_TAG)
                 )
             }
@@ -134,6 +136,7 @@ fun GoalMovementScreen(
 
             else -> EntryLayout(
                 modifier = Modifier.padding(padding),
+                band = SelloTheme.colors.goalBand,
                 header = {
                     if (!state.editing) {
                         SegmentedSwitch(
@@ -144,7 +147,8 @@ fun GoalMovementScreen(
                             if (state.withdrawal) 1 else 0,
                             { onAction(GoalMovementAction.Kind(withdrawal = it == 1)) },
                             Modifier.testTag(GOAL_MOVEMENT_KIND_TAG),
-                            enabled = state.editable
+                            enabled = state.editable,
+                            band = SelloTheme.colors.goalBand
                         )
                     }
                 },

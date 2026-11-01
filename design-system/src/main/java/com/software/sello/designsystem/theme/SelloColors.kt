@@ -38,6 +38,10 @@ data class SelloColors(
     val rule: Color,
     val band: Color,
     val onBand: Color,
+    /** The band of the goal forms (Aportar, Retirar): green, as Metas' dock. */
+    val goalBand: Color,
+    /** The band of the investment forms: the ink of Inversiones' dock, deepened in dark. */
+    val investmentBand: Color,
     val pastBar: Color,
     val onPastBar: Color,
     val pastBarSoft: Color,

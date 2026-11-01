@@ -26,8 +26,12 @@ import com.software.sello.designsystem.theme.SelloTheme
 /** One filled button per screen; the Loss tone only inside a confirmation. */
 enum class ButtonKind { Filled, Outlined, Text }
 
-/** Optional v2 action ink; the default preserves existing consumers. */
-enum class ButtonTone { Brand, Gain, Ink, Loss }
+/**
+ * Optional v2 action ink; the default preserves existing consumers. OnBand is for a
+ * [ButtonKind.Text] action on a coloured band, such as an entry form's Borrar; it is not
+ * for a filled button, which would take the tabs' band as its text whatever the band.
+ */
+enum class ButtonTone { Brand, Gain, Ink, Loss, OnBand }
 
 /**
  * Sello's button. While [loading] it keeps its label and colours, shows a spinner in
@@ -104,6 +108,7 @@ internal fun ButtonTone.inks(): Pair<Color, Color> {
         ButtonTone.Gain -> colors.semantic.gain to colors.semantic.onGain
         ButtonTone.Ink -> colors.ink to colors.paper
         ButtonTone.Loss -> colors.semantic.loss to colors.semantic.onLoss
+        ButtonTone.OnBand -> colors.onBand to colors.band
     }
 }
 

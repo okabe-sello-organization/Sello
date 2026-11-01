@@ -100,16 +100,17 @@ class InvestmentMovementScreenTest {
     }
 
     @Test
-    fun theTypeChipsAndTheInvestmentChipsEachKeepOneRow() {
+    fun theTypeChipsKeepOneRowAndTheInvestmentChipsTwo() {
         show(aporte)
 
         val kinds = InvestmentMovementKind.entries.map {
             top("$INVESTMENT_MOVEMENT_KIND_TAG.${it.name}").top
         }
         assertEquals("type chips $kinds", 1, kinds.distinct().size)
+        // Two rows, as the expense form's categories and the goals.
         val chips = investments.map { top("$INVESTMENT_MOVEMENT_INVESTMENT_TAG.${it.id}").top }
-        assertEquals("investment chips $chips", 1, chips.distinct().size)
-        assertTrue(chips.first() > kinds.first())
+        assertEquals("investment chips $chips", 2, chips.distinct().size)
+        assertTrue(chips.min() > kinds.first())
 
         rule.onNodeWithText("Llevas 3.000.000 aportados en Ecopetrol.").assertExists()
         rule.onNodeWithText("Aporte en pesos", useUnmergedTree = true).assertExists()
