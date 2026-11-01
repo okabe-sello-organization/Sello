@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.drawText
@@ -36,7 +37,7 @@ data class SplitSegment(
 /**
  * One bar split by [segments], [height] tall with [gap] of paper between them
  * (Inversiones uses 22dp and 3dp). A segment's [SplitSegment.label] is written in its
- * middle only where it fits whole; the exact values belong in the lines or rows next to it.
+ * middle only where it fits whole, in its [SplitSegment.labelColor] or paper; the exact values belong in the lines or rows next to it.
  */
 @Composable
 fun SplitBar(
@@ -49,6 +50,7 @@ fun SplitBar(
     val total = segments.sumOf { it.fraction.toDouble() }.toFloat()
     val summary = segments.joinToString(". ") { it.spoken }
     val measurer = rememberTextMeasurer()
+    val paper = SelloTheme.colors.paper
     val labelStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W800)
     Canvas(
         modifier.fillMaxWidth().height(height).clip(SelloTheme.shapes.control).semantics {
@@ -89,7 +91,8 @@ fun SplitBar(
                 )
             }
             segment.label?.let { label ->
-                val text = measurer.measure(label, labelStyle.copy(color = segment.labelColor))
+                val color = segment.labelColor.takeOrElse { paper }
+                val text = measurer.measure(label, labelStyle.copy(color = color))
                 val inset = 4.dp.toPx()
                 if (text.size.width + inset * 2 <= width && text.size.height <= size.height) {
                     drawText(

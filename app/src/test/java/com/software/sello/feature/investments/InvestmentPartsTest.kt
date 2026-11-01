@@ -2,6 +2,7 @@ package com.software.sello.feature.investments
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -181,32 +182,28 @@ class InvestmentPartsTest {
         val fill = Color(0xFF1F3BE0)
         val on = Color.White
         rule.inEveryScheme(content = {
+            // 200dp less one 3dp gap: the slices are about 170 and 30dp wide, and
+            // "100,0 %" needs more than 30dp, so the second one stays plain.
             SplitBar(
                 listOf(
-                    SplitSegment(90f, "a", fill, label = "90 %", labelColor = on),
-                    SplitSegment(1f, "b", fill, label = "1 %", labelColor = on)
+                    SplitSegment(170f, "a", fill, label = "90 %", labelColor = on),
+                    SplitSegment(30f, "b", fill, label = "100,0 %", labelColor = on)
                 ),
-                Modifier.testTag("bar"),
+                Modifier.width(200.dp).testTag("bar"),
                 gap = 3.dp,
                 height = 22.dp
             )
         }) { scheme ->
             val pixels = rule.onNodeWithTag("bar").captureToImage().toPixelMap()
-            fun white(x: Int, y: Int) = pixels[x, y].let {
-                it.red > 0.8f && it.green > 0.8f && it.blue > 0.8f
-            }
-            val middle = pixels.height / 2
-            assertTrue(
-                "$scheme: the wide slice says its label",
-                (pixels.width / 3 until pixels.width * 2 / 3).any { x ->
-                    (pixels.height / 4 until pixels.height * 3 / 4).any { white(x, it) }
+            val dp = pixels.width / 200f
+            fun written(from: Int, to: Int) =
+                ((from * dp).toInt() until (to * dp).toInt()).any { x ->
+                    (pixels.height / 4 until pixels.height * 3 / 4).any { y ->
+                        pixels[x, y].let { it.red > 0.8f && it.green > 0.8f && it.blue > 0.8f }
+                    }
                 }
-            )
-            // The 1 % slice is the bar's last few pixels; its middle stays its fill.
-            assertFalse(
-                "$scheme: the narrow slice stays plain",
-                (pixels.width - 2 until pixels.width).any { white(it, middle) }
-            )
+            assertTrue("$scheme: the wide slice says its label", written(40, 130))
+            assertFalse("$scheme: the narrow slice stays plain", written(172, 198))
         }
     }
 

@@ -232,6 +232,9 @@ private fun Rows(
     openRows: Boolean
 ) {
     val valued = state.rows.filter { it.value != null }
+    // The bar leaves out a part of 0, so the drawn slices take the inks in turn and
+    // neighbours never share one; a part of 0 takes the next ink after them.
+    val ranked = valued.partition { it.share > 0f }.let { (drawn, empty) -> drawn + empty }
     Slip(Modifier.fillMaxWidth().testTag("inversiones.rows"), pinked = false) {
         Text(
             stringResource(
@@ -243,7 +246,7 @@ private fun Rows(
         )
         if (state.total != null && valued.isNotEmpty()) {
             SplitBar(
-                valued.mapIndexed { rank, row ->
+                ranked.mapIndexed { rank, row ->
                     val ink = investmentInk(rank)
                     val percent = row.percent?.let { sharePercent(it) }
                     SplitSegment(
@@ -262,7 +265,7 @@ private fun Rows(
             )
         }
         state.rows.forEachIndexed { index, row ->
-            val rank = valued.indexOf(row)
+            val rank = ranked.indexOf(row)
             val described = row.description
             val detail = when {
                 row.valuedOn == null && described != null ->
