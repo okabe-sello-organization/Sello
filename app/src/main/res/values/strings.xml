@@ -292,7 +292,6 @@
     <string name="category_detail_no_note">Sin nota</string>
     <string name="category_detail_stub_today">hoy</string>
     <string name="category_detail_not_counted_short">Aún no cuenta</string>
-    <string name="category_detail_not_counted">Fecha posterior a hoy: todavía no cuenta</string>
     <string name="category_detail_empty_title">Sin gastos en %1$s</string>
     <string name="category_detail_empty_body">Cuando anotes un gasto en esta categoría aparecerá aquí.</string>
     <string name="category_detail_record_here">Anotar aquí</string>

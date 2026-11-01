@@ -770,8 +770,8 @@ stub: the weekday ("HOY" for today) over the day of the month, a dashed tear lin
 note (an empty one is "Sin nota" in soft italic) and the amount, with hairlines between
 rows and no dotted leader. An expense dated after today carries an **Aún no cuenta**
 tag in the warning colours and a soft day and amount. The row is read as the note, the
-whole day and the amount. Header, hint and **Anotar varios** are unchanged; the full
-list ("Ver todos") keeps its lines.
+whole day and the amount. The full list (**Ver todos**) uses the same rows. Header,
+hint and **Anotar varios** are unchanged.
 
 **Fixed payments (SELLO-135, [mock](categoria-fijos.html)):** while payments of the
 category are still to come this month, the hero is what they leave, with Recibo's

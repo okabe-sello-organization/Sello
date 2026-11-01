@@ -21,6 +21,7 @@ import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.theme.SelloTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -32,7 +33,7 @@ import org.robolectric.annotation.GraphicsMode
 /** A line with actions opens on a press and offers them by long press, by name and by swipe. */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-class ActionLineTest {
+class ActionRowTest {
     @get:Rule
     val rule = createComposeRule()
 
@@ -41,17 +42,19 @@ class ActionLineTest {
     private fun line(swipe: Boolean = true) {
         rule.setContent {
             SelloTheme {
-                ActionLine(
-                    label = "Pan",
+                ActionRow(
                     onClick = { done += "open" },
                     actions = listOf(
                         LineAction("Editar") { done += "edit" },
                         LineAction("Borrar") { done += "delete" }
                     ),
                     modifier = Modifier.testTag("line"),
-                    caption = "Hoy, 22 oct",
                     swipeAway = LineAction("Borrar") { done += "swiped" }.takeIf { swipe }
-                ) { Text("48.700") }
+                ) { pressable ->
+                    LeaderLine("Pan", modifier = pressable, caption = "Hoy, 22 oct") {
+                        Text("48.700")
+                    }
+                }
             }
         }
     }

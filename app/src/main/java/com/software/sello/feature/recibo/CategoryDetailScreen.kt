@@ -1,25 +1,19 @@
 package com.software.sello.feature.recibo
 
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -32,9 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -44,10 +35,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCircle
@@ -73,7 +61,6 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
-import java.time.LocalDate
 import java.time.YearMonth
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -553,7 +540,7 @@ private fun ExpenseList(
                     actions = listOf(LineAction(edit) { onEditExpense(row.id) }, remove),
                     modifier = Modifier.testTag(categoryExpenseTag(row.id)),
                     swipeAway = remove
-                ) { pressable -> StubLine(row, dates, state.today, pressable) }
+                ) { pressable -> ExpenseStubLine(row, dates, state.today, pressable) }
             }
         }
         // Several expenses at once, every new line starting in this category.
@@ -569,97 +556,6 @@ private fun ExpenseList(
         }
     }
 }
-
-/**
- * One expense as a receipt stub: the day torn off at the start (weekday over the day of
- * the month, "hoy" for today), then the note and the amount. Read as one line: the note,
- * the whole day and the amount; one dated after [today] also says it does not count yet.
- */
-@Composable
-private fun StubLine(row: ExpenseRow, dates: DateLabels, today: LocalDate, modifier: Modifier) {
-    val colors = SelloTheme.colors
-    val future = row.notCountedYet
-    val day = dates.day(row.date, today)
-    val weekday = if (row.date == today) {
-        stringResource(R.string.category_detail_stub_today)
-    } else {
-        dates.weekday(row.date)
-    }
-    Row(
-        modifier = modifier.fillMaxWidth().height(IntrinsicSize.Min),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .width(STUB_WIDTH)
-                .clearAndSetSemantics { contentDescription = day }
-        ) {
-            Text(
-                weekday.uppercase(Locale.forLanguageTag("es-CO")),
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontWeight = FontWeight.W700,
-                    letterSpacing = 0.6.sp
-                ),
-                color = colors.inkSoft,
-                maxLines = 1
-            )
-            Text(
-                row.date.dayOfMonth.toString(),
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.W900,
-                    fontFeatureSettings = "tnum"
-                ),
-                color = if (future) colors.inkSoft else colors.ink
-            )
-        }
-        // Where the stub tears off: the line of a ticket's perforation.
-        val perforation = colors.rule
-        Canvas(
-            Modifier
-                .padding(start = SelloTheme.spacing.sm)
-                .width(2.dp)
-                .fillMaxHeight()
-        ) {
-            drawLine(
-                color = perforation,
-                start = Offset(size.width / 2, 0f),
-                end = Offset(size.width / 2, size.height),
-                strokeWidth = size.width,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))
-            )
-        }
-        Column(
-            Modifier
-                .weight(1f)
-                .padding(horizontal = SelloTheme.spacing.md, vertical = SelloTheme.spacing.sm)
-        ) {
-            if (row.note != null) {
-                Text(row.note, style = MaterialTheme.typography.bodyLarge, color = colors.ink)
-            } else {
-                Text(
-                    stringResource(R.string.category_detail_no_note),
-                    style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
-                    color = colors.inkSoft
-                )
-            }
-            if (future) {
-                Text(
-                    stringResource(R.string.category_detail_not_counted_short),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W700),
-                    color = colors.semantic.warn,
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .background(colors.semantic.warnSoft, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 6.dp, vertical = 1.dp)
-                )
-            }
-        }
-        MoneyText(row.amount, color = if (future) colors.inkSoft else Color.Unspecified)
-    }
-}
-
-private val STUB_WIDTH = 38.dp
 
 internal fun DeleteProblem.text() = when (this) {
     DeleteProblem.Gone -> R.string.category_detail_delete_gone
