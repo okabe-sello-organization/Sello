@@ -21,8 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.text
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,7 +62,7 @@ internal fun ExpenseStubLine(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .width(STUB_WIDTH)
-                // Read with the note, as the whole day, below; "HOY" and "21" alone say less.
+                // Read with the note, as the whole day; "HOY" and "21" alone say less.
                 .clearAndSetSemantics {}
         ) {
             Text(
@@ -100,14 +100,10 @@ internal fun ExpenseStubLine(
             )
         }
         val note = row.note ?: stringResource(R.string.category_detail_no_note)
-        val notCounted = stringResource(R.string.category_detail_not_counted_short)
-        // One label on a node with a size: a size-less one never reaches a screen reader.
-        val spoken = listOfNotNull(note, day, notCounted.takeIf { future }).joinToString(", ")
         Column(
             Modifier
                 .weight(1f)
                 .padding(horizontal = SelloTheme.spacing.md, vertical = SelloTheme.spacing.sm)
-                .clearAndSetSemantics { text = AnnotatedString(spoken) }
         ) {
             Text(
                 note,
@@ -116,11 +112,13 @@ internal fun ExpenseStubLine(
                 } else {
                     MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic)
                 },
-                color = if (row.note != null) colors.ink else colors.inkSoft
+                color = if (row.note != null) colors.ink else colors.inkSoft,
+                // Spoken with the whole day, on a node with a size: one without is never read.
+                modifier = Modifier.semantics { contentDescription = "$note, $day" }
             )
             if (future) {
                 Text(
-                    notCounted,
+                    stringResource(R.string.category_detail_not_counted_short),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W700),
                     color = colors.semantic.warn,
                     modifier = Modifier
