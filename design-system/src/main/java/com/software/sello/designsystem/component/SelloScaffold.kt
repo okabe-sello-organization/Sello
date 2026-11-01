@@ -33,6 +33,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -62,7 +63,8 @@ enum class Blotter(val height: Dp) { None(0.dp), Short(100.dp), Tall(132.dp) }
  * A [topBar] takes the place of the title row ([title], [subtitle], [titleContent],
  * [navigationIcon] and [actions] then go unused). A [ribbon], if given, sits on the band
  * under the top bar or the title row; the band grows with it, so the content still
- * starts on the band.
+ * starts on the band. A [band] colour puts the title row on a band of that colour: an
+ * entry form passes its kind's, so it is told apart before anything is typed.
  * The scaffold holds no state: selection, the month and what a pane shows are the app's.
  *
  * @param blotterScroll how far, in pixels, the content has scrolled. The band shrinks
@@ -87,9 +89,11 @@ fun SelloScaffold(
     secondaryPane: (@Composable (PaddingValues) -> Unit)? = null,
     topBar: (@Composable () -> Unit)? = null,
     ribbon: (@Composable () -> Unit)? = null,
+    band: Color? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
     val colors = SelloTheme.colors
+    val bandColor = band ?: colors.band
     val density = LocalDensity.current
     val keyboardOpen = WindowInsets.ime.getBottom(density) > 0
     BoxWithConstraints(modifier = modifier.fillMaxSize().background(colors.desk)) {
@@ -105,15 +109,15 @@ fun SelloScaffold(
         val statusBar = windowInsets.asPaddingValues().calculateTopPadding()
         // The status bar, the bar and any ribbon, as last measured.
         var topArea by remember { mutableStateOf(statusBar + TopBarHeight) }
-        val measured = topBar != null || ribbon != null
+        val measured = topBar != null || ribbon != null || band != null
         if (measured) {
-            // A v2 bar or a ribbon always sits on the band; the band then reaches as far
-            // under the content as it does under the title row alone.
+            // A v2 bar, a ribbon or a band colour always sits on the band; the band then
+            // reaches as far under the content as it does under the title row alone.
             Box(
                 Modifier
                     .fillMaxWidth()
                     .height(topArea + (bandLeft - TopBarHeight).coerceAtLeast(0.dp))
-                    .background(colors.band)
+                    .background(bandColor)
                     .testTag(SCAFFOLD_BAND_TAG)
             )
         } else if (onBand) {
@@ -121,7 +125,7 @@ fun SelloScaffold(
                 Modifier
                     .fillMaxWidth()
                     .height(statusBar + maxOf(bandLeft, TopBarHeight))
-                    .background(colors.band)
+                    .background(bandColor)
                     .testTag(SCAFFOLD_BAND_TAG)
             )
         }
@@ -171,7 +175,7 @@ fun SelloScaffold(
                                 Box(
                                     Modifier
                                         .fillMaxWidth()
-                                        .background(colors.band)
+                                        .background(bandColor)
                                         .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
                                 ) { ribbon() }
                             }

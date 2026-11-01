@@ -56,6 +56,7 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.AddChip
 import com.software.sello.designsystem.component.AmountKeypad
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.ConfirmSlip
@@ -181,6 +182,7 @@ fun ExpenseEntryScreen(
             if (state.editing) R.string.expense_edit_title else R.string.expense_entry_title
         ),
         modifier = modifier,
+        band = SelloTheme.colors.band,
         navigationIcon = {
             IconButton(onClick = { onAction(ExpenseEntryAction.Back) }) {
                 Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
@@ -209,6 +211,7 @@ fun ExpenseEntryScreen(
                     onClick = { onAction(ExpenseEntryAction.Delete) },
                     kind = ButtonKind.Text,
                     enabled = state.canDelete,
+                    tone = ButtonTone.OnBand,
                     modifier = Modifier
                         .testTag(ENTRY_DELETE_TAG)
                         .semantics { contentDescription = description }
@@ -237,6 +240,7 @@ fun ExpenseEntryScreen(
             // A wide or short window puts the action and pad beside the rest.
             else -> EntryLayout(
                 modifier = Modifier.padding(padding),
+                band = SelloTheme.colors.band,
                 header = {
                     if (!state.editing && onIncome != null) {
                         SegmentedSwitch(
@@ -247,7 +251,8 @@ fun ExpenseEntryScreen(
                             0,
                             { if (it == 1 && state.editable) onIncome() },
                             Modifier.testTag("entry.kind"),
-                            enabled = state.editable
+                            enabled = state.editable,
+                            band = SelloTheme.colors.band
                         )
                     }
                 },

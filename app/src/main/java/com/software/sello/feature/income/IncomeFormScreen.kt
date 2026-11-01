@@ -134,6 +134,7 @@ fun IncomeFormScreen(
             if (state.editing) R.string.income_edit_title else R.string.income_entry_title
         ),
         modifier = modifier,
+        band = SelloTheme.colors.band,
         navigationIcon = {
             IconButton(onClick = { onAction(IncomeFormAction.Back) }) {
                 Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
@@ -159,6 +160,7 @@ fun IncomeFormScreen(
                     { onAction(IncomeFormAction.Delete) },
                     kind = ButtonKind.Text,
                     enabled = state.canDelete,
+                    tone = ButtonTone.OnBand,
                     modifier = Modifier.testTag("income.delete")
                 )
             }
@@ -177,9 +179,11 @@ fun IncomeFormScreen(
                 )
             }
 
-            // The expense form's layout, in green: the amount, action and pad hold still.
+            // The expense form's layout and band, in green: the amount, action and pad
+            // hold still. The band stays the expense form's, since green is the goals'.
             else -> EntryLayout(
                 modifier = Modifier.padding(padding),
+                band = SelloTheme.colors.band,
                 header = {
                     if (!state.editing && onExpense != null) {
                         SegmentedSwitch(
@@ -190,7 +194,8 @@ fun IncomeFormScreen(
                             1,
                             { if (it == 0 && state.editable) onExpense() },
                             Modifier.testTag("entry.kind"),
-                            enabled = state.editable
+                            enabled = state.editable,
+                            band = SelloTheme.colors.band
                         )
                     }
                 },

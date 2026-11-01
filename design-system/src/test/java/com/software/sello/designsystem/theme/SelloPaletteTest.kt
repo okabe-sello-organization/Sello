@@ -1,5 +1,6 @@
 package com.software.sello.designsystem.theme
 
+import com.software.sello.designsystem.component.bandTrough
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
@@ -42,6 +43,18 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
     }
 
     @Test
+    fun eachEntryBandStandsApart() {
+        // Expense, goal and investment forms are told apart by their band at a glance.
+        val bands = listOf(c.band, c.goalBand, c.investmentBand)
+        assertEquals(3, bands.distinct().size)
+        // In light they are the docks' own colours: Aportar's green, Anotar movimiento's ink.
+        if (!dark) {
+            assertEquals(c.semantic.gain, c.goalBand)
+            assertEquals(c.ink, c.investmentBand)
+        }
+    }
+
+    @Test
     fun twelveCategoryColours() {
         assertEquals(12, c.categories.distinct().size)
     }
@@ -62,6 +75,16 @@ class SelloPaletteTest(private val ink: SelloInk, private val dark: Boolean) {
             add(Triple(c.onBrand, c.brand, text))
             add(Triple(c.onBrandSoft, c.brandSoft, text))
             add(Triple(c.onBand, c.band, text))
+            // The entry forms' bands carry the same title, close and switch as the band.
+            add(Triple(c.onBand, c.goalBand, text))
+            add(Triple(c.onBand, c.investmentBand, text))
+            add(Triple(c.band, c.onBand, text))
+            add(Triple(c.goalBand, c.onBand, text))
+            add(Triple(c.investmentBand, c.onBand, text))
+            // The side of a band's switch not chosen: white on the lighter trough.
+            listOf(c.band, c.goalBand, c.investmentBand).forEach {
+                add(Triple(c.onBand, bandTrough(it, c.onBand), text))
+            }
             listOf(c.desk, c.paper).forEach {
                 add(Triple(s.gain, it, text))
                 add(Triple(s.loss, it, text))
