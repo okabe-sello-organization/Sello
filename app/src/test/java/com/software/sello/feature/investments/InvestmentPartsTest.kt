@@ -31,12 +31,12 @@ import com.software.sello.designsystem.component.SplitBar
 import com.software.sello.designsystem.component.SplitSegment
 import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.theme.InvestmentInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.inEveryScheme
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -130,18 +130,21 @@ class InvestmentPartsTest {
     }
 
     @Test
-    fun theShadesRepeatAfterTheFourth() {
-        val shades = mutableListOf<Color>()
+    fun theBrandLeadsAndTheInksRepeatAfterTheSixth() {
+        val inks = mutableListOf<InvestmentInk>()
+        var brand = Color.Unspecified
         rule.setContent {
             SelloTheme {
-                shades.clear()
-                (0..5).forEach { shades += investmentShade(it) }
+                brand = SelloTheme.colors.brand
+                inks.clear()
+                (0..7).forEach { inks += investmentInk(it) }
             }
         }
         rule.waitForIdle()
-        assertEquals(shades[0], shades[4])
-        assertEquals(shades[1], shades[5])
-        assertNotEquals(shades[0], shades[3])
+        assertEquals(brand, inks[0].fill)
+        assertEquals(6, inks.take(6).map { it.fill }.distinct().size)
+        assertEquals(inks[0], inks[6])
+        assertEquals(inks[1], inks[7])
     }
 
     @Test
@@ -174,13 +177,47 @@ class InvestmentPartsTest {
     }
 
     @Test
+    fun aLabelIsWrittenOnlyWhereItFitsWhole() {
+        val fill = Color(0xFF1F3BE0)
+        val on = Color.White
+        rule.inEveryScheme(content = {
+            SplitBar(
+                listOf(
+                    SplitSegment(90f, "a", fill, label = "90 %", labelColor = on),
+                    SplitSegment(1f, "b", fill, label = "1 %", labelColor = on)
+                ),
+                Modifier.testTag("bar"),
+                gap = 3.dp,
+                height = 22.dp
+            )
+        }) { scheme ->
+            val pixels = rule.onNodeWithTag("bar").captureToImage().toPixelMap()
+            fun white(x: Int, y: Int) = pixels[x, y].let {
+                it.red > 0.8f && it.green > 0.8f && it.blue > 0.8f
+            }
+            val middle = pixels.height / 2
+            assertTrue(
+                "$scheme: the wide slice says its label",
+                (pixels.width / 3 until pixels.width * 2 / 3).any { x ->
+                    (pixels.height / 4 until pixels.height * 3 / 4).any { white(x, it) }
+                }
+            )
+            // The 1 % slice is the bar's last few pixels; its middle stays its fill.
+            assertFalse(
+                "$scheme: the narrow slice stays plain",
+                (pixels.width - 2 until pixels.width).any { white(it, middle) }
+            )
+        }
+    }
+
+    @Test
     fun aRowWithoutAValueSaysSoWhole() {
         rule.inEveryScheme(content = {
             InvestmentRow(
                 name = "Cripto",
                 detail = "Criptomoneda · sin valor anotado",
                 icon = SelloIcon.Insights,
-                shade = Color.Unspecified,
+                shade = InvestmentInk(Color.Unspecified, Color.Unspecified),
                 value = null,
                 missingLabel = "Sin valor",
                 secondary = "aportaste 2.000.000",

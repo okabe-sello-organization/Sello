@@ -47,7 +47,7 @@ class InvestmentContractsTest {
                 "Parqueadero",
                 "Finca raíz · valor del 12 jun",
                 SelloIcon.Home,
-                SelloTheme.colors.brand,
+                SelloTheme.colors.investmentInk(0),
                 MoneyTextValue(MoneySign.None, "", "19.000.000", "19.000.000 pesos"),
                 "Sin valor",
                 "+7,5 %",

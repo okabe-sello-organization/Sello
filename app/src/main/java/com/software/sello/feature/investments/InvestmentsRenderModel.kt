@@ -16,6 +16,8 @@ import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.money.MoneyFormatter
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -192,10 +194,11 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
                 )
             },
             rows = InvestmentOrderPolicy.order(overview.items, order).map { item ->
-                val share = item.valueInPesos?.minorUnits?.let { value ->
-                    pesos?.let { (value.toDouble() / it).toFloat() }
+                val value = item.valueInPesos?.minorUnits
+                val share = value?.let { units ->
+                    pesos?.let { (units.toDouble() / it).toFloat() }
                 } ?: 0f
-                row(item, share)
+                row(item, share, value?.let { units -> pesos?.let { percent(units, it) } })
             },
             rate = overview.rate?.let { RateLineModel(rate(it.rate), it.date) },
             today = today,
@@ -203,7 +206,19 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
         )
     }
 
-    private fun row(item: PortfolioItem, share: Float): InvestmentRowModel {
+    /** [part] of [whole] in whole percent, half up; a part above zero never reads 0 %. */
+    private fun percent(part: Long, whole: Long): SharePercent {
+        val value = BigDecimal.valueOf(part).multiply(HUNDRED)
+            .divide(BigDecimal.valueOf(whole), 0, RoundingMode.HALF_UP)
+            .toInt()
+        return if (value == 0 && part > 0) SharePercent.UnderOne else SharePercent.Whole(value)
+    }
+
+    private fun row(
+        item: PortfolioItem,
+        share: Float,
+        percent: SharePercent? = null
+    ): InvestmentRowModel {
         val investment = item.history.investment
         val figures = item.figures
         return InvestmentRowModel(
@@ -216,7 +231,12 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
             valuedOn = figures.value?.valuedOn,
             `return` = figures.`return`,
             contributed = money.format(figures.contributed),
-            share = share
+            share = share,
+            percent = percent
         )
+    }
+
+    private companion object {
+        val HUNDRED: BigDecimal = BigDecimal.valueOf(100)
     }
 }

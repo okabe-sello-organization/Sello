@@ -43,8 +43,23 @@ data class SelloColors(
     val pastBarSoft: Color,
     val onPastBarSoft: Color,
     val semantic: SelloSemanticColors,
-    val categories: List<Color>
-)
+    val categories: List<Color>,
+    val investments: List<InvestmentInk>
+) {
+    /**
+     * The [rank]-th investment's colour, from 0: the brand first, then [investments],
+     * repeating every six. Light and dark fills alternate, so neighbours in a bar ordered
+     * by rank never share one, even where the cycle starts again.
+     */
+    fun investmentInk(rank: Int): InvestmentInk {
+        val slot = rank.coerceAtLeast(0) % (investments.size + 1)
+        return if (slot == 0) InvestmentInk(brand, onBrand) else investments[slot - 1]
+    }
+}
+
+/** A fill for one investment and the colour written on it. */
+@Immutable
+data class InvestmentInk(val fill: Color, val on: Color)
 
 /** Meanings that stay the same in both inks, so a stamp reads the same everywhere. */
 @Immutable
@@ -120,6 +135,24 @@ internal val DarkCategories = listOf(
     Color(0xFFB693F0),
     Color(0xFFEE82BE),
     Color(0xFFA3ADB8)
+)
+
+/** After the brand: amber, slate, sky, plum, teal; mid and deep fills alternate. */
+internal val LightInvestments = listOf(
+    InvestmentInk(Color(0xFFB87600), Color(0xFF0E1630)),
+    InvestmentInk(Color(0xFF3D4A5C), Color(0xFFFFFFFF)),
+    InvestmentInk(Color(0xFF2A8BCB), Color(0xFF0E1630)),
+    InvestmentInk(Color(0xFF9C2A6E), Color(0xFFFFFFFF)),
+    InvestmentInk(Color(0xFF1B9385), Color(0xFF0E1630))
+)
+
+/** After the brand: amber, slate, sky, pink, teal; mid and light fills alternate. */
+internal val DarkInvestments = listOf(
+    InvestmentInk(Color(0xFF9A6B0E), Color(0xFFFFFFFF)),
+    InvestmentInk(Color(0xFFA3ADB8), Color(0xFF0E1630)),
+    InvestmentInk(Color(0xFF2B7CB5), Color(0xFFFFFFFF)),
+    InvestmentInk(Color(0xFFEE82BE), Color(0xFF2A0A1C)),
+    InvestmentInk(Color(0xFF1D8174), Color(0xFFFFFFFF))
 )
 
 internal val LocalSelloColors = staticCompositionLocalOf { CobaltoLight }

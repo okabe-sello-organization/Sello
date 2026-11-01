@@ -244,36 +244,48 @@ private fun Rows(
         if (state.total != null && valued.isNotEmpty()) {
             SplitBar(
                 valued.mapIndexed { rank, row ->
-                    SplitSegment(row.share, row.name, investmentShade(rank))
+                    val ink = investmentInk(rank)
+                    val percent = row.percent?.let { sharePercent(it) }
+                    SplitSegment(
+                        row.share,
+                        percent?.let {
+                            stringResource(R.string.investment_bar_share, row.name, it)
+                        } ?: row.name,
+                        ink.fill,
+                        label = percent,
+                        labelColor = ink.on
+                    )
                 },
                 Modifier.padding(bottom = 6.dp).testTag("inversiones.bar"),
-                gap = 2.dp
+                gap = 3.dp,
+                height = 22.dp
             )
         }
         state.rows.forEachIndexed { index, row ->
             val rank = valued.indexOf(row)
             val described = row.description
+            val detail = when {
+                row.valuedOn == null && described != null ->
+                    stringResource(R.string.investment_row_no_value_detail, described)
+
+                row.valuedOn == null -> stringResource(R.string.investment_row_no_value)
+
+                described != null -> stringResource(
+                    R.string.investment_row_detail,
+                    described,
+                    dates.shortDay(row.valuedOn, state.today)
+                )
+
+                else -> stringResource(
+                    R.string.investment_row_valued,
+                    dates.shortDay(row.valuedOn, state.today)
+                )
+            }
             InvestmentRow(
                 name = row.name,
-                detail = when {
-                    row.valuedOn == null && described != null ->
-                        stringResource(R.string.investment_row_no_value_detail, described)
-
-                    row.valuedOn == null -> stringResource(R.string.investment_row_no_value)
-
-                    described != null -> stringResource(
-                        R.string.investment_row_detail,
-                        described,
-                        dates.shortDay(row.valuedOn, state.today)
-                    )
-
-                    else -> stringResource(
-                        R.string.investment_row_valued,
-                        dates.shortDay(row.valuedOn, state.today)
-                    )
-                },
+                detail = sharedDetail(row.percent, detail),
                 icon = InvestmentIcons.iconFor(row.iconKey),
-                shade = investmentShade(rank),
+                shade = investmentInk(rank),
                 value = row.value,
                 missingLabel = stringResource(R.string.investment_no_value),
                 secondary = row.`return`?.let { percent(it) }
@@ -291,6 +303,19 @@ private fun Rows(
         }
     }
 }
+
+/** "40 %", or "<1 %" for a part above zero that would round to nothing. */
+@Composable
+private fun sharePercent(percent: SharePercent): String = when (percent) {
+    is SharePercent.Whole -> stringResource(R.string.investment_share, percent.value)
+    SharePercent.UnderOne -> stringResource(R.string.investment_share_under_one)
+}
+
+/** "40 % · valor del 12 oct": the row's part of the total leads its detail line. */
+@Composable
+private fun sharedDetail(percent: SharePercent?, detail: String): String =
+    percent?.let { stringResource(R.string.investment_row_share, sharePercent(it), detail) }
+        ?: detail
 
 /** "▲ +5,6 % +2.066.000 de ganancia", or "0,0 % sin ganancia ni pérdida" (IN15). */
 @Composable

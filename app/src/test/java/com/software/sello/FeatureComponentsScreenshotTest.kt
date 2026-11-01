@@ -130,7 +130,7 @@ class FeatureComponentsScreenshotTest {
             "Parqueadero",
             "Finca raíz · valor del 12 jun",
             SelloIcon.Home,
-            SelloTheme.colors.brand,
+            SelloTheme.colors.investmentInk(0),
             pesos("19.000.000"),
             "Sin valor",
             "+7,5 %",

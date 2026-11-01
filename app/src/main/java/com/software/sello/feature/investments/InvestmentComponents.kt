@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -41,6 +40,7 @@ import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
+import com.software.sello.designsystem.theme.InvestmentInk
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
@@ -94,21 +94,15 @@ internal fun PerformanceLine(
     }
 }
 
-private val ShadeMix = listOf(1f, 0.68f, 0.42f, 0.22f)
-
 /**
- * The brand mixed into paper for the [rank]-th largest investment, from 0: the circle
- * in its row and its share of the split bar use the same shade. After the fourth the
- * shades repeat in order; the rows carry the exact values.
+ * The colour of the [rank]-th investment in the list, from 0: the circle in its row and
+ * its part of the split bar use the same one (the design system's investment inks).
  */
 @Composable
-internal fun investmentShade(rank: Int): Color {
-    val colors = SelloTheme.colors
-    return lerp(colors.paper, colors.brand, ShadeMix[rank.coerceAtLeast(0) % ShadeMix.size])
-}
+internal fun investmentInk(rank: Int): InvestmentInk = SelloTheme.colors.investmentInk(rank)
 
 /**
- * One investment in the overview: a [shade] circle with its icon, the name over its
+ * One investment in the overview: a [shade] circle with its icon in the colour written on it, the name over its
  * kind and valuation date, and on the right the value over its signed change. Without a
  * value the circle is dashed and [missingLabel] and [secondary] read plainly. [divider]
  * rules it off from the next row. Without [onOpen] it is not a button.
@@ -118,7 +112,7 @@ internal fun InvestmentRow(
     name: String,
     detail: String,
     icon: SelloIcon,
-    shade: Color,
+    shade: InvestmentInk,
     value: MoneyTextValue?,
     missingLabel: String,
     secondary: String,
@@ -174,7 +168,7 @@ internal fun InvestmentRow(
                         )
                     }
                 } else {
-                    Modifier.background(shade, CircleShape)
+                    Modifier.background(shade.fill, CircleShape)
                 }
             ),
             contentAlignment = Alignment.Center
@@ -183,7 +177,7 @@ internal fun InvestmentRow(
                 icon.painter(),
                 null,
                 Modifier.size(20.dp),
-                tint = if (value == null) colors.inkSoft else colors.paper
+                tint = if (value == null) colors.inkSoft else shade.on
             )
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
