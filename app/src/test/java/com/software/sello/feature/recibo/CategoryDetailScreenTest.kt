@@ -121,9 +121,6 @@ class CategoryDetailScreenTest {
     private fun inRow(id: String, text: String) =
         hasText(text) and hasAnyAncestor(hasTestTag(categoryExpenseTag(id)))
 
-    // The stub shows "HOY" over "21" but is read as the whole day.
-    private fun dayOf(id: String, day: String) = inRow(id, day)
-
     private fun heroText(text: String) = rule.onNode(
         hasText(text) and hasAnyAncestor(hasTestTag(CATEGORY_DETAIL_HEADER_TAG)),
         useUnmergedTree = true
@@ -399,17 +396,16 @@ class CategoryDetailScreenTest {
         show(ready(ExpenseListState.Rows(rows, more = false)))
 
         rule.onNodeWithText("Ver todos").performScrollTo().assertIsDisplayed()
-        rule.onNode(inRow("1", "Rappi, almuerzo"), useUnmergedTree = true).assertExists()
-        rule.onNode(dayOf("1", "Hoy, mié 21 oct"), useUnmergedTree = true).assertExists()
+        rule.onNode(inRow("1", "Rappi, almuerzo, Hoy, mié 21 oct"), useUnmergedTree = true)
+            .assertExists()
         rule.onNode(
             hasContentDescription("20.600 pesos") and
                 hasAnyAncestor(hasTestTag(categoryExpenseTag("1"))),
             useUnmergedTree = true
         ).assertExists()
-        rule.onNode(inRow("2", "Sin nota"), useUnmergedTree = true).assertExists()
-        rule.onNode(dayOf("2", "mar 20 oct"), useUnmergedTree = true).assertExists()
-        rule.onNode(dayOf("3", "mié 28 oct"), useUnmergedTree = true).assertExists()
-        rule.onNode(inRow("3", "Aún no cuenta"), useUnmergedTree = true).assertExists()
+        rule.onNode(inRow("2", "Sin nota, mar 20 oct"), useUnmergedTree = true).assertExists()
+        rule.onNode(inRow("3", "Adelantado, mié 28 oct, Aún no cuenta"), useUnmergedTree = true)
+            .assertExists()
         // Everything is listed, so there is nothing more to ask for.
         rule.onNodeWithTag(CATEGORY_DETAIL_MORE_TAG).assertExists()
     }
@@ -676,9 +672,9 @@ class CategoryDetailScreenTest {
         fun spoken(id: String) = rule.onNodeWithTag(categoryExpenseTag(id)).fetchSemanticsNode()
             .config[SemanticsProperties.Text].map { it.text }
 
-        assertEquals(listOf("Rappi, almuerzo", "Hoy, mié 21 oct", "20.600"), spoken("1"))
-        assertEquals(listOf("Sin nota", "mar 20 oct", "33.500"), spoken("2"))
-        assertEquals(listOf("Adelantado", "mié 28 oct", "Aún no cuenta", "1.000"), spoken("3"))
+        assertEquals(listOf("Rappi, almuerzo, Hoy, mié 21 oct", "20.600"), spoken("1"))
+        assertEquals(listOf("Sin nota, mar 20 oct", "33.500"), spoken("2"))
+        assertEquals(listOf("Adelantado, mié 28 oct, Aún no cuenta", "1.000"), spoken("3"))
     }
 
     @Test

@@ -2,7 +2,6 @@ package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -22,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontStyle
@@ -64,7 +62,7 @@ internal fun ExpenseStubLine(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .width(STUB_WIDTH)
-                // Read after the note, as the whole day, below; "HOY" and "21" alone say less.
+                // Read with the note, as the whole day, below; "HOY" and "21" alone say less.
                 .clearAndSetSemantics {}
         ) {
             Text(
@@ -101,24 +99,28 @@ internal fun ExpenseStubLine(
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))
             )
         }
+        val note = row.note ?: stringResource(R.string.category_detail_no_note)
+        val notCounted = stringResource(R.string.category_detail_not_counted_short)
+        // One label on a node with a size: a size-less one never reaches a screen reader.
+        val spoken = listOfNotNull(note, day, notCounted.takeIf { future }).joinToString(", ")
         Column(
             Modifier
                 .weight(1f)
                 .padding(horizontal = SelloTheme.spacing.md, vertical = SelloTheme.spacing.sm)
+                .clearAndSetSemantics { text = AnnotatedString(spoken) }
         ) {
-            if (row.note != null) {
-                Text(row.note, style = MaterialTheme.typography.bodyLarge, color = colors.ink)
-            } else {
-                Text(
-                    stringResource(R.string.category_detail_no_note),
-                    style = MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic),
-                    color = colors.inkSoft
-                )
-            }
-            Box(Modifier.semantics { text = AnnotatedString(day) })
+            Text(
+                note,
+                style = if (row.note != null) {
+                    MaterialTheme.typography.bodyLarge
+                } else {
+                    MaterialTheme.typography.bodyLarge.copy(fontStyle = FontStyle.Italic)
+                },
+                color = if (row.note != null) colors.ink else colors.inkSoft
+            )
             if (future) {
                 Text(
-                    stringResource(R.string.category_detail_not_counted_short),
+                    notCounted,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W700),
                     color = colors.semantic.warn,
                     modifier = Modifier
