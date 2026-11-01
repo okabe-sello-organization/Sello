@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -238,5 +240,29 @@ class AdaptiveScaffoldTest {
         show(900, 700, withSecondPane = false)
         assertTrue(exists(SCAFFOLD_RAIL_TAG) && !exists(SCAFFOLD_SECONDARY_TAG))
         near(900f - 80f, bounds(SCAFFOLD_PRIMARY_TAG).width)
+    }
+
+    @Test
+    fun bothPanesWriteInTheThemeInkSoPlainTextShowsInTheDark() {
+        var expected = Color.Unspecified
+        var primary = Color.Unspecified
+        var secondary = Color.Unspecified
+        rule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(scale, 1f)) {
+                SelloTheme(darkTheme = true, reducedMotion = true) {
+                    expected = SelloTheme.colors.ink
+                    Box(Modifier.requiredSize(900.dp, 700.dp)) {
+                        SelloScaffold(
+                            title = "Aportar",
+                            secondaryPane = { secondary = LocalContentColor.current }
+                        ) { primary = LocalContentColor.current }
+                    }
+                }
+            }
+        }
+        rule.waitForIdle()
+        assertTrue(exists(SCAFFOLD_SECONDARY_TAG))
+        assertEquals(expected, primary)
+        assertEquals(expected, secondary)
     }
 }
