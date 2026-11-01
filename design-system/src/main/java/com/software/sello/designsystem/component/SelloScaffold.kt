@@ -277,6 +277,12 @@ fun SelloScaffold(
     }
 }
 
+/** The panes sit on the desk, so text that names no colour writes in the theme's ink. */
+@Composable
+private fun OnDesk(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalContentColor provides SelloTheme.colors.ink, content = content)
+}
+
 /**
  * The title row: navigation icon, title and actions on one line. When a long title has
  * no room beside the actions, even on two lines, the title moves under them
@@ -378,9 +384,3 @@ const val SCAFFOLD_DOCK_TAG = "sello:scaffold:dock"
 internal const val SCAFFOLD_NOTICE_TAG = "sello:scaffold:notice"
 const val SCAFFOLD_PRIMARY_TAG = "sello:scaffold:primary"
 const val SCAFFOLD_SECONDARY_TAG = "sello:scaffold:secondary"
-
-/** The panes sit on the desk, so text that names no colour writes in the theme's ink. */
-@Composable
-private fun OnDesk(content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalContentColor provides SelloTheme.colors.ink, content = content)
-}

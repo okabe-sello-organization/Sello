@@ -243,16 +243,26 @@ class AdaptiveScaffoldTest {
     }
 
     @Test
-    fun theContentWritesInTheThemeInkSoPlainTextShowsInTheDark() {
+    fun bothPanesWriteInTheThemeInkSoPlainTextShowsInTheDark() {
         var expected = Color.Unspecified
-        var actual = Color.Unspecified
+        var primary = Color.Unspecified
+        var secondary = Color.Unspecified
         rule.setContent {
-            SelloTheme(darkTheme = true, reducedMotion = true) {
-                expected = SelloTheme.colors.ink
-                SelloScaffold(title = "Aportar") { actual = LocalContentColor.current }
+            CompositionLocalProvider(LocalDensity provides Density(scale, 1f)) {
+                SelloTheme(darkTheme = true, reducedMotion = true) {
+                    expected = SelloTheme.colors.ink
+                    Box(Modifier.requiredSize(900.dp, 700.dp)) {
+                        SelloScaffold(
+                            title = "Aportar",
+                            secondaryPane = { secondary = LocalContentColor.current }
+                        ) { primary = LocalContentColor.current }
+                    }
+                }
             }
         }
         rule.waitForIdle()
-        assertEquals(expected, actual)
+        assertTrue(exists(SCAFFOLD_SECONDARY_TAG))
+        assertEquals(expected, primary)
+        assertEquals(expected, secondary)
     }
 }
