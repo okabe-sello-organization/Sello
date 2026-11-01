@@ -23,6 +23,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -32,20 +34,28 @@ import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.theme.SelloMotion
 import com.software.sello.designsystem.theme.SelloTheme
 
-/** A choice among a few short options, shown as one trough with a sliding marker. */
+/**
+ * A choice among a few short options, shown as one trough with a sliding marker. On a
+ * coloured [band] the trough is a tint of the band and the marker is the band's ink.
+ */
 @Composable
 fun SegmentedSwitch(
     options: List<String>,
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    band: Color? = null
 ) {
     val colors = SelloTheme.colors
+    val trough = band?.let { lerp(it, colors.onBand, BAND_TROUGH) } ?: colors.paperDim
+    val marker = if (band != null) colors.onBand else colors.paper
+    val chosenText = band ?: colors.ink
+    val otherText = if (band != null) colors.onBand else colors.inkSoft
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .background(colors.paperDim, SelloTheme.shapes.control)
+            .background(trough, SelloTheme.shapes.control)
             .padding(SegmentInset)
     ) {
         val segment = maxWidth / options.size.coerceAtLeast(1)
@@ -56,7 +66,7 @@ fun SegmentedSwitch(
                 .offset { IntOffset(start.roundToPx(), 0) }
                 .width(segment)
                 .height(SegmentHeight)
-                .background(colors.paper, SegmentShape)
+                .background(marker, SegmentShape)
         )
         Row(modifier = Modifier.selectableGroup()) {
             options.forEachIndexed { index, option ->
@@ -78,7 +88,7 @@ fun SegmentedSwitch(
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = if (selected) FontWeight.W700 else FontWeight.W600
                         ),
-                        color = if (selected) colors.ink else colors.inkSoft,
+                        color = if (selected) chosenText else otherText,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = 4.dp)
                     )
@@ -89,6 +99,9 @@ fun SegmentedSwitch(
 }
 
 private val SegmentInset = 3.dp
+
+/** How far a band's trough leans towards the band's ink: a lighter shade of the band. */
+private const val BAND_TROUGH = 0.16f
 
 private val SegmentHeight = 42.dp
 

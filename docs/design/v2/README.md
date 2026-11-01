@@ -110,6 +110,13 @@ chips → note row → **Anotar gasto / Anotar ingreso** → Sello pad. The amou
 and the pad never move; only the chips and note area scroll. Income shows the amount
 in gain green with a `+`.
 
+- **Band (owner, 2026-10-31):** the form says what it records before anything is typed.
+  The title row sits on a band in the colour of the kind, which carries on behind the
+  switch and down to the middle of the amount slip, as a tab's band holds its answer slip:
+  the tabs' band for Gasto and Ingreso (green is the goals'), green for Aportar / Retirar,
+  the ink of Inversiones' dock for Anotar movimiento (a deep slate in dark, where the ink
+  is light). On the band the switch is a lighter shade of it with a white marker, and
+  Borrar is white. The bulk receipts (Anotar varios) and the editors keep the desk.
 - **Amount entry:** always the Sello pad, ready the moment the form opens. The system
   keyboard is never used for amounts. Pad: the familiar 3 × 4 layout (1–9, then `000`,
   `0`, delete), 44dp keys with 4dp gaps (48dp touch pitch), 192dp in total.
@@ -345,7 +352,8 @@ The v1.1 Metas screen, kept close to the original on purpose, in its own tab.
 Sello pad, chips in at most two rows, note row and composer, the action fixed above the pad,
 no live preview, and the same saving / rejected / unknown-outcome / restore behaviour.
 
-- The **Aportar / Retirar** switch replaces Gasto / Ingreso.
+- The **Aportar / Retirar** switch replaces Gasto / Ingreso, on a green band for both
+  sides (owner, 2026-10-31; see the entry's band).
 - **Aportar:** green amount with "+", the goal's icon in a green circle, a green **Aportar**
   button. Opened from a goal, that goal is chosen; opened from the Metas tab dock, no goal
   is chosen and Aportar waits. Goal chips follow the tab's order and show their %. One
@@ -497,8 +505,9 @@ Dividendo, Aporte, Retiro). Dock: Anotar movimiento.
 **Anotar movimiento** reuses the locked entry screen: pinked amount slip, Sello pad, the
 action above the pad, note row, one plain fact and no live preview.
 
-- Top bar: ✕ and **Movimiento**. The type is a row of chips, **Aporte · Valor de hoy ·
-  Retiro · Dividendo o renta**, above the investment chips (one row each).
+- Top bar: ✕ and **Movimiento**, on the ink band of the entry forms. The type is a row
+  of chips, **Aporte · Valor de hoy · Retiro · Dividendo o renta**, above the investment
+  chips, which take two rows as the categories and goals do (owner, 2026-10-31).
 - Aporte "+", Valor de hoy without a sign (it replaces the last value, it is not added),
   Retiro "−", Dividendo o renta "+" (counts in the gain, not in the value). Buttons in
   ink: Anotar aporte / valor / retiro / dividendo.

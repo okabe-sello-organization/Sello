@@ -16,6 +16,7 @@ internal val VioletaLight = CobaltoLight.copy(
     outline = Color(0xFF75679F),
     rule = Color(0xFFC4B7E6),
     band = Color(0xFF5B2BD6),
+    investmentBand = Color(0xFF150F2E),
     pastBar = Color(0xFF5F5887),
     pastBarSoft = Color(0xFFE7E1F6)
 )
@@ -35,6 +36,7 @@ internal val VioletaDark = CobaltoDark.copy(
     outline = Color(0xFF8E82B8),
     rule = Color(0xFF372C66),
     band = Color(0xFF4420B0),
+    investmentBand = Color(0xFF2E2750),
     pastBar = Color(0xFFABA3CF),
     pastBarSoft = Color(0xFF30265C)
 )

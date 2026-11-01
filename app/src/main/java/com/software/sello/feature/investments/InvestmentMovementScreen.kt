@@ -107,6 +107,7 @@ fun InvestmentMovementScreen(
 ) {
     SelloScaffold(
         title = stringResource(R.string.investment_movement_title),
+        band = SelloTheme.colors.investmentBand,
         navigationIcon = {
             MovementCloseButton(
                 { onAction(InvestmentMovementAction.Back) },
@@ -134,7 +135,7 @@ fun InvestmentMovementScreen(
                     { onAction(InvestmentMovementAction.Delete) },
                     kind = ButtonKind.Text,
                     enabled = state.canDelete,
-                    tone = ButtonTone.Ink,
+                    tone = ButtonTone.OnBand,
                     modifier = Modifier.testTag(INVESTMENT_MOVEMENT_DELETE_TAG)
                 )
             }
@@ -156,6 +157,7 @@ fun InvestmentMovementScreen(
 
             else -> EntryLayout(
                 modifier = Modifier.padding(padding),
+                band = SelloTheme.colors.investmentBand,
                 header = {},
                 amount = { Amount(state, onAction) },
                 choices = { Choices(state, onAction) },
@@ -264,11 +266,8 @@ private fun Choices(state: InvestmentMovementState, onAction: (InvestmentMovemen
         FactLine(AnnotatedString(stringResource(R.string.investment_movement_none)))
     } else {
         val order = rememberSelectedFirst(state.investments, state.investmentId) { it.id }
-        ChipRows(
-            order.items.size,
-            Modifier.testTag(INVESTMENT_MOVEMENT_INVESTMENTS_TAG),
-            rows = 1
-        ) { index ->
+        // Two rows, as the expense form's categories and the goals.
+        ChipRows(order.items.size, Modifier.testTag(INVESTMENT_MOVEMENT_INVESTMENTS_TAG)) { index ->
             val investment = order.items[index]
             SelloChip(
                 investment.name,

@@ -30,14 +30,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -266,6 +276,10 @@ fun EntryAmountSlip(
  * screen. A host that pads for that keyboard would otherwise squeeze the entry or flip it
  * into two columns behind the sheet, so while the keyboard is open the entry keeps the
  * height it had without it.
+ *
+ * With a [band] colour, the band under the form's title row carries on behind the header
+ * and down to the middle of the amount slip, from edge to edge of the window, as a tab's
+ * band holds its answer slip.
  */
 @Composable
 fun EntryLayout(
@@ -274,9 +288,39 @@ fun EntryLayout(
     amount: @Composable () -> Unit,
     choices: @Composable () -> Unit,
     action: @Composable () -> Unit,
-    keypad: @Composable () -> Unit
+    keypad: @Composable () -> Unit,
+    band: Color? = null
 ) {
-    BoxWithConstraints(modifier.fillMaxSize()) {
+    val reach = remember { BandReach() }
+    val windowWidth = LocalWindowInfo.current.containerSize.width
+    val banded = if (band == null) {
+        Modifier
+    } else {
+        Modifier
+            .onGloballyPositioned { reach.layout = it.positionInWindow() }
+            .drawBehind {
+                val depth = reach.amountMiddle - reach.layout.y
+                if (depth > 0f) {
+                    drawRect(
+                        band,
+                        topLeft = Offset(-reach.layout.x, 0f),
+                        size = Size(maxOf(windowWidth.toFloat(), size.width), depth)
+                    )
+                }
+            }
+    }
+    val placedAmount: @Composable () -> Unit = if (band == null) {
+        amount
+    } else {
+        {
+            Box(
+                Modifier.onGloballyPositioned {
+                    reach.amountMiddle = it.positionInWindow().y + it.size.height / 2f
+                }
+            ) { amount() }
+        }
+    }
+    BoxWithConstraints(modifier.fillMaxSize().then(banded)) {
         val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
         val settled = remember(maxWidth) { SettledHeight(maxHeight) }
         SideEffect { if (!keyboardOpen) settled.height = maxHeight }
@@ -291,7 +335,7 @@ fun EntryLayout(
                 twoPane,
                 height,
                 header,
-                amount,
+                placedAmount,
                 choices,
                 action,
                 keypad
@@ -301,6 +345,12 @@ fun EntryLayout(
 }
 
 private class SettledHeight(var height: Dp)
+
+/** Where the entry and the middle of its amount sit in the window; read when drawing. */
+private class BandReach {
+    var layout by mutableStateOf(Offset.Zero)
+    var amountMiddle by mutableFloatStateOf(0f)
+}
 
 @Composable
 private fun EntryPanes(

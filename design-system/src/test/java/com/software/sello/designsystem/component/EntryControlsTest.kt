@@ -3,9 +3,14 @@ package com.software.sello.designsystem.component
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.CompositionLocalProvider
@@ -15,6 +20,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
@@ -342,6 +349,45 @@ class EntryControlsTest {
         rule.onNodeWithContentDescription("Nota").performTextInput("Almuerzo")
         rule.onNodeWithContentDescription("Nota").assertIsDisplayed()
         assertEquals("Almuerzo", value)
+    }
+
+    // ---- Band ----
+
+    @Test
+    fun theBandRunsEdgeToEdgeDownToTheMiddleOfTheAmount() {
+        val band = Color(0xFFFF0000)
+        val desk = Color(0xFF00FF00)
+        rule.setContent {
+            Box(Modifier.fillMaxSize().background(desk).testTag("window")) {
+                EntryLayout(
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    band = band,
+                    header = { Spacer(Modifier.height(40.dp)) },
+                    amount = { Spacer(Modifier.fillMaxWidth().height(100.dp).testTag("amount")) },
+                    choices = {},
+                    action = {},
+                    keypad = {}
+                )
+            }
+        }
+        val window = rule.onNodeWithTag("window").drawnBitmap()
+        val amount = rule.onNodeWithTag("amount").fetchSemanticsNode().boundsInRoot
+        val middle = (amount.top + amount.bottom) / 2
+        val edges = listOf(1, window.width / 2, window.width - 2)
+
+        for (x in edges) {
+            assertEquals("x=$x over the header", band.toArgb(), window.getPixel(x, 2))
+            assertEquals(
+                "x=$x just above the amount's middle",
+                band.toArgb(),
+                window.getPixel(x, middle.toInt() - 3)
+            )
+            assertEquals(
+                "x=$x just below the amount's middle",
+                desk.toArgb(),
+                window.getPixel(x, middle.toInt() + 3)
+            )
+        }
     }
 
     @Test
