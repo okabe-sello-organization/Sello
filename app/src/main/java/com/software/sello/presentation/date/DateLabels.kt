@@ -33,6 +33,9 @@ class DateLabels(
         return if (date == today) todayFormat.format(plain) else plain
     }
 
+    /** "mié": the day of the week alone, as on a date stub. */
+    fun weekday(date: LocalDate): String = weekdays[date.dayOfWeek.value - 1]
+
     /** "30 sep", and "31 dic 2025" when it is not this year's. */
     fun shortDay(date: LocalDate, today: LocalDate): String {
         val plain = "${date.dayOfMonth} ${months[date.monthValue - 1]}"

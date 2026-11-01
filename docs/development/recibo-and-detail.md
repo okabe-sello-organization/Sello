@@ -164,7 +164,8 @@ announcement "Puedes corregir el límite de este mes anterior.", alone or beside
 
 ## Correcting and deleting an expense
 
-Each listed expense is an `ActionLine`:
+Each listed expense is an `ActionRow` drawing an `ExpenseStubLine` (the day as a receipt
+stub, then the note and the amount):
 
 | How | What it does |
 | --- | --- |

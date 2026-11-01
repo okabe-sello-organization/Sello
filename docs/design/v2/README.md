@@ -765,6 +765,14 @@ Cada semana gastas → Un mes normal aquí. [ADR 0015](../../decisions/0015-cate
 records the approved weekly and completed-month-history rules. Existing no-symbol,
 archive-only deletion and current status decisions continue to apply.
 
+**Latest expenses as stubs (approved 2026-10-31 by the owner):** each row is a receipt
+stub: the weekday ("HOY" for today) over the day of the month, a dashed tear line, the
+note (an empty one is "Sin nota" in soft italic) and the amount, with hairlines between
+rows and no dotted leader. An expense dated after today carries an **Aún no cuenta**
+tag in the warning colours and a soft day and amount. The row is read as the note, the
+whole day and the amount. The full list (**Ver todos**) uses the same rows. Header,
+hint and **Anotar varios** are unchanged.
+
 **Fixed payments (SELLO-135, [mock](categoria-fijos.html)):** while payments of the
 category are still to come this month, the hero is what they leave, with Recibo's
 stamps (Sin margen, Revisar with "Falta para tus pagos", its sentence and **Ajustar

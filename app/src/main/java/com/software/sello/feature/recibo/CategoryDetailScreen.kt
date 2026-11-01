@@ -15,6 +15,7 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -528,24 +529,18 @@ private fun ExpenseList(
                     .semantics { liveRegion = LiveRegionMode.Polite }
             )
         }
-        list.rows.take(4).forEach { row ->
+        list.rows.take(4).forEachIndexed { index, row ->
             // Each row is its expense, not its place in the list: a new expense at the
             // top is one row added, instead of every row below it drawn again.
             key(row.id) {
-                val day = dates.day(row.date, state.today)
+                if (index > 0) HorizontalDivider(color = SelloTheme.colors.paperAlt)
                 val remove = LineAction(delete) { onAction(CategoryDetailAction.Delete(row.id)) }
-                ActionLine(
-                    label = row.note ?: stringResource(R.string.category_detail_no_note),
+                ActionRow(
                     onClick = { onEditExpense(row.id) },
                     actions = listOf(LineAction(edit) { onEditExpense(row.id) }, remove),
                     modifier = Modifier.testTag(categoryExpenseTag(row.id)),
-                    caption = if (row.notCountedYet) {
-                        day + ". " + stringResource(R.string.category_detail_not_counted)
-                    } else {
-                        day
-                    },
                     swipeAway = remove
-                ) { MoneyText(row.amount) }
+                ) { pressable -> ExpenseStubLine(row, dates, state.today, pressable) }
             }
         }
         // Several expenses at once, every new line starting in this category.

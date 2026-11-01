@@ -53,7 +53,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.component.CategoryCircle
-import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.categoryColumns
@@ -189,9 +188,10 @@ internal fun <T> CategoryGrid(
 internal class LineAction(val label: String, val onClick: () -> Unit)
 
 /**
- * A [LeaderLine] that stands for something that can be opened and acted on, such as a
- * recorded expense. Pressing it is [onClick]. Every one of [actions] is reachable three
- * ways: a long press opens them as a menu, a screen reader is offered them by name,
+ * A line that stands for something that can be opened and acted on, such as a recorded
+ * expense. [content] draws it, putting the modifier it is given on its outermost layout,
+ * and is read as one node. Pressing it is [onClick]. Every one of [actions] is reachable
+ * three ways: a long press opens them as a menu, a screen reader is offered them by name,
  * and [swipeAway], when given, also runs by dragging the line towards the start past
  * 40 % of its width. Nothing depends on a gesture alone.
  *
@@ -200,22 +200,17 @@ internal class LineAction(val label: String, val onClick: () -> Unit)
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun ActionLine(
-    label: String,
+internal fun ActionRow(
     onClick: () -> Unit,
     actions: List<LineAction>,
     modifier: Modifier = Modifier,
-    caption: String? = null,
     swipeAway: LineAction? = null,
-    value: @Composable () -> Unit
+    content: @Composable (Modifier) -> Unit
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val line: @Composable () -> Unit = {
-        LeaderLine(
-            label = label,
-            caption = caption,
-            value = value,
-            modifier = modifier
+        content(
+            modifier
                 .background(SelloTheme.colors.paper)
                 .heightIn(min = SelloTheme.spacing.minTouchTarget)
                 .combinedClickable(

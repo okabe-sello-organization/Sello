@@ -21,7 +21,6 @@ import com.software.sello.designsystem.component.ChipFlow
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FormField
-import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.Slip
@@ -128,15 +127,9 @@ fun CategoryExpensesScreen(
                             LineAction(stringResource(R.string.category_detail_expense_delete)) {
                                 onAction(CategoryExpensesAction.Delete(row.id))
                             }
-                        ActionLine(
-                            row.note ?: stringResource(R.string.category_detail_no_note),
+                        ActionRow(
                             onClick = {
                                 onEdit(row.id)
-                            },
-                            caption = dates.day(row.date, state.today) + if (row.notCountedYet) {
-                                ". " + stringResource(R.string.category_detail_not_counted)
-                            } else {
-                                ""
                             },
                             actions = listOf(
                                 LineAction(stringResource(R.string.category_detail_expense_edit)) {
@@ -146,9 +139,7 @@ fun CategoryExpensesScreen(
                             ),
                             swipeAway = delete,
                             modifier = Modifier.testTag(categoryExpenseTag(row.id))
-                        ) {
-                            MoneyText(row.amount)
-                        }
+                        ) { pressable -> ExpenseStubLine(row, dates, state.today, pressable) }
                     }
                 }
                 item(key = "count") {
