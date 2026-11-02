@@ -31,6 +31,7 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MovementRow
+import com.software.sello.designsystem.component.MovementTone
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
@@ -235,10 +236,10 @@ private fun Movements(
             modifier = Modifier.semantics { heading() }
         )
         val shown = if (state.allMovements) state.movements else state.movements.take(SHORT_LIST)
-        shown.forEach { movement ->
+        shown.forEachIndexed { index, movement ->
             val day = dates.day(movement.date, state.today)
             MovementRow(
-                kind = stringResource(
+                title = stringResource(
                     when (movement.kind) {
                         InvestmentMovementKind.Contribution -> R.string.investment_kind_contribution
                         InvestmentMovementKind.Valuation -> R.string.investment_kind_valuation
@@ -258,7 +259,13 @@ private fun Movements(
                     InvestmentMovementKind.Valuation -> SelloIcon.Insights
                     InvestmentMovementKind.Withdrawal -> SelloIcon.ArrowBack
                     else -> SelloIcon.Add
-                }
+                },
+                tone = when (movement.kind) {
+                    InvestmentMovementKind.Valuation -> MovementTone.Value
+                    InvestmentMovementKind.Withdrawal -> MovementTone.Out
+                    else -> MovementTone.In
+                },
+                rule = index < shown.lastIndex
             )
         }
         // The foot (v2 *Anotar varios*): Varios movimientos, and Ver los N while some are hidden.

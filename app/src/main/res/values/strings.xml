@@ -1005,6 +1005,8 @@
     <string name="goal_movement_contribution">Aporte</string>
     <string name="goal_movement_withdrawal">Retiro</string>
     <string name="goal_movement_note">%1$s · %2$s</string>
+    <string name="goal_movement_kind_day">%1$s · %2$s</string>
+    <string name="goal_movement_balance">saldo</string>
     <string name="goal_movement_earned">Ganaste el sello del %s</string>
     <string name="goal_movement_earned_many">Ganaste los sellos del %1$s y del %2$s</string>
     <string name="goal_movements_none">Todavía no hay movimientos.</string>

@@ -11,10 +11,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +42,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.software.sello.designsystem.icon.SelloIcon
@@ -48,43 +51,94 @@ import com.software.sello.designsystem.theme.SelloMotion
 import com.software.sello.designsystem.theme.SelloTheme
 import kotlinx.coroutines.delay
 
+/** What a movement row's mark says: money in, money out, or a new value (v2 *mov-row*). */
+enum class MovementTone { In, Out, Value }
+
+/** The goal's balance once the movement counted, under its amount: "saldo 1.310.000". */
+@Immutable
+data class MovementBalance(val label: String, val value: MoneyTextValue)
+
+/**
+ * One movement (v2 *mov-row*): its mark, [title] over [detail], and the amount at the end
+ * with [balance] under it. A movement that earned a stamp shows the stamp as its mark.
+ * [rule] draws the line under the row; the last row of a group leaves it out.
+ */
 @Composable
 fun MovementRow(
-    kind: String,
+    title: String,
     detail: String,
     amount: MoneyTextValue,
     modifier: Modifier = Modifier,
     milestone: MilestoneSpec? = null,
     icon: SelloIcon = SelloIcon.Add,
-    annotation: String? = null
+    annotation: String? = null,
+    tone: MovementTone = MovementTone.In,
+    amountColor: Color = Color.Unspecified,
+    balance: MovementBalance? = null,
+    rule: Boolean = true
 ) {
+    val colors = SelloTheme.colors
     Row(
-        modifier.fillMaxWidth().padding(vertical = 8.dp),
+        modifier
+            .fillMaxWidth()
+            .drawBehind {
+                if (rule) {
+                    val y = size.height - 0.5.dp.toPx()
+                    drawLine(colors.rule, Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
+                }
+            }
+            .heightIn(min = 56.dp)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        if (milestone !=
-            null
-        ) {
-            MilestonePlace(milestone)
+        if (milestone != null) {
+            MilestonePlace(milestone, diameter = 34.dp, labelSize = 9.sp)
         } else {
-            Icon(icon.painter(), null, tint = SelloTheme.colors.inkSoft)
+            val (fill, ink) = when (tone) {
+                MovementTone.In -> colors.semantic.gainSoft to colors.semantic.gain
+                MovementTone.Out -> colors.paperDim to colors.inkSoft
+                MovementTone.Value -> colors.brandSoft to colors.onBrandSoft
+            }
+            Box(
+                Modifier.size(32.dp).background(fill, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon.painter(), null, Modifier.size(18.dp), tint = ink)
+            }
         }
         Column(Modifier.weight(1f)) {
-            Text(kind, fontWeight = FontWeight.W800)
+            Text(title, fontWeight = FontWeight.W800)
             Text(
                 detail,
                 style = MaterialTheme.typography.labelSmall,
-                color = SelloTheme.colors.inkSoft
+                color = colors.inkSoft
             )
             annotation?.let {
                 Text(
                     it,
                     style = MaterialTheme.typography.labelSmall,
-                    color = SelloTheme.colors.semantic.gain
+                    fontWeight = FontWeight.W700,
+                    color = colors.semantic.gain
                 )
             }
-            MoneyText(amount)
+        }
+        Column(horizontalAlignment = Alignment.End) {
+            MoneyText(amount, color = amountColor, fontWeight = FontWeight.W800)
+            balance?.let {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        it.label + " ",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = colors.inkSoft
+                    )
+                    MoneyText(
+                        it.value,
+                        color = colors.inkSoft,
+                        textStyle = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
         }
     }
 }
@@ -101,7 +155,8 @@ data class MilestoneSpec(
 )
 
 /**
- * One stamp place. [diameter] is 60dp on cards and 66dp in the celebration; [ink] replaces the
+ * One stamp place. [diameter] is 60dp on cards, 66dp in the celebration and 34dp, with
+ * a smaller [labelSize], in a movement row; [ink] replaces the
  * state's colour where the place sits on green. [land] brings an earned stamp down once,
  * after [landDelayMillis] so stamps earned together come down in turn; [relight] lights a
  * stamp earned again from its kept ink instead. Reduced motion shows it at once.
@@ -114,7 +169,8 @@ fun MilestonePlace(
     diameter: Dp = 60.dp,
     ink: Color? = null,
     relight: Boolean = false,
-    landDelayMillis: Long = 0
+    landDelayMillis: Long = 0,
+    labelSize: TextUnit = 14.sp
 ) {
     val colors = SelloTheme.colors
     val reduced = SelloTheme.reducedMotion
@@ -194,7 +250,8 @@ fun MilestonePlace(
                         }
                     )
                 )
-                if (earned) {
+                // A small stamp, as in a movement row, has the edge only.
+                if (earned && diameter >= DOUBLE_RING_MIN) {
                     drawCircle(
                         color,
                         radius = size.minDimension / 2 - edge - 3.dp.toPx() - 0.75.dp.toPx(),
@@ -215,7 +272,7 @@ fun MilestonePlace(
         ) {
             Text(
                 spec.label,
-                style = SelloTheme.type.stampSmall.copy(fontSize = 14.sp),
+                style = SelloTheme.type.stampSmall.copy(fontSize = labelSize),
                 color = if (spec.state == MilestoneState.Empty &&
                     ink == null
                 ) {
@@ -232,6 +289,8 @@ fun MilestonePlace(
 }
 
 private const val KEPT_ALPHA = 0.42f
+
+private val DOUBLE_RING_MIN = 48.dp
 
 /** Between stamps earned together, as on the v2 celebrations page. */
 private const val LAND_STAGGER_MILLIS = 160L

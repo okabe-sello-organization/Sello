@@ -256,6 +256,57 @@ class GoalsRenderModelTest {
     }
 
     @Test
+    fun mt40EachMovementCarriesTheBalanceAndEachMonthItsSignedNet() {
+        val viaje = viaje().apply { retiro(400_000, day(10, 20), "Arreglo del carro") }
+
+        val goal = detail(viaje)
+
+        // 750.000; + 960.000 = 1.710.000; − 400.000 = 1.310.000. Newest first.
+        assertEquals(
+            listOf("1.310.000", "1.710.000", "750.000"),
+            goal.movements.map { it.balance.digits }
+        )
+        assertEquals(MoneySign.None, goal.movements.first().balance.sign)
+        // October: 960.000 − 400.000 = 560.000; September: 750.000.
+        assertEquals(
+            mapOf(
+                YearMonth.of(2026, 10) to (MoneySign.Plus to "560.000"),
+                YearMonth.of(2026, 9) to (MoneySign.Plus to "750.000")
+            ),
+            goal.movementMonths.mapValues { (_, net) -> net.sign to net.digits }
+        )
+    }
+
+    @Test
+    fun mt42ARetiroDatedBeforeItsAporteShowsABalanceBelowZero() {
+        val goal = detail(
+            Goals(4, "Moto", 3_000_000, day(9, 1)).apply {
+                aporte(500_000, day(10, 10))
+                retiro(300_000, day(10, 1))
+            }
+        )
+
+        // By date: 1 oct −300.000, then 10 oct +500.000 = 200.000. Newest first.
+        assertEquals(
+            listOf(MoneySign.None to "200.000", MoneySign.Minus to "300.000"),
+            goal.movements.map { it.balance.sign to it.balance.digits }
+        )
+    }
+
+    @Test
+    fun aMonthWithMoreTakenOutThanPutInShowsItsNetWithAMinus() {
+        val goal = detail(
+            Goals(5, "Moto", 3_000_000, day(9, 1)).apply {
+                aporte(500_000, day(9, 10))
+                retiro(300_000, day(10, 2))
+            }
+        )
+
+        val october = goal.movementMonths.getValue(YearMonth.of(2026, 10))
+        assertEquals(MoneySign.Minus to "300.000", october.sign to october.digits)
+    }
+
+    @Test
     fun aportesPorMesRunFromTheGoalsFirstMonthToThisMonth() {
         val goal = detail(viaje())
 

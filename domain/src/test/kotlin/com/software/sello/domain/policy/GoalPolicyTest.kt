@@ -632,6 +632,87 @@ class GoalPolicyTest {
         )
     }
 
+    // --- The movement list (MT40–MT42) ---
+
+    private fun Recorder.ledger(): List<Pair<Long, Long>> =
+        GoalPolicy.ledger(history()).valueOrFail().lines
+            .map { it.movement.amount.money.minorUnits to it.balance.minorUnits }
+
+    @Test
+    fun mt40EachRowShowsTheBalanceOnceItCountedAndEachMonthItsNet() {
+        val goal = viaje()
+        goal.aporte(200_000, day(5, 2))
+        goal.aporte(250_000, day(6, 2))
+        goal.aporte(260_000, day(7, 2))
+        goal.aporte(300_000, day(8, 2))
+        goal.aporte(350_000, day(9, 2))
+        goal.aporte(350_000, day(10, 2))
+        goal.retiro(400_000, day(10, 20))
+
+        val ledger = GoalPolicy.ledger(goal.history()).valueOrFail()
+
+        assertEquals(
+            listOf(
+                1_310_000L,
+                1_710_000L,
+                1_360_000L,
+                1_010_000L,
+                710_000L,
+                450_000L,
+                200_000L
+            ),
+            ledger.lines.map { it.balance.minorUnits }
+        )
+        assertEquals(GoalMovementKind.Withdrawal, ledger.lines.first().movement.kind)
+        assertEquals(
+            mapOf(
+                YearMonth.of(2026, 5) to Money.cop(200_000),
+                YearMonth.of(2026, 6) to Money.cop(250_000),
+                YearMonth.of(2026, 7) to Money.cop(260_000),
+                YearMonth.of(2026, 8) to Money.cop(300_000),
+                YearMonth.of(2026, 9) to Money.cop(350_000),
+                YearMonth.of(2026, 10) to Money.cop(-50_000)
+            ),
+            ledger.months
+        )
+    }
+
+    @Test
+    fun mt41RowsGoByDateAndTheLaterRecordedFirstOnTheSameDay() {
+        val goal = viaje()
+        goal.aporte(500_000, day(10, 10))
+        goal.aporte(300_000, day(10, 1))
+        goal.aporte(100_000, day(10, 12))
+        goal.aporte(200_000, day(10, 12))
+
+        assertEquals(
+            listOf(
+                200_000L to 1_100_000L,
+                100_000L to 900_000L,
+                500_000L to 800_000L,
+                300_000L to 300_000L
+            ),
+            goal.ledger()
+        )
+    }
+
+    @Test
+    fun mt42ARetiroDatedBeforeTheAporteThatPaidForItShowsItsBalanceBelowZero() {
+        val goal = viaje()
+        goal.aporte(500_000, day(10, 10))
+        goal.retiro(300_000, day(10, 1))
+
+        assertEquals(listOf(500_000L to 200_000L, 300_000L to -300_000L), goal.ledger())
+    }
+
+    @Test
+    fun aGoalWithoutMovementsHasAnEmptyList() {
+        val ledger = GoalPolicy.ledger(viaje().history()).valueOrFail()
+
+        assertEquals(emptyList<Any>(), ledger.lines)
+        assertEquals(emptyMap<YearMonth, Money>(), ledger.months)
+    }
+
     @Test
     fun activeGoalsGoHighestCompletionFirstAndCompletedGoalsLastNewestFirst() {
         val over = standing(1, 3_060_000, 3_000_000)
