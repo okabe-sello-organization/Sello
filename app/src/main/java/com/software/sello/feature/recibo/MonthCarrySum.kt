@@ -85,7 +85,8 @@ private fun CarrySumCaption(figures: CarryFigures) {
         CarryDirection.Deficit -> colors.semantic.loss
         CarryDirection.Zero -> colors.inkSoft
     }
-    val word = stringResource(if (deficit) R.string.carry_sum_deficit else R.string.carry_sum_surplus)
+    val word =
+        stringResource(if (deficit) R.string.carry_sum_deficit else R.string.carry_sum_surplus)
     val spoken = stringResource(
         if (deficit) R.string.carry_sum_spoken_deficit else R.string.carry_sum_spoken_surplus,
         figures.base.spoken,
@@ -94,11 +95,12 @@ private fun CarrySumCaption(figures: CarryFigures) {
     val text = buildAnnotatedString {
         append(stringResource(R.string.carry_sum_base, figures.base.text()))
         append(' ')
+        // Kept together: a wrap never leaves the sign at the end of a line.
         withStyle(SpanStyle(color = ink, fontWeight = FontWeight.W800)) {
             append(if (deficit) '−' else '+')
-            append(' ')
+            append(NO_BREAK)
             appendInlineContent(BADGE, "↻")
-            append(' ')
+            append(NO_BREAK)
             append(figures.carryMagnitude.digits)
         }
         append(' ')
@@ -123,6 +125,8 @@ private fun CarrySumCaption(figures: CarryFigures) {
 }
 
 private const val BADGE = "carry-badge"
+
+private const val NO_BREAK = '\u00A0'
 
 private const val BADGE_SIZE = 1.15f
 

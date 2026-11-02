@@ -161,8 +161,7 @@ internal fun CategoryCell(
                         MoneySign.None -> colors.inkSoft
                     },
                     fontWeight = FontWeight.W800,
-                    textStyle = MaterialTheme.typography.labelSmall,
-                    singleLine = true
+                    textStyle = MaterialTheme.typography.labelSmall
                 )
             } else if (amountCaption != null) {
                 Text(

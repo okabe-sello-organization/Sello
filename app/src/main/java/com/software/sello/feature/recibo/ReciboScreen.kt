@@ -496,9 +496,7 @@ private fun CategoriesSlip(
                 over = category.over,
                 amountCaption = when {
                     category.unlimited -> stringResource(R.string.recibo_cell_unlimited_caption)
-
                     category.limit == null -> stringResource(R.string.recibo_cell_spent_caption)
-
                     else -> null
                 },
                 staggerIndex = index,

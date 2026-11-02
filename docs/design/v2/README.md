@@ -31,7 +31,7 @@ synthetic.
 | [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice; the list redesigned by the owner 2026-10-26 (SELLO-122) |
 | [Pagos fijos en la categoría](categoria-fijos.html) | Approved 2026-10-30 by the owner (SELLO-135, E24): category detail counts its own payments still to come and lists its fixed payments |
 | [Ajustar presupuesto](ajustar.html) | Locked 2026-10-26 by the owner: the screen behind Recibo's **Ajustar presupuesto ›** and its limit sheet |
-| [Arrastre](arrastre.html) | Delegated by the owner 2026-10-28 for SELLO-041 (E09, signed carry-over); approved by merging it: turning carry on, the breakdowns, dropping a balance, corrections, the catch-up lines, an uncomputable carry, Resumen |
+| [Arrastre](arrastre.html) | Delegated by the owner 2026-10-28 for SELLO-041 (E09, signed carry-over); approved by merging it: turning carry on, the breakdowns, dropping a balance, corrections, the catch-up lines, an uncomputable carry, Resumen. Its Recibo cards are replaced by the **Recibo** bullet under Arrastre below (owner, 2026-11-02) |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
 
 ## Recibo / Home

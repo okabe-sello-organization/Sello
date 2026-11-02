@@ -115,11 +115,7 @@ fun carryWords(figures: CarryFigures): String = when (figures.direction) {
 
 /** Base, carry, capacity and spent as receipt lines, with [footnote] under them. */
 @Composable
-fun CarryBreakdownSection(
-    figures: CarryFigures,
-    footnote: String?,
-    modifier: Modifier = Modifier
-) {
+fun CarryBreakdownSection(figures: CarryFigures, footnote: String?, modifier: Modifier = Modifier) {
     val words = carryWords(figures)
     val lines = buildList {
         add(CarryLine(stringResource(R.string.carry_base), figures.base))
