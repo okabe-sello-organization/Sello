@@ -2,6 +2,7 @@ package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -112,6 +113,19 @@ class CategoryFixedScreenTest {
 
         assertEquals(listOf("2", "1"), opened)
         assertEquals(1, all)
+    }
+
+    @Test
+    fun theLinkStartsAtTheSameEdgeAsTheSlipsContent() {
+        show(ready)
+        rule.onNodeWithTag(CATEGORY_DETAIL_FIXED_ALL_TAG).performScrollTo()
+
+        val title = rule.onNodeWithText("Pagos fijos", useUnmergedTree = true)
+            .getUnclippedBoundsInRoot().left
+        val link = rule.onNodeWithText("Ver todos los pagos fijos", useUnmergedTree = true)
+            .getUnclippedBoundsInRoot().left
+
+        assertEquals(title, link)
     }
 
     @Test
