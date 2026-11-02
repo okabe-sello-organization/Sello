@@ -53,8 +53,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * Varios movimientos (SELLO-134): several aportes, values, retiros and dividends of one
- * investment on one receipt, saved with SELLO-129's [RecordInvestmentMovements] as one
- * operation, or not at all. Each line has its own type, amount, date and note; a new
+ * investment on one receipt, saved with [RecordInvestmentMovements] (SELLO-129, SELLO-140)
+ * as one operation, or not at all. Each line has its own type, amount, date and note; a new
  * line copies the type and date of the one above. Lines without an amount are left out.
  * The lines, the highlighted one and the operation in flight live in [saved], so a
  * restored receipt opens as it was left and only asks about an operation it had sent,
@@ -555,6 +555,7 @@ class InvestmentMovementsViewModel(
         val sending = draft.value.lines.filter { typedMoney(it, investment.currency) != null }
         val lines = sending.map { line ->
             InvestmentMovementLine(
+                investmentId = investment.id,
                 kind = line.kind ?: return,
                 amount = amount(line, investment.currency) ?: return,
                 date = line.date,
@@ -570,8 +571,7 @@ class InvestmentMovementsViewModel(
                         RecordInvestmentMovements(
                             operation,
                             read.generation,
-                            investment.id,
-                            investment.version,
+                            mapOf(investment.id to investment.version),
                             lines
                         )
                     )

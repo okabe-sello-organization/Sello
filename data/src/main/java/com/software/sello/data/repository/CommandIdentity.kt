@@ -462,11 +462,23 @@ internal val InvestmentCommand.kind: OperationKind
 private val InvestmentAmount.fields: List<String>
     get() = listOf(money.minorUnits.toString(), money.currency.code)
 
-/** Movement kinds by their stored key, so renaming the enum never changes an identity. */
+/**
+ * Movement kinds by their stored key, so renaming the enum never changes an identity. A
+ * receipt of movements is format 2 (SELLO-140): its expected versions by investment ID,
+ * then its lines, each with its investment. Format 1 was SELLO-129's one investment: a
+ * receipt stored then never equals a format-2 command, so it answers only through `find`;
+ * the same operation sent again is an operation conflict, never a replay.
+ */
 internal fun inputDigest(command: InvestmentCommand): String {
     val subject = when (command) {
         is InvestmentEdit ->
             listOf(command.investmentId.value, command.expectedVersion.toString())
+
+        // Sorted, so the same versions given in another order are the same input.
+        is RecordInvestmentMovements ->
+            listOf(command.expectedVersions.size.toString()) +
+                command.expectedVersions.entries.sortedBy { it.key.value }
+                    .flatMap { (id, version) -> listOf(id.value, version.toString()) }
 
         is CreateInvestment, is RestoreInvestmentMovement, is SetUsdRate -> emptyList()
     }
@@ -498,7 +510,7 @@ internal fun inputDigest(command: InvestmentCommand): String {
         // The count first, then each line in order: the same lines in another order differ.
         is RecordInvestmentMovements ->
             listOf(command.lines.size.toString()) + command.lines.flatMap { line ->
-                listOf(line.kind.storedKey, line.date.toString()) +
+                listOf(line.investmentId.value, line.kind.storedKey, line.date.toString()) +
                     line.amount.fields + line.note.fields
             }
 
@@ -517,7 +529,8 @@ internal fun inputDigest(command: InvestmentCommand): String {
 
         is SetUsdRate -> listOf(command.rate.hundredths.toString(), command.date.toString())
     }
-    val head = listOf(command.kind.key, "1", command.generation.toString())
+    val format = if (command is RecordInvestmentMovements) "2" else "1"
+    val head = listOf(command.kind.key, format, command.generation.toString())
     return digest(*(head + subject + change).toTypedArray())
 }
 
