@@ -35,8 +35,10 @@ sealed interface MovementLineRefusal {
 }
 
 /**
- * One line of Varios movimientos. [kind] is null until a type is chosen; [amount] is what
- * was typed, null while nothing is, and [valid] when the type may hold it.
+ * One line of Varios movimientos. [investmentId] is null until an investment is chosen and
+ * [investmentName] while it is not known (none chosen, or [investmentGone]); [kind] is null
+ * until a type is chosen; [amount] is what was typed, in the investment's currency ([usd]),
+ * null while nothing is, and [valid] when the type may hold it.
  */
 @Immutable
 data class MovementLineModel(
@@ -46,16 +48,43 @@ data class MovementLineModel(
     val valid: Boolean,
     val date: LocalDate,
     val note: String,
-    val refusal: MovementLineRefusal? = null
+    val refusal: MovementLineRefusal? = null,
+    val investmentId: String? = null,
+    val investmentName: String? = null,
+    val usd: Boolean = false,
+    /** The chosen investment was deleted meanwhile: the line asks for another. */
+    val investmentGone: Boolean = false
 ) {
     /** Lines without an amount are left out of the receipt. */
     val typed: Boolean get() = amount != null
+
+    /** Typed with no investment: it blocks the receipt. */
+    val missingInvestment: Boolean get() = typed && investmentId == null
 
     /** Typed with no type: it blocks the receipt. */
     val missingKind: Boolean get() = typed && kind == null
 
     /** Typed with a type that may not hold it, such as an aporte of 0. */
     val invalidAmount: Boolean get() = typed && kind != null && !valid
+
+    /** Typed for an investment that no longer exists. */
+    val lost: Boolean get() = typed && investmentGone
+}
+
+/**
+ * **Aportado** (aportes − retiros) of the receipt (SELLO-142, E19). [One] while every line
+ * counted is in one currency; with COP and USD lines [InPesos] at today's rate, or the
+ * [Parts] in each currency when there is no rate, never a made-up figure.
+ */
+@Immutable
+sealed interface ContributedTotal {
+    data class One(val amount: MoneyTextValue) : ContributedTotal
+
+    /** In pesos, the dollars converted at [rate] (as the app writes rates), dated [rateDate]. */
+    data class InPesos(val amount: MoneyTextValue, val rate: String, val rateDate: LocalDate) :
+        ContributedTotal
+
+    data class Parts(val pesos: MoneyTextValue, val dollars: MoneyTextValue) : ContributedTotal
 }
 
 /** Why the receipt was not saved. None of these means anything was. */
@@ -68,7 +97,7 @@ enum class InvestmentMovementsError {
     /** The data was replaced meanwhile (restore or reset). */
     DataChanged,
 
-    /** The investment no longer exists. */
+    /** An investment of the receipt no longer exists; its lines ask for another. */
     Gone,
 
     /** The investment changed since it was read; it is read again and can be sent again. */
@@ -76,7 +105,7 @@ enum class InvestmentMovementsError {
 }
 
 /**
- * Varios movimientos (v2 *Anotar varios*): several movements of one investment on one
+ * Varios movimientos (v2 *Anotar varios*): movements of one or several investments on one
  * receipt, saved together or not at all. [highlighted] is always a line of [lines], which
  * hold 1 to 30. [removed] is the line just removed while it can still be put back.
  */
@@ -86,12 +115,12 @@ data class InvestmentMovementsState(
     val loadFailed: Boolean = false,
     /** The last read failed: the receipt works from the investment as it was read before. */
     val stale: Boolean = false,
-    val name: String = "",
-    val usd: Boolean = false,
+    /** The investments a line may choose, as the chips offer them. */
+    val investments: List<InvestmentChoice> = emptyList(),
     val lines: List<MovementLineModel>,
     val highlighted: Int = 0,
-    /** Aportes − retiros of the lines, in the investment's currency. */
-    val contributed: MoneyTextValue?,
+    /** Aportes − retiros of the lines; null when it does not fit. */
+    val contributed: ContributedTotal?,
     val today: LocalDate,
     val datePickerOpen: Boolean = false,
     val composerOpen: Boolean = false,
@@ -107,12 +136,17 @@ data class InvestmentMovementsState(
 ) {
     val current: MovementLineModel get() = lines[highlighted]
 
+    /** The highlighted line is typed in dollars, with the comma key. */
+    val usd: Boolean get() = current.usd
+
     /** Lines with an amount: the ones a save sends. */
     val counted: Int get() = lines.count { it.typed }
 
+    val missingInvestments: Int get() = lines.count { it.missingInvestment }
+
     val missingKinds: Int get() = lines.count { it.missingKind }
 
-    val refused: Int get() = lines.count { it.refusal != null || it.invalidAmount }
+    val refused: Int get() = lines.count { it.refusal != null || it.invalidAmount || it.lost }
 
     val full: Boolean get() = lines.size >= MAX_LINES
 
@@ -124,15 +158,15 @@ data class InvestmentMovementsState(
     val canAdd: Boolean get() = editable && !full && current.typed
 
     val canSubmit: Boolean
-        get() = editable && counted > 0 && missingKinds == 0 && refused == 0
+        get() = editable && counted > 0 && missingInvestments == 0 && missingKinds == 0 &&
+            refused == 0
 
     companion object {
         const val MAX_LINES = 30
 
         private val Blocking = setOf(
             InvestmentMovementsError.Unknown,
-            InvestmentMovementsError.DataChanged,
-            InvestmentMovementsError.Gone
+            InvestmentMovementsError.DataChanged
         )
     }
 }
@@ -151,6 +185,9 @@ sealed interface InvestmentMovementsAction {
     data object RemovalShown : InvestmentMovementsAction
 
     data class Kind(val kind: InvestmentMovementKind) : InvestmentMovementsAction
+
+    /** The highlighted line's investment. */
+    data class InvestmentPicked(val id: String) : InvestmentMovementsAction
 
     data class Digit(val digit: Int) : InvestmentMovementsAction
 

@@ -1,7 +1,10 @@
 package com.software.sello.feature.investments
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
@@ -153,9 +156,32 @@ class InversionesScreenshotTest {
 
     private fun capture(look: Look) {
         rule.showSello(look) {
-            InversionesScreen(shown, {}, dateLabels(), PaddingValues(16.dp))
+            InversionesScreen(
+                shown,
+                {},
+                dateLabels(),
+                PaddingValues(16.dp),
+                onRecordSeveral = {}
+            )
         }
         rule.captureStill("src/test/screenshots/inversiones-${look.label}.png")
+    }
+
+    /** The list's foot: Anotar varios, under the last investment (SELLO-142). */
+    @Test
+    fun foot() {
+        rule.showSello(Look()) {
+            InversionesScreen(
+                shown,
+                {},
+                dateLabels(),
+                PaddingValues(16.dp),
+                onRecordSeveral = {}
+            )
+        }
+        rule.onNodeWithTag(INVERSIONES_LIST_TAG)
+            .performScrollToNode(hasTestTag(INVERSIONES_RECORD_SEVERAL_TAG))
+        rule.captureStill("src/test/screenshots/inversiones-foot-cobalto-light.png")
     }
 
     @Test
