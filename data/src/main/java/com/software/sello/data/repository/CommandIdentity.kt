@@ -3,6 +3,7 @@ package com.software.sello.data.repository
 import com.software.sello.data.mapper.storedKey
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.EntryOrigin
+import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InvestmentAmount
 import com.software.sello.domain.model.Money
@@ -347,18 +348,32 @@ private val Note?.fields: List<String>
     get() = listOf(if (this == null) "0" else "1", this?.value.orEmpty())
 
 /**
+ * The one goal and version of a receipt whose every line is that goal's, or null. Such a
+ * receipt keeps the identity SELLO-128's command gave it (format 1, the goal and version
+ * as its subject, no goal on a line), so an operation that command stored still replays.
+ */
+private val RecordGoalMovements.oneGoal: Map.Entry<GoalId, Long>?
+    get() = versions.entries.singleOrNull()?.takeIf { only ->
+        lines.all { it.goalId == only.key }
+    }
+
+/**
  * [CompleteGoal.undoFor] is how long Deshacer is offered, not what was asked: it is left out.
- * [RecordGoalMovements] is format 2 since its lines name their goals (SELLO-139); its
- * versions are written by goal identifier, so the map's order never changes the identity.
+ * A [RecordGoalMovements] of several goals is format 2 (SELLO-139): each line's goal and
+ * each goal's version, written by goal identifier so the map's order never changes it.
  */
 internal fun inputDigest(command: GoalCommand): String {
+    val oneGoal = (command as? RecordGoalMovements)?.oneGoal
     val subject = when (command) {
         is GoalEdit -> listOf(command.goalId.value, command.expectedVersion.toString())
 
-        is RecordGoalMovements ->
+        is RecordGoalMovements -> if (oneGoal != null) {
+            listOf(oneGoal.key.value, oneGoal.value.toString())
+        } else {
             listOf(command.versions.size.toString()) +
                 command.versions.entries.sortedBy { it.key.value }
                     .flatMap { listOf(it.key.value, it.value.toString()) }
+        }
 
         is CreateGoal, is RestoreGoalMovement, is UndoGoalCompletion, is FeatureGoal -> emptyList()
     }
@@ -384,8 +399,8 @@ internal fun inputDigest(command: GoalCommand): String {
         // order are another receipt, since the IDs come back in line order.
         is RecordGoalMovements -> listOf(command.lines.size.toString()) +
             command.lines.flatMap {
-                listOf(it.goalId.value, it.kind.name, it.date.toString()) +
-                    it.amount.fields + it.note.fields
+                listOfNotNull(it.goalId.value.takeIf { oneGoal == null }) +
+                    listOf(it.kind.name, it.date.toString()) + it.amount.fields + it.note.fields
             }
 
         is EditGoalMovement -> listOf(
@@ -405,7 +420,7 @@ internal fun inputDigest(command: GoalCommand): String {
 
         is FeatureGoal -> listOf(command.goalId.value)
     }
-    val format = if (command is RecordGoalMovements) "2" else "1"
+    val format = if (command is RecordGoalMovements && oneGoal == null) "2" else "1"
     val head = listOf(command.kind.key, format, command.generation.toString())
     return digest(*(head + subject + change).toTypedArray())
 }

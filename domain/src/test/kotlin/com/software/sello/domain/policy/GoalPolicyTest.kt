@@ -1072,7 +1072,7 @@ class GoalPolicyTest {
     }
 
     @Test
-    fun aRetiroChecksOnlyAgainstItsOwnGoalNeverAnotherGoalsAporte() {
+    fun theSplitGivesEachGoalOnlyItsOwnLinesSoARetiroNeverUsesAnotherGoalsAporte() {
         val lines = listOf(
             aporteLine(500_000, day(9, 1), viajeId),
             retiroLine(200_000, day(9, 10), motoId)
