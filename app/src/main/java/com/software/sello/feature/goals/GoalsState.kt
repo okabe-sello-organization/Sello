@@ -131,6 +131,8 @@ data class GoalDetailModel(
     val months: List<MonthAportes>,
     /** Newest first. */
     val movements: List<MovementModel>,
+    /** Each month's net change (aportes less retiros), for the full list's month lines. */
+    val movementMonths: Map<YearMonth, MoneyTextValue>,
     /** Whether it is the goal Recibo shows, chosen or by the fallback rule. */
     val featured: Boolean,
     /** The history and the goal as read, for a command to name what it was prepared against. */
@@ -167,12 +169,16 @@ data class MonthAportes(
     val current: Boolean
 )
 
-/** A contribution or withdrawal; [stamps] are the places it earned, in order. */
+/**
+ * A contribution or withdrawal; [stamps] are the places it earned, in order. [balance] is
+ * what the goal held once it counted, in the list's order (MT40–MT42).
+ */
 @Immutable
 data class MovementModel(
     val id: String,
     val kind: GoalMovementKind,
     val amount: MoneyTextValue,
+    val balance: MoneyTextValue,
     val date: LocalDate,
     val note: String?,
     val stamps: List<GoalPlace>

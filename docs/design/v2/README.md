@@ -338,7 +338,10 @@ The v1.1 Metas screen, kept close to the original on purpose, in its own tab.
 - **Movimientos:** contributions and withdrawals, newest first. A contribution that
   earned a stamp shows the stamp in place of its + icon, with "Ganaste el sello del
   50 %". **Retirar dinero** sits in this card's header; a withdrawal is its own entry and
-  the history is kept.
+  the history is kept. Each row (owner, 2026-11-02) ends with its amount, green for an
+  aporte, and the goal's saldo under it, worked out down the list by date (MT40–MT42); a
+  note is the row's title, with its kind and day under it. The full list (after **Ver los
+  N**) gets a line per month with its net.
 - **Dock:** green **Aportar a esta meta**.
 - **After a withdrawal below an earned stamp,** the stamp stays, faded, with "El sello del
   50 % sigue siendo tuyo: lo lograste en octubre." Percentage and bar show the honest

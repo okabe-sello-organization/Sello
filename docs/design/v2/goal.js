@@ -7,16 +7,18 @@ const GOAL = { name: "Viaje a la costa", icon: "flight", target: 3000000, date: 
 const MONTHS = [["May", 200000], ["Jun", 250000], ["Jul", 260000], ["Ago", 300000], ["Sep", 350000], ["Oct", 350000]];
 
 const SCENES = {
-  normal:   { saved: 1710000, pct: 57, reached: [25, 50], movs: [["in", "Aporte", "vie 2 oct", 350000, "50 %"], ["in", "Aporte", "mié 2 sep", 350000], ["in", "Aporte", "sáb 2 ago", 300000, "25 %"], ["in", "Aporte", "jue 2 jul", 260000]] },
+  normal:   { saved: 1710000, pct: 57, reached: [25, 50], movs: [["in", "Aporte", "vie 2 oct", 350000, "50 %", null, 1710000], ["in", "Aporte", "mié 2 sep", 350000, null, null, 1360000], ["in", "Aporte", "dom 2 ago", 300000, "25 %", null, 1010000], ["in", "Aporte", "jue 2 jul", 260000, null, null, 710000]] },
   // A withdrawal of 400.000 on 20 Oct takes the goal from 57 % to 43 %, below the 50 % stamp.
   // Owner decision K: an earned stamp stays (faded) after a withdrawal.
   keep:     { saved: 1310000, pct: 43, reached: [25], kept: [50], withdrawal: true },
   // Vacunas de Luna: target 400.000, four aportes of 100.000; marked lograda on mar 30 sep.
   done:     { saved: 400000, target: 400000, pct: 100, reached: [25, 50, 75, 100], done: true,
               months: [["Jul", 100000], ["Ago", 100000], ["Sep", 200000]], max: 240000,
-              movs: [["in", "Aporte", "mar 30 sep", 100000], ["in", "Aporte", "lun 15 sep", 100000, "75 %"], ["in", "Aporte", "vie 15 ago", 100000, "50 %"], ["in", "Aporte", "mar 15 jul", 100000, "25 %"]] },
+              movs: [["in", "Aporte", "mié 30 sep", 100000, null, null, 400000], ["in", "Aporte", "mar 15 sep", 100000, "75 %", null, 300000], ["in", "Aporte", "sáb 15 ago", 100000, "50 %", null, 200000], ["in", "Aporte", "mié 15 jul", 100000, "25 %", null, 100000]] },
 };
-const WITHDRAWAL = ["out", "Retiro", "lun 20 oct", -400000, null, "Arreglo del carro"];
+const WITHDRAWAL = ["out", "Retiro", "mar 20 oct", -400000, null, "Arreglo del carro", 1310000];
+// The full list (Ver los 7): May and June's aportes too, under a line per month with its net.
+const EARLIER = [["in", "Aporte", "mar 2 jun", 250000, null, null, 450000], ["in", "Aporte", "sáb 2 may", 200000, null, null, 200000]];
 
 function hero(s, o = {}) {
   const target = s.target ?? GOAL.target;
@@ -45,15 +47,25 @@ function chart(months = MONTHS, max = 420000) {
 
 // Milestones in the movement list (owner pick MR2): the contribution that earned a stamp shows
 // the stamp in place of its + icon, with "Ganaste el sello del 50 %".
+// Owner, 2026-11-02: the amount sits at the end (green for an aporte) with the goal's saldo
+// under it, worked out down the list by date (MT40–MT42); a note is the row's title, its kind
+// and day under it; the full list (after Ver los N) gets a line per month with its net.
 function movements(s, o = {}) {
-  const list = s.withdrawal ? [WITHDRAWAL, ...SCENES.normal.movs.slice(0, 3)] : s.movs ?? SCENES.normal.movs;
-  const rows = list.map(([dir, kind, date, n, stamp, note], i) => {
-    const last = i === list.length - 1 ? "last" : "";
+  const base = s.withdrawal ? [WITHDRAWAL, ...SCENES.normal.movs] : s.movs ?? SCENES.normal.movs;
+  const list = o.all ? [...base, ...EARLIER] : base.slice(0, 4);
+  const NETS = { oct: -50000, sep: 350000, ago: 300000, jul: 260000, jun: 250000, may: 200000 };
+  const NAMES = { oct: "Octubre", sep: "Septiembre", ago: "Agosto", jul: "Julio", jun: "Junio", may: "Mayo" };
+  const month = r => r[2].split(" ")[2];
+  const rows = list.map(([dir, kind, date, n, stamp, note, saldo], i) => {
+    const next = list[i + 1];
+    const last = !next || (o.all && month(next) !== month(list[i])) ? "last" : "";
+    const head = o.all && (i === 0 || month(list[i - 1]) !== month(list[i])) ? `<div class="mov-month"><span>${NAMES[month(list[i])]}</span><span>${NETS[month(list[i])] < 0 ? "" : "+"}${fmt(NETS[month(list[i])])}</span></div>` : "";
     const mark = stamp ? `<span class="mi mi-stamp">${stamp.replace(" ", "")}</span>` : `<span class="mi">${icon(dir === "out" ? "arrow_back" : "add")}</span>`;
     const sub = stamp ? `<small class="ms-line">Ganaste el sello del ${stamp}</small>` : "";
-    return `<div class="mov-row ${dir === "out" ? "out" : ""} ${last}">${mark}<span><b>${kind}</b><small>${date}${note ? ` · ${note}` : ""}</small>${sub}</span><b>${dir === "out" ? "−" : "+"}${fmt(Math.abs(n))}</b></div>`;
+    return `${head}<div class="mov-row ${dir === "out" ? "out" : ""} ${last}">${mark}<span><b>${note ?? kind}</b><small>${note ? `${kind} · ` : ""}${date}</small>${sub}</span><span class="mov-amt"><b class="${dir === "out" ? "" : "in"}">${dir === "out" ? "−" : "+"}${fmt(Math.abs(n))}</b><small>saldo ${fmt(saldo)}</small></span></div>`;
   }).join("");
-  return `<section class="slip"><div class="mov-head"><h2 class="q" style="margin:0">Movimientos</h2>${s.done ? "" : `<button class="text-btn">Retirar dinero</button>`}</div>${rows}<button class="text-btn">Ver los ${s.withdrawal ? 7 : s.done ? s.movs.length : 6}${icon("chevron_right")}</button></section>`;
+  const count = s.withdrawal ? 7 : s.done ? s.movs.length : 6;
+  return `<section class="slip"><div class="mov-head"><h2 class="q strong" style="margin:0">Movimientos</h2>${s.done ? "" : `<button class="text-btn">Retirar dinero</button>`}</div>${rows}${o.all ? "" : `<button class="text-btn">Ver los ${count}${icon("chevron_right")}</button>`}</section>`;
 }
 
 function body(scene, { state } = {}, o = {}) {
@@ -78,7 +90,8 @@ function render() {
     card("After a withdrawal", "The 50 % stamp stays, faded, with one line saying it is still yours. Progress shows the honest 43 %; the next stamp to earn is 75 %.", frame(o, body("keep", {}, o))) +
     card("Completed goal", "Read-only: four stamps, “Meta lograda el 30 sep”, the history stays. No edit, no Aportar dock, no Retirar and no star; Borrar meta in the top bar’s ⋮ (with the confirm slip) is its only action.", frame(o, body("done", {}, o), { done: true, title: "Vacunas de Luna", tall: true })) +
     card("Loading", "Skeleton slip.", frame(o, body("normal", { state: "loading" }, o), { pin: false })) +
-    card("Failed read", "Never shown as an empty goal.", frame(o, body("normal", { state: "failed" }, o), { pin: false })));
+    card("Failed read", "Never shown as an empty goal.", frame(o, body("normal", { state: "failed" }, o), { pin: false })) +
+    card("All movements (after Ver los 7)", "Owner, 2026-11-02: a line per month with its net (aportes less retiros) over that month’s rows. The short list has none. Each saldo is the one below it plus the row’s amount.", frame(o, movements(SCENES.keep, { all: true }), { tall: true })));
 }
 document.querySelectorAll(".controls select").forEach(s => s.addEventListener("change", render));
 render();

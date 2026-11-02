@@ -48,20 +48,27 @@ class GoalComponentsTest {
                     "vie 2 oct",
                     MoneyTextValue(MoneySign.Plus, "", "350.000", "más 350.000 pesos"),
                     milestone = half,
-                    annotation = "Ganaste el sello del 50 %"
+                    annotation = "Ganaste el sello del 50 %",
+                    balance = MovementBalance(
+                        "saldo",
+                        MoneyTextValue(MoneySign.None, "", "1.710.000", "1.710.000 pesos")
+                    )
                 )
                 MovementRow(
                     "Retiro",
                     "lun 20 oct",
                     MoneyTextValue(MoneySign.Minus, "", "400.000", "menos 400.000 pesos"),
                     Modifier.testTag("retiro"),
-                    icon = SelloIcon.ArrowBack
+                    icon = SelloIcon.ArrowBack,
+                    tone = MovementTone.Out,
+                    rule = false
                 )
             }
         }) { scheme ->
             rule.onNodeWithContentDescription("50 por ciento, logrado").assertExists()
             rule.onNodeWithContentDescription("más 350.000 pesos").assertExists()
             rule.onNodeWithText("Ganaste el sello del 50 %").assertExists()
+            rule.onNodeWithContentDescription("1.710.000 pesos").assertExists()
             rule.onNodeWithContentDescription("menos 400.000 pesos").assertExists()
             val stamps = rule.onAllNodesWithDescriptionEnding(", logrado")
             assertEquals(scheme, 1, stamps)

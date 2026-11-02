@@ -117,6 +117,17 @@ Goal *Viaje a la costa*, target 3.000.000, no earlier movements, unless stated. 
 | MT21 | Aporte dated 2026-10-24 | Refused: a future date |
 | MT22 | Aporte 500.000 dated 10 oct, then retiro 300.000 dated 1 oct | Accepted: 500.000 was saved when the retiro was recorded; saved 200.000 |
 
+### Movement list
+
+Each row of a goal's movements shows its balance: what the goal held once that movement
+counted, reading the list from the oldest row up.
+
+| ID | Situation | Expected |
+| --- | --- | --- |
+| MT40 | Aportes 200.000 (2 may), 250.000 (2 jun), 260.000 (2 jul), 300.000 (2 ago), 350.000 (2 sep), 350.000 (2 oct); retiro 400.000 (20 oct) | Newest first, balances 1.310.000, 1.710.000, 1.360.000, 1.010.000, 710.000, 450.000, 200.000; months: oct −50.000, sep 350.000, ago 300.000, jul 260.000, jun 250.000, may 200.000 |
+| MT41 | Aporte 500.000 dated 10 oct, then aporte 300.000 dated 1 oct; then aportes 100.000 and 200.000, both dated 12 oct | Rows by date, the later recorded first on the same day: 200.000 → 1.100.000, 100.000 → 900.000, 500.000 → 800.000, 300.000 → 300.000 |
+| MT42 | MT22: aporte 500.000 dated 10 oct, then retiro 300.000 dated 1 oct | Aporte on top with balance 200.000; the retiro shows −300.000 (**Owner**, 2026-11-02: as the list reads) |
+
 ### Completion and deletion
 
 | ID | Situation | Expected |
