@@ -59,6 +59,7 @@ import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.MoreSlip
 import com.software.sello.designsystem.component.NoteComposer
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
@@ -141,19 +142,6 @@ fun IncomeFormScreen(
             }
         },
         actions = {
-            // Anotar varios, taking what is typed so far as its first line.
-            if (severalOffered && !state.editing && !state.loading && !state.loadFailed) {
-                val description = stringResource(R.string.expense_entry_several_description)
-                FieldPill(
-                    text = stringResource(R.string.expense_entry_several),
-                    icon = SelloIcon.ReceiptLong,
-                    onClick = { onAction(IncomeFormAction.Several) },
-                    modifier = Modifier
-                        .testTag(INCOME_SEVERAL_TAG)
-                        .semantics { contentDescription = description },
-                    enabled = state.canOpenSeveral
-                )
-            }
             if (state.editing) {
                 SelloButton(
                     stringResource(R.string.expense_edit_delete),
@@ -200,6 +188,19 @@ fun IncomeFormScreen(
                     }
                 },
                 amount = { IncomeAmount(state, onAction) },
+                // Anotar varios, taking what is typed so far as its first line.
+                more = if (severalOffered && !state.editing) {
+                    {
+                        MoreSlip(
+                            text = stringResource(R.string.entry_more_income),
+                            onClick = { onAction(IncomeFormAction.Several) },
+                            modifier = Modifier.testTag(INCOME_SEVERAL_TAG),
+                            enabled = state.canOpenSeveral
+                        )
+                    }
+                } else {
+                    null
+                },
                 choices = { IncomeChoices(state, onAction) },
                 action = { IncomeAction(state, onAction) },
                 keypad = {
