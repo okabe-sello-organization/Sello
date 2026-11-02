@@ -214,12 +214,17 @@ sealed interface CorrectionNotice {
     /**
      * A receipt of [count] aportes and retiros storage confirmed: "3 movimientos anotados:
      * +130.000", [net] being aportes minus retiros. [net] is null when it could not be worked out.
+     * [celebrations] has one per goal whose stamps the receipt changed, in line order; they are
+     * said one after the other, [turn] being the one said now.
      */
     data class GoalMovementsRecorded(
         val count: Int,
         val net: MoneyTextValue?,
-        val celebration: GoalCelebration? = null
-    ) : CorrectionNotice
+        val celebrations: List<GoalCelebration> = emptyList(),
+        val turn: Int = 0
+    ) : CorrectionNotice {
+        val celebration: GoalCelebration? get() = celebrations.getOrNull(turn)
+    }
 
     /** A new target, storage confirmed, that earned or relit a stamp (rule 7, MT18). */
     data class GoalTargetChanged(val celebration: GoalCelebration) : CorrectionNotice
@@ -938,7 +943,10 @@ class Corrections(
     /** A screen reports a new aporte or retiro its receipt confirmed, read back from storage. */
     fun goalMovementRecorded(notice: CorrectionNotice.GoalMovementRecorded) = said(notice)
 
-    /** A screen reports a receipt of several aportes and retiros its receipt confirmed. */
+    /**
+     * A screen reports a receipt of several aportes and retiros its receipt confirmed. Each
+     * goal it celebrates gets the notice's time in turn.
+     */
     fun goalMovementsRecorded(notice: CorrectionNotice.GoalMovementsRecorded) = said(notice)
 
     /**
@@ -1043,6 +1051,10 @@ class Corrections(
     private fun over() {
         val list = asking.value
         if (list?.kind == CorrectionKind.Undo && !list.busy) return undoListExpired()
+        val receipt = shown.value as? CorrectionNotice.GoalMovementsRecorded
+        if (receipt != null && receipt.turn + 1 < receipt.celebrations.size) {
+            return said(receipt.copy(turn = receipt.turn + 1))
+        }
         pending = null
         shown.value = null
     }

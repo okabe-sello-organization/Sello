@@ -3,12 +3,14 @@ package com.software.sello.feature.goals
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -27,7 +29,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Aportar varios as it is drawn on the CI phone (412×914 dp): the receipt's lines scroll
- * inside it from the fifth, the button counts the lines, a refused retiro says what is
+ * inside it from the fourth, the button counts the lines, a refused retiro says what is
  * available, and an unknown outcome offers only to ask again.
  */
 @RunWith(AndroidJUnit4::class)
@@ -51,18 +53,18 @@ class GoalBulkScreenTest {
     }
 
     /**
-     * The highlighted line carries its date pill, so four lines and that one take the slip:
-     * from the fifth on the lines scroll inside it, as the approved mock draws them, and the
-     * total, the button and the pad stay where they are.
+     * The highlighted line carries its date pill and the goal chips take two rows, so two
+     * lines and the highlighted one about fill the slip: past them the lines scroll inside
+     * it, and the total, the button and the pad stay where they are.
      */
     @Test
-    fun fourLinesFitAndFromTheFifthTheyScrollInsideTheReceipt() {
-        var lines by mutableStateOf(GoalBulkSamples.lines(4))
+    fun threeLinesFillTheReceiptAndFromTheFourthTheyScrollInsideIt() {
+        var lines by mutableStateOf(GoalBulkSamples.lines(2))
         rule.showSello { GoalBulkScreen(lines) {} }
-        assertFalse(firstLineHidden(4))
+        assertFalse(firstLineHidden(2))
         val button = rule.onNodeWithTag(GOAL_BULK_SUBMIT_TAG).getUnclippedBoundsInRoot()
 
-        for (count in listOf(5, 30)) {
+        for (count in listOf(4, 30)) {
             lines = GoalBulkSamples.lines(count)
             rule.waitForIdle()
 
@@ -119,5 +121,27 @@ class GoalBulkScreenTest {
         rule.onNodeWithText("Deshacer").performClick()
 
         assertEquals(listOf<GoalBulkAction>(GoalBulkAction.UndoRemove), actions)
+    }
+
+    @Test
+    fun eachLineIsTitledWithItsGoalAndTheChipsPickTheHighlightedLinesGoal() {
+        show(GoalBulkSamples.twoGoals)
+
+        rule.onNodeWithText("Aportar varios").assertExists()
+        rule.onAllNodesWithText("Viaje a la costa", useUnmergedTree = true).assertCountEquals(3)
+        rule.onNodeWithText("Aporte · lun 12 oct", substring = true, useUnmergedTree = true)
+            .assertExists()
+        rule.onNodeWithTag("$GOAL_BULK_GOALS_TAG.g-viaje").performClick()
+
+        assertEquals(listOf<GoalBulkAction>(GoalBulkAction.GoalPicked("g-viaje")), actions)
+    }
+
+    @Test
+    fun aLineWithoutAGoalSaysSoAndTheButtonWaits() {
+        show(GoalBulkSamples.missingGoal)
+
+        rule.onNodeWithText("Falta 1 meta").assertExists()
+        rule.onNodeWithText("Elige una meta", useUnmergedTree = true).assertExists()
+        rule.onNodeWithTag(GOAL_BULK_SUBMIT_TAG).assertIsNotEnabled()
     }
 }

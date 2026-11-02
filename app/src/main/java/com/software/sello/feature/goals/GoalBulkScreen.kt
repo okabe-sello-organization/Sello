@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -34,6 +35,7 @@ import com.software.sello.designsystem.component.BulkMarkTone
 import com.software.sello.designsystem.component.BulkReceipt
 import com.software.sello.designsystem.component.BulkTotal
 import com.software.sello.designsystem.component.ButtonTone
+import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.ConfirmSlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
@@ -46,6 +48,7 @@ import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.date.DateLabels
@@ -66,10 +69,11 @@ fun GoalBulkRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit) {
 }
 
 /**
- * Aportar varios (v2 varios): the goal's name under the title, the receipt taking the free
- * height, the Aportar / Retirar chips and the note for the highlighted line, the one
- * button and the pad. Each line carries its own date, shown as a pill on the highlighted
- * line. Lines without an amount are ignored; one with an amount and no type waits.
+ * Aportar varios (v2 varios): the goal's name under the title while the lines name one
+ * goal, the receipt taking the free height, the goal chips, the Aportar / Retirar chips and
+ * the note for the highlighted line, the one button and the pad. Each line carries its own
+ * goal and date, the date shown as a pill on the highlighted line. Lines without an amount
+ * are ignored; one with an amount and no goal or no type waits.
  */
 @Composable
 fun GoalBulkScreen(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
@@ -169,6 +173,14 @@ private fun Receipt(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit, mo
             pluralStringResource(R.plurals.goal_bulk_review, state.refused, state.refused)
         )
 
+        state.missingGoals > 0 -> BulkCaption.Problem(
+            pluralStringResource(
+                R.plurals.goal_bulk_missing_goals,
+                state.missingGoals,
+                state.missingGoals
+            )
+        )
+
         state.missing > 0 -> BulkCaption.Problem(
             pluralStringResource(R.plurals.goal_bulk_missing, state.missing, state.missing)
         )
@@ -210,8 +222,9 @@ private fun Receipt(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit, mo
 }
 
 /**
- * A receipt line: an aporte in gain green with a +, a retiro neutral with a −. Its date
- * and note sit under the type, except on the [footed] line, whose date is the pill below.
+ * A receipt line titled with its goal: an aporte in gain green with a +, a retiro neutral
+ * with a −. Its type, date and note sit under the goal, except on the [footed] line, whose
+ * date is the pill below.
  */
 @Composable
 private fun bulkLine(
@@ -230,15 +243,13 @@ private fun bulkLine(
             null -> null
         },
         markTone = if (line.withdrawal == true) BulkMarkTone.Neutral else BulkMarkTone.Gain,
-        title = line.withdrawal?.let {
-            kindLabel(it)
-        } ?: stringResource(R.string.goal_bulk_no_kind),
-        titleSoft = line.withdrawal == null,
-        detail = when {
-            footed -> note
-            note != null -> stringResource(R.string.goal_movement_note, day, note)
-            else -> day
-        },
+        title = line.goalName ?: stringResource(R.string.goal_bulk_no_goal),
+        titleSoft = line.goalName == null,
+        detail = listOfNotNull(
+            line.withdrawal?.let { kindLabel(it) } ?: stringResource(R.string.goal_bulk_no_kind),
+            day.takeIf { !footed },
+            note
+        ).reduce { done, next -> stringResource(R.string.goal_movement_note, done, next) },
         amount = line.amount?.copy(
             sign = when (line.withdrawal) {
                 true -> MoneySign.Minus
@@ -253,6 +264,8 @@ private fun bulkLine(
 
             line.futureDate -> stringResource(R.string.goal_bulk_future_date)
 
+            line.missingGoal -> stringResource(R.string.goal_bulk_choose_goal)
+
             line.missingType -> stringResource(R.string.goal_bulk_choose_kind)
 
             else -> null
@@ -260,20 +273,41 @@ private fun bulkLine(
     )
 }
 
-/** Aportar or Retirar for the highlighted line, and its note. */
+/**
+ * The highlighted line's goal chips in two rows, as Anotar varios shows categories, then
+ * Aportar or Retirar and its note.
+ */
 @Composable
 private fun Choices(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             if (state.lines.size > 1) {
-                stringResource(R.string.goal_bulk_kind_line, state.highlighted + 1)
+                stringResource(R.string.goal_bulk_choices_line, state.highlighted + 1)
             } else {
-                stringResource(R.string.goal_bulk_kind)
+                stringResource(R.string.goal_bulk_choices)
             },
             Modifier.semantics { heading() },
             color = SelloTheme.colors.inkSoft,
             style = MaterialTheme.typography.titleSmall
         )
+        // Each line starts over, so the highlighted line's goal comes first.
+        key(state.line.key) {
+            val order = rememberSelectedFirst(state.goals, state.line.goalId) { it.id }
+            ChipRows(order.items.size, Modifier.testTag(GOAL_BULK_GOALS_TAG)) { index ->
+                val goal = order.items[index]
+                SelloChip(
+                    label = goal.name,
+                    selected = goal.id == state.line.goalId && state.line.goalName != null,
+                    onClick = {
+                        order.picked()
+                        onAction(GoalBulkAction.GoalPicked(goal.id))
+                    },
+                    icon = goalIcon(goal.iconKey),
+                    enabled = state.editable,
+                    modifier = Modifier.testTag("$GOAL_BULK_GOALS_TAG.${goal.id}")
+                )
+            }
+        }
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.testTag(GOAL_BULK_KINDS_TAG)
@@ -311,9 +345,7 @@ private fun Action(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
                 GoalBulkError.Unknown -> R.string.expense_entry_unknown
                 GoalBulkError.NotSaved, GoalBulkError.Refused -> R.string.goal_bulk_not_saved
                 GoalBulkError.DataChanged -> R.string.goal_movement_data_changed
-                GoalBulkError.Gone -> R.string.goal_movement_gone
-                GoalBulkError.Changed -> R.string.goal_movement_changed
-                GoalBulkError.Completed -> R.string.goal_movement_completed
+                GoalBulkError.Changed -> R.string.goal_bulk_changed
             }
 
             state.atAmountLimit -> R.string.expense_entry_amount_limit
@@ -373,6 +405,7 @@ private fun Composer(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
 const val GOAL_BULK_CLOSE_TAG = "goal.bulk.close"
 const val GOAL_BULK_RECEIPT_TAG = "goal.bulk.receipt"
 const val GOAL_BULK_DATE_TAG = "goal.bulk.date"
+const val GOAL_BULK_GOALS_TAG = "goal.bulk.goals"
 const val GOAL_BULK_KINDS_TAG = "goal.bulk.kinds"
 const val GOAL_BULK_NOTE_TAG = "goal.bulk.note"
 const val GOAL_BULK_UNDO_TAG = "goal.bulk.undo"

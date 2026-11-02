@@ -7,13 +7,18 @@ import com.software.sello.presentation.movement.MovementNoteProblem
 import java.time.LocalDate
 
 /**
- * One line of Aportar varios. [withdrawal] is null until Aportar or Retirar is chosen;
- * [amount] is present only for a valid amount. [available] is what the goal had for this
- * retiro when storage refused it; [futureDate] marks a date storage found after today.
+ * One line of Aportar varios. [goalId] is the goal it names, and [goalName] that goal's
+ * name while it is active: null until a goal is chosen, and once the goal it names was
+ * completed or deleted, so it must be chosen again. [withdrawal] is null until Aportar or
+ * Retirar is chosen; [amount] is present only for a valid amount. [available] is what its
+ * goal had for this retiro when storage refused it; [futureDate] marks a date storage found
+ * after today.
  */
 @Immutable
 data class GoalBulkLine(
     val key: String,
+    val goalId: String?,
+    val goalName: String?,
     val withdrawal: Boolean?,
     val amount: MoneyTextValue?,
     val date: LocalDate,
@@ -23,6 +28,9 @@ data class GoalBulkLine(
 ) {
     /** It has an amount but no type: it blocks saving. */
     val missingType: Boolean get() = amount != null && withdrawal == null
+
+    /** It has an amount but no active goal: it blocks saving. */
+    val missingGoal: Boolean get() = amount != null && goalName == null
 
     val refused: Boolean get() = available != null || futureDate
 }
@@ -45,27 +53,31 @@ enum class GoalBulkError {
     /** It is not known yet whether it was saved; asking again will tell. */
     Unknown,
 
-    /** The goal no longer exists. */
-    Gone,
-
-    /** The goal changed since it was read; it is read again and can be sent again. */
-    Changed,
-
-    /** A completed goal is read-only. */
-    Completed
+    /**
+     * A goal changed, was completed or deleted since it was read; the goals are read again,
+     * a line whose goal is no longer active asks for one, and the receipt can be sent again.
+     */
+    Changed
 }
 
+/** An active goal a line can name, as its chip shows it. */
+@Immutable
+data class GoalBulkChoice(val id: String, val name: String, val iconKey: String)
+
 /**
- * Aportar varios: several aportes and retiros of one goal on one receipt, each with its
- * date, saved whole or not at all. [highlighted] is the line the pad types into, always one
- * of [lines], which holds 1 to [BULK_RECEIPT_MAX_LINES]. [total] is the net (aportes −
- * retiros) of the lines with an amount and a type.
+ * Aportar varios: several aportes and retiros of one goal or several on one receipt, each
+ * line with its goal and date, saved whole or not at all. [goals] are the active goals a
+ * line can name. [goalName] is the one goal the lines name, and null once they name none or
+ * more than one. [highlighted] is the line the pad types into, always one of [lines], which
+ * holds 1 to [BULK_RECEIPT_MAX_LINES]. [total] is the net (aportes − retiros) of the lines
+ * with an amount, an active goal and a type.
  */
 @Immutable
 data class GoalBulkState(
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
     val goalName: String? = null,
+    val goals: List<GoalBulkChoice> = emptyList(),
     val lines: List<GoalBulkLine>,
     val highlighted: Int = 0,
     val total: MoneyTextValue?,
@@ -91,6 +103,8 @@ data class GoalBulkState(
 
     val missing: Int get() = lines.count { it.missingType }
 
+    val missingGoals: Int get() = lines.count { it.missingGoal }
+
     val refused: Int get() = lines.count { it.refused }
 
     val full: Boolean get() = lines.size >= BULK_RECEIPT_MAX_LINES
@@ -105,19 +119,17 @@ data class GoalBulkState(
     val canAdd: Boolean get() = editable && !full && lines.all { it.amount != null }
 
     val canSubmit: Boolean
-        get() = editable && counted > 0 && missing == 0 && refused == 0
+        get() = editable && counted > 0 && missing == 0 && missingGoals == 0 && refused == 0
 
     private companion object {
-        val Blocking = setOf(
-            GoalBulkError.Unknown,
-            GoalBulkError.DataChanged,
-            GoalBulkError.Gone,
-            GoalBulkError.Completed
-        )
+        val Blocking = setOf(GoalBulkError.Unknown, GoalBulkError.DataChanged)
     }
 }
 
 sealed interface GoalBulkAction {
+    /** The highlighted line names the goal [id]. */
+    data class GoalPicked(val id: String) : GoalBulkAction
+
     data class Kind(val withdrawal: Boolean) : GoalBulkAction
 
     data class Digit(val digit: Int) : GoalBulkAction
@@ -152,7 +164,7 @@ sealed interface GoalBulkAction {
 
     data object Submit : GoalBulkAction
 
-    /** Asks again about an unknown outcome, or reads the goal again after a failed read. */
+    /** Asks again about an unknown outcome, or reads the goals again after a failed read. */
     data object Retry : GoalBulkAction
 
     data object Back : GoalBulkAction

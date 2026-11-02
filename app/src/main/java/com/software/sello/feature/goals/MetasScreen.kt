@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
+import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.MilestoneRow
@@ -56,14 +57,16 @@ import com.software.sello.presentation.month.monthNames
 /**
  * Metas: a stamp card per active goal, highest completion first, then the completed
  * goals as rows whose LOGRADA comes down once as each first scrolls into view. Loading
- * and a failed read are never "no goals".
+ * and a failed read are never "no goals". [onBulk] (Anotar varios, with no goal chosen)
+ * sits at the foot of the active goals, and only while there is one.
  */
 @Composable
 fun MetasScreen(
     state: MetasState,
     onAction: (MetasAction) -> Unit,
     dates: DateLabels,
-    padding: PaddingValues
+    padding: PaddingValues,
+    onBulk: (() -> Unit)? = null
 ) {
     val direction = LocalLayoutDirection.current
     val spacing = SelloTheme.spacing
@@ -145,6 +148,19 @@ fun MetasScreen(
                                     state.completion is CompletionState.Failed,
                                 loading = state.completion == CompletionState.Busy,
                                 tone = ButtonTone.Gain
+                            )
+                        }
+                    }
+                }
+                if (onBulk != null && state.goals.isNotEmpty()) {
+                    item(key = METAS_BULK_TAG) {
+                        Row {
+                            SelloButton(
+                                stringResource(R.string.metas_record_several),
+                                onBulk,
+                                Modifier.testTag(METAS_BULK_TAG),
+                                kind = ButtonKind.Text,
+                                icon = SelloIcon.ReceiptLong
                             )
                         }
                     }
@@ -260,3 +276,4 @@ private fun MetasTotal(band: MetasBand) {
 const val METAS_LIST_TAG = "metas.list"
 const val METAS_TOTAL_TAG = "metas.total"
 const val METAS_CREATE_TAG = "metas.create"
+const val METAS_BULK_TAG = "metas.bulk"

@@ -1076,6 +1076,8 @@
     <string name="metas_title">Metas</string>
     <string name="metas_create">Nueva meta</string>
     <string name="metas_dock_contribute">Aportar a una meta</string>
+    <!-- Metas' foot: Aportar varios with no goal chosen, each line picking its own. -->
+    <string name="metas_record_several">Anotar varios</string>
     <string name="metas_dock_create">Crear una meta</string>
     <string name="metas_band_label">Guardado en metas</string>
     <string name="metas_band_contributed">%1$s en %2$s</string>
@@ -1183,8 +1185,12 @@
     <string name="goal_movement_not_deleted">No se borró. El movimiento sigue ahí.</string>
     <string name="goal_bulk_title">Aportar varios</string>
     <plurals name="goal_bulk_lines"><item quantity="one">%d renglón</item><item quantity="other">%d renglones</item></plurals>
-    <string name="goal_bulk_kind">Tipo</string>
-    <string name="goal_bulk_kind_line">Tipo · renglón %d</string>
+    <string name="goal_bulk_choices">Meta y tipo</string>
+    <string name="goal_bulk_choices_line">Meta y tipo · renglón %d</string>
+    <string name="goal_bulk_no_goal">Sin meta</string>
+    <string name="goal_bulk_changed">Una meta cambió mientras escribías. Revisa y vuelve a anotar.</string>
+    <string name="goal_bulk_choose_goal">Elige una meta</string>
+    <plurals name="goal_bulk_missing_goals"><item quantity="one">Falta %d meta</item><item quantity="other">Faltan %d metas</item></plurals>
     <string name="goal_bulk_no_kind">Sin tipo</string>
     <string name="goal_bulk_choose_kind">Elige Aportar o Retirar</string>
     <plurals name="goal_bulk_missing"><item quantity="one">Falta %d tipo</item><item quantity="other">Faltan %d tipos</item></plurals>

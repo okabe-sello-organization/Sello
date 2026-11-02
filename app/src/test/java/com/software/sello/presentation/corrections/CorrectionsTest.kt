@@ -428,6 +428,41 @@ class CorrectionsTest {
     }
 
     @Test
+    fun aReceiptOfSeveralGoalsCelebratesEachGoalInTurnThenGoes() = test {
+        val viaje = GoalCelebration("g", "Viaje", listOf(GoalPlace.Half), emptyList(), false)
+        val celular = GoalCelebration("h", "Celular", emptyList(), emptyList(), true)
+        val receipt = CorrectionNotice.GoalMovementsRecorded(3, null, listOf(viaje, celular))
+        corrections.goalMovementsRecorded(receipt)
+        val first = (notice as CorrectionNotice.GoalMovementsRecorded).celebration
+        advanceTimeBy(4_000)
+        runCurrent()
+        val second = (notice as CorrectionNotice.GoalMovementsRecorded).celebration
+        advanceTimeBy(3_999)
+        runCurrent()
+        val stillSecond = (notice as CorrectionNotice.GoalMovementsRecorded).celebration
+        advanceTimeBy(1)
+        runCurrent()
+
+        assertEquals(listOf(viaje, celular, celular), listOf(first, second, stillSecond))
+        assertNull(notice)
+    }
+
+    @Test
+    fun aLaterNoticeEndsTheReceiptsTurns() = test {
+        val viaje = GoalCelebration("g", "Viaje", listOf(GoalPlace.Half), emptyList(), false)
+        val celular = GoalCelebration("h", "Celular", emptyList(), emptyList(), true)
+        corrections.goalMovementsRecorded(
+            CorrectionNotice.GoalMovementsRecorded(3, null, listOf(viaje, celular))
+        )
+        advanceTimeBy(1_000)
+        corrections.updated()
+        advanceTimeBy(4_000)
+        runCurrent()
+
+        assertNull(notice)
+    }
+
+    @Test
     fun aLaterNoticeTakesThePlaceOfAConfirmedSave() = test {
         corrections.confirmed(saved)
         val first = notice

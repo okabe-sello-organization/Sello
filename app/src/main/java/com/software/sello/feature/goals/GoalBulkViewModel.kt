@@ -31,6 +31,7 @@ import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.ReceiptGoal
 import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.presentation.corrections.CorrectionNotice
@@ -61,13 +62,14 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 /**
- * Aportar varios: up to 30 aportes and retiros of one goal, each with its date, sent as
- * one [RecordGoalMovements] that records all of them or none. The draft (lines, the
- * highlighted one, an open note) and the operation in flight live in [saved]. A refused
- * retiro is marked on its line with what was available and the draft stays; an unknown
- * outcome is asked about with its own identifier before anything else is sent. A commit
- * closes the screen and the goal shows one confirmation, celebrating once what the whole
- * receipt earned.
+ * Aportar varios: up to 30 aportes and retiros, each line naming its active goal and
+ * carrying its date, sent as one [RecordGoalMovements] that records all of them or none,
+ * at the version read of every goal it names. The draft (lines, the highlighted one, an
+ * open note) and the operation in flight live in [saved]. A refused retiro is marked on its
+ * line with what its goal had available and the draft stays; an unknown outcome is asked
+ * about with its own identifier before anything else is sent. A commit closes the screen
+ * with one confirmation that celebrates, one after the other, each goal the receipt earned
+ * something for.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class GoalBulkViewModel(
@@ -82,6 +84,8 @@ class GoalBulkViewModel(
     @Serializable
     private data class LineDraft(
         val key: String,
+        /** Null until a goal is chosen; a draft stored before goals were per line has none. */
+        val goal: String? = null,
         @Serializable(with = AmountDraftSerializer::class) val amount: AmountDraft,
         val withdrawal: Boolean?,
         @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
@@ -112,16 +116,14 @@ class GoalBulkViewModel(
         val removed: Removed? = null
     )
 
-    /** Without it no goal matches, and the receipt says the goal is gone. */
+    /** The goal it was opened from, line one's goal; null when opened from the Metas list. */
     private val goalId: String? = saved[KEY_GOAL]
-
-    /** The goal every line is for; null for a route identifier that is not one. */
-    private val lineGoal: GoalId? = goalId?.let { (GoalId.of(it) as? Outcome.Success)?.value }
 
     private val drafts = SavedDraft(saved, DRAFT, Draft.serializer())
     private val submission = Submission(saved, OPERATION, ids)
 
-    private val draft = MutableStateFlow(drafts.read()?.takeIf(::wellFormed) ?: opening())
+    private val draft =
+        MutableStateFlow(drafts.read()?.takeIf(::wellFormed)?.let(::upgraded) ?: opening())
     private val progress = MutableStateFlow(Progress())
     private val retries = MutableStateFlow(0)
     private val board = retries.flatMapLatest { reads.observeBoard() }
@@ -152,6 +154,11 @@ class GoalBulkViewModel(
         val now = state.value
         val editable = now.editable
         when (action) {
+            is GoalBulkAction.GoalPicked ->
+                if (editable && now.goals.any { it.id == action.id }) {
+                    line { it.copy(goal = action.id) }
+                }
+
             is GoalBulkAction.Kind ->
                 if (editable) line { it.copy(withdrawal = action.withdrawal) }
 
@@ -223,10 +230,10 @@ class GoalBulkViewModel(
     }
 
     /**
-     * The first draft: what was typed in Aportar or Retirar becomes line one and a second
-     * line, of the same type and date, waits for the next amount; otherwise one line, of the
-     * type it was opened from, if any. A hint that is not valid is dropped, not shown as an
-     * error the person did not make.
+     * The first draft, in the goal it was opened from, if any: what was typed in Aportar or
+     * Retirar becomes line one and a second line, of the same goal, type and date, waits for
+     * the next amount; otherwise one line, of the type it was opened from, if any. A hint
+     * that is not valid is dropped, not shown as an error the person did not make.
      */
     private fun opening(): Draft {
         val today = clock.today.value.date
@@ -240,14 +247,14 @@ class GoalBulkViewModel(
         return if (amount != null) {
             Draft(
                 listOf(
-                    LineDraft("1", amount, withdrawal, date, note),
-                    LineDraft("2", AmountDraft.Empty, withdrawal, date, "")
+                    LineDraft("1", goalId, amount, withdrawal, date, note),
+                    LineDraft("2", goalId, AmountDraft.Empty, withdrawal, date, "")
                 ),
                 highlighted = 1,
                 nextKey = 3
             )
         } else {
-            Draft(listOf(LineDraft("1", AmountDraft.Empty, withdrawal, date, note)), 0, 2)
+            Draft(listOf(LineDraft("1", goalId, AmountDraft.Empty, withdrawal, date, note)), 0, 2)
         }
     }
 
@@ -260,6 +267,10 @@ class GoalBulkViewModel(
     /** A stored draft this screen could not have written is treated as none. */
     private fun wellFormed(draft: Draft): Boolean =
         draft.lines.size in 1..BULK_RECEIPT_MAX_LINES && draft.highlighted in draft.lines.indices
+
+    /** A draft stored before each line named its goal was all for the goal it opened from. */
+    private fun upgraded(draft: Draft): Draft =
+        draft.copy(lines = draft.lines.map { it.copy(goal = it.goal ?: goalId) })
 
     private fun current(): LineDraft = draft.value.lines[draft.value.highlighted]
 
@@ -296,12 +307,18 @@ class GoalBulkViewModel(
         }
     }
 
-    /** A new line at the end, with the type and date of the line above it. */
+    /** A new line at the end, with the goal, type and date of the line above it. */
     private fun add() {
         val now = draft.value
         val above = now.lines.last()
-        val line =
-            LineDraft(now.nextKey.toString(), AmountDraft.Empty, above.withdrawal, above.date, "")
+        val line = LineDraft(
+            now.nextKey.toString(),
+            above.goal,
+            AmountDraft.Empty,
+            above.withdrawal,
+            above.date,
+            ""
+        )
         progress.update { it.copy(atLimit = false) }
         change(Draft(now.lines + line, now.lines.size, now.nextKey + 1))
     }
@@ -350,8 +367,13 @@ class GoalBulkViewModel(
         is ReadState.Failed -> state.lastGood
     }
 
-    private fun summary(board: GoalBoard?): GoalSummary? =
-        board?.goals?.firstOrNull { it.history.goal.id.value == goalId }
+    /** The goals a line can name: those not completed, in the board's order. */
+    private fun active(board: GoalBoard?): List<GoalSummary> =
+        board?.goals.orEmpty().filter { it.history.goal.completedOn == null }
+
+    /** [line]'s goal, while it is active. */
+    private fun goalOf(line: LineDraft, active: List<GoalSummary>): GoalSummary? =
+        line.goal?.let { id -> active.firstOrNull { it.history.goal.id.value == id } }
 
     private fun amountOf(line: LineDraft): TransactionAmount? =
         (line.amount.toTransactionAmount() as? Outcome.Success)?.value
@@ -362,20 +384,29 @@ class GoalBulkViewModel(
         null -> null
     }
 
-    /** The lines that would be sent, with their keys, in line order. */
-    private fun sendable(draft: Draft): List<Pair<String, GoalMovementLine>> =
-        draft.lines.mapNotNull { line ->
-            val goal = lineGoal ?: return@mapNotNull null
-            val amount = amountOf(line) ?: return@mapNotNull null
-            val kind = kindOf(line) ?: return@mapNotNull null
-            line.key to GoalMovementLine(
-                goal,
-                kind,
-                amount,
-                line.date,
-                (Note.of(line.note) as? Outcome.Success)?.value
-            )
-        }
+    /**
+     * The lines that would be sent, with their keys, in line order: those with an amount, a
+     * type and a goal among [active]; with [active] null, any goal the line names.
+     */
+    private fun sendable(
+        draft: Draft,
+        active: List<GoalSummary>?
+    ): List<Pair<String, GoalMovementLine>> = draft.lines.mapNotNull { line ->
+        val goal = if (active == null) {
+            line.goal?.let { (GoalId.of(it) as? Outcome.Success)?.value }
+        } else {
+            goalOf(line, active)?.history?.goal?.id
+        } ?: return@mapNotNull null
+        val amount = amountOf(line) ?: return@mapNotNull null
+        val kind = kindOf(line) ?: return@mapNotNull null
+        line.key to GoalMovementLine(
+            goal,
+            kind,
+            amount,
+            line.date,
+            (Note.of(line.note) as? Outcome.Success)?.value
+        )
+    }
 
     /** Aportes minus retiros, of the lines with an amount and a type. */
     private fun net(lines: List<GoalMovementLine>): Money? =
@@ -397,11 +428,13 @@ class GoalBulkViewModel(
         writing: String?
     ): GoalBulkState {
         val read = readable(board)
-        val goal = summary(read)
+        val active = active(read)
         val lines = draft.lines.map { line ->
             val refusal = progress.refusals[line.key]
             GoalBulkLine(
                 key = line.key,
+                goalId = line.goal,
+                goalName = goalOf(line, active)?.history?.goal?.name?.value,
                 withdrawal = line.withdrawal,
                 amount = amountOf(line)?.let { money.format(it.money) },
                 date = line.date,
@@ -410,14 +443,22 @@ class GoalBulkViewModel(
                 futureDate = refusal == Refusal.FutureDate
             )
         }
-        val gone = read != null && (goal == null || goal.history.goal.completedOn != null)
+        val named = lines.mapNotNull { it.goalName }.distinct()
         return GoalBulkState(
             loading = board is ReadState.Loading,
             loadFailed = board is ReadState.Failed && read == null,
-            goalName = goal?.history?.goal?.name?.value,
+            goalName = named.singleOrNull(),
+            goals = active.map {
+                GoalBulkChoice(
+                    it.history.goal.id.value,
+                    it.history.goal.name.value,
+                    it.history.goal.icon.value
+                )
+            },
             lines = lines,
             highlighted = draft.highlighted,
-            total = net(sendable(draft).map { it.second })?.let { money.format(it, signed = true) },
+            total = net(sendable(draft, active).map { it.second })
+                ?.let { money.format(it, signed = true) },
             today = today,
             atAmountLimit = progress.atLimit,
             limitPulse = progress.limitPulse,
@@ -428,14 +469,7 @@ class GoalBulkViewModel(
             composerLength = SavedNoteComposer.length(writing),
             removed = progress.removed?.let { RemovedGoalLine(it.line.withdrawal) },
             busy = progress.busy,
-            error = progress.error ?: when {
-                // While an attempt is being settled, the goal's state says nothing new.
-                !gone || progress.busy || submission.pending -> null
-
-                goal == null -> GoalBulkError.Gone
-
-                else -> GoalBulkError.Completed
-            },
+            error = progress.error,
             confirmDiscard = progress.confirmDiscard,
             closed = progress.closed
         )
@@ -443,12 +477,13 @@ class GoalBulkViewModel(
 
     private fun submit() {
         val read = readable(board.value) ?: return
-        val goal = summary(read) ?: return
-        val current = draft.value
-        val sent = sendable(current)
+        val active = active(read)
+        val sent = sendable(draft.value, active)
         if (sent.isEmpty()) return
         val keys = sent.map { it.first }
         val lines = sent.map { it.second }
+        val named = lines.map { it.goalId }.toSet()
+        val goals = active.map { it.history }.filter { it.goal.id in named }
         progress.update {
             it.copy(busy = true, error = null, refusals = emptyMap(), removed = null)
         }
@@ -459,25 +494,27 @@ class GoalBulkViewModel(
                         RecordGoalMovements(
                             operation,
                             read.generation,
-                            mapOf(goal.history.goal.id to goal.history.goal.version),
+                            goals.associate { it.goal.id to it.goal.version },
                             lines
                         )
                     )
                 },
                 keys,
-                goal.history
+                lines,
+                goals
             )
         }
     }
 
     /**
-     * [keys] are the sent lines' keys in the order sent and [sentFrom] the goal as it was
-     * read when they were sent; empty and null after a restart.
+     * [keys] and [lines] are the sent lines' keys and lines in the order sent, and [sentFrom]
+     * the goals they name as they were read when they were sent; all empty after a restart.
      */
     private fun settle(
         settled: Settled<CommittedGoal, GoalRejection>?,
         keys: List<String>,
-        sentFrom: GoalHistory?
+        lines: List<GoalMovementLine>,
+        sentFrom: List<GoalHistory>
     ) {
         when (settled) {
             // Something is still in flight and will settle; or nothing was left to ask about.
@@ -485,8 +522,8 @@ class GoalBulkViewModel(
 
             // A receipt found after an unknown outcome was not seen: it is never celebrated.
             is Settled.Committed -> committed(
-                settled.value.goals.firstOrNull { it.goalId.value == goalId }?.change
-                    .takeIf { !settled.found },
+                settled.value.goals.takeIf { !settled.found }.orEmpty(),
+                lines,
                 sentFrom
             )
 
@@ -533,8 +570,7 @@ class GoalBulkViewModel(
             CommandRejection.OperationConflict, is CommandRejection.StorageFailed -> null
 
             is CommandRejection.Specific -> when (reason.reason) {
-                GoalRejection.GoalMissing -> GoalBulkError.Gone
-                GoalRejection.Completed -> GoalBulkError.Completed
+                GoalRejection.GoalMissing, GoalRejection.Completed -> GoalBulkError.Changed
                 else -> null
             }
         } ?: GoalBulkError.NotSaved
@@ -545,21 +581,30 @@ class GoalBulkViewModel(
     private suspend fun recover() {
         if (!submission.pending) return
         progress.update { it.copy(busy = true, error = null) }
-        settle(submission.recover(commands::find), emptyList(), sentFrom = null)
+        settle(submission.recover(commands::find), emptyList(), emptyList(), emptyList())
     }
 
     /**
-     * Says what was saved, from the draft that was sent, and closes. [change] is what
-     * storage says the receipt did to the stamps; null when it is not to be celebrated.
+     * Says what was saved and closes. [goals] are what storage says the receipt did to each
+     * goal's stamps, empty when it is not to be celebrated; [lines] are the sent lines and
+     * [sentFrom] their goals as read when sent. After a restart neither is known, so the
+     * count and net come from the draft as it stands.
      */
-    private fun committed(change: GoalChange?, sentFrom: GoalHistory?) {
-        val lines = sendable(draft.value).map { it.second }
+    private fun committed(
+        goals: List<ReceiptGoal>,
+        lines: List<GoalMovementLine>,
+        sentFrom: List<GoalHistory>
+    ) {
+        val saved = lines.ifEmpty { sendable(draft.value, active = null).map { it.second } }
         corrections.goalMovementsRecorded(
             CorrectionNotice.GoalMovementsRecorded(
-                count = lines.size,
-                net = net(lines)?.let { money.format(it, signed = true) },
-                celebration = sentFrom?.let { history ->
-                    change?.let { celebration(it, history, lines) }
+                count = saved.size,
+                net = net(saved)?.let { money.format(it, signed = true) },
+                celebrations = goals.mapNotNull { receipt ->
+                    val change = receipt.change ?: return@mapNotNull null
+                    val history = sentFrom.firstOrNull { it.goal.id == receipt.goalId }
+                        ?: return@mapNotNull null
+                    celebration(change, history, lines.filter { it.goalId == receipt.goalId })
                 }
             )
         )
@@ -589,7 +634,7 @@ class GoalBulkViewModel(
         )
     }
 
-    /** The goal as it stands with the receipt's lines recorded after its history, in their order. */
+    /** A goal as it stands with its lines of the receipt recorded after its history, in order. */
     private fun after(history: GoalHistory, lines: List<GoalMovementLine>) = run {
         val next = (history.events.maxOfOrNull(GoalEvent::sequence) ?: -1) + 1
         val today = clock.today.value.date
@@ -613,7 +658,7 @@ class GoalBulkViewModel(
     }
 
     companion object {
-        /** Route argument: the goal the receipt is for. */
+        /** Route argument: the goal it was opened from, line one's goal; absent from Metas. */
         const val KEY_GOAL = "goalId"
 
         /** Route hints: what Aportar or Retirar had typed, checked like any input. */
