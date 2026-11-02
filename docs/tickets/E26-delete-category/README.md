@@ -1,6 +1,6 @@
 # SELLO-E26 — Delete a category
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person deletes a category for good, moving its expenses to another category or deleting them with it.
 - **Exit:** Borrar categoría works from Editar categoría for active and archived categories, with both choices, and says why when it did not happen.

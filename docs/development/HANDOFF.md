@@ -4,8 +4,8 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-10-31 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Every epic is Done: E01–E10, E12, E13 and E15–E25. The owner dropped E14 and the
+**Snapshot:** 2026-11-02 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
+Every epic is Done: E01–E10, E12, E13 and E15–E26. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -16,6 +16,10 @@ This summary is refreshed when an epic closes and adds no verification claims.
 - Offline, local-only COP expenses/income, with Recibo, Resumen, Metas and Inversiones
   as working tabs.
 - Category creation/editing, archive/unarchive, monthly limits and past corrections.
+  Editar categoría's ⋮ holds Archivar and Borrar categoría
+  ([E26](../tickets/E26-delete-category/README.md), ADR 0024): a category is deleted at
+  once when empty, otherwise after moving its expenses and fixed payments to another
+  category or deleting them all behind a typed BORRAR; no undo.
   The editor opens with the keyboard on the name, offers 24 icons and the person's
   most used limits, and says what the month's total limit would become.
 - Category detail follows the owner's hero → latest expenses → En números → weekly
