@@ -28,6 +28,7 @@ import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.ReceiptGoal
 import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.feature.expense.HandExpenseCommands
@@ -187,7 +188,8 @@ class GoalBulkViewModelTest {
         line(withdrawal = true, "50000", day = 16)
     }
 
-    private fun committed(change: GoalChange?) = CommandOutcome.Committed(
+    /** A receipt of [goal]'s lines that did [change] to its stamps. */
+    private fun committed(change: GoalChange?, goal: String = celular) = CommandOutcome.Committed(
         CommittedGoal(
             OperationReceipt(
                 OperationId.of(ids.next()).value(),
@@ -196,9 +198,10 @@ class GoalBulkViewModelTest {
                 10,
                 Instant.EPOCH
             ),
-            GoalId.of(celular).value(),
-            change,
-            emptyList()
+            GoalId.of(goal).value(),
+            null,
+            emptyList(),
+            listOf(ReceiptGoal(GoalId.of(goal).value(), change))
         ),
         replayed = false
     )
@@ -257,7 +260,8 @@ class GoalBulkViewModelTest {
         model.onAction(GoalBulkAction.Submit)
 
         val sent = commands.sent.single() as RecordGoalMovements
-        assertEquals(GoalId.of(viaje).value() to 5L, sent.goalId to sent.expectedVersion)
+        assertEquals(mapOf(GoalId.of(viaje).value() to 5L), sent.versions)
+        assertEquals(List(3) { GoalId.of(viaje).value() }, sent.lines.map { it.goalId })
         assertEquals(3L, sent.generation)
         assertEquals(
             listOf(
@@ -409,7 +413,13 @@ class GoalBulkViewModelTest {
         // The empty line is not sent: the retiro is the receipt's line 1, counted from 0.
         // 1.710.000 + 100.000 = 1.810.000 available before it.
         commands.next = CommandOutcome.Rejected(
-            CommandRejection.Specific(GoalRejection.LineAboveSaved(1, pesos(1_810_000).money))
+            CommandRejection.Specific(
+                GoalRejection.LineAboveSaved(
+                    1,
+                    GoalId.of(viaje).value(),
+                    pesos(1_810_000).money
+                )
+            )
         )
 
         model.onAction(GoalBulkAction.Submit)
@@ -461,7 +471,7 @@ class GoalBulkViewModelTest {
         assertEquals(
             listOf(5L, 6L),
             commands.sent.map {
-                (it as RecordGoalMovements).expectedVersion
+                (it as RecordGoalMovements).versions.values.single()
             }
         )
         assertNotEquals(commands.sent[0].operationId, commands.sent[1].operationId)
@@ -518,8 +528,8 @@ class GoalBulkViewModelTest {
 
         // Found by asking: saved, but its receipt was not seen, so nothing is celebrated.
         commands.found = Outcome.Success(
-            committed(GoalChange(listOf(GoalPlace.Quarter), emptyList(), false)).value
-                .copy(movementIds = null)
+            committed(GoalChange(listOf(GoalPlace.Quarter), emptyList(), false), goal = viaje)
+                .value.copy(movementIds = null)
         )
         model.onAction(GoalBulkAction.Retry)
 

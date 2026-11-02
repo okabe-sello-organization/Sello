@@ -346,10 +346,20 @@ private val TransactionAmount.fields: List<String>
 private val Note?.fields: List<String>
     get() = listOf(if (this == null) "0" else "1", this?.value.orEmpty())
 
-/** [CompleteGoal.undoFor] is how long Deshacer is offered, not what was asked: it is left out. */
+/**
+ * [CompleteGoal.undoFor] is how long Deshacer is offered, not what was asked: it is left out.
+ * [RecordGoalMovements] is format 2 since its lines name their goals (SELLO-139); its
+ * versions are written by goal identifier, so the map's order never changes the identity.
+ */
 internal fun inputDigest(command: GoalCommand): String {
     val subject = when (command) {
         is GoalEdit -> listOf(command.goalId.value, command.expectedVersion.toString())
+
+        is RecordGoalMovements ->
+            listOf(command.versions.size.toString()) +
+                command.versions.entries.sortedBy { it.key.value }
+                    .flatMap { listOf(it.key.value, it.value.toString()) }
+
         is CreateGoal, is RestoreGoalMovement, is UndoGoalCompletion, is FeatureGoal -> emptyList()
     }
     val change = when (command) {
@@ -374,7 +384,8 @@ internal fun inputDigest(command: GoalCommand): String {
         // order are another receipt, since the IDs come back in line order.
         is RecordGoalMovements -> listOf(command.lines.size.toString()) +
             command.lines.flatMap {
-                listOf(it.kind.name, it.date.toString()) + it.amount.fields + it.note.fields
+                listOf(it.goalId.value, it.kind.name, it.date.toString()) +
+                    it.amount.fields + it.note.fields
             }
 
         is EditGoalMovement -> listOf(
@@ -394,7 +405,8 @@ internal fun inputDigest(command: GoalCommand): String {
 
         is FeatureGoal -> listOf(command.goalId.value)
     }
-    val head = listOf(command.kind.key, "1", command.generation.toString())
+    val format = if (command is RecordGoalMovements) "2" else "1"
+    val head = listOf(command.kind.key, format, command.generation.toString())
     return digest(*(head + subject + change).toTypedArray())
 }
 

@@ -981,14 +981,17 @@ class GoalPolicyTest {
 
     // ---- A receipt of several movements (SELLO-128) ----
 
-    private fun line(kind: GoalMovementKind, pesos: Long, date: LocalDate) =
-        GoalMovementLine(kind, amount(pesos), date, null)
+    private val viajeId = goal(1).id
+    private val motoId = goal(2).id
 
-    private fun aporteLine(pesos: Long, date: LocalDate) =
-        line(GoalMovementKind.Contribution, pesos, date)
+    private fun line(kind: GoalMovementKind, pesos: Long, date: LocalDate, goal: GoalId) =
+        GoalMovementLine(goal, kind, amount(pesos), date, null)
 
-    private fun retiroLine(pesos: Long, date: LocalDate) =
-        line(GoalMovementKind.Withdrawal, pesos, date)
+    private fun aporteLine(pesos: Long, date: LocalDate, goal: GoalId = viajeId) =
+        line(GoalMovementKind.Contribution, pesos, date, goal)
+
+    private fun retiroLine(pesos: Long, date: LocalDate, goal: GoalId = viajeId) =
+        line(GoalMovementKind.Withdrawal, pesos, date, goal)
 
     /** Records [lines] after the history in the order the policy gives, as storage does. */
     private fun Recorder.receipt(lines: List<GoalMovementLine>) {
@@ -1046,6 +1049,48 @@ class GoalPolicyTest {
             GoalChange(listOf(Quarter, Half), emptyList(), false),
             GoalPolicy.change(before, goal.progress())
         )
+    }
+
+    // ---- A receipt of several goals (SELLO-139) ----
+
+    @Test
+    fun aReceiptsGoalsComeInTheOrderALineFirstNamesThemEachWithItsOwnLinesByDate() {
+        val lines = listOf(
+            aporteLine(1_000, day(10, 9), motoId),
+            aporteLine(2_000, day(9, 1), viajeId),
+            retiroLine(500, day(8, 15), motoId),
+            aporteLine(3_000, day(9, 1), viajeId),
+            aporteLine(4_000, day(8, 1), viajeId)
+        )
+
+        // Moto first (line 0): 15 Aug (line 2), 9 Oct (line 0). Then Viaje: 1 Aug (line 4),
+        // then the two of 1 Sep in line order (lines 1 and 3).
+        assertEquals(
+            listOf(motoId to listOf(2, 0), viajeId to listOf(4, 1, 3)),
+            GoalPolicy.receiptGoals(lines)
+        )
+    }
+
+    @Test
+    fun aRetiroChecksOnlyAgainstItsOwnGoalNeverAnotherGoalsAporte() {
+        val lines = listOf(
+            aporteLine(500_000, day(9, 1), viajeId),
+            retiroLine(200_000, day(9, 10), motoId)
+        )
+        val viaje = viaje()
+        val moto = viaje()
+
+        // Each goal takes only its own lines, as storage records them.
+        GoalPolicy.receiptGoals(lines).forEach { (goal, positions) ->
+            (if (goal == viajeId) viaje else moto).receipt(positions.map(lines::get))
+        }
+
+        // Viaje: 500.000 of 3.000.000 is 16 %. Moto saved nothing, so its retiro of 200.000
+        // on 10 Sep finds 0, though Viaje's aporte of 1 Sep is on the same receipt.
+        assertEquals(Money.cop(500_000), viaje.progress().saved)
+        assertEquals(16L, viaje.progress().percentage)
+        val refusal = moto.refusal() as GoalHistoryError.WithdrawalAboveSaved
+        assertEquals(Money.cop(0), refusal.available)
     }
 
     private companion object {

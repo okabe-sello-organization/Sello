@@ -80,16 +80,17 @@ data class RecordGoalMovement(
 
 /**
  * Up to [com.software.sello.domain.policy.GoalPolicy.MAX_RECEIPT_LINES] aportes and
- * retiros on one receipt, all recorded or none. The lines are recorded after the history
- * by date, a tie in line order, and checked in that order.
+ * retiros on one receipt, of one goal or several, all recorded or none. [versions] has the
+ * version the caller read of each goal the lines name, and of no other goal. Each goal's
+ * lines are recorded after its own history by date, a tie in line order, and checked in
+ * that order ([com.software.sello.domain.policy.GoalPolicy.receiptGoals]).
  */
 data class RecordGoalMovements(
     override val operationId: OperationId,
     override val generation: Long,
-    override val goalId: GoalId,
-    override val expectedVersion: Long,
+    val versions: Map<GoalId, Long>,
     val lines: List<GoalMovementLine>
-) : GoalEdit
+) : GoalCommand
 
 /** A correction in place (rule 6): the movement keeps its kind and recording position. */
 data class EditGoalMovement(
@@ -188,10 +189,15 @@ sealed interface GoalRejection {
     data class LineInvalidDate(val line: Int) : GoalRejection
 
     /**
-     * The retiro on the receipt's line [line] would take more than the [available] saved
-     * before it: the history, then the receipt's lines dated earlier or on an earlier line.
+     * The retiro on the receipt's line [line] would take more than the [available] its
+     * goal [goal] saved before it: that goal's history, then its lines of the receipt dated
+     * earlier or on an earlier line.
      */
-    data class LineAboveSaved(val line: Int, val available: Money) : GoalRejection
+    data class LineAboveSaved(val line: Int, val goal: GoalId, val available: Money) :
+        GoalRejection
+
+    /** The receipt's versions do not name exactly the goals its lines name. */
+    data object VersionsUnmatched : GoalRejection
 
     /** A total would not fit an exact amount. */
     data object Unrepresentable : GoalRejection
@@ -206,18 +212,30 @@ sealed interface GoalRejection {
 /**
  * A committed goal change and its receipt. [change] says which stamps it earned or lit
  * again, for a celebration; it is null for a replay, which is never celebrated again,
- * and for changes that cannot earn one. For [RecordGoalMovements] it is one change for
- * the whole receipt. [movementIds] are the movements [RecordGoalMovements] recorded, in
- * line order, for that command and its replay, and empty for every other change. They are
- * null for a receipt found by [GoalCommands.find]: its lines are not kept with it, so which
- * movements it wrote is not known there; replay the command to learn them.
+ * and for changes that cannot earn one.
+ *
+ * A [RecordGoalMovements] receipt has every goal it changed in [goals], in the order its
+ * lines first name them, each with its own change; [goalId] is the first of them and
+ * [change] is null. [movementIds] are the movements it recorded, in line order, for that
+ * command and its replay, and empty for every other change. They are null for a receipt
+ * found by [GoalCommands.find]: its lines are not kept with it, so which movements it
+ * wrote is not known there; replay the command to learn them. [goals] is empty for every
+ * other change.
  */
 data class CommittedGoal(
     val receipt: OperationReceipt,
     val goalId: GoalId,
     val change: GoalChange?,
-    val movementIds: List<GoalMovementId>? = emptyList()
+    val movementIds: List<GoalMovementId>? = emptyList(),
+    val goals: List<ReceiptGoal> = emptyList()
 )
+
+/**
+ * One goal a [RecordGoalMovements] receipt changed. [change] is what the whole receipt did
+ * to its stamps, worked out after the receipt's last line; null for a replay or a receipt
+ * found by [GoalCommands.find], which are never celebrated.
+ */
+data class ReceiptGoal(val goalId: GoalId, val change: GoalChange?)
 
 typealias GoalCommandOutcome = CommandOutcome<CommittedGoal, GoalRejection>
 

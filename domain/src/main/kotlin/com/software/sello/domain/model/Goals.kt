@@ -58,9 +58,11 @@ data class GoalMovement(
 
 /**
  * One line of a receipt of several movements: what [GoalMovement] holds before it is
- * recorded. Each line has its own [date], since such a receipt mostly catches up past months.
+ * recorded in [goalId]. Each line has its own [date], since such a receipt mostly catches
+ * up past months.
  */
 data class GoalMovementLine(
+    val goalId: GoalId,
     val kind: GoalMovementKind,
     val amount: TransactionAmount,
     val date: LocalDate,
