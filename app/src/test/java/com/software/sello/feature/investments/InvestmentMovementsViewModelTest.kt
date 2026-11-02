@@ -165,6 +165,10 @@ class InvestmentMovementsViewModelTest {
 
     private val InvestmentMovementsViewModel.now get() = state.value
 
+    /** Aportado while the receipt is in one currency. */
+    private val InvestmentMovementsState.aportado
+        get() = (contributed as ContributedTotal.One).amount
+
     private fun day(text: String) = LocalDate.parse(text)
 
     private fun <T> Outcome<T, *>.value(): T = (this as Outcome.Success).value
@@ -196,7 +200,7 @@ class InvestmentMovementsViewModelTest {
     fun itOpensWithOneEmptyLineOfNoTypeDatedTodayAndTheButtonWaits() = runTest {
         val model = model()
 
-        assertEquals("Ecopetrol", model.now.name)
+        assertEquals("Ecopetrol", model.now.lines[0].investmentName)
         assertEquals(1, model.now.lines.size)
         val line = model.now.current
         assertNull(line.kind)
@@ -249,7 +253,7 @@ class InvestmentMovementsViewModelTest {
 
         assertEquals(3, model.now.counted)
         // 500.000 aportado; the dividend of 89.000 and the value of 3.600.000 stay out.
-        assertEquals("500.000", model.now.contributed?.digits)
+        assertEquals("500.000", model.now.aportado.digits)
 
         model.act(InvestmentMovementsAction.Submit)
 
@@ -283,7 +287,7 @@ class InvestmentMovementsViewModelTest {
         model.act(InvestmentMovementsAction.AddLine)
 
         // 500.000 − 40.000 = 460.000; the third line has no amount.
-        assertEquals("460.000", model.now.contributed?.digits)
+        assertEquals("460.000", model.now.aportado.digits)
         assertEquals(3, model.now.lines.size)
         assertEquals(2, model.now.counted)
         model.act(InvestmentMovementsAction.Submit)
@@ -381,7 +385,7 @@ class InvestmentMovementsViewModelTest {
         model.act(InvestmentMovementsAction.AddLine, InvestmentMovementsAction.Kind(Dividend))
         model.keys("1", "2", ",", "4")
         // 250,50 + 300,00 = 550,50 aportado; the dividend of 12,40 stays out.
-        assertEquals("USD" to "550,50", model.now.contributed?.let { it.symbol to it.digits })
+        assertEquals("USD" to "550,50", model.now.aportado.let { it.symbol to it.digits })
 
         // The 000 key is not a dollar key.
         model.act(InvestmentMovementsAction.TripleZero)
@@ -414,7 +418,7 @@ class InvestmentMovementsViewModelTest {
         assertEquals(30, model.now.lines.size)
         assertEquals(29, model.now.highlighted)
         // 30 aportes of 1.000 = 30.000.
-        assertEquals("30.000", model.now.contributed?.digits)
+        assertEquals("30.000", model.now.aportado.digits)
 
         // Removing the highlighted last line keeps a highlight on the receipt.
         model.act(InvestmentMovementsAction.Remove(29))
@@ -572,10 +576,17 @@ class InvestmentMovementsViewModelTest {
         assertFalse(model.now.editable)
         assertFalse(model.now.canSubmit)
 
+        // An investment deleted meanwhile: its typed line asks for another, never saved.
         val gone = model(fondo)
+        gone.act(InvestmentMovementsAction.Kind(Contribution))
+        gone.keys("1", "000")
         reads.board.value = board(3, ecopetrolAcciones)
-        assertEquals(InvestmentMovementsError.Gone, gone.now.error)
+        assertTrue(gone.now.current.lost)
+        assertEquals(1, gone.now.refused)
         assertFalse(gone.now.canSubmit)
+        assertEquals("1.000", gone.now.current.amount?.digits)
+        gone.act(InvestmentMovementsAction.InvestmentPicked(ecopetrol))
+        assertTrue(gone.now.canSubmit)
     }
 
     @Test
@@ -585,7 +596,7 @@ class InvestmentMovementsViewModelTest {
         reads.board.value = ReadState.Failed(StorageFailure.Unavailable("hand"), good.value)
         assertFalse(model.now.loadFailed)
         assertTrue(model.now.stale)
-        assertEquals("Ecopetrol", model.now.name)
+        assertEquals("Ecopetrol", model.now.lines[0].investmentName)
         model.threeLines()
         assertTrue(model.now.canSubmit)
         reads.board.value = good
@@ -739,7 +750,8 @@ class InvestmentMovementsViewModelTest {
         model.act(InvestmentMovementsAction.Submit)
 
         assertEquals(InvestmentMovementsError.Gone, model.now.error)
-        assertFalse(model.now.editable)
+        // The receipt stays editable, so a line can choose another investment.
+        assertTrue(model.now.editable)
         assertFalse(model.now.closed)
         assertEquals(2, sent.size)
     }
@@ -758,7 +770,7 @@ class InvestmentMovementsViewModelTest {
         assertEquals(30, model.now.counted)
         assertEquals("999.999.999.999", model.now.current.amount?.digits)
         // 30 × 999.999.999.999 = 29.999.999.999.970, written whole, not clipped.
-        assertEquals("29.999.999.999.970", model.now.contributed?.digits)
+        assertEquals("29.999.999.999.970", model.now.aportado.digits)
     }
 
     @Test
@@ -802,7 +814,7 @@ class InvestmentMovementsViewModelTest {
 
         assertEquals(2, once.reads)
         assertFalse(model.now.loadFailed)
-        assertEquals("Ecopetrol", model.now.name)
+        assertEquals("Ecopetrol", model.now.lines[0].investmentName)
     }
 
     @Test
@@ -821,6 +833,307 @@ class InvestmentMovementsViewModelTest {
         model.act(InvestmentMovementsAction.Back, InvestmentMovementsAction.DiscardConfirmed)
         assertTrue(model.now.closed)
         assertTrue(hand.sent.isEmpty())
+    }
+
+    // Across investments (SELLO-142)
+
+    private fun fromList() = model(saved = SavedStateHandle())
+
+    private val aportes get() = hand.sent.filterIsInstance<RecordInvestmentMovements>()
+
+    private fun id(text: String) = InvestmentId.of(text).value()
+
+    /** Ecopetrol: an aporte of 1.000.000; Acciones: an aporte of USD 250,50, a retiro of 50. */
+    private fun InvestmentMovementsViewModel.mixed() {
+        act(
+            InvestmentMovementsAction.InvestmentPicked(ecopetrol),
+            InvestmentMovementsAction.Kind(Contribution)
+        )
+        keys("1", "000", "000")
+        act(
+            InvestmentMovementsAction.AddLine,
+            InvestmentMovementsAction.InvestmentPicked(acciones)
+        )
+        keys("2", "5", "0", ",", "5")
+        act(InvestmentMovementsAction.AddLine, InvestmentMovementsAction.Kind(Withdrawal))
+        keys("5", "0")
+    }
+
+    @Test
+    fun fromTheListNoInvestmentIsChosenAndALineWithoutOneBlocks() = runTest {
+        val model = fromList()
+
+        assertNull(model.now.current.investmentId)
+        assertEquals(
+            listOf(ecopetrol, acciones, fondo).sorted(),
+            model.now.investments.map { it.id }.sorted()
+        )
+        model.act(InvestmentMovementsAction.Kind(Contribution))
+        model.keys("5", "000")
+        assertTrue(model.now.current.missingInvestment)
+        assertEquals(1, model.now.missingInvestments)
+        assertFalse(model.now.canSubmit)
+
+        model.act(InvestmentMovementsAction.InvestmentPicked(fondo))
+        assertEquals("Fondo", model.now.current.investmentName)
+        assertEquals(0, model.now.missingInvestments)
+        assertTrue(model.now.canSubmit)
+
+        // Nothing typed: leaving just closes, with nothing to ask about.
+        val untouched = fromList()
+        untouched.act(InvestmentMovementsAction.Back)
+        assertTrue(untouched.now.closed)
+        // An investment that is not on the board is never taken.
+        val other = fromList()
+        other.act(
+            InvestmentMovementsAction.InvestmentPicked("00000000-0000-4000-9000-000000000099")
+        )
+        assertNull(other.now.current.investmentId)
+    }
+
+    @Test
+    fun linesOfSeveralInvestmentsAreOneCommandWithEachVersion() = runTest {
+        val model = fromList()
+        model.act(
+            InvestmentMovementsAction.InvestmentPicked(ecopetrol),
+            InvestmentMovementsAction.Kind(Contribution)
+        )
+        model.keys("5", "0", "0", "000")
+        model.act(InvestmentMovementsAction.DatePicked(day("2026-10-03")))
+        model.act(InvestmentMovementsAction.AddLine)
+
+        // A new line copies the investment, type and date above it.
+        val copied = model.now.current
+        assertEquals(
+            listOf(ecopetrol, Contribution, day("2026-10-03")),
+            listOf(copied.investmentId, copied.kind, copied.date)
+        )
+        model.act(
+            InvestmentMovementsAction.InvestmentPicked(fondo),
+            InvestmentMovementsAction.Kind(Withdrawal)
+        )
+        model.keys("2", "0", "0", "000")
+        // 500.000 − 200.000 = 300.000, both in pesos.
+        assertEquals("300.000", model.now.aportado.digits)
+
+        model.act(InvestmentMovementsAction.Submit)
+
+        val command = aportes.single()
+        assertEquals(mapOf(id(ecopetrol) to 6L, id(fondo) to 1L), command.expectedVersions)
+        assertEquals(
+            listOf(
+                Triple(id(ecopetrol), Contribution, Money.cop(500_000)),
+                Triple(id(fondo), Withdrawal, Money.cop(200_000))
+            ),
+            command.lines.map { Triple(it.investmentId, it.kind, it.amount.money) }
+        )
+        assertTrue(model.now.closed)
+        // Two investments: the confirmation names none of them.
+        val notice = corrections.notice.value as CorrectionNotice.InvestmentMovementsRecorded
+        assertEquals(2 to null, notice.count to notice.investmentName)
+    }
+
+    @Test
+    fun anotherCurrencyClearsTheAmountAndTheSameOneKeepsIt() = runTest {
+        val model = model()
+        model.act(InvestmentMovementsAction.Kind(Contribution))
+        model.keys("4", "000")
+        assertFalse(model.now.usd)
+
+        // Ecopetrol to Fondo: both in pesos, the 4.000 stays.
+        model.act(InvestmentMovementsAction.InvestmentPicked(fondo))
+        assertEquals("4.000", model.now.current.amount?.digits)
+
+        // To dollars: the pesos meant other money, so they go; the comma key now types cents.
+        model.act(InvestmentMovementsAction.InvestmentPicked(acciones))
+        assertNull(model.now.current.amount)
+        assertTrue(model.now.usd)
+        assertTrue(model.now.current.usd)
+        model.keys("1", "2", ",", "5")
+        assertEquals("USD" to "12,5", model.now.current.amount?.let { it.symbol to it.digits })
+
+        // Back to pesos clears the dollars too.
+        model.act(InvestmentMovementsAction.InvestmentPicked(ecopetrol))
+        assertNull(model.now.current.amount)
+        assertFalse(model.now.usd)
+        model.keys("7", "000")
+        assertEquals("7.000", model.now.current.amount?.digits)
+    }
+
+    @Test
+    fun aMixedReceiptIsInPesosAtTodaysRateAndSendsEachLineInItsOwnCurrency() = runTest {
+        reads.board.value = ReadState.Ready(
+            investmentsBoard(
+                listOf(ecopetrolAcciones, accionesUsd, fondoConRetiro),
+                rateEntry(390_000, "2026-10-01", sequence = 1),
+                rateEntry(400_000, "2026-10-20", sequence = 2),
+                generation = 3
+            )
+        )
+        val model = fromList()
+        model.mixed()
+
+        // USD 250,50 − 50,00 = 200,50 × 4.000,00 (the rate of 20 oct, the latest) = 802.000;
+        // + 1.000.000 = 1.802.000.
+        val total = model.now.contributed as ContributedTotal.InPesos
+        assertEquals("1.802.000", total.amount.digits)
+        assertEquals("4.000,00", total.rate)
+        assertEquals(day("2026-10-20"), total.rateDate)
+
+        model.act(InvestmentMovementsAction.Submit)
+
+        val command = aportes.single()
+        assertEquals(mapOf(id(ecopetrol) to 6L, id(acciones) to 2L), command.expectedVersions)
+        assertEquals(
+            listOf(
+                id(ecopetrol) to Money.cop(1_000_000),
+                id(acciones) to Money(25_050, Currency.USD),
+                id(acciones) to Money(5_000, Currency.USD)
+            ),
+            command.lines.map { it.investmentId to it.amount.money }
+        )
+    }
+
+    @Test
+    fun withNoRateAMixedReceiptShowsEachCurrencysPart() = runTest {
+        val model = fromList()
+        model.mixed()
+
+        // No rate on the board: 1.000.000 and USD 200,50, never a made-up total.
+        val parts = model.now.contributed as ContributedTotal.Parts
+        assertEquals("1.000.000", parts.pesos.digits)
+        assertEquals("USD" to "200,50", parts.dollars.symbol to parts.dollars.digits)
+        assertTrue(model.now.canSubmit)
+    }
+
+    @Test
+    fun aDollarDividendBesideAPesoAporteLeavesAportadoInPesos() = runTest {
+        val model = fromList()
+        model.act(
+            InvestmentMovementsAction.InvestmentPicked(ecopetrol),
+            InvestmentMovementsAction.Kind(Contribution)
+        )
+        model.keys("1", "000", "000")
+        model.act(
+            InvestmentMovementsAction.AddLine,
+            InvestmentMovementsAction.InvestmentPicked(acciones),
+            InvestmentMovementsAction.Kind(Dividend)
+        )
+        model.keys("1", "2")
+
+        // The dividend does not add up with aportes: only 1.000.000 in pesos counts.
+        assertEquals("1.000.000", model.now.aportado.digits)
+        assertEquals("", model.now.aportado.symbol)
+    }
+
+    @Test
+    fun aRefusedLineOfTheSecondInvestmentIsMarkedWithItsReason() = runTest {
+        val model = fromList()
+        model.act(
+            InvestmentMovementsAction.InvestmentPicked(ecopetrol),
+            InvestmentMovementsAction.Kind(Contribution)
+        )
+        model.keys("5", "0", "0", "000")
+        model.act(
+            InvestmentMovementsAction.AddLine,
+            InvestmentMovementsAction.InvestmentPicked(acciones),
+            InvestmentMovementsAction.Kind(Withdrawal)
+        )
+        model.keys("2", "0", "0", "0")
+        val own = InvestmentMovementId.of("00000000-0000-4000-8000-0000000000fe").value()
+        hand.answers += CommandOutcome.Rejected(
+            CommandRejection.Specific(
+                InvestmentRejection.LinesRefused(
+                    listOf(
+                        RefusedInvestmentLine(
+                            1,
+                            InvestmentRejection.AboveValue(own, Money(105_050, Currency.USD))
+                        )
+                    )
+                )
+            )
+        )
+
+        model.act(InvestmentMovementsAction.Submit)
+
+        val refused = model.now.lines[1]
+        // Named in the investment's own currency: USD 1.050,50 is what Acciones is worth.
+        val available = (refused.refusal as MovementLineRefusal.OverValue).available
+        assertEquals("USD" to "1.050,50", available.symbol to available.digits)
+        assertNull(model.now.lines[0].refusal)
+        assertEquals(1, model.now.highlighted)
+        assertEquals(InvestmentMovementsError.NotSaved, model.now.error)
+        assertFalse(model.now.canSubmit)
+    }
+
+    @Test
+    fun aChangedInvestmentOfSeveralIsSentAgainOnlyWhenAskedAtTheVersionsReadAgain() = runTest {
+        val model = fromList()
+        model.mixed()
+        hand.answers += CommandOutcome.Rejected(CommandRejection.VersionConflict(3))
+
+        model.act(InvestmentMovementsAction.Submit)
+
+        assertEquals(InvestmentMovementsError.Changed, model.now.error)
+        assertEquals(1, aportes.size)
+        reads.board.value = board(
+            4,
+            ecopetrolAcciones,
+            handInvestment(
+                acciones,
+                "Acciones EE. UU.",
+                null,
+                "trending_up",
+                listOf(Triple(Contribution, 100_000L, "2026-08-01")),
+                currency = Currency.USD,
+                version = 3
+            )
+        )
+        model.act(InvestmentMovementsAction.Submit)
+
+        assertEquals(
+            listOf(
+                mapOf(id(ecopetrol) to 6L, id(acciones) to 2L),
+                mapOf(id(ecopetrol) to 6L, id(acciones) to 3L)
+            ),
+            aportes.map { it.expectedVersions }
+        )
+        assertEquals(listOf(3L, 4L), aportes.map { it.generation })
+        assertTrue(model.now.closed)
+    }
+
+    @Test
+    fun aRestoredReceiptKeepsEachLinesInvestment() = runTest {
+        val saved = SavedStateHandle()
+        val first = model(saved = saved)
+        first.mixed()
+        first.act(InvestmentMovementsAction.Select(0))
+
+        val restored = model(saved = saved)
+
+        assertEquals(first.now.lines, restored.now.lines)
+        assertEquals(
+            listOf(ecopetrol, acciones, acciones),
+            restored.now.lines.map { it.investmentId }
+        )
+        assertEquals(listOf(false, true, true), restored.now.lines.map { it.usd })
+        assertEquals(0, restored.now.highlighted)
+        assertTrue(hand.sent.isEmpty())
+    }
+
+    @Test
+    fun aDeletedInvestmentKeepsItsLineInItsCurrencyUntilAnotherIsChosen() = runTest {
+        val model = fromList()
+        model.mixed()
+        reads.board.value = board(3, ecopetrolAcciones, fondoConRetiro)
+
+        // Acciones is gone: its two lines still show their dollars, and ask for another.
+        val lost = model.now.lines.filter { it.lost }
+        // The highlighted one as the pad writes it.
+        assertEquals(listOf("250,50", "50"), lost.map { it.amount?.digits })
+        assertTrue(lost.all { it.usd && it.investmentName == null })
+        assertEquals(2, model.now.refused)
+        assertFalse(model.now.canSubmit)
     }
 
     /** [delegate], held at [gate] while it is not completed. */
@@ -879,7 +1192,7 @@ class InvestmentMovementsViewModelTest {
 
         assertEquals("USD" to "250,50", model.now.lines[0].amount?.let { it.symbol to it.digits })
         // 250,50 aportado.
-        assertEquals("250,50", model.now.contributed?.digits)
+        assertEquals("250,50", model.now.aportado.digits)
         model.act(InvestmentMovementsAction.Submit)
         assertEquals(
             listOf(Money(25_050, Currency.USD)),

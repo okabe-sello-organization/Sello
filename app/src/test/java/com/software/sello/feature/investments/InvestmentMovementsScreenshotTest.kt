@@ -50,6 +50,11 @@ class InvestmentMovementsScreenshotTest {
 
     private val today = LocalDate.of(2026, 10, 22)
 
+    private val ecopetrol = InvestmentChoice("e", "Ecopetrol", "trending_up", usd = false)
+    private val acciones = InvestmentChoice("a", "Acciones EE. UU.", "insights", usd = true)
+    private val fondo = InvestmentChoice("f", "Fondo de pensiones", "account_balance", usd = false)
+    private val choices = listOf(ecopetrol, fondo, acciones)
+
     private fun line(
         key: String,
         kind: InvestmentMovementKind?,
@@ -57,25 +62,35 @@ class InvestmentMovementsScreenshotTest {
         date: LocalDate,
         note: String = "",
         valid: Boolean = kind != null,
-        refusal: MovementLineRefusal? = null
-    ) = MovementLineModel(key, kind, amount, valid, date, note, refusal)
+        refusal: MovementLineRefusal? = null,
+        investment: InvestmentChoice? = ecopetrol
+    ) = MovementLineModel(
+        key,
+        kind,
+        amount,
+        valid,
+        date,
+        note,
+        refusal,
+        investmentId = investment?.id,
+        investmentName = investment?.name,
+        usd = investment?.usd == true
+    )
 
     private fun receipt(
         lines: List<MovementLineModel>,
         highlighted: Int,
         contributed: MoneyTextValue,
-        name: String = "Ecopetrol",
-        usd: Boolean = false,
         busy: Boolean = false,
         error: InvestmentMovementsError? = null,
-        stale: Boolean = false
+        stale: Boolean = false,
+        total: ContributedTotal = ContributedTotal.One(contributed)
     ) = InvestmentMovementsState(
         loading = false,
-        name = name,
-        usd = usd,
+        investments = choices,
         lines = lines,
         highlighted = highlighted,
-        contributed = contributed,
+        contributed = total,
         today = today,
         busy = busy,
         error = error,
@@ -91,6 +106,30 @@ class InvestmentMovementsScreenshotTest {
 
     private fun dollars(digits: String) =
         MoneyTextValue(MoneySign.None, "USD", digits, "$digits dólares")
+
+    /** A receipt in pesos and dollars across three investments. */
+    private val mixed = listOf(
+        line("1", Contribution, pesos("1.000.000"), LocalDate.of(2026, 10, 3)),
+        line(
+            "2",
+            Contribution,
+            pesos("300.000"),
+            LocalDate.of(2026, 10, 3),
+            "Aporte voluntario",
+            investment = fondo
+        ),
+        line(
+            "3",
+            Contribution,
+            dollars("250,50"),
+            LocalDate.of(2026, 10, 12),
+            investment = acciones
+        ),
+        line("4", Withdrawal, dollars("50"), today, investment = acciones)
+    )
+
+    private val mixedInPesos =
+        ContributedTotal.InPesos(pesos("2.102.000"), "4.000,00", LocalDate.of(2026, 10, 20))
 
     private val states = mapOf(
         "opening" to receipt(listOf(line("0", null, null, today)), 0, pesos("0")),
@@ -125,20 +164,47 @@ class InvestmentMovementsScreenshotTest {
         // 250,50 + 300,00 = 550,50 aportado; the dividend of 12,40 stays out.
         "usd" to receipt(
             listOf(
-                line("1", Contribution, dollars("250,50"), LocalDate.of(2026, 10, 12)),
-                line("2", Contribution, dollars("300,00"), LocalDate.of(2026, 10, 5)),
+                line(
+                    "1",
+                    Contribution,
+                    dollars("250,50"),
+                    LocalDate.of(2026, 10, 12),
+                    investment = acciones
+                ),
+                line(
+                    "2",
+                    Contribution,
+                    dollars("300,00"),
+                    LocalDate.of(2026, 10, 5),
+                    investment = acciones
+                ),
                 line(
                     "3",
                     Dividend,
                     dollars("12,40"),
                     LocalDate.of(2026, 10, 16),
-                    "Dividendo de octubre"
+                    "Dividendo de octubre",
+                    investment = acciones
                 )
             ),
             2,
-            dollars("550,50"),
-            name = "Acciones EE. UU.",
-            usd = true
+            dollars("550,50")
+        ),
+        // From the Inversiones list: no investment chosen, and one typed line waits for one.
+        "from-list" to receipt(
+            listOf(line("0", Contribution, pesos("200.000"), today, investment = null)),
+            0,
+            pesos("200.000")
+        ),
+        // Ecopetrol 1.000.000, Fondo 300.000, Acciones USD 250,50 − 50,00 = 200,50:
+        // 200,50 × 4.000,00 = 802.000; 1.000.000 + 300.000 + 802.000 = 2.102.000.
+        "mixed" to receipt(mixed, 2, pesos("2.102.000"), total = mixedInPesos),
+        // No rate: 1.300.000 and USD 200,50, each on its own.
+        "mixed-no-rate" to receipt(
+            mixed,
+            2,
+            pesos("1.300.000"),
+            total = ContributedTotal.Parts(pesos("1.300.000"), dollars("200,50"))
         )
     )
 
@@ -274,6 +340,18 @@ class InvestmentMovementsScreenshotTest {
     @Test fun usdClaro() = capture("usd", dark = false)
 
     @Test fun usdOscuro() = capture("usd", dark = true)
+
+    @Test fun fromListClaro() = capture("from-list", dark = false)
+
+    @Test fun fromListOscuro() = capture("from-list", dark = true)
+
+    @Test fun mixedClaro() = capture("mixed", dark = false)
+
+    @Test fun mixedOscuro() = capture("mixed", dark = true)
+
+    @Test fun mixedNoRateClaro() = capture("mixed-no-rate", dark = false)
+
+    @Test fun mixedNoRateOscuro() = capture("mixed-no-rate", dark = true)
 
     @Test fun detailClaro() = detail(dark = false)
 

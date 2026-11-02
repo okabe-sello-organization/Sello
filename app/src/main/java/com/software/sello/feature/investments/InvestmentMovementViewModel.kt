@@ -404,16 +404,6 @@ class InvestmentMovementViewModel(
         return summary to movement
     }
 
-    /** The investments largest value first, as the overview orders them; no value last. */
-    private fun ordered(board: InvestmentBoard): List<InvestmentSummary> {
-        val overview = (board.overview as? Outcome.Success)?.value
-            ?: return board.investments.sortedBy { it.figures.value == null }
-        val ids = overview.items.map { it.history.investment.id }
-        return board.investments.sortedBy { summary ->
-            ids.indexOf(summary.history.investment.id).takeIf { it >= 0 } ?: Int.MAX_VALUE
-        }
-    }
-
     /** Hands what is typed to Varios movimientos, for the investment chosen. */
     private fun several() {
         val current = draft.value
@@ -574,7 +564,7 @@ class InvestmentMovementViewModel(
         val offered = when {
             read == null -> emptyList()
             editing -> listOfNotNull(summary(read, draft.investmentId))
-            else -> ordered(read)
+            else -> read.ordered()
         }
         val summary = summary(read, draft.investmentId)
         val original = read?.let(::original)?.second
@@ -602,14 +592,7 @@ class InvestmentMovementViewModel(
                 ?.takeIf { currency == Currency.COP },
             limitPulse = progress.limitPulse,
             atLimit = progress.atLimit,
-            investments = offered.map {
-                InvestmentChoice(
-                    id = it.history.investment.id.value,
-                    name = it.history.investment.name.value,
-                    iconKey = it.history.investment.icon.value,
-                    usd = it.history.investment.currency == Currency.USD
-                )
-            },
+            investments = offered.map { it.choice() },
             investmentId = summary?.history?.investment?.id?.value,
             fact = fact,
             overValue = check.over?.let { money.format(it) },
@@ -884,3 +867,24 @@ class InvestmentMovementViewModel(
         private const val STEP_DELETE = "delete"
     }
 }
+
+/**
+ * The investments as the movement forms offer them: largest value first, as the overview
+ * orders them; no value last.
+ */
+internal fun InvestmentBoard.ordered(): List<InvestmentSummary> {
+    val overview = (overview as? Outcome.Success)?.value
+        ?: return investments.sortedBy { it.figures.value == null }
+    val ids = overview.items.map { it.history.investment.id }
+    return investments.sortedBy { summary ->
+        ids.indexOf(summary.history.investment.id).takeIf { it >= 0 } ?: Int.MAX_VALUE
+    }
+}
+
+/** An investment as its chip offers it. */
+internal fun InvestmentSummary.choice() = InvestmentChoice(
+    id = history.investment.id.value,
+    name = history.investment.name.value,
+    iconKey = history.investment.icon.value,
+    usd = history.investment.currency == Currency.USD
+)

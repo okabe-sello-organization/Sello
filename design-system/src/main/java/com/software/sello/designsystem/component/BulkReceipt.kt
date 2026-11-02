@@ -66,6 +66,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
@@ -133,12 +134,18 @@ sealed interface BulkCaption {
     data class Problem(val text: String, val icon: Boolean = true) : BulkCaption
 }
 
-/** The foot's figure: [label] ("Total", "Aportado") and the already formatted [value]. */
+/**
+ * The foot's figure: [label] ("Total", "Aportado") and the already formatted [value]. A
+ * receipt in two currencies with no rate gives each part, [value] and [second], one under
+ * the other; [note] says under the foot how the figure was made, such as the rate used.
+ */
 @Immutable
 data class BulkTotal(
     val label: String,
     val value: MoneyTextValue,
-    val tone: BulkAmountTone = BulkAmountTone.Ink
+    val tone: BulkAmountTone = BulkAmountTone.Ink,
+    val second: MoneyTextValue? = null,
+    val note: String? = null
 )
 
 /**
@@ -277,37 +284,58 @@ private fun ReceiptHeader(caption: BulkCaption, end: @Composable () -> Unit) {
 @Composable
 private fun ReceiptFoot(total: BulkTotal, onAdd: () -> Unit, addEnabled: Boolean) {
     val colors = SelloTheme.colors
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 46.dp)
-    ) {
-        SelloButton(
-            text = stringResource(R.string.sello_bulk_add_line),
-            onClick = onAdd,
-            kind = ButtonKind.Text,
-            icon = SelloIcon.Add,
-            enabled = addEnabled,
-            contentPadding = PaddingValues(horizontal = 4.dp),
-            modifier = Modifier.offset(x = (-4).dp)
-        )
-        Spacer(Modifier.weight(1f))
+    Column(Modifier.fillMaxWidth()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.semantics(mergeDescendants = true) {}
+            modifier = Modifier.fillMaxWidth().heightIn(min = 46.dp)
         ) {
-            Text(
-                total.label,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.W600,
-                color = colors.inkSoft
+            SelloButton(
+                text = stringResource(R.string.sello_bulk_add_line),
+                onClick = onAdd,
+                kind = ButtonKind.Text,
+                icon = SelloIcon.Add,
+                enabled = addEnabled,
+                contentPadding = PaddingValues(horizontal = 4.dp),
+                modifier = Modifier.offset(x = (-4).dp)
             )
-            MoneyText(
-                total.value,
-                style = MoneyStyle.Title,
-                fontWeight = FontWeight.W900,
-                color = total.tone.ink()
+            Spacer(Modifier.weight(1f))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.semantics(mergeDescendants = true) {}
+            ) {
+                Text(
+                    total.label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.W600,
+                    color = colors.inkSoft
+                )
+                Column(horizontalAlignment = Alignment.End) {
+                    MoneyText(
+                        total.value,
+                        style = MoneyStyle.Title,
+                        fontWeight = FontWeight.W900,
+                        color = total.tone.ink()
+                    )
+                    total.second?.let {
+                        MoneyText(
+                            it,
+                            style = MoneyStyle.Title,
+                            fontWeight = FontWeight.W900,
+                            color = total.tone.ink()
+                        )
+                    }
+                }
+            }
+        }
+        total.note?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.inkSoft,
+                textAlign = TextAlign.End,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
