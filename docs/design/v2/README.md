@@ -209,7 +209,8 @@ pad. The lines scroll inside the receipt; the foot, chips, action and pad never 
   **+ Otro movimiento**, in brand ink. Tapping it opens the receipt with what is typed as line one;
   when line one has an amount, a second line in the same category, source or type is already
   highlighted for the pad. It is absent while editing, and on Anotar movimiento until an investment
-  is chosen; it dims and waits while saving or while the amount cannot be used. The title bar holds
+  is chosen; it dims and waits while saving, while the amount cannot be used, or while an
+  expense is set to repeat. The title bar holds
   only ✕ and the title (and Borrar when editing).
 
 **Rejected:** v1.1's long press on the dock and the investment's overflow menu as ways in; a
