@@ -27,6 +27,7 @@ import com.software.sello.await
 import com.software.sello.awaitDescription
 import com.software.sello.awaitTag
 import com.software.sello.awaitText
+import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_EDIT_TAG
 import com.software.sello.feature.recibo.CATEGORY_DETAIL_TAG
 import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
@@ -153,7 +154,9 @@ class CategoryManagementJourneyTest {
         openCafe()
         edit()
 
-        rule.onNodeWithTag(EDITOR_ARCHIVE_TAG).performClick()
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+        rule.awaitTag(EDITOR_MENU_ARCHIVE_TAG)
+        rule.onNodeWithTag(EDITOR_MENU_ARCHIVE_TAG).performClick()
         rule.awaitText("¿Archivar Café?")
         rule.onAllNodes(hasText("Archivar")).onLast().performClick()
 
@@ -184,7 +187,7 @@ class CategoryManagementJourneyTest {
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         openCafe()
         edit()
-        rule.onNodeWithTag(EDITOR_ARCHIVE_TAG).performClick()
+        rule.onNodeWithTag(EDITOR_UNARCHIVE_TAG).revealed().performClick()
         rule.awaitText("¿Desarchivar Café?")
         rule.onAllNodes(hasText("Desarchivar")).onLast().performClick()
         rule.awaitText("Categoría desarchivada")

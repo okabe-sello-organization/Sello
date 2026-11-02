@@ -337,7 +337,8 @@
     <string name="category_edit_scope_current">Vale desde %1$s en adelante. Los meses anteriores no cambian.</string>
     <string name="category_edit_scope_past">Cambias solo el límite de %1$s. Los demás meses y el límite habitual no cambian.</string>
     <string name="category_edit_limit_locked">Está archivada: no tiene límite de aquí en adelante. Desarchívala para ponerle uno.</string>
-    <string name="category_edit_archived">Archivada. No acepta gastos nuevos; su historia sigue aquí.</string>
+    <string name="category_edit_archived">No acepta gastos nuevos; su historia sigue aquí.</string>
+    <string name="category_edit_archived_label">Archivada</string>
     <string name="category_edit_saved_parts">Se guardó: %1$s. Lo demás no se guardó; inténtalo de nuevo.</string>
     <string name="category_edit_part_name">nombre</string>
     <string name="category_edit_part_icon">ícono</string>
@@ -348,8 +349,8 @@
     <string name="category_edit_conflict_keep">Conservar mis cambios</string>
     <string name="category_edit_archive">Archivar</string>
     <string name="category_edit_unarchive">Desarchivar</string>
-    <string name="category_edit_archive_description">Archivar esta categoría</string>
-    <string name="category_edit_unarchive_description">Desarchivar esta categoría</string>
+    <string name="category_menu_archive">Archivar categoría</string>
+    <string name="category_menu_delete">Borrar categoría</string>
     <string name="category_archive_title">¿Archivar %1$s?</string>
     <string name="category_unarchive_title">¿Desarchivar %1$s?</string>
     <string name="category_archive_effect">Deja de aceptar gastos nuevos. %1$s conserva su límite; desde %2$s queda sin presupuesto hasta que la desarchives.</string>
@@ -371,6 +372,119 @@
     <string name="category_saved_month">Límite de %1$s actualizado. Sus cifras ya lo usan.</string>
     <string name="category_archived_notice">Categoría archivada</string>
     <string name="category_unarchived_notice">Categoría desarchivada</string>
+    <!-- Deleting a category (SELLO-138, ADR 0024) -->
+    <string name="category_delete_counting">Contando lo que tiene %1$s…</string>
+    <string name="category_delete_title">¿Borrar %1$s?</string>
+    <string name="category_delete_empty_body">No tiene gastos ni pagos fijos. Se borran la categoría y su límite.</string>
+    <string name="category_delete_undoable">Esto no se puede deshacer.</string>
+    <string name="category_delete_confirm">Borrar</string>
+    <plurals name="category_delete_expenses">
+        <item quantity="one">%1$s gasto</item>
+        <item quantity="other">%1$s gastos</item>
+    </plurals>
+    <plurals name="category_delete_schedules">
+        <item quantity="one">%1$s pago fijo</item>
+        <item quantity="other">%1$s pagos fijos</item>
+    </plurals>
+    <string name="category_delete_has_both">%1$s tiene %2$s por %3$s, %4$s, y %5$s.</string>
+    <string name="category_delete_has_expenses">%1$s tiene %2$s por %3$s, %4$s.</string>
+    <string name="category_delete_has_schedules">%1$s tiene %2$s y ningún gasto.</string>
+    <plurals name="category_delete_what_now">
+        <item quantity="one">¿Qué hacemos con él?</item>
+        <item quantity="other">¿Qué hacemos con ellos?</item>
+    </plurals>
+    <string name="category_delete_range">de %1$s a %2$s de %3$d</string>
+    <string name="category_delete_range_years">de %1$s de %2$d a %3$s de %4$d</string>
+    <string name="category_delete_one_month">en %1$s de %2$d</string>
+    <string name="category_delete_short_range">%1$s – %2$s %3$d</string>
+    <string name="category_delete_short_range_years">%1$s %2$d – %3$s %4$d</string>
+    <string name="category_delete_short_month">%1$s %2$d</string>
+    <string name="category_delete_move">Moverlos a otra categoría</string>
+    <string name="category_delete_move_note">Los totales de cada mes no cambian.</string>
+    <string name="category_delete_all">Borrar todo</string>
+    <string name="category_delete_all_note">Desaparecen de todos los meses.</string>
+    <string name="category_delete_archive_hint">¿Solo quieres dejar de usarla? %1$s: no se borra nada.</string>
+    <string name="category_delete_archive_link">Archívala</string>
+    <string name="category_delete_pick_title">Mover los gastos de %1$s a</string>
+    <string name="category_delete_pick_caption">%1$s. Lo que queda en %2$s:</string>
+    <string name="category_delete_and">%1$s y %2$s</string>
+    <string name="category_delete_pick_archived">Las archivadas no aparecen: no aceptan gastos.</string>
+    <string name="category_delete_pick_none">No hay otra categoría que acepte gastos. Crea una o desarchiva otra primero.</string>
+    <string name="category_delete_pick_failed">No pudimos leer tus categorías.</string>
+    <string name="category_delete_pick_spoken">%1$s, %2$s</string>
+    <string name="category_delete_move_title">¿Mover a %1$s y borrar %2$s?</string>
+    <string name="category_delete_move_both">%1$s y %2$s pasan a %3$s, en sus mismas fechas.</string>
+    <plurals name="category_delete_move_expenses_lead">
+        <item quantity="one">El gasto</item>
+        <item quantity="other">Los %1$s gastos</item>
+    </plurals>
+    <plurals name="category_delete_move_schedules_tail">
+        <item quantity="one">su pago fijo</item>
+        <item quantity="other">sus %1$s pagos fijos</item>
+    </plurals>
+    <plurals name="category_delete_move_expenses">
+        <item quantity="one">El gasto pasa a %2$s, en su misma fecha.</item>
+        <item quantity="other">Los %1$s gastos pasan a %2$s, en sus mismas fechas.</item>
+    </plurals>
+    <plurals name="category_delete_move_schedules">
+        <item quantity="one">Su pago fijo pasa a %2$s.</item>
+        <item quantity="other">Sus %1$s pagos fijos pasan a %2$s.</item>
+    </plurals>
+    <string name="category_delete_move_limits">Los límites y el arrastre de %1$s se borran.</string>
+    <string name="category_delete_row_spent">Gastado en %1$s, %2$s</string>
+    <string name="category_delete_row_source_limit">Límite de %1$s, %2$s</string>
+    <string name="category_delete_row_target_limit">Límite de %1$s</string>
+    <string name="category_delete_change">%1$s → %2$s</string>
+    <string name="category_delete_change_spoken">%1$s: de %2$s a %3$s</string>
+    <string name="category_delete_goes">%1$s, se borra</string>
+    <string name="category_delete_stays">%1$s, no cambia</string>
+    <string name="category_delete_row_spoken">%1$s: %2$s</string>
+    <string name="category_delete_move_confirm">Mover y borrar</string>
+    <string name="category_delete_all_title">¿Borrar %1$s y todo lo suyo?</string>
+    <string name="category_delete_all_lead">Se borran para siempre:</string>
+    <string name="category_delete_all_expenses_row">%1$s, %2$s</string>
+    <string name="category_delete_all_schedules_row">Pagos fijos</string>
+    <string name="category_delete_all_limits_row">Sus límites y su arrastre</string>
+    <string name="category_delete_all_limits_value">Todos los meses</string>
+    <string name="category_delete_all_past">Los meses pasados mostrarán menos gasto.</string>
+    <string name="category_delete_word_label">Escribe BORRAR para confirmar</string>
+    <string name="category_delete_nothing">No se borró ni se movió nada.</string>
+    <string name="category_delete_changed_title">%1$s cambió</string>
+    <plurals name="category_delete_changed_counts">
+        <item quantity="one">Mientras lo veías, cambió lo que tiene %1$s: ahora es %2$s gasto por %3$s, no %4$s por %5$s.</item>
+        <item quantity="other">Mientras lo veías, cambió lo que tiene %1$s: ahora son %2$s gastos por %3$s, no %4$s por %5$s.</item>
+    </plurals>
+    <string name="category_delete_changed_body">Mientras lo veías, cambió lo que tiene %1$s.</string>
+    <string name="category_delete_changed_review">Revisa las cifras nuevas antes de seguir.</string>
+    <string name="category_delete_review">Revisar</string>
+    <string name="category_delete_target_title">%1$s ya no acepta gastos</string>
+    <string name="category_delete_target_body">%1$s se archivó o se borró mientras elegías. Los gastos de %2$s no pueden ir allí.</string>
+    <string name="category_delete_choose_other">Elegir otra</string>
+    <string name="category_delete_storage_title">No se pudo guardar</string>
+    <string name="category_delete_storage_body">El teléfono no pudo guardar el cambio. %1$s sigue con %2$s.</string>
+    <string name="category_delete_storage_body_plain">El teléfono no pudo guardar el cambio. %1$s sigue como estaba.</string>
+    <plurals name="category_delete_keeps_expenses">
+        <item quantity="one">su gasto</item>
+        <item quantity="other">sus %1$s gastos</item>
+    </plurals>
+    <string name="category_delete_keeps_limits">sus límites</string>
+    <string name="category_delete_count_title">Aún no se puede borrar</string>
+    <string name="category_delete_count_body">No pudimos contar lo que tiene %1$s. Sello no borra nada sin decirte antes exactamente qué se pierde.</string>
+    <string name="category_delete_checking_title">Comprobando…</string>
+    <string name="category_delete_checking_body">Sello no supo si terminó de borrar %1$s y lo está revisando.</string>
+    <string name="category_delete_checking_once">No se borrará dos veces.</string>
+    <string name="category_delete_check_again">Comprobar de nuevo</string>
+    <string name="category_delete_retry">Reintentar</string>
+    <string name="category_delete_cancel">Cancelar</string>
+    <string name="category_deleted_notice">%1$s se borró</string>
+    <plurals name="category_deleted_moved_notice">
+        <item quantity="one">%1$s se borró; su gasto está en %3$s</item>
+        <item quantity="other">%1$s se borró; sus %2$s gastos están en %3$s</item>
+    </plurals>
+    <plurals name="category_deleted_all_notice">
+        <item quantity="one">%1$s y su gasto se borraron</item>
+        <item quantity="other">%1$s y sus %2$s gastos se borraron</item>
+    </plurals>
     <string name="recibo_failed_title">No pudimos leer tu mes</string>
     <string name="recibo_failed">Tus registros siguen guardados. Vuelve a intentarlo.</string>
     <string-array name="weekday_names_short">

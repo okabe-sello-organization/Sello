@@ -220,7 +220,8 @@ class CategoryCarryEditorTest {
                 HandCategoryReads(),
                 testMoney()
             ),
-            { CatchUpResult(emptyList(), stopped = null) }
+            { CatchUpResult(emptyList(), stopped = null) },
+            HandRemovalPreviews()
         )
 
     private val CategoryManagementViewModel.now get() = state.value

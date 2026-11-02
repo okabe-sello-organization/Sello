@@ -158,7 +158,8 @@ class CategoryEditorViewModel(
 
             CategoryEditorAction.KeepEditing -> mutable.update { it.copy(confirmDiscard = false) }
 
-            // A category that does not exist yet has nothing to archive or to reload.
+            // A category that does not exist yet has nothing to archive, delete or reload.
+            is RemovalAction,
             CategoryEditorAction.Archive,
             CategoryEditorAction.ArchiveConfirmed,
             CategoryEditorAction.ArchiveDismissed,

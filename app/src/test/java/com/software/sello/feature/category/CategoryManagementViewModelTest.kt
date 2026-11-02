@@ -197,7 +197,8 @@ class CategoryManagementViewModelTest {
         {
             events += "catch-up"
             caughtUp
-        }
+        },
+        HandRemovalPreviews()
     )
 
     private fun SavedStateHandle.afterProcessDeath() =

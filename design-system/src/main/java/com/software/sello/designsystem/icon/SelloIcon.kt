@@ -19,6 +19,7 @@ enum class SelloIcon(@DrawableRes val filled: Int, @DrawableRes val outlined: In
         R.drawable.ic_sello_account_balance_outlined
     ),
     Apartment(R.drawable.ic_sello_apartment),
+    Archive(R.drawable.ic_sello_archive),
     CurrencyBitcoin(R.drawable.ic_sello_currency_bitcoin),
     Flag(R.drawable.ic_sello_flag),
     Close(R.drawable.ic_sello_close),
