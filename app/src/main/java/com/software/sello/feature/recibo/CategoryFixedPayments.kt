@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -150,6 +151,8 @@ internal fun CategoryFixedPayments(
                 text = stringResource(R.string.upcoming_all_schedules),
                 onClick = onAllSchedules,
                 kind = ButtonKind.Text,
+                // Starts at the slip's content edge, under the rows (design .text-link).
+                contentPadding = PaddingValues(0.dp),
                 modifier = Modifier.testTag(CATEGORY_DETAIL_FIXED_ALL_TAG)
             )
         }
