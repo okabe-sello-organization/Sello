@@ -62,7 +62,7 @@ class GoalDetailMovementsTest {
      * MT40: aportes 200.000, 250.000, 260.000, 300.000, 350.000 and 350.000 on the 2nd of
      * May to October, then a retiro of 400.000 on 20 oct for the car: 1.310.000 saved.
      */
-    private fun summary(): GoalSummary {
+    private fun summary(lastYear: Boolean = false): GoalSummary {
         val aportes = listOf(200_000L, 250_000L, 260_000L, 300_000L, 350_000L, 350_000L)
         val movements = aportes.mapIndexed { i, pesos ->
             movement(i + 1, GoalMovementKind.Contribution, pesos, LocalDate.of(2026, 5 + i, 2))
@@ -72,6 +72,9 @@ class GoalDetailMovementsTest {
             400_000,
             LocalDate.of(2026, 10, 20),
             "Arreglo del carro"
+        ) + listOfNotNull(
+            movement(8, GoalMovementKind.Contribution, 100_000, LocalDate.of(2025, 12, 15))
+                .takeIf { lastYear }
         )
         val history = GoalHistory(
             Goal(
@@ -109,8 +112,8 @@ class GoalDetailMovementsTest {
         Instant.EPOCH
     )
 
-    private fun show(all: Boolean = false, look: Look = Look()) {
-        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(summary()), null))
+    private fun show(all: Boolean = false, look: Look = Look(), lastYear: Boolean = false) {
+        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(summary(lastYear)), null))
         val detail = GoalsRenderModel(testMoney()).detail(ready, id, today)
             as GoalDetailState.Ready
         rule.showSello(look) {
@@ -173,6 +176,18 @@ class GoalDetailMovementsTest {
                 hasContentDescription("más 200.000 pesos")
         ).assertExists()
         rule.onNode(row(1) and hasContentDescription("200.000 pesos")).assertExists()
+    }
+
+    @Test
+    fun aMonthOfAnotherYearSaysItsYear() {
+        show(all = true, lastYear = true)
+
+        rule.onNode(
+            hasTestTag("goal.movements.month.2025-12") and hasText("DICIEMBRE 2025") and
+                hasContentDescription("más 100.000 pesos")
+        ).assertExists()
+        rule.onNode(hasTestTag("goal.movements.month.2026-10") and hasText("OCTUBRE"))
+            .assertExists()
     }
 
     @Test

@@ -427,7 +427,10 @@ private fun Movements(
             val first = index == 0 || month(shown[index - 1]) != month(movement)
             if (state.allMovements && first) {
                 MonthLine(
-                    months.name(month(movement)),
+                    // Another year's month says its year, as its rows' days do.
+                    month(movement).let {
+                        if (it.year == state.today.year) months.name(it) else months.title(it)
+                    },
                     goal.movementMonths.getValue(month(movement)),
                     Modifier.testTag("goal.movements.month.${month(movement)}")
                 )

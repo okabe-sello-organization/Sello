@@ -93,7 +93,7 @@ fun MovementRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         if (milestone != null) {
-            MilestonePlace(milestone, diameter = 34.dp, labelSize = 9.sp)
+            MilestonePlace(milestone, diameter = 34.dp, labelSize = 9.sp, innerRing = false)
         } else {
             val (fill, ink) = when (tone) {
                 MovementTone.In -> colors.semantic.gainSoft to colors.semantic.gain
@@ -156,7 +156,7 @@ data class MilestoneSpec(
 
 /**
  * One stamp place. [diameter] is 60dp on cards, 66dp in the celebration and 34dp, with
- * a smaller [labelSize], in a movement row; [ink] replaces the
+ * a smaller [labelSize] and no [innerRing], in a movement row; [ink] replaces the
  * state's colour where the place sits on green. [land] brings an earned stamp down once,
  * after [landDelayMillis] so stamps earned together come down in turn; [relight] lights a
  * stamp earned again from its kept ink instead. Reduced motion shows it at once.
@@ -170,7 +170,8 @@ fun MilestonePlace(
     ink: Color? = null,
     relight: Boolean = false,
     landDelayMillis: Long = 0,
-    labelSize: TextUnit = 14.sp
+    labelSize: TextUnit = 14.sp,
+    innerRing: Boolean = true
 ) {
     val colors = SelloTheme.colors
     val reduced = SelloTheme.reducedMotion
@@ -250,8 +251,7 @@ fun MilestonePlace(
                         }
                     )
                 )
-                // A small stamp, as in a movement row, has the edge only.
-                if (earned && diameter >= DOUBLE_RING_MIN) {
+                if (earned && innerRing) {
                     drawCircle(
                         color,
                         radius = size.minDimension / 2 - edge - 3.dp.toPx() - 0.75.dp.toPx(),
@@ -289,8 +289,6 @@ fun MilestonePlace(
 }
 
 private const val KEPT_ALPHA = 0.42f
-
-private val DOUBLE_RING_MIN = 48.dp
 
 /** Between stamps earned together, as on the v2 celebrations page. */
 private const val LAND_STAGGER_MILLIS = 160L
