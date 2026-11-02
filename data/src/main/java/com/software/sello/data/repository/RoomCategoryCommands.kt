@@ -3,6 +3,7 @@ package com.software.sello.data.repository
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.entity.CategoryEntity
 import com.software.sello.data.local.entity.DefaultLimitEntity
+import com.software.sello.data.local.entity.ExpenseEntity
 import com.software.sello.data.local.entity.ScheduleEntity
 import com.software.sello.data.mapper.StoredReceipt
 import com.software.sello.data.mapper.decodeAll
@@ -44,11 +45,13 @@ import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.domain.port.RemovalPreviewFailure
 import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.UnarchiveCategory
 import java.time.Instant
+import java.time.LocalDate
 import java.time.YearMonth
 
 /**
@@ -192,6 +195,8 @@ class RoomCategoryCommands(
         if (category.version != command.expectedVersion) {
             return refused(CommandRejection.VersionConflict(category.version))
         }
+        // Nothing is left to update afterwards: the category is gone.
+        if (command is DeleteCategory) return delete(command, category, profile, now)
         val next = category.copy(
             version = nextCounter(category.version, CategoryEntity.TABLE, id.value, "version"),
             updatedAt = now
@@ -293,10 +298,133 @@ class RoomCategoryCommands(
                 next
             }
 
-            is DeleteCategory -> error("SELLO-138 stub: replaced by the data work")
+            is DeleteCategory -> error("A deletion is decided above")
         }
         check(database.categoryDao().update(changed.toEntity()) == 1)
         return Written.Done(id)
+    }
+
+    /**
+     * Deletes the category for good (ADR 0024). What it holds is read again here, in this
+     * transaction, and must be exactly what the person confirmed. Moving its expenses into
+     * a carrying category is a correction of that category's chain (CP20–CP22). Its limits
+     * and carry go in both cases; nothing cascades, so each row that refers to it is moved
+     * or deleted here first. Every refusal comes before the first write.
+     */
+    private suspend fun delete(
+        command: DeleteCategory,
+        category: Category,
+        profile: FinancialProfile,
+        now: Instant
+    ): Written {
+        val id = command.categoryId.value
+        // One day for the figures and the carry check alike.
+        val today = clock.today.value.date
+        val contents = when (
+            val read = database.categoryContents(command.categoryId, command.disposal, today)
+        ) {
+            is Outcome.Success -> read.value
+            is Outcome.Failure -> return refused(read.error.rejection())
+        }
+        if (contents.preview != command.confirmed) {
+            return refused(Specific(CategoryRejection.ContentsChanged(contents.preview)))
+        }
+        when (val target = contents.target) {
+            null -> deleteContents(id, contents)
+
+            else -> {
+                val moved = contents.expenses.map { it.copy(categoryId = target.id.value) }
+                carryRefusal(moved, today, profile, command)?.let { return it }
+                moveContents(id, target, contents, now)
+            }
+        }
+        database.carryChainDao().deleteOfCategory(id)
+        database.limitDao().deleteMonthsOf(id)
+        database.limitDao().deleteDefaultsOf(id)
+        val deleted = database.categoryDao().delete(id, category.version)
+        check(deleted == 1) { "The category changed inside the transaction that read it" }
+        return Written.Done(command.categoryId)
+    }
+
+    /** Why [moved] cannot go into their new category for carry, or null when they can. */
+    private suspend fun carryRefusal(
+        moved: List<ExpenseEntity>,
+        today: LocalDate,
+        profile: FinancialProfile,
+        command: DeleteCategory
+    ): Written.Refused? = when (
+        val carry = database.expensesCarry(
+            null,
+            moved,
+            YearMonth.from(today),
+            today,
+            profile.revision,
+            correctionIdentity(command),
+            command.confirmation
+        )
+    ) {
+        null -> null
+
+        is ExpensesCarry.Failed -> Written.Refused(storageFailed(carry.failure))
+
+        is ExpensesCarry.Unavailable ->
+            refused(Specific(CategoryRejection.CarryUnavailable(carry.failure)))
+
+        is ExpensesCarry.Unconfirmed -> refused(
+            Specific(CategoryRejection.CorrectionUnconfirmed(carry.confirmation, carry.correction))
+        )
+    }
+
+    /**
+     * Every expense and fixed payment of [id] goes to [target] as it is, and the kept copy
+     * of a deleted expense with them, so undoing that deletion puts it where the others
+     * went. Only the months [target] spends in change, never its chains' months, so its
+     * chains stay as stored. [target] is one record with its limits and carry: its version
+     * goes up.
+     */
+    private suspend fun moveContents(
+        id: String,
+        target: Category,
+        contents: CategoryContents,
+        now: Instant
+    ) {
+        val to = target.id.value
+        val at = now.toEpochMilli()
+        for (row in contents.expenses) {
+            val version = nextCounter(row.version, ExpenseEntity.TABLE, row.id, "version")
+            val moved = database.expenseDao().moveTo(row.id, row.version, to, version, at)
+            check(moved == 1) { "The expense changed inside the transaction that read it" }
+        }
+        for (schedule in contents.schedules) {
+            val row = schedule.row
+            val version = nextCounter(row.version, ScheduleEntity.TABLE, row.id, "version")
+            val moved = database.scheduleDao().moveTo(row.id, row.version, to, version, at)
+            check(moved == 1) { "The schedule changed inside the transaction that read it" }
+        }
+        database.deletedExpenseDao().retarget(id, to)
+        val next = target.copy(
+            version = nextCounter(target.version, CategoryEntity.TABLE, to, "version"),
+            updatedAt = now
+        )
+        check(database.categoryDao().update(next.toEntity()) == 1)
+    }
+
+    /** Every expense and fixed payment of [id] goes, and the kept copy of a deleted expense. */
+    private suspend fun deleteContents(id: String, contents: CategoryContents) {
+        database.deletedExpenseDao().removeOfCategory(id)
+        val removed = database.expenseDao().deleteOfCategory(id)
+        check(removed == contents.expenses.size) {
+            "The expenses changed inside the transaction that read them"
+        }
+        for (schedule in contents.schedules) {
+            val row = schedule.row
+            check(database.scheduleDao().removePauses(row.id) == schedule.pauses) {
+                "The pauses changed inside the transaction that read them"
+            }
+            check(database.scheduleDao().delete(row.id, row.version) == 1) {
+                "The schedule changed inside the transaction that read it"
+            }
+        }
     }
 
     override suspend fun find(
@@ -311,6 +439,16 @@ class RoomCategoryCommands(
                 Outcome.Success(receipt.value.categoryId?.let { receipt.value.change() })
         }
     }
+}
+
+/** Why a deletion's preview could not be read, as the command's refusal. */
+private fun RemovalPreviewFailure.rejection(): CommandRejection<CategoryRejection> = when (this) {
+    RemovalPreviewFailure.CategoryMissing -> Specific(CategoryRejection.CategoryMissing)
+    RemovalPreviewFailure.TargetMissing -> Specific(CategoryRejection.TargetMissing)
+    RemovalPreviewFailure.TargetArchived -> Specific(CategoryRejection.TargetArchived)
+    RemovalPreviewFailure.SameCategory -> Specific(CategoryRejection.SameCategory)
+    RemovalPreviewFailure.TotalOverflow -> Specific(CategoryRejection.TotalOverflow)
+    is RemovalPreviewFailure.Storage -> CommandRejection.StorageFailed(failure)
 }
 
 /** A century of monthly changes; more than that is not a real history. */

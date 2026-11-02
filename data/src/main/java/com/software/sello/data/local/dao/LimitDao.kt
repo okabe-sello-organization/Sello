@@ -96,6 +96,14 @@ interface LimitDao {
         limit: Int
     ): List<MonthLimitEntity>
 
+    /** A category's whole default history, for deleting the category. Returns the rows removed. */
+    @Query("DELETE FROM default_limit WHERE category_id = :categoryId")
+    suspend fun deleteDefaultsOf(categoryId: String): Int
+
+    /** Every month limit of a category, for deleting the category. Returns the rows removed. */
+    @Query("DELETE FROM month_limit WHERE category_id = :categoryId")
+    suspend fun deleteMonthsOf(categoryId: String): Int
+
     /** For a restore only. */
     @Query("DELETE FROM default_limit")
     suspend fun deleteAllDefaults(): Int

@@ -113,6 +113,26 @@ interface ExpenseDao {
         updatedAt: Long
     ): Int
 
+    /**
+     * Moves the expense to [categoryId] while it is still at [expectedVersion], changing
+     * nothing else it holds. Returns how many rows changed: one or none.
+     */
+    @Query(
+        "UPDATE expense SET category_id = :categoryId, version = :newVersion, " +
+            "updated_at = :updatedAt WHERE id = :id AND version = :expectedVersion"
+    )
+    suspend fun moveTo(
+        id: String,
+        expectedVersion: Long,
+        categoryId: String,
+        newVersion: Long,
+        updatedAt: Long
+    ): Int
+
+    /** Every expense of a category, for deleting the category. Returns the rows removed. */
+    @Query("DELETE FROM expense WHERE category_id = :categoryId")
+    suspend fun deleteOfCategory(categoryId: String): Int
+
     /** Removes the expense only while it is still at [expectedVersion]. Returns the rows removed. */
     @Query("DELETE FROM expense WHERE id = :id AND version = :expectedVersion")
     suspend fun delete(id: String, expectedVersion: Long): Int
@@ -151,6 +171,20 @@ interface ExpenseDao {
         categoryId: String,
         from: String,
         until: String,
+        afterDate: String,
+        afterSequence: Long,
+        limit: Int
+    ): List<ExpenseEntity>
+
+    /** A category's every expense after ([afterDate], [afterSequence]) in date order. */
+    @Query(
+        "SELECT * FROM expense WHERE category_id = :categoryId " +
+            "AND (effective_date > :afterDate " +
+            "OR (effective_date = :afterDate AND sequence > :afterSequence)) " +
+            "ORDER BY effective_date, sequence LIMIT :limit"
+    )
+    suspend fun allInCategory(
+        categoryId: String,
         afterDate: String,
         afterSequence: Long,
         limit: Int

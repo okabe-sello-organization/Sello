@@ -1,5 +1,6 @@
 package com.software.sello.data
 
+import com.software.sello.data.repository.correctionIdentity
 import com.software.sello.data.repository.inputDigest
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryId
@@ -15,12 +16,16 @@ import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.port.ArchiveCategory
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateExpense
+import com.software.sello.domain.port.DeleteCategory
 import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.Disposal
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.RecordGoalMovements
+import com.software.sello.domain.port.RemovalPreview
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
+import com.software.sello.domain.port.TargetPreview
 import java.time.LocalDate
 import java.time.YearMonth
 import org.junit.Assert.assertEquals
@@ -133,6 +138,68 @@ class CommandIdentityTest {
                 receipt(aporte, retiro.copy(note = null)),
                 receipt(aporte)
             ).size
+        )
+    }
+
+    private val comida = CategoryId.of(id(5)).value()
+    private val preview = RemovalPreview(
+        categoryId = category,
+        expenses = 3,
+        total = Money.cop(60_000),
+        firstMonth = YearMonth.of(2026, 8),
+        lastMonth = YearMonth.of(2026, 10),
+        schedules = 1,
+        month = YearMonth.of(2026, 10),
+        spentThisMonth = Money.cop(40_000),
+        limitThisMonth = BudgetLimit.finite(Money.cop(50_000)).value(),
+        target = TargetPreview(
+            comida,
+            Money.cop(80_000),
+            BudgetLimit.finite(Money.cop(200_000)).value()
+        )
+    )
+    private val removal =
+        DeleteCategory(operation, 4, category, 3, Disposal.MoveTo(comida), preview)
+
+    /** ADR 0024: the disposal, each field of the confirmed preview and the confirmation. */
+    @Test
+    fun aDeletionIsItsDisposalEveryFieldOfThePreviewAndItsConfirmation() {
+        val confirmed = CorrectionConfirmation(17, correctionIdentity(removal))
+        val target = preview.target!!
+        val variants = listOf(
+            removal,
+            removal.copy(disposal = Disposal.DeleteAll, confirmed = preview.copy(target = null)),
+            removal.copy(confirmed = preview.copy(target = null)),
+            removal.copy(disposal = Disposal.MoveTo(CategoryId.of(id(6)).value())),
+            removal.copy(expectedVersion = 4),
+            removal.copy(confirmed = preview.copy(categoryId = comida)),
+            removal.copy(confirmed = preview.copy(expenses = 4)),
+            removal.copy(confirmed = preview.copy(total = Money.cop(60_001))),
+            removal.copy(confirmed = preview.copy(firstMonth = null, lastMonth = null)),
+            removal.copy(confirmed = preview.copy(firstMonth = YearMonth.of(2026, 9))),
+            removal.copy(confirmed = preview.copy(lastMonth = YearMonth.of(2026, 9))),
+            removal.copy(confirmed = preview.copy(schedules = 0)),
+            removal.copy(confirmed = preview.copy(month = YearMonth.of(2026, 11))),
+            removal.copy(confirmed = preview.copy(spentThisMonth = Money.cop(0))),
+            removal.copy(confirmed = preview.copy(limitThisMonth = null)),
+            removal.copy(confirmed = preview.copy(limitThisMonth = BudgetLimit.Unlimited)),
+            removal.copy(
+                confirmed = preview.copy(limitThisMonth = BudgetLimit.finite(Money.cop(0)).value())
+            ),
+            removal.copy(
+                confirmed = preview.copy(target = target.copy(spentThisMonth = Money.cop(1)))
+            ),
+            removal.copy(confirmed = preview.copy(target = target.copy(limitThisMonth = null))),
+            removal.copy(confirmation = confirmed),
+            removal.copy(confirmation = confirmed.copy(revision = 18))
+        )
+
+        assertEquals(variants.size, variants.map { inputDigest(it) }.toSet().size)
+        assertEquals(inputDigest(removal), inputDigest(removal.copy()))
+        // The confirmation names the change without itself, as for every correction.
+        assertEquals(
+            inputDigest(removal),
+            correctionIdentity(removal.copy(confirmation = confirmed))
         )
     }
 }

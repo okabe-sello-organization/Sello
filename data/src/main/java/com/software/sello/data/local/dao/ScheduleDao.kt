@@ -71,6 +71,22 @@ interface ScheduleDao {
         updatedAt: Long
     ): Int
 
+    /**
+     * Moves the payment to [categoryId] while it is still at [expectedVersion], its terms,
+     * pauses and checkpoint unchanged. Returns how many rows changed: one or none.
+     */
+    @Query(
+        "UPDATE schedule SET category_id = :categoryId, version = :newVersion, " +
+            "updated_at = :updatedAt WHERE id = :id AND version = :expectedVersion"
+    )
+    suspend fun moveTo(
+        id: String,
+        expectedVersion: Long,
+        categoryId: String,
+        newVersion: Long,
+        updatedAt: Long
+    ): Int
+
     /** Raises the version alone, for a change that writes only pauses. */
     @Query(
         "UPDATE schedule SET version = :newVersion, updated_at = :updatedAt " +

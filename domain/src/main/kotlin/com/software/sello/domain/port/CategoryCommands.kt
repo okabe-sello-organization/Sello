@@ -214,6 +214,9 @@ sealed interface CategoryRejection {
     /** A category cannot receive its own expenses. */
     data object SameCategory : CategoryRejection
 
+    /** The sum of the category's expenses does not fit in `Money`; no total can be confirmed. */
+    data object TotalOverflow : CategoryRejection
+
     /** A past month inside a carry chain cannot become unlimited (CP13). */
     data class ChainMonthUnlimited(val month: YearMonth) : CategoryRejection
 

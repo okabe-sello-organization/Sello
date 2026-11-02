@@ -21,6 +21,17 @@ interface DeletedExpenseDao {
     @Query("DELETE FROM deleted_expense")
     suspend fun clear(): Int
 
+    /** Kept copies of [fromCategoryId]'s expenses now belong to [toCategoryId]. Returns the rows changed. */
+    @Query(
+        "UPDATE deleted_expense SET category_id = :toCategoryId " +
+            "WHERE category_id = :fromCategoryId"
+    )
+    suspend fun retarget(fromCategoryId: String, toCategoryId: String): Int
+
+    /** Drops the kept copies of a category's expenses. Returns how many were removed. */
+    @Query("DELETE FROM deleted_expense WHERE category_id = :categoryId")
+    suspend fun removeOfCategory(categoryId: String): Int
+
     /** The highest sequence a kept copy holds, or null when there is none. */
     @Query("SELECT MAX(sequence) FROM deleted_expense")
     suspend fun highestSequence(): Long?
