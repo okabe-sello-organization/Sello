@@ -646,12 +646,18 @@ sees every locked screen unchanged.
   once: carry starts at 0 and the whole month counts from day 1. On, its caption says
   "Desde ene 2027 · trae −40.000 · este mes 60.000". A refusal (CP3, CP25) comes back from
   the command and is said under the switch, with what to do.
-- **Breakdowns:** Recibo, category detail and Resumen's selected month give **Límite base**,
+- **Breakdowns:** category detail and Resumen's selected month give **Límite base**,
   signed **Sobrante** (0 or more) or **Faltante** (negative) with its words, **Límite del
   mes** and **Gastado** as receipt lines, plus the month it comes from, the chain's start
-  and the day read (CP27). A carrying category's cell says "con sobrante" or "con
-  faltante". A negative capacity is Excedido with one sentence why; 0 por día sits beside
-  the signed deficit (CP14, CP15).
+  and the day read (CP27). A negative capacity is Excedido with one sentence why; 0 por
+  día sits beside the signed deficit (CP14, CP15).
+- **Recibo** (owner, 2026-11-02): a carrying category's circle wears a ↻ badge where Sin
+  límite's ∞ goes, and its signed carry sits under the amount ("+80.000", "−20.000", "0")
+  in gain or loss ink. Under the per-day line the month gives **Límite del mes** with its
+  sum under it ("5.500.000 base + ↻ 600.000 sobrante", wrapping rather than shrinking in
+  the millions), then **Gastado** and "Cifras al 22 feb". Which categories carry, and
+  since when, is on the cells and their detail; the red sum says why the month is
+  Excedido, so the month has no sentence of its own.
 - **Dropping:** turning off, archiving (after its own slip) or Sin límite with a carry ≠ 0
   asks "¿Olvidar el faltante de 20.000?" (or el sobrante) with this month's capacity and
   remaining before and after, as the command answered them; a moved amount brings the slip

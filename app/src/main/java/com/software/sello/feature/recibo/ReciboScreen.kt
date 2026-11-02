@@ -74,10 +74,8 @@ import com.software.sello.designsystem.component.dashedOutline
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.presentation.carry.CarryBreakdownSection
 import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.carry.CarryProblemSlip
-import com.software.sello.presentation.carry.overallCarryFootnote
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.month.monthNames
 import kotlinx.coroutines.launch
@@ -220,18 +218,11 @@ private fun SummarySlip(summary: ReciboSummary, onAdjust: () -> Unit, onReserved
         )
     ) {
         summary.closed?.let { ClosedMonthNote(it) }
-        summary.carry?.why?.let { CarryWhyNote(it) }
         // Revisar's two facts under the big number, before the tear line (v2 Recibo).
         summary.shortfall?.let { ShortfallNote(it) }
         summary.perDay?.let { PerDayFigure(it, over = summary.stamp == ReciboStamp.Over) }
-        // Under the per-day line, only while a category carries (docs/design/v2/arrastre.html).
-        summary.carry?.let { carry ->
-            CarryBreakdownSection(
-                carry.figures,
-                overallCarryFootnote(carry.categories.map { it.name to it.since }, carry.asOf),
-                prefix = carry.categories.singleOrNull()?.name
-            )
-        }
+        // Under the per-day line, only while a category carries (docs/design/v2 Arrastre).
+        summary.carry?.let { MonthCarrySum(it) }
         summary.reserved?.let { ReservedFootnote(it, onReserved) }
         if (summary.adjustable) AdjustBudgetLink(onAdjust)
     }
@@ -508,19 +499,12 @@ private fun CategoriesSlip(
 
                     category.limit == null -> stringResource(R.string.recibo_cell_spent_caption)
 
-                    category.carry != null -> stringResource(
-                        if (category.carry.direction == CarryDirection.Deficit) {
-                            R.string.carry_cell_deficit
-                        } else {
-                            R.string.carry_cell_surplus
-                        }
-                    )
-
                     else -> null
                 },
                 staggerIndex = index,
                 unlimited = category.unlimited,
-                archived = category.archived
+                archived = category.archived,
+                carry = category.carry?.carry
             )
         }
         if (active.isNotEmpty()) CategoryGrid(active, cell = cell)
@@ -545,15 +529,27 @@ internal fun categoryDescription(category: ReciboCategory): String {
     val headline = reciboHeadline(category.figure.headline)
     val stamp = stampText(category.figure.stamp)
     val amount = category.figure.amount.spoken
-    val sentence = if (category.limit != null) {
+    val carry = category.carry
+    val sentence = if (category.limit != null && carry != null) {
         stringResource(
-            if (category.carry !=
-                null
-            ) {
-                R.string.recibo_cell_limited_carry
-            } else {
-                R.string.recibo_cell_limited
-            },
+            R.string.recibo_cell_limited_carry,
+            category.name,
+            headline,
+            amount,
+            category.limit.spoken,
+            stamp,
+            stringResource(
+                if (carry.direction == CarryDirection.Deficit) {
+                    R.string.recibo_cell_carry_deficit
+                } else {
+                    R.string.recibo_cell_carry_surplus
+                },
+                carry.carryMagnitude.spoken
+            )
+        )
+    } else if (category.limit != null) {
+        stringResource(
+            R.string.recibo_cell_limited,
             category.name,
             headline,
             amount,
@@ -631,10 +627,10 @@ const val RECIBO_FAILED_TAG = "recibo:failed"
 internal fun MoneyTextValue.text(): String = (if (sign == MoneySign.Minus) "−" else "") + digits
 
 /**
- * Why the verdict is Excedido when an earlier deficit made it so (CP14): "Tu límite del
- * mes es 400.000: Comida trae −150.000 de meses anteriores.", or, when the capacity is
- * not above zero, "Te pasaste 150.000 en meses anteriores y tu límite base es 100.000:
- * febrero empezó en −50.000."
+ * Why a category's verdict is Excedido when an earlier deficit made it so (CP14): "Tu
+ * límite del mes es 400.000: Comida trae −150.000 de meses anteriores.", or, when the
+ * capacity is not above zero, "Te pasaste 150.000 en meses anteriores y tu límite base es
+ * 100.000: febrero empezó en −50.000."
  */
 @Composable
 internal fun CarryWhyNote(why: CarryWhy, modifier: Modifier = Modifier) {
@@ -648,17 +644,10 @@ internal fun CarryWhyNote(why: CarryWhy, modifier: Modifier = Modifier) {
             why.capacity.text()
         )
 
-        why.category != null ->
-            stringResource(
-                R.string.carry_why_overall,
-                why.capacity.text(),
-                why.category,
-                why.carry.text()
-            )
-
         else -> stringResource(
-            R.string.carry_why_overall_many,
+            R.string.carry_why_overall,
             why.capacity.text(),
+            why.category,
             why.carry.text()
         )
     }

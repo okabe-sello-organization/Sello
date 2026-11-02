@@ -144,8 +144,37 @@ class CarryScreenshotTest {
             ReciboScreen(render.recibo(ReadState.Ready(sc11)), {}, PaddingValues(12.dp))
         }
         rule.captureStill("src/test/screenshots/carry-deficit-cobalto-light-font1.0.png")
-        // The carrying cell names the direction: a deficit is never "con sobrante".
-        rule.onNodeWithText("con faltante", useUnmergedTree = true).assertExists()
+        // The carrying cell gives its signed carry: a deficit is never shown as a sobrante.
+        rule.onNodeWithText("−150.000", useUnmergedTree = true).assertExists()
+    }
+
+    /**
+     * Colombian sizes on 22 feb 2027: Comida (base 2.000.000) brings +600.000 and Hogar
+     * (base 3.500.000) −2.350.000 from ene; Transporte 500.000 does not carry. The month's
+     * sum has to fit beside the cells' signed carries at the narrowest width.
+     */
+    @Test
+    fun reciboInMillions() {
+        val millions = carryMonthOf(
+            "2027-02-22",
+            listOf(
+                categoryIn(1, "Comida", 2_000_000, icon = "restaurant"),
+                categoryIn(2, "Hogar", 3_500_000),
+                categoryIn(3, "Transporte", 500_000)
+            ),
+            listOf(
+                storedExpense(130, 1, "2027-01-10", 1_400_000),
+                storedExpense(131, 2, "2027-01-12", 5_850_000),
+                storedExpense(132, 1, "2027-02-05", 900_000),
+                storedExpense(133, 2, "2027-02-06", 3_000_000),
+                storedExpense(134, 3, "2027-02-07", 300_000)
+            ),
+            mapOf(1 to ene, 2 to ene)
+        )
+        rule.showSello(Look()) {
+            ReciboScreen(render.recibo(ReadState.Ready(millions)), {}, PaddingValues(12.dp))
+        }
+        rule.captureStill("src/test/screenshots/carry-recibo-millions-cobalto-light-font1.0.png")
     }
 
     @Test

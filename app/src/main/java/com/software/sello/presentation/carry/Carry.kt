@@ -113,26 +113,14 @@ fun carryWords(figures: CarryFigures): String = when (figures.direction) {
     CarryDirection.Zero -> stringResource(R.string.carry_zero)
 }
 
-/**
- * Base, carry, capacity and spent as receipt lines, with [footnote] under them. [prefix]
- * names the category before the words when the lines are a month's sum ("Comida · …").
- */
+/** Base, carry, capacity and spent as receipt lines, with [footnote] under them. */
 @Composable
 fun CarryBreakdownSection(
     figures: CarryFigures,
     footnote: String?,
-    modifier: Modifier = Modifier,
-    prefix: String? = null
+    modifier: Modifier = Modifier
 ) {
-    val words = carryWords(figures).let { words ->
-        if (prefix ==
-            null
-        ) {
-            words
-        } else {
-            stringResource(R.string.carry_words_of, prefix, words.lowercaseFirst())
-        }
-    }
+    val words = carryWords(figures)
     val lines = buildList {
         add(CarryLine(stringResource(R.string.carry_base), figures.base))
         add(CarryLine(carryLabel(figures.carry), figures.carry, words))
@@ -148,8 +136,6 @@ fun CarryBreakdownSection(
     CarryBreakdown(lines, modifier.testTag(CARRY_BREAKDOWN_TAG), footnote)
 }
 
-private fun String.lowercaseFirst() = replaceFirstChar { it.lowercase() }
-
 /**
  * Where a category's carry comes from (CP27): "Viene del restante de ene 2027 · pasas lo que
  * sobra o falta desde ene 2027", or only the start in the chain's first month; with [asOf], the day read.
@@ -163,27 +149,6 @@ fun categoryCarryFootnote(figures: CarryFigures, asOf: LocalDate? = null): Strin
     } ?: stringResource(R.string.carry_since, dates.monthYear(start))
     return asOf?.let { stringResource(R.string.carry_read_on, origin, dates.shortDay(it, it)) }
         ?: origin
-}
-
-/**
- * Where the month's carry comes from: one category, named with its start, or how many
- * categories carry; then the day read.
- */
-@Composable
-fun overallCarryFootnote(categories: List<Pair<String, YearMonth>>, asOf: LocalDate): String {
-    val dates = dateLabels()
-    val day = dates.shortDay(asOf, asOf)
-    val single = categories.singleOrNull()
-    return if (single != null) {
-        stringResource(
-            R.string.carry_overall_one,
-            single.first,
-            dates.monthYear(single.second),
-            day
-        )
-    } else {
-        pluralStringResource(R.plurals.carry_overall_many, categories.size, categories.size, day)
-    }
 }
 
 /** A verdict as a list says it: "Al día", "Excedido", "Cumplido". */
