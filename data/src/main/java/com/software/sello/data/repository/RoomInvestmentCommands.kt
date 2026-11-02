@@ -5,6 +5,7 @@ import com.software.sello.data.local.entity.DeletedInvestmentMovementEntity
 import com.software.sello.data.local.entity.InvestmentEntity
 import com.software.sello.data.local.entity.InvestmentMovementEntity
 import com.software.sello.data.local.entity.UsdRateEntity
+import com.software.sello.data.mapper.SUBJECT_SEPARATOR
 import com.software.sello.data.mapper.StoredReceipt
 import com.software.sello.data.mapper.investmentAmount
 import com.software.sello.data.mapper.toEntity
@@ -128,7 +129,12 @@ class RoomInvestmentCommands internal constructor(
     /** The committed change a receipt describes, or null when it is not an investment's. */
     private fun StoredReceipt.committedOrNull(): CommittedInvestment? = when {
         investmentId != null -> CommittedInvestment(receipt, investmentId)
+
+        investmentIds.isNotEmpty() ->
+            CommittedInvestment(receipt, null, investmentIds = investmentIds)
+
         usdRateId != null -> CommittedInvestment(receipt, null)
+
         else -> null
     }
 
@@ -181,15 +187,19 @@ class RoomInvestmentCommands internal constructor(
     }
 
     /** The investment [command] is about, at the version the caller read. */
-    private suspend fun load(command: InvestmentEdit): Load {
-        val row = database.investmentDao().byId(command.investmentId.value)
+    private suspend fun load(command: InvestmentEdit): Load =
+        load(command.investmentId, command.expectedVersion)
+
+    /** The investment [id], at the [expectedVersion] the caller read. */
+    private suspend fun load(id: InvestmentId, expectedVersion: Long): Load {
+        val row = database.investmentDao().byId(id.value)
             ?: return Load.Refused(Rejected(Specific(InvestmentRejection.InvestmentMissing)))
         val history =
             when (val read = row.toHistory(database.investmentDao().movements(row.id))) {
                 is Outcome.Success -> read.value
                 is Outcome.Failure -> return Load.Refused(storageFailed(read.error))
             }
-        if (history.investment.version != command.expectedVersion) {
+        if (history.investment.version != expectedVersion) {
             return Load.Refused(
                 Rejected(CommandRejection.VersionConflict(history.investment.version))
             )
@@ -417,10 +427,12 @@ class RoomInvestmentCommands internal constructor(
         }
 
     /**
-     * Every line at the next recording positions, in line order, with one version raise,
-     * one revision and one receipt, or nothing (SELLO-129). Each line's own amount and
-     * date are checked first, every refused line named; then the history with all of
-     * them, which names the one line at fault.
+     * Every line at its investment's next recording positions, in line order, with one
+     * version raise per investment, one revision and one receipt, or nothing (SELLO-129,
+     * SELLO-140). Each investment named is loaded at the version the caller read, in the
+     * order the lines first name them; a missing or changed one refuses the receipt. Each
+     * line's own amount, currency and date are then checked, every refused line named;
+     * then each investment's history with its own lines, which names the line at fault.
      */
     private suspend fun decide(command: RecordInvestmentMovements): InvestmentCommandOutcome {
         val movementIds = command.lines.indices.map { lineMovementId(command.operationId, it) }
@@ -434,13 +446,19 @@ class RoomInvestmentCommands internal constructor(
         if (command.lines.size !in 1..RecordInvestmentMovements.MAX_LINES) {
             return Rejected(Specific(InvestmentRejection.LineCount(command.lines.size)))
         }
-        val loaded = when (val load = load(command)) {
-            is Load.Found -> load.investment
-            is Load.Refused -> return load.outcome
+        val named = command.lines.map { it.investmentId }.distinct()
+        if (command.expectedVersions.keys != named.toSet()) {
+            return Rejected(Specific(InvestmentRejection.VersionsUnmatched))
         }
-        val investment = loaded.history.investment
+        val loaded = named.associateWith { id ->
+            when (val load = load(id, command.expectedVersions.getValue(id))) {
+                is Load.Found -> load.investment
+                is Load.Refused -> return load.outcome
+            }
+        }
         val refused = command.lines.mapIndexedNotNull { position, line ->
-            val reason = amountRejection(line.kind, line.amount, investment.currency)
+            val currency = loaded.getValue(line.investmentId).history.investment.currency
+            val reason = amountRejection(line.kind, line.amount, currency)
                 ?: dateRejection(line.date)
             reason?.let { RefusedInvestmentLine(position, it) }
         }
@@ -448,12 +466,14 @@ class RoomInvestmentCommands internal constructor(
             return Rejected(Specific(InvestmentRejection.LinesRefused(refused)))
         }
         val now = audit.now()
-        var sequence = loaded.row.nextSequence
+        // The last recording position each investment's lines have taken so far.
+        val taken = mutableMapOf<InvestmentId, Long>()
         val movements = command.lines.mapIndexed { position, line ->
-            if (position > 0) {
-                sequence =
-                    nextCounter(sequence, InvestmentEntity.TABLE, loaded.row.id, "next_sequence")
-            }
+            val row = loaded.getValue(line.investmentId).row
+            val sequence = taken[line.investmentId]
+                ?.let { nextCounter(it, InvestmentEntity.TABLE, row.id, "next_sequence") }
+                ?: row.nextSequence
+            taken[line.investmentId] = sequence
             InvestmentMovement(
                 id = movementIds[position],
                 kind = line.kind,
@@ -466,14 +486,24 @@ class RoomInvestmentCommands internal constructor(
                 updatedAt = now
             )
         }
-        when (val worked = InvestmentPolicy.withLines(loaded.history, movements)) {
+        val placed = command.lines.mapIndexed { position, line ->
+            loaded.getValue(line.investmentId).history to movements[position]
+        }
+        when (val worked = InvestmentPolicy.withLinesAcross(placed)) {
             is Outcome.Success -> Unit
             is Outcome.Failure -> return Rejected(Specific(worked.error.toRejection()))
         }
-        movements.forEach { database.investmentDao().insertMovement(it.toEntity(investment.id)) }
-        val next = nextCounter(sequence, InvestmentEntity.TABLE, loaded.row.id, "next_sequence")
-        write(loaded.row, now, loaded.row.copy(nextSequence = next))
-        val receipt = commit(profile, command, loaded.row.id, now)
+        command.lines.forEachIndexed { position, line ->
+            database.investmentDao().insertMovement(movements[position].toEntity(line.investmentId))
+        }
+        for (id in named) {
+            val row = loaded.getValue(id).row
+            val next =
+                nextCounter(taken.getValue(id), InvestmentEntity.TABLE, row.id, "next_sequence")
+            write(row, now, row.copy(nextSequence = next))
+        }
+        val subject = named.joinToString(SUBJECT_SEPARATOR) { it.value }
+        val receipt = commit(profile, command, subject, now)
         return Committed(receipt.committed().copy(movementIds = movementIds), replayed = false)
     }
 
@@ -691,6 +721,20 @@ private fun lineMovementId(operation: OperationId, position: Int): InvestmentMov
         is Outcome.Success -> id.value
         is Outcome.Failure -> error("A name-based identifier was not canonical")
     }
+}
+
+/**
+ * A receipt's history refusals, one per investment that does not work out: every line at
+ * fault, in line order, or, when one investment's total does not fit, that bare reason.
+ */
+internal fun List<InvestmentLineError>.toRejection(): InvestmentRejection {
+    val reasons = map { it.toRejection() }
+    return reasons.firstOrNull { it !is InvestmentRejection.LinesRefused }
+        ?: InvestmentRejection.LinesRefused(
+            reasons.filterIsInstance<InvestmentRejection.LinesRefused>()
+                .flatMap { it.lines }
+                .sortedBy { it.position }
+        )
 }
 
 /** A batch's history refusal, naming its line; a total that does not fit names none. */
