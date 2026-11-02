@@ -31,6 +31,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
+import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.EmptySlip
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.Footnote
@@ -38,6 +39,7 @@ import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
 import com.software.sello.designsystem.component.SplitBar
@@ -64,7 +66,8 @@ fun InversionesScreen(
     dates: DateLabels,
     padding: PaddingValues,
     onOpenRate: (() -> Unit)? = null,
-    openRows: Boolean = false
+    openRows: Boolean = false,
+    onRecordSeveral: (() -> Unit)? = null
 ) {
     val direction = LocalLayoutDirection.current
     val spacing = SelloTheme.spacing
@@ -128,7 +131,7 @@ fun InversionesScreen(
                                 Total(total, state.rate, state, dates, onOpenRate)
                             }
                         }
-                        item { Rows(state, dates, onAction, openRows) }
+                        item { Rows(state, dates, onAction, openRows, onRecordSeveral) }
                     }
                 }
             }
@@ -229,7 +232,8 @@ private fun Rows(
     state: InversionesState.Ready,
     dates: DateLabels,
     onAction: (InversionesAction) -> Unit,
-    openRows: Boolean
+    openRows: Boolean,
+    onRecordSeveral: (() -> Unit)?
 ) {
     val valued = state.rows.filter { it.value != null }
     // The bar leaves out a part of 0, so the drawn slices take the inks in turn and
@@ -304,8 +308,21 @@ private fun Rows(
                 even = row.`return`?.direction == GainDirection.Even
             )
         }
+        // Movements of several investments at once, on one receipt (SELLO-142).
+        onRecordSeveral?.let {
+            SelloButton(
+                text = stringResource(R.string.inversiones_record_several),
+                onClick = it,
+                kind = ButtonKind.Text,
+                icon = SelloIcon.ReceiptLong,
+                contentPadding = PaddingValues(end = SelloTheme.spacing.md),
+                modifier = Modifier.testTag(INVERSIONES_RECORD_SEVERAL_TAG)
+            )
+        }
     }
 }
+
+const val INVERSIONES_RECORD_SEVERAL_TAG = "inversiones.recordSeveral"
 
 /** "40 %", or "<1 %" for a part above zero that would round to nothing. */
 @Composable

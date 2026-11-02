@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -43,6 +44,7 @@ import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloNotice
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.rememberSelectedFirst
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.InvestmentMovementKind
@@ -102,10 +104,12 @@ private val MoneyTextValue.written: String
     get() = if (symbol.isEmpty()) digits else "$symbol $digits"
 
 /**
- * Varios movimientos (v2 *Anotar varios*, the investment's receipt): ✕ with the title and
- * the investment's name; the receipt taking the free height, each line with its type,
- * date and amount; the type chips and the note of the highlighted line; the ink action;
- * the pad, with the comma for dollars. The foot says **Aportado**: aportes − retiros.
+ * Varios movimientos (v2 *Anotar varios*, the investments' receipt): ✕ with the title; the
+ * receipt taking the free height, each line with its investment, its type, date and note
+ * under it, and its amount in that investment's currency; the investment and type chips and
+ * the note of the highlighted line; the ink action; the pad, with the comma while the line
+ * is in dollars. The foot says **Aportado**: aportes − retiros, in pesos at today's rate
+ * when COP and USD lines mix, or each currency's part when there is no rate.
  */
 @Composable
 fun InvestmentMovementsScreen(
@@ -114,9 +118,6 @@ fun InvestmentMovementsScreen(
 ) {
     SelloScaffold(
         title = stringResource(R.string.investment_movements_title),
-        subtitle = state.name.takeIf { it.isNotEmpty() }?.let {
-            if (state.usd) stringResource(R.string.investment_movements_in_dollars, it) else it
-        },
         navigationIcon = {
             MovementCloseButton(
                 { onAction(InvestmentMovementsAction.Back) },
@@ -204,6 +205,14 @@ private fun Receipt(
             icon = false
         )
 
+        state.missingInvestments > 0 -> BulkCaption.Problem(
+            pluralStringResource(
+                R.plurals.investment_movements_missing_investments,
+                state.missingInvestments,
+                state.missingInvestments
+            )
+        )
+
         state.missingKinds > 0 -> BulkCaption.Problem(
             pluralStringResource(
                 R.plurals.investment_movements_missing,
@@ -235,10 +244,7 @@ private fun Receipt(
         },
         highlighted = state.highlighted,
         caption = caption,
-        total = BulkTotal(
-            stringResource(R.string.investment_movements_contributed),
-            state.contributed ?: MoneyTextValue(MoneySign.None, "", "—", "—")
-        ),
+        total = total(state, dates),
         onSelect = { onAction(InvestmentMovementsAction.Select(it)) },
         onRemove = { onAction(InvestmentMovementsAction.Remove(it)) },
         onAdd = { onAction(InvestmentMovementsAction.AddLine) },
@@ -257,7 +263,38 @@ private fun Receipt(
     )
 }
 
-/** A line as the receipt draws it: its type, the date and note under it, the signed amount. */
+/** **Aportado** as the foot writes it: one figure, the figure in pesos and its rate, or the parts. */
+@Composable
+private fun total(state: InvestmentMovementsState, dates: DateLabels): BulkTotal {
+    val label = stringResource(R.string.investment_movements_contributed)
+    return when (val total = state.contributed) {
+        null -> BulkTotal(label, MoneyTextValue(MoneySign.None, "", "—", "—"))
+
+        is ContributedTotal.One -> BulkTotal(label, total.amount)
+
+        is ContributedTotal.InPesos -> BulkTotal(
+            label,
+            total.amount,
+            note = stringResource(
+                R.string.investment_movements_in_pesos,
+                total.rate,
+                dates.shortDay(total.rateDate, state.today)
+            )
+        )
+
+        is ContributedTotal.Parts -> BulkTotal(
+            label,
+            total.pesos,
+            second = total.dollars,
+            note = stringResource(R.string.investment_movements_no_rate)
+        )
+    }
+}
+
+/**
+ * A line as the receipt draws it: its investment, the type, date and note under it, the
+ * signed amount.
+ */
 @Composable
 private fun bulkLine(
     line: MovementLineModel,
@@ -269,20 +306,18 @@ private fun bulkLine(
     val mark = kind?.mark()
     val day = dates.day(line.date, state.today)
     // The highlighted line carries its date as a pill under it; the others write it.
-    val detail = if (highlighted) {
-        line.note.ifBlank { null }
-    } else {
-        listOf(day, line.note).filter { it.isNotBlank() }.joinToString(" · ")
-    }
+    val type = kind?.let { stringResource(it.label()) }
+        ?: stringResource(R.string.investment_movements_no_type)
+    val detail = listOf(type, day.takeUnless { highlighted }.orEmpty(), line.note)
+        .filter { it.isNotBlank() }.joinToString(" · ")
     return BulkLine(
         key = line.key,
         mark = mark?.first,
         markTone = mark?.second ?: BulkMarkTone.Gain,
-        title = kind?.let { stringResource(it.label()) }
-            ?: stringResource(R.string.investment_movements_no_type),
+        title = line.investmentName ?: stringResource(R.string.investment_movements_no_investment),
         // The sign is drawn; what is read stays the amount itself.
         amount = line.amount?.copy(sign = kind.sign()),
-        titleSoft = kind == null,
+        titleSoft = line.investmentName == null,
         detail = detail,
         reason = reason(line, state)
     )
@@ -293,6 +328,10 @@ private fun bulkLine(
 private fun reason(line: MovementLineModel, state: InvestmentMovementsState): String? {
     val dates = dateLabels()
     return when {
+        line.lost -> stringResource(R.string.investment_movements_investment_gone)
+
+        line.missingInvestment -> stringResource(R.string.investment_movements_choose_investment)
+
         line.missingKind -> stringResource(R.string.investment_movements_choose_type)
 
         line.invalidAmount -> stringResource(R.string.investment_movements_invalid_amount)
@@ -328,7 +367,7 @@ private fun reason(line: MovementLineModel, state: InvestmentMovementsState): St
     }
 }
 
-/** The type chips and the note of the highlighted line. */
+/** The investment chips, in two rows, the type chips and the note of the highlighted line. */
 @Composable
 private fun Choices(
     state: InvestmentMovementsState,
@@ -336,14 +375,46 @@ private fun Choices(
 ) {
     Text(
         if (state.lines.size > 1) {
-            stringResource(R.string.investment_movements_type_line, state.highlighted + 1)
+            stringResource(R.string.investment_movements_investment_line, state.highlighted + 1)
         } else {
-            stringResource(R.string.investment_movement_type)
+            stringResource(R.string.investment_movement_investment)
         },
         Modifier.semantics { heading() },
         color = SelloTheme.colors.ink,
         style = MaterialTheme.typography.titleSmall
     )
+    if (state.investments.isEmpty()) {
+        Text(
+            stringResource(R.string.investment_movement_none),
+            color = SelloTheme.colors.inkSoft,
+            style = MaterialTheme.typography.bodyMedium
+        )
+    } else {
+        key(state.current.key) {
+            val order = rememberSelectedFirst(state.investments, state.current.investmentId) {
+                it.id
+            }
+            ChipRows(
+                order.items.size,
+                Modifier.testTag(INVESTMENT_MOVEMENTS_INVESTMENTS_TAG)
+            ) { index ->
+                val investment = order.items[index]
+                SelloChip(
+                    investment.name,
+                    state.current.investmentId == investment.id,
+                    {
+                        order.picked()
+                        onAction(InvestmentMovementsAction.InvestmentPicked(investment.id))
+                    },
+                    icon = InvestmentIcons.iconFor(investment.iconKey),
+                    enabled = state.editable,
+                    modifier = Modifier.testTag(
+                        "$INVESTMENT_MOVEMENTS_INVESTMENT_TAG.${investment.id}"
+                    )
+                )
+            }
+        }
+    }
     ChipRows(Kinds.size, Modifier.testTag(INVESTMENT_MOVEMENTS_KINDS_TAG), rows = 1) { index ->
         val kind = Kinds[index]
         SelloChip(
@@ -374,9 +445,9 @@ private fun Removed(
         onAction(InvestmentMovementsAction.RemovalShown)
     }
     SelloNotice(
-        message = removed.kind?.let {
-            stringResource(R.string.investment_movements_removed, stringResource(it.label()))
-        } ?: stringResource(R.string.investment_movements_removed_plain),
+        message = (removed.investmentName ?: removed.kind?.let { stringResource(it.label()) })
+            ?.let { stringResource(R.string.investment_movements_removed, it) }
+            ?: stringResource(R.string.investment_movements_removed_plain),
         modifier = modifier.testTag(INVESTMENT_MOVEMENTS_REMOVED_TAG),
         actionLabel = stringResource(R.string.correction_undo),
         onAction = { onAction(InvestmentMovementsAction.UndoRemove) },
@@ -460,9 +531,10 @@ private fun Composer(
         MoneySign.Minus -> "−"
         MoneySign.None -> ""
     }
+    val type = kind?.let { stringResource(it.label()) }
+        ?: stringResource(R.string.investment_movements_no_type)
     MovementNoteComposer(
-        kind = kind?.let { stringResource(it.label()) }
-            ?: stringResource(R.string.investment_movements_no_type),
+        kind = line.investmentName?.let { "$it · $type" } ?: type,
         figure = line.amount?.let { sign + it.written },
         draft = state.composerDraft,
         length = state.composerLength,
@@ -485,6 +557,8 @@ const val INVESTMENT_MOVEMENTS_FAILED_TAG = "investment.movements.failed"
 const val INVESTMENT_MOVEMENTS_RECEIPT_TAG = "investment.movements.receipt"
 const val INVESTMENT_MOVEMENTS_DATE_TAG = "investment.movements.date"
 const val INVESTMENT_MOVEMENTS_KINDS_TAG = "investment.movements.kinds"
+const val INVESTMENT_MOVEMENTS_INVESTMENTS_TAG = "investment.movements.investments"
+const val INVESTMENT_MOVEMENTS_INVESTMENT_TAG = "investment.movements.investment"
 const val INVESTMENT_MOVEMENTS_KIND_TAG = "investment.movements.kind"
 const val INVESTMENT_MOVEMENTS_NOTE_TAG = "investment.movements.note"
 const val INVESTMENT_MOVEMENTS_REMOVED_TAG = "investment.movements.removed"

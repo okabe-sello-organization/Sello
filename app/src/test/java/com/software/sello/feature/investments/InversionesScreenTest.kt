@@ -369,6 +369,34 @@ class InversionesScreenTest {
     }
 
     @Test
+    fun anotarVariosSitsAtTheListsFootAndIsAbsentWithNoInvestment() {
+        val render = InvestmentsRenderModel(money)
+        var opened = 0
+        var shown by mutableStateOf(render.overview(ReadState.Ready(board()), today))
+        rule.showSello {
+            InversionesScreen(
+                shown,
+                {},
+                dateLabels(),
+                PaddingValues(16.dp),
+                onRecordSeveral = { opened++ }
+            )
+        }
+        rule.onNodeWithTag("inversiones.empty").assertExists()
+        rule.onNodeWithTag(INVERSIONES_RECORD_SEVERAL_TAG).assertDoesNotExist()
+
+        val cripto =
+            investment("Cripto", null, listOf(Triple(aporte, 2_000_000, "2026-08-01")))
+        shown = render.overview(ReadState.Ready(board(cripto)), today)
+        rule.onNodeWithTag(INVERSIONES_LIST_TAG)
+            .performScrollToNode(hasTestTag(INVERSIONES_RECORD_SEVERAL_TAG))
+        rule.onNodeWithTag(INVERSIONES_RECORD_SEVERAL_TAG)
+            .assert(hasText("Anotar varios"))
+            .performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
     fun loadingFailureEmptyAndNoValuesAreEachTheirOwnState() {
         val render = InvestmentsRenderModel(money)
         var shown by mutableStateOf<InversionesState>(InversionesState.Loading)

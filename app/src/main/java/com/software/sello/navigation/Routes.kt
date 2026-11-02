@@ -48,13 +48,14 @@ data class InvestmentMovementRoute(
 )
 
 /**
- * Varios movimientos: several movements of [investmentId] on one receipt. From Anotar
+ * Varios movimientos: movements of one or several investments on one receipt, line one in
+ * [investmentId] when opened from it (none from the Inversiones list). From Anotar
  * movimiento, [kind] (as [InvestmentMovementRoute] takes it), [amount] (minor units, cents
  * when [usd]), [note] and [date] are what was typed there, to become line one.
  */
 @Serializable
 data class InvestmentMovementsRoute(
-    val investmentId: String,
+    val investmentId: String? = null,
     val kind: String? = null,
     val amount: String? = null,
     val usd: Boolean = false,

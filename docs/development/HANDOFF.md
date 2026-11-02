@@ -5,7 +5,7 @@
 > subject to the user's current instructions.
 
 **Snapshot:** 2026-11-02 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Every epic is Done: E01–E10, E12, E13 and E15–E26. The owner dropped E14 and the
+Every epic is Done: E01–E10, E12, E13 and E15–E27. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -29,9 +29,12 @@ This summary is refreshed when an epic closes and adds no verification claims.
 - Main and tools launchers now use the existing Marca artwork, including themed icons.
 - Expense/income history, editing, deletion and guarded six-second undo.
 - Anotar varios ([E23](../tickets/E23-bulk-entry/README.md),
-  [E25](../tickets/E25-varios-everywhere/README.md)): several expenses or several incomes
-  on one receipt, Aportar varios on a goal and Varios movimientos on an investment; each
-  receipt holds one kind, set by where it opens. Every entry sheet's Varios pill hands
+  [E25](../tickets/E25-varios-everywhere/README.md),
+  [E27](../tickets/E27-varios-across/README.md)): several expenses or several incomes on
+  one receipt, a goal receipt across several goals and an investment receipt across several
+  investments, each line picking its own; mixed COP/USD totals in COP at today's rate.
+  Anotar varios also sits at the foot of Metas and Inversiones. Each receipt holds one kind,
+  set by where it opens. Every entry sheet's Varios pill hands
   what is typed on as line one. Saved whole or not at all, up to 30 lines, no undo after
   saving.
 - Exact totals, budget remaining/allowance, net flow and allocation. Resumen leads with

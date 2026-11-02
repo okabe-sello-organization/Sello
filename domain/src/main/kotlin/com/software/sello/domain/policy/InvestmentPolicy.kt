@@ -281,6 +281,19 @@ object InvestmentPolicy {
             .toMoney(Currency.COP)
 
     /**
+     * Aportes − retiros of a receipt with COP and USD lines, in pesos (E19, SELLO-142): the
+     * signed USD sum [dollars] converts once at [rate], half up to the peso, and adds to the
+     * COP sum [pesos], as the overview converts its sums. Null when the figures are not in
+     * COP and USD, or the total does not fit.
+     */
+    fun inPesos(pesos: Money, dollars: Money, rate: UsdRate): Money? {
+        if (pesos.currency != Currency.COP || dollars.currency != Currency.USD) return null
+        val converted = pesos(BigInteger.valueOf(dollars.minorUnits), rate) ?: return null
+        return (BigInteger.valueOf(pesos.minorUnits) + BigInteger.valueOf(converted.minorUnits))
+            .toMoney(Currency.COP)
+    }
+
+    /**
      * The overview in pesos (rule 13, IN06, IN07, IN17, IN28, IN35): investments with a
      * value count; COP sums add up and each USD sum converts once at [rate]; the gain and
      * return come from the converted figures; items are largest value in pesos first, ties

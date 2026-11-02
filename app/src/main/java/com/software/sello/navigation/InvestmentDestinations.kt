@@ -65,6 +65,7 @@ internal fun InversionesDestination(
     onOpenRate: (() -> Unit)? = null,
     onAdd: (() -> Unit)? = null,
     onMove: (() -> Unit)? = null,
+    onMoveSeveral: (() -> Unit)? = null,
     notice: (@Composable () -> Unit)? = null
 ) {
     val model: InversionesViewModel = viewModel(factory = viewModels)
@@ -111,7 +112,8 @@ internal fun InversionesDestination(
             dates = dateLabels(),
             padding = padding,
             onOpenRate = onOpenRate,
-            openRows = onOpen != null
+            openRows = onOpen != null,
+            onRecordSeveral = onMoveSeveral
         )
     }
     BackHandler(enabled = !state.monthPickerOpen) { tabs.onSelect(ShellTab.Recibo.id) }
@@ -249,6 +251,9 @@ internal fun NavGraphBuilder.investmentDestinations(
             onAdd = { navigation.navigate(InvestmentEditorRoute()) { launchSingleTop = true } },
             onMove = {
                 navigation.navigate(InvestmentMovementRoute()) { launchSingleTop = true }
+            },
+            onMoveSeveral = {
+                navigation.navigate(InvestmentMovementsRoute()) { launchSingleTop = true }
             },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         )

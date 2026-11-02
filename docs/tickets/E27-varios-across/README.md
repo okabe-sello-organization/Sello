@@ -1,6 +1,6 @@
 # SELLO-E27 — Varios across goals and investments
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person records movements of several goals, or of several investments, on one bulk receipt, as expense receipts already do across categories.
 - **Exit:** Aportar varios and Varios movimientos let each line pick its goal or investment, save every line of every goal or investment in one operation or none, and open from the Metas and Inversiones lists with none chosen.

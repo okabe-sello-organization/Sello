@@ -575,4 +575,27 @@ class InvestmentPolicyTest {
         assertNull(InvestmentPolicy.returnOf(cop(10), cop(0)))
         assertEquals(gana(100), InvestmentPolicy.returnOf(cop(10_000), cop(100_000)))
     }
+
+    @Test
+    fun aMixedReceiptIsInPesosWithItsDollarSumConvertedOnceHalfUp() {
+        val rate = rate("4000", "2026-10-24").rate
+        // USD 250,50 × 4.000 = 1.002.000; + 1.000.000 = 2.002.000.
+        assertEquals(cop(2_002_000), InvestmentPolicy.inPesos(cop(1_000_000), usd(25_050), rate))
+        // A retiro of USD 100,00 × 4.000 = −400.000; 1.000.000 − 400.000 = 600.000.
+        assertEquals(cop(600_000), InvestmentPolicy.inPesos(cop(1_000_000), usd(-10_000), rate))
+        val half = rate("4125", "2026-10-24").rate
+        // USD 0,10 × 4.125 = 412,5, half up to 413; and −412,5 to −413.
+        assertEquals(cop(413), InvestmentPolicy.inPesos(cop(0), usd(10), half))
+        assertEquals(cop(-413), InvestmentPolicy.inPesos(cop(0), usd(-10), half))
+        val cents = rate("4123.45", "2026-10-24").rate
+        // USD 0,01 × 4.123,45 = 41,2345, down to 41.
+        assertEquals(cop(41), InvestmentPolicy.inPesos(cop(0), usd(1), cents))
+    }
+
+    @Test
+    fun aMixedTotalThatDoesNotFitOrIsNotCopAndUsdIsNull() {
+        val rate = rate("4000", "2026-10-24").rate
+        assertNull(InvestmentPolicy.inPesos(cop(Long.MAX_VALUE), usd(100), rate))
+        assertNull(InvestmentPolicy.inPesos(usd(100), cop(100), rate))
+    }
 }

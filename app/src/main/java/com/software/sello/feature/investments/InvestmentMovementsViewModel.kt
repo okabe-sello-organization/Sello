@@ -14,6 +14,7 @@ import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.DecimalDraft
 import com.software.sello.domain.policy.InvestmentPolicy
@@ -52,10 +53,12 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 /**
- * Varios movimientos (SELLO-134): several aportes, values, retiros and dividends of one
- * investment on one receipt, saved with [RecordInvestmentMovements] (SELLO-129, SELLO-140)
- * as one operation, or not at all. Each line has its own type, amount, date and note; a new
- * line copies the type and date of the one above. Lines without an amount are left out.
+ * Varios movimientos (SELLO-134, SELLO-142): aportes, values, retiros and dividends of one
+ * or several investments on one receipt, saved with [RecordInvestmentMovements] (SELLO-129,
+ * SELLO-140) as one operation, or not at all. Each line has its own investment, type,
+ * amount (in that investment's currency), date and note; a new line copies the investment,
+ * type and date of the one above. Lines without an amount are left out. Opened from the
+ * Inversiones list, no investment is chosen.
  * The lines, the highlighted one and the operation in flight live in [saved], so a
  * restored receipt opens as it was left and only asks about an operation it had sent,
  * never sending it again. A line storage refused is marked with its reason and the
@@ -72,8 +75,14 @@ class InvestmentMovementsViewModel(
     private val money: MoneyFormatter,
     private val corrections: Corrections
 ) : ViewModel() {
+    /**
+     * [usd] is the currency the line is typed in: its investment's as last read, kept so a
+     * line whose investment is deleted meanwhile still shows what was typed.
+     */
     private data class Line(
         val key: String,
+        val investment: String?,
+        val usd: Boolean,
         val kind: InvestmentMovementKind?,
         val pesos: AmountDraft,
         val dollars: DecimalDraft,
@@ -95,11 +104,37 @@ class InvestmentMovementsViewModel(
         val comma: Boolean,
         val cents: String,
         @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
-        val note: String
+        val note: String,
+        val investment: String?,
+        val usd: Boolean
     )
 
     @Serializable
     private data class Saved(val lines: List<SavedLine>, val highlighted: Int, val nextKey: Long)
+
+    /**
+     * A line as a receipt saved before SELLO-142 kept it, with no investment of its own: it
+     * restores into the investment the receipt was opened from. The saved draft is read in
+     * order, so such a receipt never reads as a [Saved] (its lines are two fields short).
+     */
+    @Serializable
+    private data class SavedLineBefore142(
+        val key: String,
+        val kind: String?,
+        val pesos: String?,
+        val whole: String,
+        val comma: Boolean,
+        val cents: String,
+        @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
+        val note: String
+    )
+
+    @Serializable
+    private data class SavedBefore142(
+        val lines: List<SavedLineBefore142>,
+        val highlighted: Int,
+        val nextKey: Long
+    )
 
     private data class Removed(val index: Int, val line: Line)
 
@@ -113,10 +148,11 @@ class InvestmentMovementsViewModel(
         val removed: Removed? = null
     )
 
-    private val investmentId: String =
-        checkNotNull(saved[KEY_INVESTMENT]) { "Varios movimientos needs its investment" }
+    /** The investment it was opened from; null from the Inversiones list. */
+    private val investmentId: String? = saved[KEY_INVESTMENT]
 
     private val drafts = SavedDraft(saved, DRAFT, Saved.serializer())
+    private val draftsBefore142 = SavedDraft(saved, DRAFT, SavedBefore142.serializer())
     private val submission = Submission(saved, OPERATION, ids)
 
     private val draft = MutableStateFlow(restored() ?: opening())
@@ -158,6 +194,7 @@ class InvestmentMovementsViewModel(
             InvestmentMovementsAction.AddLine -> if (now.canAdd) {
                 val above = current.lines.last()
                 val line = blank(current.nextKey, above.kind, above.date)
+                    .copy(investment = above.investment, usd = above.usd)
                 change(
                     current.copy(
                         lines = current.lines + line,
@@ -186,6 +223,26 @@ class InvestmentMovementsViewModel(
 
             is InvestmentMovementsAction.Kind ->
                 if (editable) line(current) { it.copy(kind = action.kind) }
+
+            is InvestmentMovementsAction.InvestmentPicked -> {
+                val picked = summary(readable(board.value), action.id)
+                if (editable && picked != null) {
+                    val usd = picked.history.investment.currency == Currency.USD
+                    line(current) {
+                        // Another currency: what was typed meant other money, so it goes.
+                        if (usd == usdOf(it)) {
+                            it.copy(investment = action.id, usd = usd)
+                        } else {
+                            it.copy(
+                                investment = action.id,
+                                usd = usd,
+                                pesos = AmountDraft.Empty,
+                                dollars = DecimalDraft(MAX_WHOLE)
+                            )
+                        }
+                    }
+                }
+            }
 
             is InvestmentMovementsAction.Digit -> if (editable) {
                 if (now.usd) {
@@ -283,9 +340,9 @@ class InvestmentMovementsViewModel(
 
     /**
      * The first draft: what was typed in Anotar movimiento becomes line one and a second
-     * line, of the same type and date, waits for the next amount; otherwise one line, of the
-     * type it was opened from, if any. A hint that is not valid is dropped, not shown as an
-     * error the person did not make.
+     * line, of the same investment, type and date, waits for the next amount; otherwise one
+     * line, of the investment and type it was opened from, if any. A hint that is not valid
+     * is dropped, not shown as an error the person did not make.
      */
     private fun opening(): Draft {
         val today = clock.today.value.date
@@ -294,15 +351,17 @@ class InvestmentMovementsViewModel(
             ?.takeIf { Note.of(it) is Outcome.Success }.orEmpty()
         val date = saved.get<String>(KEY_PREFILL_DATE)?.let(::parseDate)
             ?.takeIf { InvestmentPolicy.acceptsDate(it, today) } ?: today
-        val first = prefilled(blank(0, kind, date), kind)
+        val usd = saved.get<Boolean>(KEY_PREFILL_USD) == true
+        fun opened(key: Long) = blank(key, kind, date).copy(investment = investmentId, usd = usd)
+        val first = prefilled(opened(0), kind)
         return if (first != null) {
             Draft(
-                lines = listOf(first.copy(note = note), blank(1, kind, date)),
+                lines = listOf(first.copy(note = note), opened(1)),
                 highlighted = 1,
                 nextKey = 2
             )
         } else {
-            Draft(listOf(blank(0, kind, date).copy(note = note)), highlighted = 0, nextKey = 1)
+            Draft(listOf(opened(0).copy(note = note)), highlighted = 0, nextKey = 1)
         }
     }
 
@@ -335,6 +394,8 @@ class InvestmentMovementsViewModel(
 
     private fun blank(key: Long, kind: InvestmentMovementKind?, date: LocalDate) = Line(
         key = key.toString(),
+        investment = null,
+        usd = false,
         kind = kind,
         pesos = AmountDraft.Empty,
         dollars = DecimalDraft(MAX_WHOLE),
@@ -344,13 +405,34 @@ class InvestmentMovementsViewModel(
 
     /** The saved receipt, when it is one this screen can hold. */
     private fun restored(): Draft? {
-        val stored = drafts.read() ?: return null
+        val stored = drafts.read() ?: draftsBefore142.read()?.let { before ->
+            Saved(
+                lines = before.lines.map {
+                    SavedLine(
+                        it.key,
+                        it.kind,
+                        it.pesos,
+                        it.whole,
+                        it.comma,
+                        it.cents,
+                        it.date,
+                        it.note,
+                        investment = investmentId,
+                        usd = it.whole.isNotEmpty() || it.comma
+                    )
+                },
+                highlighted = before.highlighted,
+                nextKey = before.nextKey
+            )
+        } ?: return null
         if (stored.lines.size !in 1..InvestmentMovementsState.MAX_LINES) return null
         if (stored.highlighted !in stored.lines.indices) return null
         return Draft(
             lines = stored.lines.map {
                 Line(
                     key = it.key,
+                    investment = it.investment,
+                    usd = it.usd,
                     kind = it.kind?.let(::kindOf),
                     pesos = it.pesos?.let { pesos ->
                         if (pesos == ZERO) ZeroPesos else AmountDraft.paste(pesos)
@@ -365,7 +447,9 @@ class InvestmentMovementsViewModel(
         )
     }
 
-    private fun change(next: Draft) {
+    private fun change(changed: Draft) {
+        // Each line keeps the currency of its investment as read, for when it is deleted.
+        val next = changed.copy(lines = changed.lines.map { it.copy(usd = usdOf(it)) })
         drafts.write(
             Saved(
                 lines = next.lines.map {
@@ -377,7 +461,9 @@ class InvestmentMovementsViewModel(
                         comma = it.dollars.comma,
                         cents = it.dollars.cents,
                         date = it.date,
-                        note = it.note
+                        note = it.note,
+                        investment = it.investment,
+                        usd = it.usd
                     )
                 },
                 highlighted = next.highlighted,
@@ -429,10 +515,13 @@ class InvestmentMovementsViewModel(
         }
     }
 
-    /** Anything on the receipt worth asking about before it is thrown away. */
+    /**
+     * Anything on the receipt worth asking about before it is thrown away; the investment
+     * it was opened from is not.
+     */
     private fun written(current: Draft) = current.lines.any {
         it.pesos != AmountDraft.Empty || !it.dollars.empty || it.kind != null ||
-            it.note.isNotBlank()
+            it.note.isNotBlank() || (it.investment != null && it.investment != investmentId)
     }
 
     /** The board to work from: the last one read, also after a failed refresh. */
@@ -442,8 +531,18 @@ class InvestmentMovementsViewModel(
         is ReadState.Failed -> state.lastGood
     }
 
-    private fun summary(board: InvestmentBoard?): InvestmentSummary? =
-        board?.investments?.firstOrNull { it.history.investment.id.value == investmentId }
+    private fun summary(board: InvestmentBoard?, id: String?): InvestmentSummary? =
+        id?.let { board?.investments?.firstOrNull { it.history.investment.id.value == id } }
+
+    /** The line's investment as last read, when there is one. */
+    private fun summary(board: InvestmentBoard?, line: Line) = summary(board, line.investment)
+
+    /** [line] is typed in dollars: its investment's currency as read, or as last kept. */
+    private fun usdOf(line: Line, board: InvestmentBoard? = readable(this.board.value)) =
+        summary(board, line)?.let { it.history.investment.currency == Currency.USD } ?: line.usd
+
+    private fun currencyOf(line: Line, board: InvestmentBoard?) =
+        if (usdOf(line, board)) Currency.USD else Currency.COP
 
     /** What was typed on [line], in [currency], whatever its type; null while nothing is. */
     private fun typedMoney(line: Line, currency: Currency): Money? = when (currency) {
@@ -479,18 +578,57 @@ class InvestmentMovementsViewModel(
         )
     }
 
-    /** Aportes − retiros of the lines that may be recorded. */
-    private fun contributed(lines: List<Line>, currency: Currency): MoneyTextValue? {
-        var total = ExactTotal.zero(currency)
-        lines.forEach { line ->
+    /**
+     * Aportes − retiros of the lines that may be recorded, each in its own currency; a line
+     * with no investment is left out. With COP and USD typed lines it is in pesos at today's
+     * [rate] (E19), or each currency's part when there is none; null when a sum does not
+     * fit. With nothing typed it is 0 in the currency of the lines' investments, pesos when
+     * they mix or none is chosen.
+     */
+    private fun contributed(
+        lines: List<Line>,
+        board: InvestmentBoard?,
+        rate: UsdRateEntry?
+    ): ContributedTotal? {
+        val totals = mutableMapOf(
+            Currency.COP to ExactTotal.zero(Currency.COP),
+            Currency.USD to ExactTotal.zero(Currency.USD)
+        )
+        // A line with no investment has no currency yet: it counts nowhere until it has one.
+        val chosen = lines.filter { it.investment != null }
+        chosen.forEach { line ->
+            val currency = currencyOf(line, board)
             val amount = amount(line, currency)?.money ?: return@forEach
-            total = when (line.kind) {
+            val total = totals.getValue(currency)
+            totals[currency] = when (line.kind) {
                 InvestmentMovementKind.Contribution -> total + amount
                 InvestmentMovementKind.Withdrawal -> total - amount
-                else -> total
+                else -> return@forEach
             }
         }
-        return (total.toMoney() as? Outcome.Success)?.value?.let(money::format)
+        // Every typed line decides it, valuations and dividends too: COP and USD lines are a
+        // receipt in two currencies even when only one of them has aportes.
+        val typed = chosen.filter { typedMoney(it, currencyOf(it, board)) != null }
+        val currencies = typed.ifEmpty { chosen }.mapTo(mutableSetOf()) { currencyOf(it, board) }
+        val pesos = (totals.getValue(Currency.COP).toMoney() as? Outcome.Success)?.value
+            ?: return null
+        val dollars = (totals.getValue(Currency.USD).toMoney() as? Outcome.Success)?.value
+            ?: return null
+        return when {
+            Currency.USD !in currencies -> ContributedTotal.One(money.format(pesos))
+
+            Currency.COP !in currencies -> ContributedTotal.One(money.format(dollars))
+
+            rate == null -> ContributedTotal.Parts(money.format(pesos), money.format(dollars))
+
+            else -> InvestmentPolicy.inPesos(pesos, dollars, rate.rate)?.let {
+                ContributedTotal.InPesos(
+                    money.format(it),
+                    money.decimal(rate.rate.hundredths, Currency.USD.scale),
+                    rate.date
+                )
+            }
+        }
     }
 
     private fun render(
@@ -501,48 +639,44 @@ class InvestmentMovementsViewModel(
         writing: String?
     ): InvestmentMovementsState {
         val read = readable(board)
-        val summary = summary(read)
-        val currency = summary?.history?.investment?.currency ?: Currency.COP
-        val lines = draft.lines.mapIndexed { index, line ->
-            MovementLineModel(
-                key = line.key,
-                kind = line.kind,
-                amount = shown(line, currency, index == draft.highlighted),
-                valid = amount(line, currency) != null,
-                date = line.date,
-                note = line.note,
-                refusal = progress.refusals[line.key]
-            )
-        }
+        fun model(line: Line, highlighted: Boolean, refusal: MovementLineRefusal?) =
+            summary(read, line).let { summary ->
+                val currency = currencyOf(line, read)
+                MovementLineModel(
+                    key = line.key,
+                    kind = line.kind,
+                    amount = shown(line, currency, highlighted),
+                    valid = amount(line, currency) != null,
+                    date = line.date,
+                    note = line.note,
+                    refusal = refusal,
+                    investmentId = line.investment,
+                    investmentName = summary?.history?.investment?.name?.value,
+                    usd = currency == Currency.USD,
+                    investmentGone = line.investment != null && read != null && summary == null
+                )
+            }
         return InvestmentMovementsState(
             loading = board is ReadState.Loading,
             loadFailed = board is ReadState.Failed && read == null,
             stale = board is ReadState.Failed && read != null,
-            name = summary?.history?.investment?.name?.value.orEmpty(),
-            usd = currency == Currency.USD,
-            lines = lines,
+            investments = read?.ordered()?.map { it.choice() }.orEmpty(),
+            lines = draft.lines.mapIndexed { index, line ->
+                model(line, index == draft.highlighted, progress.refusals[line.key])
+            },
             highlighted = draft.highlighted,
-            contributed = contributed(draft.lines, currency),
+            contributed = contributed(draft.lines, read, read?.rates?.current),
             today = today,
             datePickerOpen = progress.datePickerOpen,
             composerOpen = writing != null && !progress.closed,
             composerDraft = writing.orEmpty(),
             composerProblem = writing?.let(SavedNoteComposer::problem),
             composerLength = SavedNoteComposer.length(writing),
-            removed = progress.removed?.line?.let { removed ->
-                MovementLineModel(
-                    key = removed.key,
-                    kind = removed.kind,
-                    amount = shown(removed, currency, highlighted = false),
-                    valid = amount(removed, currency) != null,
-                    date = removed.date,
-                    note = removed.note
-                )
+            removed = progress.removed?.line?.let {
+                model(it, highlighted = false, refusal = null)
             },
             busy = progress.busy,
-            error = progress.error ?: InvestmentMovementsError.Gone.takeIf {
-                read != null && summary == null && !progress.closed
-            },
+            error = progress.error,
             confirmDiscard = progress.confirmDiscard,
             closed = progress.closed
         )
@@ -550,10 +684,10 @@ class InvestmentMovementsViewModel(
 
     private fun submit() {
         val read = readable(board.value) ?: return
-        val summary = summary(read) ?: return
-        val investment = summary.history.investment
-        val sending = draft.value.lines.filter { typedMoney(it, investment.currency) != null }
-        val lines = sending.map { line ->
+        val sending = draft.value.lines.filter { typedMoney(it, currencyOf(it, read)) != null }
+        val investments = sending.map { summary(read, it) ?: return }
+        val lines = sending.zip(investments) { line, summary ->
+            val investment = summary.history.investment
             InvestmentMovementLine(
                 investmentId = investment.id,
                 kind = line.kind ?: return,
@@ -562,22 +696,22 @@ class InvestmentMovementsViewModel(
                 note = (Note.of(line.note) as? Outcome.Success)?.value
             )
         }
+        val versions = investments.associate {
+            it.history.investment.id to
+                it.history.investment.version
+        }
         val keys = sending.map { it.key }
+        val histories = investments.map { it.history }
         progress.update { it.copy(busy = true, error = null, refusals = emptyMap()) }
         viewModelScope.launch {
             settle(
                 submission.send(commands::find, STEP) { operation ->
                     commands.submit(
-                        RecordInvestmentMovements(
-                            operation,
-                            read.generation,
-                            mapOf(investment.id to investment.version),
-                            lines
-                        )
+                        RecordInvestmentMovements(operation, read.generation, versions, lines)
                     )
                 },
                 keys,
-                summary.history
+                histories
             )
         }
     }
@@ -586,13 +720,14 @@ class InvestmentMovementsViewModel(
     private suspend fun recover() {
         if (!submission.pending) return
         progress.update { it.copy(busy = true, error = null) }
-        settle(submission.recover(commands::find), emptyList(), null)
+        settle(submission.recover(commands::find), emptyList(), emptyList())
     }
 
+    /** [keys] are the lines sent, in order, and [histories] each one's investment as read. */
     private fun settle(
         settled: Settled<CommittedInvestment, InvestmentRejection>?,
         keys: List<String>,
-        history: InvestmentHistory?
+        histories: List<InvestmentHistory>
     ) {
         when (settled) {
             // Something is still in flight and will settle; or nothing was left to ask about.
@@ -608,19 +743,20 @@ class InvestmentMovementsViewModel(
                 it.copy(busy = false, error = InvestmentMovementsError.NotSaved)
             }
 
-            is Settled.Rejected -> rejected(settled.reason, keys, history)
+            is Settled.Rejected -> rejected(settled.reason, keys, histories)
         }
     }
 
     private fun rejected(
         reason: CommandRejection<InvestmentRejection>,
         keys: List<String>,
-        history: InvestmentHistory?
+        histories: List<InvestmentHistory>
     ) {
         val specific = (reason as? CommandRejection.Specific)?.reason
-        if (specific is InvestmentRejection.LinesRefused && history != null) {
+        if (specific is InvestmentRejection.LinesRefused && keys.isNotEmpty()) {
             val refusals = specific.lines.mapNotNull { refused ->
-                keys.getOrNull(refused.position)?.let { it to refusal(refused.reason, history) }
+                val key = keys.getOrNull(refused.position) ?: return@mapNotNull null
+                key to refusal(refused.reason, histories[refused.position])
             }.toMap()
             val first = draft.value.lines.indexOfFirst { it.key in refusals }
             progress.update {
@@ -678,13 +814,15 @@ class InvestmentMovementsViewModel(
 
     /**
      * The receipt was saved. It may be answered before the board is read (a restored
-     * receipt), so the lines sent are counted by what was typed, in either currency.
+     * receipt), so the lines sent are counted by what was typed, in either currency. The
+     * confirmation names the investment when every line was of one.
      */
     private fun committed() {
-        val summary = summary(readable(board.value))
+        val sent = draft.value.lines.filter { it.pesos != AmountDraft.Empty || !it.dollars.empty }
+        val only = sent.map { it.investment }.distinct().singleOrNull()
         corrections.investmentMovementsRecorded(
-            count = draft.value.lines.count { it.pesos != AmountDraft.Empty || !it.dollars.empty },
-            investmentName = summary?.history?.investment?.name?.value
+            count = sent.size,
+            investmentName = summary(readable(board.value), only)?.history?.investment?.name?.value
         )
         drafts.clear()
         progress.update { it.copy(busy = false, error = null, closed = true) }
@@ -695,11 +833,14 @@ class InvestmentMovementsViewModel(
         private val ZeroPesos = AmountDraft.Digits("0")
 
         /** The errors a change to the receipt answers. */
-        private val Answered =
-            setOf(InvestmentMovementsError.NotSaved, InvestmentMovementsError.Changed)
+        private val Answered = setOf(
+            InvestmentMovementsError.NotSaved,
+            InvestmentMovementsError.Changed,
+            InvestmentMovementsError.Gone
+        )
         private const val ZERO = "0"
 
-        /** The route argument: the investment the receipt is for. */
+        /** The route argument: the investment it was opened from, absent from the list. */
         const val KEY_INVESTMENT = "investmentId"
 
         /**
