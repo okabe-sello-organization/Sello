@@ -14,6 +14,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -90,9 +91,13 @@ class InvestmentMovementScreenTest {
         var shown by mutableStateOf(aporte.copy(investmentId = null))
         rule.showSello { InvestmentMovementScreen(shown, severalOffered = true) { actions += it } }
 
-        rule.onNodeWithTag(INVESTMENT_MOVEMENT_SEVERAL_TAG).assertIsNotEnabled()
+        // The receipt belongs to one investment: no way in until one is chosen.
+        rule.onNodeWithTag(INVESTMENT_MOVEMENT_SEVERAL_TAG).assertDoesNotExist()
         shown = aporte
-        rule.onNodeWithTag(INVESTMENT_MOVEMENT_SEVERAL_TAG).assertIsEnabled().performClick()
+        rule.onNodeWithTag(INVESTMENT_MOVEMENT_SEVERAL_TAG)
+            .assertTextEquals("Otro movimiento")
+            .assertIsEnabled()
+            .performClick()
         assertEquals(listOf<InvestmentMovementAction>(InvestmentMovementAction.Several), actions)
 
         shown = aporte.copy(editing = true)

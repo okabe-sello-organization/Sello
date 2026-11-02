@@ -338,12 +338,15 @@ class MetasScreenTest {
 
             showDetail = true
             rule.waitForIdle()
-            val saved = rule.onNodeWithContentDescription(
-                "333.333.333.333 pesos",
-                useUnmergedTree = true
-            )
-                .getUnclippedBoundsInRoot()
+            val saved = onHero("333.333.333.333 pesos").getUnclippedBoundsInRoot()
             assertTrue("$each: detail amount at $saved", saved.right <= window.right + 0.5.dp)
+            // The one aporte's balance is the same figure, under its amount in the list.
+            val balance = rule.onNode(
+                hasContentDescription("333.333.333.333 pesos") and
+                    hasAnyAncestor(hasTestTag("goal.movements")),
+                useUnmergedTree = true
+            ).performScrollTo().getUnclippedBoundsInRoot()
+            assertTrue("$each: balance at $balance", balance.right <= window.right + 0.5.dp)
             val next = rule.onNodeWithTag("goal.next").performScrollTo().getUnclippedBoundsInRoot()
             assertTrue("$each: next line at $next", next.right <= window.right + 0.5.dp)
             // 999.999.999.999 × 50 % is 500.000.000.000 rounded up, less 333.333.333.333.

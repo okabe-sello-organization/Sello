@@ -130,6 +130,10 @@ class GoalsRenderModel(private val money: MoneyFormatter) {
             is Outcome.Success -> worked.value
             is Outcome.Failure -> return GoalDetailState.Failed
         }
+        val ledger = when (val worked = GoalPolicy.ledger(history)) {
+            is Outcome.Success -> worked.value
+            is Outcome.Failure -> return GoalDetailState.Failed
+        }
         val current = YearMonth.from(today)
         val missing = GoalPolicy.missing(progress)
         return GoalDetailState.Ready(
@@ -162,23 +166,22 @@ class GoalsRenderModel(private val money: MoneyFormatter) {
                         current = it.month == current
                     )
                 },
-                movements = history.events.filterIsInstance<GoalMovement>()
-                    .sortedWith(
-                        compareByDescending<GoalMovement> { it.date }
-                            .thenByDescending { it.sequence }
+                movements = ledger.lines.map { (movement, balance) ->
+                    MovementModel(
+                        id = movement.id.value,
+                        kind = movement.kind,
+                        amount = money.format(signed(movement), signed = true),
+                        balance = money.format(balance),
+                        date = movement.date,
+                        note = movement.note?.value,
+                        stamps = GoalPlace.entries.filter {
+                            earnedBy[it] == movement.sequence
+                        }
                     )
-                    .map { movement ->
-                        MovementModel(
-                            id = movement.id.value,
-                            kind = movement.kind,
-                            amount = money.format(signed(movement), signed = true),
-                            date = movement.date,
-                            note = movement.note?.value,
-                            stamps = GoalPlace.entries.filter {
-                                earnedBy[it] == movement.sequence
-                            }
-                        )
-                    },
+                },
+                movementMonths = ledger.months.mapValues { (_, net) ->
+                    money.format(net, signed = true)
+                },
                 featured = board.featured == goal.id,
                 generation = board.generation,
                 version = goal.version

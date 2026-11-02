@@ -124,38 +124,21 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
                             reserved = money.format(it.total)
                         )
                     },
-                    carry = carry(snapshot, budget)
+                    carry = money.carryFigures(budget, snapshot.month)?.let {
+                        ReciboCarry(it, snapshot.asOf)
+                    }
                 )
             }
         }
 
-    /** The month's carry, with each carrying category and since when (CP16, CP27). */
-    private fun carry(snapshot: MonthlySnapshot, budget: LimitedBudget): ReciboCarry? {
-        val figures = money.carryFigures(budget, snapshot.month) ?: return null
-        val carrying = snapshot.categories.mapNotNull { line ->
-            line.budget?.carry?.chainStart?.let { CarriedCategory(line.category.name.value, it) }
-        }
-        return ReciboCarry(
-            figures,
-            carrying,
-            snapshot.asOf,
-            why(budget, carrying.singleOrNull()?.name, snapshot.month, overall = true)
-        )
-    }
-
     /**
-     * Why a verdict is Excedido when an earlier deficit made it so: only for a budget over
-     * its limit with a negative carry (CP14). Compared, never calculated.
+     * Why a category's verdict is Excedido when an earlier deficit made it so: only for a
+     * budget over its limit with a negative carry (CP14). Compared, never calculated.
      */
-    private fun why(
-        budget: LimitedBudget,
-        name: String?,
-        month: YearMonth,
-        overall: Boolean
-    ): CarryWhy? {
+    private fun why(budget: LimitedBudget, name: String, month: YearMonth): CarryWhy? {
         val carry = budget.carry ?: return null
         if (!budget.isOverspent || carry.carryIn.minorUnits >= 0) return null
-        val notAboveZero = carry.capacity.minorUnits <= 0 && !overall
+        val notAboveZero = carry.capacity.minorUnits <= 0
         return CarryWhy(
             capacity = money.format(carry.capacity),
             carry = money.format(carry.carryIn, signed = true),
@@ -183,7 +166,7 @@ class ReciboRenderModel(private val money: MoneyFormatter) {
             over = budget?.isOverspent ?: false,
             expenseCount = line.expenseCount,
             carry = budget?.let { money.carryFigures(it, month) },
-            why = budget?.let { why(it, line.category.name.value, month, overall = false) },
+            why = budget?.let { why(it, line.category.name.value, month) },
             reserved = budget?.let { reserved(line, it) }
         )
     }

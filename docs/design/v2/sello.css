@@ -478,6 +478,12 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .text-btn .icon{width:1.2em;height:1.2em}
 .mi-stamp{background:var(--paper)!important;border:2.5px solid var(--gain);color:var(--gain)!important;font-family:Stencil,Schibsted,sans-serif;font-size:.62em;transform:rotate(-8deg);width:34px!important;height:34px!important}
 .ms-line{color:var(--gain)!important;font-weight:700}
+/* Owner 2026-11-02: the amount at the end with the saldo under it; a bold heading; month lines in the full list. */
+.slip h2.q.strong{font-size:1.15em;font-weight:800;color:var(--ink)}
+.mov-row .mov-amt{text-align:right;justify-items:end}
+.mov-row .mov-amt b{font-variant-numeric:tabular-nums}
+.mov-row .mov-amt b.in{color:var(--gain)}
+.mov-month{display:flex;justify-content:space-between;font-size:.78em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--outline);padding:12px 0 4px;border-bottom:1px solid var(--rule)}
 .band-pin{padding:0 16px 12px}
 .pin-band{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 12px 0 8px;border-radius:99px;border:1.5px solid rgba(255,255,255,.6);background:none;color:#fff;font-weight:800;font-size:.86em}
 .pin-band .icon{width:1.3em;height:1.3em}

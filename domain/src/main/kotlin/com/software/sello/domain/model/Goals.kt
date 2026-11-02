@@ -143,3 +143,12 @@ data class GoalOverview(val saved: Money, val contributed: Money)
 
 /** The aportes dated in [month], for Aportes por mes. */
 data class MonthContribution(val month: YearMonth, val amount: Money)
+
+/** A movement and what the goal held once it counted, in the movement list's order. */
+data class LedgerLine(val movement: GoalMovement, val balance: Money)
+
+/**
+ * A goal's movements as its list reads: [lines] newest first, each with its balance, and
+ * each month's net change (aportes less retiros), for the months that have a movement.
+ */
+data class GoalLedger(val lines: List<LedgerLine>, val months: Map<YearMonth, Money>)

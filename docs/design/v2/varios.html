@@ -64,10 +64,12 @@
     .bar-title{flex:1;margin-left:4px;display:grid;line-height:1.2;min-width:0}
     .bar-title b{font-size:1.2em;font-weight:800}
     .bar-title small{color:var(--soft);font-size:.86em}
-    .varios-btn{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 12px 0 8px;border:0;border-radius:99px;background:var(--brandsoft);color:var(--onbrandsoft);font-weight:800;font-size:.93em;flex:none}
-    .varios-btn .icon{width:1.4em;height:1.4em}
-    .seg+.varios-btn{margin-left:8px}
-    .varios-btn:disabled{opacity:.45}
+    .amount-slip.peeked{margin-bottom:0;position:relative;z-index:1}
+    .more-slip{display:flex;align-items:center;justify-content:center;gap:4px;width:calc(100% - 44px);min-height:52px;margin:-12px 22px 10px;padding:12px 12px 0;border:0;background:var(--alt);color:var(--brand);font-weight:800;font-size:.93em;flex:none;
+      -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x;
+      mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x}
+    .more-slip .icon{width:1.3em;height:1.3em}
+    .more-slip:disabled{opacity:.38}
     /* The review page's section headings must not reach the confirm slip's title. */
     .review .section .app .confirm h2{margin:0 0 8px;font-size:1.4em}
     .confirm-actions .go{border:0;background:var(--brand);color:var(--onbrand)}
@@ -93,7 +95,7 @@
   <div class="section">
     <p class="lede"><b>For approval:</b> one bulk receipt for expenses, incomes, one goal and one investment, redrawn from the v1.1 <a href="../sello-spec.html#s-varios">Anotar varios and Varios movimientos</a> in the style of the locked <a href="entry.html">entry sheet</a>. A sheet, not a screen of its own: ✕ and the switch, a pinked <b>receipt</b> where the amount slip sits (the lines scroll inside it, the total stays at its foot), the chips and note row for the highlighted line, the action, the Sello pad. Saving, the failure and the unknown outcome say what entry says, and nothing offers undo after saving. Synthetic figures, drawn at 412 × 914 dp. The choices the ticket left open are in section 8.</p>
     <h2>1 · Where it opens from</h2>
-    <p class="lede">A <b>Varios</b> pill takes the place of the empty slot in the Anotar sheet’s bar (expense and income alike). Each list a receipt adds to carries <b>Anotar varios</b> at its foot: a category, a goal, an investment and the income list. The receipts they open are in sections 2–5.</p>
+    <p class="lede">A second slip peeks out under the amount slip of every entry sheet: <b>+ Otro gasto</b>, <b>+ Otro ingreso</b>, or <b>+ Otro movimiento</b> for a goal or an investment (since 2026-11-02; until then a <b>Varios</b> pill sat in the bar, where it read as an option of the screen). Each list a receipt adds to carries <b>Anotar varios</b> at its foot: a category, a goal, an investment and the income list. The receipts they open are in sections 2–5.</p>
     <div class="frames" id="entries"></div>
     <h2>2 · Anotar varios · gastos</h2>
     <p class="lede">The loop: type an amount, optionally pick a category and a note, then <b>Otro renglón</b>; a new line copies the category above it. One date for the whole receipt, in its header. The button counts the lines with an amount.</p>

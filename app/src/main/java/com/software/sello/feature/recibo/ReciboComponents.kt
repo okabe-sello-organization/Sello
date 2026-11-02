@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.component.CategoryCircle
+import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.categoryColumns
@@ -65,7 +66,9 @@ import kotlinx.coroutines.launch
 /**
  * A circle with the category's name and one amount beside it: what is left, or what was
  * spent when there is no limit, with [amountCaption] ("gastado") under it. The amount is
- * exact even when the circle can only show "full".
+ * exact even when the circle can only show "full". While the category carries, [carry] is
+ * the signed amount it brings from earlier months ("+80.000"), under the amount in gain or
+ * loss ink, and the circle wears the ↻ badge.
  *
  * [actions] are offered by a long press, as a menu, and to a screen reader by name;
  * pressing the cell is still only [onClick].
@@ -88,7 +91,8 @@ internal fun CategoryCell(
     staggerIndex: Int = 0,
     actions: List<LineAction> = emptyList(),
     unlimited: Boolean = false,
-    archived: Boolean = false
+    archived: Boolean = false,
+    carry: MoneyTextValue? = null
 ) {
     val colors = SelloTheme.colors
     var menuOpen by remember { mutableStateOf(false) }
@@ -127,7 +131,8 @@ internal fun CategoryCell(
             over = over,
             staggerIndex = staggerIndex,
             unlimited = unlimited,
-            archived = archived
+            archived = archived,
+            carrying = carry != null
         )
         Column {
             Text(
@@ -147,7 +152,18 @@ internal fun CategoryCell(
                 }
             )
             // Under the amount, as in the v2 grid: beside it, it squeezed the amount.
-            if (amountCaption != null) {
+            if (carry != null) {
+                MoneyText(
+                    value = carry,
+                    color = when (carry.sign) {
+                        MoneySign.Plus -> colors.semantic.gain
+                        MoneySign.Minus -> colors.semantic.loss
+                        MoneySign.None -> colors.inkSoft
+                    },
+                    fontWeight = FontWeight.W800,
+                    textStyle = MaterialTheme.typography.labelSmall
+                )
+            } else if (amountCaption != null) {
                 Text(
                     amountCaption,
                     style = MaterialTheme.typography.labelSmall,

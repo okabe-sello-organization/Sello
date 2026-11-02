@@ -103,9 +103,7 @@ class ReciboCarryRenderTest {
                     chainStart = null,
                     source = null
                 ),
-                listOf(CarriedCategory("Comida", ene)),
-                LocalDate.of(2027, 2, 22),
-                why = null
+                LocalDate.of(2027, 2, 22)
             ),
             state.summary.carry
         )
@@ -136,15 +134,25 @@ class ReciboCarryRenderTest {
     }
 
     @Test
-    fun anEarlierDeficitSaysWhyTheMonthAndTheCategoryAreExcedido() {
+    fun anEarlierDeficitSaysWhyTheCategoryIsExcedidoAndTheMonthSumsIt() {
         val state = month(ReadState.Ready(excedido()))
 
-        // Σ base 550.000 + K −150.000 = C 400.000; spent 420.000: −20.000, Excedido.
+        // Σ base 550.000 + K −150.000 = C 400.000; spent 420.000: −20.000, Excedido. The
+        // month says it with its sum, base 550.000 − faltante 150.000, and no sentence.
         assertEquals(minus("20.000"), state.summary.amount)
         assertEquals(ReciboStamp.Over, state.summary.stamp)
         assertEquals(
-            CarryWhy(plain("400.000"), minus("150.000"), plain("150.000"), "Comida"),
-            state.summary.carry?.why
+            CarryFigures(
+                base = plain("550.000"),
+                carry = minus("150.000"),
+                carryMagnitude = plain("150.000"),
+                direction = CarryDirection.Deficit,
+                capacity = plain("400.000"),
+                spent = plain("420.000"),
+                chainStart = null,
+                source = null
+            ),
+            state.summary.carry?.figures
         )
         // SC11: Comida C −50.000 with nothing spent: Excedido by 50.000, base 100.000.
         val cell = state.categories.first { it.name == "Comida" }

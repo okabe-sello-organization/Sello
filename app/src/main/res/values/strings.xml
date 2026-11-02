@@ -564,8 +564,10 @@
     <string name="expense_entry_discard_confirm">Descartar</string>
     <string name="expense_entry_discard_keep">Seguir anotando</string>
     <string name="expense_entry_date_confirm">Aceptar</string>
-    <string name="expense_entry_several">Varios</string>
-    <string name="expense_entry_several_description">Anotar varios</string>
+    <!-- The slip peeking out under an entry's amount: opens Anotar varios with what is typed. -->
+    <string name="entry_more_expense">Otro gasto</string>
+    <string name="entry_more_income">Otro ingreso</string>
+    <string name="entry_more_movement">Otro movimiento</string>
     <string name="bulk_title">Anotar varios</string>
     <string name="bulk_title_expenses">Varios gastos</string>
     <string name="bulk_title_incomes">Varios ingresos</string>
@@ -1121,6 +1123,8 @@
     <string name="goal_movement_contribution">Aporte</string>
     <string name="goal_movement_withdrawal">Retiro</string>
     <string name="goal_movement_note">%1$s · %2$s</string>
+    <string name="goal_movement_kind_day">%1$s · %2$s</string>
+    <string name="goal_movement_balance">saldo</string>
     <string name="goal_movement_earned">Ganaste el sello del %s</string>
     <string name="goal_movement_earned_many">Ganaste los sellos del %1$s y del %2$s</string>
     <string name="goal_movements_none">Todavía no hay movimientos.</string>
@@ -1673,19 +1677,16 @@
     <string name="carry_surplus">Te sobró %1$s de meses anteriores</string>
     <string name="carry_deficit">Te pasaste %1$s en meses anteriores</string>
     <string name="carry_zero">Empieza en 0 este mes</string>
-    <string name="carry_words_of">%1$s · %2$s</string>
     <string name="carry_from_source">Viene del restante de %1$s · pasas lo que sobra o falta desde %2$s</string>
     <string name="carry_since">Pasas lo que sobra o falta desde %1$s</string>
     <string name="carry_read_on">%1$s · cifras al %2$s</string>
-    <string name="carry_overall_one">%1$s pasa lo que sobra o falta desde %2$s · cifras al %3$s</string>
-    <plurals name="carry_overall_many">
-        <item quantity="one">%1$d categoría pasa lo que sobra o falta · cifras al %2$s</item>
-        <item quantity="other">%1$d categorías pasan lo que sobra o falta · cifras al %2$s</item>
-    </plurals>
-    <string name="carry_cell_surplus">con sobrante</string>
-    <string name="carry_cell_deficit">con faltante</string>
+    <string name="carry_read_day">Cifras al %1$s</string>
+    <string name="carry_sum_base">%1$s base</string>
+    <string name="carry_sum_surplus">sobrante</string>
+    <string name="carry_sum_deficit">faltante</string>
+    <string name="carry_sum_spoken_surplus">Límite base %1$s más un sobrante de %2$s.</string>
+    <string name="carry_sum_spoken_deficit">Límite base %1$s menos un faltante de %2$s.</string>
     <string name="carry_why_overall">Tu límite del mes es %1$s: %2$s trae %3$s de meses anteriores.</string>
-    <string name="carry_why_overall_many">Tu límite del mes es %1$s: tus categorías traen %2$s de meses anteriores.</string>
     <string name="carry_why_category">Te pasaste %1$s en meses anteriores y tu límite base es %2$s: %3$s empezó en %4$s.</string>
     <string name="carry_per_day_deficit">0 por día: aún te pasas por %1$s.</string>
     <string name="carry_closed">Mes cerrado · gastaste %1$s de un límite de %2$s.</string>
@@ -1729,7 +1730,9 @@
     <string name="carry_failed_no_base">A %1$s de %2$s le falta un límite, y sin él no se puede calcular lo que sobra o falta. Ponle un límite a ese mes para seguir; tus registros siguen guardados.</string>
     <string name="carry_failed_set_limit">Ponerle límite a %1$s</string>
     <string name="carry_failed_damaged">Los datos de lo que sobra o falta en %1$s no se pueden leer. Tus registros siguen guardados; restaurar un respaldo los repara.</string>
-    <string name="recibo_cell_limited_carry">%1$s. %2$s %3$s de %4$s, con lo de meses anteriores. %5$s.</string>
+    <string name="recibo_cell_limited_carry">%1$s. %2$s %3$s de %4$s, %6$s de meses anteriores. %5$s.</string>
+    <string name="recibo_cell_carry_surplus">con un sobrante de %1$s</string>
+    <string name="recibo_cell_carry_deficit">con un faltante de %1$s</string>
     <string name="carry_closed_description">Mes cerrado. Gastaste %1$s de un límite de %2$s.</string>
     <string name="carry_failed_missing">Sello no pudo leer todos los gastos que necesita para calcular lo que sobra o falta en %1$s. Tus registros siguen guardados. Vuelve a intentarlo.</string>
     <string name="carry_setting">Pasar lo que sobre al mes siguiente</string>

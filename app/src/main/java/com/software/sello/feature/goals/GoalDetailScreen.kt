@@ -23,6 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -34,6 +37,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
@@ -47,7 +51,10 @@ import com.software.sello.designsystem.component.FittedMoneyText
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.MovementBalance
 import com.software.sello.designsystem.component.MovementRow
+import com.software.sello.designsystem.component.MovementTone
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
@@ -58,6 +65,7 @@ import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
+import java.time.YearMonth
 
 /**
  * One goal: what it holds and its stamps, its facts, aportes by month and its
@@ -167,6 +175,7 @@ private fun ColumnScope.Ready(
         state,
         onAction,
         dates,
+        months,
         onWithdraw.takeIf { goal.completedOn == null },
         onEditMovement.takeIf { goal.completedOn == null },
         onBulk.takeIf { goal.completedOn == null }
@@ -380,6 +389,7 @@ private fun Movements(
     state: GoalDetailState.Ready,
     onAction: (GoalDetailAction) -> Unit,
     dates: DateLabels,
+    months: MonthNames,
     onWithdraw: (() -> Unit)?,
     onEditMovement: ((String) -> Unit)?,
     onBulk: (() -> Unit)?
@@ -410,18 +420,35 @@ private fun Movements(
             )
         }
         val shown = if (state.allMovements) goal.movements else goal.movements.take(SHORT_LIST)
-        shown.forEach { movement ->
+        val balanceLabel = stringResource(R.string.goal_movement_balance)
+        // The full list is grouped by month, each with its net; the short list is not.
+        val month: (MovementModel) -> YearMonth = { YearMonth.from(it.date) }
+        shown.forEachIndexed { index, movement ->
+            val first = index == 0 || month(shown[index - 1]) != month(movement)
+            if (state.allMovements && first) {
+                MonthLine(
+                    // Another year's month says its year, as its rows' days do.
+                    month(movement).let {
+                        if (it.year == state.today.year) months.name(it) else months.title(it)
+                    },
+                    goal.movementMonths.getValue(month(movement)),
+                    Modifier.testTag("goal.movements.month.${month(movement)}")
+                )
+            }
+            val next = shown.getOrNull(index + 1)
             val day = dates.day(movement.date, state.today)
             val earned = movement.stamps
+            val kind = stringResource(
+                when (movement.kind) {
+                    GoalMovementKind.Contribution -> R.string.goal_movement_contribution
+                    GoalMovementKind.Withdrawal -> R.string.goal_movement_withdrawal
+                }
+            )
             MovementRow(
-                kind = stringResource(
-                    when (movement.kind) {
-                        GoalMovementKind.Contribution -> R.string.goal_movement_contribution
-                        GoalMovementKind.Withdrawal -> R.string.goal_movement_withdrawal
-                    }
-                ),
+                // A note names the movement better than its kind (v2 movements, 2026-11-02).
+                title = movement.note ?: kind,
                 detail = movement.note?.let {
-                    stringResource(R.string.goal_movement_note, day, it)
+                    stringResource(R.string.goal_movement_kind_day, kind, day)
                 } ?: day,
                 amount = movement.amount,
                 modifier = Modifier.testTag("goal.movement.${movement.id}").then(
@@ -446,7 +473,17 @@ private fun Movements(
                         earned.dropLast(1).map { placeLabel(it) }.joinToString(", "),
                         placeLabel(earned.last())
                     )
-                }
+                },
+                tone = when (movement.kind) {
+                    GoalMovementKind.Contribution -> MovementTone.In
+                    GoalMovementKind.Withdrawal -> MovementTone.Out
+                },
+                amountColor = when (movement.kind) {
+                    GoalMovementKind.Contribution -> SelloTheme.colors.semantic.gain
+                    GoalMovementKind.Withdrawal -> Color.Unspecified
+                },
+                balance = MovementBalance(balanceLabel, movement.balance),
+                rule = next != null && !(state.allMovements && month(next) != month(movement))
             )
         }
         val showAll = !state.allMovements && goal.movements.size > SHORT_LIST
@@ -477,6 +514,30 @@ private fun Movements(
                 }
             }
         }
+    }
+}
+
+/** A month of the full movement list: its name and its net change, over a rule. */
+@Composable
+private fun MonthLine(name: String, net: MoneyTextValue, modifier: Modifier = Modifier) {
+    val colors = SelloTheme.colors
+    val style = MaterialTheme.typography.labelSmall.copy(
+        fontWeight = FontWeight.W800,
+        letterSpacing = 0.06.em
+    )
+    Row(
+        modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) { heading() }
+            .drawBehind {
+                val y = size.height - 0.5.dp.toPx()
+                drawLine(colors.rule, Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
+            }
+            .padding(top = 12.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(name.uppercase(), Modifier.weight(1f), style = style, color = colors.outline)
+        MoneyText(net, color = colors.outline, textStyle = style)
     }
 }
 

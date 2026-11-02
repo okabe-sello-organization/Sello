@@ -31,7 +31,7 @@ synthetic.
 | [Pagos e ingresos fijos](fijos.html) | Locked 2026-10-25 by owner delegation (SELLO-114): Se repite, the list, changing a schedule, upcoming payments, the notice; the list redesigned by the owner 2026-10-26 (SELLO-122) |
 | [Pagos fijos en la categoría](categoria-fijos.html) | Approved 2026-10-30 by the owner (SELLO-135, E24): category detail counts its own payments still to come and lists its fixed payments |
 | [Ajustar presupuesto](ajustar.html) | Locked 2026-10-26 by the owner: the screen behind Recibo's **Ajustar presupuesto ›** and its limit sheet |
-| [Arrastre](arrastre.html) | Delegated by the owner 2026-10-28 for SELLO-041 (E09, signed carry-over); approved by merging it: turning carry on, the breakdowns, dropping a balance, corrections, the catch-up lines, an uncomputable carry, Resumen |
+| [Arrastre](arrastre.html) | Delegated by the owner 2026-10-28 for SELLO-041 (E09, signed carry-over); approved by merging it: turning carry on, the breakdowns, dropping a balance, corrections, the catch-up lines, an uncomputable carry, Resumen. Its Recibo cards are replaced by the **Recibo** bullet under Arrastre below (owner, 2026-11-02) |
 | [Borrar categoría](borrar-categoria.html) | Approved 2026-11-02 by the owner (SELLO-138, ADR 0024): Archivar and Borrar in Editar categoría's ⋮, moving or deleting what a category holds, and why it did not happen |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
 
@@ -109,7 +109,8 @@ punch card, goal stamp, coupon).
 label and date pill on top, category circle beside the amount) → category or source
 chips → note row → **Anotar gasto / Anotar ingreso** → Sello pad. The amount, Anotar
 and the pad never move; only the chips and note area scroll. Income shows the amount
-in gain green with a `+`.
+in gain green with a `+`. A new entry has the peeking slip of
+[Anotar varios](#anotar-varios) under its amount slip.
 
 - **Band (owner, 2026-10-31):** the form says what it records before anything is typed.
   The title row sits on a band in the colour of the kind, which carries on behind the
@@ -168,6 +169,8 @@ the entry sheet's language redrawn from v1.1's [Anotar varios and Varios
 movimientos](../sello-spec.html#s-varios). The owner approved it as drawn, including every choice the page lists for them.
 **Changed 2026-10-31 by the owner** ([E25](../../tickets/E25-varios-everywhere/README.md)): no Gasto/Ingreso
 switch on the receipt; where it opens from sets its kind; the Varios pill on every entry sheet.
+**Changed 2026-11-02 by the owner:** the pill left the title bar, where it read as an option of the
+screen rather than a way to record more; a second slip peeks out under the amount slip instead.
 
 **Order, top to bottom:** ✕ and the title (**Varios gastos** or **Varios ingresos**; for a
 goal or an investment, its title and name) → the **receipt**, a pinked slip that takes the free
@@ -196,11 +199,20 @@ pad. The lines scroll inside the receipt; the foot, chips, action and pad never 
   guardó** and no second write). A refused line is marked with its reason and the draft stays.
 - **Saved:** the sheet closes and the screen it came from shows one confirmation, for example
   **3 gastos anotados: 126.000**, with its figures already updated. No undo.
-- **Opens from:** a **Varios** pill in the Anotar bar, and since 2026-10-31 in the Aportar/Retirar
-  and Anotar movimiento bars for the chosen goal or investment (what is typed becomes line one), and
+- **Opens from:** the **peeking slip** on every entry sheet (below), and
   **Anotar varios** at the foot of a category's latest expenses (every new line starts in that
   category), the goal's movements, the investment's movements and the income list.
-- **Leaving** with lines asks **¿Descartar 3 renglones?**
+- **Leaving** with lines asks **¿Descartar 3 renglones?** and goes back to where the sheet was
+  opened from, not to the single entry it replaced.
+- **The peeking slip (2026-11-02):** on Anotar (Gasto and Ingreso), Aportar/Retirar and Anotar
+  movimiento, a second pinked slip in the paper's alt shade is tucked behind the amount slip, its
+  visible strip reading **+ Otro gasto**, **+ Otro ingreso** or, for a goal or an investment,
+  **+ Otro movimiento**, in brand ink. Tapping it opens the receipt with what is typed as line one;
+  when line one has an amount, a second line in the same category, source or type is already
+  highlighted for the pad. It is absent while editing, and on Anotar movimiento until an investment
+  is chosen; it dims and waits while saving, while the amount cannot be used, or while an
+  expense is set to repeat. The title bar holds
+  only ✕ and the title (and Borrar when editing).
 
 **Rejected:** v1.1's long press on the dock and the investment's overflow menu as ways in; a
 total that adds dividends and valuations; mixing expenses and incomes on one receipt; switching a receipt between Gasto and Ingreso
@@ -339,7 +351,10 @@ The v1.1 Metas screen, kept close to the original on purpose, in its own tab.
 - **Movimientos:** contributions and withdrawals, newest first. A contribution that
   earned a stamp shows the stamp in place of its + icon, with "Ganaste el sello del
   50 %". **Retirar dinero** sits in this card's header; a withdrawal is its own entry and
-  the history is kept.
+  the history is kept. Each row (owner, 2026-11-02) ends with its amount, green for an
+  aporte, and the goal's saldo under it, worked out down the list by date (MT40–MT42); a
+  note is the row's title, with its kind and day under it. The full list (after **Ver los
+  N**) gets a line per month with its net.
 - **Dock:** green **Aportar a esta meta**.
 - **After a withdrawal below an earned stamp,** the stamp stays, faded, with "El sello del
   50 % sigue siendo tuyo: lo lograste en octubre." Percentage and bar show the honest
@@ -632,12 +647,18 @@ sees every locked screen unchanged.
   once: carry starts at 0 and the whole month counts from day 1. On, its caption says
   "Desde ene 2027 · trae −40.000 · este mes 60.000". A refusal (CP3, CP25) comes back from
   the command and is said under the switch, with what to do.
-- **Breakdowns:** Recibo, category detail and Resumen's selected month give **Límite base**,
+- **Breakdowns:** category detail and Resumen's selected month give **Límite base**,
   signed **Sobrante** (0 or more) or **Faltante** (negative) with its words, **Límite del
   mes** and **Gastado** as receipt lines, plus the month it comes from, the chain's start
-  and the day read (CP27). A carrying category's cell says "con sobrante" or "con
-  faltante". A negative capacity is Excedido with one sentence why; 0 por día sits beside
-  the signed deficit (CP14, CP15).
+  and the day read (CP27). A negative capacity is Excedido with one sentence why; 0 por
+  día sits beside the signed deficit (CP14, CP15).
+- **Recibo** (owner, 2026-11-02): a carrying category's circle wears a ↻ badge where Sin
+  límite's ∞ goes, and its signed carry sits under the amount ("+80.000", "−20.000", "0")
+  in gain or loss ink. Under the per-day line the month gives **Límite del mes** with its
+  sum under it ("5.500.000 base + ↻ 600.000 sobrante", wrapping rather than shrinking in
+  the millions), then **Gastado** and "Cifras al 22 feb". Which categories carry, and
+  since when, is on the cells and their detail; the red sum says why the month is
+  Excedido, so the month has no sentence of its own.
 - **Dropping:** turning off, archiving (after its own slip) or Sin límite with a carry ≠ 0
   asks "¿Olvidar el faltante de 20.000?" (or el sobrante) with this month's capacity and
   remaining before and after, as the command answered them; a moved amount brings the slip

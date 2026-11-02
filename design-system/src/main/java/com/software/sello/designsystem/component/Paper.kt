@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -38,11 +40,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalClipboard
@@ -56,11 +61,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.software.sello.designsystem.R
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -269,6 +276,69 @@ fun EntryAmountSlip(
 }
 
 /**
+ * A second slip tucked behind the entry's amount slip: its visible strip, [text] after a
+ * plus (**Otro gasto**, **Otro movimiento**), opens the bulk receipt with what is typed.
+ * [EntryLayout]'s `more` slot puts it right under the amount, [MoreSlipTuck] of it hidden
+ * behind the amount slip. While not [enabled] it dims and waits.
+ */
+@Composable
+fun MoreSlip(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    val colors = SelloTheme.colors
+    val shape = remember { PinkedBottomShape(corner = 0.dp) }
+    Row(
+        Modifier
+            .zIndex(-1f)
+            .layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints)
+                val tuck = MoreSlipTuck.roundToPx()
+                layout(placeable.width, (placeable.height - tuck).coerceAtLeast(0)) {
+                    placeable.place(0, -tuck)
+                }
+            }
+            .padding(horizontal = MoreSlipInset)
+            .then(modifier)
+            .fillMaxWidth()
+            .alpha(if (enabled) 1f else MORE_SLIP_DISABLED_ALPHA)
+            .clip(shape)
+            .background(colors.paperAlt)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(top = MoreSlipTuck, bottom = MoreSlipTeeth, start = 12.dp, end = 12.dp)
+            .heightIn(min = MoreSlipStrip),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(SelloIcon.Add.painter(), null, Modifier.size(18.dp), tint = colors.brand)
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W800),
+            color = colors.brand,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+/** How much of [MoreSlip] hides behind the amount slip. */
+private val MoreSlipTuck = 12.dp
+
+/** How far [MoreSlip] sits in from the amount slip's edges, so it reads as the one behind. */
+private val MoreSlipInset = 10.dp
+
+/**
+ * [MoreSlip]'s visible strip above its teeth, 40dp with them; the part tucked behind the
+ * amount slip takes taps too, so the target is 52dp.
+ */
+private val MoreSlipStrip = 35.dp
+private val MoreSlipTeeth = 5.dp
+private const val MORE_SLIP_DISABLED_ALPHA = 0.38f
+
+/**
  * Keeps the amount, action and pad stable; choices scroll independently in either layout.
  * A portrait window too short for that scrolls the amount with the choices instead.
  *
@@ -281,6 +351,9 @@ fun EntryAmountSlip(
  * and down to the middle of the amount slip, as a tab's band holds its answer slip: from
  * edge to edge of the window, or in two panes only as far as the amount's pane, so the
  * action beside it never sits on a band of its own colour.
+ *
+ * [more], usually a [MoreSlip], sits right under the amount and moves with it; the band
+ * still ends at the amount slip's middle.
  */
 @Composable
 fun EntryLayout(
@@ -290,7 +363,8 @@ fun EntryLayout(
     choices: @Composable () -> Unit,
     action: @Composable () -> Unit,
     keypad: @Composable () -> Unit,
-    band: Color? = null
+    band: Color? = null,
+    more: (@Composable () -> Unit)? = null
 ) {
     val reach = remember { BandReach() }
     val windowWidth = LocalWindowInfo.current.containerSize.width
@@ -325,6 +399,16 @@ fun EntryLayout(
             ) { amount() }
         }
     }
+    val amountAndMore: @Composable () -> Unit = if (more == null) {
+        placedAmount
+    } else {
+        {
+            Column(Modifier.fillMaxWidth()) {
+                placedAmount()
+                more()
+            }
+        }
+    }
     BoxWithConstraints(modifier.fillMaxSize().then(banded)) {
         val keyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
         val settled = remember(maxWidth) { SettledHeight(maxHeight) }
@@ -341,7 +425,7 @@ fun EntryLayout(
                 twoPane,
                 height,
                 header,
-                placedAmount,
+                amountAndMore,
                 choices,
                 action,
                 keypad

@@ -7,6 +7,7 @@ import com.software.sello.domain.model.GoalEvent
 import com.software.sello.domain.model.GoalHistory
 import com.software.sello.domain.model.GoalHistoryError
 import com.software.sello.domain.model.GoalId
+import com.software.sello.domain.model.GoalLedger
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalMovementLine
@@ -15,6 +16,7 @@ import com.software.sello.domain.model.GoalPace
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.GoalProgress
 import com.software.sello.domain.model.GoalTargetChange
+import com.software.sello.domain.model.LedgerLine
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthContribution
 import com.software.sello.domain.model.NextPlace
@@ -289,6 +291,35 @@ object GoalPolicy {
             month = month.plusMonths(1)
         }
         return Outcome.Success(contributions)
+    }
+
+    /**
+     * The movement list (MT40–MT42): newest date first, the later recorded first on the
+     * same day. Each balance adds the movements in that order, so it is the one below it
+     * plus its own movement; a retiro dated before the aporte that paid for it shows a
+     * balance below zero, as it reads (MT42). The total always ends at what is saved.
+     */
+    fun ledger(history: GoalHistory): Outcome<GoalLedger, GoalHistoryError> {
+        val movements = history.events.filterIsInstance<GoalMovement>()
+            .sortedWith(compareBy<GoalMovement>({ it.date }, { it.sequence }))
+        var balance = BigInteger.ZERO
+        val lines = mutableListOf<LedgerLine>()
+        val months = linkedMapOf<YearMonth, BigInteger>()
+        for (movement in movements) {
+            val change = when (movement.kind) {
+                GoalMovementKind.Contribution -> units(movement.amount)
+                GoalMovementKind.Withdrawal -> -units(movement.amount)
+            }
+            balance += change
+            val after = money(balance) ?: return Outcome.Failure(GoalHistoryError.Unrepresentable)
+            lines += LedgerLine(movement, after)
+            val month = YearMonth.from(movement.date)
+            months[month] = (months[month] ?: BigInteger.ZERO) + change
+        }
+        val nets = months.mapValues { (_, net) ->
+            money(net) ?: return Outcome.Failure(GoalHistoryError.Unrepresentable)
+        }
+        return Outcome.Success(GoalLedger(lines.asReversed().toList(), nets))
     }
 
     /** A movement may be dated [today] or earlier, never later (rule 9). */
