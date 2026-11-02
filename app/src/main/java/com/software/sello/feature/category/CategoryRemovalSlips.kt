@@ -458,13 +458,19 @@ private fun ProblemSlip(
         is RemovalProblem.TargetClosed ->
             stringResource(R.string.category_delete_target_title, problem.target)
 
+        is RemovalProblem.TargetCarry ->
+            stringResource(R.string.category_delete_carry_title, problem.target)
+
         is RemovalProblem.NotSaved -> stringResource(R.string.category_delete_storage_title)
 
         RemovalProblem.CannotCount -> stringResource(R.string.category_delete_count_title)
     }
     val forward = when (problem) {
         is RemovalProblem.Changed -> R.string.category_delete_review
-        is RemovalProblem.TargetClosed -> R.string.category_delete_choose_other
+
+        is RemovalProblem.TargetClosed, is RemovalProblem.TargetCarry ->
+            R.string.category_delete_choose_other
+
         is RemovalProblem.NotSaved, RemovalProblem.CannotCount -> R.string.category_delete_retry
     }
     ConfirmSlip(
@@ -516,6 +522,13 @@ private fun ProblemSlip(
             is RemovalProblem.TargetClosed -> Body(
                 AnnotatedString(
                     stringResource(R.string.category_delete_target_body, problem.target, name)
+                ),
+                gap
+            )
+
+            is RemovalProblem.TargetCarry -> Body(
+                AnnotatedString(
+                    stringResource(R.string.category_delete_carry_body, problem.target, name)
                 ),
                 gap
             )

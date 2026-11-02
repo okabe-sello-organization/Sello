@@ -460,6 +460,8 @@
     <string name="category_delete_target_title">%1$s ya no acepta gastos</string>
     <string name="category_delete_target_body">%1$s se archivó o se borró mientras elegías. Los gastos de %2$s no pueden ir allí.</string>
     <string name="category_delete_choose_other">Elegir otra</string>
+    <string name="category_delete_carry_title">No se pueden mover a %1$s</string>
+    <string name="category_delete_carry_body">Con los gastos de %2$s, no pudimos calcular el arrastre de %1$s. Elige otra categoría o apaga su arrastre.</string>
     <string name="category_delete_storage_title">No se pudo guardar</string>
     <string name="category_delete_storage_body">El teléfono no pudo guardar el cambio. %1$s sigue con %2$s.</string>
     <string name="category_delete_storage_body_plain">El teléfono no pudo guardar el cambio. %1$s sigue como estaba.</string>

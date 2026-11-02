@@ -25,7 +25,10 @@ expenses and fixed payments.
 - No undo. The confirmation is the safeguard; external backups are the way back.
 - One command (`DeleteCategory`) does all of it in one transaction with an operation ID
   and a receipt. It carries the preview the person confirmed and is refused, with the
-  current preview, when the category, the target or the month no longer match it. Moving
+  current preview, when the category, the target or the month no longer match it. The
+  preview is the figures the person is shown (counts, total, months, this month's spending
+  and limits), not a fingerprint of every row: a change that leaves all of them equal
+  does not stop the deletion they confirmed. Moving
   into a carrying category that the moved expenses change needs the correction
   confirmation of ADR 0020 CP20–CP22.
 - Foreign keys stay `RESTRICT`: the command removes or moves each dependent row itself;

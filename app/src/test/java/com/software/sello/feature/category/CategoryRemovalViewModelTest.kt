@@ -2,6 +2,7 @@ package com.software.sello.feature.category
 
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.CarryoverFailure
 import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
@@ -569,6 +570,38 @@ class CategoryRemovalViewModelTest {
         assertEquals("" to listOf(35, "472.000", may, october, 1), again.typed to counts(again))
         assertEquals(current, sent(1).confirmed)
         assertEquals(CorrectionNotice.CategoryDeleted("Café", 35, null), notices.notice.value)
+    }
+
+    @Test
+    fun anEmptyCategoryThatGainedExpensesIsCountedAgainSoMoverIsOffered() {
+        answer(all = Outcome.Success(nothing))
+        commands.answers += rejected(CategoryRejection.ContentsChanged(everything()))
+        val form = form()
+
+        form.act(RemovalAction.Start, RemovalAction.Confirm)
+        answer()
+        form.act(RemovalAction.Next)
+
+        assertTrue(form.step is RemovalStep.Choose)
+        assertEquals(1, commands.submitted.size)
+    }
+
+    @Test
+    fun aTargetWhoseCarryCannotBeWorkedOutSaysSoAndElegirOtraReopensTheList() {
+        answer()
+        commands.answers += rejected(
+            CategoryRejection.CarryUnavailable(CarryoverFailure.Unrepresentable)
+        )
+        val form = form()
+
+        form.act(RemovalAction.Start, RemovalAction.Move, RemovalAction.Pick(uuid(2)))
+        form.act(RemovalAction.Confirm)
+        val said = form.step
+        form.act(RemovalAction.Next)
+
+        assertEquals(RemovalStep.Problem(RemovalProblem.TargetCarry("Comida")), said)
+        assertTrue(form.step is RemovalStep.Pick)
+        assertEquals(1, commands.submitted.size)
     }
 
     @Test

@@ -624,6 +624,24 @@ class CategoryRemovalContractTest {
     }
 
     @Test
+    fun aNewMonthBetweenThePreviewAndTheConfirmationRefusesWithItsFigures() = runBlocking {
+        history()
+        val seen = removals.preview(cafe, Disposal.MoveTo(comida)).valueOrFail()
+        ledger.goTo("2026-11-03")
+        val before = state()
+
+        val outcome = ledger.categories.submit(deleteCafe(Disposal.MoveTo(comida), seen))
+
+        // November: nothing spent yet in either; both defaults carry on.
+        val current = cafePreview(TargetPreview(comida, cop(0), finite(200_000))).copy(
+            month = YearMonth.of(2026, 11),
+            spentThisMonth = cop(0)
+        )
+        assertEquals(Rejected(Specific(CategoryRejection.ContentsChanged(current))), outcome)
+        assertEquals(before, state())
+    }
+
+    @Test
     fun aBadTargetOrAMissingCategoryIsRefusedWithNothingWritten() = runBlocking {
         history()
         committed(ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, ocio, 1)))

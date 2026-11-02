@@ -17,8 +17,8 @@ This summary is refreshed when an epic closes and adds no verification claims.
   as working tabs.
 - Category creation/editing, archive/unarchive, monthly limits and past corrections.
   Editar categoría's ⋮ holds Archivar and Borrar categoría
-  ([E26](../tickets/E26-delete-category/README.md), ADR 0024): a category is deleted at
-  once when empty, otherwise after moving its expenses and fixed payments to another
+  ([E26](../tickets/E26-delete-category/README.md), ADR 0024): a category is deleted after
+  one confirm slip when empty, otherwise after moving its expenses and fixed payments to another
   category or deleting them all behind a typed BORRAR; no undo.
   The editor opens with the keyboard on the name, offers 24 icons and the person's
   most used limits, and says what the month's total limit would become.

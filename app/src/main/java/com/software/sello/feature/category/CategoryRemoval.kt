@@ -312,9 +312,9 @@ internal class CategoryRemoval(
             is RemovalStep.Pick -> if (step.failed) scope.launch { pick(step.counts) }
 
             is RemovalStep.Problem -> when (val problem = step.problem) {
-                is RemovalProblem.Changed -> review()
+                is RemovalProblem.Changed -> review(problem.before)
 
-                is RemovalProblem.TargetClosed -> {
+                is RemovalProblem.TargetClosed, is RemovalProblem.TargetCarry -> {
                     val counts = counted?.let(::counts) ?: return restart()
                     scope.launch { pick(counts) }
                 }
@@ -336,14 +336,18 @@ internal class CategoryRemoval(
         }
     }
 
-    /** Revisar: the step the change concerns, with what the category holds now. */
-    private fun review() {
+    /**
+     * Revisar: the step the change concerns, with what the category holds now. A category
+     * confirmed as empty that now holds something is counted again, so Mover is offered.
+     */
+    private fun review(before: RemovalCounts?) {
+        val wasEmpty = before == null || (before.expenses == 0 && before.schedules == 0)
         val move = moving
         val all = counted
         when {
             asked is Disposal.MoveTo && move != null && !move.isEmpty -> showMove(move)
 
-            asked == Disposal.DeleteAll && all != null && !all.isEmpty -> {
+            asked == Disposal.DeleteAll && all != null && !all.isEmpty && !wasEmpty -> {
                 remember(memory.copy(stage = Stage.All, typed = ""))
                 show(RemovalStep.All(counts(all), ""))
             }
@@ -438,6 +442,10 @@ internal class CategoryRemoval(
                 show(problem(RemovalProblem.TargetClosed(memory.targetName.orEmpty())))
 
             specific is CategoryRejection.CorrectionUnconfirmed -> askCorrection(specific)
+
+            // Certain, and the same on every retry: only another target goes forward.
+            specific is CategoryRejection.CarryUnavailable && asked is Disposal.MoveTo ->
+                show(problem(RemovalProblem.TargetCarry(memory.targetName.orEmpty())))
 
             // Its expenses can no longer be summed: nothing is offered without exact figures.
             specific == CategoryRejection.TotalOverflow -> show(problem(RemovalProblem.CannotCount))

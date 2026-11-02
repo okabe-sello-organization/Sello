@@ -159,14 +159,16 @@ fun CategoryEditorScreen(
                     stringResource(R.string.category_menu_archive),
                     SelloIcon.Archive,
                     { onAction(CategoryEditorAction.Archive) },
-                    tag = EDITOR_MENU_ARCHIVE_TAG
+                    tag = EDITOR_MENU_ARCHIVE_TAG,
+                    enabled = state.canArchive
                 )
                 val delete = MoreMenuItem(
                     stringResource(R.string.category_menu_delete),
                     SelloIcon.Delete,
                     { onAction(RemovalAction.Start) },
                     loss = true,
-                    tag = EDITOR_MENU_DELETE_TAG
+                    tag = EDITOR_MENU_DELETE_TAG,
+                    enabled = state.canDelete
                 )
                 MoreMenu(if (state.archived) listOf(delete) else listOf(archive, delete))
             }

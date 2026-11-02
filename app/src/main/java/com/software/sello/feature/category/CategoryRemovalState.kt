@@ -106,6 +106,9 @@ sealed interface RemovalProblem {
     /** The category chosen to receive the expenses was archived or deleted meanwhile. */
     data class TargetClosed(val target: String) : RemovalProblem
 
+    /** The moved expenses would leave [target]'s carry impossible to work out (ADR 0020 CP8). */
+    data class TargetCarry(val target: String) : RemovalProblem
+
     /** Storage refused or failed; [counts], when known, are what the category still holds. */
     data class NotSaved(val counts: RemovalCounts?) : RemovalProblem
 
