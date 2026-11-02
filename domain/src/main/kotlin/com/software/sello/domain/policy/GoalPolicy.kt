@@ -187,6 +187,18 @@ object GoalPolicy {
     fun recordingOrder(lines: List<GoalMovementLine>): List<Int> =
         lines.indices.sortedWith(compareBy({ lines[it].date }, { it }))
 
+    /**
+     * The goals a receipt's [lines] name, in the order a line first names each, with the
+     * 0-based positions of that goal's lines in the order they are recorded after its
+     * history ([recordingOrder] among its own lines). A goal's lines are checked and
+     * stamped against its own history only, never against another goal's lines.
+     */
+    fun receiptGoals(lines: List<GoalMovementLine>): List<Pair<GoalId, List<Int>>> =
+        lines.map(GoalMovementLine::goalId).distinct().map { goal ->
+            val positions = lines.indices.filter { lines[it].goalId == goal }
+            goal to positions.sortedWith(compareBy({ lines[it].date }, { it }))
+        }
+
     /** What [after] changed against [before]: a goal with no [before] earned nothing yet. */
     fun change(before: GoalProgress?, after: GoalProgress): GoalChange {
         fun earnedIn(progress: GoalProgress?, place: GoalPlace) =

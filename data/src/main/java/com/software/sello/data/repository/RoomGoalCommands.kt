@@ -5,6 +5,7 @@ import com.software.sello.data.local.entity.DeletedGoalEventEntity
 import com.software.sello.data.local.entity.FeaturedGoalEntity
 import com.software.sello.data.local.entity.GoalEntity
 import com.software.sello.data.local.entity.GoalEventEntity
+import com.software.sello.data.mapper.SUBJECT_SEPARATOR
 import com.software.sello.data.mapper.StoredReceipt
 import com.software.sello.data.mapper.toEntity
 import com.software.sello.data.mapper.toHistory
@@ -49,6 +50,7 @@ import com.software.sello.domain.port.GoalEdit
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalUndoOffer
 import com.software.sello.domain.port.MonotonicClock
+import com.software.sello.domain.port.ReceiptGoal
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RecordIdSource
@@ -158,6 +160,21 @@ class RoomGoalCommands internal constructor(
     ) = CommittedGoal(receipt, checkNotNull(goalId) { "Not a goal receipt" }, change, movementIds)
 
     /**
+     * A receipt of goal movements, with its goals in the order its lines first name them
+     * and each one's change in [changes]; none for a replay or a receipt found.
+     */
+    private fun StoredReceipt.movements(
+        movementIds: List<GoalMovementId>?,
+        changes: Map<GoalId, GoalChange> = emptyMap()
+    ) = CommittedGoal(
+        receipt,
+        goalIds.first(),
+        null,
+        movementIds,
+        goalIds.map { ReceiptGoal(it, changes[it]) }
+    )
+
+    /**
      * Steps 1 and 2 of every command. [proceed] runs only for an operation not seen
      * before; a replay is [replayed] from its receipt.
      */
@@ -176,17 +193,18 @@ class RoomGoalCommands internal constructor(
         return proceed(profile)
     }
 
+    /** [subject] is the goal it changed, or for a receipt its goals joined in their order. */
     private suspend fun commit(
         profile: FinancialProfile,
         command: GoalCommand,
-        goalId: String,
+        subject: String,
         at: Instant
     ): StoredReceipt = database.commitCommand(
         profile,
         command.operationId,
         command.kind,
         inputDigest(command),
-        goalId,
+        subject,
         at
     )
 
@@ -203,14 +221,21 @@ class RoomGoalCommands internal constructor(
      * The goal [command] is about, at the version the caller read. A completed goal is
      * refused unless [completedAllowed].
      */
-    private suspend fun load(command: GoalEdit, completedAllowed: Boolean = false): Load {
-        val row = database.goalDao().byId(command.goalId.value)
+    private suspend fun load(command: GoalEdit, completedAllowed: Boolean = false): Load =
+        load(command.goalId, command.expectedVersion, completedAllowed)
+
+    private suspend fun load(
+        goalId: GoalId,
+        expectedVersion: Long,
+        completedAllowed: Boolean = false
+    ): Load {
+        val row = database.goalDao().byId(goalId.value)
             ?: return Load.Refused(Rejected(Specific(GoalRejection.GoalMissing)))
         val history = when (val read = row.toHistory(database.goalDao().events(row.id))) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return Load.Refused(storageFailed(read.error))
         }
-        if (history.goal.version != command.expectedVersion) {
+        if (history.goal.version != expectedVersion) {
             return Load.Refused(Rejected(CommandRejection.VersionConflict(history.goal.version)))
         }
         if (history.goal.completedOn != null && !completedAllowed) {
@@ -438,21 +463,37 @@ class RoomGoalCommands internal constructor(
             }
         }
 
+    /** One goal of a receipt: its movements in recording order, its next position and its state after. */
+    private class ReceiptPart(
+        val goal: Loaded,
+        val movements: List<GoalMovement>,
+        val nextSequence: Long,
+        val after: GoalProgress
+    )
+
     /**
-     * Every line is checked before the first write: the count, each date in line order,
-     * then the history with the lines in recording order, so the first retiro that takes
-     * more than is saved is named by its line. One version, one revision and one receipt
-     * for the whole receipt, and one change worked out after its last line.
+     * Every line is checked before the first write: the count, the versions against the
+     * goals the lines name, each goal (missing, changed or completed) in the order a line
+     * first names it, each date in line order, then each goal's history with its own lines
+     * in recording order, so the first retiro that takes more than its goal saved is named
+     * by its line and goal. Each goal gets one new version and its own change, worked out
+     * after the receipt's last line; the receipt has one revision and one receipt.
      */
     private suspend fun decide(command: RecordGoalMovements): GoalCommandOutcome {
         val ids = movementIds(command)
-        return starting(command, { it.committed(null, ids) }) { profile ->
+        return starting(command, { it.movements(ids) }) { profile ->
             if (command.lines.size !in 1..GoalPolicy.MAX_RECEIPT_LINES) {
                 return Rejected(Specific(GoalRejection.LineCount(command.lines.size)))
             }
-            val goal = when (val load = load(command)) {
-                is Load.Found -> load.goal
-                is Load.Refused -> return load.outcome
+            val named = GoalPolicy.receiptGoals(command.lines)
+            if (command.versions.keys != named.map { it.first }.toSet()) {
+                return Rejected(Specific(GoalRejection.VersionsUnmatched))
+            }
+            val goals = named.map { (goalId, _) ->
+                when (val load = load(goalId, command.versions.getValue(goalId))) {
+                    is Load.Found -> load.goal
+                    is Load.Refused -> return load.outcome
+                }
             }
             command.lines.forEachIndexed { line, entry ->
                 when (val refused = dateRejection(entry.date)) {
@@ -466,50 +507,59 @@ class RoomGoalCommands internal constructor(
             }
             val now = audit.now()
             val recordedOn = today()
-            var sequence = goal.row.nextSequence
-            val movements = GoalPolicy.recordingOrder(command.lines).map { line ->
-                val entry = command.lines[line]
-                val movement = GoalMovement(
-                    id = ids[line],
-                    kind = entry.kind,
-                    amount = entry.amount,
-                    date = entry.date,
-                    sequence = sequence,
-                    recordedOn = recordedOn,
-                    note = entry.note,
-                    version = 1,
-                    createdAt = now,
-                    updatedAt = now
-                )
-                sequence = nextCounter(sequence, GoalEntity.TABLE, goal.row.id, "next_sequence")
-                movement
-            }
-            val history = goal.history.copy(events = goal.history.events + movements)
-            val after = when (val worked = checked(history)) {
-                is Outcome.Success -> worked.value
-
-                is Outcome.Failure -> {
-                    val reason = worked.error
-                    val above = (reason as? Specific)?.reason as? GoalRejection.AboveSaved
-                    val line = above?.let { ids.indexOf(it.withdrawal) } ?: -1
-                    return Rejected(
-                        if (above != null && line >= 0) {
-                            Specific(GoalRejection.LineAboveSaved(line, above.available))
-                        } else {
-                            reason
-                        }
+            val parts = named.mapIndexed { index, (goalId, positions) ->
+                val goal = goals[index]
+                var sequence = goal.row.nextSequence
+                val movements = positions.map { line ->
+                    val entry = command.lines[line]
+                    val movement = GoalMovement(
+                        id = ids[line],
+                        kind = entry.kind,
+                        amount = entry.amount,
+                        date = entry.date,
+                        sequence = sequence,
+                        recordedOn = recordedOn,
+                        note = entry.note,
+                        version = 1,
+                        createdAt = now,
+                        updatedAt = now
                     )
+                    sequence = nextCounter(sequence, GoalEntity.TABLE, goal.row.id, "next_sequence")
+                    movement
                 }
+                val history = goal.history.copy(events = goal.history.events + movements)
+                val after = when (val worked = checked(history)) {
+                    is Outcome.Success -> worked.value
+
+                    is Outcome.Failure -> {
+                        val reason = worked.error
+                        val above = (reason as? Specific)?.reason as? GoalRejection.AboveSaved
+                        val line = above?.let { ids.indexOf(it.withdrawal) } ?: -1
+                        return Rejected(
+                            if (above != null && line >= 0) {
+                                Specific(
+                                    GoalRejection.LineAboveSaved(line, goalId, above.available)
+                                )
+                            } else {
+                                reason
+                            }
+                        )
+                    }
+                }
+                ReceiptPart(goal, movements, sequence, after)
             }
-            movements.forEach {
-                database.goalDao().insertEvent(it.toEntity(goal.history.goal.id))
+            parts.forEach { part ->
+                part.movements.forEach {
+                    database.goalDao().insertEvent(it.toEntity(part.goal.history.goal.id))
+                }
+                write(part.goal.row, now, part.goal.row.copy(nextSequence = part.nextSequence))
             }
-            write(goal.row, now, goal.row.copy(nextSequence = sequence))
-            val receipt = commit(profile, command, goal.row.id, now)
-            Committed(
-                receipt.committed(GoalPolicy.change(goal.progress, after), ids),
-                replayed = false
-            )
+            val subject = named.joinToString(SUBJECT_SEPARATOR) { it.first.value }
+            val receipt = commit(profile, command, subject, now)
+            val changes = parts.associate {
+                it.goal.history.goal.id to GoalPolicy.change(it.goal.progress, it.after)
+            }
+            Committed(receipt.movements(ids, changes), replayed = false)
         }
     }
 
@@ -766,10 +816,16 @@ class RoomGoalCommands internal constructor(
 
                 is Outcome.Failure -> receipt
 
-                is Outcome.Success ->
+                is Outcome.Success -> {
+                    val stored = receipt.value
                     Outcome.Success(
-                        receipt.value.goalId?.let { receipt.value.committed(null, null) }
+                        when {
+                            stored.goalIds.isNotEmpty() -> stored.movements(null)
+                            stored.goalId != null -> stored.committed(null, null)
+                            else -> null
+                        }
                     )
+                }
             }
         }
 }

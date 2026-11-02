@@ -1,6 +1,7 @@
 package com.software.sello.data
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.data.local.entity.OperationReceiptEntity
 import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovement
@@ -13,19 +14,23 @@ import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
+import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
+import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateGoal
 import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
+import com.software.sello.domain.port.ReceiptGoal
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordGoalMovements
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.coroutines.cancellation.CancellationException
@@ -43,10 +48,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Several aportes and retiros of one goal on one receipt (SELLO-128), against a real
- * database file: every line in one transaction, or none. The goal is 100 with a target of
- * 3.000.000 (its target event is 101); operations are numbered from 1000; today is
- * 9 October 2026. Every expected figure is worked out by hand in the test's comment.
+ * Several aportes and retiros on one receipt, of one goal (SELLO-128) or several
+ * (SELLO-139), against a real database file: every line of every goal in one transaction,
+ * or none. Viaje is goal 100 with a target of 3.000.000 (its target event is 101); Moto,
+ * made by [moto], is goal 200 with a target of 1.200.000 (its target event is 201);
+ * operations are numbered from 1000; today is 9 October 2026. Every expected figure is
+ * worked out by hand in the test's comment.
  */
 @RunWith(AndroidJUnit4::class)
 class GoalReceiptContractTest {
@@ -56,19 +63,25 @@ class GoalReceiptContractTest {
     private val ledger by lazy { TestLedger(files).also { it.start() } }
     private val today = LocalDate.of(2026, 10, 9)
     private val viaje = GoalId.of(uuid(100)).valueOrFail()
+    private val motoId = GoalId.of(uuid(200)).valueOrFail()
 
     private fun day(month: Int, day: Int) = LocalDate.of(2026, month, day)
 
-    private fun aporte(pesos: Long, date: LocalDate = today, note: String? = null) =
-        GoalMovementLine(
-            GoalMovementKind.Contribution,
-            transactionPesos(pesos),
-            date,
-            Note.of(note).valueOrFail()
-        )
+    private fun aporte(
+        pesos: Long,
+        date: LocalDate = today,
+        note: String? = null,
+        goal: GoalId = viaje
+    ) = GoalMovementLine(
+        goal,
+        GoalMovementKind.Contribution,
+        transactionPesos(pesos),
+        date,
+        Note.of(note).valueOrFail()
+    )
 
-    private fun retiro(pesos: Long, date: LocalDate = today) =
-        GoalMovementLine(GoalMovementKind.Withdrawal, transactionPesos(pesos), date, null)
+    private fun retiro(pesos: Long, date: LocalDate = today, goal: GoalId = viaje) =
+        GoalMovementLine(goal, GoalMovementKind.Withdrawal, transactionPesos(pesos), date, null)
 
     private fun events() =
         ledger.rows("goal_event", "sequence", "id", "kind", "amount_minor", "version")
@@ -77,21 +90,27 @@ class GoalReceiptContractTest {
 
     private fun goalRow() = ledger.rows("goal", "next_sequence", "version").single()
 
-    private suspend fun summary(): GoalSummary =
-        (ledger.goalReads.goal(viaje) as Outcome.Success).value!!
+    private fun goalRows() = ledger.rows("goal", "id", "next_sequence", "version")
 
-    private suspend fun version() = summary().history.goal.version
+    /** Every movement with its goal, for a receipt of several goals. */
+    private fun goalEvents() =
+        ledger.rows("goal_event", "goal_id", "sequence", "id", "kind", "amount_minor")
 
+    private suspend fun summary(goal: GoalId = viaje): GoalSummary =
+        (ledger.goalReads.goal(goal) as Outcome.Success).value!!
+
+    private suspend fun version(goal: GoalId = viaje) = summary(goal).history.goal.version
+
+    /** The lines, with the version of each goal they name as read now unless [versions]. */
     private suspend fun receipt(
         vararg lines: GoalMovementLine,
         operation: OperationId = ledger.operation(),
-        expectedVersion: Long? = null,
+        versions: Map<GoalId, Long>? = null,
         generation: Long = 1
     ) = RecordGoalMovements(
         operation,
         generation,
-        viaje,
-        expectedVersion ?: version(),
+        versions ?: lines.map { it.goalId }.distinct().associateWith { version(it) },
         lines.toList()
     )
 
@@ -129,7 +148,43 @@ class GoalReceiptContractTest {
         }
     }
 
-    private fun snapshot(): List<Any> = listOf(events(), goalRow(), ledger.revision(), receipts())
+    /** Moto, goal 200 with a target of 1.200.000, at version 1; [saved] in one aporte. */
+    private suspend fun moto(saved: Long = 0) {
+        ledger.nextRecord = 200
+        val created = ledger.goals.submit(
+            CreateGoal(
+                ledger.operation(),
+                1,
+                GoalName.of("Moto").valueOrFail(),
+                IconKey.of("two_wheeler").valueOrFail(),
+                transactionPesos(1_200_000),
+                null
+            )
+        )
+        assertTrue(created is Committed)
+        if (saved > 0) {
+            val recorded = ledger.goals.submit(
+                RecordGoalMovement(
+                    ledger.operation(),
+                    1,
+                    motoId,
+                    1,
+                    GoalMovementKind.Contribution,
+                    transactionPesos(saved),
+                    today,
+                    null
+                )
+            )
+            assertTrue(recorded is Committed)
+        }
+    }
+
+    private fun snapshot(): List<Any> =
+        listOf(goalEvents(), goalRows(), ledger.revision(), receipts())
+
+    /** [committed] as its replay answers: the same goals and movements, nothing celebrated. */
+    private fun replayOf(committed: CommittedGoal) =
+        committed.copy(goals = committed.goals.map { it.copy(change = null) })
 
     /** Nothing a refused receipt could have touched has moved since [before]. */
     private fun assertUnchanged(before: List<Any>) = assertEquals(before, snapshot())
@@ -167,7 +222,11 @@ class GoalReceiptContractTest {
             receipts()
         )
         assertEquals(OperationKind.RecordGoalMovements to viaje, saved.receipt.kind to saved.goalId)
-        assertEquals(GoalChange(listOf(GoalPlace.Quarter), emptyList(), false), saved.change)
+        assertEquals(
+            listOf(ReceiptGoal(viaje, GoalChange(listOf(GoalPlace.Quarter), emptyList(), false))),
+            saved.goals
+        )
+        assertNull(saved.change)
         val progress = summary().progress
         assertEquals(Money.cop(1_200_000), progress.saved)
         assertEquals(40L, progress.percentage)
@@ -197,7 +256,7 @@ class GoalReceiptContractTest {
                 emptyList(),
                 true
             ),
-            saved.change
+            saved.goals.single().change
         )
         assertEquals(100L, summary().progress.percentage)
     }
@@ -237,7 +296,7 @@ class GoalReceiptContractTest {
         val outcome = submit(receipt(aporte(500_000, day(9, 10)), retiro(600_000, day(9, 1))))
 
         assertEquals(
-            Rejected(Specific(GoalRejection.LineAboveSaved(1, Money.cop(200_000)))),
+            Rejected(Specific(GoalRejection.LineAboveSaved(1, viaje, Money.cop(200_000)))),
             outcome
         )
         assertUnchanged(before)
@@ -288,7 +347,7 @@ class GoalReceiptContractTest {
         started(saved = 200_000)
         val before = snapshot()
 
-        val stale = submit(receipt(aporte(1_000), expectedVersion = 1))
+        val stale = submit(receipt(aporte(1_000), versions = mapOf(viaje to 1L)))
 
         assertEquals(Rejected(CommandRejection.VersionConflict(2)), stale)
         assertUnchanged(before)
@@ -316,7 +375,7 @@ class GoalReceiptContractTest {
         val other = submit(command.copy(lines = command.lines.reversed()))
         val stale = submit(command.copy(generation = 2))
 
-        assertEquals(Committed(first.copy(change = null), replayed = true), again)
+        assertEquals(Committed(replayOf(first), replayed = true), again)
         assertEquals(Rejected(CommandRejection.OperationConflict), other)
         assertEquals(Rejected(CommandRejection.StaleGeneration(current = 1)), stale)
         assertEquals(3, events().size)
@@ -334,13 +393,11 @@ class GoalReceiptContractTest {
 
         val found = (ledger.goals.find(command.operationId) as Outcome.Success).value!!
         assertEquals(first.receipt to viaje, found.receipt to found.goalId)
+        assertEquals(listOf(ReceiptGoal(viaje, null)), found.goals)
         // Its lines are not kept with the receipt: which movements it wrote is not known.
         assertNull(found.movementIds)
         assertEquals(Outcome.Success(null), ledger.goals.find(unsent))
-        assertEquals(
-            Committed(first.copy(change = null), replayed = true),
-            submit(command)
-        )
+        assertEquals(Committed(replayOf(first), replayed = true), submit(command))
         assertEquals(Money.cop(749_000), summary().progress.saved)
     }
 
@@ -451,5 +508,256 @@ class GoalReceiptContractTest {
                 .map { it.substringBefore("|") }.toSet()
         )
         assertEquals(Money.cop(1_000_000), summary().progress.saved)
+    }
+
+    // ---- Several goals on one receipt (SELLO-139) ----
+
+    @Test
+    fun linesOfTwoGoalsAreWrittenTogetherEachGoalWithItsOwnVersionAndChange() = runBlocking {
+        started()
+        moto()
+
+        val saved = committed(
+            submit(
+                receipt(
+                    aporte(750_000),
+                    aporte(300_000, day(9, 1), goal = motoId),
+                    aporte(750_000, day(8, 1)),
+                    aporte(600_000, goal = motoId)
+                )
+            )
+        )
+
+        // Viaje: 1 Aug +750.000 (25 %, the quarter), 9 Oct +750.000: 1.500.000 of 3.000.000
+        // is 50 %, the half. Moto: 1 Sep +300.000 of 1.200.000 (25 %, the quarter), 9 Oct
+        // +600.000: 900.000 is 75 %, the half and three quarters.
+        val ids = saved.movementIds!!.map { it.value }
+        assertEquals(4, ids.toSet().size)
+        assertEquals(
+            listOf(
+                "${uuid(100)}|0|${uuid(101)}|target|3000000",
+                "${uuid(100)}|1|${ids[2]}|contribution|750000",
+                "${uuid(100)}|2|${ids[0]}|contribution|750000",
+                "${uuid(200)}|0|${uuid(201)}|target|1200000",
+                "${uuid(200)}|1|${ids[1]}|contribution|300000",
+                "${uuid(200)}|2|${ids[3]}|contribution|600000"
+            ),
+            goalEvents()
+        )
+        assertEquals(listOf("${uuid(100)}|3|2", "${uuid(200)}|3|2"), goalRows())
+        assertEquals(3L, ledger.revision())
+        assertEquals(
+            "3|goal.record_movements|${uuid(100)},${uuid(200)}",
+            receipts().last()
+        )
+        assertEquals(viaje, saved.goalId)
+        assertEquals(
+            listOf(
+                ReceiptGoal(
+                    viaje,
+                    GoalChange(listOf(GoalPlace.Quarter, GoalPlace.Half), emptyList(), false)
+                ),
+                ReceiptGoal(
+                    motoId,
+                    GoalChange(
+                        listOf(GoalPlace.Quarter, GoalPlace.Half, GoalPlace.ThreeQuarters),
+                        emptyList(),
+                        false
+                    )
+                )
+            ),
+            saved.goals
+        )
+        assertEquals(50L, summary(viaje).progress.percentage)
+        assertEquals(Money.cop(900_000), summary(motoId).progress.saved)
+        assertEquals(75L, summary(motoId).progress.percentage)
+    }
+
+    @Test
+    fun aRetiroChecksOnlyItsOwnGoalAndItsRefusalWritesNothingInEitherGoal() = runBlocking {
+        started(saved = 200_000)
+        moto()
+        val before = snapshot()
+
+        // Moto saved nothing: Viaje's aporte of 1 Sep on the same receipt is not Moto's.
+        val motoRetiro = submit(
+            receipt(aporte(500_000, day(9, 1)), retiro(100_000, day(9, 10), goal = motoId))
+        )
+        // Viaje has its 200.000 only: Moto's aporte of 1 Sep is not Viaje's. Moto, named
+        // first, is checked first and passes.
+        val viajeRetiro = submit(
+            receipt(aporte(500_000, day(9, 1), goal = motoId), retiro(600_000, day(9, 10)))
+        )
+
+        assertEquals(
+            Rejected(Specific(GoalRejection.LineAboveSaved(1, motoId, Money.cop(0)))),
+            motoRetiro
+        )
+        assertEquals(
+            Rejected(Specific(GoalRejection.LineAboveSaved(1, viaje, Money.cop(200_000)))),
+            viajeRetiro
+        )
+        assertUnchanged(before)
+    }
+
+    @Test
+    fun aFailureWritingTheSecondGoalLeavesNothingOfTheFirst() = runBlocking {
+        started()
+        moto()
+        // The database itself refuses Moto's line, after Viaje's two lines and row were written.
+        ledger.database.openHelper.writableDatabase.execSQL(
+            "CREATE TRIGGER refuse_moto_line BEFORE INSERT ON goal_event " +
+                "WHEN NEW.amount_minor = 3333 BEGIN SELECT RAISE(ABORT, 'refused'); END"
+        )
+        val before = snapshot()
+        val command = receipt(aporte(1_111), aporte(2_222), aporte(3_333, goal = motoId))
+
+        val outcome = submit(command)
+
+        assertEquals(
+            Rejected(
+                CommandRejection.StorageFailed(
+                    StorageFailure.Unavailable("SQLiteConstraintException")
+                )
+            ),
+            outcome
+        )
+        assertUnchanged(before)
+        assertEquals(Outcome.Success(null), ledger.goals.find(command.operationId))
+    }
+
+    @Test
+    fun aMissingChangedOrCompletedGoalOrUnmatchedVersionsRefuseTheWholeReceipt() = runBlocking {
+        started(saved = 200_000)
+        moto()
+        val missing = GoalId.of(uuid(300)).valueOrFail()
+        val both = arrayOf(aporte(1_000), aporte(1_000, goal = motoId))
+        val before = snapshot()
+
+        // Viaje is at version 2 and Moto at version 1.
+        val changed = submit(receipt(*both, versions = mapOf(viaje to 2L, motoId to 5L)))
+        val gone = submit(
+            receipt(
+                aporte(1_000),
+                aporte(1_000, goal = missing),
+                versions = mapOf(
+                    viaje to 2L,
+                    missing to 1L
+                )
+            )
+        )
+        val unread = submit(receipt(*both, versions = mapOf(viaje to 2L)))
+        val extra = submit(receipt(aporte(1_000), versions = mapOf(viaje to 2L, motoId to 1L)))
+
+        assertEquals(Rejected(CommandRejection.VersionConflict(1)), changed)
+        assertEquals(Rejected(Specific(GoalRejection.GoalMissing)), gone)
+        assertEquals(Rejected(Specific(GoalRejection.VersionsUnmatched)), unread)
+        assertEquals(Rejected(Specific(GoalRejection.VersionsUnmatched)), extra)
+        assertUnchanged(before)
+
+        ledger.goals.submit(CompleteGoal(ledger.operation(), 1, motoId, 1, 10.seconds))
+        val completed = snapshot()
+        assertEquals(Rejected(Specific(GoalRejection.Completed)), submit(receipt(*both)))
+        assertUnchanged(completed)
+    }
+
+    @Test
+    fun aReceiptOfTwoGoalsIsFoundAfterARestartAndItsReplayIsTheSame() = runBlocking {
+        started()
+        moto()
+        val command = receipt(aporte(750_000), aporte(300_000, goal = motoId), retiro(1_000))
+        val first = committed(submit(command))
+
+        ledger.reopen()
+
+        val found = (ledger.goals.find(command.operationId) as Outcome.Success).value!!
+        assertEquals(first.receipt to viaje, found.receipt to found.goalId)
+        assertEquals(listOf(ReceiptGoal(viaje, null), ReceiptGoal(motoId, null)), found.goals)
+        assertNull(found.movementIds)
+        assertEquals(Committed(replayOf(first), replayed = true), submit(command))
+        assertEquals(
+            Rejected(CommandRejection.OperationConflict),
+            submit(command.copy(versions = mapOf(viaje to 1L, motoId to 2L)))
+        )
+        assertEquals(
+            Rejected(CommandRejection.OperationConflict),
+            submit(command.copy(lines = command.lines.map { it.copy(goalId = viaje) }))
+        )
+        // 750.000 − 1.000 = 749.000 in Viaje and 300.000 in Moto, written once.
+        assertEquals(Money.cop(749_000), summary(viaje).progress.saved)
+        assertEquals(Money.cop(300_000), summary(motoId).progress.saved)
+        assertEquals(3L, ledger.revision())
+    }
+
+    @Test
+    fun aReceiptStoredBySello128sCommandIsFoundAndItsOperationStillReplays() = runBlocking {
+        started()
+        // As SELLO-128's command stored an aporte of 1.000 today to Viaje at version 1, in
+        // generation 1: its one goal as the subject, under the identity worked out by hand
+        // from that command's format (SHA-256 over "len:" and each field of
+        // goal.record_movements, 1, 1, the goal, 1, 1, Contribution 2026-10-09 1000 COP 0 "").
+        val operation = ledger.operation(5_000)
+        ledger.database.operationReceiptDao().insert(
+            OperationReceiptEntity(
+                operationId = operation.value,
+                kind = OperationKind.RecordGoalMovements.key,
+                inputDigest = "89f89b2e3e08df07891792bf98577362a16c097075130710fc71443c05b243db",
+                generation = 1,
+                revision = 1,
+                subjectId = uuid(100),
+                committedAt = 0
+            )
+        )
+        val before = snapshot()
+        val stored = CommittedGoal(
+            OperationReceipt(operation, OperationKind.RecordGoalMovements, 1, 1, Instant.EPOCH),
+            viaje,
+            null,
+            null,
+            listOf(ReceiptGoal(viaje, null))
+        )
+
+        val found = (ledger.goals.find(operation) as Outcome.Success).value!!
+        val again = submit(receipt(aporte(1_000), operation = operation))
+        val other = submit(receipt(aporte(2_000), operation = operation))
+
+        assertEquals(stored, found)
+        // Sent again, the same command is that receipt, never a second write.
+        assertEquals(1, (again as Committed).value.movementIds!!.size)
+        assertEquals(Committed(stored.copy(movementIds = again.value.movementIds), true), again)
+        assertEquals(Rejected(CommandRejection.OperationConflict), other)
+        assertUnchanged(before)
+    }
+
+    @Test
+    fun aDamagedHistoryOfTheSecondGoalRefusesTheReceiptWithNothingWritten() = runBlocking {
+        started()
+        moto(saved = 100_000)
+        // Moto's aporte is event 202; Viaje, named first, has already loaded when Moto fails.
+        ledger.database.openHelper.writableDatabase.execSQL(
+            "UPDATE goal_event SET kind = 'gift' WHERE id = '${uuid(202)}'"
+        )
+        val before = snapshot()
+
+        val outcome = submit(
+            receipt(
+                aporte(1_000),
+                aporte(1_000, goal = motoId),
+                versions = mapOf(
+                    viaje to 1L,
+                    motoId to 2L
+                )
+            )
+        )
+
+        assertEquals(
+            Rejected(
+                CommandRejection.StorageFailed(
+                    StorageFailure.Integrity("goal_event", uuid(202), "kind")
+                )
+            ),
+            outcome
+        )
+        assertUnchanged(before)
     }
 }

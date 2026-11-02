@@ -10,6 +10,7 @@ import com.software.sello.domain.model.ExactTotal
 import com.software.sello.domain.model.GoalChange
 import com.software.sello.domain.model.GoalEvent
 import com.software.sello.domain.model.GoalHistory
+import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementId
 import com.software.sello.domain.model.GoalMovementKind
@@ -113,6 +114,9 @@ class GoalBulkViewModel(
 
     /** Without it no goal matches, and the receipt says the goal is gone. */
     private val goalId: String? = saved[KEY_GOAL]
+
+    /** The goal every line is for; null for a route identifier that is not one. */
+    private val lineGoal: GoalId? = goalId?.let { (GoalId.of(it) as? Outcome.Success)?.value }
 
     private val drafts = SavedDraft(saved, DRAFT, Draft.serializer())
     private val submission = Submission(saved, OPERATION, ids)
@@ -361,9 +365,11 @@ class GoalBulkViewModel(
     /** The lines that would be sent, with their keys, in line order. */
     private fun sendable(draft: Draft): List<Pair<String, GoalMovementLine>> =
         draft.lines.mapNotNull { line ->
+            val goal = lineGoal ?: return@mapNotNull null
             val amount = amountOf(line) ?: return@mapNotNull null
             val kind = kindOf(line) ?: return@mapNotNull null
             line.key to GoalMovementLine(
+                goal,
                 kind,
                 amount,
                 line.date,
@@ -453,8 +459,7 @@ class GoalBulkViewModel(
                         RecordGoalMovements(
                             operation,
                             read.generation,
-                            goal.history.goal.id,
-                            goal.history.goal.version,
+                            mapOf(goal.history.goal.id to goal.history.goal.version),
                             lines
                         )
                     )
@@ -479,8 +484,11 @@ class GoalBulkViewModel(
             null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
             // A receipt found after an unknown outcome was not seen: it is never celebrated.
-            is Settled.Committed ->
-                committed(settled.value.change.takeIf { !settled.found }, sentFrom)
+            is Settled.Committed -> committed(
+                settled.value.goals.firstOrNull { it.goalId.value == goalId }?.change
+                    .takeIf { !settled.found },
+                sentFrom
+            )
 
             is Settled.Unknown -> progress.update {
                 it.copy(busy = false, error = GoalBulkError.Unknown)

@@ -21,7 +21,8 @@ import java.time.Instant
  * the goal kinds, a schedule for the schedule kinds, an investment for the investment
  * kinds, the rate entered for a new USD rate, none for a restore or reset of the whole
  * history, a category for every other kind. A receipt of several expenses or incomes has
- * them all, in line order, in [expenseIds] or [incomeIds]; a receipt of investment
+ * them all, in line order, in [expenseIds] or [incomeIds]; a receipt of goal movements has
+ * its goals, in the order its lines first name them, in [goalIds]; a receipt of investment
  * movements has its investments, in the order its lines first name them, in
  * [investmentIds] (one for a receipt SELLO-129 stored).
  */
@@ -37,6 +38,7 @@ internal class StoredReceipt(
     val usdRateId: UsdRateId? = null,
     val expenseIds: List<ExpenseId> = emptyList(),
     val incomeIds: List<IncomeId> = emptyList(),
+    val goalIds: List<GoalId> = emptyList(),
     val investmentIds: List<InvestmentId> = emptyList()
 )
 
@@ -137,6 +139,14 @@ internal fun OperationReceiptEntity.toStored(): Outcome<StoredReceipt, StorageFa
                 check("subject_id", subjectId == null)
                 StoredReceipt(receipt, inputDigest)
             }
+
+            // One goal, as SELLO-128 stored it, or several.
+            OperationKind.RecordGoalMovements ->
+                StoredReceipt(
+                    receipt,
+                    inputDigest,
+                    goalIds = subjects(subject, GoalId::of)
+                )
 
             in GoalKinds ->
                 StoredReceipt(

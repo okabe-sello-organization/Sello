@@ -119,17 +119,26 @@ class CommandIdentityTest {
     @Test
     fun aReceiptOfGoalMovementsIsItsLinesInTheOrderSent() {
         val goal = GoalId.of(id(3)).value()
-        val aporte = GoalMovementLine(GoalMovementKind.Contribution, amount, ene, null)
+        val aporte = GoalMovementLine(goal, GoalMovementKind.Contribution, amount, ene, null)
         val retiro = GoalMovementLine(
+            goal,
             GoalMovementKind.Withdrawal,
             amount,
             ene,
             Note.of("Pan").value()
         )
         fun receipt(vararg lines: GoalMovementLine) =
-            inputDigest(RecordGoalMovements(operation, 4, goal, 3, lines.toList()))
+            inputDigest(RecordGoalMovements(operation, 4, mapOf(goal to 3L), lines.toList()))
 
         assertEquals(receipt(aporte, retiro), receipt(aporte, retiro))
+        // One goal keeps SELLO-128's identity, so its stored operations still replay. Worked
+        // out by hand from that format: SHA-256 over "len:" and each field of goal.record_movements,
+        // 1, 4, the goal, 3, 2, then Contribution 2027-01-10 20000 COP 0 "" and
+        // Withdrawal 2027-01-10 20000 COP 1 Pan.
+        assertEquals(
+            "780b11692f447bdfb8c0a31e46125c9b33021e7dc681d6ad58d76a5a55b3aa2b",
+            receipt(aporte, retiro)
+        )
         assertEquals(
             4,
             setOf(
@@ -138,6 +147,39 @@ class CommandIdentityTest {
                 receipt(aporte, retiro.copy(note = null)),
                 receipt(aporte)
             ).size
+        )
+    }
+
+    /** SELLO-139: each line's goal and each goal's version are part of the receipt. */
+    @Test
+    fun aReceiptOfSeveralGoalsIsEachLinesGoalAndEachGoalsVersion() {
+        val viaje = GoalId.of(id(3)).value()
+        val moto = GoalId.of(id(4)).value()
+        val aporte = GoalMovementLine(viaje, GoalMovementKind.Contribution, amount, ene, null)
+        val both = listOf(aporte, aporte.copy(goalId = moto))
+        val versions = mapOf(viaje to 3L, moto to 7L)
+        val command = RecordGoalMovements(operation, 4, versions, both)
+
+        // The map's order is not part of it: the same versions read the same.
+        assertEquals(
+            inputDigest(command),
+            inputDigest(command.copy(versions = mapOf(moto to 7L, viaje to 3L)))
+        )
+        assertEquals(
+            5,
+            setOf(
+                command,
+                command.copy(lines = both.reversed()),
+                command.copy(lines = listOf(aporte, aporte)),
+                command.copy(versions = mapOf(viaje to 3L, moto to 8L)),
+                command.copy(versions = mapOf(viaje to 4L, moto to 7L))
+            ).map(::inputDigest).toSet().size
+        )
+        // One version and lines of another goal are not the one-goal receipt of that version.
+        val viajeOnly = RecordGoalMovements(operation, 4, mapOf(viaje to 3L), listOf(aporte))
+        assertNotEquals(
+            inputDigest(viajeOnly),
+            inputDigest(viajeOnly.copy(lines = listOf(aporte.copy(goalId = moto))))
         )
     }
 
