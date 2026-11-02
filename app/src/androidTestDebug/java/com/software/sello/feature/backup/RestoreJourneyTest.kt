@@ -48,12 +48,12 @@ import com.software.sello.domain.port.AppRestart
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.feature.recibo.RECIBO_CARRY_SUM_TAG
 import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
 import com.software.sello.feature.settings.SETTINGS_TAG
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.platform.ProcessAppRestart
 import com.software.sello.platform.TestDocuments
-import com.software.sello.presentation.carry.CARRY_BREAKDOWN_TAG
 import com.software.sello.presentation.restore.RESTORE_DONE_TAG
 import com.software.sello.presentation.restore.RESTORE_LEAVE_TAG
 import java.io.File
@@ -313,7 +313,7 @@ class RestoreJourneyTest {
         scenario = ActivityScenario.launch(Intent(context, MainActivity::class.java))
         rule.awaitTag(RECIBO_SUMMARY_TAG)
         rule.onNodeWithTag(
-            CARRY_BREAKDOWN_TAG,
+            RECIBO_CARRY_SUM_TAG,
             useUnmergedTree = true
         ).performScrollTo().assertExists()
         rule.onNodeWithText(

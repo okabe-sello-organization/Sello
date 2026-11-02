@@ -46,6 +46,8 @@ import kotlinx.coroutines.delay
  * @param over spent more than the limit: full, in loss ink.
  * @param unlimited no limit on purpose ("Sin límite"): an open, dashed ring and a small
  * ∞ badge at its lower edge, so it never looks like a limit with nothing spent yet.
+ * @param carrying the category passes what is left or missing on to the next month
+ * (ADR 0020): a ↻ badge at the same place, never together with [unlimited].
  * @param archived drawn in the soft outline ink instead of the brand or loss ink; the
  * fill and the badge keep their meaning.
  * @param staggerIndex position in a group, so the circles of a screen fill in turn.
@@ -60,7 +62,8 @@ fun CategoryCircle(
     animate: Boolean = true,
     staggerIndex: Int = 0,
     unlimited: Boolean = false,
-    archived: Boolean = false
+    archived: Boolean = false,
+    carrying: Boolean = false
 ) {
     val colors = SelloTheme.colors
     val target = if (unlimited) 0f else fillLevel(fraction, over)
@@ -132,27 +135,48 @@ fun CategoryCircle(
                 }
             }
         )
-        if (unlimited) UnlimitedBadge(size, ink)
+        when {
+            unlimited -> CircleBadge(SelloIcon.AllInclusive, size, ink, CATEGORY_UNLIMITED_TAG)
+            carrying -> CircleBadge(SelloIcon.Autorenew, size, ink, CATEGORY_CARRYING_TAG)
+        }
     }
 }
 
-/** The ∞ mark on a circle without a limit, overlapping its lower right edge. */
+/** A mark overlapping a circle's lower right edge: ∞ without a limit, ↻ while it carries. */
 @Composable
-private fun BoxScope.UnlimitedBadge(circle: Dp, ink: Color) {
-    val colors = SelloTheme.colors
+private fun BoxScope.CircleBadge(icon: SelloIcon, circle: Dp, ink: Color, tag: String) {
     val badge = circle * BADGE_SHARE
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
+    Badge(
+        icon,
+        badge,
+        ink,
+        Modifier
             .align(Alignment.BottomEnd)
             .offset(x = badge * BADGE_OVERHANG, y = badge * BADGE_OVERHANG)
-            .size(badge)
-            .background(colors.paper, CircleShape)
+            .testTag(tag)
+    )
+}
+
+@Composable
+private fun Badge(icon: SelloIcon, size: Dp, ink: Color, modifier: Modifier = Modifier) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(size)
+            .background(SelloTheme.colors.paper, CircleShape)
             .border(1.5.dp, ink, CircleShape)
-            .testTag(CATEGORY_UNLIMITED_TAG)
     ) {
-        Icon(SelloIcon.AllInclusive.painter(), null, Modifier.size(badge * 0.7f), ink)
+        Icon(icon.painter(), null, Modifier.size(size * 0.7f), ink)
     }
+}
+
+/**
+ * The ↻ a carrying category's circle wears, on its own: beside a carried amount, so the
+ * amount and the circle read as the same thing. Decorative; the words say it.
+ */
+@Composable
+fun CarryBadge(size: Dp, modifier: Modifier = Modifier, ink: Color = SelloTheme.colors.brand) {
+    Badge(SelloIcon.Autorenew, size, ink, modifier)
 }
 
 private const val DASH_SHARE = 0.09f
@@ -165,6 +189,9 @@ private const val FILL_STAGGER_MILLIS = 30L
 
 /** The test tag of the ∞ badge a circle without a limit carries. */
 const val CATEGORY_UNLIMITED_TAG = "category-circle:unlimited"
+
+/** The test tag of the ↻ badge a carrying category's circle wears. */
+const val CATEGORY_CARRYING_TAG = "category-circle:carrying"
 
 /** The test tag of a circle drawn in grey because its category is archived. */
 const val CATEGORY_ARCHIVED_TAG = "category-circle:archived"

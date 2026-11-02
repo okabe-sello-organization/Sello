@@ -131,29 +131,21 @@ data class ReciboSummary(
 )
 
 /**
- * The month's carry: the sum of the carrying [categories]' carry-in on top of the bases,
- * read on [asOf]. [why] explains a verdict an earlier deficit caused.
+ * The month's carry: the carrying categories' carry-in summed on top of the bases, read on
+ * [asOf]. Which categories carry, and how much each, is on their cells.
  */
-data class ReciboCarry(
-    val figures: CarryFigures,
-    val categories: List<CarriedCategory>,
-    val asOf: LocalDate,
-    val why: CarryWhy? = null
-)
-
-/** A category that carries this month, and since when. */
-data class CarriedCategory(val name: String, val since: YearMonth)
+data class ReciboCarry(val figures: CarryFigures, val asOf: LocalDate)
 
 /**
- * "Tu límite del mes es [capacity]: [category] trae [carry] de meses anteriores." With
- * no [category], several carry. With [base] and [month], the capacity is not above zero:
- * "Te pasaste … y tu límite base es [base]: [month] empezó en [capacity]."
+ * Why a category is Excedido: "Tu límite del mes es [capacity]: [category] trae [carry] de
+ * meses anteriores." With [base] and [month], the capacity is not above zero: "Te pasaste …
+ * y tu límite base es [base]: [month] empezó en [capacity]."
  */
 data class CarryWhy(
     val capacity: MoneyTextValue,
     val carry: MoneyTextValue,
     val carryMagnitude: MoneyTextValue,
-    val category: String?,
+    val category: String,
     val base: MoneyTextValue? = null,
     val month: YearMonth? = null
 )
