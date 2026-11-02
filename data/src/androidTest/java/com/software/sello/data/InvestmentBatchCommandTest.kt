@@ -44,7 +44,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Several movements of one investment saved as one operation (SELLO-129), against a real
+ * Several movements of one investment saved as one operation (SELLO-129), by the receipt
+ * that may span investments (SELLO-140, InvestmentReceiptAcrossTest), against a real
  * database file through the real commands and reads. Every expected figure is worked out
  * by hand in the comment beside it. Unless a test says otherwise the investment is
  * "Fondo": an aporte of 1.000.000 on 1 oct and its value the same (records 100–102,
@@ -72,20 +73,27 @@ class InvestmentBatchCommandTest {
         kind: InvestmentMovementKind,
         amount: InvestmentAmount,
         date: String,
-        note: String? = null
-    ) = InvestmentMovementLine(kind, amount, LocalDate.parse(date), Note.of(note).valueOrFail())
+        note: String? = null,
+        investment: InvestmentId = first
+    ) = InvestmentMovementLine(
+        investment,
+        kind,
+        amount,
+        LocalDate.parse(date),
+        Note.of(note).valueOrFail()
+    )
 
+    /** The lines, with [version] or the version read now for the investment they name. */
     private suspend fun batch(
         vararg lines: InvestmentMovementLine,
         operation: OperationId = ledger.operation(),
-        investment: InvestmentId = first,
         version: Long? = null,
         generation: Long = 1
     ) = RecordInvestmentMovements(
         operation,
         generation,
-        investment,
-        version ?: ledger.investmentVersion(first),
+        lines.map { it.investmentId }.distinct()
+            .associateWith { version ?: ledger.investmentVersion(it) },
         lines.toList()
     )
 
@@ -141,7 +149,8 @@ class InvestmentBatchCommandTest {
         val saved = committed(submit(command))
 
         assertEquals(OperationKind.RecordInvestmentMovements, saved.receipt.kind)
-        assertEquals(first, saved.investmentId)
+        assertNull(saved.investmentId)
+        assertEquals(listOf(first), saved.investmentIds)
         val ids = saved.movementIds!!.map { it.value }
         assertEquals(3, ids.toSet().size)
         // The next three recording positions, in line order.
@@ -368,7 +377,10 @@ class InvestmentBatchCommandTest {
 
         val stale = submit(batch(line(Contribution, pesos(1), "2026-10-02"), version = 0))
         val gone = submit(
-            batch(line(Contribution, pesos(1), "2026-10-02"), investment = investmentId(999))
+            batch(
+                line(Contribution, pesos(1), "2026-10-02", investment = investmentId(999)),
+                version = 1
+            )
         )
 
         assertEquals(Rejected(CommandRejection.VersionConflict(current = 1)), stale)
@@ -441,7 +453,14 @@ class InvestmentBatchCommandTest {
         assertEquals(2, original.movementIds!!.size)
         // The receipt alone does not know its movements: submitting again gives them.
         assertEquals(
-            Outcome.Success(CommittedInvestment(original.receipt, first, movementIds = null)),
+            Outcome.Success(
+                CommittedInvestment(
+                    original.receipt,
+                    null,
+                    movementIds = null,
+                    investmentIds = listOf(first)
+                )
+            ),
             ledger.investments.find(operation)
         )
     }

@@ -254,9 +254,10 @@ class InvestmentMovementsViewModelTest {
         model.act(InvestmentMovementsAction.Submit)
 
         val command = sent.single()
+        assertEquals(mapOf(InvestmentId.of(ecopetrol).value() to 6L), command.expectedVersions)
         assertEquals(
-            InvestmentId.of(ecopetrol).value() to 6L,
-            command.investmentId to command.expectedVersion
+            listOf(InvestmentId.of(ecopetrol).value()),
+            command.lines.map { it.investmentId }.distinct()
         )
         assertEquals(3L, command.generation)
         assertEquals(
@@ -552,7 +553,10 @@ class InvestmentMovementsViewModelTest {
         )
         model.act(InvestmentMovementsAction.Submit)
 
-        assertEquals(listOf(6L, 7L), sent.map { it.expectedVersion })
+        assertEquals(
+            listOf(6L, 7L),
+            sent.map { it.expectedVersions.getValue(InvestmentId.of(ecopetrol).value()) }
+        )
         assertTrue(model.now.closed)
     }
 

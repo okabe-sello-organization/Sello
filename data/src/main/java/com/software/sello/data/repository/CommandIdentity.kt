@@ -3,6 +3,7 @@ package com.software.sello.data.repository
 import com.software.sello.data.mapper.storedKey
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.EntryOrigin
+import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InvestmentAmount
 import com.software.sello.domain.model.Money
@@ -347,18 +348,32 @@ private val Note?.fields: List<String>
     get() = listOf(if (this == null) "0" else "1", this?.value.orEmpty())
 
 /**
+ * The one goal and version of a receipt whose every line is that goal's, or null. Such a
+ * receipt keeps the identity SELLO-128's command gave it (format 1, the goal and version
+ * as its subject, no goal on a line), so an operation that command stored still replays.
+ */
+private val RecordGoalMovements.oneGoal: Map.Entry<GoalId, Long>?
+    get() = versions.entries.singleOrNull()?.takeIf { only ->
+        lines.all { it.goalId == only.key }
+    }
+
+/**
  * [CompleteGoal.undoFor] is how long Deshacer is offered, not what was asked: it is left out.
- * [RecordGoalMovements] is format 2 since its lines name their goals (SELLO-139); its
- * versions are written by goal identifier, so the map's order never changes the identity.
+ * A [RecordGoalMovements] of several goals is format 2 (SELLO-139): each line's goal and
+ * each goal's version, written by goal identifier so the map's order never changes it.
  */
 internal fun inputDigest(command: GoalCommand): String {
+    val oneGoal = (command as? RecordGoalMovements)?.oneGoal
     val subject = when (command) {
         is GoalEdit -> listOf(command.goalId.value, command.expectedVersion.toString())
 
-        is RecordGoalMovements ->
+        is RecordGoalMovements -> if (oneGoal != null) {
+            listOf(oneGoal.key.value, oneGoal.value.toString())
+        } else {
             listOf(command.versions.size.toString()) +
                 command.versions.entries.sortedBy { it.key.value }
                     .flatMap { listOf(it.key.value, it.value.toString()) }
+        }
 
         is CreateGoal, is RestoreGoalMovement, is UndoGoalCompletion, is FeatureGoal -> emptyList()
     }
@@ -384,8 +399,8 @@ internal fun inputDigest(command: GoalCommand): String {
         // order are another receipt, since the IDs come back in line order.
         is RecordGoalMovements -> listOf(command.lines.size.toString()) +
             command.lines.flatMap {
-                listOf(it.goalId.value, it.kind.name, it.date.toString()) +
-                    it.amount.fields + it.note.fields
+                listOfNotNull(it.goalId.value.takeIf { oneGoal == null }) +
+                    listOf(it.kind.name, it.date.toString()) + it.amount.fields + it.note.fields
             }
 
         is EditGoalMovement -> listOf(
@@ -405,7 +420,7 @@ internal fun inputDigest(command: GoalCommand): String {
 
         is FeatureGoal -> listOf(command.goalId.value)
     }
-    val format = if (command is RecordGoalMovements) "2" else "1"
+    val format = if (command is RecordGoalMovements && oneGoal == null) "2" else "1"
     val head = listOf(command.kind.key, format, command.generation.toString())
     return digest(*(head + subject + change).toTypedArray())
 }
@@ -474,11 +489,23 @@ internal val InvestmentCommand.kind: OperationKind
 private val InvestmentAmount.fields: List<String>
     get() = listOf(money.minorUnits.toString(), money.currency.code)
 
-/** Movement kinds by their stored key, so renaming the enum never changes an identity. */
+/**
+ * Movement kinds by their stored key, so renaming the enum never changes an identity. A
+ * receipt of movements is format 2 (SELLO-140): its expected versions by investment ID,
+ * then its lines, each with its investment. Format 1 was SELLO-129's one investment: a
+ * receipt stored then never equals a format-2 command, so it answers only through `find`;
+ * the same operation sent again is an operation conflict, never a replay.
+ */
 internal fun inputDigest(command: InvestmentCommand): String {
     val subject = when (command) {
         is InvestmentEdit ->
             listOf(command.investmentId.value, command.expectedVersion.toString())
+
+        // Sorted, so the same versions given in another order are the same input.
+        is RecordInvestmentMovements ->
+            listOf(command.expectedVersions.size.toString()) +
+                command.expectedVersions.entries.sortedBy { it.key.value }
+                    .flatMap { (id, version) -> listOf(id.value, version.toString()) }
 
         is CreateInvestment, is RestoreInvestmentMovement, is SetUsdRate -> emptyList()
     }
@@ -510,7 +537,7 @@ internal fun inputDigest(command: InvestmentCommand): String {
         // The count first, then each line in order: the same lines in another order differ.
         is RecordInvestmentMovements ->
             listOf(command.lines.size.toString()) + command.lines.flatMap { line ->
-                listOf(line.kind.storedKey, line.date.toString()) +
+                listOf(line.investmentId.value, line.kind.storedKey, line.date.toString()) +
                     line.amount.fields + line.note.fields
             }
 
@@ -529,7 +556,8 @@ internal fun inputDigest(command: InvestmentCommand): String {
 
         is SetUsdRate -> listOf(command.rate.hundredths.toString(), command.date.toString())
     }
-    val head = listOf(command.kind.key, "1", command.generation.toString())
+    val format = if (command is RecordInvestmentMovements) "2" else "1"
+    val head = listOf(command.kind.key, format, command.generation.toString())
     return digest(*(head + subject + change).toTypedArray())
 }
 

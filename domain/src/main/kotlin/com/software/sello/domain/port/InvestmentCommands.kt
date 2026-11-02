@@ -86,8 +86,12 @@ data class RecordInvestmentMovement(
     val note: Note?
 ) : InvestmentEdit
 
-/** One line of [RecordInvestmentMovements]: what [RecordInvestmentMovement] records. */
+/**
+ * One line of [RecordInvestmentMovements]: what [RecordInvestmentMovement] records, for
+ * the investment [investmentId], its amount in that investment's currency.
+ */
 data class InvestmentMovementLine(
+    val investmentId: InvestmentId,
     val kind: InvestmentMovementKind,
     val amount: InvestmentAmount,
     val date: LocalDate,
@@ -95,19 +99,21 @@ data class InvestmentMovementLine(
 )
 
 /**
- * Several movements of one investment as one operation (SELLO-129): every line is
- * written, with one revision and one receipt, or none is. Amounts are in the
- * investment's currency, never converted. The lines are checked as if recorded after the
- * history, in line order: by date, and on a shared date after what is recorded and after
- * the lines before them, so a line may rely on an earlier-dated line of the same receipt.
+ * Movements of one or several investments as one operation (SELLO-129, SELLO-140): every
+ * line of every investment is written, with one revision and one receipt, or none is.
+ * [expectedVersions] holds the version the caller read of each investment the lines name,
+ * and of no other. Each line's amount is in its own investment's currency, never
+ * converted, so COP and USD investments may share a receipt. An investment's lines are
+ * checked against its own history only, as if recorded after it in line order: by date,
+ * and on a shared date after what is recorded and after that investment's lines before
+ * them, so a line may rely on an earlier-dated line of the same investment.
  */
 data class RecordInvestmentMovements(
     override val operationId: OperationId,
     override val generation: Long,
-    override val investmentId: InvestmentId,
-    override val expectedVersion: Long,
+    val expectedVersions: Map<InvestmentId, Long>,
     val lines: List<InvestmentMovementLine>
-) : InvestmentEdit {
+) : InvestmentCommand {
     companion object {
         /** The most lines one receipt holds. */
         const val MAX_LINES = 30
@@ -212,9 +218,16 @@ sealed interface InvestmentRejection {
     data class LineCount(val lines: Int) : InvestmentRejection
 
     /**
+     * A [RecordInvestmentMovements] whose expected versions do not name exactly the
+     * investments its lines name.
+     */
+    data object VersionsUnmatched : InvestmentRejection
+
+    /**
      * Lines of a [RecordInvestmentMovements] that may not be written, so none was. Each
-     * line's own amount and date are checked first, and every refused one is named; only
-     * when all pass is the history checked, and the one line at fault named.
+     * line's own amount, currency and date are checked first, and every refused one is
+     * named; only when all pass is each investment's history checked, and for each
+     * investment that does not work out the one line at fault named, in line order.
      */
     data class LinesRefused(val lines: List<RefusedInvestmentLine>) : InvestmentRejection
 }
@@ -228,16 +241,19 @@ sealed interface InvestmentRejection {
 data class RefusedInvestmentLine(val position: Int, val reason: InvestmentRejection)
 
 /**
- * A committed change and its receipt; [investmentId] is null for [SetUsdRate].
- * [movementIds] are the movements a [RecordInvestmentMovements] wrote, in line order, on
- * its commit and on every replay of it, and empty for every other change. They are null
- * for a receipt found by [InvestmentCommands.find]: its lines are not kept with it, so
- * which movements it wrote is not known there; submit the same command again for them.
+ * A committed change and its receipt; [investmentId] is null for [SetUsdRate] and
+ * [RecordInvestmentMovements], whose investments are [investmentIds], in the order its
+ * lines first name them; that list is empty for every other change. [movementIds] are
+ * the movements a [RecordInvestmentMovements] wrote, in line order, on its commit and on
+ * every replay of it, and empty for every other change. They are null for a receipt found
+ * by [InvestmentCommands.find]: its lines are not kept with it, so which movements it
+ * wrote is not known there; submit the same command again for them.
  */
 data class CommittedInvestment(
     val receipt: OperationReceipt,
     val investmentId: InvestmentId?,
-    val movementIds: List<InvestmentMovementId>? = emptyList()
+    val movementIds: List<InvestmentMovementId>? = emptyList(),
+    val investmentIds: List<InvestmentId> = emptyList()
 )
 
 typealias InvestmentCommandOutcome = CommandOutcome<CommittedInvestment, InvestmentRejection>

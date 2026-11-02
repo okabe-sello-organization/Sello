@@ -690,38 +690,74 @@ class GoalReceiptContractTest {
     }
 
     @Test
-    fun aReceiptStoredBySello128sCommandIsStillFound() = runBlocking {
+    fun aReceiptStoredBySello128sCommandIsFoundAndItsOperationStillReplays() = runBlocking {
         started()
-        // As SELLO-128 stored it: its one goal as the subject, under its own input identity.
+        // As SELLO-128's command stored an aporte of 1.000 today to Viaje at version 1, in
+        // generation 1: its one goal as the subject, under the identity worked out by hand
+        // from that command's format (SHA-256 over "len:" and each field of
+        // goal.record_movements, 1, 1, the goal, 1, 1, Contribution 2026-10-09 1000 COP 0 "").
         val operation = ledger.operation(5_000)
         ledger.database.operationReceiptDao().insert(
             OperationReceiptEntity(
                 operationId = operation.value,
                 kind = OperationKind.RecordGoalMovements.key,
-                inputDigest = "b".repeat(64),
+                inputDigest = "89f89b2e3e08df07891792bf98577362a16c097075130710fc71443c05b243db",
                 generation = 1,
                 revision = 1,
                 subjectId = uuid(100),
                 committedAt = 0
             )
         )
+        val before = snapshot()
+        val stored = CommittedGoal(
+            OperationReceipt(operation, OperationKind.RecordGoalMovements, 1, 1, Instant.EPOCH),
+            viaje,
+            null,
+            null,
+            listOf(ReceiptGoal(viaje, null))
+        )
 
         val found = (ledger.goals.find(operation) as Outcome.Success).value!!
+        val again = submit(receipt(aporte(1_000), operation = operation))
+        val other = submit(receipt(aporte(2_000), operation = operation))
+
+        assertEquals(stored, found)
+        // Sent again, the same command is that receipt, never a second write.
+        assertEquals(1, (again as Committed).value.movementIds!!.size)
+        assertEquals(Committed(stored.copy(movementIds = again.value.movementIds), true), again)
+        assertEquals(Rejected(CommandRejection.OperationConflict), other)
+        assertUnchanged(before)
+    }
+
+    @Test
+    fun aDamagedHistoryOfTheSecondGoalRefusesTheReceiptWithNothingWritten() = runBlocking {
+        started()
+        moto(saved = 100_000)
+        // Moto's aporte is event 202; Viaje, named first, has already loaded when Moto fails.
+        ledger.database.openHelper.writableDatabase.execSQL(
+            "UPDATE goal_event SET kind = 'gift' WHERE id = '${uuid(202)}'"
+        )
+        val before = snapshot()
+
+        val outcome = submit(
+            receipt(
+                aporte(1_000),
+                aporte(1_000, goal = motoId),
+                versions = mapOf(
+                    viaje to 1L,
+                    motoId to 2L
+                )
+            )
+        )
 
         assertEquals(
-            CommittedGoal(
-                OperationReceipt(operation, OperationKind.RecordGoalMovements, 1, 1, Instant.EPOCH),
-                viaje,
-                null,
-                null,
-                listOf(ReceiptGoal(viaje, null))
+            Rejected(
+                CommandRejection.StorageFailed(
+                    StorageFailure.Integrity("goal_event", uuid(202), "kind")
+                )
             ),
-            found
+            outcome
         )
-        // The same identifier with another input is not written again.
-        assertEquals(
-            Rejected(CommandRejection.OperationConflict),
-            submit(receipt(aporte(1_000), operation = operation))
-        )
+        assertUnchanged(before)
     }
 }

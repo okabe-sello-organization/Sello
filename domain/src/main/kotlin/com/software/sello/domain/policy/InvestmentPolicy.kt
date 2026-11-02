@@ -218,6 +218,32 @@ object InvestmentPolicy {
         return Outcome.Failure(InvestmentLineError(culprit?.index, error))
     }
 
+    /**
+     * A receipt across investments (SELLO-140): each line paired with the history of the
+     * investment it is for. Each investment's lines are checked by [withLines] against its
+     * own history and its own earlier lines only, never another investment's. Fails with
+     * one error per investment that does not work out, in the order the investments are
+     * first named, each position counted in [lines].
+     */
+    fun withLinesAcross(
+        lines: List<Pair<InvestmentHistory, InvestmentMovement>>
+    ): Outcome<Unit, List<InvestmentLineError>> {
+        val errors = lines.withIndex()
+            .groupBy { (_, line) -> line.first.investment.id }
+            .values
+            .mapNotNull { own ->
+                val history = own.first().value.first
+                when (val worked = withLines(history, own.map { it.value.second })) {
+                    is Outcome.Success -> null
+
+                    is Outcome.Failure -> worked.error.let { error ->
+                        error.copy(position = error.position?.let { own[it].index })
+                    }
+                }
+            }
+        return if (errors.isEmpty()) Outcome.Success(Unit) else Outcome.Failure(errors)
+    }
+
     /** [history] without the movement [movement]'s id. */
     fun without(history: InvestmentHistory, movement: InvestmentMovement): InvestmentHistory =
         history.copy(movements = history.movements.filterNot { it.id == movement.id })

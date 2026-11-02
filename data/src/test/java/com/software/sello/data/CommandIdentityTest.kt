@@ -131,6 +131,14 @@ class CommandIdentityTest {
             inputDigest(RecordGoalMovements(operation, 4, mapOf(goal to 3L), lines.toList()))
 
         assertEquals(receipt(aporte, retiro), receipt(aporte, retiro))
+        // One goal keeps SELLO-128's identity, so its stored operations still replay. Worked
+        // out by hand from that format: SHA-256 over "len:" and each field of goal.record_movements,
+        // 1, 4, the goal, 3, 2, then Contribution 2027-01-10 20000 COP 0 "" and
+        // Withdrawal 2027-01-10 20000 COP 1 Pan.
+        assertEquals(
+            "780b11692f447bdfb8c0a31e46125c9b33021e7dc681d6ad58d76a5a55b3aa2b",
+            receipt(aporte, retiro)
+        )
         assertEquals(
             4,
             setOf(
@@ -166,6 +174,12 @@ class CommandIdentityTest {
                 command.copy(versions = mapOf(viaje to 3L, moto to 8L)),
                 command.copy(versions = mapOf(viaje to 4L, moto to 7L))
             ).map(::inputDigest).toSet().size
+        )
+        // One version and lines of another goal are not the one-goal receipt of that version.
+        val viajeOnly = RecordGoalMovements(operation, 4, mapOf(viaje to 3L), listOf(aporte))
+        assertNotEquals(
+            inputDigest(viajeOnly),
+            inputDigest(viajeOnly.copy(lines = listOf(aporte.copy(goalId = moto))))
         )
     }
 

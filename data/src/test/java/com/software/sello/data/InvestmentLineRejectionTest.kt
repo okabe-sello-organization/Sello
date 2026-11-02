@@ -44,4 +44,38 @@ class InvestmentLineRejectionTest {
             InvestmentLineError(2, error).toRejection()
         )
     }
+
+    @Test
+    fun aReceiptAcrossInvestmentsNamesEveryLineAtFaultInLineOrder() {
+        val other = (
+            InvestmentMovementId.of("00000000-0000-4000-8000-000000000002") as Outcome.Success
+            ).value
+        val errors = listOf(
+            InvestmentLineError(3, InvestmentHistoryError.WithdrawalWithoutValue(other)),
+            InvestmentLineError(
+                1,
+                InvestmentHistoryError.WithdrawalAboveValue(retiro, Money.cop(5))
+            )
+        )
+
+        assertEquals(
+            InvestmentRejection.LinesRefused(
+                listOf(
+                    RefusedInvestmentLine(1, InvestmentRejection.AboveValue(retiro, Money.cop(5))),
+                    RefusedInvestmentLine(3, InvestmentRejection.NoValue(other))
+                )
+            ),
+            errors.toRejection()
+        )
+    }
+
+    @Test
+    fun aReceiptAcrossInvestmentsWithATotalThatDoesNotFitIsTheBareReason() {
+        val errors = listOf(
+            InvestmentLineError(1, InvestmentHistoryError.WithdrawalWithoutValue(retiro)),
+            InvestmentLineError(null, InvestmentHistoryError.Unrepresentable)
+        )
+
+        assertEquals(InvestmentRejection.Unrepresentable, errors.toRejection())
+    }
 }
