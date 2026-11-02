@@ -439,6 +439,9 @@ internal class CategoryRemoval(
 
             specific is CategoryRejection.CorrectionUnconfirmed -> askCorrection(specific)
 
+            // Its expenses can no longer be summed: nothing is offered without exact figures.
+            specific == CategoryRejection.TotalOverflow -> show(problem(RemovalProblem.CannotCount))
+
             specific == CategoryRejection.CategoryMissing -> end(SaveError.CategoryGone)
 
             reason is CommandRejection.StaleGeneration -> end(SaveError.DataChanged)

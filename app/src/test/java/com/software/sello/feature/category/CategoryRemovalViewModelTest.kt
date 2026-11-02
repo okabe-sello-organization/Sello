@@ -588,6 +588,18 @@ class CategoryRemovalViewModelTest {
     }
 
     @Test
+    fun aTotalThatNoLongerFitsWhenSendingOffersNoDeletion() {
+        answer()
+        commands.answers += rejected(CategoryRejection.TotalOverflow)
+        val form = form()
+
+        form.act(RemovalAction.Start, RemovalAction.Move, RemovalAction.Pick(uuid(2)))
+        form.act(RemovalAction.Confirm)
+
+        assertEquals(RemovalStep.Problem(RemovalProblem.CannotCount), form.step)
+    }
+
+    @Test
     fun aTargetGoneBeforeThePreviewSaysSoToo() {
         answer(move = Outcome.Failure(RemovalPreviewFailure.TargetMissing))
         val form = form()

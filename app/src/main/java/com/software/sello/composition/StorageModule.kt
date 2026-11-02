@@ -18,6 +18,7 @@ import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryReads
+import com.software.sello.domain.port.CategoryRemovalPreviews
 import com.software.sello.domain.port.DataExports
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.DocumentRead
@@ -113,6 +114,7 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<IncomeBatchCommands> { storage.incomeBatchCommands(get(), get(), get()) }
     single<CategoryCommands> { storage.categoryCommands(get(), get(), get()) }
     single<CategoryReads> { storage.categoryReads }
+    single<CategoryRemovalPreviews> { storage.categoryRemovals(get()) }
     single<CategoryInsightsSnapshots> {
         storage.categoryInsights(get(), get<DispatcherProvider>().default)
     }
