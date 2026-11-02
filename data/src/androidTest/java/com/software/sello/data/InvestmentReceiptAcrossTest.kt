@@ -479,21 +479,34 @@ class InvestmentReceiptAcrossTest {
     }
 
     @Test
-    fun aReceiptStoredBySello129sCommandIsStillFound() = runBlocking {
+    fun aReceiptStoredBySello129sCommandIsFoundButNeverReplayedByTheNewCommand() = runBlocking {
         fondo()
-        // As SELLO-129 stored it: its one investment as the subject.
+        // As SELLO-129 stored it: its one investment as the subject, and the format-1
+        // identity its code printed (at 0369b338) for these two lines on Fondo, version 1.
         val operation = ledger.operation(900)
         ledger.database.insertRaw(
             "operation_receipt",
             "operation_id" to operation.value,
             "kind" to "investment.record_movements",
-            "input_digest" to "a".repeat(64),
+            "input_digest" to "20c8cf2e18aa254bb30382c1be1c6a2e0bb0306fc22ceb1ce1493da3c2aaa93f",
             "generation" to 1L,
-            "revision" to 1L,
+            "revision" to 2L,
             "subject_id" to uuid(100),
             "committed_at" to recordedAt.toEpochMilli()
         )
+        val before = state()
 
+        // The same lines with the same operation: format 2 never equals format 1.
+        val again = submit(
+            batch(
+                line(fondo, Contribution, pesos(300_000), "2026-10-02"),
+                line(fondo, Dividend, pesos(20_000), "2026-10-03"),
+                operation = operation
+            )
+        )
+
+        assertEquals(Rejected(CommandRejection.OperationConflict), again)
+        assertEquals(before, state())
         assertEquals(
             Outcome.Success(
                 CommittedInvestment(
@@ -501,7 +514,7 @@ class InvestmentReceiptAcrossTest {
                         operation,
                         OperationKind.RecordInvestmentMovements,
                         1,
-                        1,
+                        2,
                         Instant.ofEpochMilli(recordedAt.toEpochMilli())
                     ),
                     null,
@@ -511,5 +524,34 @@ class InvestmentReceiptAcrossTest {
             ),
             ledger.investments.find(operation)
         )
+    }
+
+    @Test
+    fun aSecondInvestmentWithNoRecordingPositionLeftUndoesTheFirstsWrites() = runBlocking {
+        fondo()
+        cdt()
+        // CDT's one line takes the last position, and none follows it for its next movement;
+        // Fondo's line and version raise are written before CDT's counter is reached.
+        ledger.database.openHelper.writableDatabase.execSQL(
+            "UPDATE investment SET next_sequence = ${Long.MAX_VALUE} WHERE id = '${uuid(103)}'"
+        )
+        val before = state()
+
+        val outcome = submit(
+            batch(
+                line(fondo, Contribution, pesos(100_000), "2026-10-02"),
+                line(second, Contribution, pesos(200_000), "2026-10-03")
+            )
+        )
+
+        assertEquals(
+            Rejected(
+                CommandRejection.StorageFailed(
+                    StorageFailure.Integrity("investment", uuid(103), "next_sequence")
+                )
+            ),
+            outcome
+        )
+        assertEquals(before, state())
     }
 }

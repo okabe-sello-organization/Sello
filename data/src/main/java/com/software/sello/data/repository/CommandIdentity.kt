@@ -465,7 +465,9 @@ private val InvestmentAmount.fields: List<String>
 /**
  * Movement kinds by their stored key, so renaming the enum never changes an identity. A
  * receipt of movements is format 2 (SELLO-140): its expected versions by investment ID,
- * then its lines, each with its investment. Format 1 was SELLO-129's one investment.
+ * then its lines, each with its investment. Format 1 was SELLO-129's one investment: a
+ * receipt stored then never equals a format-2 command, so it answers only through `find`;
+ * the same operation sent again is an operation conflict, never a replay.
  */
 internal fun inputDigest(command: InvestmentCommand): String {
     val subject = when (command) {
