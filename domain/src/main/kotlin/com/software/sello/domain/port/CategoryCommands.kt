@@ -133,6 +133,24 @@ data class DisableCarry(
     val confirmedCarryIn: Money? = null
 ) : CategoryEdit
 
+/**
+ * Deletes the category for good (ADR 0024), in one transaction: its limits and carry
+ * always, and its expenses and fixed payments as [disposal] says. [confirmed] is the
+ * preview the person saw; while the category, the target or the month no longer match it
+ * exactly, the command is refused with [CategoryRejection.ContentsChanged] and the
+ * current preview. Moving into a category whose carry chain the moved expenses change
+ * needs [confirmation], as a correction does (ADR 0020 CP20–CP22).
+ */
+data class DeleteCategory(
+    override val operationId: OperationId,
+    override val generation: Long,
+    override val categoryId: CategoryId,
+    override val expectedVersion: Long,
+    val disposal: Disposal,
+    val confirmed: RemovalPreview,
+    val confirmation: CorrectionConfirmation? = null
+) : CategoryEdit
+
 /** Why nothing was written. Each of these is certain. */
 sealed interface CategoryRejection {
     data object CategoryMissing : CategoryRejection
@@ -180,6 +198,21 @@ sealed interface CategoryRejection {
         val confirmation: CorrectionConfirmation,
         val correction: CarryCorrection
     ) : CategoryRejection
+
+    /**
+     * The category, the target or the month no longer match what the person confirmed.
+     * [current] is what deleting would do now; it must be shown and confirmed again.
+     */
+    data class ContentsChanged(val current: RemovalPreview) : CategoryRejection
+
+    /** The category that was to receive the expenses no longer exists. */
+    data object TargetMissing : CategoryRejection
+
+    /** The category that was to receive the expenses is archived and takes none. */
+    data object TargetArchived : CategoryRejection
+
+    /** A category cannot receive its own expenses. */
+    data object SameCategory : CategoryRejection
 
     /** A past month inside a carry chain cannot become unlimited (CP13). */
     data class ChainMonthUnlimited(val month: YearMonth) : CategoryRejection

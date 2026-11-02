@@ -226,11 +226,12 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   same-process recreation without extension; process death expires the offer while
   durable deletion/compensation outcomes remain recoverable. Financial time cannot
   alter the deadline; offer expiry must not roll back an already committed compensation.
-- **MUST** use archive-only category removal in MVP: retain identity/history and
-  current-month limits, stop automatic budgets in later archived months, and apply
+- **MUST** keep archiving non-destructive: retain identity/history and current-month
+  limits, stop automatic budgets in later archived months, and apply
   [approved D07 restoration/visibility](docs/decisions/0001-mvp-contract.md#d07--archive-and-undo)
-  with explained consequences. Any future destructive aggregate deletion needs
-  separate approval, counts/confirmation and an explicit transaction, never a cascade.
+  with explained consequences. Deleting a category follows
+  [ADR 0024](docs/decisions/0024-deleting-a-category.md): counts and confirmation (typed
+  **BORRAR** before expenses are deleted), one explicit transaction, never a cascade.
 - **MUST** fence reset/restore against stale commands/jobs with a persisted
   generation. Recovery receipts survive the replacement they describe. Reset
   requires counts, then a second confirmation typing **BORRAR**.

@@ -20,6 +20,7 @@ import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateCategory
+import com.software.sello.domain.port.DeleteCategory
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateExpenses
 import com.software.sello.domain.port.CreateGoal
@@ -243,6 +244,7 @@ internal val CategoryCommand.kind: OperationKind
         is SetMonthLimit -> OperationKind.SetMonthLimit
         is EnableCarry -> OperationKind.EnableCarry
         is DisableCarry -> OperationKind.DisableCarry
+        is DeleteCategory -> error("SELLO-138 stub: replaced by the data work")
     }
 
 internal fun inputDigest(command: CategoryCommand): String {
@@ -262,6 +264,8 @@ internal fun inputDigest(command: CategoryCommand): String {
         is SetDefaultLimit -> command.limit.fields
 
         is SetMonthLimit -> listOf(command.month.toString()) + command.limit.fields
+
+        is DeleteCategory -> error("SELLO-138 stub: replaced by the data work")
 
         // A new kind: its confirmation is always part of it, present or not.
         is DisableCarry -> confirmation(command.confirmedCarryIn, null)

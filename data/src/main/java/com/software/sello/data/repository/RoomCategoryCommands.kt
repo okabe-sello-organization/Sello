@@ -39,6 +39,7 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CreateCategory
+import com.software.sello.domain.port.DeleteCategory
 import com.software.sello.domain.port.DisableCarry
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.FinancialClock
@@ -291,6 +292,8 @@ class RoomCategoryCommands(
                 carry.write(chains)
                 next
             }
+
+            is DeleteCategory -> error("SELLO-138 stub: replaced by the data work")
         }
         check(database.categoryDao().update(changed.toEntity()) == 1)
         return Written.Done(id)

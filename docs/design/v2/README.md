@@ -32,6 +32,7 @@ synthetic.
 | [Pagos fijos en la categoría](categoria-fijos.html) | Approved 2026-10-30 by the owner (SELLO-135, E24): category detail counts its own payments still to come and lists its fixed payments |
 | [Ajustar presupuesto](ajustar.html) | Locked 2026-10-26 by the owner: the screen behind Recibo's **Ajustar presupuesto ›** and its limit sheet |
 | [Arrastre](arrastre.html) | Delegated by the owner 2026-10-28 for SELLO-041 (E09, signed carry-over); approved by merging it: turning carry on, the breakdowns, dropping a balance, corrections, the catch-up lines, an uncomputable carry, Resumen |
+| [Borrar categoría](borrar-categoria.html) | Approved 2026-11-02 by the owner (SELLO-138, ADR 0024): Archivar and Borrar in Editar categoría's ⋮, moving or deleting what a category holds, and why it did not happen |
 | [Shared components](components.html) | Catalog of every part, with its status against `design-system` (Exists / Extend / New) |
 
 ## Recibo / Home
