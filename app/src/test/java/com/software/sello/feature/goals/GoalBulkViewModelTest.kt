@@ -706,7 +706,7 @@ class GoalBulkViewModelTest {
         val saved = SavedStateHandle(mapOf("goalId" to viaje))
         val first = model(saved = saved)
         first.threeLines()
-        saved["goal.bulk.draft"] = arrayListOf<String?>("not", "a", "draft")
+        saved["goal.bulk.draft.goals"] = arrayListOf<String?>("not", "a", "draft")
 
         val restored = model(saved = saved).state.value
 
@@ -970,6 +970,56 @@ class GoalBulkViewModelTest {
         advanceTimeBy(4_001)
         val next = corrections.notice.value as CorrectionNotice.GoalMovementsRecorded
         assertEquals("Celular nuevo", next.celebration!!.goalName)
+    }
+
+    @Test
+    fun aDraftStoredBeforeLinesNamedTheirGoalComesBackInTheGoalItOpenedFrom() = runTest {
+        // As SELLO-133 stored it, in order: 2 lines, each key, amount, type, date and note,
+        // then the highlighted line and the next key. No line names a goal.
+        val saved = SavedStateHandle(
+            mapOf(
+                "goalId" to viaje,
+                "goal.bulk.draft" to arrayListOf<String?>(
+                    "2",
+                    "1", "+", "100000", "+", "false", "2026-10-12", "",
+                    "2", "+", "50000", "+", "true", "2026-10-16", "Arreglo del carro",
+                    "1",
+                    "3"
+                )
+            )
+        )
+
+        val model = model(saved = saved)
+        val state = model.state.value
+
+        assertEquals(listOf(viaje, viaje), state.lines.map { it.goalId })
+        assertEquals(listOf("100.000", "50.000"), state.lines.map { it.amount!!.digits })
+        assertEquals(listOf(false, true), state.lines.map { it.withdrawal })
+        assertEquals("Arreglo del carro", state.lines[1].note)
+        assertEquals(1, state.highlighted)
+        // +100.000 − 50.000 = +50.000
+        assertEquals(MoneySign.Plus to "50.000", state.total!!.let { it.sign to it.digits })
+
+        // Once edited it is stored in the new form only.
+        model.type("1")
+        assertNull(saved.get<Any>("goal.bulk.draft"))
+        assertEquals(
+            listOf(viaje, viaje),
+            model(saved = saved.afterProcessDeath()).state.value.lines.map { it.goalId }
+        )
+    }
+
+    @Test
+    fun withNoActiveGoalLeftTheReceiptSaysSo() = runTest {
+        val model = model()
+        reads.board.value = ReadState.Ready(
+            GoalBoard(3, 9, listOf(board().value.goals[2]), null)
+        )
+
+        assertEquals(emptyList<GoalBulkChoice>(), model.state.value.goals)
+        assertTrue(model.state.value.noActiveGoal)
+        model.onAction(GoalBulkAction.Back)
+        assertTrue(model.state.value.closed)
     }
 
     @Test

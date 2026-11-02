@@ -84,8 +84,8 @@ class GoalBulkViewModel(
     @Serializable
     private data class LineDraft(
         val key: String,
-        /** Null until a goal is chosen; a draft stored before goals were per line has none. */
-        val goal: String? = null,
+        /** Null until a goal is chosen. */
+        val goal: String?,
         @Serializable(with = AmountDraftSerializer::class) val amount: AmountDraft,
         val withdrawal: Boolean?,
         @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
@@ -94,6 +94,23 @@ class GoalBulkViewModel(
 
     @Serializable
     private data class Draft(val lines: List<LineDraft>, val highlighted: Int, val nextKey: Int)
+
+    /** A line as drafts stored it before each line named its goal (before SELLO-141). */
+    @Serializable
+    private data class OneGoalLine(
+        val key: String,
+        @Serializable(with = AmountDraftSerializer::class) val amount: AmountDraft,
+        val withdrawal: Boolean?,
+        @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
+        val note: String
+    )
+
+    @Serializable
+    private data class OneGoalDraft(
+        val lines: List<OneGoalLine>,
+        val highlighted: Int,
+        val nextKey: Int
+    )
 
     /** Why storage refused a line, kept by the line's key until the draft changes. */
     private sealed interface Refusal {
@@ -120,10 +137,13 @@ class GoalBulkViewModel(
     private val goalId: String? = saved[KEY_GOAL]
 
     private val drafts = SavedDraft(saved, DRAFT, Draft.serializer())
+
+    /** Drafts are read in order, so one stored before goals were per line has its own key. */
+    private val oneGoalDrafts = SavedDraft(saved, ONE_GOAL_DRAFT, OneGoalDraft.serializer())
     private val submission = Submission(saved, OPERATION, ids)
 
     private val draft =
-        MutableStateFlow(drafts.read()?.takeIf(::wellFormed)?.let(::upgraded) ?: opening())
+        MutableStateFlow((drafts.read() ?: oneGoalDraft())?.takeIf(::wellFormed) ?: opening())
     private val progress = MutableStateFlow(Progress())
     private val retries = MutableStateFlow(0)
     private val board = retries.flatMapLatest { reads.observeBoard() }
@@ -268,13 +288,19 @@ class GoalBulkViewModel(
     private fun wellFormed(draft: Draft): Boolean =
         draft.lines.size in 1..BULK_RECEIPT_MAX_LINES && draft.highlighted in draft.lines.indices
 
-    /** A draft stored before each line named its goal was all for the goal it opened from. */
-    private fun upgraded(draft: Draft): Draft =
-        draft.copy(lines = draft.lines.map { it.copy(goal = it.goal ?: goalId) })
+    /** A draft stored before each line named its goal: all of it was for the goal it opened from. */
+    private fun oneGoalDraft(): Draft? = oneGoalDrafts.read()?.let { old ->
+        Draft(
+            old.lines.map { LineDraft(it.key, goalId, it.amount, it.withdrawal, it.date, it.note) },
+            old.highlighted,
+            old.nextKey
+        )
+    }
 
     private fun current(): LineDraft = draft.value.lines[draft.value.highlighted]
 
     private fun write(next: Draft) {
+        oneGoalDrafts.clear()
         drafts.write(next)
         draft.value = next
     }
@@ -609,6 +635,7 @@ class GoalBulkViewModel(
             )
         )
         drafts.clear()
+        oneGoalDrafts.clear()
         composer.close()
         removal?.cancel()
         progress.update { it.copy(busy = false, error = null, removed = null, closed = true) }
@@ -674,7 +701,8 @@ class GoalBulkViewModel(
         private val CANDIDATE =
             (GoalMovementId.of("00000000-0000-4000-8000-ffffffffffff") as Outcome.Success).value
 
-        private const val DRAFT = "goal.bulk.draft"
+        private const val DRAFT = "goal.bulk.draft.goals"
+        private const val ONE_GOAL_DRAFT = "goal.bulk.draft"
         private const val PREFIX = "goal.bulk"
         private const val OPERATION = "goal.bulk.operation"
         private const val STEP = "record_movements"

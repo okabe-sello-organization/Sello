@@ -29,7 +29,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Aportar varios as it is drawn on the CI phone (412×914 dp): the receipt's lines scroll
- * inside it from the fourth, the button counts the lines, a refused retiro says what is
+ * inside it from the third, the button counts the lines, a refused retiro says what is
  * available, and an unknown outcome offers only to ask again.
  */
 @RunWith(AndroidJUnit4::class)
@@ -54,17 +54,17 @@ class GoalBulkScreenTest {
 
     /**
      * The highlighted line carries its date pill and the goal chips take two rows, so two
-     * lines and the highlighted one about fill the slip: past them the lines scroll inside
-     * it, and the total, the button and the pad stay where they are.
+     * lines fit whole; with a third the slip is full and the lines scroll inside it, and the
+     * total, the button and the pad stay where they are.
      */
     @Test
-    fun threeLinesFillTheReceiptAndFromTheFourthTheyScrollInsideIt() {
+    fun twoLinesFitAndFromTheThirdTheyScrollInsideTheReceipt() {
         var lines by mutableStateOf(GoalBulkSamples.lines(2))
         rule.showSello { GoalBulkScreen(lines) {} }
         assertFalse(firstLineHidden(2))
         val button = rule.onNodeWithTag(GOAL_BULK_SUBMIT_TAG).getUnclippedBoundsInRoot()
 
-        for (count in listOf(4, 30)) {
+        for (count in listOf(3, 30)) {
             lines = GoalBulkSamples.lines(count)
             rule.waitForIdle()
 
@@ -143,5 +143,15 @@ class GoalBulkScreenTest {
         rule.onNodeWithText("Falta 1 meta").assertExists()
         rule.onNodeWithText("Elige una meta", useUnmergedTree = true).assertExists()
         rule.onNodeWithTag(GOAL_BULK_SUBMIT_TAG).assertIsNotEnabled()
+    }
+
+    @Test
+    fun withNoActiveGoalTheReceiptSaysSoAndCanBeClosed() {
+        show(GoalBulkSamples.missingGoal.copy(goals = emptyList()))
+
+        rule.onNodeWithText("No hay metas activas.").assertExists()
+        rule.onNodeWithTag(GOAL_BULK_CLOSE_TAG).performClick()
+
+        assertEquals(listOf<GoalBulkAction>(GoalBulkAction.Back), actions)
     }
 }

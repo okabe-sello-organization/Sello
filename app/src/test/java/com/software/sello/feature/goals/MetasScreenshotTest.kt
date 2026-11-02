@@ -33,6 +33,7 @@ import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
@@ -103,12 +104,17 @@ class MetasScreenshotTest {
     )
     private val metas = GoalsRenderModel(money).metas(ReadState.Ready(board), today)
 
-    private fun capture(look: Look) {
+    private fun capture(look: Look, name: String = "metas", onBulk: (() -> Unit)? = null) {
         rule.showSello(look) {
-            MetasScreen(metas, {}, dateLabels(), PaddingValues(16.dp))
+            MetasScreen(metas, {}, dateLabels(), PaddingValues(16.dp), onBulk = onBulk)
         }
-        rule.captureStill("src/test/screenshots/metas-${look.label}.png")
+        rule.captureStill("src/test/screenshots/$name-${look.label}.png")
     }
+
+    /** Anotar varios at the foot of the active goals, before the completed one, on the CI phone. */
+    @Test
+    @Config(qualifiers = "w412dp-h914dp-mdpi")
+    fun anotarVariosLight() = capture(Look(), "metas-bulk", onBulk = {})
 
     @Test
     fun cobaltoLight() = capture(Look())

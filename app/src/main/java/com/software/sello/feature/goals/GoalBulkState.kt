@@ -107,6 +107,9 @@ data class GoalBulkState(
 
     val refused: Int get() = lines.count { it.refused }
 
+    /** Read, and no goal is left to name: the person can only leave. */
+    val noActiveGoal: Boolean get() = !loading && !loadFailed && goals.isEmpty()
+
     val full: Boolean get() = lines.size >= BULK_RECEIPT_MAX_LINES
 
     /** Lines with something typed, which leaving would lose. */

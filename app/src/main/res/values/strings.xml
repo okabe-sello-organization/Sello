@@ -1188,6 +1188,7 @@
     <string name="goal_bulk_choices">Meta y tipo</string>
     <string name="goal_bulk_choices_line">Meta y tipo · renglón %d</string>
     <string name="goal_bulk_no_goal">Sin meta</string>
+    <string name="goal_bulk_no_active_goal">No hay metas activas.</string>
     <string name="goal_bulk_changed">Una meta cambió mientras escribías. Revisa y vuelve a anotar.</string>
     <string name="goal_bulk_choose_goal">Elige una meta</string>
     <plurals name="goal_bulk_missing_goals"><item quantity="one">Falta %d meta</item><item quantity="other">Faltan %d metas</item></plurals>
