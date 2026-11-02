@@ -59,6 +59,21 @@ class GoalMovementsNoticeTest {
         val stamps =
             GoalCelebration("g", "Viaje a la costa", listOf(GoalPlace.Half), emptyList(), false)
 
-        assertEquals(stamps, CorrectionNotice.GoalMovementsRecorded(2, null, stamps).celebration)
+        assertEquals(
+            stamps,
+            CorrectionNotice.GoalMovementsRecorded(2, null, listOf(stamps)).celebration
+        )
+    }
+
+    @Test
+    fun eachGoalsStampsAreCelebratedInTurn() {
+        val viaje =
+            GoalCelebration("g", "Viaje a la costa", listOf(GoalPlace.Half), emptyList(), false)
+        val celular = GoalCelebration("h", "Celular nuevo", emptyList(), emptyList(), true)
+        val receipt = CorrectionNotice.GoalMovementsRecorded(2, null, listOf(viaje, celular))
+
+        assertEquals(viaje, receipt.celebration)
+        assertEquals(celular, receipt.copy(turn = 1).celebration)
+        assertEquals(null, receipt.copy(turn = 2).celebration)
     }
 }

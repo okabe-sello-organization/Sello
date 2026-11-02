@@ -71,4 +71,16 @@ class GoalBulkScreenshotTest {
 
     @Test
     fun thirtyLinesOscuro() = capture("thirty-lines", GoalBulkSamples.thirty, dark = true)
+
+    @Test
+    fun twoGoalsClaro() = capture("two-goals", GoalBulkSamples.twoGoals, dark = false)
+
+    @Test
+    fun twoGoalsOscuro() = capture("two-goals", GoalBulkSamples.twoGoals, dark = true)
+
+    @Test
+    fun missingGoalClaro() = capture("missing-goal", GoalBulkSamples.missingGoal, dark = false)
+
+    @Test
+    fun missingGoalOscuro() = capture("missing-goal", GoalBulkSamples.missingGoal, dark = true)
 }

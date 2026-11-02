@@ -91,13 +91,14 @@ data class GoalMovementRoute(
 )
 
 /**
- * Aportar varios: several aportes and retiros of [goalId] on one receipt. The screen reads
- * the goal itself. From Aportar or Retirar, [withdrawal], [amount], [note] and [date] are
- * what was typed there, to become line one.
+ * Aportar varios: several aportes and retiros, each line naming its goal, on one receipt.
+ * [goalId] is the goal it was opened from, line one's goal; null from the Metas list. The
+ * screen reads the goals itself. From Aportar or Retirar, [withdrawal], [amount], [note] and
+ * [date] are what was typed there, to become line one.
  */
 @Serializable
 data class GoalBulkRoute(
-    val goalId: String,
+    val goalId: String? = null,
     val withdrawal: Boolean? = null,
     val amount: String? = null,
     val note: String? = null,

@@ -186,7 +186,8 @@ class MetasScreenTest {
     private fun destination(
         board: GoalBoard,
         onCreate: (() -> Unit)? = null,
-        onContribute: (() -> Unit)? = null
+        onContribute: (() -> Unit)? = null,
+        onBulk: (() -> Unit)? = null
     ) {
         val factory = viewModelFactory {
             initializer {
@@ -230,7 +231,8 @@ class MetasScreenTest {
                     ) {},
                     onOpenGoal = {},
                     onCreate = onCreate,
-                    onContribute = onContribute
+                    onContribute = onContribute,
+                    onBulk = onBulk
                 )
             }
         }
@@ -275,6 +277,34 @@ class MetasScreenTest {
         assertEquals(1, created)
         rule.onNodeWithTag(METAS_CREATE_TAG).assertDoesNotExist()
         rule.onNodeWithTag(METAS_TOTAL_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun anotarVariosSitsAtTheFootOfTheActiveGoalsAndOpensTheReceipt() {
+        var opened = 0
+        destination(board, onBulk = { opened++ })
+
+        rule.onNodeWithTag(METAS_LIST_TAG).performScrollToNode(hasTestTag(METAS_BULK_TAG))
+        rule.onNodeWithTag(METAS_BULK_TAG).assert(hasText("Anotar varios")).performClick()
+        assertEquals(1, opened)
+    }
+
+    @Test
+    fun withNoActiveGoalAnotarVariosIsNotOffered() {
+        destination(
+            GoalBoard(
+                1,
+                1,
+                listOf(
+                    goal(3, "Vacunas de Luna", 400_000, listOf(400_000), LocalDate.of(2026, 9, 30))
+                ),
+                null
+            ),
+            onBulk = {}
+        )
+
+        rule.onNodeWithTag("metas.completed.${board.goals[2].history.goal.id.value}").assertExists()
+        rule.onNodeWithTag(METAS_BULK_TAG).assertDoesNotExist()
     }
 
     @Test

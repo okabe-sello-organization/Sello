@@ -23,7 +23,7 @@ synthetic.
 | --- | --- |
 | [Recibo / Home](home.html) | Locked 2026-10-15 (past-month state added with Resumen) |
 | [Expense and income entry](entry.html) | Locked 2026-10-15 |
-| [Anotar varios](varios.html) | Locked 2026-10-30 by the owner (SELLO-126, E23): the bulk receipt for expenses, incomes, one goal and investments (E27), and where it opens from |
+| [Anotar varios](varios.html) | Locked 2026-10-30 by the owner (SELLO-126, E23): the bulk receipt for expenses, incomes, goals and investments (E27), and where it opens from |
 | [Resumen](resumen.html) | Locked 2026-10-15 |
 | [Income](income.html) | Locked 2026-10-15 |
 | [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16; + Nueva meta moved to the band by the owner 2026-10-26; Nueva meta and Nueva categoría made alike by the owner 2026-10-26 (see below) |
@@ -171,8 +171,10 @@ movimientos](../sello-spec.html#s-varios). The owner approved it as drawn, inclu
 switch on the receipt; where it opens from sets its kind; the Varios pill on every entry sheet.
 **Changed 2026-11-02 by the owner:** the pill left the title bar, where it read as an option of the
 screen rather than a way to record more; a second slip peeks out under the amount slip instead.
-**Changed 2026-11-02 by the owner** ([E27](../../tickets/E27-varios-across/README.md)): Varios
-movimientos is for investments, not one investment; each line picks its own.
+**Changed 2026-11-02 by the owner** ([E27](../../tickets/E27-varios-across/README.md)): Aportar
+varios takes several goals and Varios movimientos several investments, each line picking its
+own from chips as Anotar varios picks categories; Metas and Inversiones offer them with none
+chosen.
 
 **Order, top to bottom:** ✕ and the title (**Varios gastos** or **Varios ingresos**; for a
 goal, its title and name; **Varios movimientos** alone, its lines naming their investments) → the **receipt**, a pinked slip that takes the free
@@ -181,22 +183,24 @@ height: header (**Anotar varios**, the line count, the date pill), the lines, a 
 pad. The lines scroll inside the receipt; the foot, chips, action and pad never move.
 
 - **A line:** mark (category circle, a green + for an income or aporte, a neutral ← for a
-  retiro), its category, source or type, the note under it, the amount. An investment's line
-  is titled with its investment, its type and note under it. The line the pad
+  retiro), its category, source or type, the note under it, the amount. A goal's or an
+  investment's line is titled with its goal or investment, its type and note under it. The line the pad
   types into has a dark edge; tapping a line highlights it. A new line copies the category,
-  source or type (and the date, for goals and investments, and the investment) above it. Opening has one empty line.
+  source or type (and the date, for goals and investments, and the goal or investment) above it. Opening has one empty line.
 - **Kinds:** expenses and incomes share **one date** for the receipt (the pill in its header);
   where the receipt opens from sets the kind of all of it, for good. A goal's or an investment's lines each carry a
   type and a date, the date as a pill on the highlighted line. Under the highlighted line, chips
-  name every investment in two rows, as categories, then the types in one. Each line is in its
+  name every active goal or every investment in two rows, as categories, then the types in one.
+  Aportar varios is titled with the goal's name under it while the lines name one goal, and
+  alone once they name more. Each investment line is in its
   investment's currency: dollars with the comma key for a USD investment, pesos otherwise;
   choosing an investment in another currency clears the line's amount.
-- **Total:** the sum of the lines; a goal shows its net (aportes − retiros); an investment shows
+- **Total:** the sum of the lines; goals show their net (aportes − retiros) across every line; an investment shows
   **Aportado** (aportes − retiros), because dividends and valuations do not add up with them. It
   is in the lines' currency while they share one; with COP and USD lines it is in pesos at
   today's rate, saying so under it; with no rate, each currency's part, one under the other.
-- **Blocking:** a line with an amount but no category, source, investment or type is outlined
-  in loss with the reason on it, the header says **Falta 1 categoría** (**Falta 1 inversión**) and the action waits. At 30 lines the
+- **Blocking:** a line with an amount but no category, source, goal, investment or type is outlined
+  in loss with the reason on it, the header says **Falta 1 categoría** (**Falta 1 meta**, **Falta 1 inversión**) and the action waits. At 30 lines the
   header says **Máximo 30 por recibo** and **Otro renglón** waits. Lines without an amount are
   ignored; the button counts the rest: **Anotar gasto**, **Anotar 3 gastos**.
 - **Removing:** swipe a line left (past 40 % it reads **Suelta para quitar**) or long-press it;
@@ -208,8 +212,10 @@ pad. The lines scroll inside the receipt; the foot, chips, action and pad never 
   **3 gastos anotados: 126.000**, with its figures already updated. No undo.
 - **Opens from:** the **peeking slip** on every entry sheet (below), and
   **Anotar varios** at the foot of a category's latest expenses (every new line starts in that
-  category), the goal's movements, the investment's movements, the income list and the Inversiones list
-  (no investment chosen; absent while there is none).
+  category), the goal's movements (line one starts in that goal), the investment's movements,
+  the income list, and the foot of the active goals on Metas and the Inversiones list (none
+  chosen; absent while there is none). A receipt of several goals celebrates each goal that
+  earned a stamp or reached 100 % once, one after the other.
 - **Leaving** with lines asks **¿Descartar 3 renglones?** and goes back to where the sheet was
   opened from, not to the single entry it replaced.
 - **The peeking slip (2026-11-02):** on Anotar (Gasto and Ingreso), Aportar/Retirar and Anotar

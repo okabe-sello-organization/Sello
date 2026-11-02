@@ -706,7 +706,7 @@ class GoalBulkViewModelTest {
         val saved = SavedStateHandle(mapOf("goalId" to viaje))
         val first = model(saved = saved)
         first.threeLines()
-        saved["goal.bulk.draft"] = arrayListOf<String?>("not", "a", "draft")
+        saved["goal.bulk.draft.goals"] = arrayListOf<String?>("not", "a", "draft")
 
         val restored = model(saved = saved).state.value
 
@@ -723,15 +723,318 @@ class GoalBulkViewModelTest {
     }
 
     @Test
-    fun aCompletedOrMissingGoalTakesNothing() = runTest {
-        val done = model(goal = vacunas)
-        assertEquals(GoalBulkError.Completed, done.state.value.error)
-        assertFalse(done.state.value.editable)
+    fun openedFromACompletedOrMissingGoalLineOneAsksForAGoal() = runTest {
+        for (gone in listOf(vacunas, "00000000-0000-4000-9000-000000000099")) {
+            val model = model(goal = gone)
+            model.line(withdrawal = false, "5000")
 
-        val missing = model(goal = "00000000-0000-4000-9000-000000000099")
-        assertEquals(GoalBulkError.Gone, missing.state.value.error)
-        missing.type("5")
-        assertNull(missing.state.value.line.amount)
+            val state = model.state.value
+            assertNull(state.error)
+            assertNull(state.line.goalName)
+            assertEquals(1, state.missingGoals)
+            assertFalse(state.canSubmit)
+            model.onAction(GoalBulkAction.GoalPicked(vacunas))
+            assertEquals(1, model.state.value.missingGoals)
+            model.onAction(GoalBulkAction.GoalPicked(celular))
+            assertTrue(model.state.value.canSubmit)
+        }
+    }
+
+    // Across several goals
+
+    /** Opened from the Metas list, with no goal. */
+    private fun fromList() = model(saved = SavedStateHandle())
+
+    @Test
+    fun fromTheListNoGoalIsChosenAndTheChipsAreTheActiveGoals() = runTest {
+        val state = fromList().state.value
+
+        assertNull(state.goalName)
+        assertNull(state.line.goalId)
+        assertEquals(
+            listOf(viaje to "Viaje a la costa", celular to "Celular nuevo"),
+            state.goals.map { it.id to it.name }
+        )
+    }
+
+    @Test
+    fun aLineWithAnAmountAndNoGoalBlocksAndStaysOutOfTheTotal() = runTest {
+        val model = fromList()
+        model.line(withdrawal = false, "80000")
+
+        assertEquals(1, model.state.value.missingGoals)
+        assertTrue(model.state.value.line.missingGoal)
+        assertFalse(model.state.value.canSubmit)
+        assertEquals("0", model.state.value.total!!.digits)
+        model.onAction(GoalBulkAction.Submit)
+        assertEquals(emptyList<GoalCommand>(), commands.sent)
+
+        // A completed goal is not offered and is not taken.
+        model.onAction(GoalBulkAction.GoalPicked(vacunas))
+        assertEquals(1, model.state.value.missingGoals)
+
+        model.onAction(GoalBulkAction.GoalPicked(celular))
+        assertEquals(0, model.state.value.missingGoals)
+        assertEquals("Celular nuevo", model.state.value.goalName)
+        val total = model.state.value.total!!
+        assertEquals(MoneySign.Plus to "80.000", total.sign to total.digits)
+        assertTrue(model.state.value.canSubmit)
+    }
+
+    /**
+     * From Viaje a la costa: +100.000 to Viaje, then a new line (Viaje, copied) moved to
+     * Celular nuevo with +200.000, then a new line (Celular, copied) of −50.000.
+     */
+    private fun GoalBulkViewModel.twoGoals() {
+        line(withdrawal = false, "100000", day = 12)
+        onAction(GoalBulkAction.AddLine)
+        onAction(GoalBulkAction.GoalPicked(celular))
+        type("200000")
+        onAction(GoalBulkAction.AddLine)
+        line(withdrawal = true, "50000", day = 16)
+    }
+
+    @Test
+    fun eachLinePicksItsGoalANewLineCopiesItAndOneCommandCarriesEveryGoalsVersion() = runTest {
+        val model = model()
+        model.line(withdrawal = false, "100000", day = 12)
+        model.onAction(GoalBulkAction.AddLine)
+        assertEquals(viaje, model.state.value.line.goalId)
+        assertEquals("Viaje a la costa", model.state.value.goalName)
+
+        model.onAction(GoalBulkAction.GoalPicked(celular))
+        model.type("200000")
+        model.onAction(GoalBulkAction.AddLine)
+        val added = model.state.value.line
+        assertEquals(celular to false, added.goalId to added.withdrawal)
+        assertEquals(LocalDate.of(2026, 10, 12), added.date)
+        model.line(withdrawal = true, "50000", day = 16)
+
+        val state = model.state.value
+        assertNull(state.goalName)
+        assertEquals(
+            listOf("Viaje a la costa", "Celular nuevo", "Celular nuevo"),
+            state.lines.map { it.goalName }
+        )
+        // +100.000 + 200.000 − 50.000 = +250.000
+        assertEquals(MoneySign.Plus to "250.000", state.total!!.let { it.sign to it.digits })
+
+        model.onAction(GoalBulkAction.Submit)
+
+        val sent = commands.sent.single() as RecordGoalMovements
+        assertEquals(
+            mapOf(GoalId.of(viaje).value() to 5L, GoalId.of(celular).value() to 5L),
+            sent.versions
+        )
+        assertEquals(
+            listOf(viaje, celular, celular).map { GoalId.of(it).value() },
+            sent.lines.map { it.goalId }
+        )
+        assertEquals(
+            listOf(pesos(100_000), pesos(200_000), pesos(50_000)),
+            sent.lines.map { it.amount }
+        )
+        val notice = corrections.notice.value as CorrectionNotice.GoalMovementsRecorded
+        assertEquals(3 to "250.000", notice.count to notice.net!!.digits)
+        assertEquals(emptyList<Any>(), notice.celebrations)
+    }
+
+    @Test
+    fun aRefusedRetiroInTheSecondGoalIsMarkedWithWhatThatGoalHad() = runTest {
+        val model = model()
+        model.twoGoals()
+        // The retiro is the receipt's line 2, counted from 0; Celular had 450.000 + 200.000.
+        commands.next = CommandOutcome.Rejected(
+            CommandRejection.Specific(
+                GoalRejection.LineAboveSaved(2, GoalId.of(celular).value(), pesos(650_000).money)
+            )
+        )
+
+        model.onAction(GoalBulkAction.Submit)
+
+        val state = model.state.value
+        assertEquals(GoalBulkError.Refused, state.error)
+        assertEquals(listOf(null, null, "650.000"), state.lines.map { it.available?.digits })
+        assertFalse(state.canSubmit)
+        assertFalse(state.closed)
+    }
+
+    @Test
+    fun aGoalCompletedOrDeletedMeanwhileAsksToReviewItsLinesAndNeverOverwrites() = runTest {
+        for (reason in listOf(GoalRejection.Completed, GoalRejection.GoalMissing)) {
+            commands.sent.clear()
+            reads.board.value = board()
+            val model = model()
+            model.twoGoals()
+            commands.next = CommandOutcome.Rejected(CommandRejection.Specific(reason))
+
+            model.onAction(GoalBulkAction.Submit)
+            assertEquals(GoalBulkError.Changed, model.state.value.error)
+            assertFalse(model.state.value.closed)
+
+            // Read again without Celular nuevo: its lines ask for a goal before anything is sent.
+            reads.board.value = ReadState.Ready(
+                GoalBoard(3, 10, listOf(board().value.goals[0]), null)
+            )
+            assertEquals(2, model.state.value.missingGoals)
+            assertEquals(listOf(viaje), model.state.value.goals.map { it.id })
+            model.onAction(GoalBulkAction.Submit)
+            assertEquals(1, commands.sent.size)
+
+            model.onAction(GoalBulkAction.Select(1))
+            model.onAction(GoalBulkAction.GoalPicked(viaje))
+            model.onAction(GoalBulkAction.Select(2))
+            model.onAction(GoalBulkAction.GoalPicked(viaje))
+            model.onAction(GoalBulkAction.Submit)
+
+            val again = commands.sent[1] as RecordGoalMovements
+            assertEquals(mapOf(GoalId.of(viaje).value() to 5L), again.versions)
+            assertNotEquals(commands.sent[0].operationId, again.operationId)
+            assertTrue(model.state.value.closed)
+        }
+    }
+
+    @Test
+    fun aChangedGoalAmongSeveralSavesAgainAtItsNewVersion() = runTest {
+        val model = model()
+        model.twoGoals()
+        commands.next = CommandOutcome.Rejected(CommandRejection.VersionConflict(6))
+
+        model.onAction(GoalBulkAction.Submit)
+        assertEquals(GoalBulkError.Changed, model.state.value.error)
+        assertTrue(model.state.value.editable)
+
+        val celularAgain = goal(celular, "Celular nuevo", 1_200_000, 6, aporte(21, 450_000))
+        reads.board.value = ReadState.Ready(
+            GoalBoard(3, 10, listOf(board().value.goals[0], celularAgain), null)
+        )
+        model.onAction(GoalBulkAction.Submit)
+
+        assertEquals(
+            mapOf(GoalId.of(viaje).value() to 5L, GoalId.of(celular).value() to 6L),
+            (commands.sent[1] as RecordGoalMovements).versions
+        )
+        assertTrue(model.state.value.closed)
+    }
+
+    @Test
+    fun eachGoalThatEarnedSomethingCelebratesOnceOneAfterTheOther() = runTest {
+        val model = fromList()
+        // Viaje: 1.710.000 + 600.000 = 2.310.000 of 3.000.000, past 75 %, 690.000 left.
+        // Celular: 450.000 + 750.000 = 1.200.000 of 1.200.000, the target, 0 left.
+        model.onAction(GoalBulkAction.GoalPicked(viaje))
+        model.line(withdrawal = false, "600000")
+        model.onAction(GoalBulkAction.AddLine)
+        model.onAction(GoalBulkAction.GoalPicked(celular))
+        model.type("750000")
+        commands.next = CommandOutcome.Committed(
+            CommittedGoal(
+                OperationReceipt(
+                    OperationId.of(ids.next()).value(),
+                    OperationKind.RecordGoalMovements,
+                    3,
+                    10,
+                    Instant.EPOCH
+                ),
+                GoalId.of(viaje).value(),
+                null,
+                emptyList(),
+                listOf(
+                    ReceiptGoal(
+                        GoalId.of(viaje).value(),
+                        GoalChange(listOf(GoalPlace.ThreeQuarters), emptyList(), false)
+                    ),
+                    ReceiptGoal(
+                        GoalId.of(celular).value(),
+                        GoalChange(emptyList(), emptyList(), true)
+                    )
+                )
+            ),
+            replayed = false
+        )
+
+        model.onAction(GoalBulkAction.Submit)
+
+        assertTrue(model.state.value.closed)
+        val notice = corrections.notice.value as CorrectionNotice.GoalMovementsRecorded
+        assertEquals(2 to "1.350.000", notice.count to notice.net!!.digits)
+        assertEquals(
+            listOf(
+                Triple("Viaje a la costa", listOf(GoalPlace.ThreeQuarters), "690.000"),
+                Triple("Celular nuevo", emptyList(), "0")
+            ),
+            notice.celebrations.map { Triple(it.goalName, it.earned, it.missing!!.digits) }
+        )
+        assertTrue(notice.celebrations[1].reachedMeta)
+        assertEquals("Viaje a la costa", notice.celebration!!.goalName)
+        advanceTimeBy(4_001)
+        val next = corrections.notice.value as CorrectionNotice.GoalMovementsRecorded
+        assertEquals("Celular nuevo", next.celebration!!.goalName)
+    }
+
+    @Test
+    fun aDraftStoredBeforeLinesNamedTheirGoalComesBackInTheGoalItOpenedFrom() = runTest {
+        // As SELLO-133 stored it, in order: 2 lines, each key, amount, type, date and note,
+        // then the highlighted line and the next key. No line names a goal.
+        val saved = SavedStateHandle(
+            mapOf(
+                "goalId" to viaje,
+                "goal.bulk.draft" to arrayListOf<String?>(
+                    "2",
+                    "1", "+", "100000", "+", "false", "2026-10-12", "",
+                    "2", "+", "50000", "+", "true", "2026-10-16", "Arreglo del carro",
+                    "1",
+                    "3"
+                )
+            )
+        )
+
+        val model = model(saved = saved)
+        val state = model.state.value
+
+        assertEquals(listOf(viaje, viaje), state.lines.map { it.goalId })
+        assertEquals(listOf("100.000", "50.000"), state.lines.map { it.amount!!.digits })
+        assertEquals(listOf(false, true), state.lines.map { it.withdrawal })
+        assertEquals("Arreglo del carro", state.lines[1].note)
+        assertEquals(1, state.highlighted)
+        // +100.000 − 50.000 = +50.000
+        assertEquals(MoneySign.Plus to "50.000", state.total!!.let { it.sign to it.digits })
+
+        // Once edited it is stored in the new form only.
+        model.type("1")
+        assertNull(saved.get<Any>("goal.bulk.draft"))
+        assertEquals(
+            listOf(viaje, viaje),
+            model(saved = saved.afterProcessDeath()).state.value.lines.map { it.goalId }
+        )
+    }
+
+    @Test
+    fun withNoActiveGoalLeftTheReceiptSaysSo() = runTest {
+        val model = model()
+        reads.board.value = ReadState.Ready(
+            GoalBoard(3, 9, listOf(board().value.goals[2]), null)
+        )
+
+        assertEquals(emptyList<GoalBulkChoice>(), model.state.value.goals)
+        assertTrue(model.state.value.noActiveGoal)
+        model.onAction(GoalBulkAction.Back)
+        assertTrue(model.state.value.closed)
+    }
+
+    @Test
+    fun aRestoredReceiptKeepsEachLinesGoal() = runTest {
+        val saved = SavedStateHandle()
+        val first = model(saved = saved)
+        first.onAction(GoalBulkAction.GoalPicked(viaje))
+        first.line(withdrawal = false, "100000")
+        first.onAction(GoalBulkAction.AddLine)
+        first.onAction(GoalBulkAction.GoalPicked(celular))
+
+        val restored = model(saved = saved.afterProcessDeath()).state.value
+
+        assertEquals(listOf(viaje, celular), restored.lines.map { it.goalId })
+        assertEquals(1, restored.highlighted)
     }
 
     @Test

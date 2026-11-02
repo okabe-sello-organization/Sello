@@ -68,6 +68,7 @@ internal fun MetasDestination(
     onOpenGoal: (String) -> Unit,
     onCreate: (() -> Unit)? = null,
     onContribute: (() -> Unit)? = null,
+    onBulk: (() -> Unit)? = null,
     notice: (@Composable () -> Unit)? = null
 ) {
     val model: MetasViewModel = viewModel(factory = viewModels)
@@ -112,7 +113,8 @@ internal fun MetasDestination(
                 model.onAction(action)
             },
             dates = dateLabels(),
-            padding = padding
+            padding = padding,
+            onBulk = onBulk
         )
     }
     LogradaMoment(
@@ -243,6 +245,7 @@ internal fun NavGraphBuilder.goalDestinations(
             onContribute = {
                 navigation.navigate(GoalMovementRoute()) { launchSingleTop = true }
             },
+            onBulk = { navigation.navigate(GoalBulkRoute()) { launchSingleTop = true } },
             notice = notice?.let {
                 { StampNoticeBar(it, onUndo, lands) }
             }
@@ -276,7 +279,16 @@ internal fun NavGraphBuilder.goalDestinations(
                 }
             },
             onBulk = { navigation.navigate(GoalBulkRoute(id)) { launchSingleTop = true } },
-            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } },
+            // Another goal's stamps are not in view here: they land on a ticket, as on Metas.
+            notice = notice?.let {
+                {
+                    if (it.celebration.let { other -> other != null && other.goalId != id }) {
+                        StampNoticeBar(it, onUndo, lands)
+                    } else {
+                        CorrectionNoticeBar(it, onUndo)
+                    }
+                }
+            },
             celebration = remember(notice) {
                 notice?.celebration?.takeIf { it.goalId == id && lands(it) }
             }
