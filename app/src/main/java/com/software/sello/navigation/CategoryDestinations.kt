@@ -43,10 +43,20 @@ internal fun NavGraphBuilder.categoryDestinations(
         }
     }
     composable<CategoryEditRoute> {
-        CategoryManagementRoot(viewModels) {
-            val onEdit =
-                navigation.currentBackStackEntry?.destination?.hasRoute<CategoryEditRoute>()
-            if (onEdit == true) navigation.popBackStack()
+        val onEdit = {
+            navigation.currentBackStackEntry?.destination?.hasRoute<CategoryEditRoute>() == true
         }
+        CategoryManagementRoot(
+            viewModels,
+            onFinished = { if (onEdit()) navigation.popBackStack() },
+            // The category is gone: the editor, its detail and whatever was opened from it
+            // close onto Recibo, where the notice says what happened (ADR 0024).
+            onDeleted = {
+                if (onEdit()) {
+                    onShell(ShellAction.CloseCategory)
+                    navigation.popBackStack<ReciboRoute>(inclusive = false)
+                }
+            }
+        )
     }
 }

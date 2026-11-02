@@ -20,13 +20,17 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
-/** One choice in a [MoreMenu]. A [loss] choice, such as deleting, is drawn in red. */
+/**
+ * One choice in a [MoreMenu]. A [loss] choice, such as deleting, is drawn in red. One that
+ * is not [enabled], such as while the screen saves, is greyed and cannot be chosen.
+ */
 data class MoreMenuItem(
     val label: String,
     val icon: SelloIcon,
     val onClick: () -> Unit,
     val loss: Boolean = false,
-    val tag: String? = null
+    val tag: String? = null,
+    val enabled: Boolean = true
 )
 
 /**
@@ -46,7 +50,9 @@ fun MoreMenu(items: List<MoreMenuItem>, modifier: Modifier = Modifier) {
             containerColor = SelloTheme.colors.paper
         ) {
             items.forEach { item ->
-                val tint = if (item.loss) SelloTheme.colors.semantic.loss else SelloTheme.colors.ink
+                val colors = SelloTheme.colors
+                val color = if (item.loss) colors.semantic.loss else colors.ink
+                val tint = if (item.enabled) color else color.copy(alpha = DISABLED_ALPHA)
                 DropdownMenuItem(
                     text = {
                         Text(item.label, style = MaterialTheme.typography.bodyLarge, color = tint)
@@ -56,6 +62,7 @@ fun MoreMenu(items: List<MoreMenuItem>, modifier: Modifier = Modifier) {
                         open = false
                         item.onClick()
                     },
+                    enabled = item.enabled,
                     modifier = item.tag?.let { Modifier.testTag(it) } ?: Modifier
                 )
             }
@@ -64,3 +71,6 @@ fun MoreMenu(items: List<MoreMenuItem>, modifier: Modifier = Modifier) {
 }
 
 const val MORE_MENU_TAG = "sello.more"
+
+/** Material's disabled content alpha. */
+private const val DISABLED_ALPHA = 0.38f

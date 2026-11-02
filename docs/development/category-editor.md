@@ -91,7 +91,8 @@ many of this month's expenses stay (no number if the snapshot cannot be read), a
 that unsaved changes are discarded. An archived category shows "Archivada", keeps its
 name and icon editable, and offers "Desarchivar", which says whether its last limit
 comes back or nothing else changes. Nothing is deleted, so neither confirmation is
-drawn as destructive. There is no way to delete a category in the MVP (D07).
+drawn as destructive. Deleting a category is
+[ADR 0024](../decisions/0024-deleting-a-category.md) (SELLO-138).
 
 After a confirmed change the form closes and the frame shows its
 [notice](app-shell.md#what-is-said-about-a-correction).

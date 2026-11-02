@@ -117,7 +117,8 @@ fun ConfirmSlip(
 /**
  * [ConfirmSlip] with any [content] under the title, such as points to read before
  * saving a file. The content scrolls when the slip would not fit; the buttons stay
- * in view and go one above the other when a label would not fit.
+ * in view and go one above the other when a label would not fit. The action stays off
+ * until [confirmEnabled], such as until a word that confirms it is typed.
  */
 @Composable
 fun ConfirmSlip(
@@ -129,6 +130,7 @@ fun ConfirmSlip(
     destructive: Boolean = true,
     busy: Boolean = false,
     dismissLabel: String = stringResource(R.string.sello_cancel),
+    confirmEnabled: Boolean = true,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val density = LocalDensity.current
@@ -170,6 +172,7 @@ fun ConfirmSlip(
                             text = confirmLabel,
                             onClick = onConfirm,
                             tone = if (destructive) ButtonTone.Loss else ButtonTone.Brand,
+                            enabled = confirmEnabled,
                             loading = busy
                         )
                     }

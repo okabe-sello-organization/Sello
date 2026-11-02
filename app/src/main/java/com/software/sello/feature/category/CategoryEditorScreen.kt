@@ -58,12 +58,16 @@ import com.software.sello.designsystem.component.IconChoice
 import com.software.sello.designsystem.component.IconChoiceSheetContent
 import com.software.sello.designsystem.component.IconPickerCircle
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.MoreMenu
+import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.RepeatSheet
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
+import com.software.sello.designsystem.component.Stamp
+import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -87,7 +91,8 @@ fun CategoryEditorRoot(viewModels: ViewModelProvider.Factory, onFinished: (Strin
             EditorResult.Discarded,
             EditorResult.Updated,
             EditorResult.Archived,
-            EditorResult.Unarchived -> onFinished(null)
+            EditorResult.Unarchived,
+            EditorResult.Deleted -> onFinished(null)
 
             null -> Unit
         }
@@ -97,12 +102,25 @@ fun CategoryEditorRoot(viewModels: ViewModelProvider.Factory, onFinished: (Strin
     CategoryEditorScreen(state, viewModel::onAction)
 }
 
-/** The same form on an existing category. It ends when its changes are confirmed or left. */
+/**
+ * The same form on an existing category. It ends when its changes are confirmed or left;
+ * [onDeleted] when the category itself is gone, so whatever showed it closes too.
+ */
 @Composable
-fun CategoryManagementRoot(viewModels: ViewModelProvider.Factory, onFinished: () -> Unit) {
+fun CategoryManagementRoot(
+    viewModels: ViewModelProvider.Factory,
+    onFinished: () -> Unit,
+    onDeleted: () -> Unit
+) {
     val viewModel: CategoryManagementViewModel = viewModel(factory = viewModels)
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LaunchedEffect(state.result) { if (state.result != null) onFinished() }
+    LaunchedEffect(state.result) {
+        when (state.result) {
+            null -> Unit
+            EditorResult.Deleted -> onDeleted()
+            else -> onFinished()
+        }
+    }
     BackHandler { viewModel.onAction(CategoryEditorAction.Back) }
     CategoryEditorScreen(state, viewModel::onAction)
 }
@@ -134,30 +152,25 @@ fun CategoryEditorScreen(
             }
         },
         actions = {
-            // Only an existing category that has been read can be archived. It asks first.
-            if (state.editing && !state.loading && !state.loadFailed) {
-                val description = stringResource(
-                    if (state.archived) {
-                        R.string.category_edit_unarchive_description
-                    } else {
-                        R.string.category_edit_archive_description
-                    }
+            // Only an existing category that has been read: archiving it, then deleting it,
+            // each asking first. An archived one is unarchived from its slip in the form.
+            if (state.showsMenu) {
+                val archive = MoreMenuItem(
+                    stringResource(R.string.category_menu_archive),
+                    SelloIcon.Archive,
+                    { onAction(CategoryEditorAction.Archive) },
+                    tag = EDITOR_MENU_ARCHIVE_TAG,
+                    enabled = state.canArchive
                 )
-                SelloButton(
-                    text = stringResource(
-                        if (state.archived) {
-                            R.string.category_edit_unarchive
-                        } else {
-                            R.string.category_edit_archive
-                        }
-                    ),
-                    onClick = { onAction(CategoryEditorAction.Archive) },
-                    kind = ButtonKind.Text,
-                    enabled = state.canArchive,
-                    modifier = Modifier
-                        .testTag(EDITOR_ARCHIVE_TAG)
-                        .semantics { contentDescription = description }
+                val delete = MoreMenuItem(
+                    stringResource(R.string.category_menu_delete),
+                    SelloIcon.Delete,
+                    { onAction(RemovalAction.Start) },
+                    loss = true,
+                    tag = EDITOR_MENU_DELETE_TAG,
+                    enabled = state.canDelete
                 )
+                MoreMenu(if (state.archived) listOf(delete) else listOf(archive, delete))
             }
         }
     ) { padding ->
@@ -185,6 +198,7 @@ fun CategoryEditorScreen(
                     Identity(state, onAction, focusName = !nameFocused, { nameFocused = true }) {
                         choosingIcon = true
                     }
+                    if (state.archived) Archived(state, onAction)
                 },
                 amount = { Limit(state, onAction) },
                 choices = {
@@ -237,6 +251,45 @@ fun CategoryEditorScreen(
     }
     state.archiveQuestion?.let { question -> ArchiveConfirmation(state.name, question, onAction) }
     state.carryQuestion?.let { question -> CarryQuestionSlip(state, question, onAction) }
+    state.removal?.let { removal -> RemovalSlips(removal, onAction) }
+}
+
+/**
+ * An archived category says so in the form, as a paused fixed payment does, with
+ * Desarchivar, which asks first: it takes no new expenses and its history stays.
+ */
+@Composable
+private fun Archived(state: CategoryEditorState, onAction: (CategoryEditorAction) -> Unit) {
+    Slip(
+        Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm).testTag(EDITOR_ARCHIVED_TAG),
+        pinked = false
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.category_edit_archived_label),
+                style = MaterialTheme.typography.labelMedium,
+                color = SelloTheme.colors.inkSoft,
+                modifier = Modifier.weight(1f)
+            )
+            Stamp(stringResource(R.string.category_edit_archived_label), StampInk.Neutral)
+        }
+        Text(
+            stringResource(R.string.category_edit_archived),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+        SelloButton(
+            text = stringResource(R.string.category_edit_unarchive),
+            onClick = { onAction(CategoryEditorAction.Archive) },
+            kind = ButtonKind.Outlined,
+            icon = SelloIcon.Archive,
+            enabled = state.canArchive,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = SelloTheme.spacing.sm)
+                .testTag(EDITOR_UNARCHIVE_TAG)
+        )
+    }
 }
 
 /**
@@ -330,12 +383,6 @@ private fun Identity(
                 isError = false
             ),
             Modifier.testTag(EDITOR_PREREQUISITE_TAG)
-        )
-    }
-    if (state.archived) {
-        FieldMessageText(
-            FieldMessage(stringResource(R.string.category_edit_archived), isError = false),
-            Modifier.testTag(EDITOR_ARCHIVED_TAG)
         )
     }
     // The name is what is typed first, so the keyboard is ready for it. Only once, when
@@ -664,7 +711,9 @@ const val EDITOR_UNLIMITED_TAG = "category-editor:unlimited"
 const val EDITOR_LIMIT_TAG = "category-editor:limit"
 const val EDITOR_SAVE_ERROR_TAG = "category-editor:save-error"
 const val EDITOR_SUBMIT_TAG = "category-editor:submit"
-const val EDITOR_ARCHIVE_TAG = "category-editor:archive"
+const val EDITOR_MENU_ARCHIVE_TAG = "category-editor:menu.archive"
+const val EDITOR_MENU_DELETE_TAG = "category-editor:menu.delete"
+const val EDITOR_UNARCHIVE_TAG = "category-editor:unarchive"
 const val EDITOR_ARCHIVED_TAG = "category-editor:archived"
 const val EDITOR_SCOPE_TAG = "category-editor:scope"
 const val EDITOR_SAVED_PARTS_TAG = "category-editor:saved-parts"

@@ -16,6 +16,7 @@ import com.software.sello.data.repository.RoomCategoryCommands
 import com.software.sello.data.repository.RoomCategoryExpenseSearch
 import com.software.sello.data.repository.RoomCategoryInsightsSnapshots
 import com.software.sello.data.repository.RoomCategoryReads
+import com.software.sello.data.repository.RoomCategoryRemovals
 import com.software.sello.data.repository.RoomExpenseBatchCommands
 import com.software.sello.data.repository.RoomExpenseCommands
 import com.software.sello.data.repository.RoomExpenseReads
@@ -49,6 +50,7 @@ import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CategoryReads
+import com.software.sello.domain.port.CategoryRemovalPreviews
 import com.software.sello.domain.port.DataExports
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.ExpenseBatchCommands
@@ -182,6 +184,9 @@ class FinancialStorage internal constructor(
         clock: FinancialClock,
         ids: RecordIdSource
     ): CategoryCommands = RoomCategoryCommands(database, audit, clock, ids)
+
+    fun categoryRemovals(clock: FinancialClock): CategoryRemovalPreviews =
+        RoomCategoryRemovals(database, clock)
 
     val categoryReads: CategoryReads = RoomCategoryReads(database)
 

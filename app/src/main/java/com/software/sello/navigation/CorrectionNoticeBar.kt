@@ -23,6 +23,7 @@ import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.corrections.InvestmentMovementNotice
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.corrections.celebration
+import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.presentation.recurrence.repeatRuleLabel
@@ -33,6 +34,30 @@ private fun expenseRecorded(figure: String?, category: String?): String = when {
     figure == null -> stringResource(R.string.notice_expense_recorded_plain)
     category == null -> stringResource(R.string.notice_expense_recorded_amount, figure)
     else -> stringResource(R.string.notice_expense_recorded, figure, category)
+}
+
+/** "Café se borró; sus 34 gastos están en Comida", "Café y sus 34 gastos se borraron". */
+@Composable
+private fun categoryDeleted(notice: CorrectionNotice.CategoryDeleted): String {
+    val count = countText(notice.expenses)
+    return when {
+        notice.expenses == 0 -> stringResource(R.string.category_deleted_notice, notice.name)
+
+        notice.movedTo != null -> pluralStringResource(
+            R.plurals.category_deleted_moved_notice,
+            notice.expenses,
+            notice.name,
+            count,
+            notice.movedTo
+        )
+
+        else -> pluralStringResource(
+            R.plurals.category_deleted_all_notice,
+            notice.expenses,
+            notice.name,
+            count
+        )
+    }
 }
 
 /**
@@ -97,6 +122,8 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
 
         CorrectionNotice.CategoryUnarchived ->
             SelloNotice(stringResource(R.string.category_unarchived_notice), tagged)
+
+        is CorrectionNotice.CategoryDeleted -> SelloNotice(categoryDeleted(notice), tagged)
 
         is CorrectionNotice.IncomeDeleted -> SelloNotice(
             message = stringResource(

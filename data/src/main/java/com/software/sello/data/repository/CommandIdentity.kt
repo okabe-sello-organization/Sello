@@ -27,6 +27,7 @@ import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.CreateIncomes
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.CreateSchedule
+import com.software.sello.domain.port.DeleteCategory
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.DeleteGoalMovement
@@ -35,6 +36,7 @@ import com.software.sello.domain.port.DeleteInvestment
 import com.software.sello.domain.port.DeleteInvestmentMovement
 import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.DisableCarry
+import com.software.sello.domain.port.Disposal
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.EditGoal
 import com.software.sello.domain.port.EditGoalMovement
@@ -52,6 +54,7 @@ import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RecordInvestmentMovements
+import com.software.sello.domain.port.RemovalPreview
 import com.software.sello.domain.port.RenameCategory
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreGoalMovement
@@ -243,6 +246,7 @@ internal val CategoryCommand.kind: OperationKind
         is SetMonthLimit -> OperationKind.SetMonthLimit
         is EnableCarry -> OperationKind.EnableCarry
         is DisableCarry -> OperationKind.DisableCarry
+        is DeleteCategory -> OperationKind.DeleteCategory
     }
 
 internal fun inputDigest(command: CategoryCommand): String {
@@ -263,6 +267,12 @@ internal fun inputDigest(command: CategoryCommand): String {
 
         is SetMonthLimit -> listOf(command.month.toString()) + command.limit.fields
 
+        // What happens to what it holds, the preview the person confirmed, field by field,
+        // and, as for every kind newer than carry, its confirmation present or not.
+        is DeleteCategory ->
+            command.disposal.fields + command.confirmed.fields +
+                (confirmation(null, command.confirmation) ?: listOf("0", "", "", "0", "", ""))
+
         // A new kind: its confirmation is always part of it, present or not.
         is DisableCarry -> confirmation(command.confirmedCarryIn, null)
             ?: listOf("0", "", "", "0", "", "")
@@ -275,6 +285,35 @@ internal fun inputDigest(command: CategoryCommand): String {
     }
     return digestWith(command.kind, command.generation, subject + change, confirmed)
 }
+
+private val Disposal.fields: List<String>
+    get() = when (this) {
+        is Disposal.MoveTo -> listOf("move_to", target.value)
+        Disposal.DeleteAll -> listOf("delete_all", "")
+    }
+
+private val Money.fields: List<String>
+    get() = listOf(minorUnits.toString(), currency.code)
+
+/** A limit or none: "none" is a kind of its own, so it cannot be read as another. */
+private val BudgetLimit?.optionalFields: List<String>
+    get() = this?.fields ?: listOf("none", "", "")
+
+/** Every field of the preview; a month is never empty text, so "" is an absent one. */
+private val RemovalPreview.fields: List<String>
+    get() = listOf(categoryId.value, expenses.toString()) + total.fields +
+        listOf(
+            firstMonth?.toString().orEmpty(),
+            lastMonth?.toString().orEmpty(),
+            schedules.toString(),
+            month.toString()
+        ) + spentThisMonth.fields + limitThisMonth.optionalFields +
+        when (val target = target) {
+            null -> listOf("0", "", "", "", "none", "", "")
+
+            else -> listOf("1", target.categoryId.value) + target.spentThisMonth.fields +
+                target.limitThisMonth.optionalFields
+        }
 
 /** Zero and unlimited must not collide, so the kind is a field of its own. */
 private val BudgetLimit.fields: List<String>
@@ -526,4 +565,7 @@ internal fun correctionIdentity(command: CreateExpenses) =
     inputDigest(command.copy(confirmation = null))
 
 internal fun correctionIdentity(command: SetMonthLimit) =
+    inputDigest(command.copy(confirmation = null))
+
+internal fun correctionIdentity(command: DeleteCategory) =
     inputDigest(command.copy(confirmation = null))

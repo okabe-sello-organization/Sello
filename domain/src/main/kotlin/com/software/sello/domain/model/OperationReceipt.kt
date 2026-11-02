@@ -27,6 +27,9 @@ enum class OperationKind(val key: String) {
     SetMonthLimit("category.set_month_limit"),
     EnableCarry("category.enable_carry"),
     DisableCarry("category.disable_carry"),
+
+    /** A category deleted for good, with what it held moved or deleted (ADR 0024). */
+    DeleteCategory("category.delete"),
     CreateGoal("goal.create"),
     EditGoal("goal.edit"),
     ChangeGoalTarget("goal.change_target"),

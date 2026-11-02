@@ -75,6 +75,9 @@ sealed interface EditorResult {
 
     data object Unarchived : EditorResult
 
+    /** A receipt confirmed that the category was deleted: its detail closes too. */
+    data object Deleted : EditorResult
+
     data object Discarded : EditorResult
 }
 
@@ -128,7 +131,9 @@ data class CategoryEditorState(
     /** Why the last carry change, or a limit while carrying, was refused. */
     val carryProblem: CarryProblemText? = null,
     /** The last carry change that has its receipt. */
-    val carryDone: CarryDone? = null
+    val carryDone: CarryDone? = null,
+    /** Deleting the category, while it is being asked, sent or checked (ADR 0024). */
+    val removal: RemovalState? = null
 ) {
     /**
      * Nothing can be sent without a name, with a name known to be taken, while
@@ -146,6 +151,14 @@ data class CategoryEditorState(
 
     /** An existing category that has been read can be archived or unarchived from here. */
     val canArchive: Boolean get() = editing && !loading && !loadFailed && editable
+
+    /** The top bar's ⋮ (archive, delete): on an existing category read and still there. */
+    val showsMenu: Boolean
+        get() = editing && !loading && !loadFailed && saveError !in Blocking
+
+    /** Deleting can start: nothing else is being saved, asked or checked. */
+    val canDelete: Boolean
+        get() = canArchive && removal == null && archiveQuestion == null && carryQuestion == null
 
     /**
      * Carry is changed by its own command (CP28), never with the form's changes: only while
@@ -217,4 +230,33 @@ sealed interface CategoryEditorAction {
 
     /** The carry question shown is answered no: nothing changes. */
     data object CarryDismissed : CategoryEditorAction
+}
+
+/** Deleting the category (ADR 0024): each answer to the slip or sheet on screen. */
+sealed interface RemovalAction : CategoryEditorAction {
+    /** Borrar categoría in the ⋮: its contents are counted first. Nothing is deleted yet. */
+    data object Start : RemovalAction
+
+    /** Cancelar, Back or a tap outside: nothing is deleted. */
+    data object Dismiss : RemovalAction
+
+    /** Moverlos a otra categoría: the categories that can take them. */
+    data object Move : RemovalAction
+
+    /** Borrar todo, as a choice: what goes, and the word to type. */
+    data object DeleteAll : RemovalAction
+
+    /** Archívala: the archive question instead. */
+    data object ArchiveInstead : RemovalAction
+
+    data class Pick(val categoryId: String) : RemovalAction
+
+    /** What is typed to confirm Borrar todo, kept exactly. */
+    data class Word(val text: String) : RemovalAction
+
+    /** Borrar, Mover y borrar, Borrar todo or the confirmed correction list: sent once. */
+    data object Confirm : RemovalAction
+
+    /** A failure slip's way forward: Revisar, Elegir otra, Reintentar or Comprobar de nuevo. */
+    data object Next : RemovalAction
 }

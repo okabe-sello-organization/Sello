@@ -108,6 +108,13 @@ sealed interface CorrectionNotice {
 
     data object CategoryUnarchived : CorrectionNotice
 
+    /**
+     * A category was deleted, as its receipt confirmed (ADR 0024): [name], how many
+     * [expenses] it had, and the category they moved to, or null when they went with it.
+     */
+    data class CategoryDeleted(val name: String, val expenses: Int, val movedTo: String?) :
+        CorrectionNotice
+
     /** The same as [Deleted], [Restored], [UndoTooLate], [UndoBlocked] and [Updated], for an income. */
     data class IncomeDeleted(
         val canUndo: Boolean,

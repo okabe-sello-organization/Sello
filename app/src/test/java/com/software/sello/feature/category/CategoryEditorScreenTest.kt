@@ -35,6 +35,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.designsystem.component.MORE_MENU_TAG
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.presentation.carry.CarryDirection
@@ -485,7 +486,8 @@ class CategoryEditorScreenTest {
         rule.onNodeWithText("Esta categoría ya no existe. No se cambió nada.")
             .revealed().assertIsDisplayed()
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().assertIsNotEnabled()
-        rule.onNodeWithTag(EDITOR_ARCHIVE_TAG).assertIsNotEnabled()
+        // Nothing to archive or delete either.
+        rule.onNodeWithTag(MORE_MENU_TAG).assertDoesNotExist()
     }
 
     @Test
@@ -499,20 +501,46 @@ class CategoryEditorScreenTest {
     }
 
     @Test
-    fun archivingIsOfferedInTheTopBarAndANewCategoryHasNoSuchAction() {
+    fun theBarHasOnlyTheMenuWithArchivarAndThenBorrar() {
         show(editing)
 
-        rule.onNodeWithTag(EDITOR_ARCHIVE_TAG).assertIsDisplayed().performClick()
+        rule.onNodeWithText("Archivar").assertDoesNotExist()
+        rule.onNodeWithTag(MORE_MENU_TAG).assertIsDisplayed().performClick()
+        rule.onNodeWithText("Archivar categoría").assertIsDisplayed()
+        rule.onNodeWithText("Borrar categoría").assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_MENU_ARCHIVE_TAG).performClick()
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+        rule.onNodeWithTag(EDITOR_MENU_DELETE_TAG).performClick()
 
-        rule.onNodeWithText("Archivar").assertExists()
-        assertEquals(listOf<CategoryEditorAction>(CategoryEditorAction.Archive), actions)
+        assertEquals(listOf(CategoryEditorAction.Archive, RemovalAction.Start), actions)
     }
 
     @Test
-    fun aNewCategoryHasNothingToArchive() {
+    fun whileSavingTheMenuChoicesAreOffAndPressNothing() {
+        show(editing.copy(busy = true))
+
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+        rule.onNodeWithTag(EDITOR_MENU_ARCHIVE_TAG).assertIsNotEnabled().performClick()
+        rule.onNodeWithTag(EDITOR_MENU_DELETE_TAG).assertIsNotEnabled().performClick()
+
+        assertEquals(emptyList<CategoryEditorAction>(), actions)
+    }
+
+    @Test
+    fun anArchivedCategorysMenuHoldsOnlyBorrar() {
+        show(editing.copy(archived = true, limitLocked = true))
+
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+
+        rule.onNodeWithTag(EDITOR_MENU_ARCHIVE_TAG).assertDoesNotExist()
+        rule.onNodeWithText("Borrar categoría").assertIsDisplayed()
+    }
+
+    @Test
+    fun aNewCategoryHasNothingToArchiveOrDelete() {
         show(ready)
 
-        rule.onNodeWithTag(EDITOR_ARCHIVE_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(MORE_MENU_TAG).assertDoesNotExist()
     }
 
     @Test
@@ -564,7 +592,9 @@ class CategoryEditorScreenTest {
         show(editing.copy(name = "Mercado", archived = true, limitLocked = true, limitText = ""))
 
         rule.onNodeWithTag(EDITOR_ARCHIVED_TAG).assertIsDisplayed()
-        rule.onNodeWithText("Desarchivar").assertIsDisplayed()
+        rule.onNodeWithText("No acepta gastos nuevos; su historia sigue aquí.").assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_UNARCHIVE_TAG).assertIsDisplayed().performClick()
+        assertEquals(listOf<CategoryEditorAction>(CategoryEditorAction.Archive), actions)
         rule.onNodeWithTag(EDITOR_LIMIT_TAG).assertDoesNotExist()
         rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).assertDoesNotExist()
         // Nothing to type: no pad either.

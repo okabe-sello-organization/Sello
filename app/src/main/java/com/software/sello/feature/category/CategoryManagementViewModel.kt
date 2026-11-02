@@ -22,6 +22,7 @@ import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
+import com.software.sello.domain.port.CategoryRemovalPreviews
 import com.software.sello.domain.port.ChangeCategoryIcon
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
@@ -69,6 +70,9 @@ import kotlinx.serialization.Serializable
  * are saved and stay saved; the form says which, keeps the rest of the draft, and the
  * next attempt sends only what is still different. A change is reported as saved only
  * when its receipt says so.
+ *
+ * Deleting the category (ADR 0024) is [CategoryRemoval]'s, which this form hands the
+ * category as it read it, and its own operations through the same [Submission].
  */
 class CategoryManagementViewModel(
     private val saved: SavedStateHandle,
@@ -79,7 +83,8 @@ class CategoryManagementViewModel(
     private val ids: RecordIdSource,
     private val money: MoneyFormatter,
     private val notices: Corrections,
-    private val catchUp: CatchUpNow
+    private val catchUp: CatchUpNow,
+    previews: CategoryRemovalPreviews
 ) : ViewModel() {
     /** The limit a month has, or that it has none of its own to show. */
     private sealed interface StoredLimit {
@@ -177,12 +182,58 @@ class CategoryManagementViewModel(
     )
     val state: StateFlow<CategoryEditorState> = mutable.asStateFlow()
 
+    private val removal = CategoryRemoval(
+        saved,
+        submission,
+        commands,
+        previews,
+        snapshots,
+        money,
+        currentMonth,
+        viewModelScope,
+        object : RemovalHost {
+            override fun subject(): RemovalSubject? {
+                val stored = original ?: return null
+                return RemovalSubject(
+                    categoryId = categoryId ?: return null,
+                    name = stored.name,
+                    generation = generation ?: return null,
+                    version = stored.version,
+                    archived = stored.archived
+                )
+            }
+
+            override fun show(removal: RemovalState?) {
+                mutable.update { it.copy(removal = removal) }
+            }
+
+            override fun deleted(notice: CorrectionNotice) {
+                notices.categoryChanged(notice)
+                mutable.update {
+                    it.copy(busy = false, removal = null, result = EditorResult.Deleted)
+                }
+            }
+
+            override fun failed(error: SaveError) = render { it.copy(saveError = error) }
+
+            override suspend fun reread(): Boolean =
+                load(keepOriginal = false, resetDraft = false) && original != null
+
+            override fun askToArchive() = this@CategoryManagementViewModel.askToArchive()
+        }
+    )
+
     init {
         saved[KEY_CURRENT] = currentMonth.toString()
         viewModelScope.launch {
             // A restored draft keeps what it was started from; only the rest is read.
             load(keepOriginal = original != null, resetDraft = original == null)
-            if (submission.pending) recover()
+            when {
+                submission.pending -> recover()
+
+                // A deletion being asked when the process was killed: asked again, counted anew.
+                removal.restorable -> removal.restore()
+            }
         }
     }
 
@@ -236,8 +287,14 @@ class CategoryManagementViewModel(
                 }
             }
 
+            // Borrar categoría starts only on a form that could also archive; the rest
+            // answers the slip on screen.
+            is RemovalAction ->
+                if (action != RemovalAction.Start || now.canDelete) removal.onAction(action)
+
             CategoryEditorAction.Back -> when {
                 now.busy -> Unit
+                now.removal != null -> removal.onAction(RemovalAction.Dismiss)
                 now.changed -> mutable.update { it.copy(confirmDiscard = true) }
                 else -> mutable.update { it.copy(result = EditorResult.Discarded) }
             }
@@ -829,6 +886,7 @@ class CategoryManagementViewModel(
     private suspend fun recover() {
         if (!submission.pending) return
         val step = submission.step
+        if (step == CategoryRemoval.STEP_DELETE) return removal.recover()
         mutable.update { it.copy(busy = true, saveError = null) }
         val committed = when (submission.recover(commands::find)) {
             null -> return render { it.copy(busy = false) }

@@ -23,6 +23,13 @@ interface CategoryDao {
     @Query("SELECT * FROM category WHERE id = :id")
     suspend fun byId(id: String): CategoryEntity?
 
+    /**
+     * Deletes the category while it is still at [expectedVersion], once nothing refers to
+     * it any more: the foreign keys refuse it otherwise. Returns the rows removed.
+     */
+    @Query("DELETE FROM category WHERE id = :id AND version = :expectedVersion")
+    suspend fun delete(id: String, expectedVersion: Long): Int
+
     /** Categories after [afterId] in identifier order, at most [limit]. */
     @Query("SELECT * FROM category WHERE id > :afterId ORDER BY id LIMIT :limit")
     suspend fun page(afterId: String, limit: Int): List<CategoryEntity>
