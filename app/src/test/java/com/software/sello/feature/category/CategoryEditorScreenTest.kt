@@ -516,6 +516,17 @@ class CategoryEditorScreenTest {
     }
 
     @Test
+    fun whileSavingTheMenuChoicesAreOffAndPressNothing() {
+        show(editing.copy(busy = true))
+
+        rule.onNodeWithTag(MORE_MENU_TAG).performClick()
+        rule.onNodeWithTag(EDITOR_MENU_ARCHIVE_TAG).assertIsNotEnabled().performClick()
+        rule.onNodeWithTag(EDITOR_MENU_DELETE_TAG).assertIsNotEnabled().performClick()
+
+        assertEquals(emptyList<CategoryEditorAction>(), actions)
+    }
+
+    @Test
     fun anArchivedCategorysMenuHoldsOnlyBorrar() {
         show(editing.copy(archived = true, limitLocked = true))
 
