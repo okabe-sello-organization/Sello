@@ -71,6 +71,7 @@ import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyStyle
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.MoreSlip
 import com.software.sello.designsystem.component.NoteComposer
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
@@ -189,19 +190,6 @@ fun ExpenseEntryScreen(
             }
         },
         actions = {
-            // Anotar varios, taking what is typed so far as its first line.
-            if (severalOffered && !state.editing && !state.loading && !state.loadFailed) {
-                val description = stringResource(R.string.expense_entry_several_description)
-                FieldPill(
-                    text = stringResource(R.string.expense_entry_several),
-                    icon = SelloIcon.ReceiptLong,
-                    onClick = { onAction(ExpenseEntryAction.Several) },
-                    modifier = Modifier
-                        .testTag(ENTRY_SEVERAL_TAG)
-                        .semantics { contentDescription = description },
-                    enabled = state.canOpenSeveral
-                )
-            }
             // Only for an expense that is recorded and has been read: nothing else
             // is there to delete. Undo is offered afterwards, so it does not ask first.
             if (state.editing && !state.loading && !state.loadFailed) {
@@ -257,6 +245,19 @@ fun ExpenseEntryScreen(
                     }
                 },
                 amount = { Amount(state, dates, onAction) },
+                // Anotar varios, taking what is typed so far as its first line.
+                more = if (severalOffered && !state.editing) {
+                    {
+                        MoreSlip(
+                            text = stringResource(R.string.entry_more_expense),
+                            onClick = { onAction(ExpenseEntryAction.Several) },
+                            modifier = Modifier.testTag(ENTRY_SEVERAL_TAG),
+                            enabled = state.canOpenSeveral
+                        )
+                    }
+                } else {
+                    null
+                },
                 choices = {
                     Choices(
                         state,

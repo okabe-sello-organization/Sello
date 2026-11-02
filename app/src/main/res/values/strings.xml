@@ -448,8 +448,10 @@
     <string name="expense_entry_discard_confirm">Descartar</string>
     <string name="expense_entry_discard_keep">Seguir anotando</string>
     <string name="expense_entry_date_confirm">Aceptar</string>
-    <string name="expense_entry_several">Varios</string>
-    <string name="expense_entry_several_description">Anotar varios</string>
+    <!-- The slip peeking out under an entry's amount: opens Anotar varios with what is typed. -->
+    <string name="entry_more_expense">Otro gasto</string>
+    <string name="entry_more_income">Otro ingreso</string>
+    <string name="entry_more_movement">Otro movimiento</string>
     <string name="bulk_title">Anotar varios</string>
     <string name="bulk_title_expenses">Varios gastos</string>
     <string name="bulk_title_incomes">Varios ingresos</string>

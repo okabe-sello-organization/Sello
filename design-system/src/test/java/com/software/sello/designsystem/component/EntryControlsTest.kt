@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.InputMode
@@ -39,6 +40,8 @@ import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -50,6 +53,7 @@ import androidx.compose.ui.test.performKeyInput
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.pressKey
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
@@ -395,6 +399,77 @@ class EntryControlsTest {
                 window.getPixel(x, middle.toInt() + 3)
             )
         }
+    }
+
+    @Test
+    fun theMoreSlipTucksBehindTheAmountAndLeavesAFullTarget() {
+        var paperAlt = Color.Unspecified
+        val clicks = mutableListOf<Unit>()
+        var enabled by mutableStateOf(true)
+        rule.setContent {
+            SelloTheme {
+                paperAlt = SelloTheme.colors.paperAlt
+                Box(Modifier.fillMaxSize().background(desk).testTag("window")) {
+                    EntryLayout(
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        band = band,
+                        header = { Spacer(Modifier.height(40.dp)) },
+                        amount = {
+                            Spacer(Modifier.fillMaxWidth().height(100.dp).testTag("amount"))
+                        },
+                        more = {
+                            MoreSlip(
+                                "Otro gasto",
+                                { clicks += Unit },
+                                Modifier.testTag("more"),
+                                enabled = enabled
+                            )
+                        },
+                        choices = {
+                            Spacer(Modifier.fillMaxWidth().height(20.dp).testTag("choices"))
+                        },
+                        action = {},
+                        keypad = {
+                            Spacer(Modifier.fillMaxWidth().height(200.dp).testTag("keypad"))
+                        }
+                    )
+                }
+            }
+        }
+        val amount = rule.onNodeWithTag("amount").getUnclippedBoundsInRoot()
+        val more = rule.onNodeWithTag("more").getUnclippedBoundsInRoot()
+        val choices = rule.onNodeWithTag("choices").getUnclippedBoundsInRoot()
+
+        // 12dp behind the amount slip, 10dp in from its edges, 40dp showing below it.
+        assertEquals(amount.bottom - 12.dp, more.top)
+        assertEquals(amount.left + 10.dp, more.left)
+        assertEquals(amount.right - 10.dp, more.right)
+        assertEquals(amount.bottom + 40.dp, more.bottom)
+        // The choices follow the visible strip, with the layout's usual 8dp gap.
+        assertEquals(more.bottom + 8.dp, choices.top)
+
+        val window = rule.onNodeWithTag("window").drawnBitmap()
+        val density = rule.density.density
+        val middle = ((amount.top + amount.bottom) / 2).value * density
+        // The band still ends at the amount's middle; the strip is the paper's alt shade.
+        assertEquals(band.toArgb(), window.getPixel(1, middle.toInt() - 3))
+        assertEquals(desk.toArgb(), window.getPixel(1, middle.toInt() + 3))
+        assertEquals(
+            paperAlt.toArgb(),
+            window.getPixel(
+                ((more.left + 4.dp).value * density).toInt(),
+                ((amount.bottom + 20.dp).value * density).toInt()
+            )
+        )
+
+        rule.onNodeWithTag("more").assertTextEquals("Otro gasto").performClick()
+        assertEquals(1, clicks.size)
+        // The part behind the amount slip takes taps too: 52dp in all.
+        rule.onNodeWithTag("more").performTouchInput { click(Offset(centerX, 4f * density)) }
+        assertEquals(2, clicks.size)
+        enabled = false
+        rule.onNodeWithTag("more").assertIsNotEnabled().performClick()
+        assertEquals(2, clicks.size)
     }
 
     @Test

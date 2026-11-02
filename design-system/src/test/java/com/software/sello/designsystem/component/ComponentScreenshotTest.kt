@@ -108,6 +108,18 @@ class ComponentScreenshotTest {
     }
 
     @Test
+    fun moreSlip() = capture("more-slip") {
+        Column {
+            EntryAmountSlip("Gasto en pesos", pesos("48.700"), icon = SelloIcon.Restaurant)
+            MoreSlip("Otro gasto", {})
+        }
+        Column {
+            EntryAmountSlip("Aporte en pesos", pesos("350.000"), tone = ButtonTone.Gain)
+            MoreSlip("Otro movimiento", {}, enabled = false)
+        }
+    }
+
+    @Test
     fun moneyAndStamps() = capture("money-and-stamps") {
         MoneyText(pesos("937.200"), style = MoneyStyle.Hero)
         MoneyText(pesos("48.700"), style = MoneyStyle.Total)

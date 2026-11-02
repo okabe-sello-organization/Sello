@@ -37,6 +37,7 @@ import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.MoreSlip
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloScaffold
@@ -115,20 +116,6 @@ fun InvestmentMovementScreen(
             )
         },
         actions = {
-            // Varios movimientos for the chosen investment, taking what is typed so far as
-            // its first line.
-            if (severalOffered && !state.editing && !state.loading && !state.loadFailed) {
-                val description = stringResource(R.string.investment_movements_title)
-                FieldPill(
-                    text = stringResource(R.string.expense_entry_several),
-                    icon = SelloIcon.ReceiptLong,
-                    onClick = { onAction(InvestmentMovementAction.Several) },
-                    modifier = Modifier
-                        .testTag(INVESTMENT_MOVEMENT_SEVERAL_TAG)
-                        .semantics { contentDescription = description },
-                    enabled = state.canOpenSeveral
-                )
-            }
             if (state.editing) {
                 SelloButton(
                     stringResource(R.string.expense_edit_delete),
@@ -160,6 +147,20 @@ fun InvestmentMovementScreen(
                 band = SelloTheme.colors.investmentBand,
                 header = {},
                 amount = { Amount(state, onAction) },
+                // Varios movimientos for the chosen investment, taking what is typed so far
+                // as its first line.
+                more = if (severalOffered && !state.editing && state.investment != null) {
+                    {
+                        MoreSlip(
+                            text = stringResource(R.string.entry_more_movement),
+                            onClick = { onAction(InvestmentMovementAction.Several) },
+                            modifier = Modifier.testTag(INVESTMENT_MOVEMENT_SEVERAL_TAG),
+                            enabled = state.canOpenSeveral
+                        )
+                    }
+                } else {
+                    null
+                },
                 choices = { Choices(state, onAction) },
                 action = { Action(state, onAction) },
                 keypad = {

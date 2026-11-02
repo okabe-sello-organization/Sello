@@ -36,6 +36,7 @@ import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.MoneySign
+import com.software.sello.designsystem.component.MoreSlip
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
@@ -95,19 +96,6 @@ fun GoalMovementScreen(
             )
         },
         actions = {
-            // Aportar varios for the chosen goal, taking what is typed so far as its first line.
-            if (severalOffered && !state.editing && !state.loading && !state.loadFailed) {
-                val description = stringResource(R.string.goal_bulk_title)
-                FieldPill(
-                    text = stringResource(R.string.expense_entry_several),
-                    icon = SelloIcon.ReceiptLong,
-                    onClick = { onAction(GoalMovementAction.Several) },
-                    modifier = Modifier
-                        .testTag(GOAL_MOVEMENT_SEVERAL_TAG)
-                        .semantics { contentDescription = description },
-                    enabled = state.canOpenSeveral
-                )
-            }
             if (state.editing) {
                 SelloButton(
                     stringResource(R.string.expense_edit_delete),
@@ -153,6 +141,19 @@ fun GoalMovementScreen(
                     }
                 },
                 amount = { Amount(state, onAction) },
+                // Aportar varios for the chosen goal, taking what is typed so far as its first line.
+                more = if (severalOffered && !state.editing) {
+                    {
+                        MoreSlip(
+                            text = stringResource(R.string.entry_more_movement),
+                            onClick = { onAction(GoalMovementAction.Several) },
+                            modifier = Modifier.testTag(GOAL_MOVEMENT_SEVERAL_TAG),
+                            enabled = state.canOpenSeveral
+                        )
+                    }
+                } else {
+                    null
+                },
                 choices = { Choices(state, onAction) },
                 action = { Action(state, onAction) },
                 keypad = {

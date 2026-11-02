@@ -108,7 +108,8 @@ punch card, goal stamp, coupon).
 label and date pill on top, category circle beside the amount) → category or source
 chips → note row → **Anotar gasto / Anotar ingreso** → Sello pad. The amount, Anotar
 and the pad never move; only the chips and note area scroll. Income shows the amount
-in gain green with a `+`.
+in gain green with a `+`. A new entry has the peeking slip of
+[Anotar varios](#anotar-varios) under its amount slip.
 
 - **Band (owner, 2026-10-31):** the form says what it records before anything is typed.
   The title row sits on a band in the colour of the kind, which carries on behind the
@@ -167,6 +168,8 @@ the entry sheet's language redrawn from v1.1's [Anotar varios and Varios
 movimientos](../sello-spec.html#s-varios). The owner approved it as drawn, including every choice the page lists for them.
 **Changed 2026-10-31 by the owner** ([E25](../../tickets/E25-varios-everywhere/README.md)): no Gasto/Ingreso
 switch on the receipt; where it opens from sets its kind; the Varios pill on every entry sheet.
+**Changed 2026-11-02 by the owner:** the pill left the title bar, where it read as an option of the
+screen rather than a way to record more; a second slip peeks out under the amount slip instead.
 
 **Order, top to bottom:** ✕ and the title (**Varios gastos** or **Varios ingresos**; for a
 goal or an investment, its title and name) → the **receipt**, a pinked slip that takes the free
@@ -195,11 +198,20 @@ pad. The lines scroll inside the receipt; the foot, chips, action and pad never 
   guardó** and no second write). A refused line is marked with its reason and the draft stays.
 - **Saved:** the sheet closes and the screen it came from shows one confirmation, for example
   **3 gastos anotados: 126.000**, with its figures already updated. No undo.
-- **Opens from:** a **Varios** pill in the Anotar bar, and since 2026-10-31 in the Aportar/Retirar
-  and Anotar movimiento bars for the chosen goal or investment (what is typed becomes line one), and
+- **Opens from:** the **peeking slip** on every entry sheet (below), and
   **Anotar varios** at the foot of a category's latest expenses (every new line starts in that
   category), the goal's movements, the investment's movements and the income list.
-- **Leaving** with lines asks **¿Descartar 3 renglones?**
+- **Leaving** with lines asks **¿Descartar 3 renglones?** and goes back to where the sheet was
+  opened from, not to the single entry it replaced.
+- **The peeking slip (2026-11-02):** on Anotar (Gasto and Ingreso), Aportar/Retirar and Anotar
+  movimiento, a second pinked slip in the paper's alt shade is tucked behind the amount slip, its
+  visible strip reading **+ Otro gasto**, **+ Otro ingreso** or, for a goal or an investment,
+  **+ Otro movimiento**, in brand ink. Tapping it opens the receipt with what is typed as line one;
+  when line one has an amount, a second line in the same category, source or type is already
+  highlighted for the pad. It is absent while editing, and on Anotar movimiento until an investment
+  is chosen; it dims and waits while saving, while the amount cannot be used, or while an
+  expense is set to repeat. The title bar holds
+  only ✕ and the title (and Borrar when editing).
 
 **Rejected:** v1.1's long press on the dock and the investment's overflow menu as ways in; a
 total that adds dividends and valuations; mixing expenses and incomes on one receipt; switching a receipt between Gasto and Ingreso

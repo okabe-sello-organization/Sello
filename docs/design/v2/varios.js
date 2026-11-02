@@ -241,11 +241,11 @@ const SC = {
 const phone = (o, inner) => `<div class="phone"><div class="app" data-ink="${o.ink}" data-theme="${o.theme}">${inner}</div></div>`;
 const card = (title, note, inner) => `<div class="frame-card"><h3>${title}</h3><p>${note}</p>${inner}</div>`;
 
-// The Anotar sheet with the new Varios pill where the bar had an empty slot.
+// The Anotar sheet with the peeking slip under its amount (2026-11-02; it replaced the bar's Varios pill).
 function anotar() {
   const cat = ["Transporte", "directions_bus"];
-  const bar = `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button><div class="seg" role="group" aria-label="Tipo"><button aria-pressed="true">Gasto</button><button aria-pressed="false">Ingreso</button></div><button class="varios-btn" aria-label="Anotar varios">${icon("receipt_long")}Varios</button></div></div>`;
-  const slip = `<section class="slip pinked amount-slip"><div class="amount-meta"><span>Gasto en pesos</span><button class="date-pill">${icon("event")}${TODAY}</button></div><div class="amount-row"><span class="circle" style="--fill:100%" aria-hidden="true">${icon(cat[1])}<span class="on">${icon(cat[1])}</span></span><div class="amount-value">${money(18400)}<span class="caret"></span></div></div></section>`;
+  const bar = `<div class="entry-top">${statusbar()}<div class="entry-bar"><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button><div class="seg" role="group" aria-label="Tipo"><button aria-pressed="true">Gasto</button><button aria-pressed="false">Ingreso</button></div><span class="spacer"></span></div></div>`;
+  const slip = `<section class="slip pinked amount-slip peeked"><div class="amount-meta"><span>Gasto en pesos</span><button class="date-pill">${icon("event")}${TODAY}</button></div><div class="amount-row"><span class="circle" style="--fill:100%" aria-hidden="true">${icon(cat[1])}<span class="on">${icon(cat[1])}</span></span><div class="amount-value">${money(18400)}<span class="caret"></span></div></div></section><button class="more-slip">${icon("add")}Otro gasto</button>`;
   const chips = CATEGORIES.map(([n, ic]) => `<button class="chip" aria-pressed="${n === cat[0]}">${icon(ic)}${n}</button>`).join("") + `<button class="chip add">${icon("add")}Nueva</button>`;
   const midHtml = `<div class="entry-mid"><h3>Categoría</h3><div class="chips">${chips}</div><button class="note-pill filled">${icon("edit_note")}<span>Uber</span><span class="edit">Editar</span></button></div>`;
   return bar + slip + midHtml + `<div class="entry-action"><button class="primary">${icon("add")}Anotar gasto</button></div>` + pad(false, false) + `<div class="gesture" style="background:var(--desk)"></div>`;
@@ -298,7 +298,7 @@ const OPEN = [
   "<b>No type is preselected</b> on the first line of a goal or investment receipt (like entry’s category); later lines copy the line above. A wrong direction on a receipt is easy to miss.",
   "<b>The foot:</b> a goal shows its net (aportes − retiros); an investment shows <b>Aportado</b> (aportes − retiros) only, because dividends and valuations do not add up with them. v1.1 had no total for investments.",
   "<b>Removing a draft line</b> keeps v1.1’s swipe, long press and <b>Deshacer</b> toast. It is a draft, not a saved entry, so “no undo after saving” is untouched. The last line cannot be removed.",
-  "<b>Reaching the receipt:</b> a <b>Varios</b> pill in the Anotar bar and <b>Anotar varios</b> at the foot of the category, goal, investment and income lists. v1.1’s long press on the dock and the investment’s overflow menu are not used.",
+  "<b>Reaching the receipt:</b> a second slip peeking out under the amount on every entry sheet (<b>+ Otro gasto</b>, <b>+ Otro ingreso</b>, <b>+ Otro movimiento</b>; it replaced a <b>Varios</b> pill in the bar on 2026-11-02) and <b>Anotar varios</b> at the foot of the category, goal, investment and income lists. v1.1’s long press on the dock and the investment’s overflow menu are not used.",
   "<b>A line’s title</b> is its category, source or type; its note sits under it. The date shows under it on goal and investment lines, and as a pill on the highlighted one.",
   "<b>A USD receipt stays in dollars:</b> no pesos equivalent on the receipt; the investment’s own screens show the converted total as before.",
   "<b>Leaving</b> with typed lines asks <b>¿Descartar 3 renglones?</b>; a restored draft opens exactly as it was left.",
@@ -312,7 +312,7 @@ function render() {
   const E = SC.expense;
 
   set("entries",
-    card("From single entry", "The Anotar sheet, Gasto or Ingreso, gets a <b>Varios</b> pill in its bar. What is typed so far becomes line one.", phone(o, anotar())) +
+    card("From single entry", "Every entry sheet has a second slip tucked behind its amount: <b>+ Otro gasto</b>. What is typed so far becomes line one.", phone(o, anotar())) +
     card("…arrives with line one filled", "The expense typed in Anotar is line one; a second empty line is highlighted and copies its category.", s("expense", "fromEntry")) +
     card("From a category", "<b>Anotar varios</b> at the foot of the category’s latest expenses. Every new line starts in that category.", phone(o, categoryDetail())) +
     card("…arrives with the category chosen", "Line one is empty with Transporte already chosen.", s("expense", "fromCategory")) +
