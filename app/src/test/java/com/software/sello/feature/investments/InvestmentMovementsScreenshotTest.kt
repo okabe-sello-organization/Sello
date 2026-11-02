@@ -194,7 +194,8 @@ class InvestmentMovementsScreenshotTest {
         "from-list" to receipt(
             listOf(line("0", Contribution, pesos("200.000"), today, investment = null)),
             0,
-            pesos("200.000")
+            // A line with no investment is left out of Aportado.
+            pesos("0")
         ),
         // Ecopetrol 1.000.000, Fondo 300.000, Acciones USD 250,50 − 50,00 = 200,50:
         // 200,50 × 4.000,00 = 802.000; 1.000.000 + 300.000 + 802.000 = 2.102.000.

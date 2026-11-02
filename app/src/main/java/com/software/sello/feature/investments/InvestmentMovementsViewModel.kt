@@ -105,13 +105,36 @@ class InvestmentMovementsViewModel(
         val cents: String,
         @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
         val note: String,
-        /** Absent in a receipt saved before SELLO-142: the one it was opened from. */
-        val investment: String? = null,
-        val usd: Boolean = false
+        val investment: String?,
+        val usd: Boolean
     )
 
     @Serializable
     private data class Saved(val lines: List<SavedLine>, val highlighted: Int, val nextKey: Long)
+
+    /**
+     * A line as a receipt saved before SELLO-142 kept it, with no investment of its own: it
+     * restores into the investment the receipt was opened from. The saved draft is read in
+     * order, so such a receipt never reads as a [Saved] (its lines are two fields short).
+     */
+    @Serializable
+    private data class SavedLineBefore142(
+        val key: String,
+        val kind: String?,
+        val pesos: String?,
+        val whole: String,
+        val comma: Boolean,
+        val cents: String,
+        @Serializable(with = LocalDateSerializer::class) val date: LocalDate,
+        val note: String
+    )
+
+    @Serializable
+    private data class SavedBefore142(
+        val lines: List<SavedLineBefore142>,
+        val highlighted: Int,
+        val nextKey: Long
+    )
 
     private data class Removed(val index: Int, val line: Line)
 
@@ -129,6 +152,7 @@ class InvestmentMovementsViewModel(
     private val investmentId: String? = saved[KEY_INVESTMENT]
 
     private val drafts = SavedDraft(saved, DRAFT, Saved.serializer())
+    private val draftsBefore142 = SavedDraft(saved, DRAFT, SavedBefore142.serializer())
     private val submission = Submission(saved, OPERATION, ids)
 
     private val draft = MutableStateFlow(restored() ?: opening())
@@ -381,14 +405,33 @@ class InvestmentMovementsViewModel(
 
     /** The saved receipt, when it is one this screen can hold. */
     private fun restored(): Draft? {
-        val stored = drafts.read() ?: return null
+        val stored = drafts.read() ?: draftsBefore142.read()?.let { before ->
+            Saved(
+                lines = before.lines.map {
+                    SavedLine(
+                        it.key,
+                        it.kind,
+                        it.pesos,
+                        it.whole,
+                        it.comma,
+                        it.cents,
+                        it.date,
+                        it.note,
+                        investment = investmentId,
+                        usd = it.whole.isNotEmpty() || it.comma
+                    )
+                },
+                highlighted = before.highlighted,
+                nextKey = before.nextKey
+            )
+        } ?: return null
         if (stored.lines.size !in 1..InvestmentMovementsState.MAX_LINES) return null
         if (stored.highlighted !in stored.lines.indices) return null
         return Draft(
             lines = stored.lines.map {
                 Line(
                     key = it.key,
-                    investment = it.investment ?: investmentId,
+                    investment = it.investment,
                     usd = it.usd,
                     kind = it.kind?.let(::kindOf),
                     pesos = it.pesos?.let { pesos ->
@@ -536,10 +579,11 @@ class InvestmentMovementsViewModel(
     }
 
     /**
-     * Aportes − retiros of the lines that may be recorded, each in its own currency. With
-     * COP and USD lines it is in pesos at today's [rate] (E19), or each currency's part when
-     * there is none; null when a sum does not fit. With no aporte or retiro yet it is 0 in
-     * the currency of the lines' investments, pesos when they mix or none is chosen.
+     * Aportes − retiros of the lines that may be recorded, each in its own currency; a line
+     * with no investment is left out. With COP and USD typed lines it is in pesos at today's
+     * [rate] (E19), or each currency's part when there is none; null when a sum does not
+     * fit. With nothing typed it is 0 in the currency of the lines' investments, pesos when
+     * they mix or none is chosen.
      */
     private fun contributed(
         lines: List<Line>,
@@ -550,8 +594,9 @@ class InvestmentMovementsViewModel(
             Currency.COP to ExactTotal.zero(Currency.COP),
             Currency.USD to ExactTotal.zero(Currency.USD)
         )
-        val counted = mutableSetOf<Currency>()
-        lines.forEach { line ->
+        // A line with no investment has no currency yet: it counts nowhere until it has one.
+        val chosen = lines.filter { it.investment != null }
+        chosen.forEach { line ->
             val currency = currencyOf(line, board)
             val amount = amount(line, currency)?.money ?: return@forEach
             val total = totals.getValue(currency)
@@ -560,11 +605,11 @@ class InvestmentMovementsViewModel(
                 InvestmentMovementKind.Withdrawal -> total - amount
                 else -> return@forEach
             }
-            counted += currency
         }
-        val currencies = counted.ifEmpty {
-            lines.filter { it.investment != null }.mapTo(mutableSetOf()) { currencyOf(it, board) }
-        }
+        // Every typed line decides it, valuations and dividends too: COP and USD lines are a
+        // receipt in two currencies even when only one of them has aportes.
+        val typed = chosen.filter { typedMoney(it, currencyOf(it, board)) != null }
+        val currencies = typed.ifEmpty { chosen }.mapTo(mutableSetOf()) { currencyOf(it, board) }
         val pesos = (totals.getValue(Currency.COP).toMoney() as? Outcome.Success)?.value
             ?: return null
         val dollars = (totals.getValue(Currency.USD).toMoney() as? Outcome.Success)?.value

@@ -23,7 +23,7 @@ synthetic.
 | --- | --- |
 | [Recibo / Home](home.html) | Locked 2026-10-15 (past-month state added with Resumen) |
 | [Expense and income entry](entry.html) | Locked 2026-10-15 |
-| [Anotar varios](varios.html) | Locked 2026-10-30 by the owner (SELLO-126, E23): the bulk receipt for expenses, incomes, one goal and one investment, and where it opens from |
+| [Anotar varios](varios.html) | Locked 2026-10-30 by the owner (SELLO-126, E23): the bulk receipt for expenses, incomes, one goal and investments (E27), and where it opens from |
 | [Resumen](resumen.html) | Locked 2026-10-15 |
 | [Income](income.html) | Locked 2026-10-15 |
 | [Metas](metas.html) · [goal detail](goal.html) · [Aportar/Retirar](aportar.html) · [create a goal](create.html) · [celebrations](celebrate.html) | Locked 2026-10-16; + Nueva meta moved to the band by the owner 2026-10-26; Nueva meta and Nueva categoría made alike by the owner 2026-10-26 (see below) |
