@@ -190,7 +190,8 @@ class CategoryDetailFixedTest {
             testMoney(),
             corrections,
             HandCategoryInsights(),
-            schedules
+            schedules,
+            { testScheduler.currentTime.milliseconds }
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}

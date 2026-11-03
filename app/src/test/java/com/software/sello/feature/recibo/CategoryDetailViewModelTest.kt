@@ -2,7 +2,10 @@ package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Money
+import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
@@ -40,7 +43,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -90,7 +95,9 @@ class CategoryDetailViewModelTest {
                 testMoney(),
                 corrections,
                 insights,
-                HandScheduleReads()
+                HandScheduleReads(),
+                // Moves with the test's own time, as the wait for detail figures does.
+                { testScheduler.currentTime.milliseconds }
             )
         // Something has to be watching for the state to be kept up to date.
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -161,6 +168,97 @@ class CategoryDetailViewModelTest {
             )
         assertEquals(DetailInsightsState.Failed, vm.ready.insights)
         assertEquals(plain("3.000"), vm.ready.category.spent)
+    }
+
+    /** Detail figures worked out from [budget], whose average expense is [average]. */
+    private fun figuresOf(budget: MonthlySnapshot, average: Long) = ReadState.Ready(
+        CategoryInsights(
+            budget, food.category.id, null, null, 23, Money.cop(average),
+            null, null, null, emptyList(), null, emptyList()
+        )
+    )
+
+    /** Opens Alimentación with three expenses of 1.000, its detail figures worked out. */
+    private fun TestScope.openedWithFigures(): CategoryDetailViewModel {
+        val vm = started()
+        commit(many(3))
+        show(vm, 1)
+        insights.state.value =
+            figuresOf(monthOf("2026-10-23", listOf(food, coffee), many(3)), 1_000)
+        assertEquals(plain("3.000"), vm.ready.category.spent)
+        return vm
+    }
+
+    /** One expense deleted: the month is worked out again, a new revision. */
+    private fun deletedOne(): MonthlySnapshot {
+        reads.stored.clear()
+        many(2).forEach { reads.stored[it.id] = it }
+        return monthOf("2026-10-23", listOf(food, coffee), many(2)).copy(revision = 2)
+            .also(snapshots::ready)
+    }
+
+    @Test
+    fun aChangeKeepsTheWholeScreenUntilItsDetailFiguresAreWorkedOutThenShowsThemTogether() =
+        runTest {
+            val vm = openedWithFigures()
+
+            val after = deletedOne()
+
+            // Nothing moves while the detail figures are behind the total.
+            assertEquals(plain("3.000"), vm.ready.category.spent)
+            assertEquals(
+                plain("1.000"),
+                (vm.ready.insights as DetailInsightsState.Ready).figures.averageExpense
+            )
+            insights.state.value = figuresOf(after, 900)
+            assertEquals(plain("2.000"), vm.ready.category.spent)
+            assertEquals(
+                plain("900"),
+                (vm.ready.insights as DetailInsightsState.Ready).figures.averageExpense
+            )
+        }
+
+    @Test
+    fun detailFiguresThatTakeTooLongNeverHoldBackTheNewTotal() = runTest {
+        val vm = openedWithFigures()
+
+        deletedOne()
+        advanceTimeBy(DETAIL_FIGURES_WAIT_MILLIS - 1)
+        assertEquals(plain("3.000"), vm.ready.category.spent)
+        advanceTimeBy(1)
+        runCurrent()
+
+        assertEquals(plain("2.000"), vm.ready.category.spent)
+        assertEquals(DetailInsightsState.Loading, vm.ready.insights)
+    }
+
+    @Test
+    fun changesInQuickSuccessionShareOneWait() = runTest {
+        val vm = openedWithFigures()
+
+        deletedOne()
+        advanceTimeBy(300)
+        snapshots.ready(monthOf("2026-10-23", listOf(food, coffee), many(1)).copy(revision = 3))
+        advanceTimeBy(DETAIL_FIGURES_WAIT_MILLIS - 300 - 1)
+        assertEquals(plain("3.000"), vm.ready.category.spent)
+        advanceTimeBy(1)
+        runCurrent()
+
+        assertEquals(plain("1.000"), vm.ready.category.spent)
+    }
+
+    @Test
+    fun aFailedReadIsShownAtOnceNeverHeldBack() = runTest {
+        val vm = openedWithFigures()
+        val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
+
+        snapshots.of(october).value = ReadState.Failed(
+            failure,
+            lastGood = monthOf("2026-10-23", listOf(food, coffee), many(2)).copy(revision = 2)
+        )
+
+        assertEquals(true, vm.ready.stale)
+        assertEquals(plain("2.000"), vm.ready.category.spent)
     }
 
     @Test

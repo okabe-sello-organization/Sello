@@ -1,7 +1,8 @@
 package com.software.sello.feature.recibo
 
-import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animate
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -26,10 +27,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,7 +62,6 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import kotlin.math.roundToInt
-import kotlinx.coroutines.launch
 
 /**
  * A circle with the category's name and one amount beside it: what is left, or what was
@@ -288,12 +288,15 @@ private fun SwipeAway(action: LineAction, line: @Composable () -> Unit) {
     val run by rememberUpdatedState(action.onClick)
     val reduced = SelloTheme.reducedMotion
     val towardsStart = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1 else 1
-    val scope = rememberCoroutineScope()
-    // How far the line has been dragged towards the start: zero or negative.
-    val dragged = remember { Animatable(0f) }
+    // How far the line has been dragged towards the start: zero or negative. Each move
+    // lands at once, so letting go always reads where the line really is.
+    var dragged by remember { mutableFloatStateOf(0f) }
     var width by remember { mutableIntStateOf(0) }
+    val drag = rememberDraggableState { delta ->
+        dragged = (dragged + delta).coerceIn(-width.toFloat(), 0f)
+    }
     Box(Modifier.onSizeChanged { width = it.width }) {
-        if (dragged.value < 0f) {
+        if (dragged < 0f) {
             Box(
                 contentAlignment = Alignment.CenterEnd,
                 modifier = Modifier
@@ -311,17 +314,22 @@ private fun SwipeAway(action: LineAction, line: @Composable () -> Unit) {
         }
         Box(
             Modifier
-                .offset { IntOffset((dragged.value * towardsStart).roundToInt(), 0) }
+                .offset { IntOffset((dragged * towardsStart).roundToInt(), 0) }
                 .draggable(
                     orientation = Orientation.Horizontal,
                     reverseDirection = towardsStart < 0,
-                    state = rememberDraggableState { delta ->
-                        val to = (dragged.value + delta).coerceIn(-width.toFloat(), 0f)
-                        scope.launch { dragged.snapTo(to) }
-                    },
+                    state = drag,
                     onDragStopped = {
-                        if (width > 0 && dragged.value <= -width * SWIPE_THRESHOLD) run()
-                        if (reduced) dragged.snapTo(0f) else dragged.animateTo(0f)
+                        if (width > 0 && dragged <= -width * SWIPE_THRESHOLD) run()
+                        // Back as a drag of its own, below a finger's: a new touch takes
+                        // the line from it instead of fighting it.
+                        drag.drag(MutatePriority.Default) {
+                            if (reduced) {
+                                dragBy(-dragged)
+                            } else {
+                                animate(dragged, 0f) { value, _ -> dragBy(value - dragged) }
+                            }
+                        }
                     }
                 )
         ) { line() }
