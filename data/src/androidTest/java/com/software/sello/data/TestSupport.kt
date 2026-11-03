@@ -3,6 +3,8 @@ package com.software.sello.data
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import androidx.test.platform.app.InstrumentationRegistry
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.openSelloDatabase
@@ -51,9 +53,12 @@ class DatabaseFiles : ExternalResource() {
     val resetFolder: File get() = File(context.filesDir, name.removeSuffix(".db") + "-reset")
     private val opened = mutableListOf<SelloDatabase>()
 
-    /** Each call is a fresh handle on the same file, as after a process restart. */
-    fun open(): SelloDatabase =
-        openSelloDatabase(context, Dispatchers.IO, name).also { opened += it }
+    /**
+     * Each call is a fresh handle on the same file, as after a process restart. [files]
+     * opens the file itself; a test passes one only to make a statement fail.
+     */
+    fun open(files: SupportSQLiteOpenHelper.Factory = FrameworkSQLiteOpenHelperFactory()) =
+        openSelloDatabase(context, Dispatchers.IO, name, files).also { opened += it }
 
     override fun after() {
         opened.forEach { if (it.isOpen) it.close() }

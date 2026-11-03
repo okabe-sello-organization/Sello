@@ -1,5 +1,6 @@
 package com.software.sello.data
 
+import android.database.SQLException
 import androidx.room.withTransaction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.data.mapper.toEntity
@@ -72,6 +73,39 @@ class CommandRunTest {
         assertEquals(1, database.count("category"))
         assertEquals(0, database.count("expense"))
     }
+
+    @Test
+    fun aDatabaseErrorThatIsNotSQLitesOwnIsACertainRollbackWithNothingSaved() = runBlocking {
+        val database = files.open()
+
+        val run = database.runCommand {
+            database.categoryDao().insert(category(1, "Mercado").toEntity())
+            throw SQLException("A layer above SQLite refused the statement")
+        }
+
+        assertEquals(CommandRun.RolledBack(StorageFailure.Unavailable("SQLException")), run)
+        assertEquals(0, database.count("category"))
+    }
+
+    @Test
+    fun aDatabaseErrorThatIsNotSQLitesOwnAtTheCommitIsUnknownAndTheNextCommandIsSaved() =
+        runBlocking {
+            val statements = RefusedStatements(refused = ";COMMIT")
+            val database = files.open(statements)
+
+            val refused = database.runCommand {
+                database.categoryDao().insert(category(1, "Mercado").toEntity())
+            }
+            statements.refused = null
+            val next = database.runCommand {
+                database.categoryDao().insert(category(2, "Hogar").toEntity())
+            }
+
+            assertEquals(CommandRun.Unknown, refused)
+            assertEquals(CommandRun.Finished(Unit), next)
+            // The refused commit never ran, so only the next command's row is there.
+            assertEquals(1, database.count("category"))
+        }
 
     @Test
     fun aCommandInsideAnotherTransactionFailsAtOnceAndNothingIsSaved() = runBlocking {

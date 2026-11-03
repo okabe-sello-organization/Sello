@@ -65,6 +65,11 @@ class DocumentWriteContractTest {
     }
 
     @Test
+    fun aProviderThatReportsAFailureIsAFailureEvenWhenEveryByteWentIn() {
+        assertEquals(DocumentWrite.Failed, write("reported"))
+    }
+
+    @Test
     fun aDestinationThatIsNotADocumentIsAFailure() = runBlocking {
         assertEquals(DocumentWrite.Failed, writer.write(DocumentDestination("not a uri"), bytes))
     }

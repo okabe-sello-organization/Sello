@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteOpenHelper
+import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
 import com.software.sello.data.local.dao.CarryChainDao
 import com.software.sello.data.local.dao.CategoryDao
 import com.software.sello.data.local.dao.DeletedExpenseDao
@@ -114,14 +116,16 @@ abstract class SelloDatabase : RoomDatabase() {
  * The only place the database is opened. Queries run on [queries], which must carry a
  * dispatcher. There is no destructive fallback of any kind: a file this build cannot
  * read, whether from a newer schema or damaged, makes the open fail and is left as it is.
+ * [files] opens the file itself; only a test replaces it, to make a statement fail.
  */
 internal fun openSelloDatabase(
     context: Context,
     queries: CoroutineContext,
-    fileName: String = SelloDatabase.FILE_NAME
+    fileName: String = SelloDatabase.FILE_NAME,
+    files: SupportSQLiteOpenHelper.Factory = FrameworkSQLiteOpenHelperFactory()
 ): SelloDatabase =
     Room.databaseBuilder(context.applicationContext, SelloDatabase::class.java, fileName)
-        .openHelperFactory(NonDestructiveOpenHelperFactory())
+        .openHelperFactory(NonDestructiveOpenHelperFactory(files))
         .addMigrations(
             Migration1To2,
             Migration2To3,
