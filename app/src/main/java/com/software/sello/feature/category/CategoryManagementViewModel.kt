@@ -134,10 +134,13 @@ class CategoryManagementViewModel(
     private val categoryId: CategoryId? =
         (saved.get<String>(KEY_CATEGORY)?.let(CategoryId::of) as? Outcome.Success)?.value
 
-    /** Fixed when the form opens, so a draft restored next month is still about this one. */
-    private val currentMonth: YearMonth =
+    /**
+     * Fixed when the form opens, so a draft restored next month is still about this one;
+     * moved on only when a save finds it ended ([monthEnded]).
+     */
+    private var currentMonth: YearMonth =
         saved.get<String>(KEY_CURRENT)?.let(::month) ?: session.currentMonthNow
-    private val targetMonth: YearMonth =
+    private var targetMonth: YearMonth =
         saved.get<String>(KEY_MONTH)?.let(::month)?.takeIf { it <= currentMonth } ?: currentMonth
 
     private var original: Original? = savedOriginal()
@@ -384,6 +387,8 @@ class CategoryManagementViewModel(
         val stored = original ?: return
         val generation = generation ?: return
         val id = categoryId ?: return
+        // Turning on is for the month the card shows, and Sello turns it on in today's.
+        if (enable && monthEnded()) return
         mutable.update {
             it.copy(busy = true, saveError = null, carryProblem = null, carryDone = null)
         }
@@ -721,6 +726,7 @@ class CategoryManagementViewModel(
             null
         }
         val icon = (IconKey.of(state.iconKey) as? Outcome.Success)?.value ?: return
+        if (EditPart.Limit in pending && monthEnded()) return
         // Making the limit unlimited while carrying drops the balance (CP11): asked first.
         dropReason = DropReason.Unlimited.takeIf { limit == BudgetLimit.Unlimited }
         mutable.update {
@@ -734,6 +740,8 @@ class CategoryManagementViewModel(
         }
         viewModelScope.launch {
             for (part in pending) {
+                // The month can end while the parts before the limit are sent.
+                if (part == EditPart.Limit && monthEnded()) return@launch
                 val version = original?.version ?: return@launch
                 val settled = submission.send(commands::find, STEP_EDIT) { operation ->
                     val command: CategoryCommand = when (part) {
@@ -785,6 +793,41 @@ class CategoryManagementViewModel(
             }
             finished()
         }
+    }
+
+    /**
+     * Whether the month this form shows as in progress has ended. A limit from it onwards
+     * and turning carry on are applied to today's month, so neither is sent then: the
+     * form says so and reads the month now in progress, keeping what was typed. A
+     * finished month's own limit names its month and is not affected.
+     */
+    private fun monthEnded(): Boolean {
+        val ended = currentMonth
+        val now = session.currentMonthNow
+        if (targetMonth != ended || now == ended) return false
+        currentMonth = now
+        targetMonth = now
+        saved[KEY_CURRENT] = now.toString()
+        saved[KEY_MONTH] = now.toString()
+        pendingDrop = null
+        confirmedDrop = null
+        dropReason = null
+        pendingConfirmation = null
+        render {
+            it.copy(
+                busy = false,
+                saveError = SaveError.MonthEnded,
+                endedMonth = ended,
+                targetMonth = now,
+                historical = false,
+                carry = null,
+                carryQuestion = null,
+                carryProblem = null,
+                carryDone = null
+            )
+        }
+        viewModelScope.launch { load(keepOriginal = false, resetDraft = false) }
+        return true
     }
 
     /** Every change has its receipt. */

@@ -533,7 +533,21 @@ private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -
 /** What went wrong, or that nothing changed yet, between the limit and the button. */
 @Composable
 private fun Said(state: CategoryEditorState) {
-    if (state.savedParts.isNotEmpty() && state.saveError != null) {
+    val ended = state.endedMonth
+    val shown = state.targetMonth
+    if (state.saveError == SaveError.MonthEnded && ended != null && shown != null) {
+        val months = monthNames()
+        FieldMessageText(
+            FieldMessage(
+                stringResource(
+                    R.string.category_edit_month_ended,
+                    months.title(ended),
+                    months.title(shown)
+                )
+            ),
+            Modifier.testTag(EDITOR_SAVE_ERROR_TAG)
+        )
+    } else if (state.savedParts.isNotEmpty() && state.saveError != null) {
         val saved = state.savedParts.map { stringResource(it.text()) }.joinToString(", ")
         FieldMessageText(
             FieldMessage(stringResource(R.string.category_edit_saved_parts, saved)),
@@ -697,6 +711,9 @@ private fun SaveError.text(editing: Boolean) = when (this) {
     SaveError.CategoryGone -> R.string.category_edit_gone
 
     SaveError.PaymentsPending -> R.string.category_archive_payments_pending
+
+    // Said with its months in Said; this is only the fallback without them.
+    SaveError.MonthEnded -> R.string.category_edit_not_saved
 }
 
 const val EDITOR_LOADING_TAG = "category-editor:loading"

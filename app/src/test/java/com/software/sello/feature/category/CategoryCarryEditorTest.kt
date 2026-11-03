@@ -122,7 +122,8 @@ class CategoryCarryEditorTest {
     private val commands = HandCommands()
     private val reads = HandCategoryReads().apply { generation = 7 }
     private val snapshots = HandSnapshots()
-    private val session = MonthSession(HandFinancialClock("2027-02-10"), HandMonotonicClock())
+    private val clock = HandFinancialClock("2027-02-10")
+    private val session = MonthSession(clock, HandMonotonicClock())
     private var nextId = 500
     private val money = MoneyFormatter(
         object : MoneyLabels {
@@ -266,6 +267,44 @@ class CategoryCarryEditorTest {
         assertEquals(5L, sent.expectedVersion)
         assertEquals(CarryDone.Enabled, form.now.carryDone)
         assertNull(form.now.carryQuestion)
+    }
+
+    @Test
+    fun turningOnAfterTheMonthEndedIsRefusedAndTheFormReadsTheNewMonth() {
+        publish(carrying = false)
+        clock.goTo("2027-02-28")
+        val form = form()
+        form.onAction(CategoryEditorAction.EnableCarry)
+        val asked = form.now.carryQuestion
+        clock.goTo("2027-03-01")
+
+        form.onAction(CategoryEditorAction.CarryConfirmed)
+
+        assertEquals(CarryQuestion.Enable(feb, plain("30.000")), asked)
+        assertTrue(commands.submitted.isEmpty())
+        assertNull(form.now.carryQuestion)
+        assertEquals(SaveError.MonthEnded, form.now.saveError)
+        assertEquals(feb, form.now.endedMonth)
+        assertEquals(YearMonth.of(2027, 3), form.now.targetMonth)
+        // March was never published: its card is not guessed.
+        assertEquals(CarryCard.Unreadable, form.now.carry)
+    }
+
+    @Test
+    fun turningOnFromARestoredFormAfterTheMonthEndedIsRefused() {
+        publish(carrying = false)
+        clock.goTo("2027-02-28")
+        val state = saved()
+        form(state = state)
+        clock.goTo("2027-03-01")
+        val kept = SavedStateHandle(state.keys().associateWith { state.get<Any?>(it) })
+        val restored = form(state = kept)
+        restored.onAction(CategoryEditorAction.EnableCarry)
+
+        restored.onAction(CategoryEditorAction.CarryConfirmed)
+
+        assertTrue(commands.submitted.isEmpty())
+        assertEquals(SaveError.MonthEnded, restored.now.saveError)
     }
 
     @Test
