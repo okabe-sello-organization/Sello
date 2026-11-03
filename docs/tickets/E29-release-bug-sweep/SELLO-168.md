@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P2
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** None
 - **Gate:** G2
 
@@ -19,3 +19,9 @@ its note.
 ### Notes
 `WalkingSliceJourneyTest.kt:169`; failed once in CI run 41583780253. Device work only on
 a new emulator. Review: lighter.
+
+### Resolution
+Already fixed on `main` by #320, merged after the audit commit: the note was never in
+the row, because the expense was saved without it. "Listo" was clicked by position
+while the keyboard was still lifting the composer, the click missed and the note was
+dropped. The test now presses "Listo" through its accessibility action.
