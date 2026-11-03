@@ -401,6 +401,21 @@ class GoalMovementViewModelTest {
     }
 
     @Test
+    fun afterASavedAporteProcessDeathBringsNothingBackToSaveAgain() = runTest {
+        val saved = SavedStateHandle(mapOf("goalId" to viaje, "withdrawal" to false))
+        val first = model(saved = saved)
+        first.keys("4", "5", "000")
+        first.onAction(GoalMovementAction.Submit)
+        assertTrue(first.state.value.closed)
+
+        val restored = model(saved = saved)
+
+        assertNull(restored.state.value.amount)
+        assertFalse(restored.state.value.canSubmit)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
     fun aNoteOverSixtyCharactersKeepsTheComposerOpenWithTheText() = runTest {
         val model = model(goal = viaje)
         model.onAction(GoalMovementAction.OpenComposer)
