@@ -21,6 +21,7 @@ import com.software.sello.domain.port.CommittedSchedule
 import com.software.sello.domain.port.CorrectionConfirmation
 import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
+import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseReads
@@ -37,7 +38,6 @@ import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.presentation.carry.CarryCorrectionText
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
-import com.software.sello.presentation.corrections.DeleteResult
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.recurrence.FollowingSchedule
@@ -455,15 +455,18 @@ class ExpenseEntryViewModel(
                 }
             }
 
+            // An unresolved save or deletion is only checked again: leaving would lose the
+            // operation that tells whether it happened.
             ExpenseEntryAction.Back -> when {
-                now.busy -> Unit
+                now.busy || submission.pending -> Unit
                 now.recorded != null -> progress.update { it.copy(closed = true) }
                 isTyped() -> progress.update { it.copy(confirmDiscard = true) }
                 else -> progress.update { it.copy(closed = true) }
             }
 
-            ExpenseEntryAction.DiscardConfirmed ->
+            ExpenseEntryAction.DiscardConfirmed -> if (!now.busy && !submission.pending) {
                 progress.update { it.copy(confirmDiscard = false, closed = true) }
+            }
 
             ExpenseEntryAction.KeepEditing -> progress.update { it.copy(confirmDiscard = false) }
 
@@ -543,27 +546,53 @@ class ExpenseEntryViewModel(
         val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
-            val error = when (corrections.delete(id, original.version, snapshot.generation)) {
-                DeleteResult.Deleted -> return@launch progress.update {
-                    it.copy(busy = false, closed = true)
+            settleDelete(
+                submission.send(commands::find, STEP_DELETE) { operation ->
+                    corrections.deleteExpense(
+                        DeleteExpense(operation, snapshot.generation, id, original.version)
+                    )
                 }
+            )
+        }
+    }
 
-                DeleteResult.Gone -> EntryError.ExpenseGone
+    private fun settleDelete(settled: Settled<CommittedExpense, ExpenseRejection>?) {
+        when (settled) {
+            // Something is still in flight and will settle; or nothing was left to ask about.
+            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
 
-                DeleteResult.Changed -> EntryError.ExpenseChanged
-
-                DeleteResult.DataChanged -> EntryError.DataChanged
-
-                DeleteResult.Failed -> EntryError.NotDeleted
-
-                DeleteResult.Unknown -> EntryError.DeleteUnknown
-
-                // The list of later months is shown above the form; it stays open (CP20).
-                DeleteResult.AwaitsConfirmation -> return@launch progress.update {
-                    it.copy(busy = false)
-                }
+            // A deletion sent from here was offered to undo by [corrections]; one found
+            // after an unknown outcome is offered now.
+            is Settled.Committed -> {
+                if (settled.found) corrections.expenseDeleted(settled.value.receipt)
+                progress.update { it.copy(busy = false, error = null, closed = true) }
             }
-            progress.update { it.copy(busy = false, error = error) }
+
+            is Settled.Unknown -> progress.update {
+                it.copy(busy = false, error = EntryError.DeleteUnknown)
+            }
+
+            Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
+
+            is Settled.Rejected -> {
+                val error = when (val reason = settled.reason) {
+                    is CommandRejection.VersionConflict -> EntryError.ExpenseChanged
+
+                    is CommandRejection.StaleGeneration -> EntryError.DataChanged
+
+                    is CommandRejection.Specific -> when (reason.reason) {
+                        ExpenseRejection.ExpenseMissing -> EntryError.ExpenseGone
+
+                        // The list of later months is shown above the form; it stays open (CP20).
+                        is ExpenseRejection.CorrectionUnconfirmed -> null
+
+                        else -> EntryError.NotDeleted
+                    }
+
+                    else -> EntryError.NotDeleted
+                }
+                progress.update { it.copy(busy = false, error = error) }
+            }
         }
     }
 
@@ -845,10 +874,10 @@ class ExpenseEntryViewModel(
     /** Asks storage how the saved operation ended. Only a receipt counts as saved. */
     private suspend fun recover() {
         progress.update { it.copy(busy = true, error = null) }
-        if (submission.step == STEP_SCHEDULE) {
-            settleSchedule(submission.recover(schedules::find))
-        } else {
-            settle(submission.recover(commands::find))
+        when (submission.step) {
+            STEP_SCHEDULE -> settleSchedule(submission.recover(schedules::find))
+            STEP_DELETE -> settleDelete(submission.recover(commands::find))
+            else -> settle(submission.recover(commands::find))
         }
     }
 
@@ -1003,6 +1032,7 @@ class ExpenseEntryViewModel(
         private const val KEY_SAVED_SCHEDULE = "expense.saved.schedule"
         private const val STEP_EXPENSE = "expense"
         private const val STEP_SCHEDULE = "schedule"
+        private const val STEP_DELETE = "delete"
         private const val KEY_ORIGIN_SCHEDULE = "expense.origin.schedule"
         private const val KEY_REPEAT_OFFERED = "expense.repeat.offered"
         private const val KEY_FOLLOWING = "expense.following"

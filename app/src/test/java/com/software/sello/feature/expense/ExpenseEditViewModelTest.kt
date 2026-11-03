@@ -839,4 +839,98 @@ class ExpenseEditViewModelTest {
         assertFalse(form.now.closed)
         assertEquals(1, commands.deleted.size)
     }
+
+    /** A deletion was sent and asking how it ended failed too. */
+    private fun ExpenseEntryViewModel.deleteWithUnknownOutcome() {
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        onAction(ExpenseEntryAction.Delete)
+    }
+
+    private fun deletionFound(operation: OperationId) = Outcome.Success(
+        commands.committed(operation, bread.id, OperationKind.DeleteExpense)
+    )
+
+    @Test
+    fun aDeletionWhoseOutcomeIsUnknownLocksTheFormAndCannotBeDiscardedOrSentAgain() {
+        val form = opened()
+        form.retype("52000")
+        form.deleteWithUnknownOutcome()
+
+        form.onAction(ExpenseEntryAction.Delete)
+        form.onAction(ExpenseEntryAction.Submit)
+        form.onAction(ExpenseEntryAction.Back)
+        val asked = form.now
+        form.onAction(ExpenseEntryAction.DiscardConfirmed)
+
+        assertEquals(EntryError.DeleteUnknown, form.now.error)
+        assertFalse(form.now.canDelete || form.now.editable || form.now.canSubmit)
+        assertFalse(asked.confirmDiscard || form.now.closed)
+        assertEquals(1, commands.deleted.size)
+        assertEquals(emptyList<Any>(), commands.edited)
+    }
+
+    @Test
+    fun checkingAnUnknownDeletionAgainAsksTheSameOperationAndOffersDeshacerWhenFound() {
+        commands.offer = {
+            commands.deleted.lastOrNull()?.let {
+                UndoOffer(it.operationId, it.expenseId, 6.seconds)
+            }
+        }
+        val form = opened()
+        form.deleteWithUnknownOutcome()
+        val operation = commands.deleted.single().operationId
+        commands.found = { deletionFound(it) }
+
+        form.onAction(ExpenseEntryAction.Retry)
+
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(1, commands.deleted.size)
+        assertTrue(form.now.closed)
+        assertEquals(CorrectionNotice.Deleted(canUndo = true), corrections.notice.value)
+    }
+
+    @Test
+    fun anUnknownDeletionFoundNotCommittedCanBeSentAgainAsANewOperation() {
+        val form = opened()
+        form.deleteWithUnknownOutcome()
+        commands.found = { Outcome.Success(null) }
+
+        form.onAction(ExpenseEntryAction.Retry)
+        assertNull(form.now.error)
+        assertTrue(form.now.canDelete)
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
+                replayed = false
+            )
+        }
+        form.onAction(ExpenseEntryAction.Delete)
+
+        assertEquals(2, commands.deleted.size)
+        assertTrue(commands.deleted[0].operationId != commands.deleted[1].operationId)
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun anUnknownDeletionIsStillCheckedWithTheSameOperationAfterTheProcessIsKilled() {
+        val saved = editing()
+        val first = opened(saved = saved)
+        first.deleteWithUnknownOutcome()
+        val operation = commands.deleted.single().operationId
+
+        val restored = form(saved.afterProcessDeath())
+        restored.onAction(ExpenseEntryAction.Back)
+        restored.onAction(ExpenseEntryAction.DiscardConfirmed)
+
+        assertEquals(EntryError.DeleteUnknown, restored.now.error)
+        assertFalse(restored.now.canDelete || restored.now.confirmDiscard || restored.now.closed)
+        commands.found = { deletionFound(it) }
+        restored.onAction(ExpenseEntryAction.Retry)
+        assertEquals(listOf(operation, operation, operation), commands.looked)
+        assertEquals(1, commands.deleted.size)
+        assertTrue(restored.now.closed)
+        // A new process cannot undo a deletion it did not make: it is only said.
+        assertEquals(CorrectionNotice.Deleted(canUndo = false), corrections.notice.value)
+    }
 }
