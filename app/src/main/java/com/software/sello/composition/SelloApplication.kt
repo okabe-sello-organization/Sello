@@ -63,6 +63,7 @@ class SelloApplication : Application() {
                             applicationContext,
                             financialZone,
                             opened.value.storage,
+                            opened.value.profile.generation,
                             variant.names
                         ) + variant.modules(opened.value.profile)
                     )

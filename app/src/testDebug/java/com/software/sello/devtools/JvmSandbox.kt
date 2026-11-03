@@ -76,7 +76,13 @@ class JvmSandbox(val scenario: Scenario) {
         graph = koinApplication {
             allowOverride(true)
             modules(
-                productionModules(context, zone, opened.value.storage, SandboxNames) +
+                productionModules(
+                    context,
+                    zone,
+                    opened.value.storage,
+                    opened.value.profile.generation,
+                    SandboxNames
+                ) +
                     composition.modules(opened.value.profile) +
                     module { single<MonotonicClock> { monotonic } }
             )

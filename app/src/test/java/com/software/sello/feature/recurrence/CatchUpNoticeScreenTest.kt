@@ -94,6 +94,9 @@ class CatchUpNoticeScreenTest {
 
     private var timedOut = 0
 
+    /** The notice the bar said it showed when its time ran out. */
+    private var timedOutWith: CatchUpNoticeState? = null
+
     /** The bar alone, with the test's clock held still until it is moved by hand. */
     private fun bar(reduced: Boolean = false, recommendedMillis: Long? = null) {
         rule.mainClock.autoAdvance = false
@@ -111,7 +114,13 @@ class CatchUpNoticeScreenTest {
             CompositionLocalProvider(LocalAccessibilityManager provides longer) {
                 SelloTheme(reducedMotion = reduced) {
                     Column {
-                        CatchUpNoticeBar(ready(recorded), onTimeout = { timedOut++ }) { viewed++ }
+                        CatchUpNoticeBar(
+                            ready(recorded),
+                            onTimeout = {
+                                timedOut++
+                                timedOutWith = it
+                            }
+                        ) { viewed++ }
                     }
                 }
             }
@@ -131,6 +140,8 @@ class CatchUpNoticeScreenTest {
 
         rule.mainClock.advanceTimeBy(400)
         assertEquals(1, timedOut)
+        // What counts as seen is what the bar showed, so Recibo marks no further than that.
+        assertEquals(ready(recorded), timedOutWith)
     }
 
     @Test

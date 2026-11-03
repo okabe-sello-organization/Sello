@@ -44,7 +44,7 @@ class ScheduleRecordReadsTest {
         val store = RoomScheduleCatchUp(ledger.database, { ledger.audit }, {
             uuid(ledger.nextRecord++)
         })
-        return (store.recordDue(d(today), 50) as CatchUpBatch.Recorded).occurrences
+        return (store.recordDue(1, d(today), 50) as CatchUpBatch.Recorded).occurrences
     }
 
     private suspend fun schedule(start: String, rule: RepeatRule, entry: ScheduledEntry) {

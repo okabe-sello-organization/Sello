@@ -492,6 +492,7 @@ class ScenarioRunner(
                 null -> null
                 is CatchUpStop.Failed -> "falló la puesta al día: ${name(stop.failure)}"
                 CatchUpStop.Unknown -> "no se sabe si el último lote de la puesta al día se guardó"
+                CatchUpStop.Stale -> "la historia cambió; la puesta al día espera al reinicio"
             }
         }
     }

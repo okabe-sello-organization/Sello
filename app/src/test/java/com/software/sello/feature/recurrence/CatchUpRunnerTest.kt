@@ -12,6 +12,7 @@ import com.software.sello.domain.port.ScheduleCatchUpStore
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.usecase.CatchUpResult
 import com.software.sello.domain.usecase.CatchUpSchedules
+import com.software.sello.domain.usecase.CatchUpStop
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.CompletableDeferred
@@ -42,18 +43,27 @@ class CatchUpRunnerTest {
         override fun observe(): Flow<ScheduleBookState> = book
     }
     private val asked = mutableListOf<LocalDate>()
+    private val generations = mutableListOf<Long>()
     private var hold: CompletableDeferred<Unit>? = null
-    private val store = ScheduleCatchUpStore { today, _ ->
+
+    /** The history's generation as stored; a restore or an erase moves it on. */
+    private var stored = 1L
+    private val store = ScheduleCatchUpStore { generation, today, _ ->
         asked += today
+        generations += generation
         hold?.await()
-        CatchUpBatch.Recorded(emptyList())
+        if (generation == stored) CatchUpBatch.Recorded(emptyList()) else CatchUpBatch.Stale
     }
 
-    private fun ready(revision: Long) = ReadState.Ready(ScheduleBook(1, revision, emptyList()))
+    private fun ready(revision: Long, generation: Long = 1) =
+        ReadState.Ready(ScheduleBook(generation, revision, emptyList()))
+
+    /** Catch-up for a process that started on generation 1. */
+    private fun catchUp() = CatchUpSchedules(store, clock, 1)
 
     @Test
     fun itRunsOnStartOnceTheScheduleBookIsRead() = runTest {
-        val runner = CatchUpRunner(CatchUpSchedules(store, clock), clock, reads, backgroundScope)
+        val runner = CatchUpRunner(catchUp(), clock, reads, backgroundScope)
         runCurrent()
         assertEquals(emptyList<LocalDate>(), asked)
 
@@ -67,7 +77,7 @@ class CatchUpRunnerTest {
     /** RE14: open from 27 to 28 October, the day change alone runs it again. */
     @Test
     fun re14aNewFinancialDayRunsItWithoutReopening() = runTest {
-        CatchUpRunner(CatchUpSchedules(store, clock), clock, reads, backgroundScope)
+        CatchUpRunner(catchUp(), clock, reads, backgroundScope)
         book.value = ready(4)
         runCurrent()
 
@@ -79,7 +89,7 @@ class CatchUpRunnerTest {
 
     @Test
     fun aCommittedChangeSuchAsASavedScheduleRunsItAgain() = runTest {
-        CatchUpRunner(CatchUpSchedules(store, clock), clock, reads, backgroundScope)
+        CatchUpRunner(catchUp(), clock, reads, backgroundScope)
         book.value = ready(4)
         runCurrent()
 
@@ -93,7 +103,7 @@ class CatchUpRunnerTest {
     fun changesDuringARunMakeOneMoreRunNotOneEach() = runTest {
         val running = CompletableDeferred<Unit>()
         hold = running
-        CatchUpRunner(CatchUpSchedules(store, clock), clock, reads, backgroundScope)
+        CatchUpRunner(catchUp(), clock, reads, backgroundScope)
         book.value = ready(4)
         runCurrent()
 
@@ -111,9 +121,30 @@ class CatchUpRunnerTest {
         assertEquals(listOf(LocalDate.of(2026, 10, 27), LocalDate.of(2026, 10, 28)), asked)
     }
 
+    /**
+     * SELLO-146: a restore commits generation 2 while this process, started on 1, still
+     * counts days in its old zone. Catch-up still asks for generation 1, so it is refused.
+     */
+    @Test
+    fun afterARestoreItStillAsksForTheGenerationTheProcessStartedOn() = runTest {
+        val runner = CatchUpRunner(catchUp(), clock, reads, backgroundScope)
+        book.value = ready(4)
+        runCurrent()
+
+        stored = 2
+        book.value = ready(1, generation = 2)
+        runCurrent()
+
+        assertEquals(listOf(1L, 1L), generations)
+        assertEquals(
+            CatchUpState.Finished(CatchUpResult(emptyList(), CatchUpStop.Stale)),
+            runner.state.value
+        )
+    }
+
     @Test
     fun anUnreadableScheduleBookStartsNothing() = runTest {
-        CatchUpRunner(CatchUpSchedules(store, clock), clock, reads, backgroundScope)
+        CatchUpRunner(catchUp(), clock, reads, backgroundScope)
 
         book.value = ReadState.Failed(StorageFailure.Unavailable("SQLiteException"), null)
         runCurrent()
