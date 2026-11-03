@@ -147,23 +147,34 @@ class GoalEditorViewModel(
                 else -> load()
             }
 
+            // An unresolved save keeps the form open: only Comprobar is offered.
             GoalEditorAction.Back -> when {
                 now.busy -> Unit
                 now.confirmDelete -> set(KEY_CONFIRM, false)
+                submission.pending -> Unit
                 dirty(now) -> mutable.update { it.copy(confirmDiscard = true) }
                 else -> finish(GoalEditorResult.Discarded)
             }
 
-            GoalEditorAction.DiscardConfirmed -> finish(GoalEditorResult.Discarded)
+            GoalEditorAction.DiscardConfirmed -> if (submission.pending) {
+                mutable.update { it.copy(confirmDiscard = false) }
+            } else {
+                finish(GoalEditorResult.Discarded)
+            }
 
             GoalEditorAction.KeepEditing -> mutable.update { it.copy(confirmDiscard = false) }
 
             GoalEditorAction.AskToDelete ->
-                if (stored != null && !now.busy && now.result == null) set(KEY_CONFIRM, true)
+                if (stored != null && !now.busy && now.result == null && !submission.pending) {
+                    set(KEY_CONFIRM, true)
+                }
 
             GoalEditorAction.CancelDelete -> if (!now.busy) set(KEY_CONFIRM, false)
 
-            GoalEditorAction.Delete -> if (now.confirmDelete && !now.busy) delete()
+            GoalEditorAction.Delete ->
+                if (now.confirmDelete && !now.busy && now.result == null && !submission.pending) {
+                    delete()
+                }
 
             GoalEditorAction.MarkComplete -> markComplete(now)
 
@@ -395,6 +406,18 @@ class GoalEditorViewModel(
                     )
                 }
                 if (!settle(step, settled)) return@launch
+                // Saved: a later Guardar sends only what is still different.
+                if (step == STEP_DETAILS) {
+                    stored = summary.copy(
+                        history = summary.history.copy(
+                            goal = summary.history.goal.copy(
+                                name = name,
+                                icon = icon,
+                                targetMonth = month
+                            )
+                        )
+                    )
+                }
             }
             finish(GoalEditorResult.Updated)
         }
@@ -430,7 +453,7 @@ class GoalEditorViewModel(
         }
 
         is Settled.Unknown -> {
-            mutable.update { it.copy(busy = false, saveError = GoalSaveError.Unknown) }
+            unknown()
             false
         }
 
@@ -497,6 +520,13 @@ class GoalEditorViewModel(
         return false
     }
 
+    /** Not known whether it saved: the confirm slip gives way to Comprobar. */
+    private fun unknown() {
+        saved[KEY_CONFIRM] = false
+        mutable.update { it.copy(busy = false, saveError = GoalSaveError.Unknown) }
+        render()
+    }
+
     /** Asks how the saved operation ended, with its own identifier, then reads again. */
     private suspend fun recover() {
         if (!submission.pending) return
@@ -505,8 +535,7 @@ class GoalEditorViewModel(
         when (val settled = submission.recover(commands::find)) {
             null -> mutable.update { it.copy(busy = false) }
 
-            is Settled.Unknown ->
-                mutable.update { it.copy(busy = false, saveError = GoalSaveError.Unknown) }
+            is Settled.Unknown -> unknown()
 
             Settled.NotCommitted -> notSaved(GoalSaveError.NotSaved)
 
@@ -520,13 +549,16 @@ class GoalEditorViewModel(
     }
 
     private fun finish(result: GoalEditorResult) {
+        saved[KEY_CONFIRM] = false
         saved[KEY_RESULT] = when (result) {
             is GoalEditorResult.Created -> "created:${result.goalId}"
             GoalEditorResult.Updated -> "updated"
             GoalEditorResult.Deleted -> "deleted"
             GoalEditorResult.Discarded -> "discarded"
         }
-        mutable.update { it.copy(busy = false, confirmDiscard = false, result = result) }
+        mutable.update {
+            it.copy(busy = false, confirmDiscard = false, confirmDelete = false, result = result)
+        }
     }
 
     private fun result(stored: String): GoalEditorResult = when {

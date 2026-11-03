@@ -443,6 +443,107 @@ class GoalEditorViewModelTest {
     }
 
     @Test
+    fun anUnknownCreateWhoseLookupFailsCanOnlyBeCheckedAgainNeverLeft() = runTest {
+        val model = model()
+        model.casaPropia()
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        model.onAction(GoalEditorAction.Submit)
+        val operation = commands.sent.single().operationId
+
+        model.onAction(GoalEditorAction.Back)
+        assertFalse(model.state.value.confirmDiscard)
+        model.onAction(GoalEditorAction.DiscardConfirmed)
+        assertNull(model.state.value.result)
+        assertEquals(GoalSaveError.Unknown, model.state.value.saveError)
+
+        commands.found = Outcome.Success(created().value)
+        model.onAction(GoalEditorAction.Retry)
+
+        assertEquals(listOf(operation, operation), commands.asked)
+        assertEquals(1, commands.sent.size)
+        assertEquals(GoalEditorResult.Created(viajeId), model.state.value.result)
+    }
+
+    @Test
+    fun withAnEditUnresolvedBorrarIsNotOfferedAndNothingIsLeftBusy() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        model.onAction(GoalEditorAction.NameChanged("Viaje a Cartagena"))
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        model.onAction(GoalEditorAction.Submit)
+
+        model.onAction(GoalEditorAction.AskToDelete)
+        model.onAction(GoalEditorAction.Delete)
+
+        assertFalse(model.state.value.confirmDelete)
+        assertFalse(model.state.value.busy)
+        assertTrue(commands.sent.single() is EditGoal)
+        model.onAction(GoalEditorAction.Back)
+        assertNull(model.state.value.result)
+    }
+
+    @Test
+    fun anUnknownDeleteClosesTheSlipAndIsCheckedWithItsOwnOperation() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        model.onAction(GoalEditorAction.AskToDelete)
+        model.onAction(GoalEditorAction.Delete)
+        val operation = commands.sent.single().operationId
+
+        val unknown = model.state.value
+        assertEquals(GoalSaveError.Unknown, unknown.saveError)
+        assertFalse(unknown.confirmDelete)
+        assertFalse(unknown.busy)
+        model.onAction(GoalEditorAction.AskToDelete)
+        assertFalse(model.state.value.confirmDelete)
+
+        commands.found = Outcome.Success(created().value)
+        model.onAction(GoalEditorAction.Retry)
+
+        assertEquals(listOf(operation, operation), commands.asked)
+        assertEquals(1, commands.sent.size)
+        assertEquals(GoalEditorResult.Deleted, model.state.value.result)
+    }
+
+    @Test
+    fun aDeletedGoalClearsTheSlipAndIsNeverDeletedTwice() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        model.onAction(GoalEditorAction.AskToDelete)
+        model.onAction(GoalEditorAction.Delete)
+
+        assertEquals(GoalEditorResult.Deleted, model.state.value.result)
+        assertFalse(model.state.value.confirmDelete)
+        model.onAction(GoalEditorAction.AskToDelete)
+        model.onAction(GoalEditorAction.Delete)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
+    fun whenTheNameSavesAndTheTargetDoesNotGuardarSendsOnlyTheTarget() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        model.onAction(GoalEditorAction.NameChanged("Viaje a Cartagena"))
+        model.onAction(GoalEditorAction.ClearAmount)
+        model.type("2", "000", "000")
+        // The name commits; the target's outcome is unknown and the lookup finds nothing.
+        commands.queue += targetChanged(change = null)
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Success(null)
+        model.onAction(GoalEditorAction.Submit)
+
+        assertEquals(GoalSaveError.NotSaved, model.state.value.saveError)
+        assertTrue(model.state.value.changed)
+        assertEquals("Viaje a Cartagena", model.state.value.name)
+
+        model.onAction(GoalEditorAction.Submit)
+
+        val again = commands.sent.drop(2).single() as ChangeGoalTarget
+        assertEquals(pesos(2_000_000) to 5L, again.target to again.expectedVersion)
+        assertEquals(GoalEditorResult.Updated, model.state.value.result)
+    }
+
+    @Test
     fun afterProcessDeathTheDraftIsBackAndASaveInFlightIsFoundNotSentAgain() = runTest {
         val saved = SavedStateHandle()
         val first = model(saved)
