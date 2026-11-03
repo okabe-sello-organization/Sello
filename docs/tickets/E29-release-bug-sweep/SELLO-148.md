@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-145
 - **Gate:** G2
 
@@ -16,6 +16,11 @@ recorded this month, as they are stored now, not the schedule's current terms.
 - RE18: on 10 Oct day 5 becomes day 25. October shows 950.000 recorded (5 Oct).
 - The 5 Oct entry edited to 900.000 counts 900.000; deleted, it counts nothing and the
   schedule leaves "Ya se anotaron" for October.
+- Ruling on #329 (R1): rent ended 30 Sep, its end removed on 20 Oct, so the checkpoint
+  jumps to 20 Oct while 5 Oct was never recorded. October shows nothing recorded for it
+  (no "Ya se anotaron", no "anotado 5 oct"); a daily café ended 10 Oct and extended on
+  20 Oct counts nothing for 11–20 Oct.
+- The row's "anotado" date comes from the stored entries too, not the checkpoint.
 - Sums are checked `Money`; tests use hand-worked literals.
 
 ### Notes

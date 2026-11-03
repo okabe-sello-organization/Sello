@@ -13,7 +13,7 @@ import com.software.sello.domain.policy.ScheduleStatus
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
-import com.software.sello.domain.port.ScheduleBookState
+import com.software.sello.domain.port.ScheduleMonthBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.presentation.money.MoneyFormatter
@@ -43,7 +43,8 @@ enum class ScheduleGroup { Due, Recorded, Later, Paused, Ended }
  * One schedule's row. A payment is named by its note, else its category ([categoryName]
  * with [iconKey]); an income by its note, else its source ([sourceKey], [sourceName]).
  * [soon] says one is still to come this month; [pausedFrom] and [endedOn] dim it. [group]
- * places it in the list; [recordedOn] is when this month's last occurrence went through.
+ * places it in the list; [recordedOn] is the day of this month's last occurrence it has an
+ * entry for, as the entries are stored now.
  */
 data class ScheduleRow(
     val id: String,
@@ -63,7 +64,10 @@ data class ScheduleRow(
     val recordedOn: LocalDate? = null
 )
 
-/** The month as a plan: what went through, what is still to come, both. Never recorded money. */
+/**
+ * The month: what went through, as its entries are stored now, what is still to come, and
+ * both.
+ */
 data class ScheduleMonthPlan(
     val month: YearMonth,
     val done: MoneyTextValue,
@@ -131,7 +135,7 @@ class SchedulesViewModel(
     ) { today, _ -> today }
         .flatMapLatest { today ->
             combine(
-                schedules.observe(),
+                schedules.observeMonth(YearMonth.from(today)),
                 snapshots.observe(YearMonth.from(today)),
                 tab
             ) { book, month, tab -> render(today, book, month, ScheduleTab.valueOf(tab)) }
@@ -147,15 +151,16 @@ class SchedulesViewModel(
 
     private fun render(
         today: LocalDate,
-        book: ScheduleBookState,
+        book: ScheduleMonthBookState,
         month: SnapshotState,
         tab: ScheduleTab
     ): SchedulesState {
-        val stored = when (book) {
+        val read = when (book) {
             ReadState.Loading -> return SchedulesState.Loading
             is ReadState.Failed -> return SchedulesState.Failed
-            is ReadState.Ready -> book.value.schedules
+            is ReadState.Ready -> book.value
         }
+        val stored = read.book.schedules
         val snapshot = when (month) {
             ReadState.Loading -> return SchedulesState.Loading
             is ReadState.Failed -> return SchedulesState.Failed
@@ -171,8 +176,10 @@ class SchedulesViewModel(
             today,
             current
         )
-        val plan = (ScheduleListPolicy.month(lines, current) as? Outcome.Success)?.value
+        val plan =
+            (ScheduleListPolicy.month(lines, read.records, current) as? Outcome.Success)?.value
         val rows = lines.map { line ->
+            val recordedOn = ScheduleListPolicy.recordedOn(line, read.records, current)
             val schedule = line.stored.schedule
             val entry = schedule.entry
             val category = (entry as? ScheduledEntry.Payment)?.let { categories[it.categoryId] }
@@ -195,10 +202,10 @@ class SchedulesViewModel(
                     line.status == ScheduleStatus.Ended -> ScheduleGroup.Ended
                     line.status == ScheduleStatus.Paused -> ScheduleGroup.Paused
                     line.toComeThisMonth -> ScheduleGroup.Due
-                    line.recordedThisMonth != null -> ScheduleGroup.Recorded
+                    recordedOn != null -> ScheduleGroup.Recorded
                     else -> ScheduleGroup.Later
                 },
-                recordedOn = line.recordedThisMonth
+                recordedOn = recordedOn
             )
         }
         return SchedulesState.Ready(

@@ -17,6 +17,13 @@ interface IncomeDao {
     )
     suspend fun recordedAfter(since: Long): List<IncomeEntity>
 
+    /** Every income a schedule recorded for an occurrence from [from] to [until], both included. */
+    @Query(
+        "SELECT * FROM income WHERE origin_schedule_id IS NOT NULL " +
+            "AND origin_date BETWEEN :from AND :until ORDER BY origin_date, origin_slot, sequence"
+    )
+    suspend fun recordedFor(from: String, until: String): List<IncomeEntity>
+
     @Query("SELECT * FROM income WHERE id = :id")
     suspend fun byId(id: String): IncomeEntity?
 

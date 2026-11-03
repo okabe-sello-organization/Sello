@@ -76,6 +76,13 @@ interface ExpenseDao {
     )
     suspend fun recordedAfter(since: Long): List<ExpenseEntity>
 
+    /** Every expense a schedule recorded for an occurrence from [from] to [until], both included. */
+    @Query(
+        "SELECT * FROM expense WHERE origin_schedule_id IS NOT NULL " +
+            "AND origin_date BETWEEN :from AND :until ORDER BY origin_date, origin_slot, sequence"
+    )
+    suspend fun recordedFor(from: String, until: String): List<ExpenseEntity>
+
     @Query("SELECT * FROM expense WHERE id = :id")
     suspend fun byId(id: String): ExpenseEntity?
 

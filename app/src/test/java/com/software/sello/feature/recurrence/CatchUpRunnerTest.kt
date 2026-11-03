@@ -13,6 +13,7 @@ import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.usecase.CatchUpResult
 import com.software.sello.domain.usecase.CatchUpSchedules
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,6 +41,10 @@ class CatchUpRunnerTest {
         override suspend fun book(): Outcome<ScheduleBook, StorageFailure> = error("not read here")
 
         override fun observe(): Flow<ScheduleBookState> = book
+
+        override suspend fun month(month: YearMonth) = error("not read here")
+
+        override fun observeMonth(month: YearMonth) = error("not read here")
     }
     private val asked = mutableListOf<LocalDate>()
     private var hold: CompletableDeferred<Unit>? = null
