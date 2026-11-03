@@ -205,14 +205,17 @@ object GoalPolicy {
             goal to positions.sortedWith(compareBy({ lines[it].date }, { it }))
         }
 
-    /** What [after] changed against [before]: a goal with no [before] earned nothing yet. */
+    /**
+     * What [after] changed against [before]: a goal with no [before] earned nothing yet.
+     * A place is earned when [after] holds it and [before] did not, lit or faded: a receipt
+     * of several lines can reach a place and fall below it again, which earns it (rule 4)
+     * and keeps it faded (rule 5). Lighting again and Meta follow where [after] ends.
+     */
     fun change(before: GoalProgress?, after: GoalProgress): GoalChange {
         fun earnedIn(progress: GoalProgress?, place: GoalPlace) =
             progress?.state(place).let { it is PlaceState.Earned || it is PlaceState.Kept }
         return GoalChange(
-            earned = GoalPlace.entries.filter {
-                !earnedIn(before, it) && after.state(it) is PlaceState.Earned
-            },
+            earned = GoalPlace.entries.filter { !earnedIn(before, it) && earnedIn(after, it) },
             relit = GoalPlace.entries.filter {
                 before?.state(it) is PlaceState.Kept && after.state(it) is PlaceState.Earned
             },
