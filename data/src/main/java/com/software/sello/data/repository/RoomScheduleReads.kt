@@ -7,7 +7,6 @@ import com.software.sello.data.mapper.profileFrom
 import com.software.sello.data.mapper.toDomain
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
-import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
@@ -57,8 +56,8 @@ class RoomScheduleReads(private val database: SelloDatabase) : ScheduleReads {
                     is Outcome.Success -> read.value
                     is Outcome.Failure -> return@withTransaction read
                 }
-                val from = EffectiveDates.storedText(month.atDay(1))
-                val until = EffectiveDates.storedText(month.atEndOfMonth())
+                val from = month.firstDayText
+                val until = month.lastDayText
                 val records = mutableListOf<ScheduleRecord>()
                 for (row in database.expenseDao().recordedFor(from, until)) {
                     when (val expense = row.toDomain()) {

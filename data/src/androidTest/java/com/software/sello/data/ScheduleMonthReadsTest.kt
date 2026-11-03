@@ -308,6 +308,46 @@ class ScheduleMonthReadsTest {
         )
     }
 
+    /**
+     * December 9999, the last month a date can be stored in, holds its schedules' entries
+     * through its 31st (#278, MonthBounds): a daily payment from 30 Dec and a daily income
+     * from 30 Nov. November 9999 keeps only its own.
+     */
+    @Test
+    fun theLastStorableMonthHoldsItsEntriesThroughItsLastDay() = runBlocking {
+        ledger.goTo("9999-11-30")
+        ledger.categories.submit(ledger.createCategory("Hogar"))
+        val daily = RepeatRule.EveryDays.of(1).valueOrFail()
+        listOf(
+            CreateSchedule(ledger.operation(), 1, payment(8_000), daily, d("9999-12-30"), null),
+            CreateSchedule(
+                ledger.operation(),
+                1,
+                ScheduledEntry.Income(IncomeSource.Salary, transactionPesos(10_000), null),
+                daily,
+                d("9999-11-30"),
+                null
+            )
+        ).forEach { assertTrue(ledger.schedules.submit(it) is Committed) }
+        ledger.goTo("9999-12-31")
+        assertEquals(34, catchUp("9999-12-31").size)
+
+        val december = read(YearMonth.of(9999, 12)).records
+        assertEquals(33, december.size)
+        assertEquals(
+            listOf(
+                "expense|9999-12-30|9999-12-30|8000",
+                "expense|9999-12-31|9999-12-31|8000",
+                "income|9999-12-31|9999-12-31|10000"
+            ),
+            summary(december).filter { it.startsWith("expense") || it.contains("|9999-12-31|") }
+        )
+        assertEquals(
+            listOf("income|9999-11-30|9999-11-30|10000"),
+            summary(read(YearMonth.of(9999, 11)).records)
+        )
+    }
+
     private fun edit(expense: ExpenseId, version: Long, pesos: Long, date: String) = EditExpense(
         operationId = ledger.operation(),
         generation = 1,
