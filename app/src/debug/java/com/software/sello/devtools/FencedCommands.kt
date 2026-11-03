@@ -112,7 +112,8 @@ class FencedScheduleCatchUp(
     private val fence: WriteFence,
     private val saved: () -> Unit
 ) : ScheduleCatchUpStore {
-    override suspend fun recordDue(today: LocalDate, limit: Int): CatchUpBatch = fence.write {
-        store.recordDue(today, limit)
-    }.also { if (it is CatchUpBatch.Recorded && it.occurrences.isNotEmpty()) saved() }
+    override suspend fun recordDue(generation: Long, today: LocalDate, limit: Int): CatchUpBatch =
+        fence.write {
+            store.recordDue(generation, today, limit)
+        }.also { if (it is CatchUpBatch.Recorded && it.occurrences.isNotEmpty()) saved() }
 }

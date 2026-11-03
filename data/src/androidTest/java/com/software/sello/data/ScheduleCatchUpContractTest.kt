@@ -52,7 +52,7 @@ class ScheduleCatchUpContractTest {
     }, { uuid(ledger.nextRecord++) })
 
     private suspend fun batch(today: String, limit: Int = CatchUpSchedules.BATCH) =
-        store().recordDue(d(today), limit)
+        store().recordDue(1, d(today), limit)
 
     private suspend fun categories() {
         ledger.categories.submit(ledger.createCategory("Hogar"))
@@ -153,7 +153,7 @@ class ScheduleCatchUpContractTest {
         val today = object : FinancialClock {
             override val today = MutableStateFlow(FinancialDay(d("2026-10-24"), ledger.zone))
         }
-        val result = CatchUpSchedules(store(), today).run()
+        val result = CatchUpSchedules(store(), today, 1).run()
 
         // 1 August to 19 September, then 20 September to 24 October: 85, 425.000.
         assertEquals(50, first.occurrences.size)
@@ -380,5 +380,52 @@ class ScheduleCatchUpContractTest {
             batch("2026-10-05")
         )
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM expense"))
+    }
+
+    /**
+     * SELLO-146: café on the 2nd in Transporte, then rent on the 5th in Hogar, archived
+     * behind the commands' back. The batch writes nothing, not even the café, and leaves
+     * both checkpoints; once Hogar is back, the next run records each exactly once.
+     */
+    @Test
+    fun aBatchThatFailsPartWayWritesNothingAndTheNextRunRecordsEachOnce() = runBlocking {
+        categories()
+        val cafe =
+            schedule("2026-10-01", RepeatRule.Monthly.of(2).valueOrFail(), payment(101, 5_000))
+        val rent =
+            schedule("2026-10-01", RepeatRule.Monthly.of(5).valueOrFail(), payment(100, 950_000))
+        ledger.database.openHelper.writableDatabase.execSQL(
+            "UPDATE category SET archived = 1 WHERE id = '${uuid(100)}'"
+        )
+        val revision = ledger.revision()
+        val receipts = ledger.long("SELECT COUNT(*) FROM operation_receipt")
+
+        assertEquals(
+            CatchUpBatch.Failed(StorageFailure.Integrity("schedule", rent.value, "category_id")),
+            batch("2026-10-05")
+        )
+        assertEquals(0L, ledger.long("SELECT COUNT(*) FROM expense"))
+        assertEquals(listOf("0|null|null", "1|null|null"), checkpoints())
+        assertEquals(revision, ledger.revision())
+        assertEquals(receipts, ledger.long("SELECT COUNT(*) FROM operation_receipt"))
+
+        ledger.database.openHelper.writableDatabase.execSQL(
+            "UPDATE category SET archived = 0 WHERE id = '${uuid(100)}'"
+        )
+        val recorded = batch("2026-10-05") as CatchUpBatch.Recorded
+
+        assertEquals(listOf(cafe, rent), recorded.occurrences.map { it.origin.schedule })
+        assertEquals(
+            listOf(
+                "2026-10-02|1|5000|${uuid(101)}|null|${cafe.value}",
+                "2026-10-05|1|950000|${uuid(100)}|null|${rent.value}"
+            ),
+            expenses()
+        )
+        assertEquals(955_000L, ledger.long("SELECT SUM(amount_minor) FROM expense"))
+        assertEquals(listOf("0|2026-10-02|1", "1|2026-10-05|1"), checkpoints())
+        assertEquals(revision + 1, ledger.revision())
+        assertEquals(CatchUpBatch.Recorded(emptyList()), batch("2026-10-05"))
+        assertEquals(2L, ledger.long("SELECT COUNT(*) FROM expense"))
     }
 }

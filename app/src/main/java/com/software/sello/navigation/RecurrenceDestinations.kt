@@ -5,6 +5,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
@@ -65,6 +66,8 @@ internal fun NavGraphBuilder.recurrenceDestinations(
         val state by shellState
         val notice by noticeState
         val model: CatchUpNoticeViewModel = viewModel(factory = viewModels)
+        // Read here, so Listo marks the list as drawn, never a newer one not shown yet.
+        val shown = model.state.collectAsStateWithLifecycle().value
         ShellScreen(
             state,
             monthNames(),
@@ -73,11 +76,11 @@ internal fun NavGraphBuilder.recurrenceDestinations(
             onBack = { navigation.popBackStack() },
             screenTitle = stringResource(R.string.catch_up_title),
             pastMonthRibbon = false,
-            // Listo dismisses the notice; Back keeps it.
+            // Listo dismisses what the list shows; Back keeps it.
             dock = SelloDock(
                 label = stringResource(R.string.catch_up_done_description),
                 actionLabel = stringResource(R.string.catch_up_done),
-                onClick = model::done,
+                onClick = { model.done(shown) },
                 icon = SelloIcon.Check
             ),
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
