@@ -357,6 +357,21 @@ class GoalsRenderModelTest {
     }
 
     @Test
+    fun withSeveralStarsAStarredGoalReadsAsFeaturedAndChoosingAnotherMovesNoStar() {
+        val celular = celular()
+        val viaje = viaje()
+        val vacunas = Goals(4, "Vacunas de Luna", 400_000, day(7, 15), "pets")
+        val stars = setOf(celular.id, vacunas.id)
+
+        // Celular is starred but Vacunas heads the list: still starred, nothing to move.
+        val starred = detail(celular, viaje, vacunas, featured = vacunas.id, starred = stars)
+        val unstarred = detail(viaje, celular, vacunas, featured = vacunas.id, starred = stars)
+
+        assertEquals(true to null, starred.featured to starred.replacesStar)
+        assertEquals(false to null, unstarred.featured to unstarred.replacesStar)
+    }
+
+    @Test
     fun mt05AGoalPastItsTargetWaitsAtTheMetaWithNothingMissing() {
         val over = Goals(5, "Viaje", 3_000_000, day(10, 1)).apply {
             aporte(2_950_000, day(10, 1))

@@ -196,6 +196,31 @@ class GoalsViewModelTest {
     }
 
     @Test
+    fun withSeveralStarsChoosingAddsAStarAndAStarredGoalSendsNothing() = runTest {
+        val motoId = "00000000-0000-4000-9000-000000000003"
+        reads.board.value = board(
+            summary(viajeId, 1_710_000, 3_000_000),
+            summary(celularId, 450_000, 1_200_000),
+            summary(motoId, 100_000, 9_000_000),
+            featured = celularId,
+            starred = setOf(celularId, motoId)
+        )
+        val viaje = detail()
+        watch(viaje)
+        val moto = detail(SavedStateHandle(mapOf("goalId" to motoId)))
+        watch(moto)
+
+        moto.onAction(GoalDetailAction.Feature)
+        viaje.onAction(GoalDetailAction.Feature)
+
+        assertEquals(true, ready(moto).goal.featured)
+        assertEquals(
+            StarGoal(commands.sent.single().operationId, 3, GoalId.of(viajeId).value()),
+            commands.sent.single()
+        )
+    }
+
+    @Test
     fun choosingTheGoalWhileAnotherIsStarredMovesThatStarInOneCommand() = runTest {
         reads.board.value = board(
             summary(viajeId, 1_710_000, 3_000_000),

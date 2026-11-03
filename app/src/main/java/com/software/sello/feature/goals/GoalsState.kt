@@ -133,12 +133,12 @@ data class GoalDetailModel(
     val movements: List<MovementModel>,
     /** Each month's net change (aportes less retiros), for the full list's month lines. */
     val movementMonths: Map<YearMonth, MoneyTextValue>,
-    /** Whether it is the goal Recibo shows, starred or by the fallback rule. */
+    /** Whether it is starred, or the goal Recibo shows by the fallback rule. */
     val featured: Boolean,
     /**
-     * The starred goal Recibo shows instead of this one, whose star choosing this one moves
-     * here; null when no goal is starred. Until Recibo shows several goals (SELLO-144),
-     * choosing keeps one star, as one choice did before.
+     * The one starred goal, whose star choosing this one moves here; null when none or
+     * several are starred, and choosing adds a star. Until Recibo shows several goals
+     * (SELLO-144), choosing keeps one star, as one choice did before.
      */
     val replacesStar: String? = null,
     /** The history and the goal as read, for a command to name what it was prepared against. */

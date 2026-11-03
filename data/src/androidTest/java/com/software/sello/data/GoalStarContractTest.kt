@@ -30,6 +30,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -111,6 +112,25 @@ class GoalStarContractTest {
         assertEquals(Outcome.Success(null), ledger.goals.find(sixth))
         assertEquals(starsOf(0, 1, 2, 3, 4), stars())
         assertEquals((0..4).map(::goal).toSet(), board().starred)
+    }
+
+    @Test
+    fun twoStarsSentTogetherAtFourGiveOneStarAndOneRefusalNamingTheLimit() = runBlocking {
+        goals(6)
+        for (n in 0..3) star(n)
+        val second = async(Dispatchers.Default, start = CoroutineStart.LAZY) { star(5) }
+        // The second star starts while the first is inside its transaction, past its count.
+        ledger.whenAWriteIsStamped = {
+            ledger.whenAWriteIsStamped = {}
+            second.start()
+        }
+
+        val first = async(Dispatchers.Default) { star(4) }.await()
+        val other = second.await()
+
+        assertTrue("$first", first is Committed)
+        assertEquals(Rejected(Specific(GoalRejection.StarLimit(5))), other)
+        assertEquals(starsOf(0, 1, 2, 3, 4), stars())
     }
 
     @Test
@@ -321,6 +341,47 @@ class GoalStarContractTest {
         assertTrue("$undone", undone is Committed)
         assertEquals(starsOf(0, 1), stars())
         assertEquals(setOf(goal(0), goal(1)), board().starred)
+    }
+
+    /** Makes the database refuse the receipt of [kind], the last write of its command. */
+    private fun refuseReceipt(kind: String) = ledger.database.openHelper.writableDatabase.execSQL(
+        "CREATE TRIGGER refuse_receipt BEFORE INSERT ON operation_receipt " +
+            "WHEN NEW.kind = '$kind' BEGIN SELECT RAISE(ABORT, 'refused'); END"
+    )
+
+    private val refused = Rejected(
+        CommandRejection.StorageFailed(StorageFailure.Unavailable("SQLiteConstraintException"))
+    )
+
+    @Test
+    fun aCompletionThatFailsAfterTakingTheStarLeavesTheGoalActiveAndStarred() = runBlocking {
+        goals(1)
+        star(0)
+        refuseReceipt("goal.complete")
+        val before = snapshot()
+        val completion = ledger.operation()
+
+        assertEquals(refused, complete(0, completion))
+        assertEquals(before, snapshot())
+        assertEquals(starsOf(0), stars())
+        assertNull(ledger.goals.completionUndoOffer())
+        assertEquals(Outcome.Success(null), ledger.goals.find(completion))
+    }
+
+    @Test
+    fun aDeshacerThatFailsAfterGivingTheStarBackLeavesTheGoalCompletedAndUnstarred() = runBlocking {
+        goals(1)
+        star(0)
+        val completion = ledger.operation()
+        complete(0, completion)
+        refuseReceipt("goal.undo_completion")
+        val before = snapshot()
+        val undo = ledger.operation()
+
+        assertEquals(refused, submit(UndoGoalCompletion(undo, 1, completion)))
+        assertEquals(before, snapshot())
+        assertEquals(emptyList<String>(), stars())
+        assertEquals(Outcome.Success(null), ledger.goals.find(undo))
     }
 
     @Test
