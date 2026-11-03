@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.GoalId
+import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CompleteGoal
@@ -16,6 +17,7 @@ import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import java.time.LocalDate
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,8 +63,8 @@ sealed interface CompletionState {
  * the goal's name are saved before it leaves, so an outcome that is not known is asked
  * about with that identifier, after a restart too, and never sent twice. The big moment
  * follows only a confirmed completion made here; one found again is said, not celebrated.
- * Deshacer is offered by [corrections] for about ten seconds after the moment, longer
- * while a screen reader is on.
+ * Deshacer is offered by [corrections] for about ten seconds counted from when the moment
+ * closes, longer while a screen reader is on (SELLO-092).
  */
 class GoalCompleter(
     private val saved: SavedStateHandle,
@@ -77,6 +79,9 @@ class GoalCompleter(
     val state: StateFlow<CompletionState> = mutable
     private val submission = Submission(saved, OPERATION, ids)
 
+    /** The completion the big moment on show celebrates. */
+    private var celebrated: OperationReceipt? = null
+
     init {
         if (submission.pending) scope.launch { recover() }
     }
@@ -89,24 +94,36 @@ class GoalCompleter(
         val goalId = (GoalId.of(target.goalId) as? Outcome.Success)?.value ?: return
         saved[NAME] = target.name
         mutable.value = CompletionState.Busy
-        val undoFor = (if (screenReader.active()) READING_UNDO else UNDO) + MOMENT
+        // Storage keeps Deshacer possible while the moment shows; what is offered is
+        // counted from the save, then again from when the moment closes.
+        val shownFor = undoFor()
         scope.launch {
             settle(
                 target,
                 submission.send(commands::find) { operation ->
                     corrections.completeGoal(
-                        CompleteGoal(operation, target.generation, goalId, target.version, undoFor),
-                        target.name
+                        CompleteGoal(operation, target.generation, goalId, target.version, KEPT),
+                        target.name,
+                        shownFor
                     )
                 }
             )
         }
     }
 
-    /** The big moment is closed: Listo or Ver mi meta. */
+    /**
+     * The big moment is closed: Listo or Ver mi meta. Deshacer's time starts now, so it
+     * never runs out behind the moment; a second call, after a recreation too, is ignored.
+     */
     fun done() {
-        if (mutable.value is CompletionState.Celebrating) mutable.value = CompletionState.Idle
+        if (mutable.value !is CompletionState.Celebrating) return
+        mutable.value = CompletionState.Idle
+        val receipt = celebrated ?: return
+        celebrated = null
+        corrections.goalCompletionMomentClosed(receipt, saved[NAME] ?: "", undoFor())
     }
+
+    private fun undoFor() = if (screenReader.active()) READING_UNDO else UNDO
 
     fun retry() {
         when {
@@ -128,6 +145,7 @@ class GoalCompleter(
 
             // Only a completion seen to commit here earns the big moment.
             is Settled.Committed -> if (target != null && !settled.found) {
+                celebrated = settled.value.receipt
                 CompletionState.Celebrating(
                     LogradaPlate(
                         target.name,
@@ -139,7 +157,7 @@ class GoalCompleter(
                     )
                 )
             } else {
-                corrections.goalCompleted(settled.value.receipt, saved[NAME] ?: "")
+                corrections.goalCompleted(settled.value.receipt, saved[NAME] ?: "", undoFor())
                 CompletionState.Idle
             }
 
@@ -156,8 +174,11 @@ class GoalCompleter(
         val UNDO = 10.seconds
         val READING_UNDO = 30.seconds
 
-        /** The big moment plays before Deshacer is seen. */
-        val MOMENT = 4.seconds
+        /**
+         * How long storage keeps Deshacer possible, so it outlasts a moment left on screen;
+         * only what [Corrections] offers can be taken, and that is counted as above.
+         */
+        val KEPT = 5.minutes
 
         const val OPERATION = "goal.completion.operation"
         const val NAME = "goal.completion.name"
