@@ -178,22 +178,21 @@ class CategoryDetailViewModelTest {
         )
     )
 
-    /** Opens Alimentación with three expenses of 1.000, its detail figures worked out. */
-    private fun TestScope.openedWithFigures(): CategoryDetailViewModel {
+    /** Opens Alimentación with [count] expenses of 1.000, its detail figures worked out. */
+    private fun TestScope.openedWithFigures(count: Int = 3): CategoryDetailViewModel {
         val vm = started()
-        commit(many(3))
+        commit(many(count))
         show(vm, 1)
         insights.state.value =
-            figuresOf(monthOf("2026-10-23", listOf(food, coffee), many(3)), 1_000)
-        assertEquals(plain("3.000"), vm.ready.category.spent)
+            figuresOf(monthOf("2026-10-23", listOf(food, coffee), many(count)), 1_000)
         return vm
     }
 
-    /** One expense deleted: the month is worked out again, a new revision. */
-    private fun deletedOne(): MonthlySnapshot {
+    /** The last of [count] expenses deleted: the month is worked out again, a new revision. */
+    private fun deletedOne(count: Int = 3): MonthlySnapshot {
         reads.stored.clear()
-        many(2).forEach { reads.stored[it.id] = it }
-        return monthOf("2026-10-23", listOf(food, coffee), many(2)).copy(revision = 2)
+        many(count - 1).forEach { reads.stored[it.id] = it }
+        return monthOf("2026-10-23", listOf(food, coffee), many(count - 1)).copy(revision = 2)
             .also(snapshots::ready)
     }
 
@@ -259,6 +258,45 @@ class CategoryDetailViewModelTest {
 
         assertEquals(true, vm.ready.stale)
         assertEquals(plain("2.000"), vm.ready.category.spent)
+    }
+
+    @Test
+    fun detailFiguresThatFailWhileTheScreenWaitsAreShownAtOnce() = runTest {
+        val vm = openedWithFigures()
+
+        val after = deletedOne()
+        insights.state.value = ReadState.Failed(
+            SnapshotFailure.Unrepresentable,
+            (figuresOf(after, 900) as ReadState.Ready).value
+        )
+
+        assertEquals(DetailInsightsState.Failed, vm.ready.insights)
+        assertEquals(plain("2.000"), vm.ready.category.spent)
+    }
+
+    @Test
+    fun aDeletedRowSwipedAgainWhileTheScreenWaitsAsksNothingMore() = runTest {
+        val vm = openedWithFigures()
+
+        vm.onAction(CategoryDetailAction.Delete(uuid(102)))
+        deletedOne()
+        vm.onAction(CategoryDetailAction.Delete(uuid(102)))
+
+        assertEquals(listOf(uuid(102)), commands.deleted.map { it.expenseId.value })
+        assertEquals(null, vm.ready.deleteProblem)
+    }
+
+    @Test
+    fun showMoreWhileTheScreenWaitsAsksForNoPage() = runTest {
+        val vm = openedWithFigures(45)
+
+        deletedOne(45)
+        repeat(3) { vm.onAction(CategoryDetailAction.ShowMore) }
+        advanceTimeBy(DETAIL_FIGURES_WAIT_MILLIS)
+        runCurrent()
+
+        assertEquals(plain("44.000"), vm.ready.category.spent)
+        assertEquals(20, vm.rows.rows.size)
     }
 
     @Test
