@@ -897,7 +897,7 @@ class ExpenseEditViewModelTest {
         commands.found = { Outcome.Success(null) }
 
         form.onAction(ExpenseEntryAction.Retry)
-        assertNull(form.now.error)
+        assertEquals(EntryError.NotDeleted, form.now.error)
         assertTrue(form.now.canDelete)
         commands.deleteAnswer = {
             CommandOutcome.Committed(

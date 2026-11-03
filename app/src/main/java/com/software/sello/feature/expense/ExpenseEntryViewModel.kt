@@ -572,7 +572,10 @@ class ExpenseEntryViewModel(
                 it.copy(busy = false, error = EntryError.DeleteUnknown)
             }
 
-            Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
+            // Asked with its own ID: nothing was deleted, and Borrar can be pressed again.
+            Settled.NotCommitted -> progress.update {
+                it.copy(busy = false, error = EntryError.NotDeleted)
+            }
 
             is Settled.Rejected -> {
                 val error = when (val reason = settled.reason) {
