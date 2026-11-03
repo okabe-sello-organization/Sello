@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -172,7 +173,9 @@ class InvestmentBackupRestoreTest {
         NoticeSeen(),
         { uuid(nextId++) },
         { ledger.audit },
-        dispatchers
+        dispatchers,
+        Mutex(),
+        { true }
     )
 
     private fun resets() = RoomResets(
@@ -183,7 +186,8 @@ class InvestmentBackupRestoreTest {
         PreferenceReset { PreferenceWrite.Saved },
         { ledger.zone },
         { ledger.audit },
-        dispatchers
+        dispatchers,
+        Mutex()
     )
 
     private suspend fun erase() {

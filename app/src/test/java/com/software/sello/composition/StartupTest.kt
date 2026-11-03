@@ -6,6 +6,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CheckedBackup
+import com.software.sello.domain.port.CheckedBackupFile
 import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
@@ -60,8 +61,12 @@ class StartupTest {
         ZoneId.of("America/Lima"),
         BackupSummary(categories = 2, expenses = 3, incomes = 1, 0, 0)
     )
+    private val file = object : CheckedBackupFile {
+        override val bytes = this@StartupTest.bytes
+        override val checked = this@StartupTest.checked
+    }
     private var read: Outcome<ChosenBackup, RestoreRejection> =
-        Outcome.Success(ChosenBackup(bytes, checked))
+        Outcome.Success(ChosenBackup(file))
     private val restored = RestoreOutcome.Restored(
         BackupSummary(2, 3, 1, 0, 0),
         PendingPreferences(null, null)
@@ -405,11 +410,13 @@ class StartupTest {
                 "read ${source.id}",
                 "move",
                 "open",
-                "stage [1, 2, 3]",
+                "stage checked [1, 2, 3]",
                 "replace 00000000-0000-4000-8000-000000005000"
             ),
             events
         )
+        // The file the check read is the one staged, so it is not read or parsed again.
+        assertSame(file, restores.stagedFiles.single())
         // The new store is never shown: the app starts again in a new process.
         assertEquals(StartupState.Failed(corrupt), startup.state.value)
     }
@@ -424,7 +431,7 @@ class StartupTest {
         startup.check(source)
         assertEquals(StartupRestore.NotSetAside, startup.restore())
 
-        read = Outcome.Success(ChosenBackup(bytes, checked))
+        read = Outcome.Success(ChosenBackup(file))
         startup.check(source)
         startup.forget()
         assertEquals(StartupRestore.NotSetAside, startup.restore())

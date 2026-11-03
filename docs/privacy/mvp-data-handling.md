@@ -24,6 +24,7 @@ while it is being shared.
 | `cache/exports/` | At most one export the person chose to share, CSV or JSON | Plaintext financial data while it exists. Removed by the next share and when Sello next starts. |
 | `files/sello-restore/` | A backup file chosen to restore, until it is confirmed, cancelled or a day old; after a restore, the backup's preferences until they are applied | Plaintext financial data while it exists. |
 | `files/sello-reset/pending.properties` | During an erase only: its operation ID and whether preferences were reset | No financial data. |
+| `files/sello-reset/compact.pending` | An empty file, after an erase whose compaction is not done yet | No data; removed once the database is compacted. |
 | `databases/sello-unreadable.db` (+ companions) | The database that could not be opened, kept aside by Empezar de cero or a restore at start-up | Plaintext financial data. Never shared or backed up; erased by Borrar todos los datos. ([ADR 0008](../decisions/0008-unreadable-storage-start-over.md)) |
 
 The debug build adds a separate sandbox with synthetic data: `sandbox.db`,
@@ -73,6 +74,10 @@ restore and the kept unreadable copy, compacts the database so no erased row sur
 in its free pages or log, and returns every preference to first-run. What remains: the
 profile (the device's zone, the next generation and revision) and one `history.reset`
 receipt with no subject. Saved backup files are outside Sello and are not touched.
+A compaction that cannot finish, such as a checkpoint kept busy, is retried at each
+start until it does. A restore never replaces the history while an erase's preferences
+are not back to first-run: it resets them first, or does not restore. The kept copy is
+deleted even when a restore came after the erase.
 
 ## Logs
 

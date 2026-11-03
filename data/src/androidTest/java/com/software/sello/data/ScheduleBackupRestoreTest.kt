@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -183,7 +184,9 @@ class ScheduleBackupRestoreTest {
         notice,
         { uuid(nextId++) },
         { target.audit },
-        dispatchers
+        dispatchers,
+        Mutex(),
+        { true }
     )
 
     /** What a schedule is, without its version, which a restore starts again at 1. */
@@ -410,7 +413,8 @@ class ScheduleBackupRestoreTest {
             PreferenceReset { PreferenceWrite.Saved },
             { ledger.zone },
             { ledger.audit },
-            dispatchers
+            dispatchers,
+            Mutex()
         )
         assertTrue(
             resets.reset(resets.preview().valueOrFail(), ledger.operation()) is ResetOutcome.Erased
@@ -452,7 +456,8 @@ class ScheduleBackupRestoreTest {
             PreferenceReset { PreferenceWrite.Saved },
             { ledger.zone },
             { ledger.audit },
-            dispatchers
+            dispatchers,
+            Mutex()
         )
         val preview = resets.preview().valueOrFail()
         assertEquals(3, preview.current.schedules)

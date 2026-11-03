@@ -5,7 +5,7 @@ import com.software.sello.data.FinancialStorage
 import com.software.sello.data.StorageNames
 import com.software.sello.data.backup.BackupBounds
 import com.software.sello.data.backup.BackupCodec
-import com.software.sello.data.backup.check
+import com.software.sello.data.backup.checkFile
 import com.software.sello.data.openFinancialStorage
 import com.software.sello.data.setAsideFinancialStorage
 import com.software.sello.domain.model.FinancialProfile
@@ -139,7 +139,7 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<ScheduleCatchUpStore> { storage.scheduleCatchUp(get(), get()) }
     single<BackupExports> { storage.backupExports(get(), get(), get(), get(), get(), get()) }
     single<DataExports> { storage.dataExports(get(), get()) }
-    single<Restores> { storage.restores(get(), get(), get(), get(), get(), get(), get()) }
+    single<Restores> { storage.restores(get(), get(), get(), get(), get(), get(), get(), get()) }
     // A new history after an erase takes the device's zone, read when the erase commits.
     single<Resets> { storage.resets(get(), ::deviceZone, get(), get()) }
 }
@@ -147,7 +147,8 @@ fun storageModule(storage: FinancialStorage): Module = module {
 /**
  * Reads a chosen document and checks it whole as a backup, before any storage is open:
  * how the start-up failure screen learns what a file would restore. At most
- * [maxBytes] plus one are read, and the check runs off the main thread.
+ * [maxBytes] plus one are read, and the check runs off the main thread. What it read
+ * is kept with the file, so restoring it parses nothing again.
  */
 suspend fun readStartupBackup(
     reader: DocumentReader,
@@ -160,9 +161,9 @@ suspend fun readStartupBackup(
     is DocumentRead.TooLarge -> Outcome.Failure(RestoreRejection.TooLarge)
 
     is DocumentRead.Read -> when (
-        val checked = withContext(dispatchers.default) { BackupCodec().check(read.bytes) }
+        val checked = withContext(dispatchers.default) { BackupCodec().checkFile(read.bytes) }
     ) {
-        is Outcome.Success -> Outcome.Success(ChosenBackup(read.bytes, checked.value))
+        is Outcome.Success -> Outcome.Success(ChosenBackup(checked.value))
         is Outcome.Failure -> checked
     }
 }

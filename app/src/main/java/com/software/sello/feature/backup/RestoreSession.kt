@@ -48,12 +48,13 @@ sealed interface RestoreStep {
     data object Failed : RestoreStep
 
     /**
-     * The replacement under [operationId] may have committed. Checking reads its receipt
+     * The replacement under [operationId] may have committed, or what it left to apply
+     * could not be read; null when no file still names it. Checking reads its receipt
      * again, never replaces; [checking] while that runs. [chosenSetAside]: a file chosen
      * meanwhile was not checked, because this one had to be settled first.
      */
     data class Unknown(
-        val operationId: OperationId,
+        val operationId: OperationId?,
         val checking: Boolean = false,
         val chosenSetAside: Boolean = false
     ) : RestoreStep
@@ -86,8 +87,11 @@ class RestoreSession(
     val step: StateFlow<RestoreStep> = state.asStateFlow()
 
     private val startUp: Job = scope.launch {
-        // Finished quietly if it can be; only preferences still failing are shown.
-        restores.applyPending()?.takeUnless { it.preferences.done }?.let {
+        // Finished quietly if it can be; only preferences still failing, or gone because
+        // the backup's could not be read, are shown.
+        restores.applyPending()?.takeUnless {
+            it.preferences.done && !it.preferencesUnreadable
+        }?.let {
             state.compareAndSet(RestoreStep.Idle, RestoreStep.Restored(it))
         }
     }
@@ -245,13 +249,13 @@ class RestoreSession(
      * Otherwise only what is read about [operation] itself answers it; nothing left to
      * read, or another operation, leaves it unknown rather than look like nothing happened.
      */
-    private suspend fun checked(operation: OperationId): RestoreStep {
+    private suspend fun checked(operation: OperationId?): RestoreStep {
         restores.pending()?.let { return RestoreStep.Restored(it) }
         val found = restores.staged()
         if (found.operationId() != operation) return RestoreStep.Unknown(operation)
         return when (found) {
             is StagedLookup.Waiting -> RestoreStep.Previewing(found.staged, notReplaced = true)
-            is StagedLookup.Replaced -> replaced(operation)
+            is StagedLookup.Replaced -> replaced(found.operationId)
             is StagedLookup.NotReplaced -> RestoreStep.Failed
             is StagedLookup.Unknown, StagedLookup.None -> RestoreStep.Unknown(operation)
         }

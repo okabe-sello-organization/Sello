@@ -105,4 +105,24 @@ class RestoreSectionTest {
             "No se restauró: tus datos no cambiaron. Si aún quieres, confírmalo de nuevo."
         ).assertIsDisplayed()
     }
+
+    @Test
+    fun preferencesThatCouldNotBeReadAreNamedWithNothingToApply() {
+        show(
+            RestoreStep.Restored(
+                RestoreOutcome.Restored(
+                    BackupSummary(2, 3, 1, 0, 0),
+                    PendingPreferences(null, null),
+                    preferencesUnreadable = true
+                )
+            )
+        )
+
+        rule.onNodeWithText("Historial financiero restaurado").assertIsDisplayed()
+        rule.onNodeWithText("No pudimos leer las preferencias del respaldo", substring = true)
+            .assertIsDisplayed()
+        rule.onNodeWithText("Ir al recibo").performClick()
+
+        assertEquals(listOf<RestoreAction>(RestoreAction.Leave), actions)
+    }
 }
