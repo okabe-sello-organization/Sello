@@ -71,7 +71,13 @@ class ReciboGoalViewModel(
         if (pills.isEmpty() && reached == null && completion == CompletionState.Idle) {
             ReciboGoalState.Hidden
         } else {
-            ReciboGoalState.Shown(pills, reached, completion, read?.revision ?: 0)
+            ReciboGoalState.Shown(
+                pills,
+                reached,
+                completion,
+                read?.revision ?: 0,
+                stale = board is ReadState.Failed
+            )
         }
     }.stateIn(
         viewModelScope,

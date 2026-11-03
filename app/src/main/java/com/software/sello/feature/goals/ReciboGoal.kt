@@ -56,6 +56,14 @@ fun ReciboGoal(
             modifier,
             verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
         ) {
+            // The last good goals after a failed read: said, never passed off as fresh.
+            if (state.stale) {
+                ErrorSlip(
+                    stringResource(R.string.metas_stale),
+                    { onAction(ReciboGoalAction.Retry) },
+                    Modifier.testTag(RECIBO_GOAL_STALE_TAG)
+                )
+            }
             when (state.pills.size) {
                 0 -> Unit
 
@@ -246,4 +254,5 @@ const val RECIBO_GOAL_TAG = "recibo.goal"
 const val RECIBO_GOAL_DOTS_TAG = "recibo.goal.dots"
 const val RECIBO_GOAL_REACHED_TAG = "recibo.goal.reached"
 const val RECIBO_GOAL_FAILED_TAG = "recibo.goal.failed"
+const val RECIBO_GOAL_STALE_TAG = "recibo.goal.stale"
 const val RECIBO_GOAL_ERROR_TAG = "recibo.goal.error"

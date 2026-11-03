@@ -96,10 +96,7 @@ class GoalDetailViewModel(
                 confirmingDelete = flags.confirming && state.goal.completedOn != null,
                 allMovements = flags.all,
                 completion = completion,
-                // Once the goal is starred, or completed, there is nothing left to replace.
-                replacing = ReplaceSheet(state.goal.starredOthers, flags.picked).takeIf {
-                    flags.replacing && !state.goal.starred && state.goal.completedOn == null
-                }
+                replacing = sheet(state.goal, flags)
             )
 
             else -> state
@@ -171,9 +168,29 @@ class GoalDetailViewModel(
         val id = (GoalId.of(goal.id) as? Outcome.Success)?.value ?: return
         when {
             goal.starred -> send(STEP_UNSTAR) { UnstarGoal(it, goal.generation, id) }
+
             goal.starredOthers.size >= GoalPolicy.MAX_STARRED -> openSheet()
-            else -> send(STEP_FEATURE) { StarGoal(it, goal.generation, id) }
+
+            else -> {
+                // A sheet left open from before is not wanted now there is room.
+                saved[KEY_REPLACE] = false
+                saved[KEY_PICKED] = null
+                send(STEP_FEATURE) { StarGoal(it, goal.generation, id) }
+            }
         }
+    }
+
+    /**
+     * The replace sheet while it is open and still needed: the goal is active and not
+     * starred, and the other starred goals fill every place. A pick no longer among them
+     * is dropped, so Reintentar never sends a star that moved meanwhile.
+     */
+    private fun sheet(goal: GoalDetailModel, flags: Flags): ReplaceSheet? {
+        val needed = flags.replacing && !goal.starred && goal.completedOn == null &&
+            goal.starredOthers.size >= GoalPolicy.MAX_STARRED
+        if (!needed) return null
+        val picked = flags.picked?.takeIf { id -> goal.starredOthers.any { it.id == id } }
+        return ReplaceSheet(goal.starredOthers, picked)
     }
 
     private fun openSheet() {
@@ -234,9 +251,10 @@ class GoalDetailViewModel(
 
             is Settled.Unknown -> ui.value = Ui(error = GoalDetailError.Unknown)
 
-            // Five were starred meanwhile: the star needs one to replace.
+            // Five were starred meanwhile and the board already shows them: pick one to replace.
             is Settled.Rejected if step == STEP_FEATURE &&
-                (settled.reason as? CommandRejection.Specific)?.reason is GoalRejection.StarLimit ->
+                (settled.reason as? CommandRejection.Specific)?.reason is GoalRejection.StarLimit &&
+                (ready()?.goal?.starredOthers?.size ?: 0) >= GoalPolicy.MAX_STARRED ->
                 openSheet()
 
             // Certain: nothing was written, so this attempt is over. The sheet keeps its pick.

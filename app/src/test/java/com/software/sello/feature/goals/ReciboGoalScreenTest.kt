@@ -167,6 +167,25 @@ class ReciboGoalScreenTest {
         )
 
     @Test
+    fun olderGoalsAreMarkedAndReadAgain() {
+        show(ReciboGoalState.Shown(listOf(viaje, fondo), null, stale = true))
+
+        rule.onNodeWithText("No pudimos leer tus metas de nuevo", substring = true).assertExists()
+        rule.onNode(hasText("Reintentar") and hasAnyAncestor(hasTestTag(RECIBO_GOAL_STALE_TAG)))
+            .performClick()
+        pillOf("Viaje a la costa", 1, 2, 57).assertExists()
+
+        assertEquals(listOf<Any>(ReciboGoalAction.Retry), actions)
+    }
+
+    @Test
+    fun freshGoalsAreNotMarked() {
+        show(ReciboGoalState.Shown(listOf(viaje, fondo), null))
+
+        rule.onNodeWithTag(RECIBO_GOAL_STALE_TAG).assertDoesNotExist()
+    }
+
+    @Test
     fun oneGoalIsTodaysPillWithNoDotsAndNoPlace() {
         show(ReciboGoalState.Shown(listOf(viaje), null))
 

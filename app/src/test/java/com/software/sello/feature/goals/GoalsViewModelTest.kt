@@ -444,8 +444,8 @@ class GoalsViewModelTest {
     }
 
     @Test
-    fun aStarRefusedForTheLimitOpensTheSheet() = runTest {
-        // Read with four stars; a fifth was starred elsewhere before this one landed.
+    fun aStarRefusedForTheLimitBeforeTheBoardShowsFiveSaysItWasNotSaved() = runTest {
+        // Read with one star; four more were starred elsewhere before this one landed.
         reads.board.value = board(
             summary(viajeId, 1_710_000, 3_000_000),
             summary(celularId, 450_000, 1_200_000),
@@ -460,8 +460,69 @@ class GoalsViewModelTest {
 
         model.onAction(GoalDetailAction.ToggleStar)
 
-        assertNull(ready(model).error)
-        assertEquals(listOf(celularId), ready(model).replacing?.choices?.map { it.id })
+        // No sheet of one goal: it says nothing was saved, and the board will show five.
+        assertEquals(GoalDetailError.NotSaved, ready(model).error)
+        assertNull(ready(model).replacing)
+    }
+
+    @Test
+    fun theSheetClosesOnceAStarIsFreedAndTheStarThenGoesStraightThrough() = runTest {
+        reads.board.value = fiveStarred()
+        val model = detail()
+        watch(model)
+        model.onAction(GoalDetailAction.ToggleStar)
+        assertEquals(5, ready(model).replacing?.choices?.size)
+
+        // Curso was unstarred elsewhere: four starred, room for this one.
+        reads.board.value = board(
+            summary(viajeId, 1_710_000, 3_000_000),
+            summary(celularId, 450_000, 1_200_000),
+            summary(motoId, 100_000, 1_000_000),
+            summary(biciId, 900_000, 1_000_000),
+            summary(fondoId, 500_000, 1_000_000),
+            summary(cursoId, 10_000, 1_000_000),
+            recibo = listOf(biciId, fondoId, celularId, motoId, viajeId),
+            starred = setOf(celularId, motoId, biciId, fondoId)
+        )
+        assertNull(ready(model).replacing)
+
+        model.onAction(GoalDetailAction.ToggleStar)
+        assertEquals(
+            StarGoal(commands.sent.single().operationId, 3, GoalId.of(viajeId).value()),
+            commands.sent.single()
+        )
+    }
+
+    @Test
+    fun aRefusedPickThatLostItsStarIsDroppedSoReintentarCannotSendIt() = runTest {
+        val otroId = "00000000-0000-4000-9000-000000000007"
+        reads.board.value = fiveStarred()
+        val model = detail()
+        watch(model)
+        model.onAction(GoalDetailAction.ToggleStar)
+        commands.next = CommandOutcome.Rejected(
+            CommandRejection.Specific(GoalRejection.NotStarred)
+        )
+        model.onAction(GoalDetailAction.Replace(motoId))
+        assertEquals(motoId, ready(model).replacing?.picked)
+
+        // Moto's star moved to Otro elsewhere: still five, but Moto is no choice now.
+        reads.board.value = board(
+            summary(viajeId, 1_710_000, 3_000_000),
+            summary(celularId, 450_000, 1_200_000),
+            summary(motoId, 100_000, 1_000_000),
+            summary(biciId, 900_000, 1_000_000),
+            summary(fondoId, 500_000, 1_000_000),
+            summary(cursoId, 10_000, 1_000_000),
+            summary(otroId, 200_000, 1_000_000),
+            recibo = listOf(biciId, fondoId, celularId, otroId, cursoId),
+            starred = setOf(celularId, otroId, biciId, fondoId, cursoId)
+        )
+
+        assertNull(ready(model).replacing?.picked)
+        assertEquals(false, ready(model).replacing?.choices?.any { it.id == motoId })
+        model.onAction(GoalDetailAction.Replace(motoId))
+        assertEquals(1, commands.sent.size)
     }
 
     @Test

@@ -251,13 +251,15 @@ sealed interface ReciboGoalState {
      * [pills] are the goals Recibo shows, in its order; [reached] another active goal at
      * 100 % that is not among them, waiting to be marked. Either may be empty while a
      * completion's moment is still open. [revision] is the board's: the carousel opens on
-     * the first goal again whenever it changes.
+     * the first goal again whenever it changes. [stale] when the goals are the last good
+     * read after a failed one: they are marked as older, with Reintentar.
      */
     data class Shown(
         val pills: List<ReciboGoalPill>,
         val reached: ReciboReachedGoal?,
         val completion: CompletionState = CompletionState.Idle,
-        val revision: Long = 0
+        val revision: Long = 0,
+        val stale: Boolean = false
     ) : ReciboGoalState
 }
 

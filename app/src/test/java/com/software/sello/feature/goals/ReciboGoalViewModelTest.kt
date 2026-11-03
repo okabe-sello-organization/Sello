@@ -266,6 +266,8 @@ class ReciboGoalViewModelTest {
         reads.board.value =
             ReadState.Failed(StorageFailure.Unavailable("x"), board(a, featured = viaje))
         assertEquals(viaje, shown(model).pill?.id)
+        // The last good goals, marked as older.
+        assertTrue(shown(model).stale)
 
         val before = reads.started
         model.onAction(ReciboGoalAction.Retry)
@@ -331,6 +333,24 @@ class ReciboGoalViewModelTest {
     private val moto = "00000000-0000-4000-9000-000000000004"
     private val bici = "00000000-0000-4000-9000-000000000005"
     private val fondo = "00000000-0000-4000-9000-000000000006"
+
+    @Test
+    fun goalsAreMarkedOlderOnlyWhileTheyAreTheLastGoodRead() = runTest {
+        reads.board.value = ReadState.Ready(board(a, b, recibo = listOf(viaje, celular)))
+        val model = model()
+        watch(model)
+        assertEquals(false, shown(model).stale)
+
+        reads.board.value = ReadState.Failed(
+            StorageFailure.Unavailable("x"),
+            board(a, b, recibo = listOf(viaje, celular))
+        )
+        assertEquals(true, shown(model).stale)
+        assertEquals(listOf(viaje, celular), shown(model).pills.map { it.id })
+
+        reads.board.value = ReadState.Ready(board(a, b, recibo = listOf(viaje, celular)))
+        assertEquals(false, shown(model).stale)
+    }
 
     @Test
     fun twoGoalsAreBothShownInTheBoardsOrderNotMetas() = runTest {

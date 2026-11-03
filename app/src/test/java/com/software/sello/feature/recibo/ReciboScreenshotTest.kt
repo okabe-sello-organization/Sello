@@ -157,14 +157,22 @@ class ReciboScreenshotTest {
     private val curso = ReciboGoalPill("curso", "Curso de inglés", "school", 5)
 
     /** Recibo with [pills] in the goal slot, moved [forward] goals on before the capture. */
-    private fun captureGoals(name: String, pills: List<ReciboGoalPill>, forward: Int, look: Look) {
+    private fun captureGoals(
+        name: String,
+        pills: List<ReciboGoalPill>,
+        forward: Int,
+        look: Look,
+        stale: Boolean = false
+    ) {
         rule.showSello(look) {
             Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk)) {
                 ReciboScreen(
                     overspent,
                     {},
                     PaddingValues(12.dp),
-                    goal = { ReciboGoal(ReciboGoalState.Shown(pills, null), {}, {}, {}) }
+                    goal = {
+                        ReciboGoal(ReciboGoalState.Shown(pills, null, stale = stale), {}, {}, {})
+                    }
                 )
             }
         }
@@ -181,6 +189,9 @@ class ReciboScreenshotTest {
         }
         rule.captureStill("src/test/screenshots/recibo-goals-$name-${look.label}.png")
     }
+
+    @Test
+    fun olderGoals() = captureGoals("stale", listOf(viaje, fondo, bici), 0, Look(), stale = true)
 
     @Test
     fun oneGoal() = captureGoals("one", listOf(viaje), 0, Look())
