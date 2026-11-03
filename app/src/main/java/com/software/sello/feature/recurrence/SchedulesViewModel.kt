@@ -43,8 +43,8 @@ enum class ScheduleGroup { Due, Recorded, Later, Paused, Ended }
  * One schedule's row. A payment is named by its note, else its category ([categoryName]
  * with [iconKey]); an income by its note, else its source ([sourceKey], [sourceName]).
  * [soon] says one is still to come this month; [pausedFrom] and [endedOn] dim it. [group]
- * places it in the list; [recordedOn] is the day of this month's last occurrence it has an
- * entry for, as the entries are stored now.
+ * places it in the list; [recordedOn] is the latest date in this month of the entries the
+ * schedule recorded, as they are stored now.
  */
 data class ScheduleRow(
     val id: String,
