@@ -94,6 +94,21 @@ class IncomeFormScreenTest {
     )
 
     @Test
+    fun aFailedRefreshKeepsTheDraftUnderTheOlderNoticeAndRetryReadsAgain() {
+        val actions = mutableListOf<IncomeFormAction>()
+        showForm(ready.copy(stale = true), actions)
+
+        rule.onNodeWithTag("income.form.stale").assertIsDisplayed()
+        rule.onNodeWithText(
+            "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día."
+        ).assertIsDisplayed()
+        rule.onNodeWithTag("income.loadFailed").assertDoesNotExist()
+        rule.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(listOf<IncomeFormAction>(IncomeFormAction.Retry), actions)
+    }
+
+    @Test
     fun theFormIsGreenWithAPlusAndOffersSourcesAsWordsWithTheirOwnAction() {
         val actions = mutableListOf<IncomeFormAction>()
         showForm(ready, actions)

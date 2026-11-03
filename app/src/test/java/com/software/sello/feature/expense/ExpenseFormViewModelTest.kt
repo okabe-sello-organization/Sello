@@ -16,6 +16,7 @@ import com.software.sello.domain.port.CreateExpense
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
@@ -32,6 +33,7 @@ import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatKind
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
@@ -105,7 +107,10 @@ class ExpenseFormViewModelTest {
 
     private val said get() = corrections.notice.value
 
-    private fun form(saved: SavedStateHandle = SavedStateHandle()) = ExpenseEntryViewModel(
+    private fun form(
+        saved: SavedStateHandle = SavedStateHandle(),
+        snapshots: MonthlySnapshots = this.snapshots
+    ) = ExpenseEntryViewModel(
         saved,
         commands,
         reads,
@@ -177,6 +182,50 @@ class ExpenseFormViewModelTest {
         assertTrue(failed.loadFailed && !failed.canSubmit)
         assertEquals(listOf(october, october), snapshots.observed)
         assertFalse(form.now.loadFailed)
+    }
+
+    @Test
+    fun aRefreshThatFailsKeepsTheDraftMarkedOlderAndItStillSaves() {
+        val observed = NewObservationSnapshots()
+        observed.ready(monthOf("2026-10-22", listOf(food, coffee), generation = 4))
+        val form = form(snapshots = observed)
+        form.type("48700")
+        form.pick(2)
+        val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
+
+        observed.of(october).value = ReadState.Failed(failure, lastGood = null)
+        val failed = form.now
+        // Reintentar starts a new observation, which knows nothing of the last good read.
+        form.onAction(ExpenseEntryAction.Retry)
+        val retried = form.now
+        form.submit()
+
+        for (shown in listOf(failed, retried)) {
+            assertTrue(shown.stale && !shown.loading && !shown.loadFailed && shown.editable)
+            assertEquals(listOf("Alimentación", "Café"), shown.categories.map { it.name })
+            assertEquals(uuid(2) to shown("48.700"), shown.categoryId to shown.amount)
+            assertTrue(shown.canSubmit)
+        }
+        val command = commands.created.single()
+        assertEquals(4L to categoryId(2), command.generation to command.categoryId)
+        assertEquals(pesos(48_700), command.amount)
+    }
+
+    @Test
+    fun aReadThatSucceedsAgainClearsTheOlderMarker() {
+        val observed = NewObservationSnapshots()
+        observed.ready(monthOf("2026-10-22", listOf(food)))
+        val form = form(snapshots = observed)
+        val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
+        observed.of(october).value = ReadState.Failed(failure, lastGood = null)
+        val failed = form.now
+
+        form.onAction(ExpenseEntryAction.Retry)
+        observed.ready(monthOf("2026-10-22", listOf(food, coffee)))
+
+        assertTrue(failed.stale)
+        assertFalse(form.now.stale || form.now.loadFailed)
+        assertEquals(listOf("Alimentación", "Café"), form.now.categories.map { it.name })
     }
 
     // --- Which category starts selected ---

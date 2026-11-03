@@ -5,18 +5,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.SnapshotFailure
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.policy.ScheduleStatus
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.ScheduleMonthBook
 import com.software.sello.domain.port.ScheduleMonthBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SnapshotState
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -95,7 +100,9 @@ sealed interface SchedulesState {
         val tab: ScheduleTab,
         val plan: ScheduleMonthPlan?,
         val rows: List<ScheduleRow>,
-        val ended: List<ScheduleRow>
+        val ended: List<ScheduleRow>,
+        /** The last refresh failed: this is the month as last read. */
+        val stale: Boolean = false
     ) : SchedulesState {
         val empty: Boolean get() = rows.isEmpty() && ended.isEmpty()
     }
@@ -129,14 +136,19 @@ class SchedulesViewModel(
     private fun initialTab(): ScheduleTab =
         if (saved.get<Boolean>(KEY_INCOME) == true) ScheduleTab.Incomes else ScheduleTab.Payments
 
+    /** The month as last read, so a failed refresh or a Retry never blanks it (ARCHITECTURE §6). */
+    private val lastBook = LastGoodRead<ScheduleMonthBook, StorageFailure>()
+    private val lastMonth = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
+
     val state: StateFlow<SchedulesState> = combine(
         clock.today.map { it.date }.distinctUntilChanged(),
         attempts
     ) { today, _ -> today }
         .flatMapLatest { today ->
+            val current = YearMonth.from(today)
             combine(
-                schedules.observeMonth(YearMonth.from(today)),
-                snapshots.observe(YearMonth.from(today)),
+                lastBook.keep(current, schedules.observeMonth(current)),
+                lastMonth.keep(current, snapshots.observe(current)),
                 tab
             ) { book, month, tab -> render(today, book, month, ScheduleTab.valueOf(tab)) }
         }
@@ -155,17 +167,19 @@ class SchedulesViewModel(
         month: SnapshotState,
         tab: ScheduleTab
     ): SchedulesState {
+        // A failed read with nothing read before is Failed; after a read it is kept, older.
         val read = when (book) {
             ReadState.Loading -> return SchedulesState.Loading
-            is ReadState.Failed -> return SchedulesState.Failed
+            is ReadState.Failed -> book.lastGood ?: return SchedulesState.Failed
             is ReadState.Ready -> book.value
         }
         val stored = read.book.schedules
         val snapshot = when (month) {
             ReadState.Loading -> return SchedulesState.Loading
-            is ReadState.Failed -> return SchedulesState.Failed
+            is ReadState.Failed -> month.lastGood ?: return SchedulesState.Failed
             is ReadState.Ready -> month.value
         }
+        val stale = book is ReadState.Failed || month is ReadState.Failed
         val categories = snapshot.categories.associateBy { it.category.id }
         val current = YearMonth.from(today)
         val lines = ScheduleListPolicy.lines(
@@ -224,7 +238,8 @@ class SchedulesViewModel(
                 )
             },
             rows = rows.filter { it.first != ScheduleStatus.Ended }.map { it.second },
-            ended = rows.filter { it.first == ScheduleStatus.Ended }.map { it.second }
+            ended = rows.filter { it.first == ScheduleStatus.Ended }.map { it.second },
+            stale = stale
         )
     }
 

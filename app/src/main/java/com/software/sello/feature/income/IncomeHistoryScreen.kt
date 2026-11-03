@@ -91,7 +91,7 @@ fun IncomeHistoryScreen(
             }
 
             is IncomeHistoryState.Ready -> if (state.lines.isEmpty() && !state.more) {
-                staleItem(state, onAction)
+                staleItem(state, split, onAction)
                 item {
                     EmptySlip(
                         title = stringResource(
@@ -107,7 +107,7 @@ fun IncomeHistoryScreen(
                 }
                 planItem(plan, today, onAction)
             } else {
-                staleItem(state, onAction)
+                staleItem(state, split, onAction)
                 item { CameIn(state, split, months.inSentence(state.month)) }
                 planItem(plan, today, onAction)
                 assign?.let { item { AssignNote(it, onAssign, onAction) } }
@@ -173,9 +173,10 @@ fun IncomeHistoryScreen(
 /** The last refresh failed: these are the figures as last read, and Reintentar reads again. */
 private fun LazyListScope.staleItem(
     state: IncomeHistoryState.Ready,
+    split: IncomeSplit?,
     onAction: (IncomeHistoryAction) -> Unit
 ) {
-    if (!state.stale) return
+    if (!state.stale && split?.stale != true) return
     item {
         ErrorSlip(
             stringResource(R.string.income_stale),
@@ -293,16 +294,18 @@ private fun MonthPlan(plan: IncomePlanView, today: LocalDate) {
 }
 
 /**
- * "Entró en octubre" and the recorded total; under the tear line, the split between
- * category budgets and what is unassigned. A negative unassigned amount is signed and
- * red, with the two facts behind it, and draws no segment of its own. Without the
- * summary, only the total is shown: no figure stands in for one that was not read.
+ * "Entró en octubre" and the summary's income, dated up to today as Resumen counts it;
+ * under the tear line, the split between category budgets and what is unassigned. A
+ * negative unassigned amount is signed and red, with the two facts behind it, and draws
+ * no segment of its own. Without the summary, only the recorded total is shown: no
+ * figure stands in for one that was not read.
  */
 @Composable
 private fun CameIn(state: IncomeHistoryState.Ready, split: IncomeSplit?, month: String) {
     AnswerSlip(
         label = stringResource(R.string.income_came_in, month),
-        amount = state.total,
+        // What came in up to today, as Resumen counts it; the list's total has every income.
+        amount = split?.income ?: state.total,
         stamp = null,
         ink = StampInk.Neutral,
         modifier = Modifier.testTag("income.hero")

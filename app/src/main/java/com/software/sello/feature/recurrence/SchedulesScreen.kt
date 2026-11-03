@@ -41,6 +41,7 @@ import com.software.sello.designsystem.component.StubButton
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.feature.recibo.StaleSlip
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
@@ -114,6 +115,15 @@ fun SchedulesScreen(
             }
 
             is SchedulesState.Ready -> {
+                // A refresh failed: this is the month as last read.
+                if (state.stale) {
+                    item {
+                        StaleSlip(
+                            { onAction(SchedulesAction.Retry) },
+                            Modifier.testTag("schedules.stale")
+                        )
+                    }
+                }
                 item { Summary(state.plan, state.tab, state.empty, today, onAdd) }
                 if (!state.empty) {
                     item { Groups(state, today, dates, onOpen) }

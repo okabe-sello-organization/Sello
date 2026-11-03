@@ -5,8 +5,10 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -220,6 +222,33 @@ class IncomeHistoryScreenTest {
                 )
             )
         )
+    }
+
+    /** 150.000 today and 100.000 dated tomorrow: what came in is Resumen's 150.000. */
+    @Test
+    fun theHeroLeavesOutIncomeDatedAfterTodayAsResumenDoes() {
+        val tomorrow = IncomeLine("i2", pesos("100.000"), "salary", null, today.plusDays(1), null)
+        show(
+            IncomeHistoryState.Ready(october, pesos("250.000"), listOf(tomorrow, salary), false),
+            split
+        )
+
+        rule.onAllNodes(hasAnyAncestor(hasTestTag("income.hero")) and hasText("150.000"))
+            .assertCountEquals(1)
+        rule.onAllNodes(hasAnyAncestor(hasTestTag("income.hero")) and hasText("250.000"))
+            .assertCountEquals(0)
+        rule.onNodeWithText("250.000").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun aSplitAsLastReadIsMarkedOlderAndRetryReadsAgain() {
+        show(ready(), split.copy(stale = true))
+
+        rule.onNodeWithTag("income.stale").assertIsDisplayed()
+        rule.onNodeWithTag("income.split").assertIsDisplayed()
+        rule.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.Retry), actions)
     }
 
     @Test

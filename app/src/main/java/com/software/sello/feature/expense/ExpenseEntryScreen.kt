@@ -90,6 +90,7 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Note
+import com.software.sello.feature.recibo.StaleSlip
 import com.software.sello.presentation.carry.CarryCorrectionContent
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
@@ -426,6 +427,10 @@ private fun Choices(
     announcementBusy: Boolean,
     announcementFailed: Boolean
 ) {
+    // A refresh failed: the categories are those last read and the draft stays.
+    if (state.stale) {
+        StaleSlip({ onAction(ExpenseEntryAction.Retry) }, Modifier.testTag(ENTRY_STALE_TAG))
+    }
     val addNew = onCreateCategory.takeIf { !state.editing }
     val order = rememberSelectedFirst(state.categories, state.categoryId) { it.id }
     val count = order.items.size + if (addNew != null) 1 else 0
@@ -769,6 +774,7 @@ const val ENTRY_CORRECTION_TAG = "expense-entry:correction"
 
 const val ENTRY_LOADING_TAG = "expense-entry:loading"
 const val ENTRY_LOAD_FAILED_TAG = "expense-entry:load-failed"
+const val ENTRY_STALE_TAG = "expense-entry:stale"
 const val ENTRY_AMOUNT_TAG = "expense-entry:amount"
 const val ENTRY_CATEGORIES_TAG = "expense-entry:categories"
 const val ENTRY_NEW_CATEGORY_TAG = "expense-entry:new-category"

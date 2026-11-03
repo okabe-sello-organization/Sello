@@ -76,6 +76,7 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.SourceName
+import com.software.sello.feature.recibo.StaleSlip
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
@@ -291,6 +292,12 @@ private fun IncomeAmount(state: IncomeFormState, onAction: (IncomeFormAction) ->
 /** Source chips (words only), Otro's name, the note, and what a correction changes. */
 @Composable
 private fun IncomeChoices(state: IncomeFormState, onAction: (IncomeFormAction) -> Unit) {
+    // A refresh failed: the form keeps what it read and the draft stays.
+    if (state.stale) {
+        StaleSlip({
+            onAction(IncomeFormAction.Retry)
+        }, Modifier.testTag("income.form.stale"))
+    }
     val order = rememberSelectedFirst(state.sourceKeys, state.sourceKey) { it }
     ChipRows(order.items.size, Modifier.testTag("income.sources")) { index ->
         val key = order.items[index]
