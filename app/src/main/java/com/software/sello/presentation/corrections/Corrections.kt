@@ -744,7 +744,8 @@ class Corrections(
         goalName: String = "",
         carryMonths: Int? = null
     ): DeleteResult {
-        if (until == null) {
+        // An offer whose time is already over, as for one found late, is only said.
+        if (until == null || until <= monotonic.elapsed()) {
             pending = null
             show(
                 offer(kind, canUndo = false, goalName = goalName, carryMonths = carryMonths),

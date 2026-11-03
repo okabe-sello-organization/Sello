@@ -2,6 +2,7 @@ package com.software.sello.feature.recibo
 
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.CategoryId
+import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
@@ -12,6 +13,7 @@ import com.software.sello.domain.port.ExpenseSearchPage
 import com.software.sello.domain.port.ReadState
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.categoryIn
+import com.software.sello.feature.expense.expenseId
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
@@ -22,6 +24,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
+import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
@@ -58,6 +61,7 @@ class CategoryExpensesViewModelTest {
     private var hold: CompletableDeferred<Unit>? = null
     private var nextOperation = 900
     private var watching: Job? = null
+    private lateinit var corrections: Corrections
     private val search = object : CategoryExpenseSearch {
         override suspend fun read(
             categoryId: CategoryId,
@@ -107,7 +111,7 @@ class CategoryExpensesViewModelTest {
                 )
             )
         }
-        val corrections =
+        corrections =
             Corrections(
                 commands,
                 HandIncomeCommands(),
@@ -128,7 +132,9 @@ class CategoryExpensesViewModelTest {
                 snapshots,
                 search,
                 testMoney(),
-                corrections
+                corrections,
+                commands,
+                { uuid(nextOperation++) }
             )
         watching =
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -363,4 +369,62 @@ class CategoryExpensesViewModelTest {
         assertEquals(false, open)
         assertEquals(true, archived)
     }
+
+    // --- An unknown deletion keeps its operation (#331) ---
+
+    private fun CategoryExpensesViewModel.deleteWithUnknownOutcome() {
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        onAction(CategoryExpensesAction.Delete(uuid(100)))
+    }
+
+    private fun SavedStateHandle.afterProcessDeath() =
+        SavedStateHandle(keys().associateWith { get<Any?>(it) })
+
+    @Test
+    fun checkingAnUnknownDeletionAsksTheSameOperationAndNeverSendsItAgain() = runTest {
+        val model = started()
+        model.deleteWithUnknownOutcome()
+        runCurrent()
+        val operation = commands.deleted.single().operationId
+        model.onAction(CategoryExpensesAction.Delete(uuid(101)))
+        runCurrent()
+        val whileUnknown = commands.deleted.size
+        commands.found = {
+            Outcome.Success(commands.committed(it, expenseId(100), OperationKind.DeleteExpense))
+        }
+
+        model.onAction(CategoryExpensesAction.CheckDelete)
+        runCurrent()
+
+        assertEquals(1, whileUnknown)
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(null, model.ready.problem)
+        assertEquals(CorrectionNotice.Deleted(canUndo = false), corrections.notice.value)
+    }
+
+    @Test
+    fun anUnknownDeletionIsAskedAboutAgainAfterTheProcessIsKilledAndAnotherSearchKeepsIt() =
+        runTest {
+            val saved = SavedStateHandle()
+            val first = started(saved)
+            first.deleteWithUnknownOutcome()
+            runCurrent()
+            val operation = commands.deleted.single().operationId
+            first.onAction(CategoryExpensesAction.Search("Compra 1"))
+            runCurrent()
+            val afterSearch = first.ready.problem
+            watching?.cancel()
+
+            val restored = started(saved.afterProcessDeath())
+
+            assertEquals(DeleteProblem.Unknown, afterSearch)
+            assertEquals(DeleteProblem.Unknown, restored.ready.problem)
+            assertEquals(listOf(operation, operation, operation), commands.looked)
+            commands.found = { Outcome.Success(null) }
+            restored.onAction(CategoryExpensesAction.CheckDelete)
+            runCurrent()
+            assertEquals(DeleteProblem.Failed, restored.ready.problem)
+            assertEquals(1, commands.deleted.size)
+        }
 }

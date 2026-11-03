@@ -357,8 +357,96 @@ class CarryCorrectionsTest {
         // Asked with the same operation, never sent again, and never called "not deleted".
         assertEquals(listOf(commands.deleted.last().operationId), commands.looked)
         assertEquals(2, commands.deleted.size)
-        assertEquals(CorrectionNotice.DeleteUnknown, corrections.notice.value)
+        assertEquals(CorrectionNotice.DeleteUnknown(), corrections.notice.value)
         assertNull(corrections.question.value)
+    }
+
+    /** A deletion confirmed after its list, whose outcome is unknown and could not be found. */
+    private suspend fun TestScope.confirmedWithUnknownOutcome() {
+        commands.deleteAnswer = { unconfirmed() }
+        corrections.delete(expenseId(101), 3, 7)
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        corrections.confirmQuestion()
+        runCurrent()
+    }
+
+    @Test
+    fun anUnknownConfirmedDeletionStaysUntilCheckedAndFoundIsOfferedToUndo() = test {
+        offerFor6Seconds()
+        confirmedWithUnknownOutcome()
+        val operation = commands.deleted.last().operationId
+        val waiting = corrections.notice.value
+        commands.found = {
+            Outcome.Success(
+                commands.committed(
+                    it,
+                    expenseId(101),
+                    com.software.sello.domain.model.OperationKind.DeleteExpense
+                )
+            )
+        }
+
+        corrections.checkDeletion()
+        runCurrent()
+
+        assertEquals(CorrectionNotice.DeleteUnknown(), waiting)
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(2, commands.deleted.size)
+        assertEquals(
+            CorrectionNotice.Deleted(canUndo = true, carryMonths = 3),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun anUnknownConfirmedDeletionFoundLateIsSaidWithNothingLeftToUndo() = test {
+        offerFor6Seconds()
+        confirmedWithUnknownOutcome()
+        // It waits to be checked: its time never runs out like a statement's.
+        advanceTimeBy(60_000)
+        runCurrent()
+        val waiting = corrections.notice.value
+        commands.found = {
+            Outcome.Success(
+                commands.committed(
+                    it,
+                    expenseId(101),
+                    com.software.sello.domain.model.OperationKind.DeleteExpense
+                )
+            )
+        }
+
+        corrections.checkDeletion()
+        runCurrent()
+
+        assertEquals(CorrectionNotice.DeleteUnknown(), waiting)
+        assertEquals(
+            CorrectionNotice.Deleted(canUndo = false, carryMonths = 3),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun anUnknownConfirmedDeletionFoundNotDoneSaysSoAndStillUnknownWaitsAgain() = test {
+        confirmedWithUnknownOutcome()
+        val operation = commands.deleted.last().operationId
+
+        corrections.checkDeletion()
+        runCurrent()
+        val stillUnknown = corrections.notice.value
+        commands.found = { Outcome.Success(null) }
+        corrections.checkDeletion()
+        runCurrent()
+
+        assertEquals(CorrectionNotice.DeleteUnknown(), stillUnknown)
+        assertEquals(listOf(operation, operation, operation), commands.looked)
+        assertEquals(CorrectionNotice.NotDeleted, corrections.notice.value)
+        assertEquals(2, commands.deleted.size)
+        // Nothing is left to ask about.
+        corrections.checkDeletion()
+        runCurrent()
+        assertEquals(3, commands.looked.size)
     }
 
     @Test

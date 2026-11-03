@@ -50,7 +50,8 @@ internal class ExpenseRowDeletions(
     )
 
     /** Asks again, with its own ID, how the unresolved deletion of [place] ended. */
-    suspend fun check(place: String): RowDeletion? = ended(submission(place).recover(commands::find))
+    suspend fun check(place: String): RowDeletion? =
+        ended(submission(place).recover(commands::find))
 
     private fun ended(settled: Settled<CommittedExpense, ExpenseRejection>?): RowDeletion? =
         when (settled) {
