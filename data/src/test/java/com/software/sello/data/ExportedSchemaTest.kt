@@ -16,7 +16,8 @@ class ExportedSchemaTest {
     private val versionFive = File(schemas, "5.json").readText()
     private val versionSix = File(schemas, "6.json").readText()
     private val versionSeven = File(schemas, "7.json").readText()
-    private val current = File(schemas, "8.json").readText()
+    private val versionEight = File(schemas, "8.json").readText()
+    private val current = File(schemas, "9.json").readText()
 
     private fun values(schema: String, key: String) =
         Regex("\"$key\"\\s*:\\s*\"?([\\w]+)\"?").findAll(schema).map { it.groupValues[1] }
@@ -46,7 +47,8 @@ class ExportedSchemaTest {
                 "5.json",
                 "6.json",
                 "7.json",
-                "8.json"
+                "8.json",
+                "9.json"
             ),
             schemas.list()!!.sorted()
         )
@@ -57,7 +59,8 @@ class ExportedSchemaTest {
         assertEquals(listOf("5"), values(versionFive, "version").toList())
         assertEquals(listOf("6"), values(versionSix, "version").toList())
         assertEquals(listOf("7"), values(versionSeven, "version").toList())
-        assertEquals(listOf("8"), values(current, "version").toList())
+        assertEquals(listOf("8"), values(versionEight, "version").toList())
+        assertEquals(listOf("9"), values(current, "version").toList())
     }
 
     @Test
@@ -139,13 +142,47 @@ class ExportedSchemaTest {
         assertEquals(
             mvpTables + "deleted_expense" + "deleted_income" + goalTables - "featured_goal" +
                 "starred_goal" + scheduleTables + investmentTables + "carry_chain",
-            values(current, "tableName").toSet()
+            values(versionEight, "tableName").toSet()
         )
         // One row per starred goal: the goal is the key, so no goal is starred twice.
-        val stars = current.substringAfter("\"tableName\": \"starred_goal\"")
+        val stars = versionEight.substringAfter("\"tableName\": \"starred_goal\"")
             .substringBefore("\"tableName\"")
         assertEquals(listOf("goal_id"), values(stars, "columnName").toList())
         assertTrue("PRIMARY KEY(`goal_id`)" in stars)
+    }
+
+    private fun table(schema: String, name: String) =
+        schema.substringAfter("\"tableName\": \"$name\"").substringBefore("\"tableName\"")
+            .substringBefore("\"setupQueries\"")
+
+    @Test
+    fun versionNineAddsOnlyTheDerivedSearchKeyAndIndexesForLongHistories() {
+        assertEquals(
+            values(versionEight, "tableName").toSet(),
+            values(current, "tableName").toSet()
+        )
+        val expense = table(current, "expense")
+        assertEquals(
+            values(table(versionEight, "expense"), "columnName").toList() + "search_key",
+            values(expense, "columnName").toList()
+        )
+        assertTrue("`search_key` TEXT NOT NULL DEFAULT ''" in expense)
+        assertEquals(
+            setOf(
+                "index_expense_created_at_origin_schedule_id",
+                "index_income_created_at_origin_schedule_id",
+                "index_operation_receipt_kind_committed_at"
+            ),
+            values(current, "name").toSet() - values(versionEight, "name").toSet()
+        )
+        // Nothing else of version 8 changed: with the additions taken out, the tables match.
+        for (name in values(versionEight, "tableName").toSet() - setOf(
+            "expense",
+            "income",
+            "operation_receipt"
+        )) {
+            assertEquals(name, table(versionEight, name), table(current, name))
+        }
     }
 
     @Test
@@ -158,6 +195,7 @@ class ExportedSchemaTest {
             versionFive to 7,
             versionSix to 8,
             versionSeven to 9,
+            versionEight to 9,
             current to 9
         )) {
             val actions = (values(schema, "onDelete") + values(schema, "onUpdate")).toList()

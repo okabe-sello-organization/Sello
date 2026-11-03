@@ -15,6 +15,10 @@ import kotlinx.coroutines.flow.Flow
  * What schedules recorded, from the entries themselves: one transaction reads the
  * expenses and incomes with an origin created after a moment, so a deleted one is gone
  * and nothing is kept apart from them. One that cannot be read fails the read.
+ *
+ * Bounded (SELLO-165), even when nothing was ever seen: the earliest created, at most
+ * [PER_KIND] of each kind, and then every entry of the moment where it stops. Listo marks
+ * seen up to the latest moment shown, so whatever is left out comes after it, next time.
  */
 class RoomScheduleRecordReads(private val database: SelloDatabase) : ScheduleRecordReads {
     override suspend fun recordedAfter(
@@ -22,8 +26,21 @@ class RoomScheduleRecordReads(private val database: SelloDatabase) : ScheduleRec
     ): Outcome<List<ScheduleRecord>, StorageFailure> = reading {
         database.withTransaction {
             val after = since?.toEpochMilli() ?: Long.MIN_VALUE
+            val expenses = database.expenseDao().recordedAfter(after, PER_KIND)
+            val incomes = database.incomeDao().recordedAfter(after, PER_KIND)
+            // A kind that filled its share may have more after its last row: stop at the
+            // earliest such moment, with all of it.
+            val stop = listOfNotNull(
+                expenses.takeIf { it.size == PER_KIND }?.last()?.createdAt,
+                incomes.takeIf { it.size == PER_KIND }?.last()?.createdAt
+            ).minOrNull()
             val records = mutableListOf<Placed>()
-            for (row in database.expenseDao().recordedAfter(after)) {
+            val expenseRows = if (stop == null) {
+                expenses
+            } else {
+                expenses.filter { it.createdAt < stop } + database.expenseDao().recordedAt(stop)
+            }
+            for (row in expenseRows) {
                 when (val expense = row.toDomain()) {
                     is Outcome.Success -> records += Placed(
                         row.effectiveDate,
@@ -34,7 +51,12 @@ class RoomScheduleRecordReads(private val database: SelloDatabase) : ScheduleRec
                     is Outcome.Failure -> return@withTransaction expense
                 }
             }
-            for (row in database.incomeDao().recordedAfter(after)) {
+            val incomeRows = if (stop == null) {
+                incomes
+            } else {
+                incomes.filter { it.createdAt < stop } + database.incomeDao().recordedAt(stop)
+            }
+            for (row in incomeRows) {
                 when (val income = row.toDomain()) {
                     is Outcome.Success -> records += Placed(
                         row.effectiveDate,
@@ -54,6 +76,11 @@ class RoomScheduleRecordReads(private val database: SelloDatabase) : ScheduleRec
     // Every command, catch-up included, moves the profile's revision.
     override fun observeRecordedAfter(since: Instant?): Flow<ScheduleRecordsState> =
         database.observeOnRevision { recordedAfter(since) }
+
+    companion object {
+        /** At most this many of each kind before the moment where a read stops. */
+        const val PER_KIND = 250
+    }
 }
 
 /** A record with where it falls: its date, then the order it was put down. */

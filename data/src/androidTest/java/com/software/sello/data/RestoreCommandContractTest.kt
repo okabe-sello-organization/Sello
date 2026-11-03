@@ -6,6 +6,7 @@ import com.software.sello.data.backup.BackupContents
 import com.software.sello.data.backup.FinancialSnapshot
 import com.software.sello.data.backup.PortablePreferences
 import com.software.sello.data.backup.RoomRestores
+import com.software.sello.data.repository.RoomCategoryExpenseSearch
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.AutomaticBudget
 import com.software.sello.domain.model.CategoryOrder
@@ -31,6 +32,7 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteExpense
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
+import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceFailure
@@ -140,38 +142,42 @@ class RestoreCommandContractTest {
         CategoryOrderingPreference(CategoryOrder.Alphabetical, CategoryOrderDirection.Ascending)
     )
 
-    private fun g01(preferences: PortablePreferences? = wanted) = BackupCodec().encode(
-        BackupContents(
-            exportedAt = Instant.parse("2026-10-22T14:30:00Z"),
-            financialMonth = YearMonth.of(2026, 10),
-            financial = FinancialSnapshot(
-                zone = lima,
-                revision = 9,
-                categories = listOf(category(1, "Comida"), category(2, "Café", archived = true)),
-                defaultLimits = listOf(
-                    DefaultLimit(
-                        ledger.categoryId(1),
-                        YearMonth.of(2026, 10),
-                        AutomaticBudget.Limit(finite(100_000))
-                    )
+    private fun g01(preferences: PortablePreferences? = wanted, plaza: String = "Plaza") =
+        BackupCodec().encode(
+            BackupContents(
+                exportedAt = Instant.parse("2026-10-22T14:30:00Z"),
+                financialMonth = YearMonth.of(2026, 10),
+                financial = FinancialSnapshot(
+                    zone = lima,
+                    revision = 9,
+                    categories = listOf(
+                        category(1, "Comida"),
+                        category(2, "Café", archived = true)
+                    ),
+                    defaultLimits = listOf(
+                        DefaultLimit(
+                            ledger.categoryId(1),
+                            YearMonth.of(2026, 10),
+                            AutomaticBudget.Limit(finite(100_000))
+                        )
+                    ),
+                    monthLimits = emptyList(),
+                    expenses = listOf(
+                        expense(101, 1, "2026-10-01", 1, 10_000),
+                        expense(102, 1, "2026-10-02", 2, 15_000, note = plaza),
+                        expense(103, 1, "2026-10-03", 3, 5_000)
+                    ),
+                    incomes = listOf(income(201, "2026-10-01", 1, 200_000, IncomeSource.Salary)),
+                    goals = emptyList(),
+                    starredGoals = emptySet(),
+                    schedules = emptyList(),
+                    investments = emptyList(),
+                    usdRates = emptyList(),
+                    carryChains = emptyList()
                 ),
-                monthLimits = emptyList(),
-                expenses = listOf(
-                    expense(101, 1, "2026-10-01", 1, 10_000),
-                    expense(102, 1, "2026-10-02", 2, 15_000, note = "Plaza"),
-                    expense(103, 1, "2026-10-03", 3, 5_000)
-                ),
-                incomes = listOf(income(201, "2026-10-01", 1, 200_000, IncomeSource.Salary)),
-                goals = emptyList(),
-                starredGoals = emptySet(),
-                schedules = emptyList(),
-                investments = emptyList(),
-                usdRates = emptyList(),
-                carryChains = emptyList()
-            ),
-            preferences = preferences
-        )
-    ).valueOrFail()
+                preferences = preferences
+            )
+        ).valueOrFail()
 
     /** Two expenses in Mercado, through the real commands. */
     private suspend fun currentHistory() {
@@ -231,6 +237,32 @@ class RestoreCommandContractTest {
         restores().stage(bytes).valueOrFail()
 
     private fun stagingFiles(): List<String> = files.restoreFolder.list()?.sorted().orEmpty()
+
+    /**
+     * A backup holds no search key (SELLO-165): the format is the one every earlier build
+     * wrote, and the restore builds the key from each note, so "\u00c1REA \u00d1u\u00f1oa"
+     * is found as "area nunoa".
+     */
+    @Test
+    fun aRestoreBuildsTheSearchKeyOfEveryNote() = runBlocking {
+        currentHistory()
+
+        restores().replace(stage(g01(plaza = "\u00c1REA \u00d1u\u00f1oa")))
+
+        assertEquals(
+            listOf("${uuid(101)}|", "${uuid(102)}|area nunoa", "${uuid(103)}|"),
+            ledger.rows("expense", "id", "search_key")
+        )
+        val found = RoomCategoryExpenseSearch(ledger.database).read(
+            ledger.categoryId(1),
+            YearMonth.of(2026, 10),
+            ExpenseOrder.Date,
+            "area nunoa",
+            0,
+            20
+        ).valueOrFail()
+        assertEquals(listOf(ExpenseId.of(uuid(102)).valueOrFail()), found.expenses.map { it.id })
+    }
 
     @Test
     fun aConfirmedRestoreReplacesTheWholeHistoryNotMergesIt() = runBlocking {

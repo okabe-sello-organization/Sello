@@ -1,5 +1,6 @@
 package com.software.sello.data.repository
 
+import com.software.sello.data.local.SearchKey
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.entity.DeletedExpenseEntity
 import com.software.sello.data.local.entity.ExpenseEntity
@@ -135,6 +136,7 @@ class RoomExpenseCommands internal constructor(
                 amountMinor = command.amount.money.minorUnits,
                 currency = command.amount.money.currency.code,
                 note = command.note?.value,
+                searchKey = SearchKey.of(command.note?.value),
                 newVersion = newVersion,
                 updatedAt = now.toEpochMilli()
             )

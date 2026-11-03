@@ -1,6 +1,7 @@
 package com.software.sello.data.repository
 
 import androidx.room.withTransaction
+import com.software.sello.data.local.SearchKey
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.mapper.decodeAll
 import com.software.sello.data.mapper.profileFrom
@@ -34,12 +35,14 @@ class RoomCategoryExpenseSearch(private val database: SelloDatabase) : CategoryE
                 ExpenseOrder.Amount -> "amount"
                 ExpenseOrder.Name -> "name"
             }
+            // Folded as every note is, so case and accents never keep an expense out.
+            val key = SearchKey.of(query)
             val rows = database.expenseDao().searchInCategory(
                 categoryId.value,
                 month.atDay(1).toString(),
                 month.plusMonths(1).atDay(1).toString(),
                 sort,
-                query,
+                key,
                 offset,
                 limit + 1
             )
@@ -47,7 +50,7 @@ class RoomCategoryExpenseSearch(private val database: SelloDatabase) : CategoryE
                 categoryId.value,
                 month.atDay(1).toString(),
                 month.plusMonths(1).atDay(1).toString(),
-                query
+                key
             )
             when (val read = rows.take(limit).decodeAll { it.toDomain() }) {
                 is Outcome.Failure -> read
