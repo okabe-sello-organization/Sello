@@ -15,6 +15,8 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
@@ -378,6 +380,22 @@ class ReciboGoalViewModelTest {
 
         val sent = commands.sent.single() as CompleteGoal
         assertEquals(GoalId.of(viaje).value() to 4L, sent.goalId to sent.expectedVersion)
+    }
+
+    @Test
+    fun retryAfterAFailedCompletionReadsTheGoalsAgain() = runTest {
+        val over = goal(viaje, "Viaje a la costa", 3_360_000, 3_000_000)
+        reads.board.value = ReadState.Ready(board(over, b, featured = viaje))
+        val model = model()
+        watch(model)
+        commands.next = CommandOutcome.Rejected(CommandRejection.VersionConflict(5))
+        model.onAction(ReciboGoalAction.MarkComplete(viaje))
+        assertEquals(CompletionState.Failed(GoalDetailError.NotSaved), shown(model).completion)
+
+        model.onAction(ReciboGoalAction.Retry)
+
+        assertEquals(2, reads.started)
+        assertEquals(CompletionState.Idle, shown(model).completion)
     }
 
     private val moto = "00000000-0000-4000-9000-000000000004"

@@ -711,6 +711,29 @@ class GoalsViewModelTest {
             CompletionState.Failed(GoalDetailError.NotSaved),
             (model.state.value as MetasState.Ready).completion
         )
+
+        // Reintentar clears the failure and reads the board again; the goals stay shown.
+        model.onAction(MetasAction.Retry)
+
+        assertEquals(2, fresh.started)
+        val after = model.state.value as MetasState.Ready
+        assertEquals(CompletionState.Idle, after.completion)
+        assertEquals(listOf(viajeId), after.goals.map { it.id })
+    }
+
+    @Test
+    fun theGoalPageRetryAfterAFailedCompletionReadsAgain() = runTest {
+        reads.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        val model = detail()
+        watch(model)
+        commands.next = CommandOutcome.Rejected(CommandRejection.VersionConflict(5))
+        model.onAction(GoalDetailAction.MarkComplete)
+        assertEquals(CompletionState.Failed(GoalDetailError.NotSaved), ready(model).completion)
+
+        model.onAction(GoalDetailAction.Retry)
+
+        assertEquals(2, reads.started)
+        assertEquals(CompletionState.Idle, ready(model).completion)
     }
 
     @Test

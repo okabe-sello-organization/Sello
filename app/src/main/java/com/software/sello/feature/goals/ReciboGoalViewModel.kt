@@ -95,6 +95,8 @@ class ReciboGoalViewModel(
             // A new attempt starts a new observation.
             ReciboGoalAction.Retry -> if (completer.state.value is CompletionState.Failed) {
                 completer.retry()
+                // Retry always reads again, also when it clears a failed completion.
+                attempts.update { it + 1 }
             } else {
                 attempts.update { it + 1 }
             }

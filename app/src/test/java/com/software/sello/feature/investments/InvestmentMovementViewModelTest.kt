@@ -56,7 +56,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -669,26 +669,30 @@ class InvestmentMovementViewModelTest {
     }
 
     @Test
-    fun vuelveAIntentarloAfterAFailedFirstReadReadsTheBoardAgain() = runTest {
+    fun vuelveAIntentarloAfterAFailedFirstReadReadsTheBoardAgainAndKeepsTheDraft() = runTest {
+        // A draft typed before process death, restored from the saved state.
+        val saved = SavedStateHandle(mapOf(InvestmentMovementViewModel.KEY_INVESTMENT to ecopetrol))
+        val first = model(saved = saved)
+        first.onAction(InvestmentMovementAction.Kind(Dividend))
+        first.keys("5", "000")
+        first.onAction(InvestmentMovementAction.DatePicked(day("2026-10-02")))
         val failed = ReadState.Failed(StorageFailure.Unavailable("hand"), null)
         val answers = ArrayDeque(listOf(failed, board(ecopetrolAcciones)))
+        // Every subscription starts from Loading, as the real read does.
         val once = object : InvestmentReads by reads {
             var reads = 0
 
             override fun observeBoard(): Flow<InvestmentBoardState> {
                 reads++
-                return flowOf(answers.removeFirst())
+                val answer = answers.removeFirst()
+                return flow {
+                    emit(ReadState.Loading)
+                    emit(answer)
+                }
             }
         }
-        val model = InvestmentMovementViewModel(
-            SavedStateHandle(mapOf(InvestmentMovementViewModel.KEY_INVESTMENT to ecopetrol)),
-            once,
-            commands,
-            clock,
-            ids,
-            money,
-            corrections
-        )
+        val model =
+            InvestmentMovementViewModel(saved, once, commands, clock, ids, money, corrections)
         assertTrue(model.now.loadFailed)
 
         model.onAction(InvestmentMovementAction.Retry)
@@ -696,6 +700,9 @@ class InvestmentMovementViewModelTest {
         assertEquals(2, once.reads)
         assertFalse(model.now.loadFailed)
         assertEquals(ecopetrol, model.now.investmentId)
+        assertEquals(Dividend, model.now.kind)
+        assertEquals("5.000", model.now.amount!!.digits)
+        assertEquals(day("2026-10-02"), model.now.date)
     }
 
     @Test
