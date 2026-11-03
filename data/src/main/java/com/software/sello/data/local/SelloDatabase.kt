@@ -75,7 +75,7 @@ import kotlin.coroutines.CoroutineContext
         UsdRateEntity::class,
         CarryChainEntity::class
     ],
-    version = 9,
+    version = SelloDatabase.VERSION,
     exportSchema = true
 )
 abstract class SelloDatabase : RoomDatabase() {
@@ -109,6 +109,9 @@ abstract class SelloDatabase : RoomDatabase() {
 
     companion object {
         const val FILE_NAME = "sello.db"
+
+        /** The schema this build writes; raised with every exported schema and migration. */
+        const val VERSION = 9
     }
 }
 

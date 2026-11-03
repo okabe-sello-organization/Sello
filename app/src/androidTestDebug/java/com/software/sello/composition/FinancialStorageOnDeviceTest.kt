@@ -4,6 +4,7 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.software.sello.TestData
+import com.software.sello.data.local.SelloDatabase
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.OverallBudget
@@ -52,7 +53,8 @@ class FinancialStorageOnDeviceTest {
     fun startupCreatedTheRealDatabaseWithExactlyOneProfile() {
         assertTrue(file.exists())
         val zone = stored { database ->
-            assertEquals(8, database.version)
+            // The real file, at the schema this build declares.
+            assertEquals(SelloDatabase.VERSION, database.version)
             assertEquals(1, database.count("profile"))
             database.rawQuery("SELECT financial_zone FROM profile WHERE id = 1", null).use {
                 it.moveToFirst()
