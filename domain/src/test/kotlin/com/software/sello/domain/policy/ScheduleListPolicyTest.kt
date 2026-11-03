@@ -179,6 +179,31 @@ class ScheduleListPolicyTest {
         )
     }
 
+    /**
+     * SELLO-145: paused before it starts, a schedule's pause begins on its start, 1 Dec,
+     * and it is listed under En pausa from that day on, not as active.
+     */
+    @Test
+    fun aSchedulePausedBeforeItStartsIsListedAsPaused() {
+        val later = payment(
+            8,
+            monthly(25),
+            "2026-12-01",
+            99_900,
+            pauses = listOf(SchedulePause(d("2026-12-01"), null))
+        )
+        val lines = ScheduleListPolicy.lines(listOf(later), today, october)
+
+        assertEquals(ScheduleStatus.Paused, lines.single().status)
+        assertEquals(d("2026-12-01"), lines.single().pausedFrom)
+        assertEquals(null, lines.single().next)
+        assertEquals(null, ScheduleListPolicy.nextDate(lines, today))
+        assertEquals(
+            SchedulesMonth(Money.cop(0), 0, Money.cop(0), 0, Money.cop(0), 0),
+            ScheduleListPolicy.month(lines, october).valueOrFail()
+        )
+    }
+
     @Test
     fun theNextOneIsTheNearestDateStillToComeAmongActiveSchedules() {
         // Rent next 5 Nov, the gym 15 Nov, the bills 28 Oct; the bus is paused and the

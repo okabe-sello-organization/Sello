@@ -259,6 +259,31 @@ class ScheduleBackupTest {
         for ((text, expected) in cases) assertEquals(expected, rejection(text))
     }
 
+    /**
+     * SELLO-145: rent that was twice a month and recorded its second slot on 5 October
+     * became monthly that day, leaving the checkpoint at 5 October, slot 1. A rule with
+     * one occurrence a day never records a second slot, so its checkpoint covers the whole
+     * day; twice a month, the slot still counts.
+     */
+    @Test
+    fun `a checkpoint covers its whole day unless the schedule repeats twice a month`() {
+        val rent = variant(
+            "\"schedule\": \"00000000-0000-4000-8000-000000000201\",\n          \"date\": \"2026-10-05\",\n          \"slot\": 1",
+            "\"schedule\": \"00000000-0000-4000-8000-000000000201\",\n          \"date\": \"2026-10-05\",\n          \"slot\": 2"
+        )
+        val salary = variant(
+            "\"schedule\": \"00000000-0000-4000-8000-000000000203\",\n          \"date\": \"2026-10-15\",\n          \"slot\": 1",
+            "\"schedule\": \"00000000-0000-4000-8000-000000000203\",\n          \"date\": \"2026-10-15\",\n          \"slot\": 2"
+        )
+
+        assertEquals(
+            Occurrence(d("2026-10-05"), 2),
+            codec.read(rent.toByteArray()).value().contents.financial.expenses.first()
+                .origin?.occurrence
+        )
+        assertEquals(BackupRejection.InvalidValue("financial.incomes[0].origin"), rejection(salary))
+    }
+
     @Test
     fun `an origin may name a schedule that was deleted since`() {
         val deleted = variant(
