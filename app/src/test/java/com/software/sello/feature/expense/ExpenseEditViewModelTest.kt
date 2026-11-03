@@ -640,14 +640,19 @@ class ExpenseEditViewModelTest {
      * Opened on the recorded bread; 52.000 with Este y los siguientes: the schedule takes
      * it (now at version 3) and the expense is refused.
      */
-    private fun halfSaved(saved: SavedStateHandle = editing(recorded)): ExpenseEntryViewModel {
+    private fun halfSaved(
+        saved: SavedStateHandle = editing(recorded),
+        rereadFails: Boolean = false
+    ): ExpenseEntryViewModel {
         scheduleBook.schedules += weekly
         schedules.answer = { command ->
             val change = command as ChangeSchedule
-            scheduleBook.schedules[0] = weekly.copy(
-                schedule = weekly.schedule.copy(entry = change.entry),
-                version = 3
+            val now = scheduleBook.schedules[0]
+            scheduleBook.schedules[0] = now.copy(
+                schedule = now.schedule.copy(entry = change.entry),
+                version = now.version + 1
             )
+            scheduleBook.failing = rereadFails
             CommandOutcome.Committed(schedules.committed(command.operationId), replayed = false)
         }
         commands.editAnswer = {
@@ -685,6 +690,10 @@ class ExpenseEditViewModelTest {
         assertEquals(3L, sent[1].expectedVersion)
         assertEquals(listOf(pesos(52_000), pesos(55_000)), commands.edited.map { it.amount })
         assertTrue(form.now.closed)
+        assertEquals(
+            CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = false),
+            corrections.notice.value
+        )
     }
 
     @Test
@@ -702,6 +711,7 @@ class ExpenseEditViewModelTest {
         )
         assertEquals(listOf(pesos(52_000), pesos(55_000)), commands.edited.map { it.amount })
         assertTrue(form.now.closed)
+        assertEquals(CorrectionNotice.Updated, corrections.notice.value)
     }
 
     @Test
@@ -720,6 +730,57 @@ class ExpenseEditViewModelTest {
         assertEquals(3L, sent[1].expectedVersion)
         assertEquals(listOf(pesos(52_000), pesos(55_000)), commands.edited.map { it.amount })
         assertTrue(form.now.closed)
+        assertEquals(
+            CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = false),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun aScheduleThatCouldNotBeReadAgainIsChangedAtItsCurrentVersion() {
+        val form = halfSaved(rereadFails = true)
+        scheduleBook.failing = false
+        form.retype("55000")
+        form.onAction(ExpenseEntryAction.Submit)
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
+
+        val sent = schedules.submitted.map { it as ChangeSchedule }
+        assertEquals(listOf(2L, 3L), sent.map { it.expectedVersion })
+        assertEquals(listOf(pesos(52_000), pesos(55_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun theRecordedTermsAgainAfterTheFollowingChangedStillAsk() {
+        val form = halfSaved()
+        form.retype("48700")
+        form.onAction(ExpenseEntryAction.DatePicked(LocalDate.parse("2026-10-06")))
+        form.onAction(ExpenseEntryAction.Submit)
+
+        assertTrue(form.now.askFollowing)
+        assertEquals(1, schedules.submitted.size)
+        assertEquals(1, commands.edited.size)
+    }
+
+    @Test
+    fun dismissingTheQuestionAndTypingWhatTheFollowingTookOnlyRetriesThisOne() {
+        val form = halfSaved()
+        form.retype("55000")
+        form.onAction(ExpenseEntryAction.Submit)
+        val asked = form.now
+        form.onAction(ExpenseEntryAction.FollowingDismissed)
+        form.retype("52000")
+        form.onAction(ExpenseEntryAction.Submit)
+
+        assertTrue(asked.askFollowing)
+        assertFalse(form.now.askFollowing)
+        assertEquals(1, schedules.submitted.size)
+        assertEquals(listOf(pesos(52_000), pesos(52_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+        assertEquals(
+            CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = false),
+            corrections.notice.value
+        )
     }
 
     // --- Carry: a change that reaches a closed month of a chain (ADR 0020 CP20, CP21, CP23) ---

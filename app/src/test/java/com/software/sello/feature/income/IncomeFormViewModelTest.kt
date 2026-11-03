@@ -831,13 +831,18 @@ class IncomeFormViewModelTest {
      * Opened on the recorded salary; 1.200.000 with Este y los siguientes: the schedule
      * takes it (now at version 5) and the income is refused.
      */
-    private fun halfSaved(saved: SavedStateHandle = editing(recordedSalary)): IncomeFormViewModel {
+    private fun halfSaved(
+        saved: SavedStateHandle = editing(recordedSalary),
+        rereadFails: Boolean = false
+    ): IncomeFormViewModel {
         scheduleBook.schedules += salarySchedule
         schedules.answer = { command ->
-            scheduleBook.schedules[0] = salarySchedule.copy(
-                schedule = salarySchedule.schedule.copy(entry = (command as ChangeSchedule).entry),
-                version = 5
+            val now = scheduleBook.schedules[0]
+            scheduleBook.schedules[0] = now.copy(
+                schedule = now.schedule.copy(entry = (command as ChangeSchedule).entry),
+                version = now.version + 1
             )
+            scheduleBook.failing = rereadFails
             CommandOutcome.Committed(schedules.committed(command.operationId), replayed = false)
         }
         commands.editAnswer = {
@@ -867,6 +872,10 @@ class IncomeFormViewModelTest {
         assertEquals(listOf(pesos(1_200_000)), sentAmounts())
         assertEquals(listOf(pesos(1_200_000), pesos(1_200_000)), commands.edited.map { it.amount })
         assertTrue(form.now.closed)
+        assertEquals(
+            CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = true),
+            corrections.notice.value
+        )
     }
 
     @Test
@@ -883,6 +892,10 @@ class IncomeFormViewModelTest {
         assertEquals(5L, (schedules.submitted[1] as ChangeSchedule).expectedVersion)
         assertEquals(listOf(pesos(1_200_000), pesos(1_300_000)), commands.edited.map { it.amount })
         assertTrue(form.now.closed)
+        assertEquals(
+            CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = true),
+            corrections.notice.value
+        )
     }
 
     @Test
@@ -897,6 +910,7 @@ class IncomeFormViewModelTest {
         assertEquals(listOf(pesos(1_200_000)), sentAmounts())
         assertEquals(listOf(pesos(1_200_000), pesos(1_300_000)), commands.edited.map { it.amount })
         assertTrue(form.now.closed)
+        assertEquals(CorrectionNotice.IncomeUpdated, corrections.notice.value)
     }
 
     @Test
@@ -914,6 +928,59 @@ class IncomeFormViewModelTest {
         assertEquals(5L, (schedules.submitted[1] as ChangeSchedule).expectedVersion)
         assertEquals(listOf(pesos(1_200_000), pesos(1_300_000)), commands.edited.map { it.amount })
         assertTrue(form.now.closed)
+        assertEquals(
+            CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = true),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun aScheduleThatCouldNotBeReadAgainIsChangedAtItsCurrentVersion() {
+        val form = halfSaved(rereadFails = true)
+        scheduleBook.failing = false
+        form.retype("1300000")
+        form.onAction(IncomeFormAction.Submit)
+        form.onAction(IncomeFormAction.FollowingChosen(alsoFollowing = true))
+
+        assertEquals(
+            listOf(4L, 5L),
+            schedules.submitted.map { (it as ChangeSchedule).expectedVersion }
+        )
+        assertEquals(listOf(pesos(1_200_000), pesos(1_300_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun theRecordedTermsAgainAfterTheFollowingChangedStillAsk() {
+        val form = halfSaved()
+        form.retype("1000000")
+        form.onAction(IncomeFormAction.DatePicked(LocalDate.parse("2026-10-06")))
+        form.onAction(IncomeFormAction.Submit)
+
+        assertTrue(form.now.askFollowing)
+        assertEquals(1, schedules.submitted.size)
+        assertEquals(1, commands.edited.size)
+    }
+
+    @Test
+    fun dismissingTheQuestionAndTypingWhatTheFollowingTookOnlyRetriesThisOne() {
+        val form = halfSaved()
+        form.retype("1300000")
+        form.onAction(IncomeFormAction.Submit)
+        val asked = form.now
+        form.onAction(IncomeFormAction.FollowingDismissed)
+        form.retype("1200000")
+        form.onAction(IncomeFormAction.Submit)
+
+        assertTrue(asked.askFollowing)
+        assertFalse(form.now.askFollowing)
+        assertEquals(listOf(pesos(1_200_000)), sentAmounts())
+        assertEquals(listOf(pesos(1_200_000), pesos(1_200_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+        assertEquals(
+            CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = true),
+            corrections.notice.value
+        )
     }
 
     // --- Varios: Anotar varios with what is typed as its line one (SELLO-132) ---

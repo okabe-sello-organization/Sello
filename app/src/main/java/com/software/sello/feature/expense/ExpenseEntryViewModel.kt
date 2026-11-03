@@ -157,6 +157,9 @@ class ExpenseEntryViewModel(
     private val drafts = SavedDraft(saved, KEY_DRAFT, Draft.serializer())
     private val originals = SavedDraft(saved, KEY_ORIGINAL, Original.serializer())
     private val followingTerms = SavedDraft(saved, KEY_FOLLOWING_TERMS, Terms.serializer())
+
+    /** The terms the Solo este / Este y los siguientes answer was given for. */
+    private val answeredTerms = SavedDraft(saved, KEY_FOLLOWING_FOR, Terms.serializer())
     private val submission = Submission(saved, KEY_OPERATION, ids)
 
     private val draft = MutableStateFlow(
@@ -479,6 +482,7 @@ class ExpenseEntryViewModel(
 
             is ExpenseEntryAction.FollowingChosen -> if (now.askFollowing && now.editable) {
                 saved[KEY_FOLLOWING] = action.alsoFollowing
+                answeredTerms.write(terms(draft.value))
                 progress.update { it.copy(askFollowing = false) }
                 submit()
             }
@@ -614,25 +618,26 @@ class ExpenseEntryViewModel(
     private fun termsChanged(draft: Draft, original: Original): Boolean =
         terms(draft) != Terms(original.digits, original.categoryId, original.note)
 
+    /** Solo este (false) or Este y los siguientes (true), if given for these terms. */
+    private fun answer(): Boolean? = saved.get<Boolean>(KEY_FOLLOWING)
+        ?.takeIf { answeredTerms.read() == terms(draft.value) }
+
+    /** The following payments already took these terms from this form. */
+    private fun followingHasThese(): Boolean = followingTerms.read() == terms(draft.value)
+
     private fun submit() {
         val original = progress.value.original
-        val following = progress.value.following
-        // The following payments took other terms than these: the choice is asked again,
-        // so this expense and its schedule never silently differ (SELLO-150).
-        val followingTook = followingTerms.read()
-        if (followingTook != null && followingTook != terms(draft.value)) {
-            followingTerms.clear()
-            saved[KEY_FOLLOWING] = null
-        }
         // New terms on an expense a schedule recorded: Solo este or Este y los siguientes.
-        if (editing && original != null && following != null &&
-            saved.get<Boolean>(KEY_FOLLOWING) == null && termsChanged(draft.value, original)
+        // An answer counts only for the terms it was given for, and once this form changed
+        // the schedule any other terms ask again, so the expense and its schedule never
+        // silently differ (SELLO-150).
+        if (editing && original != null && progress.value.following != null &&
+            answer() == null && !followingHasThese() &&
+            (termsChanged(draft.value, original) || followingTerms.read() != null)
         ) {
             return progress.update { it.copy(askFollowing = true) }
         }
-        if (editing && saved.get<Boolean>(KEY_FOLLOWING) == true && followingTerms.read() == null) {
-            return submitFollowing()
-        }
+        if (editing && answer() == true && !followingHasThese()) return submitFollowing()
         val draft = draft.value
         val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         val amount = (draft.amount.toTransactionAmount() as? Outcome.Success)?.value ?: return
@@ -717,8 +722,8 @@ class ExpenseEntryViewModel(
             is Settled.Rejected -> {
                 // Certain: nothing was written, so this attempt is over. The draft stays,
                 // and Solo este or Este y los siguientes is asked again unless the
-                // following payments already changed.
-                if (followingTerms.read() == null) saved[KEY_FOLLOWING] = null
+                // following payments already took these terms.
+                saved[KEY_FOLLOWING] = null
                 val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> EntryError.DataChanged
 
@@ -769,19 +774,22 @@ class ExpenseEntryViewModel(
 
     /**
      * The schedule's new terms go first: if they are refused nothing at all was written.
-     * The expense is corrected only once they are confirmed (see [followingSaved]).
+     * The expense is corrected only once they are confirmed (see [followingSaved]). The
+     * schedule is read again first, so the change is of its current version.
      */
     private fun submitFollowing() {
-        val following = progress.value.following ?: return
         val snapshot = (month.value as? ReadState.Ready)?.value ?: return
         val draft = draft.value
         val amount = (draft.amount.toTransactionAmount() as? Outcome.Success)?.value ?: return
         val category = (state.value.categoryId?.let(CategoryId::of) as? Outcome.Success)?.value
             ?: return
         val note = (Note.of(draft.note) as? Outcome.Success ?: return).value
-        val recurrence = following.schedule.recurrence
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
+            loadFollowing()
+            // The schedule is gone: nothing was sent; saving again corrects only this one.
+            val following = progress.value.following ?: return@launch followingRefused()
+            val recurrence = following.schedule.recurrence
             settleSchedule(
                 submission.send(schedules::find, STEP_SCHEDULE) { operation ->
                     schedules.submit(
@@ -801,9 +809,15 @@ class ExpenseEntryViewModel(
         }
     }
 
+    /** Nothing was written; the choice is asked again. */
+    private fun followingRefused() {
+        saved[KEY_FOLLOWING] = null
+        progress.update { it.copy(busy = false, error = EntryError.FollowingNotSaved) }
+    }
+
     /**
      * The following payments took the new terms; now this expense is corrected. The
-     * schedule is read again, so new terms after a refusal change it as it is now.
+     * schedule is read again, so it shows the terms it now has.
      */
     private suspend fun followingSaved() {
         followingTerms.write(terms(draft.value))
@@ -831,8 +845,7 @@ class ExpenseEntryViewModel(
             Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
 
             is Settled.Rejected -> if (editing) {
-                saved[KEY_FOLLOWING] = null
-                progress.update { it.copy(busy = false, error = EntryError.FollowingNotSaved) }
+                followingRefused()
             } else {
                 // Certain: nothing was written. The draft and the choice stay.
                 val error = when (val reason = settled.reason) {
@@ -905,7 +918,7 @@ class ExpenseEntryViewModel(
         if (editing) {
             // A correction has no receipt of its own: the lists show the expense as it
             // is now, and the notice says the change was saved.
-            if (followingTerms.read() != null) {
+            if (followingHasThese()) {
                 corrections.scheduleChanged(
                     CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = false)
                 )
@@ -1057,5 +1070,6 @@ class ExpenseEntryViewModel(
         private const val KEY_REPEAT_OFFERED = "expense.repeat.offered"
         private const val KEY_FOLLOWING = "expense.following"
         private const val KEY_FOLLOWING_TERMS = "expense.following.terms"
+        private const val KEY_FOLLOWING_FOR = "expense.following.for"
     }
 }

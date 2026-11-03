@@ -124,6 +124,9 @@ class IncomeFormViewModel(
 
     /** The draft whose terms the following incomes took from this form (SELLO-150). */
     private val followingTerms = SavedDraft(saved, FOLLOWING_TERMS, Draft.serializer())
+
+    /** The draft the Solo este / Este y los siguientes answer was given for. */
+    private val answeredTerms = SavedDraft(saved, FOLLOWING_FOR, Draft.serializer())
     private val submission = Submission(saved, OPERATION, ids)
     private val draft = MutableStateFlow(
         drafts.read() ?: Draft(AmountDraft.Empty, "salary", "", clock.today.value.date, "")
@@ -352,6 +355,7 @@ class IncomeFormViewModel(
 
             is IncomeFormAction.FollowingChosen -> if (now.askFollowing && now.editable) {
                 saved[FOLLOWING] = action.alsoFollowing
+                answeredTerms.write(draft.value)
                 progress.update { it.copy(askFollowing = false) }
                 submit()
             }
@@ -439,24 +443,27 @@ class IncomeFormViewModel(
         draft.amount != other.amount || source(draft) != source(other) ||
             Note.of(draft.note) != Note.of(other.note)
 
+    /** Solo este (false) or Este y los siguientes (true), if given for these terms. */
+    private fun answer(): Boolean? = saved.get<Boolean>(FOLLOWING)
+        ?.takeIf { answeredTerms.read()?.let { !termsChanged(draft.value, it) } == true }
+
+    /** The following incomes already took these terms from this form. */
+    private fun followingHasThese(): Boolean =
+        followingTerms.read()?.let { !termsChanged(draft.value, it) } == true
+
     private fun submit() {
         val original = progress.value.original
-        // The following incomes took other terms than these: the choice is asked again,
-        // so this income and its schedule never silently differ (SELLO-150).
-        val followingTook = followingTerms.read()
-        if (followingTook != null && termsChanged(draft.value, followingTook)) {
-            followingTerms.clear()
-            saved[FOLLOWING] = null
-        }
         // New terms on an income a schedule recorded: Solo este or Este y los siguientes.
+        // An answer counts only for the terms it was given for, and once this form changed
+        // the schedule any other terms ask again, so the income and its schedule never
+        // silently differ (SELLO-150).
         if (editing && original != null && progress.value.following != null &&
-            saved.get<Boolean>(FOLLOWING) == null && termsChanged(draft.value, original.draft)
+            answer() == null && !followingHasThese() &&
+            (termsChanged(draft.value, original.draft) || followingTerms.read() != null)
         ) {
             return progress.update { it.copy(askFollowing = true) }
         }
-        if (editing && saved.get<Boolean>(FOLLOWING) == true && followingTerms.read() == null) {
-            return submitFollowing()
-        }
+        if (editing && answer() == true && !followingHasThese()) return submitFollowing()
         val current = draft.value
         val generation = saved.get<Long>(GENERATION) ?: return
         val amount = (current.amount.toTransactionAmount() as? Outcome.Success)?.value ?: return
@@ -524,8 +531,8 @@ class IncomeFormViewModel(
             Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
 
             is Settled.Rejected -> {
-                // Asked again unless the following incomes already changed.
-                if (followingTerms.read() == null) saved[FOLLOWING] = null
+                // Asked again unless the following incomes already took these terms.
+                saved[FOLLOWING] = null
                 val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
 
@@ -548,18 +555,21 @@ class IncomeFormViewModel(
 
     /**
      * The schedule's new terms go first: if they are refused nothing at all was written.
-     * The income is corrected only once they are confirmed.
+     * The income is corrected only once they are confirmed. The schedule is read again
+     * first, so the change is of its current version.
      */
     private fun submitFollowing() {
-        val following = progress.value.following ?: return
         val generation = saved.get<Long>(GENERATION) ?: return
         val current = draft.value
         val amount = (current.amount.toTransactionAmount() as? Outcome.Success)?.value ?: return
         val source = (source(current) as? Outcome.Success)?.value ?: return
         val note = (Note.of(current.note) as? Outcome.Success ?: return).value
-        val recurrence = following.schedule.recurrence
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
+            loadFollowing()
+            // The schedule is gone: nothing was sent; saving again corrects only this one.
+            val following = progress.value.following ?: return@launch followingRefused()
+            val recurrence = following.schedule.recurrence
             settleSchedule(
                 submission.send(schedules::find, STEP_SCHEDULE) { operation ->
                     schedules.submit(
@@ -579,9 +589,15 @@ class IncomeFormViewModel(
         }
     }
 
+    /** Nothing was written; the choice is asked again. */
+    private fun followingRefused() {
+        saved[FOLLOWING] = null
+        progress.update { it.copy(busy = false, error = IncomeFormError.FollowingNotSaved) }
+    }
+
     /**
      * The following incomes took the new terms; now this income is corrected. The
-     * schedule is read again, so new terms after a refusal change it as it is now.
+     * schedule is read again, so it shows the terms it now has.
      */
     private suspend fun followingSaved() {
         followingTerms.write(draft.value)
@@ -609,8 +625,7 @@ class IncomeFormViewModel(
             Settled.NotCommitted -> progress.update { it.copy(busy = false, error = null) }
 
             is Settled.Rejected -> if (editing) {
-                saved[FOLLOWING] = null
-                progress.update { it.copy(busy = false, error = IncomeFormError.FollowingNotSaved) }
+                followingRefused()
             } else {
                 val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
@@ -667,7 +682,7 @@ class IncomeFormViewModel(
 
     private suspend fun committed(id: IncomeId) {
         if (editing) {
-            if (followingTerms.read() != null) {
+            if (followingHasThese()) {
                 corrections.scheduleChanged(
                     CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = true)
                 )
@@ -882,5 +897,6 @@ class IncomeFormViewModel(
         private const val REPEAT_OFFERED = "income.repeat.offered"
         private const val FOLLOWING = "income.following"
         private const val FOLLOWING_TERMS = "income.following.terms"
+        private const val FOLLOWING_FOR = "income.following.for"
     }
 }
