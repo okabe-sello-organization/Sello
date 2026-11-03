@@ -206,7 +206,9 @@ Every key is required, even when its value is `null`, and no other key is allowe
   100,000 records of at most 999.999.999.999 are spent against them. Carry in any month
   is therefore at most 120,000 × 999.999.999.999 + 100,000 × 999.999.999.999, about
   2.2 × 10^17, far below 9.2 × 10^18.
-- **Order:** `sequence` is kept as written, so history keeps its order. Files are
+- **Order:** `sequence` is kept as written, so history keeps its order. Every
+  `sequence` is a whole number from 0 to 9223372036854775806, one below the largest
+  64-bit number: the app puts the next one after the highest. Files are
   written categories by creation then ID, limits by category then month, records
   by date then sequence, goals by creation then ID with each history by sequence,
   schedules by `sequence` with each schedule's pauses by first day, investments by

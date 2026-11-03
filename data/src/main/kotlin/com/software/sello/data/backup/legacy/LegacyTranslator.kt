@@ -907,6 +907,13 @@ class LegacyTranslator(
                 }
                 val day = rateDay(updated) ?: return@records Skip(LegacyReason.InvalidDate)
                 if (day.isAfter(exportDay)) return@records Skip(LegacyReason.DateAfterExport)
+                // Only a rate from 0,1 to below 1.000.000 is worked out; any other is out of
+                // range as it is, and rounding one with a huge exponent would work through
+                // as many digits as the exponent says.
+                val whole = exact.precision().toLong() - exact.scale()
+                if (exact.signum() <= 0 || whole !in RATE_DIGITS) {
+                    return@records Skip(LegacyReason.AmountOutOfRange)
+                }
                 val rounded = exact.stripTrailingZeros().scale() > 2
                 val centavos = if (rounded) exact.setScale(2, RoundingMode.HALF_UP) else exact
                 val rate = UsdRate.of(centavos).orNull()
@@ -1111,6 +1118,9 @@ class LegacyTranslator(
     private companion object {
         const val NEWEST_VERSION = 2L
         const val CUSTOM = "CUSTOM:"
+
+        /** How many digits a rate worth working out has before its decimal point. */
+        val RATE_DIGITS = 0L..6L
 
         /** How FinanceTracker writes `exportedAt`: local time, no zone, no seconds. */
         val exportedFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")

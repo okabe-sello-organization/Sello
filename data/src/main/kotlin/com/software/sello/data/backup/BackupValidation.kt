@@ -145,6 +145,15 @@ private fun <T> Outcome<T, *>.or(path: String): T = when (this) {
 private fun whole(element: JsonElement, path: String): Long =
     element.wholeNumberOrNull() ?: invalid(path)
 
+/**
+ * A recording or creation position: [whole], and below [Long.MAX_VALUE]. The app puts the
+ * next goal event, movement, expense, income, schedule or rate after the highest position
+ * and cannot go past the largest, so a file holding it would leave a goal it cannot read
+ * back or a list it can never add to.
+ */
+private fun sequenceNumber(element: JsonElement, path: String): Long =
+    whole(element, path).also { if (it == Long.MAX_VALUE) invalid(path) }
+
 /** [whole], or an explicit `null`. */
 private fun optionalWhole(element: JsonElement, path: String): Long? =
     if (element is JsonNull) null else whole(element, path)
@@ -411,7 +420,7 @@ private fun expenses(
         val path = "financial.expenses[$index]"
         val id = ExpenseId.of(row.id).or("$path.id")
         if (!ids.add(id.value)) reject(BackupRejection.DuplicateId("$path.id"))
-        val sequence = whole(row.sequence, "$path.sequence")
+        val sequence = sequenceNumber(row.sequence, "$path.sequence")
         if (!sequences.add(sequence)) reject(BackupRejection.DuplicateEntry("$path.sequence"))
         Expense(
             id = id,
@@ -436,7 +445,7 @@ private fun incomes(wire: List<IncomeV3>, handled: Map<ScheduleId, Occurrence?>)
         val path = "financial.incomes[$index]"
         val id = IncomeId.of(row.id).or("$path.id")
         if (!ids.add(id.value)) reject(BackupRejection.DuplicateId("$path.id"))
-        val sequence = whole(row.sequence, "$path.sequence")
+        val sequence = sequenceNumber(row.sequence, "$path.sequence")
         if (!sequences.add(sequence)) reject(BackupRejection.DuplicateEntry("$path.sequence"))
         if (row.source !in IncomeSource.keys) invalid("$path.source")
         val source = IncomeSource.of(row.source, row.sourceName).or("$path.sourceName")
@@ -584,7 +593,7 @@ private fun schedules(wire: List<ScheduleV3>, categories: List<Category>): List<
         val category = (entry as? ScheduledEntry.Payment)?.let { known.getValue(it.categoryId) }
         val running = recurrence.pauses.lastOrNull()?.until != null || recurrence.pauses.isEmpty()
         if (category?.archived == true && running) invalid("$path.pauses")
-        val sequence = whole(row.sequence, "$path.sequence")
+        val sequence = sequenceNumber(row.sequence, "$path.sequence")
         if (!sequences.add(sequence)) reject(BackupRejection.DuplicateEntry("$path.sequence"))
         val handled = row.handled?.let {
             Occurrence(
@@ -658,7 +667,7 @@ private fun goals(wire: List<GoalV2>): List<GoalHistory> {
         var previous = -1L
         val events = row.history.mapIndexed { position, event ->
             val at = "$path.history[$position]"
-            val sequence = whole(event.sequence, "$at.sequence")
+            val sequence = sequenceNumber(event.sequence, "$at.sequence")
             if (sequence <= previous) reject(BackupRejection.DuplicateEntry("$at.sequence"))
             previous = sequence
             val amount = amount(event.amount, event.currency, at)
@@ -810,10 +819,8 @@ private fun investments(wire: List<InvestmentV4>): List<InvestmentHistory> {
             val at = "$path.movements[$position]"
             val movementId = InvestmentMovementId.of(movement.id).or("$at.id")
             if (!movementIds.add(movementId)) reject(BackupRejection.DuplicateId("$at.id"))
-            val sequence = whole(movement.sequence, "$at.sequence")
+            val sequence = sequenceNumber(movement.sequence, "$at.sequence")
             if (sequence <= previous) reject(BackupRejection.DuplicateEntry("$at.sequence"))
-            // A restore puts the next recording position after the last one.
-            if (sequence == Long.MAX_VALUE) invalid("$at.sequence")
             previous = sequence
             val kind = movementKind(movement.kind, "$at.kind")
             InvestmentMovement(
@@ -870,7 +877,7 @@ private fun usdRates(wire: List<UsdRateV4>): List<UsdRateEntry> {
         val id = UsdRateId.of(row.id).or("$path.id")
         if (!ids.add(id)) reject(BackupRejection.DuplicateId("$path.id"))
         val hundredths = whole(row.rateHundredths, "$path.rateHundredths")
-        val sequence = whole(row.sequence, "$path.sequence")
+        val sequence = sequenceNumber(row.sequence, "$path.sequence")
         if (!sequences.add(sequence)) reject(BackupRejection.DuplicateEntry("$path.sequence"))
         UsdRateEntry(
             id = id,
