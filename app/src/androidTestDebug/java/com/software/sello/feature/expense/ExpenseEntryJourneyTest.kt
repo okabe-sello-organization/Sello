@@ -116,7 +116,9 @@ class ExpenseEntryJourneyTest {
     private fun writeNote(text: String) {
         rule.onNodeWithTag(ENTRY_NOTE_TAG).performScrollTo().performClick()
         rule.onNode(hasSetTextAction()).performTextInput(text)
-        rule.onNodeWithContentDescription("Listo").performClick()
+        // Pressed, not clicked by position: the keyboard may still be on its way, and
+        // its arrival lifts the composer, so a click may land where Listo no longer is.
+        rule.onNodeWithContentDescription("Listo").press()
         rule.onNode(hasSetTextAction()).assertDoesNotExist()
     }
 

@@ -116,7 +116,10 @@ class WalkingSliceJourneyTest {
         if (note != null) {
             rule.onNodeWithTag(ENTRY_NOTE_TAG).performScrollTo().performClick()
             rule.onNode(hasSetTextAction()).performTextInput(note)
-            rule.onNodeWithContentDescription("Listo").performClick()
+            // Pressed, not clicked by position: the keyboard may still be on its way, and
+            // its arrival lifts the composer, so a click may land where Listo no longer is.
+            rule.onNodeWithContentDescription("Listo").press()
+            rule.onNode(hasSetTextAction()).assertDoesNotExist()
         }
         rule.onNodeWithTag(ENTRY_SUBMIT_TAG).press()
         // A confirmed save closes the form and says so over the screen it was opened from.
