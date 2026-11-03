@@ -121,6 +121,9 @@ class IncomeFormViewModel(
     }
     private val drafts = SavedDraft(saved, DRAFT, Draft.serializer())
     private val originals = SavedDraft(saved, ORIGINAL, Original.serializer())
+
+    /** The draft whose terms the following incomes took from this form (SELLO-150). */
+    private val followingTerms = SavedDraft(saved, FOLLOWING_TERMS, Draft.serializer())
     private val submission = Submission(saved, OPERATION, ids)
     private val draft = MutableStateFlow(
         drafts.read() ?: Draft(AmountDraft.Empty, "salary", "", clock.today.value.date, "")
@@ -432,21 +435,26 @@ class IncomeFormViewModel(
     }
 
     /** Amount, source or note: what a schedule's following incomes can take on. */
-    private fun termsChanged(draft: Draft, original: Original): Boolean =
-        draft.amount != original.draft.amount || source(draft) != source(original.draft) ||
-            Note.of(draft.note) != Note.of(original.draft.note)
+    private fun termsChanged(draft: Draft, other: Draft): Boolean =
+        draft.amount != other.amount || source(draft) != source(other) ||
+            Note.of(draft.note) != Note.of(other.note)
 
     private fun submit() {
         val original = progress.value.original
+        // The following incomes took other terms than these: the choice is asked again,
+        // so this income and its schedule never silently differ (SELLO-150).
+        val followingTook = followingTerms.read()
+        if (followingTook != null && termsChanged(draft.value, followingTook)) {
+            followingTerms.clear()
+            saved[FOLLOWING] = null
+        }
         // New terms on an income a schedule recorded: Solo este or Este y los siguientes.
         if (editing && original != null && progress.value.following != null &&
-            saved.get<Boolean>(FOLLOWING) == null && termsChanged(draft.value, original)
+            saved.get<Boolean>(FOLLOWING) == null && termsChanged(draft.value, original.draft)
         ) {
             return progress.update { it.copy(askFollowing = true) }
         }
-        if (editing && saved.get<Boolean>(FOLLOWING) == true &&
-            saved.get<Boolean>(FOLLOWING_SAVED) != true
-        ) {
+        if (editing && saved.get<Boolean>(FOLLOWING) == true && followingTerms.read() == null) {
             return submitFollowing()
         }
         val current = draft.value
@@ -517,7 +525,7 @@ class IncomeFormViewModel(
 
             is Settled.Rejected -> {
                 // Asked again unless the following incomes already changed.
-                if (saved.get<Boolean>(FOLLOWING_SAVED) != true) saved[FOLLOWING] = null
+                if (followingTerms.read() == null) saved[FOLLOWING] = null
                 val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> IncomeFormError.DataChanged
 
@@ -571,9 +579,13 @@ class IncomeFormViewModel(
         }
     }
 
-    /** The following incomes took the new terms; now this income is corrected. */
-    private fun followingSaved() {
-        saved[FOLLOWING_SAVED] = true
+    /**
+     * The following incomes took the new terms; now this income is corrected. The
+     * schedule is read again, so new terms after a refusal change it as it is now.
+     */
+    private suspend fun followingSaved() {
+        followingTerms.write(draft.value)
+        loadFollowing()
         progress.update { it.copy(busy = false) }
         submit()
     }
@@ -655,7 +667,7 @@ class IncomeFormViewModel(
 
     private suspend fun committed(id: IncomeId) {
         if (editing) {
-            if (saved.get<Boolean>(FOLLOWING_SAVED) == true) {
+            if (followingTerms.read() != null) {
                 corrections.scheduleChanged(
                     CorrectionNotice.ScheduleChanged(ScheduleChange.Changed, income = true)
                 )
@@ -841,7 +853,7 @@ class IncomeFormViewModel(
                     sourceKey = income?.source?.key
                 )
             },
-            followingSaved = saved.get<Boolean>(FOLLOWING_SAVED) == true,
+            followingSaved = followingTerms.read()?.let { !termsChanged(draft, it) } == true,
             pastMonths = progress.original?.let {
                 listOf(YearMonth.from(it.draft.date), YearMonth.from(draft.date)).distinct()
                     .filter { month -> month != YearMonth.from(today) }
@@ -869,6 +881,6 @@ class IncomeFormViewModel(
         private const val ORIGIN_SCHEDULE = "income.origin.schedule"
         private const val REPEAT_OFFERED = "income.repeat.offered"
         private const val FOLLOWING = "income.following"
-        private const val FOLLOWING_SAVED = "income.following.saved"
+        private const val FOLLOWING_TERMS = "income.following.terms"
     }
 }

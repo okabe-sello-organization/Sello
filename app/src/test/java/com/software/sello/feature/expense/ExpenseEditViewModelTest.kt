@@ -634,6 +634,94 @@ class ExpenseEditViewModelTest {
         assertTrue(form.now.closed)
     }
 
+    // --- New terms after only the following changed (SELLO-150) ---
+
+    /**
+     * Opened on the recorded bread; 52.000 with Este y los siguientes: the schedule takes
+     * it (now at version 3) and the expense is refused.
+     */
+    private fun halfSaved(saved: SavedStateHandle = editing(recorded)): ExpenseEntryViewModel {
+        scheduleBook.schedules += weekly
+        schedules.answer = { command ->
+            val change = command as ChangeSchedule
+            scheduleBook.schedules[0] = weekly.copy(
+                schedule = weekly.schedule.copy(entry = change.entry),
+                version = 3
+            )
+            CommandOutcome.Committed(schedules.committed(command.operationId), replayed = false)
+        }
+        commands.editAnswer = {
+            CommandOutcome.Rejected(CommandRejection.StorageFailed(StorageFailure.Unavailable("x")))
+        }
+        val form = opened(recorded, saved)
+        form.retype("52000")
+        form.onAction(ExpenseEntryAction.Submit)
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
+        commands.editAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.EditExpense),
+                replayed = false
+            )
+        }
+        return form
+    }
+
+    private fun ChangeSchedule.amount() = (entry as ScheduledEntry.Payment).amount
+
+    @Test
+    fun newTermsAfterTheFollowingChangedAskAgainAndEsteYLosSiguientesSendsBoth() {
+        val form = halfSaved()
+        val half = form.now
+        form.retype("55000")
+        form.onAction(ExpenseEntryAction.Submit)
+        val asked = form.now
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
+
+        assertTrue(half.followingSaved)
+        assertTrue(asked.askFollowing)
+        val sent = schedules.submitted.map { it as ChangeSchedule }
+        assertEquals(listOf(pesos(52_000), pesos(55_000)), sent.map { it.amount() })
+        // The second change is of the schedule as the first one left it.
+        assertEquals(3L, sent[1].expectedVersion)
+        assertEquals(listOf(pesos(52_000), pesos(55_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun newTermsAfterTheFollowingChangedWithSoloEsteCorrectOnlyThisOne() {
+        val form = halfSaved()
+        form.retype("55000")
+        form.onAction(ExpenseEntryAction.Submit)
+        val asked = form.now
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = false))
+
+        assertTrue(asked.askFollowing)
+        assertEquals(
+            listOf(pesos(52_000)),
+            schedules.submitted.map { (it as ChangeSchedule).amount() }
+        )
+        assertEquals(listOf(pesos(52_000), pesos(55_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun newTermsAfterTheFollowingChangedAskAgainAfterTheProcessWasKilled() {
+        val saved = editing(recorded)
+        halfSaved(saved)
+        val form = form(saved.afterProcessDeath())
+        form.retype("55000")
+        form.onAction(ExpenseEntryAction.Submit)
+        val asked = form.now
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
+
+        assertTrue(asked.askFollowing)
+        val sent = schedules.submitted.map { it as ChangeSchedule }
+        assertEquals(listOf(pesos(52_000), pesos(55_000)), sent.map { it.amount() })
+        assertEquals(3L, sent[1].expectedVersion)
+        assertEquals(listOf(pesos(52_000), pesos(55_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
     // --- Carry: a change that reaches a closed month of a chain (ADR 0020 CP20, CP21, CP23) ---
 
     private val carryConfirmation = CorrectionConfirmation(41, "edit-100")

@@ -825,6 +825,97 @@ class IncomeFormViewModelTest {
         assertEquals(pesos(1_200_000), commands.edited.single().amount)
     }
 
+    // --- New terms after only the following changed (SELLO-150) ---
+
+    /**
+     * Opened on the recorded salary; 1.200.000 with Este y los siguientes: the schedule
+     * takes it (now at version 5) and the income is refused.
+     */
+    private fun halfSaved(saved: SavedStateHandle = editing(recordedSalary)): IncomeFormViewModel {
+        scheduleBook.schedules += salarySchedule
+        schedules.answer = { command ->
+            scheduleBook.schedules[0] = salarySchedule.copy(
+                schedule = salarySchedule.schedule.copy(entry = (command as ChangeSchedule).entry),
+                version = 5
+            )
+            CommandOutcome.Committed(schedules.committed(command.operationId), replayed = false)
+        }
+        commands.editAnswer = {
+            Rejected(CommandRejection.StorageFailed(StorageFailure.Unavailable("x")))
+        }
+        val form = opened(recordedSalary, saved)
+        form.retype("1200000")
+        form.onAction(IncomeFormAction.Submit)
+        form.onAction(IncomeFormAction.FollowingChosen(alsoFollowing = true))
+        commands.editAnswer =
+            { CommandOutcome.Committed(commands.committed(it.operationId, it.incomeId), false) }
+        return form
+    }
+
+    private fun sentAmounts() =
+        schedules.submitted.map { ((it as ChangeSchedule).entry as ScheduledEntry.Income).amount }
+
+    @Test
+    fun theSameTermsAfterOnlyTheFollowingChangedCorrectThisOneWithoutResending() {
+        val form = halfSaved()
+        val half = form.now
+        form.onAction(IncomeFormAction.Submit)
+
+        assertTrue(half.followingSaved)
+        assertEquals(IncomeFormError.NotSaved, half.error)
+        assertFalse(form.now.askFollowing)
+        assertEquals(listOf(pesos(1_200_000)), sentAmounts())
+        assertEquals(listOf(pesos(1_200_000), pesos(1_200_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun newTermsAfterTheFollowingChangedAskAgainAndEsteYLosSiguientesSendsBoth() {
+        val form = halfSaved()
+        form.retype("1300000")
+        form.onAction(IncomeFormAction.Submit)
+        val asked = form.now
+        form.onAction(IncomeFormAction.FollowingChosen(alsoFollowing = true))
+
+        assertTrue(asked.askFollowing)
+        assertEquals(listOf(pesos(1_200_000), pesos(1_300_000)), sentAmounts())
+        // The second change is of the schedule as the first one left it.
+        assertEquals(5L, (schedules.submitted[1] as ChangeSchedule).expectedVersion)
+        assertEquals(listOf(pesos(1_200_000), pesos(1_300_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun newTermsAfterTheFollowingChangedWithSoloEsteCorrectOnlyThisOne() {
+        val form = halfSaved()
+        form.retype("1300000")
+        form.onAction(IncomeFormAction.Submit)
+        val asked = form.now
+        form.onAction(IncomeFormAction.FollowingChosen(alsoFollowing = false))
+
+        assertTrue(asked.askFollowing)
+        assertEquals(listOf(pesos(1_200_000)), sentAmounts())
+        assertEquals(listOf(pesos(1_200_000), pesos(1_300_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun newTermsAfterTheFollowingChangedAskAgainAfterTheProcessWasKilled() {
+        val saved = editing(recordedSalary)
+        halfSaved(saved)
+        val form = form(saved.afterProcessDeath())
+        form.retype("1300000")
+        form.onAction(IncomeFormAction.Submit)
+        val asked = form.now
+        form.onAction(IncomeFormAction.FollowingChosen(alsoFollowing = true))
+
+        assertTrue(asked.askFollowing)
+        assertEquals(listOf(pesos(1_200_000), pesos(1_300_000)), sentAmounts())
+        assertEquals(5L, (schedules.submitted[1] as ChangeSchedule).expectedVersion)
+        assertEquals(listOf(pesos(1_200_000), pesos(1_300_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
     // --- Varios: Anotar varios with what is typed as its line one (SELLO-132) ---
 
     @Test
