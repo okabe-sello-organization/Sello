@@ -347,12 +347,18 @@ class ScheduleEditorViewModel(
         saved[COMPOSER_TEXT] = null
     }
 
+    /** The "Otro" name as saved passes as it is, even if typed before SELLO-164's rule. */
+    private fun storedOther(stored: StoredSchedule? = progress.value.stored): String? =
+        ((stored?.schedule?.entry as? ScheduledEntry.Income)?.source as? IncomeSource.Other)
+            ?.name?.value
+
     private fun composerProblem(what: ScheduleComposer, text: String): ScheduleTextProblem? {
         val error = when (what) {
             ScheduleComposer.Note -> (Note.of(text) as? Outcome.Failure)?.error
 
-            ScheduleComposer.SourceName -> (SourceName.of(text) as? Outcome.Failure)?.error
-                ?.takeIf { it != TextError.Required }
+            ScheduleComposer.SourceName ->
+                (SourceName.fromInput(text, storedOther()) as? Outcome.Failure)?.error
+                    ?.takeIf { it != TextError.Required }
         }
         return error?.let(::problem)
     }
@@ -378,12 +384,13 @@ class ScheduleEditorViewModel(
             is ScheduledEntry.Income -> {
                 val key = form.value.source ?: return null
                 val source = (
-                    IncomeSource.of(
+                    IncomeSource.fromInput(
                         key,
                         form.value.other.takeIf {
                             key ==
                                 IncomeSource.Other.KEY
-                        }
+                        },
+                        storedOther(stored)
                     )
                         as? Outcome.Success
                     )?.value ?: return null

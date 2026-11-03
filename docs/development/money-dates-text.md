@@ -16,9 +16,9 @@ never substitutes zero, empty or a "repaired" value.
 | A manual entry's date | `EffectiveDates.forManualEntry(date, today)` | `today` comes from `FinancialClock`; later dates are `InFuture`; one the stored text cannot hold is `OutOfRange`. |
 | A selectable month | `EffectiveDates.forSelection(month, today)` | Up to the current month, and storable. |
 | A month given a limit | `EffectiveDates.isStorable(month)` | The command refuses a month that would not read back. |
-| A category name | `CategoryName.of(raw)` | Trimmed, composed (NFC), 1–24 code points. Compare `uniquenessKey` for duplicates, including archived categories; never display or store the key as the name. |
+| A category name | `CategoryName.fromInput(raw, stored)` for what a person types; `of(raw)` for storage, mappers and backups | Trimmed, composed (NFC), 1–24 code points. Compare `uniquenessKey` for duplicates, including archived categories; never display or store the key as the name. `fromInput` (also on `GoalName`, `InvestmentName` and `SourceName`) also refuses format (Cf) characters except U+200C and U+200D, so a new name can't pass for another; `stored`, the name already saved, passes as it is (SELLO-164). |
 | A note | `Note.of(raw)` | Null or blank means no note; otherwise up to 60 code points. |
-| An income source | `IncomeSource.of(key, otherName)` | Stable keys `salary`, `freelance`, `passive_income`, `transfer`, `other`. Labels are resources in presentation. |
+| An income source | `IncomeSource.fromInput(key, otherName, stored)` for what a person picks and types; `of(key, otherName)` for storage, mappers and backups | Stable keys `salary`, `freelance`, `passive_income`, `transfer`, `other`. Labels are resources in presentation. |
 
 **Storable** means the stored text reads back as the same value, asked of the same
 two functions that write and read. In practice that is years 0000 to 9999: four plain
