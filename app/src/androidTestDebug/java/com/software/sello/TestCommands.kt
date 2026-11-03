@@ -214,7 +214,7 @@ object TestCommands {
         assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
-    /** Stars [goal] for Recibo, as "Mostrar en Recibo" does with no star, through the real command. */
+    /** Stars [goal] for Recibo, as "Destacar en Recibo" does, through the real command. */
     fun featureGoal(goal: String) = runBlocking {
         val outcome = koin.get<GoalCommands>().submit(
             StarGoal(operation(), generation(), GoalId.of(goal).value())

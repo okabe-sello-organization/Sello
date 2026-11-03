@@ -53,8 +53,9 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Recibo's goal (rule 12, MT28–MT31): the goal the board names is shown, with its
- * percentage; another active goal at 100 % gets the green row and can be marked there;
+ * Recibo's goals (rule 12, MT28–MT31, SELLO-144): the goals the board names are shown in
+ * its order, each with its percentage; another active goal at 100 % that is not among them
+ * gets the green row and can be marked there;
  * nothing on a past month or with no active goal; a failed read is said, never shown as
  * no goal. Goals A *Viaje a la costa* 1.710.000 of 3.000.000 (57 %) and B *Celular
  * nuevo* 450.000 of 1.200.000 (37 %); today is 23 October 2026.
@@ -137,14 +138,25 @@ class ReciboGoalViewModelTest {
     private val a get() = goal(viaje, "Viaje a la costa", 1_710_000, 3_000_000)
     private val b get() = goal(celular, "Celular nuevo", 450_000, 1_200_000)
 
-    /** A board as storage reads it: [featured] heads Recibo's list after the fallback rule. */
-    private fun board(vararg goals: GoalSummary, featured: String?) = GoalBoard(
+    /**
+     * A board as storage reads it: [recibo] is Recibo's list, already ranked by storage;
+     * [featured] alone heads it.
+     */
+    private fun board(
+        vararg goals: GoalSummary,
+        featured: String? = null,
+        recibo: List<String> = listOfNotNull(featured),
+        revision: Long = 9
+    ) = GoalBoard(
         3,
-        9,
+        revision,
         goals.toList(),
         emptySet(),
-        listOfNotNull(featured?.let { GoalId.of(it).value() })
+        recibo.map { GoalId.of(it).value() }
     )
+
+    /** The first goal, the one Recibo opens on. */
+    private val ReciboGoalState.Shown.pill get() = pills.firstOrNull()
 
     private fun model() = ReciboGoalViewModel(
         SavedStateHandle(),
@@ -169,7 +181,11 @@ class ReciboGoalViewModelTest {
         watch(model)
 
         assertEquals(
-            ReciboGoalState.Shown(ReciboGoalPill(viaje, "Viaje a la costa", "flight", 57), null),
+            ReciboGoalState.Shown(
+                listOf(ReciboGoalPill(viaje, "Viaje a la costa", "flight", 57)),
+                null,
+                revision = 9
+            ),
             model.state.value
         )
 
@@ -310,5 +326,86 @@ class ReciboGoalViewModelTest {
 
         val sent = commands.sent.single() as CompleteGoal
         assertEquals(GoalId.of(viaje).value() to 4L, sent.goalId to sent.expectedVersion)
+    }
+
+    private val moto = "00000000-0000-4000-9000-000000000004"
+    private val bici = "00000000-0000-4000-9000-000000000005"
+    private val fondo = "00000000-0000-4000-9000-000000000006"
+
+    @Test
+    fun twoGoalsAreBothShownInTheBoardsOrderNotMetas() = runTest {
+        // Metas lists Viaje first (created first); storage ranked Celular first.
+        reads.board.value = ReadState.Ready(board(a, b, recibo = listOf(celular, viaje)))
+        val model = model()
+        watch(model)
+
+        assertEquals(listOf(celular, viaje), shown(model).pills.map { it.id })
+        assertEquals(listOf(37L, 57L), shown(model).pills.map { it.percentage })
+    }
+
+    @Test
+    fun fiveGoalsAreShownInRankingOrderWithTheReachedOneWaitingInItsPill() = runTest {
+        // Viaje starred at 57 %, then the rest by completion: Celular 100 %, Moto 42 %,
+        // Bici 18 %, Fondo 5 %. A sixth active goal is left out by storage.
+        val celularDone = goal(celular, "Celular nuevo", 1_200_000, 1_200_000)
+        val motoGoal = goal(moto, "Moto", 420_000, 1_000_000)
+        val biciGoal = goal(bici, "Bicicleta", 180_000, 1_000_000)
+        val fondoGoal = goal(fondo, "Fondo de emergencia", 50_000, 1_000_000)
+        val sixth = goal(curso, "Curso de inglés", 10_000, 1_000_000)
+        reads.board.value = ReadState.Ready(
+            board(
+                a,
+                celularDone,
+                motoGoal,
+                biciGoal,
+                fondoGoal,
+                sixth,
+                recibo = listOf(viaje, celular, moto, bici, fondo)
+            )
+        )
+        val model = model()
+        watch(model)
+
+        assertEquals(
+            listOf(
+                ReciboGoalPill(viaje, "Viaje a la costa", "flight", 57),
+                ReciboGoalPill(celular, "Celular nuevo", "flight", 100, reached = true),
+                ReciboGoalPill(moto, "Moto", "flight", 42),
+                ReciboGoalPill(bici, "Bicicleta", "flight", 18),
+                ReciboGoalPill(fondo, "Fondo de emergencia", "flight", 5)
+            ),
+            shown(model).pills
+        )
+        // Celular is in the carousel: no green row repeats it.
+        assertEquals(null, shown(model).reached)
+
+        // Its ✓ on the second pill marks it.
+        model.onAction(ReciboGoalAction.MarkComplete(celular))
+        val sent = commands.sent.single() as CompleteGoal
+        assertEquals(GoalId.of(celular).value(), sent.goalId)
+    }
+
+    @Test
+    fun aReachedGoalLeftOutOfTheCarouselGetsTheRow() = runTest {
+        val reached = goal(curso, "Curso de inglés", 2_000_000, 2_000_000)
+        reads.board.value = ReadState.Ready(board(a, b, reached, recibo = listOf(viaje, celular)))
+        val model = model()
+        watch(model)
+
+        assertEquals(ReciboReachedGoal(curso, "Curso de inglés", "flight"), shown(model).reached)
+    }
+
+    @Test
+    fun aNewRevisionIsPassedOnSoTheCarouselOpensOnTheFirstGoalAgain() = runTest {
+        reads.board.value = ReadState.Ready(board(a, b, recibo = listOf(viaje, celular)))
+        val model = model()
+        watch(model)
+        assertEquals(9L, shown(model).revision)
+
+        reads.board.value =
+            ReadState.Ready(board(a, b, recibo = listOf(viaje, celular), revision = 10))
+
+        assertEquals(10L, shown(model).revision)
+        assertEquals(viaje, shown(model).pill?.id)
     }
 }

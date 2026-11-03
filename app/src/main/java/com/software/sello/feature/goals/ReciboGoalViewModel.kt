@@ -27,9 +27,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
 /**
- * Recibo's goal from the goal board as it changes (rule 12). Which goal is the first of
- * storage's answer, [GoalBoard.reciboGoals]: starred goals first, else the fallback. Shown only on
- * the current month; goals are read apart from it and never change its figures.
+ * Recibo's goals from the goal board as it changes (rule 12): storage's answer,
+ * [GoalBoard.reciboGoals], in its order, starred goals first and then the rest. Shown only
+ * on the current month; goals are read apart from it and never change its figures.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReciboGoalViewModel(
@@ -65,12 +65,13 @@ class ReciboGoalViewModel(
             is ReadState.Ready -> board.value
             is ReadState.Failed -> board.lastGood ?: return@combine ReciboGoalState.Failed
         }
-        val pill = read?.takeIf { selected == current }?.let(::pill)
-        val reached = read?.takeIf { selected == current }?.let { reached(it, pill?.id) }
-        if (pill == null && reached == null && completion == CompletionState.Idle) {
+        val shown = read?.takeIf { selected == current }
+        val pills = shown?.let(::pills).orEmpty()
+        val reached = shown?.let { reached(it, pills.map(ReciboGoalPill::id).toSet()) }
+        if (pills.isEmpty() && reached == null && completion == CompletionState.Idle) {
             ReciboGoalState.Hidden
         } else {
-            ReciboGoalState.Shown(pill, reached, completion)
+            ReciboGoalState.Shown(pills, reached, completion, read?.revision ?: 0)
         }
     }.stateIn(
         viewModelScope,
@@ -91,7 +92,7 @@ class ReciboGoalViewModel(
                 val read = (board.value as? ReadState.Ready)?.value ?: return
                 val shown = state.value as? ReciboGoalState.Shown
                 val waiting = shown?.reached?.id == action.id ||
-                    shown?.pill?.takeIf { it.reached }?.id == action.id
+                    shown?.pills.orEmpty().any { it.reached && it.id == action.id }
                 if (waiting) {
                     render.completionTarget(read, action.id)?.let(completer::complete)
                 }
@@ -101,11 +102,11 @@ class ReciboGoalViewModel(
         }
     }
 
-    private fun pill(board: GoalBoard): ReciboGoalPill? {
-        val first = board.reciboGoals.firstOrNull() ?: return null
-        val shown = board.goals.firstOrNull { it.history.goal.id == first } ?: return null
+    private fun pills(board: GoalBoard): List<ReciboGoalPill> = board.reciboGoals.mapNotNull { id ->
+        val shown =
+            board.goals.firstOrNull { it.history.goal.id == id } ?: return@mapNotNull null
         val goal = shown.history.goal
-        return ReciboGoalPill(
+        ReciboGoalPill(
             goal.id.value,
             goal.name.value,
             goal.icon.value,
@@ -116,12 +117,12 @@ class ReciboGoalViewModel(
         )
     }
 
-    /** The first other active goal at 100 %, in Metas' order. */
-    private fun reached(board: GoalBoard, shown: String?): ReciboReachedGoal? =
+    /** The first active goal at 100 % that Recibo does not show already, in Metas' order. */
+    private fun reached(board: GoalBoard, shown: Set<String>): ReciboReachedGoal? =
         GoalPolicy.ordered(board.goals, { it.history.goal }, { it.progress })
             .firstOrNull {
                 val goal = it.history.goal
-                goal.completedOn == null && goal.id.value != shown &&
+                goal.completedOn == null && goal.id.value !in shown &&
                     it.progress.state(GoalPlace.Meta) == PlaceState.Ready
             }
             ?.history?.goal?.let { ReciboReachedGoal(it.id.value, it.name.value, it.icon.value) }

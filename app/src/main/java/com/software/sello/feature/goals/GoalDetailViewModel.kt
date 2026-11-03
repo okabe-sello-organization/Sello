@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.policy.GoalPolicy
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.FinancialClock
@@ -16,6 +18,7 @@ import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ReplaceStar
 import com.software.sello.domain.port.StarGoal
+import com.software.sello.domain.port.UnstarGoal
 import com.software.sello.platform.ScreenReader
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
@@ -32,8 +35,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * One goal, read from the board as it changes, and its two actions: choosing it for
- * Recibo and, once completed, deleting it after the confirm slip. Each command's
+ * One goal, read from the board as it changes, and its actions: starring it for Recibo
+ * (with five starred, through the sheet that picks the star it replaces) and, once
+ * completed, deleting it after the confirm slip. The sheet and its pick are kept in
+ * [SavedStateHandle], so they come back after process death. Each command's
  * identifier is saved before it leaves; an outcome that is not known is asked about with
  * that same identifier, after a restart too, before anything else is sent.
  */
@@ -63,20 +68,38 @@ class GoalDetailViewModel(
     /** The goal is deleted: the screen is left. */
     val deleted: StateFlow<Boolean> = _deleted
 
+    private val flags = combine(
+        saved.getStateFlow(KEY_CONFIRM, false),
+        saved.getStateFlow(KEY_ALL, false),
+        saved.getStateFlow(KEY_REPLACE, false),
+        saved.getStateFlow<String?>(KEY_PICKED, null),
+        ::Flags
+    )
+
+    private data class Flags(
+        val confirming: Boolean,
+        val all: Boolean,
+        val replacing: Boolean,
+        val picked: String?
+    )
+
     val state: StateFlow<GoalDetailState> = combine(
         attempts.flatMapLatest { reads.observeBoard() },
         clock.today,
         combine(ui, completer.state, ::Pair),
-        saved.getStateFlow(KEY_CONFIRM, false),
-        saved.getStateFlow(KEY_ALL, false)
-    ) { board, today, (ui, completion), confirming, all ->
+        flags
+    ) { board, today, (ui, completion), flags ->
         when (val state = render.detail(board, goalId, today.date)) {
             is GoalDetailState.Ready -> state.copy(
                 busy = ui.busy || completion == CompletionState.Busy,
                 error = ui.error ?: (completion as? CompletionState.Failed)?.error,
-                confirmingDelete = confirming && state.goal.completedOn != null,
-                allMovements = all,
-                completion = completion
+                confirmingDelete = flags.confirming && state.goal.completedOn != null,
+                allMovements = flags.all,
+                completion = completion,
+                // Once the goal is starred, or completed, there is nothing left to replace.
+                replacing = ReplaceSheet(state.goal.starredOthers, flags.picked).takeIf {
+                    flags.replacing && !state.goal.starred && state.goal.completedOn == null
+                }
             )
 
             else -> state
@@ -102,7 +125,16 @@ class GoalDetailViewModel(
                 attempts.update { it + 1 }
             }
 
-            GoalDetailAction.Feature -> feature()
+            GoalDetailAction.ToggleStar -> toggleStar()
+
+            is GoalDetailAction.Replace -> replace(action.id)
+
+            GoalDetailAction.CancelReplace -> if (!ui.value.busy) {
+                saved[KEY_REPLACE] = false
+                saved[KEY_PICKED] = null
+                // A refusal belonged to the sheet; an unknown outcome is still to be checked.
+                if (ui.value.error == GoalDetailError.NotSaved) ui.value = Ui()
+            }
 
             GoalDetailAction.AskToDelete -> if (ready()?.goal?.completedOn != null) {
                 saved[KEY_CONFIRM] = true
@@ -132,18 +164,33 @@ class GoalDetailViewModel(
     /** Whether a command may be sent: nothing in flight and no outcome left unknown. */
     private fun free(): Boolean = !ui.value.busy && !submission.pending
 
-    private fun feature() {
+    /** A filled star unstars; an empty one stars, or with five starred opens the sheet. */
+    private fun toggleStar() {
         val goal = ready()?.goal ?: return
-        if (!free() || goal.featured || goal.completedOn != null) return
+        if (!free() || goal.completedOn != null) return
         val id = (GoalId.of(goal.id) as? Outcome.Success)?.value ?: return
-        val instead = goal.replacesStar?.let { (GoalId.of(it) as? Outcome.Success)?.value }
-        send(STEP_FEATURE) {
-            if (instead == null) {
-                StarGoal(it, goal.generation, id)
-            } else {
-                ReplaceStar(it, goal.generation, instead, id)
-            }
+        when {
+            goal.starred -> send(STEP_UNSTAR) { UnstarGoal(it, goal.generation, id) }
+            goal.starredOthers.size >= GoalPolicy.MAX_STARRED -> openSheet()
+            else -> send(STEP_FEATURE) { StarGoal(it, goal.generation, id) }
         }
+    }
+
+    private fun openSheet() {
+        ui.value = Ui()
+        saved[KEY_PICKED] = null
+        saved[KEY_REPLACE] = true
+    }
+
+    /** Picking a starred goal in the sheet saves at once: its star moves here, or nothing does. */
+    private fun replace(picked: String) {
+        val sheet = ready()?.replacing ?: return
+        val goal = ready()?.goal ?: return
+        if (!free() || sheet.choices.none { it.id == picked }) return
+        val star = (GoalId.of(goal.id) as? Outcome.Success)?.value ?: return
+        val unstar = (GoalId.of(picked) as? Outcome.Success)?.value ?: return
+        saved[KEY_PICKED] = picked
+        send(STEP_REPLACE) { ReplaceStar(it, goal.generation, unstar, star) }
     }
 
     private fun delete() {
@@ -173,6 +220,10 @@ class GoalDetailViewModel(
             null -> if (!submission.pending) ui.value = Ui()
 
             is Settled.Committed -> {
+                if (step == STEP_REPLACE) {
+                    saved[KEY_REPLACE] = false
+                    saved[KEY_PICKED] = null
+                }
                 if (step == STEP_DELETE) {
                     saved[KEY_CONFIRM] = false
                     saved[KEY_DELETED] = true
@@ -183,7 +234,12 @@ class GoalDetailViewModel(
 
             is Settled.Unknown -> ui.value = Ui(error = GoalDetailError.Unknown)
 
-            // Certain: nothing was written, so this attempt is over.
+            // Five were starred meanwhile: the star needs one to replace.
+            is Settled.Rejected if step == STEP_FEATURE &&
+                (settled.reason as? CommandRejection.Specific)?.reason is GoalRejection.StarLimit ->
+                openSheet()
+
+            // Certain: nothing was written, so this attempt is over. The sheet keeps its pick.
             is Settled.Rejected, Settled.NotCommitted -> {
                 saved[KEY_CONFIRM] = false
                 ui.value = Ui(error = GoalDetailError.NotSaved)
@@ -199,7 +255,11 @@ class GoalDetailViewModel(
         private const val KEY_CONFIRM = "goal.detail.confirmDelete"
         private const val KEY_ALL = "goal.detail.allMovements"
         private const val KEY_DELETED = "goal.detail.deleted"
+        private const val KEY_REPLACE = "goal.detail.replacing"
+        private const val KEY_PICKED = "goal.detail.replacePicked"
         private const val STEP_FEATURE = "feature"
+        private const val STEP_UNSTAR = "unstar"
+        private const val STEP_REPLACE = "replace"
         private const val STEP_DELETE = "delete"
 
         /** Long enough to outlast a rotation without reading again. */

@@ -178,6 +178,18 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .gw-fill.reached .gw-fill-main{color:var(--ink)}
 .gw-fill.reached .gw-fill-main .icon{color:var(--gain)}
 .gw-fill.reached .gw-round{background:var(--gain);color:#fff}
+/* Several goals (SELLO-144): the same slot swipes; dots sit just under the pill. */
+.gw-carousel{margin-bottom:10px}
+.gw-carousel .gw-fill{margin-bottom:0}
+.gw-dots{display:flex;justify-content:center;align-items:center;gap:6px;height:14px;margin-top:2px}
+.gw-dots i{width:6px;height:6px;border-radius:99px;background:var(--outline);opacity:.5}
+.gw-dots i.on{width:18px;background:var(--brand);opacity:1}
+/* Keep the reached-row styles (.reached, further down) off the green pill. */
+.gw-fill.reached{background:var(--paper);color:inherit;gap:0;padding:4px;margin:0 0 14px}
+.gw-carousel .gw-fill.reached{margin-bottom:0}
+.app[data-theme] .gw-fill.reached .gw-fill-main{min-height:48px;padding:0 12px 0 14px;border-radius:0;background:none;font-size:inherit;color:var(--ink)}
+.gw-fill.reached .gw-fill-main span{display:block;flex:initial;line-height:inherit}
+.gw-fill.reached .gw-round{min-height:0;padding:0;border-radius:50%}
 
 
 /* ---------- Entry: shared ---------- */
@@ -488,6 +500,16 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .pin-band{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 12px 0 8px;border-radius:99px;border:1.5px solid rgba(255,255,255,.6);background:none;color:#fff;font-weight:800;font-size:.86em}
 .pin-band .icon{width:1.3em;height:1.3em}
 .pin-band.on{background:rgba(255,255,255,.18);border-color:transparent}
+/* The replace sheet (SELLO-144): the five starred goals, pick one. */
+.star-sheet{padding:14px 16px 16px}
+.star-sheet h2{margin:0 2px 4px;font-size:1.15em;font-weight:800}
+.star-sheet .fx-row .fx-ic{color:var(--brand)}
+.star-sheet .fx-row>b{font-variant-numeric:tabular-nums}
+.star-sheet .fx-row>.icon{width:1.2em;height:1.2em;color:var(--brand)}
+.star-sheet .rule-actions{grid-template-columns:1fr;margin-top:10px}
+.star-sheet .err{display:flex;gap:8px;align-items:flex-start;margin:8px 2px 0;padding:10px 12px;border-radius:12px;background:var(--losssoft);color:var(--ink);font-size:.9em;line-height:1.35}
+.star-sheet .err .icon{width:1.3em;height:1.3em;color:var(--loss);flex:none}
+.star-sheet .fx-row[aria-checked=true]{background:var(--alt);border-radius:12px;padding-left:8px;padding-right:8px}
 
 /* ---------- Aportar / Retirar ---------- */
 .amount-value.goal-in{color:var(--gain)}

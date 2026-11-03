@@ -174,7 +174,7 @@ sealed interface ScenarioStep {
     /** Marcar como lograda on [goal], read at [version]. */
     data class MarkLograda(val goal: String, val version: Long) : ScenarioStep
 
-    /** [goal] chosen for Recibo, as "Mostrar en Recibo" does. */
+    /** [goal] chosen for Recibo, as "Destacar en Recibo" does. */
     data class ChooseForRecibo(val goal: String) : ScenarioStep
 
     /**

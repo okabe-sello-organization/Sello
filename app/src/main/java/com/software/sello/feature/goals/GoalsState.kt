@@ -101,15 +101,28 @@ sealed interface GoalDetailState {
         val goal: GoalDetailModel,
         val today: LocalDate,
         val stale: Boolean = false,
-        /** Recibo's goal is being chosen or the goal deleted: nothing else may be sent. */
+        /** A star is being saved or the goal deleted: nothing else may be sent. */
         val busy: Boolean = false,
         val confirmingDelete: Boolean = false,
         val error: GoalDetailError? = null,
         val allMovements: Boolean = false,
         /** Marcar como lograda in progress, or its big moment on screen. */
-        val completion: CompletionState = CompletionState.Idle
+        val completion: CompletionState = CompletionState.Idle,
+        /** Starring this goal while five are starred: the sheet to pick the one it replaces. */
+        val replacing: ReplaceSheet? = null
     ) : GoalDetailState
 }
+
+/**
+ * The replace sheet: the starred goals in Recibo's order ([choices]), the one picked to
+ * give its star up, kept while its save is refused or not known ([picked]).
+ */
+@Immutable
+data class ReplaceSheet(val choices: List<StarChoice>, val picked: String?)
+
+/** A starred goal as the replace sheet lists it. */
+@Immutable
+data class StarChoice(val id: String, val name: String, val iconKey: String, val percentage: Long)
 
 @Immutable
 data class GoalDetailModel(
@@ -133,14 +146,13 @@ data class GoalDetailModel(
     val movements: List<MovementModel>,
     /** Each month's net change (aportes less retiros), for the full list's month lines. */
     val movementMonths: Map<YearMonth, MoneyTextValue>,
-    /** Whether it is starred, or the goal Recibo shows by the fallback rule. */
-    val featured: Boolean,
     /**
-     * The one starred goal, whose star choosing this one moves here; null when none or
-     * several are starred, and choosing adds a star. Until Recibo shows several goals
-     * (SELLO-144), choosing keeps one star, as one choice did before.
+     * Whether the person starred it. A goal Recibo shows only to fill a place is not
+     * starred.
      */
-    val replacesStar: String? = null,
+    val starred: Boolean,
+    /** The other starred goals, in Recibo's order: what a sixth star would replace. */
+    val starredOthers: List<StarChoice> = emptyList(),
     /** The history and the goal as read, for a command to name what it was prepared against. */
     val generation: Long,
     val version: Long
@@ -201,7 +213,14 @@ enum class GoalDetailError {
 sealed interface GoalDetailAction {
     data object Retry : GoalDetailAction
 
-    data object Feature : GoalDetailAction
+    /** The star pill: stars the goal, unstars it, or with five starred opens the sheet. */
+    data object ToggleStar : GoalDetailAction
+
+    /** In the replace sheet: this starred goal gives its star to the one shown. */
+    data class Replace(val id: String) : GoalDetailAction
+
+    /** Cancelar or back on the replace sheet: nothing changes. */
+    data object CancelReplace : GoalDetailAction
 
     data object AskToDelete : GoalDetailAction
 
@@ -218,8 +237,8 @@ sealed interface GoalDetailAction {
 }
 
 /**
- * Recibo's goal (rule 12): the goal shown as the pill, and another goal waiting at
- * 100 %. Read apart from the month, so Recibo's answer never waits on goals.
+ * Recibo's goals (rule 12): up to five, taking turns in the pill's place, and another goal
+ * waiting at 100 %. Read apart from the month, so Recibo's answer never waits on goals.
  */
 sealed interface ReciboGoalState {
     /** A past month, no active goal, or the first read still on its way. */
@@ -229,17 +248,20 @@ sealed interface ReciboGoalState {
     data object Failed : ReciboGoalState
 
     /**
-     * [pill] is the goal Recibo shows; [reached] another active goal at 100 %, waiting
-     * to be marked. Either may be absent while a completion's moment is still open.
+     * [pills] are the goals Recibo shows, in its order; [reached] another active goal at
+     * 100 % that is not among them, waiting to be marked. Either may be empty while a
+     * completion's moment is still open. [revision] is the board's: the carousel opens on
+     * the first goal again whenever it changes.
      */
     data class Shown(
-        val pill: ReciboGoalPill?,
+        val pills: List<ReciboGoalPill>,
         val reached: ReciboReachedGoal?,
-        val completion: CompletionState = CompletionState.Idle
+        val completion: CompletionState = CompletionState.Idle,
+        val revision: Long = 0
     ) : ReciboGoalState
 }
 
-/** The goal on Recibo, filled to its rounded-down [percentage]. */
+/** A goal on Recibo, filled to its rounded-down [percentage]. */
 @Immutable
 data class ReciboGoalPill(
     val id: String,

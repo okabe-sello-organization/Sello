@@ -1,6 +1,6 @@
 # SELLO-E28 — Several goals on Recibo
 
-- **Status:** In Progress
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person glances at up to five goals on Recibo, swiping through them in the goal pill's place, and adds to any of them without opening Metas.
 - **Exit:** Up to five goals can be starred, Recibo's goal pill is a looping carousel of up to five goals ranked by the rule below, and a sixth star asks which starred goal it replaces.
@@ -34,3 +34,5 @@ star and Deshacer restores it when there is room; the detail star shows "starred
 "shown on Recibo"; a restored backup with more than 5 stars or a repeated star is
 refused, never trimmed. The v2 design has no
 carousel or replace sheet, so SELLO-144 shows the owner a mock before building.
+
+Owner approved the SELLO-144 mock (2026-11-03): dots, no peek, ★ Destacada en Recibo / ☆ Destacar en Recibo, replace sheet.

@@ -14,6 +14,16 @@ const SPEND = {
   early:    { Hogar: 0, Comida: 40000, Transporte: 20000, Café: 0, Salud: 0, Ocio: 0, Ropa: 0 },
 };
 const GOAL = { name: "Viaje a la costa", icon: "flight", pct: 57 };
+// SELLO-144 (approved by the owner 2026-11-03): up to five goals in the pill's place. Starred first, then the
+// rest; inside each group the higher exact completion first. ★ marks a starred goal (data only:
+// the pill shows no star).
+const GOALS = {
+  viaje:   { name: "Viaje a la costa", icon: "flight", pct: 57, star: true },
+  celular: { name: "Celular nuevo", icon: "phone_iphone", pct: 100 },
+  fondo:   { name: "Fondo de emergencia", icon: "home", pct: 42 },
+  bici:    { name: "Bicicleta", icon: "fitness_center", pct: 18 },
+  ingles:  { name: "Curso de inglés", icon: "school", pct: 5 },
+};
 
 // Budget status stamps (owner-picked wording).
 const STAMPS = {
@@ -47,6 +57,11 @@ const SCENES = {
   reachedOther: { spend: "reserved", label: "Restante del presupuesto", hero: 400000, status: "ok", daily: 40000, days: 10, reserved: 200000, payments: 1, reachedGoal: ["Celular nuevo", "phone_iphone"] },
   nolimit:  { spend: "paid", label: "Has gastado este mes", hero: 600000, status: "none", unlimited: true },
   early:    { spend: "early", month: "Noviembre", label: "Restante del presupuesto", hero: 740000, status: "ok", daily: 26400, days: 28, reserved: 200000, payments: 1, invite: true },
+  // SELLO-144: the carousel. `at` is the pill on screen (0 = first; Recibo always opens there).
+  one:      { spend: "reserved", label: "Restante del presupuesto", hero: 400000, status: "ok", daily: 40000, days: 10, reserved: 200000, payments: 1, goals: ["viaje"] },
+  three:    { spend: "reserved", label: "Restante del presupuesto", hero: 400000, status: "ok", daily: 40000, days: 10, reserved: 200000, payments: 1, goals: ["viaje", "fondo", "bici"] },
+  // Only Viaje is starred, so Celular nuevo (100 %, not yet lograda) leads the unstarred ones.
+  five:     { spend: "reserved", label: "Restante del presupuesto", hero: 400000, status: "ok", daily: 40000, days: 10, reserved: 200000, payments: 1, goals: ["viaje", "celular", "fondo", "bici", "ingles"], at: 1 },
   today:    { spend: "reserved", label: "Restante del presupuesto", hero: 600000, status: "ok", daily: 60000, days: 10, mvp: true },
 };
 const payments = n => n === 1 ? "1 pago previsto" : `${n} pagos previstos`;
@@ -67,10 +82,27 @@ function answer(s) {
   return h + `</section>`;
 }
 
-// Goal notch: the pill itself is the progress bar.
-function goal() {
-  const label = `${GOAL.name}, ${GOAL.pct} por ciento. Ver meta`;
-  return `<section class="gw-fill" style="--p:${GOAL.pct}%"><button class="gw-fill-main" aria-label="${label}">${icon(GOAL.icon)}<span>${GOAL.name}</span><b>${GOAL.pct} %</b></button><button class="gw-round" aria-label="Aportar a ${GOAL.name}">${icon("add")}</button></section>`;
+// Goal notch: the pill itself is the progress bar. At 100 % not yet lograda it turns green
+// with a round ✓ (Marcar como lograda) in place of the +.
+function pill(g = GOAL, place = "", tag = "section") {
+  const done = g.pct >= 100;
+  const label = `${g.name}, ${g.pct} por ciento${place}. Ver meta`;
+  const round = done
+    ? `<button class="gw-round" aria-label="Marcar ${g.name} como lograda">${icon("check")}</button>`
+    : `<button class="gw-round" aria-label="Aportar a ${g.name}">${icon("add")}</button>`;
+  return `<${tag} class="gw-fill ${done ? "reached" : ""}" style="--p:${Math.min(g.pct, 100)}%"><button class="gw-fill-main" aria-label="${label}">${icon(g.icon)}<span>${g.name}</span><b>${g.pct} %</b></button>${round}</${tag}>`;
+}
+
+// SELLO-144: one goal is today's pill exactly. Two to five: the same slot swipes sideways and
+// loops; dots just under it show the place. No peek of the next pill (owner, 2026-11-03).
+function goal(s = {}) {
+  const ids = s.goals ?? null;
+  if (!ids || ids.length === 1) return pill(ids ? GOALS[ids[0]] : GOAL);
+  const at = s.at ?? 0, n = ids.length;
+  const here = GOALS[ids[at]];
+  const place = `, meta ${at + 1} de ${n}`;
+  const dots = `<div class="gw-dots" aria-hidden="true">${ids.map((_, i) => `<i class="${i === at ? "on" : ""}"></i>`).join("")}</div>`;
+  return `<section class="gw-carousel" aria-roledescription="carrusel" aria-label="Tus metas">${pill(here, place, "div")}${dots}</section>`;
 }
 
 function categoryGrid(s) {
@@ -88,7 +120,7 @@ function categoryGrid(s) {
 function homeBody(s) {
   let b = answer(s);
   if (s.invite) b += `<button class="invite">${icon("insights")}<span>Ver cómo cerraste octubre</span>${icon("chevron_right", "chev")}</button>`;
-  if (!s.mvp) b += goal();
+  if (!s.mvp) b += goal(s);
   if (s.reachedGoal) b += `<section class="reached" aria-label="Meta alcanzada">${icon("check")}<span><b>${s.reachedGoal[0]}</b><small>Llegó al 100 %</small></span><button>Marcar como lograda</button></section>`;
   return b + categoryGrid(s);
 }
@@ -99,6 +131,13 @@ function special(kind) {
   if (kind === "failed") return `<section class="slip empty">${icon("error")}<h2>No pudimos leer tu mes</h2><p>Tus registros siguen guardados. Vuelve a intentarlo.</p><button class="outline-btn">Reintentar</button></section>`;
   if (kind === "stale") return `<div class="stale" role="status">Mostramos tus últimos datos leídos.<button class="text-link">Reintentar</button></div>` + homeBody(SCENES.reserved);
 }
+
+// SELLO-144, approved by the owner 2026-11-03.
+const CAROUSEL = [
+  { title: "1 goal · today's pill, no dots", scene: "one" },
+  { title: "3 goals · first pill, dots under it", scene: "three" },
+  { title: "5 goals · on the 2nd, a 100 % goal not yet lograda", scene: "five" },
+];
 
 const STATES = [
   { title: "Default · a payment is reserved", scene: "reserved" },
@@ -124,7 +163,13 @@ const STATES = [
 
 function render() {
   const o = Object.fromEntries(["ink", "theme", "scale", "tabs"].map(id => [id, document.getElementById(id).value]));
-  document.getElementById("states").innerHTML = STATES.map(d => {
+  const carousel = document.getElementById("carousel");
+  if (carousel) carousel.innerHTML = frames(CAROUSEL, o);
+  document.getElementById("states").innerHTML = frames(STATES, o);
+}
+
+function frames(list, o) {
+  return list.map(d => {
     const s = d.scene ? SCENES[d.scene] : null;
     const body = d.special ? special(d.special) : homeBody(s);
     const scale = d.large ? 2 : Number(o.scale);

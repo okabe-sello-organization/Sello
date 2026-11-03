@@ -4,8 +4,8 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-11-02 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Every epic is Done: E01–E10, E12, E13 and E15–E27. The owner dropped E14 and the
+**Snapshot:** 2026-11-03 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
+Every epic is Done: E01–E10, E12, E13 and E15–E28. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -47,8 +47,10 @@ This summary is refreshed when an epic closes and adds no verification claims.
   with its stamps, Aportes por mes and movements; Aportar/Retirar with past dates,
   corrections and Deshacer. Stamps at 25, 50 and 75 % are celebrated once per confirmed
   save; Marcar como lograda shows the big moment and offers Deshacer for about 10 s
-  (30 s with TalkBack), then the goal is read-only. Recibo shows the chosen goal, or the
-  most complete one, and a row for another goal at 100 %. Goals never touch budgets or
+  (30 s with TalkBack), then the goal is read-only. Up to five goals can be starred
+  ([E28](../tickets/E28-recibo-goal-carousel/README.md)); a sixth star picks the one it
+  replaces. Recibo's goal pill is a looping carousel of up to five goals, starred first,
+  then the most complete, with dots under it, and a row for another goal at 100 %. Goals never touch budgets or
   income; backups carry them. Rules: [goal examples](../testing/goal-examples.md).
 - Pagos e ingresos fijos: Se repite in both entry forms makes a schedule (monthly,
   twice a month, every N days or weeks, optional end). The list, from Configuración and
@@ -76,8 +78,9 @@ This summary is refreshed when an epic closes and adds no verification claims.
   confirms dropping it; past corrections preview and replay later months. Rules:
   [ADR 0020](../decisions/0020-signed-carryover-policy.md).
 - Shared month and restored drafts/navigation.
-- Room schema 7 for finances (goals since 4, recurring schedules since 5, investments
-  since 6, carryover since 7); DataStore for nonfinancial preferences; backup format version 6
+- Room schema 8 for finances (goals since 4, recurring schedules since 5, investments
+  since 6, carryover since 7, up to five starred goals since 8); DataStore for
+  nonfinancial preferences; backup format version 7
   ([format](../data/backup-format.md)).
 - Backups save and restore through the system file picker, also from the start-up
   failure screen; retry and confirmed start-over preserve an unreadable database privately.

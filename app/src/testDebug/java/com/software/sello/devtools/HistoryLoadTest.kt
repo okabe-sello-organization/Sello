@@ -2,6 +2,7 @@ package com.software.sello.devtools
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.domain.model.GainDirection
+import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
@@ -142,6 +143,30 @@ class HistoryLoadTest {
         assertEquals(pesos(2_010_000), tight.month(2026, 9).spent)
         assertEquals(pesos(140_000), tight.month(2026, 9).limited().budget.remaining)
         assertEquals(pesos(150_000), tight.summary(2026, 9).unallocated)
+    }
+
+    @Test
+    fun fiveStarredGoals() {
+        val loaded = load(Scenarios.StarredGoals)
+        val board: GoalBoard = runBlocking { loaded.koin.get<GoalReads>().board().value() }
+        fun name(id: GoalId) =
+            board.goals.single { it.history.goal.id == id }.history.goal.name.value
+
+        // 1.200.000 of 1.200.000 is 100 %; 2.100.000 of 5.000.000 is 42 %; 300.000 of
+        // 1.000.000 is 30 %; 360.000 of 2.000.000 is 18 %; 100.000 of 2.000.000 is 5 %.
+        assertEquals(
+            listOf(
+                "Celular nuevo",
+                "Fondo de emergencia",
+                "Cirugía de Luna",
+                "Bicicleta",
+                "Curso de inglés"
+            ),
+            board.reciboGoals.map(::name)
+        )
+        assertEquals(board.reciboGoals.toSet(), board.starred)
+        // Viaje a la costa, 57 %, is the sixth: not starred, not on Recibo.
+        assertEquals(6, board.goals.size)
     }
 
     @Test

@@ -239,6 +239,45 @@ object Scenarios {
     )
 
     /**
+     * Six active goals, five of them starred (SELLO-144): Recibo's carousel shows the five
+     * starred ones, Celular nuevo at 100 % waiting on its ✓, and starring Viaje a la costa
+     * from its detail opens the sheet that picks the star it replaces.
+     */
+    val StarredGoals = Scenario(
+        id = "metas-destacadas",
+        version = 1,
+        seed = 1,
+        zone = Bogota,
+        start = day(2026, 10, 1),
+        today = day(2026, 10, 24),
+        title = "Cinco metas destacadas",
+        summary = "Seis metas, cinco con estrella en el carrusel de Recibo; Celular nuevo al " +
+            "100 %. Destacar Viaje a la costa pide cuál cambiar.",
+        steps = listOf(
+            Category("mercado", "Mercado", "shopping_cart", 700_000),
+            Income(3_000_000, "salary"),
+            Goal("viaje", "Viaje a la costa", "flight", 3_000_000),
+            Goal("celular", "Celular nuevo", "phone_iphone", 1_200_000),
+            Goal("emergencia", "Fondo de emergencia", "home", 5_000_000),
+            Goal("luna", "Cirugía de Luna", "pets", 1_000_000),
+            Goal("bici", "Bicicleta", "fitness_center", 2_000_000),
+            Goal("curso", "Curso de inglés", "school", 2_000_000),
+            Aporte("viaje", 1_710_000, 1),
+            Aporte("celular", 1_200_000, 1),
+            Aporte("emergencia", 2_100_000, 1),
+            Aporte("luna", 300_000, 1),
+            Aporte("bici", 360_000, 1),
+            Aporte("curso", 100_000, 1),
+            ChooseForRecibo("celular"),
+            ChooseForRecibo("emergencia"),
+            ChooseForRecibo("luna"),
+            ChooseForRecibo("bici"),
+            ChooseForRecibo("curso"),
+            AdvanceTo(day(2026, 10, 24))
+        )
+    )
+
+    /**
      * The four investments of the v2 page from May 2025, each movement on its own day
      * (IN02–IN06), then Acciones EE. UU. in dollars at 4.150,25 on 20 October (IN27,
      * IN28), with a small budget beside them.
@@ -833,6 +872,7 @@ object Scenarios {
         NormalYear,
         TightMonth,
         GoalSaver,
+        StarredGoals,
         Investor,
         FixedPayments,
         SixMonths,
