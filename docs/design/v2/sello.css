@@ -678,6 +678,16 @@ svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:m
 .inv-chart .dots circle{fill:var(--brand);stroke:var(--paper);stroke-width:2}
 .legend i.val{border-radius:50%;background:var(--brand)}
 .legend i.put{height:0;border-top:2px dashed var(--outline);background:none;border-radius:0}
+.inv-chart .grid line{stroke:var(--rule);stroke-width:1}
+.inv-chart .grid text{fill:var(--outline);font-size:9px}
+.inv-chart .guide{stroke:var(--ink);stroke-width:1;stroke-dasharray:2 3}
+.inv-chart .dots circle.sel{fill:var(--ink)}
+.inv-picked{display:flex;gap:12px;font-size:.86em;color:var(--soft);margin:0 0 4px}
+.inv-picked span:first-child{flex:1}
+.inv-picked b{color:var(--ink);font-weight:800}
+.inv-axis{padding-left:34px}
+.mov-amt small.gain{color:var(--gain)}
+.mov-amt small.loss{color:var(--loss)}
 .mov-row.val .mi{background:var(--brandsoft);color:var(--onbrandsoft)}
 .inv-ic.none{background:none;border:2px dashed var(--outline);color:var(--soft)}
 .inv-none{color:var(--soft)}

@@ -36,14 +36,17 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -54,9 +57,16 @@ import kotlinx.coroutines.delay
 /** What a movement row's mark says: money in, money out, or a new value (v2 *mov-row*). */
 enum class MovementTone { In, Out, Value }
 
-/** The goal's balance once the movement counted, under its amount: "saldo 1.310.000". */
+/**
+ * A figure under a movement's amount: a goal's "saldo 1.310.000", an investment's
+ * "ganancia +228.000" in [color], or a label alone ("sin ganancia") when [value] is null.
+ */
 @Immutable
-data class MovementBalance(val label: String, val value: MoneyTextValue)
+data class MovementBalance(
+    val label: String,
+    val value: MoneyTextValue?,
+    val color: Color = Color.Unspecified
+)
 
 /**
  * One movement (v2 *mov-row*): its mark, [title] over [detail], and the amount at the end
@@ -126,20 +136,50 @@ fun MovementRow(
         Column(horizontalAlignment = Alignment.End) {
             MoneyText(amount, color = amountColor, fontWeight = FontWeight.W800)
             balance?.let {
+                val ink = it.color.takeOrElse { colors.inkSoft }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        it.label + " ",
+                        if (it.value == null) it.label else it.label + " ",
                         style = MaterialTheme.typography.labelSmall,
-                        color = colors.inkSoft
+                        color = ink
                     )
-                    MoneyText(
-                        it.value,
-                        color = colors.inkSoft,
-                        textStyle = MaterialTheme.typography.labelSmall
-                    )
+                    it.value?.let { value ->
+                        MoneyText(
+                            value,
+                            color = ink,
+                            textStyle = MaterialTheme.typography.labelSmall
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+/**
+ * A month of a full movement list, over a rule: its name and, for a goal, its [net]
+ * change. Goal and investment details share it.
+ */
+@Composable
+fun MovementMonthLine(name: String, net: MoneyTextValue?, modifier: Modifier = Modifier) {
+    val colors = SelloTheme.colors
+    val style = MaterialTheme.typography.labelSmall.copy(
+        fontWeight = FontWeight.W800,
+        letterSpacing = 0.06.em
+    )
+    Row(
+        modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) { heading() }
+            .drawBehind {
+                val y = size.height - 0.5.dp.toPx()
+                drawLine(colors.rule, Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
+            }
+            .padding(top = 12.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(name.uppercase(), Modifier.weight(1f), style = style, color = colors.outline)
+        net?.let { MoneyText(it, color = colors.outline, textStyle = style) }
     }
 }
 

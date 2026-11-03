@@ -48,26 +48,39 @@ const tab = (o, body, { tall = false, bandHtml = "", dock = "Anotar movimiento" 
 // 89.000 (mar 2026) + 89.000 (sep 2026) = 178.000; recorded values below; gain +228.000 (+7,6 %).
 // Fondo: aportes 6.000.000, retiro 500.000 (ago 2026), value 5.242.000; gain −258.000 (−4,3 %).
 const DETAIL = {
-  eco: { name: "Ecopetrol", kind: "Acciones", value: 3050000, contributed: 3000000, withdrawn: 0, paid: 178000, gain: 228000, pct: "7,6", up: true, since: "mar 2025", valued: "9 oct",
+  eco: { mid: "dic 25", name: "Ecopetrol", kind: "Acciones", value: 3050000, contributed: 3000000, withdrawn: 0, paid: 178000, gain: 228000, pct: "7,6", up: true, since: "mar 2025", valued: "9 oct",
     // [month index from mar 2025, recorded value]; contributions as steps.
     values: [[0, 2000000], [4, 3010000], [9, 2900000], [13, 3120000], [19, 3050000]], steps: [[0, 2000000], [4, 3000000]],
-    movs: [["value", "Valor de hoy", "vie 9 oct", "3.050.000"], ["paid", "Dividendo", "mar 15 sep", "+89.000"], ["value", "Valor de hoy", "jue 2 abr", "3.120.000"], ["paid", "Dividendo", "dom 15 mar", "+89.000"]], count: 9 },
-  fondo: { name: "Fondo de acciones", kind: "Fondo colectivo", value: 5242000, contributed: 6000000, withdrawn: 500000, paid: 0, gain: -258000, pct: "4,3", up: false, since: "may 2025", valued: "14 oct",
+    picked: ["9 oct 2026", "3.050.000", "3.000.000"],
+    // [kind, title, day, amount, figure under it, figure ink] (IN37).
+    movs: [["value", "Valor de hoy", "vie 9 oct", "3.050.000", "ganancia +228.000", "gain"], ["paid", "Dividendo", "mar 15 sep", "+89.000", "dividendos 178.000"], ["value", "Valor de hoy", "jue 2 abr", "3.120.000", "ganancia +209.000", "gain"], ["paid", "Trimestre I", "Dividendo · dom 15 mar", "+89.000", "dividendos 89.000"]], count: 9 },
+  fondo: { mid: "ene 26", name: "Fondo de acciones", kind: "Fondo colectivo", value: 5242000, contributed: 6000000, withdrawn: 500000, paid: 0, gain: -258000, pct: "4,3", up: false, since: "may 2025", valued: "14 oct",
     values: [[2, 3000000], [8, 6150000], [14, 5980000], [17, 5600000], [19, 5242000]], steps: [[2, 3000000], [8, 6000000], [17, 5500000]],
-    movs: [["value", "Valor de hoy", "mié 14 oct", "5.242.000"], ["out", "Retiro", "lun 3 ago", "−500.000"], ["value", "Valor de hoy", "vie 3 jul", "5.600.000"], ["in", "Aporte", "lun 3 nov 2025", "+3.000.000"]], count: 7 },
+    picked: ["14 oct 2026", "5.242.000", "5.500.000"],
+    movs: [["value", "Valor de hoy", "mié 14 oct", "5.242.000", "pérdida −258.000", "loss"], ["out", "Retiro", "lun 3 ago", "−500.000", "pusiste 5.500.000"], ["value", "Valor de hoy", "vie 3 jul", "5.600.000", "pérdida −400.000", "loss"], ["in", "Aporte", "lun 3 nov 2025", "+3.000.000", "pusiste 6.000.000"]], count: 7 },
 };
 
 // Recorded values are dots joined by a thin line (only recorded points, nothing in between is
-// claimed); what was put in (aportes − retiros) is a dashed step line.
+// claimed); what was put in (aportes − retiros) is a dashed step line. Owner, 2026-11-02: faint
+// gridlines with short amounts, three months, and a line above the chart reading the picked value
+// (the newest until a dot is tapped) with what was put in by then. No list of values under it.
 function chart(d) {
-  const W = 300, Hh = 110, max = d.value < 4000000 ? 3500000 : 7000000, x = m => 8 + m * (W - 16) / 19, y = v => Hh - 6 - v * (Hh - 16) / max;
+  const W = 300, Hh = 120, G = 34, lo = d.value < 4000000 ? 1500000 : 2500000, hi = d.value < 4000000 ? 3500000 : 6500000;
+  const x = m => G + m * (W - G - 8) / 19, y = v => Hh - 8 - (v - lo) * (Hh - 16) / (hi - lo);
+  const marks = d.value < 4000000 ? [[2000000, "2 M"], [2500000, "2,5 M"], [3000000, "3 M"]] : [[3000000, "3 M"], [4000000, "4 M"], [5000000, "5 M"], [6000000, "6 M"]];
+  const grid = marks.map(([v, t]) => `<line x1="${G}" x2="${W}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text x="0" y="${(y(v) + 3).toFixed(1)}">${t}</text>`).join("");
   const steps = d.steps.map(([m, v], i) => `${i ? `H${x(m).toFixed(1)}V${y(v).toFixed(1)}` : `M${x(m).toFixed(1)},${y(v).toFixed(1)}`}`).join("") + `H${x(19)}`;
   const line = d.values.map(([m, v], i) => `${i ? "L" : "M"}${x(m).toFixed(1)},${y(v).toFixed(1)}`).join("");
-  const dots = d.values.map(([m, v]) => `<circle cx="${x(m).toFixed(1)}" cy="${y(v).toFixed(1)}" r="4"/>`).join("");
-  return `<section class="slip"><h2 class="q">Valor anotado y lo que pusiste</h2><svg class="inv-chart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Valores anotados de ${d.since} a octubre 2026"><path class="put" d="${steps}"/><path class="val" d="${line}"/><g class="dots">${dots}</g></svg><div class="axis"><span>mar 25</span><span class="now">oct 26</span></div><p class="legend"><span><i class="val"></i>Valor anotado</span><span><i class="put"></i>Lo que pusiste</span></p></section>`;
+  const last = d.values.length - 1;
+  const dots = d.values.map(([m, v], i) => `<circle class="${i === last ? "sel" : ""}" cx="${x(m).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${i === last ? 6 : 4}"/>`).join("");
+  const [day, worth, put] = d.picked;
+  return `<section class="slip"><h2 class="q strong">Valor y lo que pusiste</h2><p class="inv-picked"><span>${day}</span><span>Vale <b>${worth}</b></span><span>Pusiste <b>${put}</b></span></p><svg class="inv-chart" viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Valores anotados de ${d.since} a octubre 2026"><g class="grid">${grid}</g><line class="guide" x1="${x(19)}" x2="${x(19)}" y1="2" y2="${Hh - 2}"/><path class="put" d="${steps}"/><path class="val" d="${line}"/><g class="dots">${dots}</g></svg><div class="axis inv-axis"><span>${d.since.replace(" 20", " ")}</span><span>${d.mid}</span><span class="now">oct 26</span></div><p class="legend"><span><i class="val"></i>Valor anotado</span><span><i class="put"></i>Lo que pusiste</span></p></section>`;
 }
 const movIcon = { value: "insights", paid: "add", in: "add", out: "arrow_back" };
-const movs = d => `<section class="slip"><div class="mov-head"><h2 class="q" style="margin:0">Movimientos</h2></div>${d.movs.map(([k, label, date, n], i) => `<div class="mov-row ${k === "out" ? "out" : ""} ${k === "value" ? "val" : ""} ${i === d.movs.length - 1 ? "last" : ""}"><span class="mi">${icon(movIcon[k])}</span><span><b>${label}</b><small>${date}</small></span><b>${n}</b></div>`).join("")}<button class="text-btn">Ver los ${d.count}${icon("chevron_right")}</button></section>`;
+// Owner, 2026-11-02: the goal's row. The amount at the end (aporte and dividendo green, a value
+// without a sign) with a figure under it: a value's gain, what was put in so far for an aporte or
+// retiro, the dividends so far for a dividendo (IN37–IN40). A note is the title.
+const movs = d => `<section class="slip"><div class="mov-head"><h2 class="q strong" style="margin:0">Movimientos</h2></div>${d.movs.map(([k, label, date, n, under, ink], i) => `<div class="mov-row ${k === "out" ? "out" : ""} ${k === "value" ? "val" : ""} ${i === d.movs.length - 1 ? "last" : ""}"><span class="mi">${icon(movIcon[k])}</span><span><b>${label}</b><small>${date}</small></span><span class="mov-amt"><b class="${k === "paid" || k === "in" ? "in" : ""}">${n}</b><small class="${ink ?? ""}">${under}</small></span></div>`).join("")}<button class="text-btn">Ver los ${d.count}${icon("chevron_right")}</button></section>`;
 const detailHero = d => `<section class="slip pinked"><div class="answer-head"><span class="label">Vale</span>${stamp(d)}</div><div class="gd-saved">${money(d.value)}</div>${perf(d)}<p class="caption inv-since">Valor anotado el ${d.valued} · desde ${d.since}</p><div class="tear" aria-hidden="true"></div>${breakdown(d)}<button class="outline-btn wide inv-update">${icon("insights")}Anotar el valor de hoy</button></section>`;
 const detail = (o, d, tall = false) => `<div class="phone ${tall ? "tall" : ""}"><div class="app" data-ink="${o.ink}" data-theme="${o.theme}">${subShell({ title: d.name, body: detailHero(d) + chart(d) + movs(d), tabs: 4, active: 3, dock: "Anotar movimiento", dockClass: "inv", action: ["edit_note", "Editar inversión"] })}</div></div>`;
 
@@ -198,7 +211,7 @@ function render() {
     card("Overview", "Value as the big number with a Gana / Pierde stamp, the signed return with arrow and pesos, then what produced it under the tear. A quiet line says when the values were recorded (a link until SELLO-106). Then one bar for where the money is and a row per investment.", tab(o, heroSlip(TOTAL) + listSlip(H))) +
     card("Whole screen", "Rows show each value’s date, so an old valuation (Parqueadero, 12 jun) is visible without opening it.", tab(o, heroSlip(TOTAL) + listSlip(H), { tall: true })));
   set("detail",
-    card("Gaining, with dividends", "Same slip language: value, stamp, signed return, the breakdown and “Anotar el valor de hoy”. The chart shows only recorded values as dots; the dashed line is what was put in.", detail(o, DETAIL.eco)) +
+    card("Gaining, with dividends", "Same slip language: value, stamp, signed return, the breakdown and “Anotar el valor de hoy”. The chart shows only recorded values as dots; the dashed line is what was put in. The line above it reads the picked dot (owner, 2026-11-02).", detail(o, DETAIL.eco)) +
     card("Losing, after a withdrawal", "−4,3 % in red with a down arrow and “de pérdida”, stated plainly. The withdrawal lowers what was put in, so it is not shown as a loss.", detail(o, DETAIL.fondo)) +
     card("Detail, whole screen", "Movements: Valor de hoy, Dividendo, Aporte, Retiro. Anotar movimiento opens the entry screen below.", detail(o, DETAIL.eco, true)));
   set("states",

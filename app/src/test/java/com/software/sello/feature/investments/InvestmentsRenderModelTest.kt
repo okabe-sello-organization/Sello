@@ -1,6 +1,7 @@
 package com.software.sello.feature.investments
 
 import com.software.sello.designsystem.component.MoneySign
+import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.GainDirection
 import com.software.sello.domain.model.IconKey
@@ -329,25 +330,118 @@ class InvestmentsRenderModelTest {
         assertEquals("500.000", detail.movements[1].amount.digits)
     }
 
+    /** Pesos as a row draws them, typed by hand: "−258.000", "+1.350.000" or "0". */
+    private fun money(text: String): MoneyTextValue {
+        val digits = text.trimStart('-', '+')
+        return when (text.first()) {
+            '-' -> MoneyTextValue(MoneySign.Minus, "", digits, "menos $digits pesos")
+            '+' -> MoneyTextValue(MoneySign.Plus, "", digits, "más $digits pesos")
+            else -> MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
+        }
+    }
+
+    private fun detailOf(summary: InvestmentSummary) = render.detail(
+        ReadState.Ready(board(summary)),
+        summary.history.investment.id.value,
+        today
+    ) as InvestmentDetailState.Ready
+
     @Test
-    fun theChartPlacesOnlyRecordedValuesAndWhatWasPutInAsSteps() {
-        val fondo = fondo()
-        val chart = (
-            render.detail(
-                ReadState.Ready(board(fondo)),
-                fondo.history.investment.id.value,
-                today
-            ) as InvestmentDetailState.Ready
-            ).chart!!
+    fun theChartPlacesOnlyRecordedValuesAndWhatWasPutInAsStepsBetweenRoundMarks() {
+        val chart = detailOf(fondo()).chart!!
         // Values 6.000.000 and 5.242.000; put in 6.000.000, then 5.500.000 after the retiro.
         assertEquals(listOf("6.000.000", "5.242.000"), chart.values.map { it.amount.digits })
         assertEquals(listOf("6.000.000", "5.500.000"), chart.putIn.map { it.amount.digits })
+        // Each value carries what was put in by then, for the line above the chart.
+        assertEquals(listOf("6.000.000", "5.500.000"), chart.values.map { it.putIn!!.digits })
+        // 5.242.000..6.000.000 is 758.000; a third is 252.667, so the step is 500.000 and
+        // the marks run 5 M, 5,5 M, 6 M.
+        assertEquals(
+            listOf(
+                AxisMark(0f, "5", AxisUnit.Millions),
+                AxisMark(0.5f, "5,5", AxisUnit.Millions),
+                AxisMark(1f, "6", AxisUnit.Millions)
+            ),
+            chart.grid
+        )
         assertEquals(1f, chart.values.first().y)
+        // (5.242.000 − 5.000.000) ÷ 1.000.000.
+        assertEquals(0.242f, chart.values.last().y, 0.0001f)
+        assertEquals(0.5f, chart.putIn.last().y, 0.0001f)
         assertEquals(0f, chart.values.first().x)
-        assertEquals(5_500_000f / 6_000_000f, chart.putIn.last().y, 0.0001f)
         assertTrue(chart.values.last().x < 1f)
+        // 3 may 2025 to today, 25 oct 2026, is 540 days; day 270 is 28 jan 2026.
         assertEquals(YearMonth.of(2025, 5), chart.start)
+        assertEquals(YearMonth.of(2026, 1), chart.middle)
         assertEquals(YearMonth.of(2026, 10), chart.end)
+    }
+
+    @Test
+    fun aDollarChartsMarksAreWholeDollarsBelowTenThousand() {
+        val chart = detailOf(acciones()).chart!!
+        // USD 1.000,00..1.050,50 is 50,50; a third is 16,83, so the step is USD 20.
+        assertEquals(
+            listOf("1.000", "1.020", "1.040", "1.060"),
+            chart.grid.map { it.figure }
+        )
+        assertEquals(setOf(AxisUnit.One), chart.grid.map { it.unit }.toSet())
+        // (1.050,50 − 1.000) ÷ 60.
+        assertEquals(0.8417f, chart.values.single().y, 0.0001f)
+    }
+
+    @Test
+    fun equalHeightsSitBetweenTwoMarks() {
+        val chart = detailOf(
+            investment(
+                "CDT",
+                null,
+                listOf(
+                    Triple(aporte, 1_000_000, "2026-10-01"),
+                    Triple(valor, 1_000_000, "2026-10-01")
+                )
+            )
+        ).chart!!
+        // A third of 1.000.000 is 333.333, so the step is 500.000, one either side.
+        assertEquals(
+            listOf("500", "1", "1,5"),
+            chart.grid.map { it.figure }
+        )
+        assertEquals(
+            listOf(AxisUnit.Thousands, AxisUnit.Millions, AxisUnit.Millions),
+            chart.grid.map { it.unit }
+        )
+        assertEquals(0.5f, chart.values.single().y, 0.0001f)
+    }
+
+    @Test
+    fun in38_eachMovementCarriesItsFigureUnderTheAmount() {
+        val figures = detailOf(fondo()).movements.map { it.figure }
+        // Newest first: value 5.242.000 (5.242.000 + 500.000 − 6.000.000), the retiro,
+        // the first value (6.000.000 − 6.000.000), the aporte.
+        assertEquals(
+            listOf(
+                MovementFigure.Gain(GainDirection.Loss, money("-258.000")),
+                MovementFigure.PutIn(money("5.500.000")),
+                MovementFigure.Gain(GainDirection.Even, money("0")),
+                MovementFigure.PutIn(money("6.000.000"))
+            ),
+            figures
+        )
+    }
+
+    @Test
+    fun aDividendCarriesTheDividendsSoFarAndALaterValueCountsThem() {
+        val figures = detailOf(parqueadero()).movements.map { it.figure }
+        // 19.000.000 + 350.000 − 18.000.000 = +1.350.000.
+        assertEquals(
+            listOf(
+                MovementFigure.Gain(GainDirection.Gain, money("+1.350.000")),
+                MovementFigure.Dividends(money("350.000")),
+                MovementFigure.Gain(GainDirection.Even, money("0")),
+                MovementFigure.PutIn(money("18.000.000"))
+            ),
+            figures
+        )
     }
 
     @Test

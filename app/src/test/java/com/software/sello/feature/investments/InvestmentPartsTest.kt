@@ -7,18 +7,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PixelMap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.assertIsNotSelected
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
@@ -264,28 +270,41 @@ class InvestmentPartsTest {
     }
 
     @Test
-    fun theValuesChartNamesItsMonthsItsLinesAndEveryRecordedValue() {
+    fun theValuesChartNamesItsMonthsItsLinesAndEveryRecordedValueWithoutWritingThem() {
         var chosen: String? = null
         rule.inEveryScheme(width = 320.dp, content = {
             RecordedValuesChart(
                 values = listOf(
-                    RecordedMark("a", 0f, 0.5f, "3 may 2025: 3.000.000 pesos"),
-                    RecordedMark("b", 1f, 0.9f, "14 oct 2026: 5.242.000 pesos")
+                    RecordedMark("a", 0f, 0.5f, "3 may 2025: vale 3.000.000 pesos"),
+                    RecordedMark("b", 1f, 0.9f, "14 oct 2026: vale 5.242.000 pesos")
                 ),
                 contributions = listOf(RecordedMark("c", 0f, 0.5f, "3.000.000 pesos")),
+                grid = listOf(GridMark(0f, "3 M"), GridMark(1f, "6 M")),
                 summary = "Valores anotados de may 2025 a oct 2026",
-                selectedId = null,
+                selectedId = "b",
                 onSelect = { chosen = it },
-                axis = "may 25" to "oct 26",
+                axis = Triple("may 25", "ene 26", "oct 26"),
                 legend = "Valor anotado" to "Lo que pusiste"
             )
         }) { scheme ->
-            listOf("may 25", "oct 26", "Valor anotado", "Lo que pusiste").forEach {
+            listOf("may 25", "ene 26", "oct 26", "Valor anotado", "Lo que pusiste").forEach {
                 rule.onNodeWithText(it).assertExists()
             }
             rule.onNodeWithContentDescription("Valores anotados de may 2025 a oct 2026")
                 .assertExists()
-            rule.onNodeWithText("14 oct 2026: 5.242.000 pesos").performClick()
+            // Each value is a named radio for a screen reader, never a line of text.
+            rule.onNodeWithText("3 may 2025: vale 3.000.000 pesos").assertDoesNotExist()
+            rule.onNodeWithContentDescription(
+                "14 oct 2026: vale 5.242.000 pesos"
+            ).assertIsSelected()
+            rule.onNodeWithContentDescription("3 may 2025: vale 3.000.000 pesos")
+                .assertIsNotSelected()
+                .performSemanticsAction(SemanticsActions.OnClick)
+            assertEquals(scheme, "a", chosen)
+            // A tap picks the dot nearest in time: the right edge is 14 oct.
+            rule.onNodeWithTag("investment.chart.dot.a").assertExists()
+            rule.onNodeWithContentDescription("Valores anotados de may 2025 a oct 2026")
+                .performTouchInput { click(Offset(width - 2f, height / 2f)) }
             assertEquals(scheme, "b", chosen)
         }
     }

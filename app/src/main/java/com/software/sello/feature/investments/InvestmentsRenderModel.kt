@@ -2,21 +2,23 @@ package com.software.sello.feature.investments
 
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.domain.model.Currency
-import com.software.sello.domain.model.InvestmentHistory
+import com.software.sello.domain.model.GainDirection
+import com.software.sello.domain.model.InvestmentLedgerLine
 import com.software.sello.domain.model.InvestmentMovement
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.InvestmentOrder
-import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PortfolioError
 import com.software.sello.domain.model.PortfolioItem
 import com.software.sello.domain.model.UsdRate
 import com.software.sello.domain.policy.InvestmentOrderPolicy
+import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.money.MoneyFormatter
 import java.math.BigDecimal
+import java.math.BigInteger
 import java.math.RoundingMode
 import java.time.LocalDate
 import java.time.YearMonth
@@ -63,9 +65,13 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
             ?: return InvestmentDetailState.Gone
         val investment = summary.history.investment
         val figures = summary.figures
-        val newestFirst = summary.history.movements.sortedWith(
+        // Newest first with the figures under each amount (IN37–IN40). The board's figures
+        // already worked out, so the ledger does too; without it the rows show no figure.
+        val ledger = (InvestmentPolicy.ledger(summary.history) as? Outcome.Success)?.value
+        val newestFirst = ledger?.map { it.movement } ?: summary.history.movements.sortedWith(
             compareByDescending<InvestmentMovement> { it.date }.thenByDescending { it.sequence }
         )
+        val lines = ledger?.associateBy { it.movement.id }
         return InvestmentDetailState.Ready(
             id = investment.id.value,
             name = investment.name.value,
@@ -80,7 +86,7 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
             withdrawn = money.format(figures.withdrawn),
             dividends = money.format(figures.dividends),
             since = figures.since,
-            chart = chart(summary.history, today),
+            chart = ledger?.let { chart(it.asReversed(), investment.currency, today) },
             movements = newestFirst.map { movement ->
                 val amount = movement.amount.money
                 InvestmentMovementModel(
@@ -95,7 +101,8 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
                             money.format(amount).copy(sign = MoneySign.Minus)
 
                         else -> money.format(amount, signed = true)
-                    }
+                    },
+                    figure = lines?.get(movement.id)?.let(::figure)
                 )
             },
             today = today,
@@ -103,49 +110,127 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
         )
     }
 
-    /**
-     * Recorded values as points and what was put in (aportes − retiros, in replay order)
-     * as steps, both scaled to the largest of them; time runs from the first aporte to
-     * today. Coordinates are drawing positions, never money.
-     */
-    private fun chart(history: InvestmentHistory, today: LocalDate): ValuesChartModel? {
-        val ordered = history.movements.sortedWith(
-            compareBy<InvestmentMovement> { it.date }.thenBy { it.sequence }
-        )
-        val first = ordered.firstOrNull { it.kind == InvestmentMovementKind.Contribution }?.date
-            ?: return null
-        val end = maxOf(today, ordered.last().date)
-        val span = (end.toEpochDay() - first.toEpochDay()).coerceAtLeast(1).toFloat()
-        var put = 0L
-        val steps = mutableListOf<Pair<InvestmentMovement, Long>>()
-        ordered.forEach { movement ->
-            val units = movement.amount.money.minorUnits
-            when (movement.kind) {
-                InvestmentMovementKind.Contribution -> put += units
-                InvestmentMovementKind.Withdrawal -> put -= units
-                else -> return@forEach
-            }
-            steps += movement to put
+    private fun figure(line: InvestmentLedgerLine): MovementFigure = when (line.movement.kind) {
+        InvestmentMovementKind.Valuation -> {
+            val gain = line.gain!!
+            MovementFigure.Gain(
+                direction = when {
+                    gain.minorUnits > 0 -> GainDirection.Gain
+                    gain.minorUnits < 0 -> GainDirection.Loss
+                    else -> GainDirection.Even
+                },
+                amount = money.format(gain, signed = true)
+            )
         }
-        val values = ordered.filter { it.kind == InvestmentMovementKind.Valuation }
-        val top = (values.map { it.amount.money.minorUnits } + steps.map { it.second })
-            .maxOrNull()?.coerceAtLeast(1)?.toFloat() ?: 1f
-        val currency = history.investment.currency
-        fun point(id: String, date: LocalDate, units: Long) = ChartPoint(
-            id = id,
-            x = (date.toEpochDay() - first.toEpochDay()) / span,
-            y = units / top,
-            date = date,
-            amount = money.format(Money(units, currency))
-        )
+
+        InvestmentMovementKind.Dividend -> MovementFigure.Dividends(money.format(line.dividends))
+
+        else -> MovementFigure.PutIn(money.format(line.putIn))
+    }
+
+    /**
+     * Recorded values as points, each with what was put in by then, and what was put in
+     * (aportes − retiros) as steps, from the [replayed] ledger, oldest first. Time runs
+     * from the first aporte to today; heights run between the round amounts of [grid]
+     * around them. Coordinates are drawing positions, never money.
+     */
+    private fun chart(
+        replayed: List<InvestmentLedgerLine>,
+        currency: Currency,
+        today: LocalDate
+    ): ValuesChartModel? {
+        val first = replayed.firstOrNull {
+            it.movement.kind == InvestmentMovementKind.Contribution
+        }?.movement?.date ?: return null
+        val end = maxOf(today, replayed.last().movement.date)
+        val span = (end.toEpochDay() - first.toEpochDay()).coerceAtLeast(1)
+        val steps = replayed.filter {
+            it.movement.kind == InvestmentMovementKind.Contribution ||
+                it.movement.kind == InvestmentMovementKind.Withdrawal
+        }
+        val values = replayed.filter { it.movement.kind == InvestmentMovementKind.Valuation }
+        val heights = values.map { it.movement.amount.money.minorUnits } +
+            steps.map { it.putIn.minorUnits }
+        val scale = grid(heights.min(), heights.max(), currency)
+        fun x(date: LocalDate) = (date.toEpochDay() - first.toEpochDay()).toFloat() / span
         return ValuesChartModel(
-            values = values.map { point(it.id.value, it.date, it.amount.money.minorUnits) },
-            putIn = steps.map { (movement, level) ->
-                point(movement.id.value, movement.date, level)
+            values = values.map {
+                val units = it.movement.amount.money.minorUnits
+                ChartPoint(
+                    id = it.movement.id.value,
+                    x = x(it.movement.date),
+                    y = scale.y(units),
+                    date = it.movement.date,
+                    amount = money.format(it.movement.amount.money),
+                    putIn = money.format(it.putIn)
+                )
+            },
+            putIn = steps.map {
+                ChartPoint(
+                    id = it.movement.id.value,
+                    x = x(it.movement.date),
+                    y = scale.y(it.putIn.minorUnits),
+                    date = it.movement.date,
+                    amount = money.format(it.putIn)
+                )
             },
             start = YearMonth.from(first),
-            end = YearMonth.from(end)
+            end = YearMonth.from(end),
+            middle = YearMonth.from(first.plusDays(span / 2)),
+            grid = scale.marks
         )
+    }
+
+    /** Round amounts from [low] to [high] and where each sits, for the chart's gridlines. */
+    private class Grid(val bottom: Long, val top: Long, val marks: List<AxisMark>) {
+        fun y(units: Long): Float =
+            ((units.toDouble() - bottom) / (top.toDouble() - bottom)).toFloat()
+    }
+
+    /**
+     * Gridlines a round step apart (1, 2, 2,5 or 5 times a power of ten, in whole pesos or
+     * dollars), the smallest step that splits [low]..[high] into at most three, from the
+     * step at or below [low] to the one at or above [high]; one step either side when
+     * they are equal.
+     */
+    private fun grid(low: Long, high: Long, currency: Currency): Grid {
+        val unit = BigInteger.TEN.pow(currency.scale).toLong()
+        // Equal heights split their own size, so the flat line sits between two marks.
+        val spread = (high.toDouble() - low).takeIf { it > 0 } ?: kotlin.math.abs(high.toDouble())
+        val target = spread / MAX_STEPS
+        val step = STEPS.map { it * unit }.firstOrNull { it >= target } ?: (STEPS.last() * unit)
+        var bottom = Math.floorDiv(low, step) * step
+        var top = -Math.floorDiv(-high, step) * step
+        if (top == bottom) {
+            bottom -= step
+            top += step
+        }
+        val marks = generateSequence(bottom) { it + step }.takeWhile { it <= top }.map { units ->
+            axisMark(units, currency).copy(
+                y = ((units.toDouble() - bottom) / (top.toDouble() - bottom)).toFloat()
+            )
+        }.toList()
+        return Grid(bottom, top, marks)
+    }
+
+    /**
+     * [units] as an axis writes it: from a million in millions ("2,5 M"), from ten
+     * thousand in thousands ("800 mil"), below that whole ("1.020"); up to two decimals.
+     */
+    private fun axisMark(units: Long, currency: Currency): AxisMark {
+        val whole = BigDecimal.valueOf(units, currency.scale)
+        val (amount, unit) = when {
+            whole.abs() >= MILLION -> whole.divide(MILLION) to AxisUnit.Millions
+            whole.abs() >= TEN_THOUSAND -> whole.divide(THOUSAND) to AxisUnit.Thousands
+            else -> whole to AxisUnit.One
+        }
+        val rounded = amount.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros()
+        val plain = rounded.abs().toPlainString()
+        val integer = plain.substringBefore('.')
+        val grouped = integer.reversed().chunked(3).joinToString(".").reversed()
+        val decimals = plain.substringAfter('.', "").let { if (it.isEmpty()) "" else ",$it" }
+        val sign = if (rounded.signum() < 0) "−" else ""
+        return AxisMark(0f, sign + grouped + decimals, unit)
     }
 
     /** The rate as the app writes it: "4.150,25". */
@@ -238,5 +323,15 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
 
     private companion object {
         val HUNDRED: BigDecimal = BigDecimal.valueOf(100)
+        val THOUSAND: BigDecimal = BigDecimal.valueOf(1_000)
+        val TEN_THOUSAND: BigDecimal = BigDecimal.valueOf(10_000)
+        val MILLION: BigDecimal = BigDecimal.valueOf(1_000_000)
+        const val MAX_STEPS = 3
+
+        /** Round steps in whole units: 1, 2, 2,5 and 5 times each power of ten from 1. */
+        val STEPS: List<Long> = (0..14).flatMap { power ->
+            val ten = BigInteger.TEN.pow(power).toLong()
+            listOfNotNull(ten, 2 * ten, if (power > 0) 25 * ten / 10 else null, 5 * ten)
+        }
     }
 }

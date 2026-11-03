@@ -3,18 +3,21 @@ package com.software.sello.feature.investments
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -30,10 +33,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.software.sello.designsystem.component.MoneyText
@@ -232,115 +245,163 @@ internal fun InvestmentRow(
 @Immutable
 internal data class RecordedMark(val id: String, val x: Float, val y: Float, val spoken: String)
 
+/** A gridline at [y] in 0..1 and its short [label]: "2,5 M". */
+@Immutable
+internal data class GridMark(val y: Float, val label: String)
+
 /**
  * Recorded values as dots joined by a thin line, and what was put in as a dashed step
- * line; nothing between recorded points is claimed. With [axis] the first and last
- * month are written under it, and with [legend] what the line and the steps are.
- * Each value is also a named row for keyboard and screen-reader users.
+ * line; nothing between recorded points is claimed. Faint [grid] lines carry short
+ * amounts at the left; [axis] writes the first, middle and last month under it and
+ * [legend] what the line and the steps are. The [selectedId] dot is drawn larger in ink
+ * with a guide down the chart; a tap picks the dot nearest in time. Each dot is also a
+ * named radio button for screen readers, with no visible text of its own.
  */
 @Composable
 internal fun RecordedValuesChart(
     values: List<RecordedMark>,
     contributions: List<RecordedMark>,
+    grid: List<GridMark>,
     summary: String,
     selectedId: String?,
     onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier,
-    axis: Pair<String, String>? = null,
-    legend: Pair<String, String>? = null
+    axis: Triple<String, String, String>,
+    legend: Pair<String, String>,
+    modifier: Modifier = Modifier
 ) {
     val colors = SelloTheme.colors
+    val measurer = rememberTextMeasurer()
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(color = colors.outline)
+    val density = LocalDensity.current
     Column(modifier.fillMaxWidth()) {
-        Canvas(Modifier.fillMaxWidth().height(150.dp).semantics { contentDescription = summary }) {
+        BoxWithConstraints(
+            Modifier.fillMaxWidth().height(CHART_HEIGHT).semantics { contentDescription = summary }
+        ) {
+            val width = with(density) { maxWidth.toPx() }
+            val height = with(density) { CHART_HEIGHT.toPx() }
+            val gutter = with(density) { GUTTER.toPx() }
+            val inset = with(density) { INSET.toPx() }
             fun point(mark: RecordedMark) = Offset(
-                mark.x.coerceIn(0f, 1f) * (size.width - 16.dp.toPx()) + 8.dp.toPx(),
-                (1f - mark.y.coerceIn(0f, 1f)) * (size.height - 16.dp.toPx()) + 8.dp.toPx()
+                gutter + mark.x.coerceIn(0f, 1f) * (width - gutter - inset),
+                inset + (1f - mark.y.coerceIn(0f, 1f)) * (height - 2 * inset)
             )
-            val steps = Path()
-            contributions.forEachIndexed { index, mark ->
-                val p = point(mark)
-                if (index == 0) {
-                    steps.moveTo(p.x, p.y)
-                } else {
-                    steps.lineTo(p.x, point(contributions[index - 1]).y)
-                    steps.lineTo(p.x, p.y)
+            val selected = values.firstOrNull { it.id == selectedId }
+            Canvas(
+                Modifier.fillMaxSize().pointerInput(values) {
+                    detectTapGestures { tap ->
+                        values.minByOrNull { kotlin.math.abs(point(it).x - tap.x) }
+                            ?.let { onSelect(it.id) }
+                    }
+                }
+            ) {
+                grid.forEach { mark ->
+                    val y = inset + (1f - mark.y) * (size.height - 2 * inset)
+                    drawLine(colors.rule, Offset(gutter, y), Offset(size.width, y), 1.dp.toPx())
+                    val text = measurer.measure(mark.label, labelStyle)
+                    drawText(text, topLeft = Offset(0f, y - text.size.height / 2f))
+                }
+                selected?.let {
+                    val x = point(it).x
+                    drawLine(
+                        colors.ink,
+                        Offset(x, 0f),
+                        Offset(x, size.height),
+                        1.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(2.dp.toPx(), 3.dp.toPx())
+                        )
+                    )
+                }
+                val steps = Path()
+                contributions.forEachIndexed { index, mark ->
+                    val p = point(mark)
+                    if (index == 0) {
+                        steps.moveTo(p.x, p.y)
+                    } else {
+                        steps.lineTo(p.x, point(contributions[index - 1]).y)
+                        steps.lineTo(p.x, p.y)
+                    }
+                }
+                contributions.lastOrNull()?.let { steps.lineTo(size.width - inset, point(it).y) }
+                drawPath(
+                    steps,
+                    colors.outline,
+                    style = Stroke(
+                        2.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(
+                            floatArrayOf(5.dp.toPx(), 4.dp.toPx())
+                        )
+                    )
+                )
+                val line = Path()
+                values.forEachIndexed { index, mark ->
+                    val p = point(mark)
+                    if (index == 0) line.moveTo(p.x, p.y) else line.lineTo(p.x, p.y)
+                }
+                drawPath(line, colors.brand, style = Stroke(2.dp.toPx()))
+                values.forEach { mark ->
+                    val picked = mark.id == selectedId
+                    val radius = if (picked) 6.dp.toPx() else 4.dp.toPx()
+                    drawCircle(colors.paper, radius + 2.dp.toPx(), point(mark))
+                    drawCircle(if (picked) colors.ink else colors.brand, radius, point(mark))
                 }
             }
-            drawPath(
-                steps,
-                colors.inkSoft,
-                style = Stroke(
-                    1.5.dp.toPx(),
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 4.dp.toPx()))
-                )
+            // One named, selectable spot per dot for screen readers; taps go to the canvas.
+            Box(Modifier.fillMaxSize().selectableGroup()) {
+                values.forEach { mark ->
+                    val p = point(mark)
+                    val half = with(density) { (DOT_TARGET / 2).toPx() }
+                    Box(
+                        Modifier
+                            .offset { IntOffset((p.x - half).toInt(), (p.y - half).toInt()) }
+                            .size(DOT_TARGET)
+                            .testTag("investment.chart.dot.${mark.id}")
+                            .semantics {
+                                contentDescription = mark.spoken
+                                this.selected = mark.id == selectedId
+                                role = Role.RadioButton
+                                onClick {
+                                    onSelect(mark.id)
+                                    true
+                                }
+                            }
+                    )
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(start = GUTTER, top = 2.dp)) {
+            val style = MaterialTheme.typography.bodySmall
+            Text(axis.first, Modifier.weight(1f), style = style, color = colors.inkSoft)
+            Text(
+                axis.second,
+                Modifier.weight(1f),
+                style = style,
+                color = colors.inkSoft,
+                textAlign = TextAlign.Center
             )
-            val line = Path()
-            values.forEachIndexed { index, mark ->
-                val p = point(mark)
-                if (index == 0) line.moveTo(p.x, p.y) else line.lineTo(p.x, p.y)
-            }
-            drawPath(line, colors.brand, style = Stroke(1.5.dp.toPx()))
-            values.forEach { mark ->
-                drawCircle(
-                    if (mark.id ==
-                        selectedId
-                    ) {
-                        colors.ink
-                    } else {
-                        colors.brand
-                    },
-                    if (mark.id ==
-                        selectedId
-                    ) {
-                        6.dp.toPx()
-                    } else {
-                        4.dp.toPx()
-                    },
-                    point(mark)
-                )
-            }
+            Text(
+                axis.third,
+                Modifier.weight(1f),
+                style = style,
+                color = colors.ink,
+                fontWeight = FontWeight.W800,
+                textAlign = TextAlign.End
+            )
         }
-        axis?.let { (start, end) ->
-            Row(Modifier.fillMaxWidth().padding(horizontal = SelloTheme.spacing.sm)) {
-                Text(
-                    start,
-                    Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.inkSoft
-                )
-                Text(
-                    end,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = colors.ink,
-                    fontWeight = FontWeight.W800
-                )
-            }
-        }
-        legend?.let { (value, put) ->
-            FlowRow(
-                Modifier.fillMaxWidth().padding(SelloTheme.spacing.sm),
-                horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
-            ) {
-                LegendItem(value, dashed = false, color = colors.brand)
-                LegendItem(put, dashed = true, color = colors.inkSoft)
-            }
-        }
-        // Named controls expose each real recorded value to keyboard and screen-reader users.
-        Column(Modifier.selectableGroup()) {
-            values.forEach { mark ->
-                Text(
-                    mark.spoken,
-                    Modifier.fillMaxWidth().heightIn(
-                        min = 48.dp
-                    ).selectable(mark.id == selectedId, role = Role.RadioButton) {
-                        onSelect(mark.id)
-                    }.padding(SelloTheme.spacing.sm),
-                    color = colors.ink
-                )
-            }
+        FlowRow(
+            Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.lg)
+        ) {
+            LegendItem(legend.first, dashed = false, color = colors.brand)
+            LegendItem(legend.second, dashed = true, color = colors.outline)
         }
     }
 }
+
+private val CHART_HEIGHT = 150.dp
+private val GUTTER = 40.dp
+private val INSET = 8.dp
+private val DOT_TARGET = 24.dp
 
 @Composable
 private fun LegendItem(label: String, dashed: Boolean, color: Color) {

@@ -107,6 +107,18 @@ enum class GainDirection { Gain, Loss, Even }
  */
 data class InvestmentReturn(val direction: GainDirection, val tenths: Long)
 
+/**
+ * A movement and the figures once it counted, as the movement list reads them (IN37–IN40):
+ * [putIn] is aportes − retiros so far and may be below zero; [dividends] is the dividends
+ * so far; [gain] is only on a recorded value, the gain at that value (rule 6).
+ */
+data class InvestmentLedgerLine(
+    val movement: InvestmentMovement,
+    val putIn: Money,
+    val dividends: Money,
+    val gain: Money?
+)
+
 /** The value carried forward (rule 5) and the date of the recorded value it comes from. */
 data class CarriedValue(val amount: Money, val valuedOn: LocalDate)
 

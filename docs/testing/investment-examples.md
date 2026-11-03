@@ -1,6 +1,6 @@
 # Investment rules and worked examples
 
-**Ticket:** SELLO-106 · **Updated:** 2026-10-25 · **Status:** owner decisions recorded
+**Ticket:** SELLO-106 · **Updated:** 2026-11-02 (the movement list, IN37–IN40) · **Status:** owner decisions recorded
 below; the examples are approved by merging the SELLO-106 pull request (owner, 2026-10-25).
 
 The rules every investment ticket (SELLO-107–112) implements and tests against.
@@ -133,6 +133,21 @@ Rate 4.150,25 dated 20 oct unless stated.
 | IN34 | USD amounts | USD 0,01 and USD 9.999.999.999,99 accepted; USD 10.000.000.000,00 refused; typed with the pad's comma key, at most two decimals |
 | IN35 | Investments exist, none with a value (COP or USD) | The answer slip says "Todavía no hay valores anotados" with no number, stamp, return or breakdown; the rows say Sin valor; no bar and no rate line (**Proposed**) |
 | IN36 | IN28 with a goal of 5.000.000 saved | The total is unchanged: goals are not investments |
+
+## The movement list
+
+Each movement in the detail's list shows a figure under its amount (owner, 2026-11-02):
+**Valor de hoy** the gain at that value (value + retiros + dividendos − aportes so far,
+rule 6), **Aporte** and **Retiro** what was put in so far (aportes − retiros, the chart's
+dashed line, below zero once more was taken out than put in), **Dividendo** the dividends
+so far. Newest first, the later recorded first on the same day.
+
+| ID | Situation | Expected, newest first |
+| --- | --- | --- |
+| IN37 | Ecopetrol: aporte 2.000.000 and value 2.000.000 (2 mar 2025); aporte 1.000.000, then value 3.010.000 (3 jul 2025); value 2.900.000 (1 dic 2025); dividend 89.000 (15 mar 2026); value 3.120.000 (2 abr 2026); dividend 89.000 (15 sep 2026); value 3.050.000 (9 oct 2026) | Value 3.050.000: ganancia +228.000 (the slip's) · dividend: dividendos 178.000 · value 3.120.000: ganancia +209.000 · dividend: dividendos 89.000 · value 2.900.000: pérdida −100.000 · value 3.010.000: ganancia +10.000 · aporte: pusiste 3.000.000 · value 2.000.000: sin ganancia (0) · aporte: pusiste 2.000.000 |
+| IN38 | Fondo of IN04: aporte 3.000.000 and value 3.000.000 (3 may 2025); aporte 3.000.000 (3 nov 2025); retiro 500.000 (3 ago 2026); value 5.242.000 (14 oct 2026) | Value: pérdida −258.000 (IN04's) · retiro: pusiste 5.500.000 · aporte: pusiste 6.000.000 · value: 0 · aporte: pusiste 3.000.000 |
+| IN39 | Aporte 1.000.000 (5 ene 2026); value 3.000.000 (1 jun); retiro 2.500.000 (10 jun) | Retiro: pusiste −1.500.000 · value: ganancia +2.000.000 · aporte: pusiste 1.000.000. The slip: `V` 500.000, `G` +2.000.000 |
+| IN40 | Aporte 1.000.000 (1 sep 2026); value 1.100.000 (1 oct); dividend 50.000 (10 oct); aporte 500.000 (12 oct) | Aporte: pusiste 1.500.000 · dividend: dividendos 50.000 · value: ganancia +100.000 · aporte: pusiste 1.000.000. The slip's gain is +150.000: the later dividend adds to it, the aporte does not |
 
 ## Open points
 

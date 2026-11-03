@@ -6,6 +6,7 @@ import com.software.sello.domain.model.GainDirection
 import com.software.sello.domain.model.InvestmentFigures
 import com.software.sello.domain.model.InvestmentHistory
 import com.software.sello.domain.model.InvestmentHistoryError
+import com.software.sello.domain.model.InvestmentLedgerLine
 import com.software.sello.domain.model.InvestmentLineError
 import com.software.sello.domain.model.InvestmentMovement
 import com.software.sello.domain.model.InvestmentMovementKind
@@ -146,6 +147,51 @@ object InvestmentPolicy {
                 movements = movements.size
             )
         )
+    }
+
+    /**
+     * The movement list (IN37–IN40): newest first, the later recorded first on the same
+     * day, each with what was put in and the dividends once it counted, and a recorded
+     * value with the gain at that value (value + retiros + dividendos − aportes so far).
+     * The last value's gain is the slip's gain until a later movement changes it: an
+     * aporte or retiro leaves it, a dividend adds to it (IN40). Refuses a movement in
+     * another currency, or a figure that does not fit.
+     */
+    fun ledger(
+        history: InvestmentHistory
+    ): Outcome<List<InvestmentLedgerLine>, InvestmentHistoryError> {
+        val currency = history.investment.currency
+        val unrepresentable = Outcome.Failure(InvestmentHistoryError.Unrepresentable)
+        var contributed = BigInteger.ZERO
+        var withdrawn = BigInteger.ZERO
+        var dividends = BigInteger.ZERO
+        val lines = mutableListOf<InvestmentLedgerLine>()
+        for (movement in history.movements.sortedWith(replayOrder)) {
+            val amount = movement.amount.money
+            if (amount.currency != currency) {
+                return Outcome.Failure(InvestmentHistoryError.CurrencyMismatch(movement.id))
+            }
+            val units = BigInteger.valueOf(amount.minorUnits)
+            when (movement.kind) {
+                InvestmentMovementKind.Contribution -> contributed += units
+                InvestmentMovementKind.Withdrawal -> withdrawn += units
+                InvestmentMovementKind.Dividend -> dividends += units
+                InvestmentMovementKind.Valuation -> Unit
+            }
+            val gain = if (movement.kind == InvestmentMovementKind.Valuation) {
+                (units + withdrawn + dividends - contributed).toMoney(currency)
+                    ?: return unrepresentable
+            } else {
+                null
+            }
+            lines += InvestmentLedgerLine(
+                movement = movement,
+                putIn = (contributed - withdrawn).toMoney(currency) ?: return unrepresentable,
+                dividends = dividends.toMoney(currency) ?: return unrepresentable,
+                gain = gain
+            )
+        }
+        return Outcome.Success(lines.asReversed().toList())
     }
 
     /**
