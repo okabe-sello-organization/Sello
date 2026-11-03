@@ -84,6 +84,10 @@ class IncomeHistoryViewModelTest {
         override suspend fun book() = error("The history observes")
 
         override fun observe() = book
+
+        override suspend fun month(month: YearMonth) = error("The history reads no month")
+
+        override fun observeMonth(month: YearMonth) = error("The history reads no month")
     }
 
     /** The same reads, but a page can be held back to look at the screen while it is read. */

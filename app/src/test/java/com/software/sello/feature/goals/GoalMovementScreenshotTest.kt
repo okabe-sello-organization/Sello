@@ -15,8 +15,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * What Aportar a una meta looks like, kept as committed images (ADR 0022): Cobalto light, Cobalto
- * dark at twice the font size, and Violeta light. See ExpenseEntryScreenshotTest.
+ * What Aportar a una meta looks like, kept as committed images (ADR 0022)
+ * in all four themes: Cobalto and Violeta, light and dark. See ExpenseEntryScreenshotTest.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -55,4 +55,7 @@ class GoalMovementScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    @Test
+    fun violetaDark() = capture(Look(ink = SelloInk.Violeta, dark = true))
 }

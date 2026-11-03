@@ -915,6 +915,84 @@ class CategoryManagementViewModelTest {
         assertEquals("Cafetería", form.now.name)
     }
 
+    private fun publishNovember() = snapshots.ready(
+        monthOf(
+            "2026-11-01",
+            listOf(categoryIn(1, "Café", 200_000)),
+            List(2) { storedExpense(200 + it, 1, "2026-11-01", 1_000) }
+        )
+    )
+
+    @Test
+    fun archivingAfterTheFormsMonthEndedAsksAboutTheMonthInProgress() {
+        clock.goTo("2026-10-31")
+        val form = form()
+        clock.goTo("2026-11-01")
+        reads.categories = listOf(cafeInNovember, mercado)
+        publishNovember()
+
+        form.onAction(CategoryEditorAction.Archive)
+
+        // November's own 2 expenses, and November named: archiving applies to today's month.
+        val asked = form.now.archiveQuestion
+        assertEquals(november to 2, asked?.let { it.currentMonth to it.expensesThisMonth })
+        assertEquals(november to false, form.now.targetMonth to form.now.historical)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
+    @Test
+    fun confirmingAQuestionAboutAMonthThatEndedAsksAgainBeforeArchiving() {
+        clock.goTo("2026-10-31")
+        val form = form()
+        form.onAction(CategoryEditorAction.Archive)
+        val asked = form.now.archiveQuestion
+        clock.goTo("2026-11-01")
+        reads.categories = listOf(cafeInNovember, mercado)
+        publishNovember()
+
+        form.onAction(CategoryEditorAction.ArchiveConfirmed)
+        val again = form.now.archiveQuestion
+
+        assertEquals(october, asked?.currentMonth)
+        // Nothing is sent on October's question; November's is asked instead.
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+        assertEquals(november to 2, again?.let { it.currentMonth to it.expensesThisMonth })
+        assertFalse(form.now.busy)
+
+        form.onAction(CategoryEditorAction.ArchiveConfirmed)
+
+        assertEquals(listOf(ArchiveCategory::class), commands.submitted.map { it::class })
+        assertEquals(EditorResult.Archived, form.now.result)
+    }
+
+    @Test
+    fun aFinishedMonthsFormAsksAboutTheMonthInProgressAndStaysOnItsMonth() {
+        clock.goTo("2026-10-31")
+        val form = form(opening(month = september))
+        clock.goTo("2026-11-01")
+        publishNovember()
+
+        form.onAction(CategoryEditorAction.Archive)
+
+        assertEquals(november, form.now.archiveQuestion?.currentMonth)
+        assertEquals(september to true, form.now.targetMonth to form.now.historical)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
+    @Test
+    fun whenTheMonthInProgressCannotBeReadArchivingAsksNothingAndSaysSo() {
+        clock.goTo("2026-10-31")
+        val form = form()
+        clock.goTo("2026-11-01")
+        reads.failure = StorageFailure.Unavailable("x")
+
+        form.onAction(CategoryEditorAction.Archive)
+
+        assertNull(form.now.archiveQuestion)
+        assertTrue(form.now.loadFailed)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
     /**
      * Rule 9 with a payment due and not recorded yet: Sello records what is due, then
      * archives under a new operation, since the refused one wrote nothing (owner,

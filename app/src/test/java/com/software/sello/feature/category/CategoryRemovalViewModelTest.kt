@@ -116,7 +116,8 @@ class CategoryRemovalViewModelTest {
     private val previews = HandRemovalPreviews()
     private val reads = HandCategoryReads().apply { generation = 7 }
     private val snapshots = HandSnapshots()
-    private val session = MonthSession(HandFinancialClock("2026-10-22"), HandMonotonicClock())
+    private val clock = HandFinancialClock("2026-10-22")
+    private val session = MonthSession(clock, HandMonotonicClock())
     private var nextId = 500
     private lateinit var notices: Corrections
 
@@ -343,6 +344,34 @@ class CategoryRemovalViewModelTest {
             pick.targets!!.associate { it.name to it.amount.digits }
         )
         assertEquals(october, pick.month)
+    }
+
+    @Test
+    fun afterTheMonthTheFormOpenedWithEndedTheListIsTheMonthInProgress() {
+        answer()
+        val form = form()
+        clock.goTo("2026-11-01")
+        // November so far: Comida spent nothing of its 200.000, Hogar 50.000 of 400.000.
+        snapshots.ready(
+            monthOf(
+                "2026-11-01",
+                listOf(
+                    categoryIn(1, "Café", 50_000),
+                    categoryIn(2, "Comida", 200_000),
+                    categoryIn(3, "Hogar", 400_000)
+                ),
+                listOf(storedExpense(20, 3, "2026-11-01", 50_000))
+            )
+        )
+
+        form.act(RemovalAction.Start, RemovalAction.Move)
+
+        val pick = form.step as RemovalStep.Pick
+        assertEquals(YearMonth.of(2026, 11), pick.month)
+        assertEquals(
+            mapOf("Comida" to "200.000", "Hogar" to "350.000"),
+            pick.targets!!.associate { it.name to it.amount.digits }
+        )
     }
 
     @Test

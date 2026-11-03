@@ -75,7 +75,8 @@ internal class CategoryRemoval(
     private val previews: CategoryRemovalPreviews,
     private val snapshots: MonthlySnapshots,
     private val money: MoneyFormatter,
-    private val currentMonth: YearMonth,
+    /** Today's month, read again at each use: a month the form opened with may have ended. */
+    private val monthInProgress: () -> YearMonth,
     private val scope: CoroutineScope,
     private val host: RemovalHost
 ) {
@@ -226,12 +227,11 @@ internal class CategoryRemoval(
     private suspend fun pick(counts: RemovalCounts) {
         val subject = host.subject() ?: return
         remember(memory.copy(stage = Stage.Pick))
-        publish(
-            RemovalState(subject.name, RemovalStep.Pick(counts, currentMonth, null), busy = true)
-        )
-        val month = when (val read = snapshots.read(currentMonth)) {
+        val shown = monthInProgress()
+        publish(RemovalState(subject.name, RemovalStep.Pick(counts, shown, null), busy = true))
+        val month = when (val read = snapshots.read(shown)) {
             is Outcome.Failure ->
-                return show(RemovalStep.Pick(counts, currentMonth, null, failed = true))
+                return show(RemovalStep.Pick(counts, shown, null, failed = true))
 
             is Outcome.Success -> read.value
         }
@@ -247,7 +247,7 @@ internal class CategoryRemoval(
                     amount = money.format(line.budget?.remaining ?: line.spent)
                 )
             }
-        show(RemovalStep.Pick(counts, currentMonth, targets))
+        show(RemovalStep.Pick(counts, shown, targets))
     }
 
     /** What moving into [target] would do, from its own preview. */
@@ -478,7 +478,7 @@ internal class CategoryRemoval(
 
     private suspend fun askCorrection(refusal: CategoryRejection.CorrectionUnconfirmed) {
         if (categories.isEmpty()) {
-            (snapshots.read(currentMonth) as? Outcome.Success)?.value?.let { month ->
+            (snapshots.read(monthInProgress()) as? Outcome.Success)?.value?.let { month ->
                 categories = month.categories.associate { it.category.id to it.category }
             }
         }

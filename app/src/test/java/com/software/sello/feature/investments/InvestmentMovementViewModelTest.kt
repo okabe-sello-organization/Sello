@@ -613,6 +613,59 @@ class InvestmentMovementViewModelTest {
     }
 
     @Test
+    fun zeroThen000Then5IsFiveAndComesBackAsFiveAfterProcessDeath() = runTest {
+        val saved = SavedStateHandle(mapOf(InvestmentMovementViewModel.KEY_INVESTMENT to ecopetrol))
+        val first = model(saved = saved)
+        first.onAction(InvestmentMovementAction.Kind(Valuation))
+        first.keys("0", "000", "5")
+        assertEquals("5", first.now.amount!!.digits)
+
+        val restored = model(saved = saved)
+
+        assertEquals("5", restored.now.amount!!.digits)
+        assertNull(restored.now.amountText)
+        restored.onAction(InvestmentMovementAction.Submit)
+        val sent = commands.sent.single() as RecordInvestmentMovement
+        assertEquals(Money.cop(5), sent.amount.money)
+    }
+
+    @Test
+    fun afterASavedAporteProcessDeathBringsNothingBackToSaveAgain() = runTest {
+        val saved = SavedStateHandle(mapOf(InvestmentMovementViewModel.KEY_INVESTMENT to ecopetrol))
+        val first = model(saved = saved)
+        first.keys("5", "000")
+        first.onAction(InvestmentMovementAction.Submit)
+        assertTrue(first.now.closed)
+
+        val restored = model(saved = saved)
+
+        assertNull(restored.now.amount)
+        assertFalse(restored.now.canSubmit)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
+    fun afterASavedCorrectionProcessDeathReadsTheMovementAsStored() = runTest {
+        val saved = SavedStateHandle(
+            mapOf(
+                InvestmentMovementViewModel.KEY_INVESTMENT to ecopetrol,
+                InvestmentMovementViewModel.KEY_MOVEMENT to movementId(23).value
+            )
+        )
+        val first = model(saved = saved)
+        first.onAction(InvestmentMovementAction.ClearAmount)
+        first.keys("9", "0", "000")
+        first.onAction(InvestmentMovementAction.Submit)
+        assertTrue(first.now.closed)
+
+        val restored = model(saved = saved)
+
+        // The fake keeps the movement at 89.000; storage, not the sent draft, is shown.
+        assertEquals("89.000", restored.now.amount!!.digits)
+        assertFalse(restored.now.canSubmit)
+    }
+
+    @Test
     fun editingSendsTheCorrectionAtBothVersionsOnlyOnceSomethingChanged() = runTest {
         val model = model(investment = ecopetrol, movement = movementId(23).value)
         assertEquals("89.000", model.now.amount!!.digits)
