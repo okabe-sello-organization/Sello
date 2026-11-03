@@ -1,6 +1,7 @@
 package com.software.sello.feature.recurrence
 
 import androidx.lifecycle.SavedStateHandle
+import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
@@ -13,11 +14,12 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBook
-import com.software.sello.domain.port.ScheduleBookState
+import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.StoredSchedule
 import com.software.sello.feature.expense.categoryId
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
+import com.software.sello.feature.expense.storedExpense
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.pesos
@@ -108,9 +110,39 @@ class SchedulesViewModelTest {
         reads.state.value = ReadState.Ready(ScheduleBook(1, 1, schedules.toList()))
     }
 
-    private fun categories() = snapshots.ready(
+    private var entries = 100
+
+    /** The expense schedule [number] recorded for its [occurrence], stored now at [amount]. */
+    private fun paid(number: Int, occurrence: String, amount: Long, date: String = occurrence) =
+        ScheduleRecord.Payment(
+            storedExpense(entries++, 1, date, amount).copy(
+                origin = EntryOrigin(scheduleId(number), Occurrence(d(occurrence), 1))
+            )
+        )
+
+    /** What the schedules recorded, as the entries are stored now. */
+    private fun recorded(vararg records: ScheduleRecord) {
+        reads.records.value = records.toList()
+    }
+
+    /** The rent's 5 Oct entry, the bus's 3 and 10 Oct ones and the course's 16 Sep one. */
+    private fun recordedSoFar() = recorded(
+        paid(1, "2026-10-05", 950_000),
+        paid(3, "2026-10-03", 20_000),
+        paid(3, "2026-10-10", 20_000),
+        paid(4, "2026-09-16", 189_000)
+    )
+
+    private fun SchedulesViewModel.plan() = ready.plan!!.let {
+        listOf(it.done.spoken, it.doneCount, it.toCome.spoken, it.toComeCount, it.total.spoken)
+    }
+
+    private fun SchedulesViewModel.row(number: Int) =
+        (ready.rows + ready.ended).single { it.id == scheduleId(number).value }
+
+    private fun categories(today: String = "2026-10-22") = snapshots.ready(
         monthOf(
-            "2026-10-22",
+            today,
             listOf(
                 categoryIn(1, "Hogar", 400_000, icon = "home"),
                 categoryIn(2, "Transporte", 100_000, icon = "directions_bus"),
@@ -129,6 +161,7 @@ class SchedulesViewModelTest {
         val model = list()
         categories()
         publish(rent, bills, bus, course, salary)
+        recordedSoFar()
 
         val ready = model.ready
         assertEquals(ScheduleTab.Payments, ready.tab)
@@ -162,6 +195,7 @@ class SchedulesViewModelTest {
         val model = list()
         categories()
         publish(rent, bills, bus, course, later)
+        recordedSoFar()
 
         val all = model.ready.rows + model.ready.ended
         assertEquals(
@@ -221,5 +255,111 @@ class SchedulesViewModelTest {
         assertEquals(SchedulesState.Failed, schedulesFailed)
         assertEquals(SchedulesState.Failed, categoriesFailed)
         assertEquals(1, model.ready.rows.size)
+    }
+
+    /**
+     * SELLO-148, RE17: rent on the 5th at 950.000, raised to 1.000.000 on 10 Oct. What went
+     * through is the 5 Oct entry as stored: 950.000, then 900.000 once edited; deleted, the
+     * rent has nothing recorded in October and leaves "Ya se anotaron".
+     */
+    @Test
+    fun whatWentThroughIsTheEntryAsStoredNow() {
+        val raised =
+            stored(1, pay(1, 1_000_000, "Arriendo"), monthly(5), "2026-10-01", "2026-10-10")
+        val model = list()
+        categories()
+        publish(raised)
+        recorded(paid(1, "2026-10-05", 950_000))
+
+        assertEquals(listOf("950.000 pesos", 1, "0 pesos", 0, "950.000 pesos"), model.plan())
+        assertEquals(ScheduleGroup.Recorded, model.row(1).group)
+        assertEquals(d("2026-10-05"), model.row(1).recordedOn)
+
+        recorded(paid(1, "2026-10-05", 900_000))
+        assertEquals(listOf("900.000 pesos", 1, "0 pesos", 0, "900.000 pesos"), model.plan())
+
+        recorded()
+        assertEquals(listOf("0 pesos", 0, "0 pesos", 0, "0 pesos"), model.plan())
+        assertEquals(ScheduleGroup.Later, model.row(1).group)
+        assertEquals(null, model.row(1).recordedOn)
+    }
+
+    /**
+     * SELLO-148, RE18: on 10 Oct the rent moves from the 5th to the 25th. 950.000 went
+     * through on 5 Oct and 950.000 is still to come on the 25th.
+     */
+    @Test
+    fun aMovedDayKeepsWhatWentThroughOnTheOldDay() {
+        val moved = stored(1, pay(1, 950_000, "Arriendo"), monthly(25), "2026-10-01", "2026-10-10")
+        val model = list()
+        categories()
+        publish(moved)
+        recorded(paid(1, "2026-10-05", 950_000))
+
+        assertEquals(
+            listOf("950.000 pesos", 1, "950.000 pesos", 1, "1.900.000 pesos"),
+            model.plan()
+        )
+        assertEquals(ScheduleGroup.Due, model.row(1).group)
+        assertEquals(d("2026-10-05"), model.row(1).recordedOn)
+    }
+
+    /**
+     * SELLO-148, ruling on #329 (R1): the rent ended 30 Sep and the daily café, 8.000, ended
+     * 10 Oct; on 20 Oct both run again and the checkpoint jumps to 20 Oct. The rent never
+     * recorded 5 Oct: no "anotado 5 oct", nothing through. The café counts 1-10 Oct only,
+     * never 11-20 Oct, and 21-31 Oct are still to come.
+     */
+    @Test
+    fun aScheduleRunAgainCountsOnlyWhatItRecorded() {
+        val resumed =
+            stored(1, pay(1, 950_000, "Arriendo"), monthly(5), "2026-06-01", "2026-10-20")
+        val cafe = stored(
+            7,
+            pay(1, 8_000, "Café"),
+            RepeatRule.EveryDays.of(1).value(),
+            "2026-10-01",
+            "2026-10-20"
+        )
+        val model = list()
+        categories()
+        publish(resumed, cafe)
+        recorded(
+            paid(1, "2026-09-05", 950_000),
+            *(1..10).map { paid(7, "2026-10-%02d".format(it), 8_000) }.toTypedArray()
+        )
+
+        // Through: 10 x 8.000 = 80.000. To come: 11 x 8.000 = 88.000. Both: 168.000.
+        assertEquals(listOf("80.000 pesos", 10, "88.000 pesos", 11, "168.000 pesos"), model.plan())
+        assertEquals(ScheduleGroup.Later, model.row(1).group)
+        assertEquals(null, model.row(1).recordedOn)
+        assertEquals(d("2026-11-05"), model.row(1).next)
+        assertEquals(d("2026-10-10"), model.row(7).recordedOn)
+    }
+
+    /**
+     * SELLO-148, ruling on #343 (R1): on 10 Nov an entry counts where it is stored now. The
+     * 5 Nov one moved to 31 Oct leaves November with nothing through; the 5 Oct one moved
+     * to 7 Nov gives November 1.900.000 from two, "anotado 7 nov".
+     */
+    @Test
+    fun anEntryCountsInTheMonthOfItsStoredDate() {
+        clock.goTo("2026-11-10")
+        val model = list()
+        categories("2026-11-10")
+        publish(stored(1, pay(1, 950_000, "Arriendo"), monthly(5), "2026-10-01", "2026-11-05"))
+
+        recorded(paid(1, "2026-10-05", 950_000), paid(1, "2026-11-05", 950_000, "2026-10-31"))
+        assertEquals(listOf("0 pesos", 0, "0 pesos", 0, "0 pesos"), model.plan())
+        assertEquals(ScheduleGroup.Later, model.row(1).group)
+        assertEquals(null, model.row(1).recordedOn)
+
+        recorded(paid(1, "2026-10-05", 950_000, "2026-11-07"), paid(1, "2026-11-05", 950_000))
+        assertEquals(
+            listOf("1.900.000 pesos", 2, "0 pesos", 0, "1.900.000 pesos"),
+            model.plan()
+        )
+        assertEquals(ScheduleGroup.Recorded, model.row(1).group)
+        assertEquals(d("2026-11-07"), model.row(1).recordedOn)
     }
 }

@@ -1,10 +1,13 @@
 package com.software.sello.domain.policy
 
+import com.software.sello.domain.model.EntryOrigin
 import com.software.sello.domain.model.ExactTotal
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MoneyError
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ScheduleId
+import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.StoredSchedule
 import java.time.LocalDate
 import java.time.YearMonth
@@ -15,9 +18,9 @@ enum class ScheduleStatus { Active, Paused, Ended }
  * One schedule as Pagos e ingresos fijos lists it on a day: its [status], the first day of
  * the pause running then or still open ([pausedFrom]), the [next] occurrence not yet
  * recorded, which may be due already while catch-up has not reached it, its first
- * occurrence in the month ([monthFirst]), whether one is still to come that month
- * ([toComeThisMonth]) and the date of the month's last occurrence already recorded
- * ([recordedThisMonth]).
+ * occurrence in the month ([monthFirst]) and whether one is still to come that month
+ * ([toComeThisMonth]). What it recorded comes from its entries
+ * ([ScheduleListPolicy.recordedOn]).
  */
 data class ScheduleLine(
     val stored: StoredSchedule,
@@ -25,14 +28,13 @@ data class ScheduleLine(
     val pausedFrom: LocalDate?,
     val next: LocalDate?,
     val monthFirst: LocalDate?,
-    val toComeThisMonth: Boolean,
-    val recordedThisMonth: LocalDate?
+    val toComeThisMonth: Boolean
 )
 
 /**
- * What a month holds for some schedules, as a plan: occurrences already recorded
- * ([done], [doneCount]), those still to come ([toCome], [toComeCount]) and both
- * ([total]), with how many schedules are [active]. Never recorded money.
+ * What a month holds for some schedules: the entries they recorded, as stored now
+ * ([done], [doneCount]), the occurrences still to come ([toCome], [toComeCount]) and both
+ * ([total]), with how many schedules are [active].
  */
 data class SchedulesMonth(
     val done: Money,
@@ -84,10 +86,7 @@ object ScheduleListPolicy {
                 monthFirst = inMonth.firstOrNull()?.date,
                 toComeThisMonth = inMonth.any {
                     stored.handled == null || it.isAfter(stored.handled)
-                },
-                recordedThisMonth = inMonth.lastOrNull {
-                    stored.handled != null && !it.isAfter(stored.handled)
-                }?.date
+                }
             )
         }
         return lines.sortedWith(
@@ -97,15 +96,27 @@ object ScheduleListPolicy {
         )
     }
 
-    /** [month] for [lines] of one kind, summed exactly; a sum that does not fit fails. */
-    fun month(lines: List<ScheduleLine>, month: YearMonth): Outcome<SchedulesMonth, MoneyError> {
-        val done = mutableListOf<Money>()
+    /**
+     * [month] for [lines] of one kind, summed exactly; a sum that does not fit fails. What
+     * went through is the schedules' [records] dated in [month] as stored now, where Recibo
+     * files them: an edited entry at its edited amount and date, a deleted one not at all,
+     * and an occurrence the checkpoint passed without recording counts nothing. What is
+     * still to come is each occurrence after the checkpoint, at the schedule's amount.
+     */
+    fun month(
+        lines: List<ScheduleLine>,
+        records: List<ScheduleRecord>,
+        month: YearMonth
+    ): Outcome<SchedulesMonth, MoneyError> {
+        val listed = lines.mapTo(HashSet()) { it.stored.schedule.id }
+        val done = records.filter { it.dateIn({ id -> id in listed }, month) != null }
+            .map { it.amount }
         val toCome = mutableListOf<Money>()
         lines.forEach { line ->
             val handled = line.stored.handled
             val amount = line.stored.schedule.entry.amount.money
             occurrencesIn(line.stored, month).forEach {
-                if (handled != null && !it.isAfter(handled)) done += amount else toCome += amount
+                if (handled == null || it.isAfter(handled)) toCome += amount
             }
         }
         val currency = lines.firstOrNull()?.stored?.schedule?.entry?.amount?.money?.currency
@@ -125,6 +136,17 @@ object ScheduleListPolicy {
     }
 
     /**
+     * The latest date in [month] among the entries [line]'s schedule recorded, as [records]
+     * store them now; null when it has none there.
+     */
+    fun recordedOn(
+        line: ScheduleLine,
+        records: List<ScheduleRecord>,
+        month: YearMonth
+    ): LocalDate? =
+        records.mapNotNull { it.dateIn({ id -> id == line.stored.schedule.id }, month) }.maxOrNull()
+
+    /**
      * The nearest date still to come among active [lines]; one already due that catch-up
      * has not recorded yet is [today]'s. Null when none is active.
      */
@@ -137,6 +159,30 @@ object ScheduleListPolicy {
 
     private fun Occurrence.isAfter(other: Occurrence) =
         date.isAfter(other.date) || (date == other.date && slot > other.slot)
+
+    /** Every record carries its origin (rule 4); an entry without one is no schedule's. */
+    private val ScheduleRecord.origin: EntryOrigin?
+        get() = when (this) {
+            is ScheduleRecord.Payment -> expense.origin
+            is ScheduleRecord.Earning -> income.origin
+        }
+
+    private val ScheduleRecord.amount: Money
+        get() = when (this) {
+            is ScheduleRecord.Payment -> expense.amount.money
+            is ScheduleRecord.Earning -> income.amount.money
+        }
+
+    /** The date the entry is stored at now, which an edit may have moved. */
+    private val ScheduleRecord.date: LocalDate
+        get() = when (this) {
+            is ScheduleRecord.Payment -> expense.date
+            is ScheduleRecord.Earning -> income.date
+        }
+
+    /** The stored date of [this], when a [schedule] recorded it and it falls in [month]. */
+    private fun ScheduleRecord.dateIn(schedule: (ScheduleId) -> Boolean, month: YearMonth) =
+        date.takeIf { origin?.schedule?.let(schedule) == true && YearMonth.from(it) == month }
 
     private inline fun <T> Outcome<T, MoneyError>.orReturn(
         failed: (Outcome.Failure<MoneyError>) -> Nothing
