@@ -1023,6 +1023,41 @@ class IncomeFormViewModelTest {
         )
     }
 
+    @Test
+    fun aScheduleGoneWhenReadAgainSendsNothingAndTheNextSaveCorrectsOnlyThisOne() {
+        scheduleBook.schedules += salarySchedule
+        val form = opened(recordedSalary)
+        form.retype("1200000")
+        form.onAction(IncomeFormAction.Submit)
+        scheduleBook.schedules.clear()
+        form.onAction(IncomeFormAction.FollowingChosen(alsoFollowing = true))
+        val refused = form.now
+        form.onAction(IncomeFormAction.Submit)
+
+        assertEquals(IncomeFormError.FollowingNotSaved, refused.error)
+        assertFalse(refused.busy)
+        assertTrue(schedules.submitted.isEmpty())
+        assertFalse(form.now.askFollowing)
+        assertEquals(listOf(pesos(1_200_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun aScheduleThatCannotBeReadAgainIsSentAtTheLastVersionAndAStaleOneIsRefused() {
+        scheduleBook.schedules += salarySchedule
+        val form = opened(recordedSalary)
+        form.retype("1200000")
+        form.onAction(IncomeFormAction.Submit)
+        scheduleBook.failing = true
+        schedules.answer = { Rejected(CommandRejection.VersionConflict(current = 5)) }
+        form.onAction(IncomeFormAction.FollowingChosen(alsoFollowing = true))
+
+        assertEquals(listOf(4L), schedules.submitted.map { (it as ChangeSchedule).expectedVersion })
+        assertEquals(IncomeFormError.FollowingNotSaved, form.now.error)
+        assertFalse(form.now.busy)
+        assertTrue(commands.edited.isEmpty())
+    }
+
     // --- Varios: Anotar varios with what is typed as its line one (SELLO-132) ---
 
     @Test

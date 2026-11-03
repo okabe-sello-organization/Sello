@@ -783,6 +783,39 @@ class ExpenseEditViewModelTest {
         )
     }
 
+    @Test
+    fun aScheduleGoneWhenReadAgainSendsNothingAndTheNextSaveCorrectsOnlyThisOne() {
+        val form = fromSchedule()
+        form.retype("52000")
+        form.onAction(ExpenseEntryAction.Submit)
+        scheduleBook.schedules.clear()
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
+        val refused = form.now
+        form.onAction(ExpenseEntryAction.Submit)
+
+        assertEquals(EntryError.FollowingNotSaved, refused.error)
+        assertFalse(refused.busy)
+        assertTrue(schedules.submitted.isEmpty())
+        assertFalse(form.now.askFollowing)
+        assertEquals(listOf(pesos(52_000)), commands.edited.map { it.amount })
+        assertTrue(form.now.closed)
+    }
+
+    @Test
+    fun aScheduleThatCannotBeReadAgainIsSentAtTheLastVersionAndAStaleOneIsRefused() {
+        val form = fromSchedule()
+        form.retype("52000")
+        form.onAction(ExpenseEntryAction.Submit)
+        scheduleBook.failing = true
+        schedules.answer = { Rejected(CommandRejection.VersionConflict(current = 3)) }
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = true))
+
+        assertEquals(listOf(2L), schedules.submitted.map { (it as ChangeSchedule).expectedVersion })
+        assertEquals(EntryError.FollowingNotSaved, form.now.error)
+        assertFalse(form.now.busy)
+        assertTrue(commands.edited.isEmpty())
+    }
+
     // --- Carry: a change that reaches a closed month of a chain (ADR 0020 CP20, CP21, CP23) ---
 
     private val carryConfirmation = CorrectionConfirmation(41, "edit-100")

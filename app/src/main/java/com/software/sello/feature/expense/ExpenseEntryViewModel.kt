@@ -775,7 +775,8 @@ class ExpenseEntryViewModel(
     /**
      * The schedule's new terms go first: if they are refused nothing at all was written.
      * The expense is corrected only once they are confirmed (see [followingSaved]). The
-     * schedule is read again first, so the change is of its current version.
+     * schedule is read again first; if that read fails, the last version read is sent,
+     * and storage refuses it if it is stale.
      */
     private fun submitFollowing() {
         val snapshot = (month.value as? ReadState.Ready)?.value ?: return
