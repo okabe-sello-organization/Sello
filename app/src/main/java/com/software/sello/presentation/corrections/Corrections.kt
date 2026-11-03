@@ -373,6 +373,9 @@ class Corrections(
     }
 
     private var unresolved: Unresolved? = null
+
+    /** What a check answered while another notice held the bar: said once the bar is free. */
+    private var owed: CorrectionNotice? = null
     private var askedUndo: CorrectionConfirmation? = null
     private val asking = MutableStateFlow<CorrectionQuestion?>(null)
 
@@ -645,6 +648,17 @@ class Corrections(
         when (shown.kind) {
             CorrectionKind.Delete -> {
                 val wanted = asked ?: return run { asking.value = null }
+                // One confirmed before is still unresolved: it is asked about first, never
+                // replaced, and this one is not sent.
+                val held = unresolved
+                if (held != null) {
+                    asking.value = null
+                    asked = null
+                    ending?.cancel()
+                    pending = null
+                    this.shown.value = CorrectionNotice.DeleteUnknown(held.checking)
+                    return
+                }
                 scope.launch {
                     val command = DeleteExpense(
                         operation(),
@@ -719,7 +733,11 @@ class Corrections(
                     unresolved = null
                     when {
                         found.value != null -> expenseGone(wanted.command, wanted.months, true)
+
                         onBar -> said(CorrectionNotice.NotDeleted)
+
+                        // Kept for when the notice holding the bar is over.
+                        else -> owed = CorrectionNotice.NotDeleted
                     }
                 }
             }
@@ -1196,7 +1214,7 @@ class Corrections(
         ending?.cancel()
         pending = null
         // An unresolved deletion is not dismissed: it is still to be asked about.
-        shown.value = unresolved?.let { CorrectionNotice.DeleteUnknown(it.checking) }
+        freed()
     }
 
     /**
@@ -1242,8 +1260,26 @@ class Corrections(
             return said(receipt.copy(turn = receipt.turn + 1))
         }
         pending = null
-        // An unresolved deletion comes back once what took its place is over.
-        shown.value = unresolved?.let { CorrectionNotice.DeleteUnknown(it.checking) }
+        freed()
+    }
+
+    /**
+     * The bar is free: an unresolved deletion comes back, still to be asked about, or what a
+     * check answered meanwhile is said; otherwise nothing is shown.
+     */
+    private fun freed() {
+        val held = unresolved
+        val answer = owed
+        when {
+            held != null -> shown.value = CorrectionNotice.DeleteUnknown(held.checking)
+
+            answer != null -> {
+                owed = null
+                said(answer)
+            }
+
+            else -> shown.value = null
+        }
     }
 
     private fun operation(): OperationId = when (val id = OperationId.of(ids.next())) {

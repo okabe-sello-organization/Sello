@@ -290,23 +290,16 @@ class CarryCorrectionsTest {
         assertNull(corrections.question.value)
     }
 
-    /** As storage offers it: six seconds from the deletion, then no offer at all. */
+    /**
+     * As storage offers it: six seconds from when the deletion was sent, as the fake records
+     * it whatever its answer, then no offer at all.
+     */
     private fun offerLikeStorage() {
-        val deletedAt =
-            mutableMapOf<com.software.sello.domain.model.OperationId, kotlin.time.Duration>()
-        val answer = commands.deleteAnswer
-        commands.deleteAnswer = {
-            deletedAt[it.operationId] = monotonic.elapsed()
-            answer(it)
-        }
+        commands.clock = monotonic::elapsed
         commands.offer = {
             commands.deleted.lastOrNull()?.let { sent ->
-                deletedAt[sent.operationId]?.let {
-                    UndoOffer(
-                        sent.operationId,
-                        sent.expenseId,
-                        it + 6.seconds
-                    )
+                commands.deletedAt[sent.operationId]?.let {
+                    UndoOffer(sent.operationId, sent.expenseId, it + 6.seconds)
                 }
             }?.takeIf { monotonic.elapsed() < it.until }
         }
@@ -395,7 +388,7 @@ class CarryCorrectionsTest {
 
     @Test
     fun anUnknownConfirmedDeletionStaysUntilCheckedAndFoundIsOfferedToUndo() = test {
-        offerFor6Seconds()
+        offerLikeStorage()
         confirmedWithUnknownOutcome()
         val operation = commands.deleted.last().operationId
         val waiting = corrections.notice.value
@@ -617,6 +610,47 @@ class CarryCorrectionsTest {
         assertEquals(true to false, held to other)
         assertEquals(listOf(operation, operation), commands.looked)
         assertEquals(2, commands.deleted.size)
+        assertEquals(false, corrections.holdsDeletionOf(expenseId(101)))
+    }
+
+    @Test
+    fun aSecondConfirmedDeletionNeverTakesThePlaceOfAnUnresolvedOne() = test {
+        confirmedWithUnknownOutcome()
+        val operation = commands.deleted.last().operationId
+        commands.deleteAnswer = { unconfirmed() }
+        corrections.delete(expenseId(102), 3, 7)
+        val asked = commands.deleted.size
+
+        corrections.confirmQuestion()
+        runCurrent()
+        commands.found = { foundDeletion(it, 101) }
+        corrections.checkDeletion()
+        runCurrent()
+
+        // Asked, but never confirmed while 101 was unresolved: nothing more was sent.
+        assertEquals(asked, commands.deleted.size)
+        assertNull(corrections.question.value)
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(
+            CorrectionNotice.Deleted(canUndo = false, carryMonths = 3),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun aCheckAnsweredWhileAnotherNoticeHoldsTheBarIsSaidOnceItIsOver() = test {
+        confirmedWithUnknownOutcome()
+        commands.found = { Outcome.Success(null) }
+        corrections.checkDeletion()
+        corrections.updated()
+        runCurrent()
+        val meanwhile = corrections.notice.value
+        advanceTimeBy(4_001)
+        runCurrent()
+        val after = corrections.notice.value
+
+        assertEquals(CorrectionNotice.Updated, meanwhile)
+        assertEquals(CorrectionNotice.NotDeleted, after)
         assertEquals(false, corrections.holdsDeletionOf(expenseId(101)))
     }
 }

@@ -365,11 +365,17 @@ class CategoryExpensesViewModelTest {
 
     @Test
     fun anArchivedCategorysListSaysItIsArchivedSoItsDockTakesNoNewExpense() = runTest {
-        val open = started().archived.value
-        val archived = started(archived = true).archived.value
+        val open = dockOf(started())()
+        val archived = dockOf(started(archived = true))()
 
-        assertEquals(false, open)
-        assertEquals(true, archived)
+        assertEquals(ListDock.Anotar, open)
+        assertEquals(ListDock.Archived, archived)
+    }
+
+    /** The dock as the screen sees it: watched for as long as the test runs. */
+    private fun TestScope.dockOf(model: CategoryExpensesViewModel): () -> ListDock {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.dock.collect {} }
+        return { model.dock.value }
     }
 
     @Test
@@ -379,21 +385,29 @@ class CategoryExpensesViewModelTest {
         )
         hold = CompletableDeferred()
         val reading = started(ready = false)
-        val whileReading = reading.state.value to reading.archived.value
+        val dock = dockOf(reading)
+        val whileReading = reading.state.value to dock()
         failure = true
         hold!!.complete(Unit)
         runCurrent()
 
-        assertEquals(CategoryExpensesState.Loading to true, whileReading)
+        assertEquals(CategoryExpensesState.Loading to ListDock.Archived, whileReading)
         assertEquals(CategoryExpensesState.Failed, reading.state.value)
-        assertEquals(true, reading.archived.value)
+        assertEquals(ListDock.Archived, dock())
     }
 
     @Test
-    fun beforeAnyMonthIsReadWhetherItIsArchivedIsNotKnown() = runTest {
+    fun anotarWaitsWhileTheFirstMonthIsReadAndStaysWhenItCannotBe() = runTest {
         val model = started(ready = false)
+        val dock = dockOf(model)
+        val loading = dock()
 
-        assertEquals(null, model.archived.value)
+        snapshots.of(month).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        runCurrent()
+
+        assertEquals(ListDock.Waiting, loading)
+        assertEquals(CategoryExpensesState.Failed, model.state.value)
+        assertEquals(ListDock.Anotar, dock())
     }
 
     // --- An unknown deletion keeps its operation (#331) ---

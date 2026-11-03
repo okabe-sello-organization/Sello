@@ -41,6 +41,7 @@ import com.software.sello.feature.recibo.CategoryExpensesAction
 import com.software.sello.feature.recibo.CategoryExpensesScreen
 import com.software.sello.feature.recibo.CategoryExpensesState
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
+import com.software.sello.feature.recibo.ListDock
 import com.software.sello.feature.recibo.ReciboAction
 import com.software.sello.feature.recibo.ReciboScreen
 import com.software.sello.feature.recibo.ReciboState
@@ -142,7 +143,7 @@ internal fun NavGraphBuilder.reciboDestinations(
         val expenses by model.state.collectAsStateWithLifecycle()
         val query by model.query.collectAsStateWithLifecycle()
         val order by model.order.collectAsStateWithLifecycle()
-        val archived by model.archived.collectAsStateWithLifecycle()
+        val listDock by model.dock.collectAsStateWithLifecycle()
         LaunchedEffect(id) { model.onAction(CategoryExpensesAction.Show(id)) }
         ShellScreen(
             state,
@@ -152,9 +153,12 @@ internal fun NavGraphBuilder.reciboDestinations(
             screenTitle = (expenses as? CategoryExpensesState.Ready)?.categoryName
                 ?: stringResource(R.string.category_expenses_title),
             showMonthAsSubtitle = true,
-            // An archived category takes no new expense here either, as on its detail; until
-            // the category is read the dock waits, disabled, instead of offering Anotar.
-            dock = categoryDock(archived = archived == true, known = archived != null) {
+            // An archived category takes no new expense here either, as on its detail; while
+            // the list is first read the dock waits, disabled, instead of offering Anotar.
+            dock = categoryDock(
+                archived = listDock == ListDock.Archived,
+                known = listDock != ListDock.Waiting
+            ) {
                 navigation.navigate(ExpenseEntryRoute(id))
             },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }

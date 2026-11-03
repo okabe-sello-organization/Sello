@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -53,6 +52,18 @@ sealed interface CategoryExpensesState {
         /** The month could not be read again: these are the rows as last read. */
         val stale: Boolean = false
     ) : CategoryExpensesState
+}
+
+/** The dock of a category's full list. */
+enum class ListDock {
+    /** Anotar, in this category. */
+    Anotar,
+
+    /** Anotar, disabled while the list is first read. */
+    Waiting,
+
+    /** Disabled, "Archivada": the category takes no new expense. */
+    Archived
 }
 
 sealed interface CategoryExpensesAction {
@@ -93,13 +104,6 @@ class CategoryExpensesViewModel(
 
     /** Whether the category is archived, from the last month read of it, with its id. */
     private val known = MutableStateFlow<Pair<String?, Boolean>?>(null)
-
-    /**
-     * Whether the category listed is archived, as soon as a month of it is read: null until
-     * then, so the dock never offers Anotar for a category not yet known to take one.
-     */
-    val archived: StateFlow<Boolean?> = known.map { it?.second }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** The month and category listed: the only place whose deletions are said. */
     private var current: String? = null
@@ -146,6 +150,24 @@ class CategoryExpensesViewModel(
             state
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CategoryExpensesState.Loading)
+
+    /**
+     * What the dock offers. Archived is known as soon as a month of the category is read and
+     * holds while its rows are read or fail. Before that it waits only while the list is
+     * still loading: a month that could not be read leaves Anotar, whose form says so itself.
+     */
+    val dock: StateFlow<ListDock> = combine(known, state) { known, state ->
+        when (known?.second) {
+            true -> ListDock.Archived
+
+            false -> ListDock.Anotar
+
+            null -> when (state) {
+                CategoryExpensesState.Loading -> ListDock.Waiting
+                else -> ListDock.Anotar
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ListDock.Waiting)
 
     fun onAction(action: CategoryExpensesAction) {
         when (action) {
