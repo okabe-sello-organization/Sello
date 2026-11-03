@@ -10,11 +10,14 @@ import com.software.sello.domain.model.OverallBudget
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.policy.ScheduleStatus
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CommandOutcome.Committed
+import com.software.sello.domain.port.CommandOutcome.Rejected
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.ScheduleCommand
@@ -106,6 +109,32 @@ class ScheduleChangeContractTest {
     private fun checkpoint() = ledger.rows("schedule", "handled_date", "handled_slot").single()
 
     private fun pauses() = ledger.rows("schedule_pause", "from_date", "until_date")
+
+    private fun sql(statement: String) =
+        ledger.database.openHelper.writableDatabase.execSQL(statement)
+
+    /** The schedule's row and pauses, the revision and the receipts, as one value. */
+    private fun everything() = listOf(
+        ledger.rows(
+            "schedule",
+            "rule",
+            "rule_first",
+            "rule_second",
+            "start_date",
+            "end_date",
+            "handled_date",
+            "handled_slot",
+            "version",
+            "updated_at"
+        ),
+        pauses(),
+        listOf(ledger.revision().toString()),
+        ledger.rows("operation_receipt", "revision", "kind", "subject_id")
+    )
+
+    private val faulted = Rejected(
+        CommandRejection.StorageFailed(StorageFailure.Unavailable("SQLiteConstraintException"))
+    )
 
     private suspend fun version() =
         ledger.scheduleReads.book().valueOrFail().schedules.single().version
@@ -289,5 +318,62 @@ class ScheduleChangeContractTest {
         assertNull(reserved(YearMonth.of(2026, 11)))
         assertEquals(ScheduleStatus.Paused, line("2026-11-25").status)
         assertEquals(emptyList<String>(), expenses())
+    }
+
+    // ---- A failure after the schedule's row is written ----
+
+    /**
+     * The checkpoint's write fails after the row took the new rule and version: the whole
+     * change rolls back, and the same operation commits once the fault is gone.
+     */
+    @Test
+    fun aFailedCheckpointWriteRollsBackTheRuleTheVersionAndTheReceipt() = runBlocking {
+        start("2026-10-01")
+        val rent = payment(300_000, "Arriendo")
+        create("2026-10-01", twice(15, 30), rent)
+        ledger.goTo("2026-10-30")
+        catchUp("2026-10-30")
+        ledger.goTo("2026-11-02")
+        sql(
+            "CREATE TRIGGER refuse_checkpoint BEFORE UPDATE OF handled_date ON schedule " +
+                "BEGIN SELECT RAISE(ABORT, 'refused'); END"
+        )
+        val before = everything()
+        val command = change(1, "2026-11-03", monthly(15), rent)
+
+        assertEquals(faulted, submit(command))
+
+        assertEquals(before, everything())
+        assertEquals("2026-10-30|2", checkpoint())
+        assertEquals(null, ledger.schedules.find(command.operationId).valueOrFail())
+        sql("DROP TRIGGER refuse_checkpoint")
+        committed(submit(command))
+        assertEquals("2026-11-02|1", checkpoint())
+    }
+
+    /**
+     * Rewriting the pauses fails after the old ones were removed: the start, the version
+     * and the pause set before the start all stay as they were.
+     */
+    @Test
+    fun aFailedPauseRewriteRollsBackTheStartTheVersionAndTheOldPause() = runBlocking {
+        start("2026-10-10")
+        val gym = payment(99_900, "Gimnasio")
+        create("2026-12-01", monthly(25), gym)
+        committed(submit(PauseSchedule(ledger.operation(), 1, schedule, 1)))
+        sql(
+            "CREATE TRIGGER refuse_pause BEFORE INSERT ON schedule_pause " +
+                "BEGIN SELECT RAISE(ABORT, 'refused'); END"
+        )
+        val before = everything()
+        val command = change(2, "2026-11-20", monthly(25), gym)
+
+        assertEquals(faulted, submit(command))
+
+        assertEquals(before, everything())
+        assertEquals(listOf("2026-12-01|null"), pauses())
+        sql("DROP TRIGGER refuse_pause")
+        committed(submit(command))
+        assertEquals(listOf("2026-11-20|null"), pauses())
     }
 }
