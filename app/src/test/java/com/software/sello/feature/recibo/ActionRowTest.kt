@@ -1,8 +1,10 @@
 package com.software.sello.feature.recibo
 
 import androidx.compose.material3.Text
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -19,6 +21,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -42,20 +45,22 @@ class ActionRowTest {
 
     private val done = mutableListOf<String>()
 
-    private fun line(swipe: Boolean = true) {
+    private fun line(swipe: Boolean = true, direction: LayoutDirection = LayoutDirection.Ltr) {
         rule.setContent {
-            SelloTheme {
-                ActionRow(
-                    onClick = { done += "open" },
-                    actions = listOf(
-                        LineAction("Editar") { done += "edit" },
-                        LineAction("Borrar") { done += "delete" }
-                    ),
-                    modifier = Modifier.testTag("line"),
-                    swipeAway = LineAction("Borrar") { done += "swiped" }.takeIf { swipe }
-                ) { pressable ->
-                    LeaderLine("Pan", modifier = pressable, caption = "Hoy, 22 oct") {
-                        Text("48.700")
+            CompositionLocalProvider(LocalLayoutDirection provides direction) {
+                SelloTheme {
+                    ActionRow(
+                        onClick = { done += "open" },
+                        actions = listOf(
+                            LineAction("Editar") { done += "edit" },
+                            LineAction("Borrar") { done += "delete" }
+                        ),
+                        modifier = Modifier.testTag("line"),
+                        swipeAway = LineAction("Borrar") { done += "swiped" }.takeIf { swipe }
+                    ) { pressable ->
+                        LeaderLine("Pan", modifier = pressable, caption = "Hoy, 22 oct") {
+                            Text("48.700")
+                        }
                     }
                 }
             }
@@ -155,6 +160,40 @@ class ActionRowTest {
 
         assertEquals(start, rule.onNodeWithTag("line").getUnclippedBoundsInRoot().left)
         assertEquals(emptyList<String>(), done)
+    }
+
+    @Test
+    fun aSwipePastTheThresholdThatIsCancelledOnlyGoesBack() {
+        line()
+        val start = rule.onNodeWithTag("line").getUnclippedBoundsInRoot().left
+
+        // The system takes the gesture, as a pulled-down shade or a call would.
+        rule.onNodeWithTag("line").performTouchInput {
+            down(centerRight - Offset(4f, 0f))
+            moveBy(Offset(-width * 0.8f, 0f))
+            cancel()
+        }
+        rule.waitForIdle()
+
+        assertEquals(emptyList<String>(), done)
+        assertEquals(start, rule.onNodeWithTag("line").getUnclippedBoundsInRoot().left)
+    }
+
+    @Test
+    fun rightToLeftTheLineIsSwipedAwayTowardsItsStartOnTheRight() {
+        line(direction = LayoutDirection.Rtl)
+
+        rule.onNodeWithTag("line").performTouchInput {
+            swipeLeft(startX = right - 4f, endX = left + 4f)
+        }
+        rule.waitForIdle()
+        assertEquals(emptyList<String>(), done)
+
+        rule.onNodeWithTag("line").performTouchInput {
+            swipeRight(startX = left + 4f, endX = right - 4f)
+        }
+        rule.waitForIdle()
+        assertEquals(listOf("swiped"), done)
     }
 
     @Test
