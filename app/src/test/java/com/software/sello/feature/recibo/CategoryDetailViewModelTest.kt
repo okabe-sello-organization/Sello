@@ -185,6 +185,8 @@ class CategoryDetailViewModelTest {
         show(vm, 1)
         insights.state.value =
             figuresOf(monthOf("2026-10-23", listOf(food, coffee), many(count)), 1_000)
+        // Shown whole, so a change has something to keep.
+        assertEquals(true, vm.ready.insights is DetailInsightsState.Ready)
         return vm
     }
 
@@ -284,6 +286,20 @@ class CategoryDetailViewModelTest {
 
         assertEquals(listOf(uuid(102)), commands.deleted.map { it.expenseId.value })
         assertEquals(null, vm.ready.deleteProblem)
+    }
+
+    @Test
+    fun aPageReadOfTheSameMonthDoesNotLetADeletedRowBeAskedForAgain() = runTest {
+        val vm = openedWithFigures(45)
+        reads.hold = CompletableDeferred()
+
+        vm.onAction(CategoryDetailAction.ShowMore)
+        vm.onAction(CategoryDetailAction.Delete(uuid(122)))
+        reads.hold?.complete(Unit)
+        vm.onAction(CategoryDetailAction.Delete(uuid(122)))
+
+        assertEquals(40, vm.rows.rows.size)
+        assertEquals(listOf(uuid(122)), commands.deleted.map { it.expenseId.value })
     }
 
     @Test

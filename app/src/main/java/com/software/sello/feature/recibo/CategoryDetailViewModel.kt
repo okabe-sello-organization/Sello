@@ -97,8 +97,11 @@ class CategoryDetailViewModel(
     private var listed = Listed(0, emptyMap())
     private val deleting = mutableSetOf<String>()
 
-    /** Deleted, but still listed until the list is read again: asked for no more. */
-    private val deleted = mutableSetOf<String>()
+    /**
+     * Deleted, but still listed until the month is read again: asked for no more. Each is
+     * kept with the month it was deleted from, so only a read of a later one lets it go.
+     */
+    private val deleted = mutableMapOf<String, Pair<Long, Long>>()
     private val deleteProblem = MutableStateFlow<DeleteProblem?>(null)
 
     /** What was last shown whole: its figures and its detail figures, of one revision. */
@@ -198,13 +201,15 @@ class CategoryDetailViewModel(
         val version = from.versions[expenseId] ?: return
         val id = (ExpenseId.of(expenseId) as? Outcome.Success)?.value ?: return
         if (expenseId in deleted || !deleting.add(expenseId)) return
+        val shownMonth = (state.value as? CategoryDetailState.Ready)
+            ?.let { it.generation to it.revision }
         deleteProblem.value = null
         viewModelScope.launch {
             try {
                 deleteProblem.value = when (corrections.delete(id, version, from.generation)) {
                     // The row leaves with the next read of the month, like any change.
                     DeleteResult.Deleted -> {
-                        deleted += expenseId
+                        shownMonth?.let { deleted[expenseId] = it }
                         null
                     }
 
@@ -440,7 +445,8 @@ class CategoryDetailViewModel(
                 rows += read.expenses.map { row(it, snapshot) }
                 versions += read.expenses.associate { it.id.value to it.version }
                 listed = Listed(snapshot.generation, versions.toMap())
-                deleted.clear()
+                val month = snapshot.generation to snapshot.revision
+                deleted.values.removeAll { it != month }
                 next = read.next
                 pages += step
                 emit(
