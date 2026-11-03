@@ -136,7 +136,8 @@ class CategoryManagementViewModel(
 
     /**
      * Fixed when the form opens, so a draft restored next month is still about this one;
-     * moved on only when a save finds it ended ([monthEnded]).
+     * moved on only when a save finds it ended ([monthEnded]) or archiving is asked about
+     * after it ended ([followMonth]).
      */
     private var currentMonth: YearMonth =
         saved.get<String>(KEY_CURRENT)?.let(::month) ?: session.currentMonthNow
@@ -192,7 +193,8 @@ class CategoryManagementViewModel(
         previews,
         snapshots,
         money,
-        currentMonth,
+        // Deleting applies to today's month, as its preview does: never a month that ended.
+        { session.currentMonthNow },
         viewModelScope,
         object : RemovalHost {
             override fun subject(): RemovalSubject? {
@@ -312,8 +314,17 @@ class CategoryManagementViewModel(
             CategoryEditorAction.ArchiveDismissed ->
                 mutable.update { it.copy(archiveQuestion = null) }
 
-            CategoryEditorAction.ArchiveConfirmed ->
-                if (now.canArchive && now.archiveQuestion != null) archive()
+            CategoryEditorAction.ArchiveConfirmed -> {
+                val question = now.archiveQuestion
+                when {
+                    !now.canArchive || question == null -> Unit
+
+                    // Asked about a month that has ended: asked again about today's.
+                    question.currentMonth != session.currentMonthNow -> askToArchive()
+
+                    else -> archive()
+                }
+            }
 
             CategoryEditorAction.ReloadKeepingDraft ->
                 if (now.saveError == SaveError.Conflict && !now.busy) reload(resetDraft = false)
@@ -806,6 +817,32 @@ class CategoryManagementViewModel(
         val ended = currentMonth
         val now = session.currentMonthNow
         if (targetMonth != ended || now == ended) return false
+        moveTo(now)
+        render { it.copy(saveError = SaveError.MonthEnded, monthEnded = MonthEnded(ended, carry)) }
+        viewModelScope.launch { load(keepOriginal = false, resetDraft = false) }
+        return true
+    }
+
+    /**
+     * Before archiving is asked about: once the month this form shows as in progress has
+     * ended, the form moves on to today's month and reads it, since archiving applies to
+     * today's month. False when it could not be read; the form then says so.
+     */
+    private suspend fun followMonth(): Boolean {
+        val now = session.currentMonthNow
+        if (now == currentMonth) return true
+        if (targetMonth != currentMonth) {
+            // A finished month's form stays on its month; only "today" moves on.
+            currentMonth = now
+            saved[KEY_CURRENT] = now.toString()
+            return true
+        }
+        moveTo(now)
+        return load(keepOriginal = false, resetDraft = false)
+    }
+
+    /** The form shows [now] as the month in progress; what was asked about another is gone. */
+    private fun moveTo(now: YearMonth) {
         currentMonth = now
         targetMonth = now
         saved[KEY_CURRENT] = now.toString()
@@ -817,8 +854,6 @@ class CategoryManagementViewModel(
         render {
             it.copy(
                 busy = false,
-                saveError = SaveError.MonthEnded,
-                monthEnded = MonthEnded(ended, carry),
                 targetMonth = now,
                 historical = false,
                 carry = null,
@@ -827,8 +862,6 @@ class CategoryManagementViewModel(
                 carryDone = null
             )
         }
-        viewModelScope.launch { load(keepOriginal = false, resetDraft = false) }
-        return true
     }
 
     /** Every change has its receipt. */
@@ -959,8 +992,10 @@ class CategoryManagementViewModel(
     }
 
     private fun askToArchive() {
-        val stored = original ?: return
         viewModelScope.launch {
+            mutable.update { it.copy(archiveQuestion = null) }
+            if (!followMonth() || !mutable.value.canArchive) return@launch
+            val stored = original ?: return@launch
             // Counted from the month as it is shown everywhere else. If it cannot be
             // read the question is asked without a number, never with a made-up one.
             val count = (snapshots.read(currentMonth) as? Outcome.Success)?.value?.categories
