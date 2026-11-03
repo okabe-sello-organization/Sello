@@ -120,6 +120,18 @@ class InvisibleNameCharactersTest {
     }
 
     @Test
+    fun anEmojiTagSequenceIsRefusedAsItsTagsAreFormatCharacters() {
+        // The England flag: black flag, tags g b e n g, cancel tag. Every tag is Cf.
+        val england = "\uD83C\uDFF4" +
+            "\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F"
+        assertEquals(
+            "F0 9F 8F B4 F3 A0 81 A7 F3 A0 81 A2 F3 A0 81 A5 F3 A0 81 AE F3 A0 81 A7 F3 A0 81 BF",
+            hex(england)
+        )
+        assertEquals(TextError.ControlCharacter, CategoryName.fromInput(england).errorOrFail())
+    }
+
+    @Test
     fun theStoredNameKeepsPassingSoAnOlderNameCanBeKept() {
         // Saved before the rule: editing the rest keeps the name as it is.
         assertEquals(
