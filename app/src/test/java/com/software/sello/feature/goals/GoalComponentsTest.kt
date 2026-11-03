@@ -10,8 +10,8 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
-import androidx.compose.ui.test.assertIsNotSelected
-import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -82,17 +82,17 @@ class GoalComponentsTest {
     }
 
     @Test
-    fun theReciboPinIsARadioThatSaysWhetherTheGoalIsChosen() {
+    fun theStarPillIsASwitchThatSaysWhetherTheGoalIsStarred() {
         var chosen = false
         rule.inEveryScheme(reset = { chosen = false }, content = {
             Column {
-                GoalPinPill("Mostrar en Recibo", false, { chosen = true }, Modifier.testTag("off"))
-                GoalPinPill("En tu Recibo", true, {}, Modifier.testTag("on"))
+                GoalPinPill("Destacar en Recibo", false, { chosen = true }, Modifier.testTag("off"))
+                GoalPinPill("Destacada en Recibo", true, {}, Modifier.testTag("on"))
             }
         }) { scheme ->
-            rule.onNodeWithTag("on").assertIsSelected()
-                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.RadioButton))
-            val off = rule.onNodeWithTag("off").assertIsNotSelected()
+            rule.onNodeWithTag("on").assertIsOn()
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Switch))
+            val off = rule.onNodeWithTag("off").assertIsOff()
             off.performClick()
 
             assertTrue(scheme, chosen)

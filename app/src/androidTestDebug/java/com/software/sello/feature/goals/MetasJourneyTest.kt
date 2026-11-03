@@ -100,21 +100,21 @@ class MetasJourneyTest {
         rule.onNodeWithText("2 de 4").assertExists()
         rule.onNodeWithText("faltan 1.290.000").assertExists()
         rule.onNodeWithTag(MONTH_SWITCHER_TAG).assertDoesNotExist()
-        // Without a choice the best goal is Recibo's.
-        rule.onNodeWithText("En tu Recibo").assertExists()
+        // Shown first on Recibo without a star: the pill offers to star it.
+        rule.onNodeWithText("Destacar en Recibo").assertExists()
 
         Espresso.pressBack()
         rule.awaitTag(METAS_LIST_TAG)
         rule.onNodeWithTag(METAS_LIST_TAG).performScrollToNode(hasTestTag("metas.goal.$celular"))
         rule.onNodeWithTag("metas.goal.$celular").performClick()
         rule.awaitTag("goal.pin")
-        rule.onNodeWithText("Mostrar en Recibo").press()
-        rule.awaitText("En tu Recibo")
+        rule.onNodeWithText("Destacar en Recibo").press()
+        rule.awaitText("Destacada en Recibo")
         assertEquals(listOf(celular), TestData.rows("SELECT goal_id FROM starred_goal"))
 
         // Choosing it survives recreation and is not sent again.
         scenario?.recreate()
-        rule.awaitText("En tu Recibo")
+        rule.awaitText("Destacada en Recibo")
         assertEquals(
             1L,
             TestData.long("SELECT COUNT(*) FROM operation_receipt WHERE kind = 'goal.feature'")

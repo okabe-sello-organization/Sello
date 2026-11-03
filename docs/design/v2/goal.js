@@ -36,8 +36,26 @@ function hero(s, o = {}) {
   return `<section class="slip pinked"><div class="gd-head"><span class="label">Ya guardaste</span><b>${s.pct} %</b></div><div class="gd-saved">${money(s.saved)}</div><div class="gd-sub"><span>de ${fmt(target)}</span><span>${s.done ? "" : `faltan ${fmt(target - s.saved)}`}</span></div><span class="v1-track" aria-hidden="true"><i style="width:${s.pct}%"></i></span><div class="tear" aria-hidden="true"></div><div class="gd-stamps-head"><b>Sellos</b><span class="caption">${stamps} de 4</span></div><span class="v1-places">${places}</span>${keptNote}${nextLine}</section>`;
 }
 
-// "Show on Recibo": a small star pill in the band, under the goal's name (owner pick Q3).
-const bandPill = on => `<div class="band-pin"><button class="pin-band ${on ? "on" : ""}" aria-pressed="${on}">${icon(on ? "star" : "star_outline")}${on ? "En tu Recibo" : "Mostrar en Recibo"}</button></div>`;
+// The star pill in the band, under the goal's name (owner pick Q3). SELLO-144 (approved
+// 2026-11-03): it says whether the goal is starred, not whether Recibo shows it, since an
+// unstarred goal may still fill a place in Recibo's carousel. Up to 5 starred.
+const bandPill = on => `<div class="band-pin"><button class="pin-band ${on ? "on" : ""}" aria-pressed="${on}">${icon(on ? "star" : "star_outline")}${on ? "Destacada en Recibo" : "Destacar en Recibo"}</button></div>`;
+
+// Starring a sixth goal: a bottom sheet with the five starred goals, in Recibo's order, to
+// pick the one whose star moves here. Picking saves both stars at once; Cancelar or back
+// changes nothing. A failed save says so and keeps the choice.
+const STARRED = [["Celular nuevo", "phone_iphone", 100], ["Fondo de emergencia", "home", 42], ["Cirugía de Luna", "pets", 30], ["Bicicleta", "fitness_center", 18], ["Curso de inglés", "school", 5]];
+function starSheet({ failed = false } = {}) {
+  const rows = STARRED.map(([n, ic, p], i) => {
+    const picked = failed && n === "Bicicleta";
+    return `<button class="fx-row ${i === STARRED.length - 1 ? "last" : ""}" role="radio" aria-checked="${picked}"><span class="fx-ic">${icon(ic)}</span><span class="fx-text"><b>${n}</b></span><b>${p} %</b>${icon("star")}</button>`;
+  }).join("");
+  const err = failed ? `<p class="err" role="alert">${icon("error")}<span><b>No se pudo cambiar.</b> Tus 5 metas destacadas siguen igual. Vuelve a intentarlo.</span></p>` : "";
+  const acts = failed
+    ? `<div class="rule-actions" style="grid-template-columns:1fr 2fr"><button class="ghost">Cancelar</button><button class="go">Reintentar</button></div>`
+    : `<div class="rule-actions"><button class="ghost">Cancelar</button></div>`;
+  return `<div class="composer star-sheet" role="dialog" aria-label="Tu Recibo ya tiene 5 metas"><h2>Tu Recibo ya tiene 5 metas</h2><p class="caption" style="margin:0 2px 6px">Elige cuál cambiar por <b>${GOAL.name}</b>. Esa deja de estar destacada.</p><div role="radiogroup">${rows}</div>${err}${acts}</div>`;
+}
 const facts = (s, o = {}) => `<section class="slip"><div class="leader"><span>Meta</span><i class="dots"></i><b>${money(GOAL.target)}</b></div><div class="leader"><span>Fecha objetivo</span><i class="dots"></i><b>${GOAL.date}</b></div><div class="leader"><span>Desde</span><i class="dots"></i><b>${GOAL.since}</b></div></section>`;
 
 function chart(months = MONTHS, max = 420000) {
@@ -76,16 +94,22 @@ function body(scene, { state } = {}, o = {}) {
   return hero(s, o) + (s.done ? "" : facts(s, o)) + chart(s.months, s.max) + movements(s, o);
 }
 
-const frame = (o, html, { tall = false, done = false, title = GOAL.name, featured = true, pin = true } = {}) => `<div class="phone ${tall ? "tall" : ""}"><div class="app" data-ink="${o.ink}" data-theme="${o.theme}">${subShell({ title, body: html, active: 2, dock: done ? "" : "Aportar a esta meta", dockClass: "goal", action: done ? ["more_vert", "Más opciones"] : ["edit_note", "Editar meta"], band: done || !pin ? "" : bandPill(featured) })}</div></div>`;
+const frame = (o, html, { tall = false, done = false, title = GOAL.name, featured = true, pin = true, sheet = "" } = {}) => `<div class="phone ${tall ? "tall" : ""}"><div class="app" data-ink="${o.ink}" data-theme="${o.theme}">${subShell({ title, body: html, active: 2, dock: done ? "" : "Aportar a esta meta", dockClass: "goal", action: done ? ["more_vert", "Más opciones"] : ["edit_note", "Editar meta"], band: done || !pin ? "" : bandPill(featured) })}${sheet ? `<div class="scrim">${sheet}</div>` : ""}</div></div>`;
 const card = (title, note, inner) => `<div class="frame-card"><h3>${title}</h3><p>${note}</p>${inner}</div>`;
 
 function render() {
   const o = reviewOptions(["ink", "theme"]);
   const set = (id, h) => document.getElementById(id).innerHTML = h;
   set("detail",
-    card("Goal detail", "The star pill under the name chooses this goal for Recibo. Then saved amount and stamps, the goal’s facts, contributions by month and the movements. Dock: Aportar a esta meta.", frame(o, body("normal", {}, o))) +
+    card("Goal detail", "The star pill under the name stars this goal for Recibo. Then saved amount and stamps, the goal’s facts, contributions by month and the movements. Dock: Aportar a esta meta.", frame(o, body("normal", {}, o))) +
     card("Whole screen, scrolled", "A contribution that earned a stamp shows it instead of its + icon. Retirar dinero sits with the movements.", frame(o, body("normal", {}, o), { tall: true })) +
-    card("While another goal is on Recibo", "Outlined pill with an empty star: tapping it moves Home’s goal here.", frame(o, body("normal", {}, o), { featured: false })));
+    card("Not starred", "Outlined pill with an empty star. Tapping it stars the goal. SELLO-144: it may still show on Recibo, filling a place; the pill does not say so.", frame(o, body("normal", {}, o), { featured: false })));
+  const stars = document.getElementById("stars");
+  if (stars) stars.innerHTML =
+    card("Starred", "“★ Destacada en Recibo”, filled. Tapping it unstars the goal.", frame(o, body("normal", {}, o))) +
+    card("Not starred", "“☆ Destacar en Recibo”, outlined. With fewer than 5 starred, tapping stars it at once.", frame(o, body("normal", {}, o), { featured: false })) +
+    card("Starring a 6th · replace sheet", "Five goals already starred: the sheet lists them in Recibo’s order. Picking one swaps both stars in one save; Cancelar or back changes nothing.", frame(o, body("normal", {}, o), { featured: false, sheet: starSheet() })) +
+    card("Replace refused", "The save did not happen: the sheet stays with the choice (Bicicleta) kept, says nothing changed and offers Reintentar.", frame(o, body("normal", {}, o), { featured: false, sheet: starSheet({ failed: true }) }));
   set("states",
     card("After a withdrawal", "The 50 % stamp stays, faded, with one line saying it is still yours. Progress shows the honest 43 %; the next stamp to earn is 75 %.", frame(o, body("keep", {}, o))) +
     card("Completed goal", "Read-only: four stamps, “Meta lograda el 30 sep”, the history stays. No edit, no Aportar dock, no Retirar and no star; Borrar meta in the top bar’s ⋮ (with the confirm slip) is its only action.", frame(o, body("done", {}, o), { done: true, title: "Vacunas de Luna", tall: true })) +

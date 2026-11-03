@@ -21,7 +21,7 @@ synthetic.
 
 | Screen | State |
 | --- | --- |
-| [Recibo / Home](home.html) | Locked 2026-10-15 (past-month state added with Resumen) |
+| [Recibo / Home](home.html) | Locked 2026-10-15 (past-month state added with Resumen; several goals approved 2026-11-03, SELLO-144) |
 | [Expense and income entry](entry.html) | Locked 2026-10-15 |
 | [Anotar varios](varios.html) | Locked 2026-10-30 by the owner (SELLO-126, E23): the bulk receipt for expenses, incomes, goals and investments (E27), and where it opens from |
 | [Resumen](resumen.html) | Locked 2026-10-15 |
@@ -74,9 +74,20 @@ the goal. Only shown when Metas ships. At 100 % or more, not yet lograda, the pi
 green and the round button is a **✓** that marks it lograda and opens the big moment
 (owner, 2026-10-26); the percentage stays exact (112 %).
 
-**Another goal reached 100 %:** when a goal that is not on Recibo reaches 100 % (for
-example while the user was away), a green row appears under the pill: ✓ the goal's
-name, "Llegó al 100 %" and **Marcar como lograda**. The goal on Recibo stays in place.
+**Several goals** (owner, approved 2026-11-03, SELLO-144): up to five goals take turns in
+the same slot, the same pill height; it never grows into a list. Starred goals come first,
+then the other active goals, the higher completion first in each group. One goal is the
+pill above exactly, with no swipe and no dots. With two to five, swiping sideways moves
+one goal at a time and loops from the last to the first; small dots just under the pill
+show the place (the goal on screen is a short bar in brand, the others outline dots).
+No peek of the next pill. Every pill keeps its own **+** or **✓**, and tapping it opens
+that goal. Recibo opens on the first goal every time. TalkBack reads each pill with its
+place ("Meta 2 de 4") and offers the next and previous goal.
+
+**Another goal reached 100 %:** when a goal that is not among Recibo's goals reaches
+100 % (for example while the user was away), a green row appears under the pill: ✓ the
+goal's name, "Llegó al 100 %" and **Marcar como lograda**. The goals on Recibo stay in
+place.
 
 **Categories:** unchanged circle grid. The card's header offers **+ Nueva categoría**, the
 same pill as Metas' **+ Nueva meta** in the soft brand fill on paper (owner, 2026-10-26),
@@ -353,10 +364,17 @@ The v1.1 Metas screen, kept close to the original on purpose, in its own tab.
 
 **Goal detail** (v1.1's "Detalle de meta", opened by tapping a goal):
 
-- **Top bar:** ← goal name, edit. Under the name in the band, a small star pill chooses
-  the goal shown on Recibo: **★ En tu Recibo** (filled) or **☆ Mostrar en Recibo**
-  (outlined). Only one goal can be on Recibo; choosing another moves it. Not shown on a
-  completed goal.
+- **Top bar:** ← goal name, edit. Under the name in the band, a small star pill stars
+  the goal for Recibo: **★ Destacada en Recibo** (filled) or **☆ Destacar en Recibo**
+  (outlined). It says whether the goal is starred, not whether Recibo shows it: an
+  unstarred goal may still fill a place there. Tapping it stars or unstars the goal. Up
+  to five goals can be starred; starring a sixth opens a bottom sheet, **Tu Recibo ya
+  tiene 5 metas**, "Elige cuál cambiar por Viaje a la costa. Esa deja de estar
+  destacada.", listing the five starred goals in Recibo's order (icon, name, percentage,
+  ★). Tapping one saves at once and moves its star here; **Cancelar** or back changes
+  nothing. A refused save keeps the sheet and the choice: "**No se pudo cambiar.** Tus 5
+  metas destacadas siguen igual. Vuelve a intentarlo." with **Cancelar** and
+  **Reintentar** (owner, approved 2026-11-03, SELLO-144). Not shown on a completed goal.
 - **Main card (pinked):** "Ya guardaste" and the percentage in green, the saved amount
   large, "de 3.000.000" / "faltan 1.290.000", the green bar; under the tear line
   **Sellos 2 de 4**, the four stamps and "🏁 Próximo sello: 75 %, faltan 540.000".

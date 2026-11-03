@@ -1,6 +1,8 @@
 package com.software.sello.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +48,7 @@ import com.software.sello.feature.goals.MetasAction
 import com.software.sello.feature.goals.MetasScreen
 import com.software.sello.feature.goals.MetasState
 import com.software.sello.feature.goals.MetasViewModel
+import com.software.sello.feature.goals.ReplaceStarSheet
 import com.software.sello.feature.reset.back
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.GoalCelebration
@@ -156,56 +159,62 @@ internal fun GoalDestination(
     LaunchedEffect(deleted) { if (deleted) onBack() }
     val ready = detail as? GoalDetailState.Ready
     val active = ready != null && ready.goal.completedOn == null
-    ShellScreen(
-        state = state,
-        names = monthNames(),
-        onAction = onShell,
-        navigation = null,
-        onBack = onBack,
-        titleOnly = ready?.goal?.name ?: stringResource(R.string.goal_title_fallback),
-        notice = notice,
-        band = if (active) {
-            { GoalPin(ready!!, model::onAction) }
-        } else {
-            null
-        },
-        actions = {
-            if (active && onEdit != null) {
-                IconButton(onClick = onEdit, modifier = Modifier.testTag(GOAL_EDIT_TAG)) {
-                    Icon(SelloIcon.EditNote.painter(), stringResource(R.string.goal_edit))
+    // A box, so the replace sheet lies over the band, the content and the dock.
+    Box(Modifier.fillMaxSize()) {
+        ShellScreen(
+            state = state,
+            names = monthNames(),
+            onAction = onShell,
+            navigation = null,
+            onBack = onBack,
+            titleOnly = ready?.goal?.name ?: stringResource(R.string.goal_title_fallback),
+            notice = notice,
+            band = if (active) {
+                { GoalPin(ready!!, model::onAction) }
+            } else {
+                null
+            },
+            actions = {
+                if (active && onEdit != null) {
+                    IconButton(onClick = onEdit, modifier = Modifier.testTag(GOAL_EDIT_TAG)) {
+                        Icon(SelloIcon.EditNote.painter(), stringResource(R.string.goal_edit))
+                    }
                 }
-            }
-            if (ready != null && !active) {
-                MoreMenu(
-                    listOf(
-                        MoreMenuItem(
-                            stringResource(R.string.goal_delete_action),
-                            SelloIcon.Delete,
-                            { model.onAction(GoalDetailAction.AskToDelete) },
-                            loss = true,
-                            tag = GOAL_DELETE_TAG
+                if (ready != null && !active) {
+                    MoreMenu(
+                        listOf(
+                            MoreMenuItem(
+                                stringResource(R.string.goal_delete_action),
+                                SelloIcon.Delete,
+                                { model.onAction(GoalDetailAction.AskToDelete) },
+                                loss = true,
+                                tag = GOAL_DELETE_TAG
+                            )
                         )
                     )
-                )
+                }
+            },
+            entryDock = false,
+            dock = onContribute?.takeIf { active }?.let {
+                goalDock(stringResource(R.string.goal_dock_contribute), it)
             }
-        },
-        entryDock = false,
-        dock = onContribute?.takeIf { active }?.let {
-            goalDock(stringResource(R.string.goal_dock_contribute), it)
+        ) { padding ->
+            GoalDetailScreen(
+                state = detail,
+                onAction = model::onAction,
+                dates = dateLabels(),
+                months = monthNames(),
+                padding = padding,
+                onWithdraw = onWithdraw,
+                onEditMovement = onEditMovement.takeIf { active },
+                onBulk = onBulk.takeIf { active },
+                landing = celebration?.earned.orEmpty().toSet(),
+                relighting = celebration?.relit.orEmpty().toSet()
+            )
         }
-    ) { padding ->
-        GoalDetailScreen(
-            state = detail,
-            onAction = model::onAction,
-            dates = dateLabels(),
-            months = monthNames(),
-            padding = padding,
-            onWithdraw = onWithdraw,
-            onEditMovement = onEditMovement.takeIf { active },
-            onBulk = onBulk.takeIf { active },
-            landing = celebration?.earned.orEmpty().toSet(),
-            relighting = celebration?.relit.orEmpty().toSet()
-        )
+        ready?.replacing?.let { sheet ->
+            ReplaceStarSheet(ready.goal.name, sheet, ready.busy, ready.error, model::onAction)
+        }
     }
     LogradaMoment(ready?.completion ?: CompletionState.Idle, {
         model.onAction(GoalDetailAction.CelebrationDone)

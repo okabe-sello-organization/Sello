@@ -1,6 +1,7 @@
 package com.software.sello.feature.goals
 
 import com.software.sello.domain.model.GoalEvent
+import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.GoalMovement
 import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.GoalPlace
@@ -182,8 +183,8 @@ class GoalsRenderModel(private val money: MoneyFormatter) {
                 movementMonths = ledger.months.mapValues { (_, net) ->
                     money.format(net, signed = true)
                 },
-                featured = board.reciboGoals.firstOrNull() == goal.id || goal.id in board.starred,
-                replacesStar = board.starred.singleOrNull()?.takeIf { it != goal.id }?.value,
+                starred = goal.id in board.starred,
+                starredOthers = starredOthers(board, goal.id),
                 generation = board.generation,
                 version = goal.version
             ),
@@ -191,6 +192,18 @@ class GoalsRenderModel(private val money: MoneyFormatter) {
             stale = stale
         )
     }
+
+    /**
+     * The starred goals but [id], in Recibo's order. Starred goals lead Recibo's list and
+     * there are at most five, so every one of them is in it.
+     */
+    private fun starredOthers(board: GoalBoard, id: GoalId): List<StarChoice> =
+        board.reciboGoals.filter { it in board.starred && it != id }.mapNotNull { starred ->
+            board.goals.firstOrNull { it.history.goal.id == starred }?.let {
+                val goal = it.history.goal
+                StarChoice(goal.id.value, goal.name.value, goal.icon.value, it.progress.percentage)
+            }
+        }
 
     /** A withdrawal is shown with its minus; its amount is never negative itself. */
     private fun signed(movement: GoalMovement): Money = when (movement.kind) {

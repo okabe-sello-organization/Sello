@@ -46,7 +46,7 @@ Missing = nothing exists.
 
 | Element | State | Where, or what differs |
 | --- | --- | --- |
-| Top bar ← name, edit; star pill **★ En tu Recibo** / **☆ Mostrar en Recibo** | Present | `TitleBar`; `GoalPinPill` (catalog *Icon strip and Recibo pin*); no device test of the pill |
+| Top bar ← name, edit; star pill **★ Destacada en Recibo** / **☆ Destacar en Recibo** (SELLO-144) | Present | `TitleBar`; `GoalPinPill` (catalog *Icon strip and Recibo pin*); no device test of the pill |
 | Main card: "Ya guardaste", %, saved, "de / faltan", bar, tear line, **Sellos 2 de 4**, next stamp | Partial | Built from `Slip`, `TearLine`, `MilestoneRow`; no composed card |
 | Facts: Meta, Fecha objetivo, Desde | Present | `LeaderLine` / `KeyValue` |
 | Aportes por mes, this month in brand | Present | `ColumnsChart` (current period); catalog *Split, partial-month and recorded values* |

@@ -141,7 +141,8 @@ private fun ColumnScope.Ready(
     relighting: Set<GoalPlace>
 ) {
     val goal = state.goal
-    state.error?.let { error ->
+    // While the replace sheet is open it says what happened itself.
+    state.error?.takeIf { state.replacing == null }?.let { error ->
         ErrorSlip(
             message = stringResource(
                 when (error) {
@@ -514,15 +515,20 @@ private fun Movements(
     }
 }
 
-/** The star pill under the goal's name, on the band. Not shown on a completed goal. */
+/**
+ * The star pill under the goal's name, on the band: whether the person starred the goal,
+ * not whether Recibo shows it (an unstarred goal may fill a place there). Tapping stars or
+ * unstars it. Not shown on a completed goal.
+ */
 @Composable
 fun GoalPin(state: GoalDetailState.Ready, onAction: (GoalDetailAction) -> Unit) {
-    val featured = state.goal.featured
+    val starred = state.goal.starred
     Box(Modifier.fillMaxWidth().padding(bottom = SelloTheme.spacing.xs)) {
         GoalPinPill(
-            label = stringResource(if (featured) R.string.goal_pin_on else R.string.goal_pin_off),
-            selected = featured,
-            onClick = { onAction(GoalDetailAction.Feature) },
+            label = stringResource(if (starred) R.string.goal_pin_on else R.string.goal_pin_off),
+            selected = starred,
+            onClick = { onAction(GoalDetailAction.ToggleStar) },
+            enabled = !state.busy,
             modifier = Modifier.testTag("goal.pin")
         )
     }

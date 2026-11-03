@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
@@ -14,6 +16,9 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.feature.goals.ReciboGoal
+import com.software.sello.feature.goals.ReciboGoalPill
+import com.software.sello.feature.goals.ReciboGoalState
 import com.software.sello.showSello
 import java.time.YearMonth
 import org.junit.Rule
@@ -141,4 +146,73 @@ class ReciboScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    // ---------- Recibo's goals (SELLO-144, home.html's carousel scenes) ----------
+
+    private val viaje = ReciboGoalPill("viaje", "Viaje a la costa", "flight", 57)
+    private val celular =
+        ReciboGoalPill("celular", "Celular nuevo", "phone_iphone", 100, reached = true)
+    private val fondo = ReciboGoalPill("fondo", "Fondo de emergencia", "home", 42)
+    private val bici = ReciboGoalPill("bici", "Bicicleta", "fitness_center", 18)
+    private val curso = ReciboGoalPill("curso", "Curso de inglés", "school", 5)
+
+    /** Recibo with [pills] in the goal slot, moved [forward] goals on before the capture. */
+    private fun captureGoals(
+        name: String,
+        pills: List<ReciboGoalPill>,
+        forward: Int,
+        look: Look,
+        stale: Boolean = false
+    ) {
+        rule.showSello(look) {
+            Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk)) {
+                ReciboScreen(
+                    overspent,
+                    {},
+                    PaddingValues(12.dp),
+                    goal = {
+                        ReciboGoal(ReciboGoalState.Shown(pills, null, stale = stale), {}, {}, {})
+                    }
+                )
+            }
+        }
+        repeat(forward) { step ->
+            val shown = pills[step]
+            val node = rule.onNodeWithContentDescription(
+                "${shown.name}, ${shown.percentage} por ciento. Meta ${step + 1} de ${pills.size}. Ver meta"
+            ).fetchSemanticsNode()
+            val next = node.config[SemanticsActions.CustomActions].single {
+                it.label ==
+                    "Meta siguiente"
+            }
+            rule.runOnIdle { next.action() }
+        }
+        rule.captureStill("src/test/screenshots/recibo-goals-$name-${look.label}.png")
+    }
+
+    @Test
+    fun olderGoals() = captureGoals("stale", listOf(viaje, fondo, bici), 0, Look(), stale = true)
+
+    @Test
+    fun oneGoal() = captureGoals("one", listOf(viaje), 0, Look())
+
+    @Test
+    fun threeGoalsOnTheSecond() =
+        captureGoals("three-second", listOf(viaje, fondo, bici), 1, Look())
+
+    @Test
+    fun threeGoalsOnTheSecondDark() =
+        captureGoals("three-second", listOf(viaje, fondo, bici), 1, Look(dark = true))
+
+    @Test
+    fun fiveGoalsOnTheReachedSecond() =
+        captureGoals("five-reached", listOf(viaje, celular, fondo, bici, curso), 1, Look())
+
+    @Test
+    fun fiveGoalsOnTheReachedSecondDark() = captureGoals(
+        "five-reached",
+        listOf(viaje, celular, fondo, bici, curso),
+        1,
+        Look(dark = true)
+    )
 }

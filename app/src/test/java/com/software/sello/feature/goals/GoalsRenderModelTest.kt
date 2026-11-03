@@ -120,17 +120,18 @@ class GoalsRenderModelTest {
 
     private fun goalId(id: String) = (GoalId.of(id) as Outcome.Success).value
 
-    /** [featured] heads Recibo's list; [starred] are the goals starred. */
+    /** [recibo] is Recibo's list, [featured] alone heading it; [starred] are the goals starred. */
     private fun board(
         vararg goals: Goals,
         featured: String? = null,
+        recibo: List<String> = listOfNotNull(featured),
         starred: Set<String> = emptySet()
     ) = GoalBoard(
         generation = 1,
         revision = 7,
         goals = goals.map { it.summary() },
         starred = starred.map(::goalId).toSet(),
-        reciboGoals = listOfNotNull(featured?.let(::goalId))
+        reciboGoals = recibo.map(::goalId)
     )
 
     private fun ready(state: GoalBoardState) = render.metas(state, today) as MetasState.Ready
@@ -223,10 +224,11 @@ class GoalsRenderModelTest {
         goal: Goals,
         vararg others: Goals,
         featured: String? = null,
+        recibo: List<String> = listOfNotNull(featured),
         starred: Set<String> = emptySet()
     ) = (
         render.detail(
-            ReadState.Ready(board(goal, *others, featured = featured, starred = starred)),
+            ReadState.Ready(board(goal, *others, recibo = recibo, starred = starred)),
             goal.id,
             today
         ) as GoalDetailState.Ready
@@ -236,7 +238,7 @@ class GoalsRenderModelTest {
     fun mt07AfterAWithdrawalTheDetailIsHonestAndKeepsTheStamp() {
         val viaje = viaje().apply { retiro(400_000, day(10, 20), "Arreglo del carro") }
 
-        val goal = detail(viaje, celular(), featured = viaje.id)
+        val goal = detail(viaje, celular(), featured = viaje.id, starred = setOf(viaje.id))
 
         assertEquals(43L, goal.percentage)
         assertEquals("1.310.000", goal.saved.digits)
@@ -265,7 +267,7 @@ class GoalsRenderModelTest {
         assertEquals("Arreglo del carro", goal.movements.first().note)
         assertEquals(day(10, 20), goal.movements.first().date)
         assertEquals(day(9, 15), goal.since)
-        assertEquals(true, goal.featured)
+        assertEquals(true, goal.starred)
     }
 
     @Test
@@ -334,41 +336,34 @@ class GoalsRenderModelTest {
     }
 
     @Test
-    fun anotherGoalOnReciboLeavesThisOneUnfeatured() {
-        val celular = celular()
-
-        assertEquals(false, detail(viaje(), celular, featured = celular.id).featured)
-    }
-
-    @Test
-    fun choosingAGoalWhileAnotherIsStarredAndShownMovesThatStarHere() {
-        val celular = celular()
+    fun aGoalOnReciboOnlyToFillAPlaceIsNotStarred() {
         val viaje = viaje()
 
-        val other = detail(viaje, celular, featured = celular.id, starred = setOf(celular.id))
-        val shownItself =
-            detail(celular, viaje, featured = celular.id, starred = setOf(celular.id))
-        // Nothing starred: Viaje is shown by the fallback rule, and no star moves.
-        val byFallback = detail(celular, viaje, featured = viaje.id)
+        val goal = detail(viaje, celular(), featured = viaje.id)
 
-        assertEquals(false to celular.id, other.featured to other.replacesStar)
-        assertEquals(true to null, shownItself.featured to shownItself.replacesStar)
-        assertEquals(false to null, byFallback.featured to byFallback.replacesStar)
+        assertEquals(false, goal.starred)
+        assertEquals(emptyList<StarChoice>(), goal.starredOthers)
     }
 
     @Test
-    fun withSeveralStarsAStarredGoalReadsAsFeaturedAndChoosingAnotherMovesNoStar() {
+    fun theOtherStarredGoalsAreListedInRecibosOrderForTheReplaceSheet() {
         val celular = celular()
         val viaje = viaje()
         val vacunas = Goals(4, "Vacunas de Luna", 400_000, day(7, 15), "pets")
         val stars = setOf(celular.id, vacunas.id)
+        val recibo = listOf(vacunas.id, celular.id, viaje.id)
 
-        // Celular is starred but Vacunas heads the list: still starred, nothing to move.
-        val starred = detail(celular, viaje, vacunas, featured = vacunas.id, starred = stars)
-        val unstarred = detail(viaje, celular, vacunas, featured = vacunas.id, starred = stars)
+        val unstarred = detail(viaje, celular, vacunas, recibo = recibo, starred = stars)
+        val starred = detail(celular, viaje, vacunas, recibo = recibo, starred = stars)
 
-        assertEquals(true to null, starred.featured to starred.replacesStar)
-        assertEquals(false to null, unstarred.featured to unstarred.replacesStar)
+        assertEquals(false, unstarred.starred)
+        assertEquals(
+            listOf(vacunas.id to "Vacunas de Luna", celular.id to "Celular nuevo"),
+            unstarred.starredOthers.map { it.id to it.name }
+        )
+        assertEquals("pets", unstarred.starredOthers.first().iconKey)
+        assertEquals(true, starred.starred)
+        assertEquals(listOf(vacunas.id), starred.starredOthers.map { it.id })
     }
 
     @Test

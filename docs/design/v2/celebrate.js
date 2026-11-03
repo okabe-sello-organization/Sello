@@ -79,7 +79,7 @@ function lograda() {
 }
 
 const app = (o, inner, cls = "") => `<div class="phone"><div class="app ${o.motion === "reduced" ? "reduced" : ""} ${cls}" data-ink="${o.ink}" data-theme="${o.theme}">${inner}</div></div>`;
-const pin = `<div class="band-pin"><button class="pin-band on" aria-pressed="true">${icon("star")}En tu Recibo</button></div>`;
+const pin = `<div class="band-pin"><button class="pin-band on" aria-pressed="true">${icon("star")}Destacada en Recibo</button></div>`;
 // A completed goal is read-only: no edit action and no Aportar dock.
 const detail = (o, body, extra = "", { title = VIAJE.name, dock = "Aportar a esta meta", band = pin, done = false } = {}) => app(o, subShell({ title, body, active: 2, dock, dockClass: "goal", action: done ? undefined : ["edit_note", "Editar meta"], band }) + extra);
 const metasTab = (o, body, band, extra = "") => app(o, appShell({ title: "Metas", addLabel: "Crear una meta", body, tabs: 3, active: 2, band, dock: "Aportar a una meta", dockClass: "goal" }) + extra);

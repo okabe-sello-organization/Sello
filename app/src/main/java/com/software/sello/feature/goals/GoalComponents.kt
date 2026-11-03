@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
@@ -31,9 +31,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.role
@@ -79,7 +81,9 @@ internal fun GoalPill(
     reached: Boolean = false,
     completeLabel: String = contributeLabel,
     onComplete: () -> Unit = {},
-    completing: Boolean = false
+    completing: Boolean = false,
+    /** TalkBack's next and previous goal, when the pill is one of several on Recibo. */
+    customActions: List<CustomAccessibilityAction> = emptyList()
 ) {
     val colors = SelloTheme.colors
     val fill = if (reached) 1f else progress.coerceIn(0f, 1f)
@@ -108,6 +112,7 @@ internal fun GoalPill(
                 .semantics(mergeDescendants = true) {
                     openDescription?.let { contentDescription = it }
                     progressBarRangeInfo = ProgressBarRangeInfo(fill, 0f..1f)
+                    if (customActions.isNotEmpty()) this.customActions = customActions
                 }
                 .padding(start = 14.dp, end = SelloTheme.spacing.md),
             verticalAlignment = Alignment.CenterVertically,
@@ -352,7 +357,8 @@ internal fun GoalPinPill(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
 ) {
     val colors = SelloTheme.colors
     Row(
@@ -360,10 +366,12 @@ internal fun GoalPinPill(
             CircleShape
         ).background(if (selected) colors.onBand.copy(alpha = 0.18f) else Color.Transparent)
             .border(1.5.dp, if (selected) Color.Transparent else colors.onBand, CircleShape)
-            .selectable(
+            // A star turned on and off: a switch, not one choice among others.
+            .toggleable(
                 selected,
-                role = Role.RadioButton,
-                onClick = onClick
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = { onClick() }
             )
             .heightIn(min = SelloTheme.spacing.minTouchTarget)
             .padding(horizontal = SelloTheme.spacing.md),

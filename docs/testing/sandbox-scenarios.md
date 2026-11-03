@@ -84,6 +84,19 @@ kept (faded), empty; Celular 1.200.000, lograda, all four earned; Fondo de emerg
 2.500.000, 50 %, two earned, on Recibo. October's budget is untouched by the aportes
 (MT06): 900.000 − 380.000 = 520.000 left, unassigned 2.100.000.
 
+### Cinco metas destacadas (`metas-destacadas@1`)
+
+Six goals from 1 October 2026, one aporte each: Viaje a la costa 1.710.000 of 3.000.000
+(57 %), Celular nuevo 1.200.000 of 1.200.000 (100 %, not marked lograda), Fondo de
+emergencia 2.100.000 of 5.000.000 (42 %), Cirugía de Luna 300.000 of 1.000.000 (30 %),
+Bicicleta 360.000 of 2.000.000 (18 %) and Curso de inglés 100.000 of 2.000.000 (5 %). All
+but Viaje are starred. Beside them, Mercado 700.000 with a salary of 3.000.000. For
+SELLO-144: Recibo's carousel, and starring Viaje opens the sheet to pick the star it
+replaces.
+
+Checked by `HistoryLoadTest.fiveStarredGoals`: Recibo shows Celular, Fondo, Cirugía de
+Luna, Bicicleta and Curso in that order, all five starred; Viaje is left out.
+
 ### Inversiones con dólares (`inversiones@1`)
 
 Fondo de inversión, CDT Banco, Parqueadero and Ecopetrol with the movements of the

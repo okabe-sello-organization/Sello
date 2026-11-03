@@ -86,7 +86,8 @@ class ReciboGoalJourneyTest {
         // 1.710.000 + 600.000 = 2.310.000 of 3.000.000: 77 %, past the 75 % place.
         rule.awaitTag(CELEBRATION_TICKET_TAG)
         rule.onNode(hasTestTag(CORRECTION_NOTICE_TAG)).assertExists()
-        rule.awaitDescription("Viaje a la costa, 77 por ciento. Ver meta")
+        // Back on Recibo the carousel opens on its first goal, now 77 %.
+        rule.awaitDescription("Viaje a la costa, 77 por ciento. Meta 1 de 2. Ver meta")
         assertEquals(before, answer())
         assertEquals(0L, TestData.count("expense") + TestData.count("income"))
     }

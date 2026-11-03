@@ -5,10 +5,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
@@ -58,7 +61,7 @@ class ReciboGoalScreenTest {
 
     @Test
     fun thePillSaysItsExactPercentageOpensTheGoalAndItsPlusIsAportar() {
-        show(ReciboGoalState.Shown(viaje, null))
+        show(ReciboGoalState.Shown(listOf(viaje), null))
 
         rule.onNodeWithContentDescription("Viaje a la costa, 57 por ciento. Ver meta")
             .assertHasClickAction()
@@ -77,7 +80,7 @@ class ReciboGoalScreenTest {
 
     @Test
     fun theShownGoalAt100PercentOffersMarcarComoLogradaInsteadOfThePlus() {
-        show(ReciboGoalState.Shown(viaje.copy(percentage = 112, reached = true), null))
+        show(ReciboGoalState.Shown(listOf(viaje.copy(percentage = 112, reached = true)), null))
 
         rule.onNodeWithContentDescription("Aportar a Viaje a la costa").assertDoesNotExist()
         rule.onNodeWithContentDescription("Marcar Viaje a la costa como lograda")
@@ -96,7 +99,7 @@ class ReciboGoalScreenTest {
     fun whileItIsBeingMarkedThePillsButtonWaits() {
         show(
             ReciboGoalState.Shown(
-                viaje.copy(percentage = 112, reached = true),
+                listOf(viaje.copy(percentage = 112, reached = true)),
                 null,
                 CompletionState.Busy
             )
@@ -108,7 +111,7 @@ class ReciboGoalScreenTest {
 
     @Test
     fun anotherGoalAt100PercentIsMarkedFromItsGreenRow() {
-        show(ReciboGoalState.Shown(viaje, curso))
+        show(ReciboGoalState.Shown(listOf(viaje), curso))
 
         rule.onNodeWithText("Curso de inglés").assertExists()
         rule.onNodeWithText("Llegó al 100 %").assertExists()
@@ -131,7 +134,13 @@ class ReciboGoalScreenTest {
 
     @Test
     fun aMarcarNotSavedSaysSoAndOffersToTryAgain() {
-        show(ReciboGoalState.Shown(viaje, curso, CompletionState.Failed(GoalDetailError.NotSaved)))
+        show(
+            ReciboGoalState.Shown(
+                listOf(viaje),
+                curso,
+                CompletionState.Failed(GoalDetailError.NotSaved)
+            )
+        )
 
         rule.onNodeWithText("No se guardó el cambio. Puedes intentarlo de nuevo.").assertExists()
         rule.onNode(hasText("Reintentar") and hasAnyAncestor(hasTestTag(RECIBO_GOAL_ERROR_TAG)))
@@ -147,5 +156,89 @@ class ReciboGoalScreenTest {
         rule.onNodeWithTag(RECIBO_GOAL_TAG).assertDoesNotExist()
         rule.onNodeWithTag(RECIBO_GOAL_REACHED_TAG).assertDoesNotExist()
         rule.onNodeWithTag(RECIBO_GOAL_FAILED_TAG).assertDoesNotExist()
+    }
+
+    private val fondo = ReciboGoalPill("fondo", "Fondo de emergencia", "home", 42)
+    private val bici = ReciboGoalPill("bici", "Bicicleta", "fitness_center", 18)
+
+    private fun pillOf(name: String, place: Int, of: Int, percentage: Int) =
+        rule.onNodeWithContentDescription(
+            "$name, $percentage por ciento. Meta $place de $of. Ver meta"
+        )
+
+    @Test
+    fun olderGoalsAreMarkedAndReadAgain() {
+        show(ReciboGoalState.Shown(listOf(viaje, fondo), null, stale = true))
+
+        rule.onNodeWithText("No pudimos leer tus metas de nuevo", substring = true).assertExists()
+        rule.onNode(hasText("Reintentar") and hasAnyAncestor(hasTestTag(RECIBO_GOAL_STALE_TAG)))
+            .performClick()
+        pillOf("Viaje a la costa", 1, 2, 57).assertExists()
+
+        assertEquals(listOf<Any>(ReciboGoalAction.Retry), actions)
+    }
+
+    @Test
+    fun freshGoalsAreNotMarked() {
+        show(ReciboGoalState.Shown(listOf(viaje, fondo), null))
+
+        rule.onNodeWithTag(RECIBO_GOAL_STALE_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun oneGoalIsTodaysPillWithNoDotsAndNoPlace() {
+        show(ReciboGoalState.Shown(listOf(viaje), null))
+
+        rule.onNodeWithTag(RECIBO_GOAL_TAG).assertExists()
+        rule.onNodeWithTag(RECIBO_GOAL_DOTS_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun severalGoalsOpenOnTheFirstWithDotsAndEachPillSaysItsPlace() {
+        show(ReciboGoalState.Shown(listOf(viaje, fondo, bici), null))
+
+        rule.onNodeWithTag(RECIBO_GOAL_DOTS_TAG).assertExists()
+        pillOf("Viaje a la costa", 1, 3, 57).assertIsDisplayed().performClick()
+        rule.onNodeWithContentDescription("Aportar a Viaje a la costa").performClick()
+
+        assertEquals(listOf<Any>("open:viaje", "contribute:viaje"), actions)
+    }
+
+    @Test
+    fun talkBackMovesToTheNextAndPreviousGoalAndTheCarouselLoops() {
+        show(ReciboGoalState.Shown(listOf(viaje, fondo, bici), null))
+
+        pillOf("Viaje a la costa", 1, 3, 57).performCustomAction("Meta siguiente")
+        pillOf("Fondo de emergencia", 2, 3, 42).assertIsDisplayed()
+            .performCustomAction("Meta anterior")
+        // Before the first comes the last.
+        pillOf("Viaje a la costa", 1, 3, 57).assertIsDisplayed()
+            .performCustomAction("Meta anterior")
+        pillOf("Bicicleta", 3, 3, 18).assertIsDisplayed()
+            .performCustomAction("Meta siguiente")
+        // After the last comes the first again.
+        pillOf("Viaje a la costa", 1, 3, 57).assertIsDisplayed()
+    }
+
+    @Test
+    fun aSecondPillAt100PercentOffersMarcarComoLograda() {
+        val celular =
+            ReciboGoalPill("celular", "Celular nuevo", "phone_iphone", 100, reached = true)
+        show(ReciboGoalState.Shown(listOf(viaje, celular, fondo), null))
+
+        pillOf("Viaje a la costa", 1, 3, 57).performCustomAction("Meta siguiente")
+        rule.onNodeWithContentDescription("Marcar Celular nuevo como lograda").performClick()
+
+        assertEquals(listOf<Any>(ReciboGoalAction.MarkComplete("celular")), actions)
+    }
+
+    private fun SemanticsNodeInteraction.performCustomAction(
+        label: String
+    ): SemanticsNodeInteraction {
+        val action = fetchSemanticsNode().config[SemanticsActions.CustomActions]
+            .single { it.label == label }
+        rule.runOnIdle { action.action() }
+        rule.waitForIdle()
+        return this
     }
 }
