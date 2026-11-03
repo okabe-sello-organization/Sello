@@ -531,7 +531,7 @@ private fun Said(state: ExpenseEntryState) {
         }
     }
     val missing = state.missing?.text()
-    if (missing != null && !state.busy && state.error != EntryError.Unknown) {
+    if (missing != null && !state.busy && state.error !in Unresolved) {
         FieldMessageText(
             FieldMessage(stringResource(missing), isError = false),
             Modifier.testTag(ENTRY_MISSING_TAG)
@@ -554,9 +554,15 @@ private fun Action(state: ExpenseEntryState, onAction: (ExpenseEntryAction) -> U
 
 @Composable
 private fun SubmitButton(state: ExpenseEntryState, onAction: (ExpenseEntryAction) -> Unit) {
-    if (state.error == EntryError.Unknown) {
+    if (state.error in Unresolved) {
         SelloButton(
-            text = stringResource(R.string.expense_entry_check_again),
+            text = stringResource(
+                if (state.error == EntryError.DeleteUnknown) {
+                    R.string.expense_edit_check_deleted
+                } else {
+                    R.string.expense_entry_check_again
+                }
+            ),
             onClick = { onAction(ExpenseEntryAction.Retry) },
             modifier = Modifier.fillMaxWidth().testTag(ENTRY_SUBMIT_TAG),
             loading = state.busy
@@ -745,7 +751,7 @@ private fun EntryError.text(editing: Boolean) = when (this) {
 
     EntryError.NotDeleted -> R.string.expense_edit_not_deleted
 
-    EntryError.DeleteUnknown -> R.string.correction_delete_unknown
+    EntryError.DeleteUnknown -> R.string.expense_edit_delete_unknown
 
     EntryError.StartTooEarly -> R.string.repeat_start_too_early
 
@@ -755,6 +761,9 @@ private fun EntryError.text(editing: Boolean) = when (this) {
 
     EntryError.CarryUnavailable -> R.string.carry_unavailable_save_any
 }
+
+/** A save or deletion whose outcome is unknown: the form only offers to check it again. */
+private val Unresolved = setOf(EntryError.Unknown, EntryError.DeleteUnknown)
 
 const val ENTRY_CORRECTION_TAG = "expense-entry:correction"
 

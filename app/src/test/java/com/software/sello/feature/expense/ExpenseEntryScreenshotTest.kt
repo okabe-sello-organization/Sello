@@ -67,4 +67,17 @@ class ExpenseEntryScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    /** Correcting, after a deletion whose outcome is unknown: only checking again is offered. */
+    @Test
+    fun deleteUnknown() {
+        val look = Look()
+        val unknown = ready.copy(
+            editing = true,
+            missing = Missing.Changes,
+            error = EntryError.DeleteUnknown
+        )
+        rule.showSello(look) { ExpenseEntryScreen(unknown, dateLabels(), {}) }
+        rule.captureStill("src/test/screenshots/expense-entry-delete-unknown-${look.label}.png")
+    }
 }

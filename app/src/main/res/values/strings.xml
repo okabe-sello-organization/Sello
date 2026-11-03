@@ -625,6 +625,8 @@
     <string name="expense_edit_gone">Este gasto ya no existe. No se cambió nada.</string>
     <string name="expense_edit_changed">Este gasto cambió mientras lo corregías. No se guardó nada; sal y vuelve a abrirlo.</string>
     <string name="expense_edit_not_deleted">No se pudo borrar. El gasto sigue anotado.</string>
+    <string name="expense_edit_delete_unknown">Aún no sabemos si se borró. Compruébalo antes de volver a intentarlo.</string>
+    <string name="expense_edit_check_deleted">Comprobar si se borró</string>
     <string name="expense_edit_load_failed">No pudimos leer este gasto.</string>
     <string name="expense_edit_discard_title">¿Descartar los cambios?</string>
     <string name="expense_edit_discard_message">El gasto queda como estaba.</string>
