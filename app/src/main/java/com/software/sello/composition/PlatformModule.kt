@@ -71,15 +71,17 @@ fun androidModule(context: Context): Module = module {
     single<ScreenReader> { AndroidScreenReader(context) }
 }
 
+/** [generation] is the history's as [storage] opened, when [financialZone] was read. */
 fun productionModules(
     context: Context,
     financialZone: ProcessFinancialZone,
     storage: FinancialStorage,
+    generation: Long,
     names: StorageNames = StorageNames.Normal
 ): List<Module> = listOf(
     androidModule(context),
     platformModule(financialZone),
     storageModule(storage),
     preferencesModule(names.preferences),
-    presentationModule()
+    presentationModule(generation)
 )

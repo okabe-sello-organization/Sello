@@ -306,6 +306,37 @@ class CategoryManagementViewModelTest {
         assertEquals("CAFE", (commands.submitted.single() as RenameCategory).name.value)
     }
 
+    @Test
+    fun aRenameToAnInvisibleOrDirectionLookAlikeIsRefusedBeforeAnythingIsSent() {
+        for (text in listOf("Caf\u00E9\u200B", "Ca\u00ADf\u00E9", "\u202ECaf\u00E9")) {
+            val form = form(opening(category = 2))
+            form.name(text)
+
+            form.save()
+
+            assertEquals(text, NameError.NotAllowed, form.now.nameError)
+            assertEquals(text, text, form.now.name)
+        }
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
+    @Test
+    fun aNameSavedBeforeTheInvisibleCharacterRuleIsKeptWhileTheRestChanges() {
+        val older = stored(1, "Caf\u00E9\u200B", limited)
+        reads.categories = listOf(older, mercado)
+        val form = form()
+
+        form.onAction(CategoryEditorAction.IconPicked("restaurant"))
+        form.save()
+
+        assertNull(form.now.nameError)
+        assertEquals(listOf(ChangeCategoryIcon::class), commands.submitted.map { it::class })
+        assertEquals(
+            "43 61 66 C3 A9 E2 80 8B",
+            form.now.name.toByteArray(Charsets.UTF_8).joinToString(" ") { "%02X".format(it) }
+        )
+    }
+
     // --- Saving ---
 
     @Test

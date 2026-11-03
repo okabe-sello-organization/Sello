@@ -109,13 +109,14 @@ class GoalEditorViewModelTest {
         saved: Long,
         targetMonth: YearMonth? = YearMonth.of(2026, 12),
         completedOn: LocalDate? = null,
-        version: Long = 4
+        version: Long = 4,
+        name: String = "Viaje a la costa"
     ): GoalSummary {
         val day = LocalDate.of(2026, 10, 1)
         val history = GoalHistory(
             Goal(
                 GoalId.of(viajeId).value(),
-                GoalName.of("Viaje a la costa").value(),
+                GoalName.of(name).value(),
                 IconKey.of("flight").value(),
                 targetMonth,
                 completedOn,
@@ -275,6 +276,36 @@ class GoalEditorViewModelTest {
         assertFalse(model.state.value.canSubmit)
         model.onAction(GoalEditorAction.Submit)
         assertEquals(emptyList<GoalCommand>(), commands.sent)
+    }
+
+    @Test
+    fun aNameWithAnInvisibleOrDirectionCharacterIsRefusedAndNothingIsSent() = runTest {
+        for (text in listOf("Casa\u200B propia", "Ca\u00ADsa propia", "\u202ECasa propia")) {
+            val model = model()
+            model.casaPropia()
+            model.onAction(GoalEditorAction.NameChanged(text))
+
+            model.onAction(GoalEditorAction.Submit)
+
+            assertEquals(text, GoalNameError.NotAllowed, model.state.value.nameError)
+            assertFalse(text, model.state.value.canSubmit)
+        }
+        assertEquals(emptyList<GoalCommand>(), commands.sent)
+    }
+
+    @Test
+    fun aNameSavedBeforeTheInvisibleCharacterRuleIsKeptByAnEdit() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000, name = "Viaje\u200B a la costa")))
+        model.onAction(GoalEditorAction.IconPicked("home"))
+
+        model.onAction(GoalEditorAction.Submit)
+
+        assertNull(model.state.value.nameError)
+        assertEquals(
+            "56 69 61 6A 65 E2 80 8B 20 61 20 6C 61 20 63 6F 73 74 61",
+            (commands.sent.single() as EditGoal).name.value.toByteArray(Charsets.UTF_8)
+                .joinToString(" ") { "%02X".format(it) }
+        )
     }
 
     @Test

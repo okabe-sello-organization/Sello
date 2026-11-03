@@ -481,6 +481,10 @@ class InvestmentEditorViewModel(
 
     private fun name(): String = form.name
 
+    /** The name as saved, which passes as it is even if typed before SELLO-164's rule. */
+    private fun storedName(summary: InvestmentSummary?): String? =
+        summary?.history?.investment?.name?.value
+
     private fun description(): String = form.description
 
     private fun chosenCurrency(summary: InvestmentSummary?, starting: Currency): Currency =
@@ -553,7 +557,9 @@ class InvestmentEditorViewModel(
             editing = editing,
             name = text,
             nameLength = length(text),
-            nameError = textError((InvestmentName.of(text) as? Outcome.Failure)?.error),
+            nameError = textError(
+                (InvestmentName.fromInput(text, storedName(summary)) as? Outcome.Failure)?.error
+            ),
             description = about,
             descriptionLength = length(about),
             descriptionError =
@@ -598,7 +604,8 @@ class InvestmentEditorViewModel(
 
     private fun submit(now: InvestmentEditorState) {
         val read = readable() ?: return
-        val name = (InvestmentName.of(name()) as? Outcome.Success)?.value ?: return
+        val name = (InvestmentName.fromInput(name(), storedName(stored(read))) as? Outcome.Success)
+            ?.value ?: return
         val description = (
             InvestmentDescription.of(
                 description()

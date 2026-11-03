@@ -56,7 +56,10 @@ class JvmSandbox(val scenario: Scenario) {
 
     fun open(): JvmSandbox {
         close()
-        val composition = DebugComposition(store, {}, { Scenarios.find(it) }) {
+        val composition = DebugComposition(store, {}, { key ->
+            // A history written only for one test is found as well as the shipped ones.
+            if (key == scenario.key) scenario else Scenarios.find(key)
+        }) {
             runner = it.scenarios ?: runner
         }
         runner = null
@@ -73,7 +76,13 @@ class JvmSandbox(val scenario: Scenario) {
         graph = koinApplication {
             allowOverride(true)
             modules(
-                productionModules(context, zone, opened.value.storage, SandboxNames) +
+                productionModules(
+                    context,
+                    zone,
+                    opened.value.storage,
+                    opened.value.profile.generation,
+                    SandboxNames
+                ) +
                     composition.modules(opened.value.profile) +
                     module { single<MonotonicClock> { monotonic } }
             )

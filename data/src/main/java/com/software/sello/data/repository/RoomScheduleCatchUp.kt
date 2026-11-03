@@ -32,28 +32,50 @@ import java.time.LocalDate
  *
  * It needs no operation identifier from a caller to be safe to repeat: what is due is
  * worked out from the checkpoints inside the transaction, and the origin of each entry
- * is unique, so a batch that committed is never written again.
+ * is unique, so a batch that committed is never written again. Every check comes before
+ * the first write, so a batch refused is a batch with nothing written. A history
+ * replaced since the caller's generation is not written to at all.
  */
 class RoomScheduleCatchUp internal constructor(
     private val database: SelloDatabase,
     private val audit: AuditClock,
     private val ids: RecordIdSource
 ) : ScheduleCatchUpStore {
-    override suspend fun recordDue(today: LocalDate, limit: Int): CatchUpBatch {
+    override suspend fun recordDue(generation: Long, today: LocalDate, limit: Int): CatchUpBatch {
         // Most runs find nothing due; they read and never take the write lock.
-        when (val anything = reading { anyDue(today) }) {
+        when (val anything = reading { anyDue(generation, today) }) {
             is Outcome.Failure -> return CatchUpBatch.Failed(anything.error)
-            is Outcome.Success -> if (!anything.value) return CatchUpBatch.Recorded(emptyList())
+            is Outcome.Success -> anything.value?.let { return it }
         }
-        return when (val run = database.runCommand { record(today, limit) }) {
+        return recordBatch(generation, today, limit)
+    }
+
+    /**
+     * The batch's own transaction, which checks [generation] again: a restore or an erase
+     * can commit between the read above and it.
+     */
+    internal suspend fun recordBatch(generation: Long, today: LocalDate, limit: Int): CatchUpBatch =
+        when (val run = database.runCommand { record(generation, today, limit) }) {
             is CommandRun.Finished -> run.value
             is CommandRun.RolledBack -> CatchUpBatch.Failed(run.failure)
             CommandRun.Unknown -> CatchUpBatch.Unknown
         }
-    }
 
-    /** Whether any schedule has an occurrence due, read without writing. */
-    private suspend fun anyDue(today: LocalDate): Outcome<Boolean, StorageFailure> {
+    /**
+     * Read without writing: [CatchUpBatch.Stale] for a replaced history, nothing recorded
+     * when no schedule has an occurrence due, else null and the batch goes ahead.
+     */
+    private suspend fun anyDue(
+        generation: Long,
+        today: LocalDate
+    ): Outcome<CatchUpBatch?, StorageFailure> {
+        when (val profile = profileFrom(database.profileDao().rows())) {
+            is Outcome.Failure -> return profile
+
+            is Outcome.Success -> if (profile.value.generation != generation) {
+                return Outcome.Success(CatchUpBatch.Stale)
+            }
+        }
         val pauses = database.scheduleDao().allPauses().groupBy { it.scheduleId }
         for (row in database.scheduleDao().all()) {
             when (val stored = row.toStored(pauses[row.id].orEmpty())) {
@@ -67,21 +89,25 @@ class RoomScheduleCatchUp internal constructor(
                         today,
                         1
                     )
-                    if (due.isNotEmpty()) return Outcome.Success(true)
+                    if (due.isNotEmpty()) return Outcome.Success(null)
                 }
             }
         }
-        return Outcome.Success(false)
+        return Outcome.Success(CatchUpBatch.Recorded(emptyList()))
     }
 
     private class Due(val stored: StoredSchedule, val origin: EntryOrigin)
 
-    /** Runs inside the transaction. Nothing due writes nothing at all. */
-    private suspend fun record(today: LocalDate, limit: Int): CatchUpBatch {
+    /**
+     * Runs inside the transaction. Every return before the first insert writes nothing,
+     * and none comes after it: a refusal there would commit the rows already inserted.
+     */
+    private suspend fun record(generation: Long, today: LocalDate, limit: Int): CatchUpBatch {
         val profile = when (val stored = profileFrom(database.profileDao().rows())) {
             is Outcome.Success -> stored.value
             is Outcome.Failure -> return CatchUpBatch.Failed(stored.error)
         }
+        if (profile.generation != generation) return CatchUpBatch.Stale
         val pauses = database.scheduleDao().allPauses().groupBy { it.scheduleId }
         val schedules = database.scheduleDao().all().map { row ->
             when (val stored = row.toStored(pauses[row.id].orEmpty())) {
@@ -100,22 +126,25 @@ class RoomScheduleCatchUp internal constructor(
             )
             .take(limit)
         if (due.isEmpty()) return CatchUpBatch.Recorded(emptyList())
+        // Archiving pauses a category's schedules, so this is damage, never skipped.
+        for (item in due) {
+            val entry = item.stored.schedule.entry as? ScheduledEntry.Payment ?: continue
+            val category = database.categoryDao().byId(entry.categoryId.value)
+            if (category == null || category.archived != 0L) {
+                return CatchUpBatch.Failed(
+                    StorageFailure.Integrity(
+                        "schedule",
+                        item.stored.schedule.id.value,
+                        "category_id"
+                    )
+                )
+            }
+        }
 
         val now = audit.now()
         val recorded = due.map { item ->
             when (val entry = item.stored.schedule.entry) {
                 is ScheduledEntry.Payment -> {
-                    // Archiving pauses a category's schedules, so this is damage, never skipped.
-                    val category = database.categoryDao().byId(entry.categoryId.value)
-                    if (category == null || category.archived != 0L) {
-                        return CatchUpBatch.Failed(
-                            StorageFailure.Integrity(
-                                "schedule",
-                                item.stored.schedule.id.value,
-                                "category_id"
-                            )
-                        )
-                    }
                     val id = expenseId()
                     database.expenseDao().insert(
                         Expense(

@@ -39,7 +39,6 @@ import com.software.sello.domain.model.Category
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Outcome
-import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.CarryoverReads
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryReads
@@ -57,6 +56,7 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.money.MoneyFormatter
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -98,11 +98,14 @@ sealed interface CatchUpNoticeState {
     /**
      * [items] since the notice was last dismissed; none means there is no notice. [carry] is
      * what recording the payments did to carry chains, null when it reached none (CP18).
+     * [through] is when the latest of [items] was recorded: dismissing them marks seen up
+     * to it and no further, so anything recorded after it stays. Null with no items.
      */
     data class Ready(
         val items: List<RecordedItem>,
         val today: LocalDate,
-        val carry: CatchUpCarry? = null
+        val carry: CatchUpCarry? = null,
+        val through: Instant? = null
     ) : CatchUpNoticeState {
         val payments: Int get() = items.count { !it.income }
         val incomes: Int get() = items.count { it.income }
@@ -122,7 +125,8 @@ sealed interface CatchUpCarry {
  * The notice after catching up (recurrence-examples rule 14; docs/design/v2/fijos.html):
  * every entry catch-up recorded since the person last pressed Listo, across runs, each
  * opening its edit. It is derived from the entries themselves, so one deleted meanwhile
- * leaves it, and only when Listo was pressed is kept, on the audit clock that stamps them.
+ * leaves it, and only how far Listo reached is kept: the latest stamp it showed, on the
+ * audit clock that stamps them.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CatchUpNoticeViewModel(
@@ -130,7 +134,6 @@ class CatchUpNoticeViewModel(
     records: ScheduleRecordReads,
     private val categories: CategoryReads,
     clock: FinancialClock,
-    private val audit: AuditClock,
     private val money: MoneyFormatter,
     private val carryover: CarryoverReads
 ) : ViewModel() {
@@ -162,12 +165,18 @@ class CatchUpNoticeViewModel(
     fun retry() = attempts.update { it + 1 }
 
     /**
-     * Listo, or the notice's time on Recibo running out: everything shown so far is seen.
-     * The notice stays if that cannot be kept.
+     * Listo, or the notice's time on Recibo running out, on the notice as [shown]: what it
+     * listed is seen, and nothing recorded after it. The notice stays if that cannot be
+     * kept. A notice that listed nothing marks nothing and just closes.
      */
-    fun done() {
+    fun done(shown: CatchUpNoticeState) {
+        val through = (shown as? CatchUpNoticeState.Ready)?.through
+        if (through == null) {
+            closing.value = true
+            return
+        }
         viewModelScope.launch {
-            if (preferences.markCatchUpNoticeSeen(audit.now()) == PreferenceWrite.Saved) {
+            if (preferences.markCatchUpNoticeSeen(through) == PreferenceWrite.Saved) {
                 closing.value = true
             }
         }
@@ -217,7 +226,13 @@ class CatchUpNoticeViewModel(
                 }
             },
             today = today,
-            carry = carry(records, names.mapValues { it.value.category })
+            carry = carry(records, names.mapValues { it.value.category }),
+            through = records.maxOf { record ->
+                when (record) {
+                    is ScheduleRecord.Payment -> record.expense.createdAt
+                    is ScheduleRecord.Earning -> record.income.createdAt
+                }
+            }
         )
     }
 
@@ -252,11 +267,16 @@ class CatchUpNoticeViewModel(
 /**
  * "Sello anotó 4 pagos fijos · Ver", above Anotar on Recibo. It only informs: the person
  * set these up already. It goes by itself after five seconds, longer when a screen reader
- * asks for it, calling [onTimeout]; the time left drains across the bar (in steps with
- * reduced motion). Ver still opens the list while it shows.
+ * asks for it, calling [onTimeout] with the notice it showed all that time; the time left
+ * drains across the bar (in steps with reduced motion). Ver still opens the list while it
+ * shows.
  */
 @Composable
-fun CatchUpNoticeBar(state: CatchUpNoticeState, onTimeout: () -> Unit, onView: () -> Unit) {
+fun CatchUpNoticeBar(
+    state: CatchUpNoticeState,
+    onTimeout: (CatchUpNoticeState) -> Unit,
+    onView: () -> Unit
+) {
     val ready = state as? CatchUpNoticeState.Ready ?: return
     if (ready.items.isEmpty()) return
     val accessibility = LocalAccessibilityManager.current
@@ -281,7 +301,7 @@ fun CatchUpNoticeBar(state: CatchUpNoticeState, onTimeout: () -> Unit, onView: (
         } else {
             left.animateTo(0f, tween(shownFor.toInt(), easing = LinearEasing))
         }
-        timeUp()
+        timeUp(ready)
     }
     val count = ready.items.size
     val recorded = when {
@@ -314,15 +334,31 @@ private const val TIME_STEPS = 5
 @Composable
 fun CatchUpRecordedRoot(
     viewModels: ViewModelProvider.Factory,
-    padding: PaddingValues,
     onEdit: (id: String, income: Boolean) -> Unit,
-    onClosed: () -> Unit
+    onClosed: () -> Unit,
+    frame: @Composable (onDone: () -> Unit, list: @Composable (PaddingValues) -> Unit) -> Unit
 ) {
     val model: CatchUpNoticeViewModel = viewModel(factory = viewModels)
-    val state by model.state.collectAsStateWithLifecycle()
+    CatchUpRecordedRoot(model, onEdit, onClosed, frame)
+}
+
+/**
+ * The list and its Listo ([frame] places them) from one read of [model]'s state, so
+ * Listo marks seen exactly the list drawn, never a newer one not drawn yet.
+ */
+@Composable
+fun CatchUpRecordedRoot(
+    model: CatchUpNoticeViewModel,
+    onEdit: (id: String, income: Boolean) -> Unit,
+    onClosed: () -> Unit,
+    frame: @Composable (onDone: () -> Unit, list: @Composable (PaddingValues) -> Unit) -> Unit
+) {
+    val shown = model.state.collectAsStateWithLifecycle().value
     val closed by model.closed.collectAsStateWithLifecycle()
     LaunchedEffect(closed) { if (closed) onClosed() }
-    CatchUpRecordedScreen(state, padding, model::retry, onEdit)
+    frame({ model.done(shown) }) { padding ->
+        CatchUpRecordedScreen(shown, padding, model::retry, onEdit)
+    }
 }
 
 /** Lo que Sello anotó: each entry with its date and amount, opening its edit. */

@@ -138,35 +138,37 @@ object CarryoverCorrectionReplay {
     }
 
     /**
-     * What recording [payments] does when catch-up records them (CP18, SC37, SC47): the
-     * occurrences of [before]'s category dated in an earlier month of one of its chains are
-     * added to that month's spending, and the result is the notice's list. It is derived
-     * from the listed occurrences, so an occurrence taken off the list leaves the notice.
+     * What recording [payments] did when catch-up recorded them (CP18, SC37, SC47).
+     * [recorded] is the category as it is now, with the payments in it, so the notice's
+     * "after" is what Recibo shows. Its "before" takes out only the occurrences dated in an
+     * earlier month of one of the category's chains; every other expense, a payment of the
+     * current month included, stays on both sides. It is derived from the listed
+     * occurrences, so an occurrence taken off the list leaves the notice.
      */
     fun catchUp(
-        before: CategoryCarryInput,
+        recorded: CategoryCarryInput,
         payments: List<ReservedPayment>,
         currentMonth: YearMonth
     ): Outcome<CarryCorrection, CarryoverFailure> {
-        var spending: SpendingHistory = before.spending
+        var spending: SpendingHistory = recorded.spending
         for (payment in payments) {
             val month = YearMonth.from(payment.occurrence.date)
-            if (payment.categoryId != before.categoryId || month >= currentMonth) continue
-            if (before.chains.none { it.covers(month) }) continue
+            if (payment.categoryId != recorded.categoryId || month >= currentMonth) continue
+            if (recorded.chains.none { it.covers(month) }) continue
             spending =
-                when (val added = spending.plus(payment.occurrence.date, payment.amount.money)) {
-                    is Outcome.Success -> added.value
-                    is Outcome.Failure -> return added
+                when (val taken = spending.minus(payment.occurrence.date, payment.amount.money)) {
+                    is Outcome.Success -> taken.value
+                    is Outcome.Failure -> return taken
                 }
         }
-        val after = CategoryCarryInput(
-            before.categoryId,
-            before.chains,
-            before.defaults,
-            before.overrides,
+        val before = CategoryCarryInput(
+            recorded.categoryId,
+            recorded.chains,
+            recorded.defaults,
+            recorded.overrides,
             spending
         )
-        return preview(currentMonth, listOf(CategoryCorrection(before, after)))
+        return preview(currentMonth, listOf(CategoryCorrection(before, recorded)))
     }
 
     /** Adds [id]'s changed months to the lists; a change that does not fit fails (CP23). */

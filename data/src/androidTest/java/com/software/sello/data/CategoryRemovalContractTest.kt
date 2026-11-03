@@ -197,7 +197,7 @@ class CategoryRemovalContractTest {
         spend(102, "2026-10-04", 12_000)
         val batch = RoomScheduleCatchUp(ledger.database, { ledger.audit }, {
             uuid(ledger.nextRecord++)
-        }).recordDue(LocalDate.parse("2026-10-09"), 50)
+        }).recordDue(1, LocalDate.parse("2026-10-09"), 50)
         assertTrue("$batch", batch is CatchUpBatch.Recorded)
     }
 

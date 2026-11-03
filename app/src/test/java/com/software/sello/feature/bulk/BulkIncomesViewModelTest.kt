@@ -305,6 +305,22 @@ class BulkIncomesViewModelTest {
     }
 
     @Test
+    fun otrosNameWithAnInvisibleOrDirectionCharacterIsNotTaken() {
+        for (text in listOf("Bono\u200B", "Bo\u00ADno", "\u202EBono")) {
+            val bulk = incomeSheet()
+            bulk.type("850000")
+            bulk.source("other")
+
+            bulk.name(text)
+
+            assertEquals(text, text, bulk.now.noteDraft)
+            assertTrue(text, bulk.now.noteDraftNotAllowed)
+            assertNull(text, bulk.now.lines.single().source?.name)
+            assertFalse(text, bulk.now.canSubmit)
+        }
+    }
+
+    @Test
     fun otroWithoutANameBlocksSavingAndSaysWhy() {
         val bulk = incomeSheet()
         bulk.type("850000")
