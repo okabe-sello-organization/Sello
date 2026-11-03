@@ -392,12 +392,13 @@ class CarryoverCorrectionReplayTest {
         TransactionAmount.of(cop(pesos)).valueOrFail()
     )
 
-    private fun hogarBefore(): CategoryCarryInput {
+    /** Hogar of SC37 before catch-up, plus [recorded] as (date, pesos) recorded since. */
+    private fun hogarInput(vararg recorded: Pair<String, Long>): CategoryCarryInput {
         val expenses = listOf(
             expense(hogar, "2027-01-10", 1_000_000),
             expense(hogar, "2027-02-10", 800_000),
             expense(hogar, "2027-03-05", 500_000)
-        )
+        ) + recorded.map { expense(hogar, it.first, it.second) }
         return CategoryCarryInput(
             hogar,
             listOf(chain(ene, of = hogar)),
@@ -410,7 +411,7 @@ class CarryoverCorrectionReplayTest {
     @Test
     fun sc37TheOpeningNoticeNamesTheMonthAndTheLaterCapacityAnOccurrenceChanges() {
         val result = CarryoverCorrectionReplay.catchUp(
-            hogarBefore(),
+            hogarInput("2027-02-05" to 200_000L),
             listOf(due("2027-02-05", 200_000)),
             mar
         )
@@ -437,7 +438,7 @@ class CarryoverCorrectionReplayTest {
     @Test
     fun sc47APaymentLargerThanTheMonthsRemainingFlipsItsVerdictInTheNotice() {
         val result = CarryoverCorrectionReplay.catchUp(
-            hogarBefore(),
+            hogarInput("2027-02-05" to 300_000L),
             listOf(due("2027-02-05", 300_000)),
             mar
         )
@@ -457,7 +458,7 @@ class CarryoverCorrectionReplayTest {
     @Test
     fun sc47DeletingTheOccurrenceFromTheNoticeIsACorrectionWithTheListOfLaterMonths() {
         // Before: the 300.000 is recorded (feb S 1.100.000, mar K -100.000). After: deleted.
-        val recorded = hogarBefore().let {
+        val recorded = hogarInput().let {
             CategoryCarryInput(
                 it.categoryId,
                 it.chains,
@@ -469,7 +470,7 @@ class CarryoverCorrectionReplayTest {
 
         val result = CarryoverCorrectionReplay.preview(
             mar,
-            listOf(CategoryCorrection(recorded, hogarBefore()))
+            listOf(CategoryCorrection(recorded, hogarInput()))
         )
             .valueOrFail()
 
@@ -490,10 +491,72 @@ class CarryoverCorrectionReplayTest {
             due("2027-03-05", 200_000)
         )
 
-        val result = CarryoverCorrectionReplay.catchUp(hogarBefore(), payments, mar).valueOrFail()
+        val result = CarryoverCorrectionReplay.catchUp(
+            hogarInput("2027-03-05" to 200_000L),
+            payments,
+            mar
+        )
+            .valueOrFail()
 
         assertTrue(result.isEmpty)
         assertEquals(emptyList<CarryMonthChange>(), result.edited)
+    }
+
+    @Test
+    fun aPaymentOfTheCurrentMonthStaysInItsFiguresOnBothSidesOfTheNotice() {
+        // SELLO-147. Servicios carries from oct 2026 with base 200.000; oct spent 150.000.
+        // On 3 nov catch-up records internet 80.000 dated 30 oct and electricity 190.000
+        // dated 1 nov. Worked by hand:
+        //   before: oct S 150.000, R 50.000; nov K 50.000, C 250.000, S 190.000, R 60.000, Al día
+        //   after:  oct S 230.000, R -30.000; nov K -30.000, C 170.000, S 190.000, R -20.000, Excedido
+        val servicios = Carry.id(4)
+        val oct = YearMonth.of(2026, 10)
+        val nov = YearMonth.of(2026, 11)
+        val internet = expense(servicios, "2026-10-30", 80_000)
+        val electricity = expense(servicios, "2026-11-01", 190_000)
+        val recorded = CategoryCarryInput(
+            servicios,
+            listOf(chain(oct, of = servicios)),
+            listOf(monthly(oct, 200_000, servicios)),
+            emptyList(),
+            Carry.history(
+                servicios,
+                oct,
+                nov,
+                "2026-11-03",
+                expense(servicios, "2026-10-12", 150_000),
+                internet,
+                electricity
+            )
+        )
+        val payments = listOf(internet, electricity).map {
+            ReservedPayment(
+                rent,
+                servicios,
+                null,
+                Occurrence(it.date, 1),
+                it.amount
+            )
+        }
+
+        val result = CarryoverCorrectionReplay.catchUp(recorded, payments, nov).valueOrFail()
+
+        val november = result.months.single()
+        assertEquals(nov, november.month)
+        assertEquals(250_000L to 170_000L, november.capacity())
+        assertEquals(60_000L to -20_000L, november.remaining())
+        assertEquals(
+            190_000L to 190_000L,
+            november.before.spent.minorUnits to november.after.spent.minorUnits
+        )
+        assertEquals(CarryVerdict.InProgress(Verdict.OnTrack), november.before.verdict)
+        assertEquals(CarryVerdict.InProgress(Verdict.Over), november.after.verdict)
+        val october = result.edited.single()
+        assertEquals(oct, october.month)
+        assertEquals(50_000L to -30_000L, october.remaining())
+        assertEquals(CarryVerdict.Closed(PastVerdict.WithinLimit), october.before.verdict)
+        assertEquals(CarryVerdict.Closed(PastVerdict.Over), october.after.verdict)
+        assertEquals(mapOf(nov to cop(-80_000)), result.overallCapacityChange)
     }
 
     @Test

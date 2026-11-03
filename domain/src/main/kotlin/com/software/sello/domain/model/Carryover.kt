@@ -74,6 +74,23 @@ class SpendingHistory private constructor(
         return Outcome.Success(SpendingHistory(from, through, byMonth + (month to total)))
     }
 
+    /**
+     * The same history without one expense of [amount] dated [date] that it holds, as it was
+     * before a catch-up recorded it. A date outside the history is its own failure.
+     */
+    fun minus(date: LocalDate, amount: Money): Outcome<SpendingHistory, CarryoverFailure> {
+        val month = YearMonth.from(date)
+        val current = when (val known = spent(month)) {
+            is Outcome.Success -> known.value
+            is Outcome.Failure -> return known
+        }
+        val total = when (val difference = current - amount) {
+            is Outcome.Success -> difference.value
+            is Outcome.Failure -> return Outcome.Failure(difference.error.toCarryover())
+        }
+        return Outcome.Success(SpendingHistory(from, through, byMonth + (month to total)))
+    }
+
     companion object {
         private val ZERO = Money.cop(0)
 
