@@ -177,7 +177,7 @@ class CategoryEditorViewModel(
      * however it is written. The command still refuses it, for a name taken meanwhile.
      */
     private fun takenError(text: String): NameError? {
-        val name = (CategoryName.of(text) as? Outcome.Success)?.value ?: return null
+        val name = (CategoryName.fromInput(text) as? Outcome.Success)?.value ?: return null
         return NameError.Taken.takeIf { name.uniquenessKey in takenNames }
     }
 
@@ -245,7 +245,7 @@ class CategoryEditorViewModel(
 
     private fun submit() {
         val state = mutable.value
-        val name = when (val name = CategoryName.of(state.name)) {
+        val name = when (val name = CategoryName.fromInput(state.name)) {
             is Outcome.Success -> name.value
 
             is Outcome.Failure -> return mutable.update {

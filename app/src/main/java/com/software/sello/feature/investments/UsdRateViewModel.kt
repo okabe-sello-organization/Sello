@@ -2,13 +2,15 @@ package com.software.sello.feature.investments
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.UsdRateBook
 import com.software.sello.domain.model.UsdRateEntry
 import com.software.sello.domain.port.FinancialClock
-import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.ReadState
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import java.time.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +28,12 @@ class UsdRateViewModel(reads: InvestmentReads, clock: FinancialClock, money: Mon
     private val render = InvestmentsRenderModel(money)
     private val attempts = MutableStateFlow(0)
 
+    /** The board as last read, so a Retry or a return never blanks figures already shown. */
+    private val lastGood = LastGoodRead<InvestmentBoard, StorageFailure>()
+    private val board = attempts.flatMapLatest { lastGood.keep(Unit, reads.observeBoard()) }
+
     val state: StateFlow<UsdRateState> =
-        combine(attempts.flatMapLatest { reads.observeBoard() }, clock.today) { board, today ->
+        combine(board, clock.today) { board, today ->
             when (board) {
                 ReadState.Loading -> UsdRateState.Loading
 

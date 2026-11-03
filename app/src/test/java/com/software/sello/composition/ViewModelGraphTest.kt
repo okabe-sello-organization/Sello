@@ -35,7 +35,7 @@ class ViewModelGraphTest {
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @OptIn(KoinInternalApi::class)
-    private fun registeredViewModels() = presentationModule().mappings.values
+    private fun registeredViewModels() = presentationModule(generation = 1).mappings.values
         .map { it.beanDefinition.primaryType }
         .filter { ViewModel::class.java.isAssignableFrom(it.java) }
         .map { it.java.asSubclass(ViewModel::class.java) }
@@ -60,6 +60,7 @@ class ViewModelGraphTest {
                     context,
                     initializedZone(),
                     opened.value.storage,
+                    opened.value.profile.generation,
                     names
                 ) + host.module
             )

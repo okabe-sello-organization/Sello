@@ -15,6 +15,7 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpenseRejection
+import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandExpenseReads
@@ -32,6 +33,7 @@ import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import java.time.YearMonth
@@ -74,7 +76,10 @@ class CategoryDetailViewModelTest {
 
     private fun plain(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
-    private fun TestScope.started(): CategoryDetailViewModel {
+    private fun TestScope.started(
+        source: MonthlySnapshots = snapshots,
+        figures: HandCategoryInsights = insights
+    ): CategoryDetailViewModel {
         val corrections = Corrections(
             commands,
             HandIncomeCommands(),
@@ -90,11 +95,11 @@ class CategoryDetailViewModelTest {
         val viewModel =
             CategoryDetailViewModel(
                 session,
-                snapshots,
+                source,
                 reads,
                 testMoney(),
                 corrections,
-                insights,
+                figures,
                 HandScheduleReads(),
                 // Moves with the test's own time, as the wait for detail figures does.
                 { testScheduler.currentTime.milliseconds }
@@ -533,6 +538,89 @@ class CategoryDetailViewModelTest {
         assertEquals(listOf(uuid(700)), viewModel.rows.rows.map { it.id })
         // A finished month takes no new expense from here.
         assertEquals(false, viewModel.ready.canRecord)
+    }
+
+    @Test
+    fun retryOnOlderFiguresKeepsThemAndAFailureAgainLeavesThemOlder() = runTest {
+        val fresh = NewObservationSnapshots()
+        val figures = HandCategoryInsights(newObservations = true)
+        val viewModel = started(fresh, figures)
+        val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
+        many(3).forEach { reads.stored[it.id] = it }
+        fresh.ready(monthOf("2026-10-23", listOf(food, coffee), many(3), october))
+        show(viewModel, 1)
+        figures.state.value =
+            figuresOf(monthOf("2026-10-23", listOf(food, coffee), many(3)), 1_000)
+        fresh.of(october).value = ReadState.Failed(failure, lastGood = null)
+        val older = viewModel.ready
+        val seen = mutableListOf<CategoryDetailState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect { seen += it }
+        }
+
+        viewModel.onAction(CategoryDetailAction.Retry)
+
+        assertEquals(listOf(october, october), fresh.observed)
+        assertEquals(true, older.stale)
+        assertEquals(true, seen.all { it is CategoryDetailState.Ready && it.stale })
+        assertEquals(plain("3.000"), viewModel.ready.category.spent)
+        assertEquals(3, viewModel.rows.rows.size)
+    }
+
+    @Test
+    fun comingBackAfterTheSharingStoppedShowsTheFiguresNotASkeleton() = runTest {
+        val fresh = NewObservationSnapshots()
+        val figures = HandCategoryInsights(newObservations = true)
+        val viewModel = CategoryDetailViewModel(
+            session,
+            fresh,
+            reads,
+            testMoney(),
+            Corrections(
+                commands,
+                HandIncomeCommands(),
+                HandGoalCommands(),
+                HandInvestmentCommands(),
+                { testScheduler.currentTime.milliseconds },
+                { uuid(nextOperation++) },
+                CoroutineScope(Dispatchers.Main),
+                HandCategoryReads(),
+                testMoney()
+            ),
+            figures,
+            HandScheduleReads(),
+            { testScheduler.currentTime.milliseconds }
+        )
+        val first = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect {}
+        }
+        many(3).forEach { reads.stored[it.id] = it }
+        fresh.ready(monthOf("2026-10-23", listOf(food, coffee), many(3), october))
+        show(viewModel, 1)
+        figures.state.value =
+            figuresOf(monthOf("2026-10-23", listOf(food, coffee), many(3)), 1_000)
+        val shown = viewModel.ready
+        first.cancel()
+        advanceTimeBy(5_001)
+        runCurrent()
+        val seen = mutableListOf<CategoryDetailState>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect { seen += it }
+        }
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertEquals(listOf(october, october), fresh.observed)
+        assertEquals(true, seen.isNotEmpty())
+        assertEquals(
+            true,
+            seen.all {
+                it is CategoryDetailState.Ready && !it.stale &&
+                    it.insights is DetailInsightsState.Ready
+            }
+        )
+        assertEquals(shown, viewModel.ready)
     }
 
     @Test

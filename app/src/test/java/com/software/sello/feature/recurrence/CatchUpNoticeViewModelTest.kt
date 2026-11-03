@@ -56,7 +56,7 @@ import org.junit.Before
 import org.junit.Test
 
 /** When it was last dismissed, as the preference store keeps it. */
-private class HandCatchUpPreferences : CatchUpNoticePreferences {
+internal class HandCatchUpPreferences : CatchUpNoticePreferences {
     val seen = MutableStateFlow<PreferenceRead<Instant?>>(PreferenceRead.Ready(null))
     val marked = mutableListOf<Instant>()
     var answer: PreferenceWrite = PreferenceWrite.Saved
@@ -71,7 +71,7 @@ private class HandCatchUpPreferences : CatchUpNoticePreferences {
 }
 
 /** Entries with an origin, as storage keeps them; [failure] makes the read fail. */
-private class HandRecords : ScheduleRecordReads {
+internal class HandRecords : ScheduleRecordReads {
     val entries = MutableStateFlow<List<ScheduleRecord>>(emptyList())
     var failure: StorageFailure? = null
 
@@ -100,7 +100,7 @@ private class HandRecords : ScheduleRecordReads {
 }
 
 /** What recording the listed payments did to carry chains (ADR 0020 CP18). */
-private class HandCarry : CarryoverReads {
+internal class HandCarry : CarryoverReads {
     var notice: Outcome<CarryCatchUpNotice, CarryReadFailure> = Outcome.Success(
         CarryCatchUpNotice(1, 1, LocalDate.parse("2026-10-22"), emptyList())
     )
@@ -127,7 +127,6 @@ class CatchUpNoticeViewModelTest {
         categories = listOf(category(1, "Hogar"), category(2, "Transporte", icon = "bus"))
     }
     private val clock = HandFinancialClock("2026-10-22")
-    private var auditNow = Instant.parse("2026-10-22T15:00:00Z")
     private val money = testMoney()
     private val carry = HandCarry()
 
@@ -138,7 +137,7 @@ class CatchUpNoticeViewModelTest {
     fun reset() = Dispatchers.resetMain()
 
     private fun model() =
-        CatchUpNoticeViewModel(preferences, records, categories, clock, { auditNow }, money, carry)
+        CatchUpNoticeViewModel(preferences, records, categories, clock, money, carry)
 
     private fun rent(createdAt: String) = ScheduleRecord.Payment(
         storedExpense(50, 1, "2026-10-05", 950_000, "Arriendo")
@@ -195,9 +194,9 @@ class CatchUpNoticeViewModelTest {
         records.entries.value = listOf(rent("2026-10-22T14:00:00Z"))
         val model = model()
 
-        model.done()
+        model.done(model.state.value)
 
-        assertEquals(listOf(Instant.parse("2026-10-22T15:00:00Z")), preferences.marked)
+        assertEquals(listOf(Instant.parse("2026-10-22T14:00:00Z")), preferences.marked)
         assertTrue(model.closed.value)
         assertEquals(
             CatchUpNoticeState.Ready(emptyList(), LocalDate.parse("2026-10-22")),
@@ -229,7 +228,7 @@ class CatchUpNoticeViewModelTest {
         assertEquals(1, (recibo.state.value as CatchUpNoticeState.Ready).items.size)
         records.slowAfterListo = true
 
-        list.done()
+        list.done(list.state.value)
 
         assertTrue(list.closed.value)
         val shown = recibo.state.value
@@ -253,11 +252,32 @@ class CatchUpNoticeViewModelTest {
         records.entries.value += bus(53, "2026-10-23", "2026-10-23T00:00:01Z")
         assertEquals(3, (model.state.value as CatchUpNoticeState.Ready).items.size)
 
-        auditNow = Instant.parse("2026-10-23T09:00:00Z")
-        model.done()
+        model.done(model.state.value)
+        assertEquals(listOf(Instant.parse("2026-10-23T00:00:01Z")), preferences.marked)
         assertEquals(
             emptyList<RecordedItem>(),
             (model.state.value as CatchUpNoticeState.Ready).items
+        )
+    }
+
+    /**
+     * SELLO-146: the notice shows the rent; catch-up records the bus at 14:30 and Listo is
+     * pressed before the notice shows it. Only the rent is seen; the bus stays.
+     */
+    @Test
+    fun listoMarksSeenOnlyWhatTheNoticeShowedAndAnEntryRecordedSinceStays() {
+        records.entries.value = listOf(rent("2026-10-22T14:00:00Z"))
+        val model = model()
+        val shown = model.state.value
+
+        records.entries.value += bus(51, "2026-10-22", "2026-10-22T14:30:00Z")
+        model.done(shown)
+
+        assertEquals(listOf(Instant.parse("2026-10-22T14:00:00Z")), preferences.marked)
+        assertTrue(model.closed.value)
+        assertEquals(
+            listOf("Transporte"),
+            (model.state.value as CatchUpNoticeState.Ready).items.map { it.categoryName }
         )
     }
 
@@ -267,10 +287,29 @@ class CatchUpNoticeViewModelTest {
         preferences.answer = PreferenceWrite.Failed(PreferenceFailure.Unavailable)
         val model = model()
 
-        model.done()
+        model.done(model.state.value)
 
         assertFalse(model.closed.value)
         assertEquals(1, (model.state.value as CatchUpNoticeState.Ready).items.size)
+    }
+
+    /** A list that could not be read, or that was empty, showed nothing: Listo marks nothing. */
+    @Test
+    fun listoOnANoticeThatListedNothingClosesAndMarksNothing() {
+        records.entries.value = listOf(rent("2026-10-22T14:00:00Z"))
+        records.failure = StorageFailure.Unavailable("SQLException")
+        val failed = model()
+        assertEquals(CatchUpNoticeState.Failed, failed.state.value)
+
+        failed.done(failed.state.value)
+        val empty = model()
+        empty.done(CatchUpNoticeState.Ready(emptyList(), LocalDate.parse("2026-10-22")))
+
+        assertTrue(failed.closed.value)
+        assertTrue(empty.closed.value)
+        assertEquals(emptyList<Instant>(), preferences.marked)
+        records.failure = null
+        assertEquals(1, (model().state.value as CatchUpNoticeState.Ready).items.size)
     }
 
     @Test

@@ -56,7 +56,13 @@ class SandboxGraph(var session: SandboxSession, private val setups: List<Scenari
         graph = koinApplication {
             allowOverride(true)
             modules(
-                productionModules(context, zone, opened.value.storage, SandboxNames) +
+                productionModules(
+                    context,
+                    zone,
+                    opened.value.storage,
+                    opened.value.profile.generation,
+                    SandboxNames
+                ) +
                     composition.modules(opened.value.profile)
             )
         }

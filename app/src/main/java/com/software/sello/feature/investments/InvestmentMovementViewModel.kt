@@ -44,10 +44,12 @@ import com.software.sello.presentation.submission.Submission
 import com.software.sello.presentation.submission.typed
 import java.time.Instant
 import java.time.LocalDate
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -64,6 +66,7 @@ import kotlinx.serialization.Serializable
  * whose outcome is not known is asked about with its own identifier before anything
  * else is sent. Pesos are typed with 000, dollars with the comma and exact cents.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class InvestmentMovementViewModel(
     private val saved: SavedStateHandle,
     reads: InvestmentReads,
@@ -148,7 +151,8 @@ class InvestmentMovementViewModel(
         )
     )
     private val progress = MutableStateFlow(Progress())
-    private val board = reads.observeBoard()
+    private val attempts = MutableStateFlow(0)
+    private val board = attempts.flatMapLatest { reads.observeBoard() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
     private val composer = SavedNoteComposer(saved, PREFIX, viewModelScope)
 
@@ -295,6 +299,9 @@ class InvestmentMovementViewModel(
             InvestmentMovementAction.Retry -> if (!now.busy) {
                 if (submission.pending) {
                     viewModelScope.launch { recover() }
+                } else if (now.loadFailed) {
+                    // Vuelve a intentarlo after a failed first read reads the board again.
+                    attempts.update { it + 1 }
                 } else {
                     progress.update { it.copy(error = null) }
                 }

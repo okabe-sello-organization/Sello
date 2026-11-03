@@ -435,6 +435,29 @@ class CategoryEditorViewModelTest {
     }
 
     @Test
+    fun aNameWithAnInvisibleOrDirectionCharacterCannotPassForATakenOne() {
+        reads.categories = listOf(reads.category(1, "Caf\u00E9", archived = true))
+        val lookAlikes = listOf("Caf\u00E9\u200B", "Ca\u00ADf\u00E9", "\u202ECaf\u00E9")
+        assertEquals(
+            listOf("43 61 66 C3 A9 E2 80 8B", "43 61 C2 AD 66 C3 A9", "E2 80 AE 43 61 66 C3 A9"),
+            lookAlikes.map { text ->
+                text.toByteArray(Charsets.UTF_8).joinToString(" ") { "%02X".format(it) }
+            }
+        )
+
+        for (text in lookAlikes) {
+            val editor = editor()
+            editor.withNoLimit(text)
+
+            editor.submit()
+
+            assertEquals(text, NameError.NotAllowed, editor.state.value.nameError)
+            assertEquals(text, text, editor.state.value.name)
+        }
+        assertEquals(emptyList<CreateCategory>(), commands.submitted)
+    }
+
+    @Test
     fun aTakenNameIsShownOnTheFieldAndTheNextAttemptIsANewOperation() {
         commands.answer = { rejected(Specific(CategoryRejection.NameTaken)) }
         val editor = editor()

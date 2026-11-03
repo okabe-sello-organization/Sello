@@ -38,11 +38,20 @@ class CatchUpSchedulesTest {
         ExpenseId.of("00000000-0000-4000-8000-%012d".format(1000 + day)).valueOrFail()
     )
 
+    /** The history's generation when this process started. */
+    private val generation = 3L
+
     private class Scripted(private val batches: List<CatchUpBatch>) : ScheduleCatchUpStore {
         val asked = mutableListOf<Pair<LocalDate, Int>>()
+        val generations = mutableListOf<Long>()
 
-        override suspend fun recordDue(today: LocalDate, limit: Int): CatchUpBatch {
+        override suspend fun recordDue(
+            generation: Long,
+            today: LocalDate,
+            limit: Int
+        ): CatchUpBatch {
             asked += today to limit
+            generations += generation
             return batches.getOrElse(asked.size - 1) { CatchUpBatch.Recorded(emptyList()) }
         }
     }
@@ -55,10 +64,11 @@ class CatchUpSchedulesTest {
         val store = Scripted(listOf(CatchUpBatch.Recorded(first), CatchUpBatch.Recorded(second)))
         val heard = mutableListOf<List<RecordedOccurrence>>()
 
-        val result = CatchUpSchedules(store, clock).run { heard += it }
+        val result = CatchUpSchedules(store, clock, generation).run { heard += it }
 
         assertEquals(CatchUpResult(first + second, null), result)
         assertEquals(listOf(today to 50, today to 50), store.asked)
+        assertEquals(listOf(3L, 3L), store.generations)
         assertEquals(listOf(first, second), heard)
     }
 
@@ -68,14 +78,14 @@ class CatchUpSchedulesTest {
         val store = Scripted(listOf(CatchUpBatch.Recorded(fifty)))
         val heard = mutableListOf<List<RecordedOccurrence>>()
 
-        val result = CatchUpSchedules(store, clock).run { heard += it }
+        val result = CatchUpSchedules(store, clock, generation).run { heard += it }
 
         assertEquals(CatchUpResult(fifty, null), result)
         assertEquals(2, store.asked.size)
         assertEquals(listOf(fifty), heard)
         assertEquals(
             CatchUpResult(emptyList(), null),
-            CatchUpSchedules(Scripted(emptyList()), clock).run()
+            CatchUpSchedules(Scripted(emptyList()), clock, generation).run()
         )
     }
 
@@ -86,7 +96,7 @@ class CatchUpSchedulesTest {
         val failure = StorageFailure.Unavailable("SQLiteFullException")
         val store = Scripted(listOf(CatchUpBatch.Recorded(first), CatchUpBatch.Failed(failure)))
 
-        val result = CatchUpSchedules(store, clock).run()
+        val result = CatchUpSchedules(store, clock, generation).run()
 
         assertEquals(CatchUpResult(first, CatchUpStop.Failed(failure)), result)
         assertEquals(2, store.asked.size)
@@ -98,10 +108,31 @@ class CatchUpSchedulesTest {
         val store =
             Scripted(listOf(CatchUpBatch.Unknown, CatchUpBatch.Recorded(listOf(recorded(1)))))
 
-        val result = CatchUpSchedules(store, clock).run()
+        val result = CatchUpSchedules(store, clock, generation).run()
 
         assertEquals(CatchUpResult(emptyList(), CatchUpStop.Unknown), result)
         assertEquals(1, store.asked.size)
+    }
+
+    /**
+     * SELLO-146: a restore or an erase replaced the history after this process started;
+     * what earlier batches recorded stays, and nothing more is tried until the restart.
+     */
+    @Test
+    fun aReplacedHistoryStopsTheRunUntilTheRestart() = runBlocking {
+        val first = (1..50).map(::recorded)
+        val store = Scripted(
+            listOf(
+                CatchUpBatch.Recorded(first),
+                CatchUpBatch.Stale,
+                CatchUpBatch.Recorded(listOf(recorded(51)))
+            )
+        )
+
+        val result = CatchUpSchedules(store, clock, generation).run()
+
+        assertEquals(CatchUpResult(first, CatchUpStop.Stale), result)
+        assertEquals(listOf(3L, 3L), store.generations)
     }
 
     @Test
@@ -109,7 +140,11 @@ class CatchUpSchedulesTest {
         val store = object : ScheduleCatchUpStore {
             val days = mutableListOf<LocalDate>()
 
-            override suspend fun recordDue(today: LocalDate, limit: Int): CatchUpBatch {
+            override suspend fun recordDue(
+                generation: Long,
+                today: LocalDate,
+                limit: Int
+            ): CatchUpBatch {
                 days += today
                 // Midnight passes while the first batch is written.
                 clock.today.value = FinancialDay(today.plusDays(1), clock.today.value.zone)
@@ -125,7 +160,7 @@ class CatchUpSchedulesTest {
             }
         }
 
-        CatchUpSchedules(store, clock).run()
+        CatchUpSchedules(store, clock, generation).run()
 
         assertEquals(listOf(today, today), store.days)
     }

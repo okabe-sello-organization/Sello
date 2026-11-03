@@ -1,6 +1,7 @@
 package com.software.sello.feature.recurrence
 
 import androidx.lifecycle.SavedStateHandle
+import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Occurrence
 import com.software.sello.domain.model.OperationId
@@ -10,6 +11,7 @@ import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CommandOutcome
@@ -118,6 +120,19 @@ class ScheduleEditorViewModelTest {
         updatedAt = Instant.EPOCH
     )
 
+    /** An "Otro" income schedule, otherwise as [rent]. */
+    private fun otherIncome(name: String) = rent().let { stored ->
+        stored.copy(
+            schedule = stored.schedule.copy(
+                entry = ScheduledEntry.Income(
+                    IncomeSource.Other(SourceName.of(name).value()),
+                    pesos(950_000),
+                    null
+                )
+            )
+        )
+    }
+
     private fun month(archived: Boolean = false) = snapshots.ready(
         monthOf(
             "2026-10-22",
@@ -195,6 +210,40 @@ class ScheduleEditorViewModelTest {
             corrections.notice.value
         )
         assertTrue(editor.now.closed)
+    }
+
+    @Test
+    fun otrosNameWithAnInvisibleOrDirectionCharacterCannotBeFinished() {
+        for (text in listOf("Bono\u200B", "Bo\u00ADno", "\u202EBono")) {
+            val editor = opened(otherIncome("Bono"))
+            editor.onAction(ScheduleEditorAction.OpenComposer(ScheduleComposer.SourceName))
+            editor.onAction(ScheduleEditorAction.ComposerChanged(text))
+            editor.onAction(ScheduleEditorAction.ComposerDone)
+
+            assertEquals(text, ScheduleTextProblem.NotAllowed, editor.now.composerProblem)
+            assertEquals(text, ScheduleComposer.SourceName, editor.now.composer)
+        }
+        assertEquals(emptyList<Any>(), commands.submitted)
+    }
+
+    @Test
+    fun otrosNameSavedBeforeTheInvisibleCharacterRuleIsKeptByAChange() {
+        val editor = opened(otherIncome("Dise\u00F1o\u200B"))
+        editor.onAction(ScheduleEditorAction.OpenComposer(ScheduleComposer.SourceName))
+        editor.onAction(ScheduleEditorAction.ComposerDone)
+        val reconfirmed = editor.now
+        editor.type("1000000")
+
+        editor.onAction(ScheduleEditorAction.Save)
+
+        assertNull(reconfirmed.composerProblem)
+        assertNull(reconfirmed.composer)
+        val entry = (commands.submitted.single() as ChangeSchedule).entry as ScheduledEntry.Income
+        assertEquals(
+            "44 69 73 65 C3 B1 6F E2 80 8B",
+            (entry.source as IncomeSource.Other).name.value.toByteArray(Charsets.UTF_8)
+                .joinToString(" ") { "%02X".format(it) }
+        )
     }
 
     @Test

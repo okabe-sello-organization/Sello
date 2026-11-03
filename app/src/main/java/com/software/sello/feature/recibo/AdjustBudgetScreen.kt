@@ -24,8 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
@@ -350,6 +352,22 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
                 kind = ButtonKind.Text
             )
             return@RepeatSheet
+        }
+        if (sheet.stale) {
+            Text(
+                stringResource(R.string.recibo_stale),
+                style = MaterialTheme.typography.bodySmall,
+                color = colors.semantic.loss,
+                modifier = Modifier
+                    .testTag("limit.sheet.stale")
+                    .semantics { liveRegion = LiveRegionMode.Polite }
+            )
+            SelloButton(
+                stringResource(R.string.recibo_stale_retry),
+                { onSheet(LimitSheetAction.Retry) },
+                kind = ButtonKind.Text,
+                enabled = !sheet.busy
+            )
         }
         SegmentedSwitch(
             options = listOf(

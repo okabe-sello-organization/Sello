@@ -67,7 +67,13 @@ class ProductionGraphOnDeviceTest {
         val zone = ProcessFinancialZone().apply { initialize(opened.value.profile.zone) }
         return koinApplication {
             modules(
-                productionModules(context, zone, opened.value.storage, names) +
+                productionModules(
+                    context,
+                    zone,
+                    opened.value.storage,
+                    opened.value.profile.generation,
+                    names
+                ) +
                     ProductionComposition.modules(opened.value.profile)
             )
         }.also { release = it }.koin

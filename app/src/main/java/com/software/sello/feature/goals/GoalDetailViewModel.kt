@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
@@ -22,6 +24,7 @@ import com.software.sello.domain.port.UnstarGoal
 import com.software.sello.platform.ScreenReader
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,6 +62,9 @@ class GoalDetailViewModel(
     private val goalId: String = saved[KEY_GOAL] ?: ""
     private val attempts = MutableStateFlow(0)
     private val ui = MutableStateFlow(Ui())
+
+    /** The board as last read, so a Retry or a return never blanks figures already shown. */
+    private val lastGood = LastGoodRead<GoalBoard, StorageFailure>()
     private val submission = Submission(saved, KEY_OPERATION, ids)
     private val completer =
         GoalCompleter(saved, commands, corrections, ids, clock, screenReader, viewModelScope)
@@ -84,7 +90,7 @@ class GoalDetailViewModel(
     )
 
     val state: StateFlow<GoalDetailState> = combine(
-        attempts.flatMapLatest { reads.observeBoard() },
+        attempts.flatMapLatest { lastGood.keep(Unit, reads.observeBoard()) },
         clock.today,
         combine(ui, completer.state, ::Pair),
         flags
@@ -115,6 +121,8 @@ class GoalDetailViewModel(
         when (action) {
             GoalDetailAction.Retry -> if (completer.state.value is CompletionState.Failed) {
                 completer.retry()
+                // Retry always reads again, also when it clears a failed completion.
+                attempts.update { it + 1 }
             } else if (ui.value.error == GoalDetailError.Unknown) {
                 viewModelScope.launch { recover() }
             } else {
