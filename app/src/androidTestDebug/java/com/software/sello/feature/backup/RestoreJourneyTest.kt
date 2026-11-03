@@ -187,7 +187,7 @@ class RestoreJourneyTest {
                         )
                     ),
                     goals = emptyList(),
-                    featuredGoal = null,
+                    starredGoals = emptySet(),
                     schedules = emptyList(),
                     investments = emptyList(),
                     usdRates = emptyList(),

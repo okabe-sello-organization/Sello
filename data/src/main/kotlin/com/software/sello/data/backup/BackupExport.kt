@@ -71,14 +71,14 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
     }.decodeAll { it.toDomain() }
     val events = goalDao().allEvents().groupBy { it.goalId }
     val goals = goalDao().all().decodeAll { it.toHistory(events[it.id].orEmpty()) }
-    val featured = goalDao().featured()?.let { row ->
-        when (val id = GoalId.of(row.goalId)) {
+    val starred = goalDao().starred().map { row ->
+        when (val id = GoalId.of(row)) {
             is Outcome.Success -> id.value
 
             is Outcome.Failure ->
-                return Outcome.Failure(StorageFailure.Integrity("featured_goal", null, "goal_id"))
+                return Outcome.Failure(StorageFailure.Integrity("starred_goal", row, "goal_id"))
         }
-    }
+    }.toSet()
     val pauses = scheduleDao().allPauses().groupBy { it.scheduleId }
     val schedules = scheduleDao().all().decodeAll { it.toStored(pauses[it.id].orEmpty()) }
     // In recording order, as a file writes them; the reads replay them by date instead.
@@ -100,7 +100,7 @@ private suspend fun SelloDatabase.snapshot(): Outcome<FinancialSnapshot, Storage
             expenses = expenses.orReturn { return it },
             incomes = incomes.orReturn { return it },
             goals = goals.orReturn { return it },
-            featuredGoal = featured,
+            starredGoals = starred,
             schedules = schedules.orReturn { return it },
             investments = investments.orReturn { return it },
             usdRates = rates.orReturn { return it },

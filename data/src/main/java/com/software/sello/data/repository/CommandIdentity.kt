@@ -45,7 +45,6 @@ import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.EditInvestment
 import com.software.sello.domain.port.EditInvestmentMovement
 import com.software.sello.domain.port.EnableCarry
-import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalEdit
 import com.software.sello.domain.port.InvestmentCommand
@@ -57,6 +56,7 @@ import com.software.sello.domain.port.RecordInvestmentMovement
 import com.software.sello.domain.port.RecordInvestmentMovements
 import com.software.sello.domain.port.RemovalPreview
 import com.software.sello.domain.port.RenameCategory
+import com.software.sello.domain.port.ReplaceStar
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreGoalMovement
 import com.software.sello.domain.port.RestoreIncome
@@ -67,8 +67,10 @@ import com.software.sello.domain.port.ScheduleEdit
 import com.software.sello.domain.port.SetDefaultLimit
 import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.SetUsdRate
+import com.software.sello.domain.port.StarGoal
 import com.software.sello.domain.port.UnarchiveCategory
 import com.software.sello.domain.port.UndoGoalCompletion
+import com.software.sello.domain.port.UnstarGoal
 import java.security.MessageDigest
 
 /*
@@ -338,7 +340,9 @@ internal val GoalCommand.kind: OperationKind
         is CompleteGoal -> OperationKind.CompleteGoal
         is UndoGoalCompletion -> OperationKind.UndoGoalCompletion
         is DeleteGoal -> OperationKind.DeleteGoal
-        is FeatureGoal -> OperationKind.FeatureGoal
+        is StarGoal -> OperationKind.StarGoal
+        is UnstarGoal -> OperationKind.UnstarGoal
+        is ReplaceStar -> OperationKind.ReplaceStar
     }
 
 private val TransactionAmount.fields: List<String>
@@ -375,7 +379,8 @@ internal fun inputDigest(command: GoalCommand): String {
                     .flatMap { listOf(it.key.value, it.value.toString()) }
         }
 
-        is CreateGoal, is RestoreGoalMovement, is UndoGoalCompletion, is FeatureGoal -> emptyList()
+        is CreateGoal, is RestoreGoalMovement, is UndoGoalCompletion, is StarGoal, is UnstarGoal,
+        is ReplaceStar -> emptyList()
     }
     val change = when (command) {
         is CreateGoal -> listOf(
@@ -418,7 +423,12 @@ internal fun inputDigest(command: GoalCommand): String {
 
         is UndoGoalCompletion -> listOf(command.completionId.value)
 
-        is FeatureGoal -> listOf(command.goalId.value)
+        // As FeatureGoal wrote it, so a star stored before SELLO-143 still replays.
+        is StarGoal -> listOf(command.goalId.value)
+
+        is UnstarGoal -> listOf(command.goalId.value)
+
+        is ReplaceStar -> listOf(command.unstar.value, command.star.value)
     }
     val format = if (command is RecordGoalMovements && oneGoal == null) "2" else "1"
     val head = listOf(command.kind.key, format, command.generation.toString())

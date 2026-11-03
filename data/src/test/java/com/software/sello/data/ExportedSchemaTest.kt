@@ -15,7 +15,8 @@ class ExportedSchemaTest {
     private val versionFour = File(schemas, "4.json").readText()
     private val versionFive = File(schemas, "5.json").readText()
     private val versionSix = File(schemas, "6.json").readText()
-    private val current = File(schemas, "7.json").readText()
+    private val versionSeven = File(schemas, "7.json").readText()
+    private val current = File(schemas, "8.json").readText()
 
     private fun values(schema: String, key: String) =
         Regex("\"$key\"\\s*:\\s*\"?([\\w]+)\"?").findAll(schema).map { it.groupValues[1] }
@@ -37,7 +38,16 @@ class ExportedSchemaTest {
     @Test
     fun everyVersionThatShippedIsStillExported() {
         assertEquals(
-            listOf("1.json", "2.json", "3.json", "4.json", "5.json", "6.json", "7.json"),
+            listOf(
+                "1.json",
+                "2.json",
+                "3.json",
+                "4.json",
+                "5.json",
+                "6.json",
+                "7.json",
+                "8.json"
+            ),
             schemas.list()!!.sorted()
         )
         assertEquals(listOf("1"), values(versionOne, "version").toList())
@@ -46,7 +56,8 @@ class ExportedSchemaTest {
         assertEquals(listOf("4"), values(versionFour, "version").toList())
         assertEquals(listOf("5"), values(versionFive, "version").toList())
         assertEquals(listOf("6"), values(versionSix, "version").toList())
-        assertEquals(listOf("7"), values(current, "version").toList())
+        assertEquals(listOf("7"), values(versionSeven, "version").toList())
+        assertEquals(listOf("8"), values(current, "version").toList())
     }
 
     @Test
@@ -111,16 +122,30 @@ class ExportedSchemaTest {
         assertEquals(
             mvpTables + "deleted_expense" + "deleted_income" + goalTables + scheduleTables +
                 investmentTables + "carry_chain",
-            values(current, "tableName").toSet()
+            values(versionSeven, "tableName").toSet()
         )
         // A chain is its months; carry, capacity and remaining are derived, never stored.
-        val chain = current.substringAfter("\"tableName\": \"carry_chain\"")
+        val chain = versionSeven.substringAfter("\"tableName\": \"carry_chain\"")
             .substringBefore("\"tableName\"")
         assertEquals(
             listOf("category_id", "start_month", "end_month"),
             values(chain, "columnName").toList()
         )
-        assertFalse("REAL" in values(current, "affinity").toSet())
+        assertFalse("REAL" in values(versionSeven, "affinity").toSet())
+    }
+
+    @Test
+    fun versionEightReplacesTheOneChosenGoalWithStarredGoalsKeyedByGoal() {
+        assertEquals(
+            mvpTables + "deleted_expense" + "deleted_income" + goalTables - "featured_goal" +
+                "starred_goal" + scheduleTables + investmentTables + "carry_chain",
+            values(current, "tableName").toSet()
+        )
+        // One row per starred goal: the goal is the key, so no goal is starred twice.
+        val stars = current.substringAfter("\"tableName\": \"starred_goal\"")
+            .substringBefore("\"tableName\"")
+        assertEquals(listOf("goal_id"), values(stars, "columnName").toList())
+        assertTrue("PRIMARY KEY(`goal_id`)" in stars)
     }
 
     @Test
@@ -132,6 +157,7 @@ class ExportedSchemaTest {
             versionFour to 5,
             versionFive to 7,
             versionSix to 8,
+            versionSeven to 9,
             current to 9
         )) {
             val actions = (values(schema, "onDelete") + values(schema, "onUpdate")).toList()

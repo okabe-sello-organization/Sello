@@ -110,7 +110,7 @@ class RestoreAfterSetAsideTest {
                 ),
                 incomes = listOf(income(201, "2026-10-01", 1, 200_000, IncomeSource.Salary)),
                 goals = emptyList(),
-                featuredGoal = null,
+                starredGoals = emptySet(),
                 schedules = emptyList(),
                 investments = emptyList(),
                 usdRates = emptyList(),

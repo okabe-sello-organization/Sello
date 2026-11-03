@@ -96,7 +96,7 @@ class GoalEditorViewModelTest {
             HandCategoryReads(),
             testMoney()
         )
-        reads.read = Outcome.Success(GoalBoard(3, 9, emptyList(), null))
+        reads.read = Outcome.Success(GoalBoard(3, 9, emptyList(), emptySet(), emptyList()))
     }
 
     @After
@@ -143,7 +143,7 @@ class GoalEditorViewModelTest {
     }
 
     private fun editing(summary: GoalSummary): SavedStateHandle {
-        reads.read = Outcome.Success(GoalBoard(3, 9, listOf(summary), null))
+        reads.read = Outcome.Success(GoalBoard(3, 9, listOf(summary), emptySet(), emptyList()))
         return SavedStateHandle(mapOf("goalId" to viajeId))
     }
 
@@ -545,7 +545,7 @@ class GoalEditorViewModelTest {
         val model = model()
         assertTrue(model.state.value.loadFailed)
 
-        reads.read = Outcome.Success(GoalBoard(3, 9, emptyList(), null))
+        reads.read = Outcome.Success(GoalBoard(3, 9, emptyList(), emptySet(), emptyList()))
         model.onAction(GoalEditorAction.Retry)
 
         assertFalse(model.state.value.loadFailed)

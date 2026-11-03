@@ -137,12 +137,13 @@ class ReciboGoalViewModelTest {
     private val a get() = goal(viaje, "Viaje a la costa", 1_710_000, 3_000_000)
     private val b get() = goal(celular, "Celular nuevo", 450_000, 1_200_000)
 
-    /** A board as storage reads it: [featured] is Recibo's goal after the fallback rule. */
+    /** A board as storage reads it: [featured] heads Recibo's list after the fallback rule. */
     private fun board(vararg goals: GoalSummary, featured: String?) = GoalBoard(
         3,
         9,
         goals.toList(),
-        featured?.let { GoalId.of(it).value() }
+        emptySet(),
+        listOfNotNull(featured?.let { GoalId.of(it).value() })
     )
 
     private fun model() = ReciboGoalViewModel(

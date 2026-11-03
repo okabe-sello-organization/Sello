@@ -2,11 +2,10 @@ package com.software.sello.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.software.sello.data.local.entity.FeaturedGoalEntity
 import com.software.sello.data.local.entity.GoalEntity
 import com.software.sello.data.local.entity.GoalEventEntity
+import com.software.sello.data.local.entity.StarredGoalEntity
 
 @Dao
 interface GoalDao {
@@ -25,8 +24,8 @@ interface GoalDao {
     @Query("DELETE FROM goal_event")
     suspend fun deleteAllEvents()
 
-    @Query("DELETE FROM featured_goal")
-    suspend fun deleteFeatured()
+    @Query("DELETE FROM starred_goal")
+    suspend fun deleteAllStars()
 
     @Query("DELETE FROM goal")
     suspend fun deleteAll()
@@ -103,12 +102,24 @@ interface GoalDao {
     @Query("DELETE FROM goal WHERE id = :id AND version = :expectedVersion")
     suspend fun delete(id: String, expectedVersion: Long): Int
 
-    @Query("SELECT * FROM featured_goal WHERE id = 1")
-    suspend fun featured(): FeaturedGoalEntity?
+    /** The starred goals' identifiers, in identifier order. */
+    @Query("SELECT goal_id FROM starred_goal ORDER BY goal_id")
+    suspend fun starred(): List<String>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun feature(featured: FeaturedGoalEntity)
+    @Query("SELECT COUNT(*) FROM starred_goal")
+    suspend fun starredCount(): Int
 
-    @Query("DELETE FROM featured_goal WHERE goal_id = :goalId")
-    suspend fun unfeature(goalId: String): Int
+    @Query("SELECT EXISTS(SELECT 1 FROM starred_goal WHERE goal_id = :goalId)")
+    suspend fun isStarred(goalId: String): Boolean
+
+    /** Fails on a goal already starred: the caller checks first. */
+    @Insert
+    suspend fun star(star: StarredGoalEntity)
+
+    @Insert
+    suspend fun starAll(stars: List<StarredGoalEntity>)
+
+    /** Returns the rows removed: one, or none when the goal was not starred. */
+    @Query("DELETE FROM starred_goal WHERE goal_id = :goalId")
+    suspend fun unstar(goalId: String): Int
 }

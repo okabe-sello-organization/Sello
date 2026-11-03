@@ -112,8 +112,13 @@ class CarryBackupRestoreTest {
     private val preferences = Preferences()
     private var nextId = 5_000
 
-    /** A version 6 file as Sello wrote it before: no chains and no financial month. */
-    private fun String.asVersion5() = replace("\"version\": 6,", "\"version\": 5,")
+    /**
+     * A file as Sello wrote it at version 5: no chains, no financial month and, with no goal
+     * starred, no chosen goal.
+     */
+    private fun String.asVersion5() = replace("\"version\": 7,", "\"version\": 5,")
+        .also { check(it.contains("\"starredGoals\": [],")) }
+        .replace("\"starredGoals\": [],", "\"featuredGoal\": null,")
         .replace(Regex(",\\s+\"carryChains\": \\[[^]]*]"), "")
         .replace(Regex("\\s+\"financialMonth\": \"[0-9-]+\","), "")
 

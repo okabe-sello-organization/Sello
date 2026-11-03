@@ -161,17 +161,18 @@ private fun flag(element: JsonElement, path: String): Boolean {
 }
 
 /**
- * Checks a decoded file completely, older versions read as version 6 included; the
+ * Checks a decoded file completely, older versions read as version 7 included; the
  * first problem rejects all of it.
  */
-internal fun validate(file: BackupFileV6): Outcome<BackupContents, BackupRejection> = try {
+internal fun validate(file: BackupFileV7): Outcome<BackupContents, BackupRejection> = try {
     Outcome.Success(contentsOf(file))
 } catch (rejected: Rejected) {
     Outcome.Failure(rejected.rejection)
 }
 
-private fun contentsOf(file: BackupFileV6): BackupContents {
+private fun contentsOf(file: BackupFileV7): BackupContents {
     val financial = file.financial
+    val version = whole(file.version, "version")
     val revision = whole(financial.sourceRevision, "financial.sourceRevision")
     val zone = try {
         ZoneId.of(financial.zone).also { if (it.id != financial.zone) invalid("financial.zone") }
@@ -181,19 +182,13 @@ private fun contentsOf(file: BackupFileV6): BackupContents {
     val categories = categories(financial.categories)
     val known = categories.mapTo(HashSet()) { it.id }
     val goals = goals(financial.goals)
-    val featured = financial.featuredGoal?.let { text ->
-        val id = GoalId.of(text).or("financial.featuredGoal")
-        if (goals.none { it.goal.id == id }) {
-            reject(BackupRejection.DanglingReference("financial.featuredGoal"))
-        }
-        id
-    }
+    val starred = starredGoals(financial.starredGoals, goals, version < STARS_VERSION)
     val schedules = schedules(financial.schedules, categories)
     val handled = schedules.associate { it.schedule.id to it.handled }
     val exportedAt = instant(file.exportedAt, "exportedAt")
     val financialMonth = when (val said = financial.financialMonth) {
         // Only a file read from an older version leaves it out, and it has no chains.
-        null -> if (file.version.wholeNumberOrNull() == BackupFormat.VERSION) {
+        null -> if (version >= FINANCIAL_MONTH_VERSION) {
             invalid("financial.financialMonth")
         } else {
             YearMonth.from(exportedAt.atZone(zone))
@@ -215,7 +210,7 @@ private fun contentsOf(file: BackupFileV6): BackupContents {
             expenses = expenses(financial.expenses, known, handled),
             incomes = incomes(financial.incomes, handled),
             goals = goals,
-            featuredGoal = featured,
+            starredGoals = starred,
             schedules = schedules,
             investments = investments(financial.investments),
             usdRates = usdRates(financial.usdRates),
@@ -229,6 +224,39 @@ private fun contentsOf(file: BackupFileV6): BackupContents {
         ),
         preferences = file.preferences?.let(::preferences)
     )
+}
+
+/** The first version that says its financial month. */
+private const val FINANCIAL_MONTH_VERSION = 6L
+
+/** The first version with `starredGoals` in place of `featuredGoal`. */
+private const val STARS_VERSION = 7L
+
+/**
+ * Up to [GoalPolicy.MAX_STARRED] goals of the file, each active and named once. A file of
+ * version 6 or older names at most one, as `featuredGoal`; a completed one is dropped,
+ * since a star never sits on a completed goal. A version 7 file that breaks any rule is
+ * refused, never trimmed.
+ */
+private fun starredGoals(
+    wire: List<String>,
+    goals: List<GoalHistory>,
+    older: Boolean
+): Set<GoalId> {
+    if (wire.size > GoalPolicy.MAX_STARRED) invalid("financial.starredGoals")
+    val byId = goals.associateBy { it.goal.id }
+    val starred = LinkedHashSet<GoalId>()
+    wire.forEachIndexed { index, text ->
+        val path = if (older) "financial.featuredGoal" else "financial.starredGoals[$index]"
+        val id = GoalId.of(text).or(path)
+        val goal = byId[id] ?: reject(BackupRejection.DanglingReference(path))
+        if (goal.goal.completedOn != null) {
+            if (older) return@forEachIndexed
+            invalid(path)
+        }
+        if (!starred.add(id)) reject(BackupRejection.DuplicateId(path))
+    }
+    return starred
 }
 
 private const val NANOS_PER_MILLI = 1_000_000

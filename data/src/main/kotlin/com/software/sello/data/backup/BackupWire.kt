@@ -8,11 +8,12 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
 /*
- * The wire shapes of versions 1 to 6, documented in docs/data/backup-format.md.
+ * The wire shapes of versions 1 to 7, documented in docs/data/backup-format.md.
  * Version 2 is version 1 plus `financial.goals` and `financial.featuredGoal`; version 3
  * is version 2 plus `financial.schedules` and each expense's and income's `origin`;
  * version 4 is version 3 plus `financial.investments` and `financial.usdRates`; version 5 adds
- * two investment settings to `preferences`; version 6 adds `financial.carryChains`. These classes
+ * two investment settings to `preferences`; version 6 adds `financial.carryChains`; version 7
+ * replaces `financial.featuredGoal` with `financial.starredGoals`. These classes
  * are the file and nothing else: they never become Room entities or domain values
  * without going through BackupValidation. Every property is required, including the
  * nullable ones, and the JSON configuration refuses unknown keys. Numbers and flags
@@ -510,6 +511,65 @@ internal fun BackupFileV5.asVersion6() = BackupFileV6(
         investments = financial.investments,
         usdRates = financial.usdRates,
         carryChains = emptyList()
+    ),
+    preferences = preferences
+)
+
+/**
+ * Version 7: version 6 with up to five starred goals in `financial.starredGoals` in place
+ * of the one `featuredGoal` (SELLO-143).
+ */
+@Serializable
+internal data class BackupFileV7(
+    val format: String,
+    val version: JsonElement,
+    val exportedAt: String,
+    val financial: FinancialV7,
+    val preferences: PreferencesV5?
+)
+
+@Serializable
+internal data class FinancialV7(
+    val sourceRevision: JsonElement,
+    val zone: String,
+    /** `yyyy-MM`: the financial month it was made in; null only in a file read from an older version. */
+    val financialMonth: String?,
+    val categories: List<CategoryV1>,
+    val defaultLimits: List<DefaultLimitV1>,
+    val monthLimits: List<MonthLimitV1>,
+    val expenses: List<ExpenseV3>,
+    val incomes: List<IncomeV3>,
+    val goals: List<GoalV2>,
+    val starredGoals: List<String>,
+    val schedules: List<ScheduleV3>,
+    val investments: List<InvestmentV4>,
+    val usdRates: List<UsdRateV4>,
+    val carryChains: List<CarryChainV6>
+)
+
+/**
+ * A version 6 file read as version 7: its one chosen goal, if any, starred. Validation
+ * drops it when that goal is completed, which a version 7 file is refused for instead.
+ */
+internal fun BackupFileV6.asVersion7() = BackupFileV7(
+    format = format,
+    version = version,
+    exportedAt = exportedAt,
+    financial = FinancialV7(
+        sourceRevision = financial.sourceRevision,
+        zone = financial.zone,
+        financialMonth = financial.financialMonth,
+        categories = financial.categories,
+        defaultLimits = financial.defaultLimits,
+        monthLimits = financial.monthLimits,
+        expenses = financial.expenses,
+        incomes = financial.incomes,
+        goals = financial.goals,
+        starredGoals = listOfNotNull(financial.featuredGoal),
+        schedules = financial.schedules,
+        investments = financial.investments,
+        usdRates = financial.usdRates,
+        carryChains = financial.carryChains
     ),
     preferences = preferences
 )

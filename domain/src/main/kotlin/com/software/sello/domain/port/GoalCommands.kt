@@ -149,11 +149,29 @@ data class DeleteGoal(
     override val expectedVersion: Long
 ) : GoalEdit
 
-/** Chooses the goal Recibo shows (rule 12). */
-data class FeatureGoal(
+/**
+ * Stars an active goal for Recibo (rule 12), while fewer than
+ * [com.software.sello.domain.policy.GoalPolicy.MAX_STARRED] are starred.
+ */
+data class StarGoal(
     override val operationId: OperationId,
     override val generation: Long,
     val goalId: GoalId
+) : GoalCommand
+
+/** Removes one goal's star. */
+data class UnstarGoal(
+    override val operationId: OperationId,
+    override val generation: Long,
+    val goalId: GoalId
+) : GoalCommand
+
+/** Unstars [unstar] and stars [star] together, or neither: the way to a sixth star. */
+data class ReplaceStar(
+    override val operationId: OperationId,
+    override val generation: Long,
+    val unstar: GoalId,
+    val star: GoalId
 ) : GoalCommand
 
 /** Why a goal command wrote nothing, beyond the reasons every [CommandRejection] has. */
@@ -201,6 +219,12 @@ sealed interface GoalRejection {
 
     /** A total would not fit an exact amount. */
     data object Unrepresentable : GoalRejection
+
+    /** [limit] goals are starred already; one has to be replaced ([ReplaceStar]). */
+    data class StarLimit(val limit: Int) : GoalRejection
+
+    /** The goal a [ReplaceStar] would unstar is no longer starred. */
+    data object NotStarred : GoalRejection
 
     /** The time to undo is over, or this is not the change on offer. */
     data object UndoExpired : GoalRejection
@@ -264,13 +288,17 @@ data class GoalSummary(val history: GoalHistory, val progress: GoalProgress)
 
 /**
  * Every goal, the earliest created first, read at one [revision] of one [generation].
- * [featured] is Recibo's goal after the fallback rule, or null.
+ * [starred] are the goals the person starred, all active, at most
+ * [com.software.sello.domain.policy.GoalPolicy.MAX_STARRED]. [reciboGoals] is what Recibo
+ * shows, in its order ([com.software.sello.domain.policy.GoalPolicy.reciboGoals]): a goal
+ * there only to fill a place is not in [starred].
  */
 data class GoalBoard(
     val generation: Long,
     val revision: Long,
     val goals: List<GoalSummary>,
-    val featured: GoalId?
+    val starred: Set<GoalId>,
+    val reciboGoals: List<GoalId>
 )
 
 /** The board as [GoalReads.observeBoard] sees it. A failed read keeps the last good board. */

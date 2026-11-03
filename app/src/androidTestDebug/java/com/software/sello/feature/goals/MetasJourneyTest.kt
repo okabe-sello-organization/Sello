@@ -110,7 +110,7 @@ class MetasJourneyTest {
         rule.awaitTag("goal.pin")
         rule.onNodeWithText("Mostrar en Recibo").press()
         rule.awaitText("En tu Recibo")
-        assertEquals(listOf(celular), TestData.rows("SELECT goal_id FROM featured_goal"))
+        assertEquals(listOf(celular), TestData.rows("SELECT goal_id FROM starred_goal"))
 
         // Choosing it survives recreation and is not sent again.
         scenario?.recreate()

@@ -28,12 +28,12 @@ import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.EditGoal
 import com.software.sello.domain.port.EditGoalMovement
-import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RestoreGoalMovement
+import com.software.sello.domain.port.StarGoal
 import com.software.sello.domain.port.UndoGoalCompletion
 import java.time.LocalDate
 import java.time.YearMonth
@@ -160,7 +160,8 @@ class GoalCommandContractTest {
         assertEquals(Outcome.Success(saved.copy(movementIds = null)), ledger.goals.find(operation))
         val board = (ledger.goalReads.board() as Outcome.Success).value
         assertEquals(listOf(0L), board.goals.map { it.progress.percentage })
-        assertEquals(viaje, board.featured)
+        assertEquals(listOf(viaje), board.reciboGoals)
+        assertEquals(emptySet<GoalId>(), board.starred)
     }
 
     @Test
@@ -506,25 +507,26 @@ class GoalCommandContractTest {
     // ---- Deleting and Recibo's goal ----
 
     @Test
-    fun mt27DeletingAGoalRemovesItsMovementsAndItsChoiceForRecibo() = runBlocking {
+    fun mt27DeletingAGoalRemovesItsMovementsAndItsStar() = runBlocking {
         started()
         aporte(500_000)
         aporte(500_000)
-        submit(FeatureGoal(ledger.operation(), 1, viaje))
+        submit(StarGoal(ledger.operation(), 1, viaje))
 
         val outcome = submit(DeleteGoal(ledger.operation(), 1, viaje, version()))
 
         assertTrue("$outcome", outcome is Committed)
         assertEquals(emptyList<String>(), ledger.rows("goal", "id"))
         assertEquals(emptyList<String>(), events())
-        assertEquals(emptyList<String>(), ledger.rows("featured_goal", "goal_id"))
+        assertEquals(emptyList<String>(), ledger.rows("starred_goal", "goal_id"))
         val board = (ledger.goalReads.board() as Outcome.Success).value
         assertEquals(emptyList<GoalSummary>(), board.goals)
-        assertNull(board.featured)
+        assertEquals(emptySet<GoalId>(), board.starred)
+        assertEquals(emptyList<GoalId>(), board.reciboGoals)
     }
 
     @Test
-    fun mt28To30TheChoiceWinsUntilThatGoalIsCompleted() = runBlocking {
+    fun mt28To30TheStarWinsUntilThatGoalIsCompleted() = runBlocking {
         started()
         aporte(1_710_000)
         ledger.audit = ledger.audit.plusSeconds(1)
@@ -533,11 +535,13 @@ class GoalCommandContractTest {
         aporte(450_000, celular)
         fun board() = runBlocking { (ledger.goalReads.board() as Outcome.Success).value }
 
-        assertEquals(viaje, board().featured)
-        submit(FeatureGoal(ledger.operation(), 1, celular))
-        assertEquals(celular, board().featured)
+        // Viaje 57 %, Celular 37,5 %.
+        assertEquals(listOf(viaje, celular), board().reciboGoals)
+        submit(StarGoal(ledger.operation(), 1, celular))
+        assertEquals(listOf(celular, viaje), board().reciboGoals)
         submit(CompleteGoal(ledger.operation(), 1, celular, version(celular), 10.seconds))
-        assertEquals(viaje, board().featured)
+        assertEquals(listOf(viaje), board().reciboGoals)
+        assertEquals(emptySet<GoalId>(), board().starred)
     }
 
     @Test

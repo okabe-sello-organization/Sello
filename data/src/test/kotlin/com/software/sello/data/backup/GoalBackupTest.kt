@@ -10,7 +10,6 @@ import com.software.sello.domain.model.PlaceState
 import com.software.sello.domain.policy.GoalPolicy
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -52,18 +51,18 @@ class GoalBackupTest {
         assertEquals(1L, history.goal.version)
         assertTrue(history.events.filterIsInstance<GoalMovement>().all { it.version == 1L })
         assertEquals(
-            GoalId.of("00000000-0000-4000-8000-000000000301").value(),
-            plan.contents.financial.featuredGoal
+            setOf(GoalId.of("00000000-0000-4000-8000-000000000301").value()),
+            plan.contents.financial.starredGoals
         )
         assertEquals(1 to 3, plan.counts.goals to plan.counts.goalEvents)
     }
 
     @Test
-    fun `a file with goals is written back byte for byte, as version 6`() {
+    fun `a file with goals is written back byte for byte, as version 7`() {
         val plan = codec.read(goals.toByteArray()).value()
 
         assertEquals(
-            writtenAsVersion6(String(resource("valid-goals-v3.json"))),
+            writtenAsVersion7(String(resource("valid-goals-v3.json"))),
             String(codec.encode(plan.contents).value())
         )
     }
@@ -74,7 +73,7 @@ class GoalBackupTest {
 
         assertEquals(g01(), plan.contents)
         assertEquals(emptyList<Any>(), plan.contents.financial.goals)
-        assertNull(plan.contents.financial.featuredGoal)
+        assertEquals(emptySet<GoalId>(), plan.contents.financial.starredGoals)
     }
 
     @Test

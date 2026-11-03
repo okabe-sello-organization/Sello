@@ -47,10 +47,12 @@ These are expectations, not passing tests.
     trimming; an icon is required; there is no limit on the number of goals.
 11. **Independence:** goals never change budgets, income allocation, Recibo's remainder or
     Resumen's figures, and are not tied to a month.
-12. **Recibo's goal:** the person's choice wins. Without a choice, or when the chosen
-    goal is completed or deleted, the active goal with the highest exact completion is
-    shown (saved ÷ target, not the rounded percentage); on a tie, the one created first.
-    Nothing is shown with no active goal, or on a past month.
+12. **Recibo's goals:** up to five active goals can be starred; completing a goal removes
+    its star (Deshacer puts it back while fewer than five are starred) and deleting it
+    removes it. Recibo's list holds up to five active goals: the starred ones first, then
+    the rest; inside each group the highest exact completion first (saved ÷ target, not
+    the rounded percentage), on a tie the one created first (SELLO-143). Nothing is shown
+    with no active goal, or on a past month.
 13. **Pace while creating or editing:** with a target month, the months counted run from
     the month after today through the target month. The monthly amount is what is still
     missing ÷ those months, rounded **up** to a whole peso. Each stamp's projected month

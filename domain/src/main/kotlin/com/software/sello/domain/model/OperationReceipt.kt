@@ -43,7 +43,13 @@ enum class OperationKind(val key: String) {
     CompleteGoal("goal.complete"),
     UndoGoalCompletion("goal.undo_completion"),
     DeleteGoal("goal.delete"),
-    FeatureGoal("goal.feature"),
+
+    /** A star for Recibo; stored as `goal.feature` since a goal could only be chosen. */
+    StarGoal("goal.feature"),
+    UnstarGoal("goal.unstar"),
+
+    /** One goal's star moved to another, in one write. Its subject is the newly starred goal. */
+    ReplaceStar("goal.replace_star"),
     CreateInvestment("investment.create"),
     EditInvestment("investment.edit"),
     RecordInvestmentMovement("investment.record_movement"),

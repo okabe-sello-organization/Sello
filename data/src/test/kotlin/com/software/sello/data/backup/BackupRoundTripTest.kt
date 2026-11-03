@@ -67,9 +67,9 @@ class BackupRoundTripTest {
     }
 
     @Test
-    fun `G01 is written byte for byte as the documented version 6 file`() {
+    fun `G01 is written byte for byte as the documented version 7 file`() {
         assertEquals(
-            String(resource("valid-g01-v6.json")),
+            String(resource("valid-g01-v7.json")),
             String(codec.encode(g01InDollars()).value())
         )
     }
@@ -85,6 +85,11 @@ class BackupRoundTripTest {
     @Test
     fun `the version 6 file reads back as the same G01 history`() {
         assertEquals(g01InDollars(), codec.read(resource("valid-g01-v6.json")).value().contents)
+    }
+
+    @Test
+    fun `the version 7 file reads back as the same G01 history`() {
+        assertEquals(g01InDollars(), codec.read(resource("valid-g01-v7.json")).value().contents)
     }
 
     @Test
@@ -118,7 +123,7 @@ class BackupRoundTripTest {
 
     @Test
     fun `every ink is written as the id it has always had, and reads back`() {
-        val file = String(resource("valid-g01-v6.json"))
+        val file = String(resource("valid-g01-v7.json"))
         for ((ink, id) in listOf(
             InkPreference.Cobalto to "cobalto",
             InkPreference.Violeta to "violeta"
@@ -293,7 +298,7 @@ class BackupRoundTripTest {
                 "expenses",
                 "incomes",
                 "goals",
-                "featuredGoal",
+                "starredGoals",
                 "schedules",
                 "investments",
                 "usdRates",

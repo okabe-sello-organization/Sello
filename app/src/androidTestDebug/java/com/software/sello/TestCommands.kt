@@ -27,7 +27,6 @@ import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.CreateInvestment
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
-import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
@@ -37,6 +36,7 @@ import com.software.sello.domain.port.InvestmentCommandOutcome
 import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.SetMonthLimit
+import com.software.sello.domain.port.StarGoal
 import com.software.sello.navigation.MonthSession
 import java.time.LocalDate
 import java.time.YearMonth
@@ -214,10 +214,10 @@ object TestCommands {
         assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }
 
-    /** Chooses [goal] for Recibo, as "Mostrar en Recibo" does, through the real command. */
+    /** Stars [goal] for Recibo, as "Mostrar en Recibo" does with no star, through the real command. */
     fun featureGoal(goal: String) = runBlocking {
         val outcome = koin.get<GoalCommands>().submit(
-            FeatureGoal(operation(), generation(), GoalId.of(goal).value())
+            StarGoal(operation(), generation(), GoalId.of(goal).value())
         )
         assertTrue("$outcome", outcome is CommandOutcome.Committed)
     }

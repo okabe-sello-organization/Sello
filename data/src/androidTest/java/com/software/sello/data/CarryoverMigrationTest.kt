@@ -254,7 +254,7 @@ class CarryoverMigrationTest {
             }
         database.close()
 
-        assertEquals(7, version)
+        assertEquals(8, version)
         // SC42: every category is off. mar R −150.000; abr C 100.000, not 60.000.
         assertEquals(
             LimitedBudget(

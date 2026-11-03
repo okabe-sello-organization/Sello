@@ -163,7 +163,7 @@ class RestoreCommandContractTest {
                 ),
                 incomes = listOf(income(201, "2026-10-01", 1, 200_000, IncomeSource.Salary)),
                 goals = emptyList(),
-                featuredGoal = null,
+                starredGoals = emptySet(),
                 schedules = emptyList(),
                 investments = emptyList(),
                 usdRates = emptyList(),
@@ -339,7 +339,7 @@ class RestoreCommandContractTest {
 
         val truncated = restores().stage(bytes.copyOf(bytes.size / 2))
         val newer = restores().stage(
-            String(bytes).replaceFirst("\"version\": 6", "\"version\": 7").toByteArray()
+            String(bytes).replaceFirst("\"version\": 7", "\"version\": 8").toByteArray()
         )
 
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.Damaged)), truncated)

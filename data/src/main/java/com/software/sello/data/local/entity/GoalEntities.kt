@@ -139,9 +139,13 @@ data class DeletedGoalEventEntity(
     }
 }
 
-/** The goal the person chose for Recibo: one row or none (rule 12). */
+/**
+ * A goal the person starred for Recibo (rule 12): at most
+ * [com.software.sello.domain.policy.GoalPolicy.MAX_STARRED] rows, never one for a
+ * completed goal. The key makes a goal starred at most once.
+ */
 @Entity(
-    tableName = "featured_goal",
+    tableName = "starred_goal",
     foreignKeys = [
         ForeignKey(
             entity = GoalEntity::class,
@@ -150,18 +154,14 @@ data class DeletedGoalEventEntity(
             onDelete = ForeignKey.RESTRICT,
             onUpdate = ForeignKey.RESTRICT
         )
-    ],
-    indices = [Index("goal_id")]
+    ]
 )
-data class FeaturedGoalEntity(
+data class StarredGoalEntity(
     @PrimaryKey
-    @ColumnInfo(name = "id")
-    val id: Long,
     @ColumnInfo(name = "goal_id")
     val goalId: String
 ) {
     companion object {
-        const val TABLE = "featured_goal"
-        const val SINGLE_ID = 1L
+        const val TABLE = "starred_goal"
     }
 }

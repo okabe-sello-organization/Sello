@@ -100,7 +100,8 @@ class MetasScreenshotTest {
             goal(2, "Celular nuevo", 1_200_000, listOf(450_000)),
             goal(3, "Vacunas de Luna", 400_000, listOf(400_000), LocalDate.of(2026, 9, 30))
         ),
-        null
+        emptySet(),
+        emptyList()
     )
     private val metas = GoalsRenderModel(money).metas(ReadState.Ready(board), today)
 

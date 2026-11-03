@@ -4,6 +4,7 @@ import android.database.SQLException
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.entity.GoalEventEntity
+import com.software.sello.data.local.entity.StarredGoalEntity
 import com.software.sello.data.mapper.profileFrom
 import com.software.sello.data.mapper.toHistory
 import com.software.sello.domain.model.GoalHistory
@@ -41,28 +42,50 @@ class RoomGoalReads(private val database: SelloDatabase) : GoalReads {
                     is Outcome.Failure -> return@withTransaction summary
                 }
             }
-            val chosen = database.goalDao().featured()?.goalId?.let { GoalId.of(it) }
-            val chosenId = when (chosen) {
-                null -> null
-
-                is Outcome.Success -> chosen.value
-
-                is Outcome.Failure -> return@withTransaction Outcome.Failure(
-                    StorageFailure.Integrity("featured_goal", null, "goal_id")
-                )
+            val starred = when (val stars = starred(goals)) {
+                is Outcome.Success -> stars.value
+                is Outcome.Failure -> return@withTransaction stars
             }
             Outcome.Success(
                 GoalBoard(
                     generation = profile.generation,
                     revision = profile.revision,
                     goals = goals,
-                    featured = GoalPolicy.featured(
+                    starred = starred,
+                    reciboGoals = GoalPolicy.reciboGoals(
                         goals.map { it.history.goal to it.progress },
-                        chosenId
+                        starred
                     )
                 )
             )
         }
+    }
+
+    /**
+     * The starred goals, read inside the board's transaction. Every write keeps them to at
+     * most [GoalPolicy.MAX_STARRED] active goals; anything else was damaged afterwards and
+     * fails the read rather than being trimmed.
+     */
+    private suspend fun starred(goals: List<GoalSummary>): Outcome<Set<GoalId>, StorageFailure> {
+        val rows = database.goalDao().starred()
+        val completed = goals.filter { it.history.goal.completedOn != null }
+            .mapTo(HashSet()) { it.history.goal.id.value }
+        if (rows.size > GoalPolicy.MAX_STARRED) {
+            return Outcome.Failure(
+                StorageFailure.Integrity(StarredGoalEntity.TABLE, null, "goal_id")
+            )
+        }
+        val starred = mutableSetOf<GoalId>()
+        for (row in rows) {
+            val id = GoalId.of(row)
+            if (id !is Outcome.Success || row in completed) {
+                return Outcome.Failure(
+                    StorageFailure.Integrity(StarredGoalEntity.TABLE, row, "goal_id")
+                )
+            }
+            starred += id.value
+        }
+        return Outcome.Success(starred)
     }
 
     override fun observeBoard(): Flow<GoalBoardState> = database.observeOnRevision { board() }

@@ -121,7 +121,8 @@ class GoalBulkViewModelTest {
                 goal(celular, "Celular nuevo", 1_200_000, 5, aporte(21, 450_000)),
                 goal(vacunas, "Vacunas de Luna", 400_000, 5, aporte(31, 400_000), done = true)
             ),
-            null
+            emptySet(),
+            emptyList()
         )
     )
 
@@ -589,7 +590,8 @@ class GoalBulkViewModelTest {
                 3,
                 10,
                 listOf(goal(celular, "Celular nuevo", 1_200_000, 6, aporte(21, 750_000))),
-                null
+                emptySet(),
+                emptyList()
             )
         )
 
@@ -874,7 +876,7 @@ class GoalBulkViewModelTest {
 
             // Read again without Celular nuevo: its lines ask for a goal before anything is sent.
             reads.board.value = ReadState.Ready(
-                GoalBoard(3, 10, listOf(board().value.goals[0]), null)
+                GoalBoard(3, 10, listOf(board().value.goals[0]), emptySet(), emptyList())
             )
             assertEquals(2, model.state.value.missingGoals)
             assertEquals(listOf(viaje), model.state.value.goals.map { it.id })
@@ -906,7 +908,7 @@ class GoalBulkViewModelTest {
 
         val celularAgain = goal(celular, "Celular nuevo", 1_200_000, 6, aporte(21, 450_000))
         reads.board.value = ReadState.Ready(
-            GoalBoard(3, 10, listOf(board().value.goals[0], celularAgain), null)
+            GoalBoard(3, 10, listOf(board().value.goals[0], celularAgain), emptySet(), emptyList())
         )
         model.onAction(GoalBulkAction.Submit)
 
@@ -1013,7 +1015,7 @@ class GoalBulkViewModelTest {
     fun withNoActiveGoalLeftTheReceiptSaysSo() = runTest {
         val model = model()
         reads.board.value = ReadState.Ready(
-            GoalBoard(3, 9, listOf(board().value.goals[2]), null)
+            GoalBoard(3, 9, listOf(board().value.goals[2]), emptySet(), emptyList())
         )
 
         assertEquals(emptyList<GoalBulkChoice>(), model.state.value.goals)

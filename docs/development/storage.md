@@ -3,7 +3,7 @@
 Rules: [architecture](../../ARCHITECTURE.md) §§4, 5, 7.
 
 One Room database, `sello.db`, in the app's private storage, is the only place
-financial facts live. Its schema is version 6; every version is exported to
+financial facts live. Its schema is version 8; every version is exported to
 `data/schemas/com.software.sello.data.local.SelloDatabase/`.
 
 ## What is stored
@@ -22,7 +22,7 @@ financial facts live. Its schema is version 6; every version is exported to
 | `goal` | Name, icon key, optional target month, completion day, the next recording position, version, audit times | `id` |
 | `goal_event` | A goal's history: each target (`target`) and movement (`contribution`, `withdrawal`) with amount, date (movements only), the day it was recorded, note, version, audit times | `id`; unique (`goal_id`, `sequence`), the recording order |
 | `deleted_goal_event` | What a deleted goal movement was, for its undo | `deletion_id` |
-| `featured_goal` | The goal chosen for Recibo, if any | `id` is always 1 |
+| `starred_goal` | The goals starred for Recibo: at most five, never a completed one (version 8 replaced `featured_goal`, keeping its goal unless completed) | `goal_id` |
 | `schedule` | A recurring payment (category) or income (source): amount, note, repeat rule, start and end, creation order, the last occurrence catch-up handled, version, audit times | `id`; unique `sequence` |
 | `schedule_pause` | One pause of a schedule: its first day and the day it resumed, if it did | (`schedule_id`, `from_date`) |
 | `investment` | Name, optional description, icon key, currency (`COP` or `USD`, never changed), the next recording position, version, audit times | `id` |

@@ -4,9 +4,9 @@ import androidx.room.withTransaction
 import com.software.sello.data.backup.legacy.LegacyTranslation
 import com.software.sello.data.backup.legacy.LegacyTranslator
 import com.software.sello.data.local.SelloDatabase
-import com.software.sello.data.local.entity.FeaturedGoalEntity
 import com.software.sello.data.local.entity.OperationReceiptEntity
 import com.software.sello.data.local.entity.ProfileEntity
+import com.software.sello.data.local.entity.StarredGoalEntity
 import com.software.sello.data.mapper.profileFrom
 import com.software.sello.data.mapper.toEntity
 import com.software.sello.data.mapper.toStored
@@ -414,7 +414,7 @@ class RoomRestores(
             investmentDao().deleteAllMovements()
             investmentDao().deleteAll()
             investmentDao().deleteAllRates()
-            goalDao().deleteFeatured()
+            goalDao().deleteAllStars()
             goalDao().deleteAllEvents()
             goalDao().deleteAll()
             scheduleDao().deleteAllPauses()
@@ -439,9 +439,7 @@ class RoomRestores(
                     scheduleDao().insertPause(pause.toEntity(stored.schedule.id))
                 }
             }
-            financial.featuredGoal?.let {
-                goalDao().feature(FeaturedGoalEntity(FeaturedGoalEntity.SINGLE_ID, it.value))
-            }
+            goalDao().starAll(financial.starredGoals.map { StarredGoalEntity(it.value) })
             for (history in financial.investments) insertInvestment(history)
             for (rate in financial.usdRates) investmentDao().insertRate(rate.toEntity())
             // Months only: carry is worked out again from what was just inserted (CP26).

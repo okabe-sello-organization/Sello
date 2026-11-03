@@ -162,7 +162,8 @@ class MetasScreenTest {
             ),
             goal(3, "Vacunas de Luna", 400_000, listOf(400_000), LocalDate.of(2026, 9, 30))
         ),
-        null
+        emptySet(),
+        emptyList()
     )
 
     private val clock = object : FinancialClock {
@@ -268,7 +269,7 @@ class MetasScreenTest {
     @Test
     fun withNoGoalsOnlyTheDockCreatesOne() {
         var created = 0
-        destination(GoalBoard(1, 0, emptyList(), null), onCreate = { created++ })
+        destination(GoalBoard(1, 0, emptyList(), emptySet(), emptyList()), onCreate = { created++ })
 
         rule.onNodeWithText("Ponle nombre a algo que quieras").assertExists()
         rule.onNodeWithTag(MONTH_SWITCHER_TAG).assertDoesNotExist()
@@ -298,7 +299,8 @@ class MetasScreenTest {
                 listOf(
                     goal(3, "Vacunas de Luna", 400_000, listOf(400_000), LocalDate.of(2026, 9, 30))
                 ),
-                null
+                emptySet(),
+                emptyList()
             ),
             onBulk = {}
         )
@@ -390,7 +392,7 @@ class MetasScreenTest {
     }
 
     private fun showDetail(summary: GoalSummary) {
-        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(summary), null))
+        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(summary), emptySet(), emptyList()))
         val detail = GoalsRenderModel(money).detail(ready, summary.history.goal.id.value, today)
         rule.showSello(Look(density = 1f)) {
             GoalDetailScreen(detail, {}, dateLabels(), monthNames(), PaddingValues(16.dp))

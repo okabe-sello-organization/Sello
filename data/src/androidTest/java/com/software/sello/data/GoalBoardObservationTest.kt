@@ -95,7 +95,7 @@ class GoalBoardObservationTest {
             next { saved(it) == Money.cop(0) }
             aporte(750_000)
             val good = next { saved(it) == Money.cop(750_000) } as ReadState.Ready<GoalBoard>
-            assertEquals(viaje, good.value.featured)
+            assertEquals(listOf(viaje), good.value.reciboGoals)
 
             ledger.database.openHelper.writableDatabase.execSQL(
                 "UPDATE goal_event SET amount_minor = 0 WHERE id = '${uuid(102)}'"
