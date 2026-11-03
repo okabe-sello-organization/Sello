@@ -8,7 +8,9 @@
 
 ### Outcome
 "Ya se anotaron" and the month's bar in Pagos fijos sum the entries each schedule
-recorded this month, as they are stored now, not the schedule's current terms.
+recorded this month, as they are stored now, not the schedule's current terms. An entry
+counts in the month of its stored date, where Recibo files it, at its stored amount
+(ruling on #343).
 
 ### Acceptance criteria
 - RE17: rent monthly on 5, 950.000, amount changed to 1.000.000 on 10 Oct. October's
@@ -20,7 +22,8 @@ recorded this month, as they are stored now, not the schedule's current terms.
   jumps to 20 Oct while 5 Oct was never recorded. October shows nothing recorded for it
   (no "Ya se anotaron", no "anotado 5 oct"); a daily café ended 10 Oct and extended on
   20 Oct counts nothing for 11–20 Oct.
-- The row's "anotado" date comes from the stored entries too, not the checkpoint.
+- The row's "anotado" date comes from the stored entries too, not the checkpoint: the
+  latest stored date among that schedule's entries in the month.
 - Sums are checked `Money`; tests use hand-worked literals.
 
 ### Notes

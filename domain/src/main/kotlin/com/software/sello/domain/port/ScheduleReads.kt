@@ -35,9 +35,9 @@ data class ScheduleBook(
 typealias ScheduleBookState = ReadState<ScheduleBook, StorageFailure>
 
 /**
- * The [book] with every entry its schedules recorded for an occurrence in [month], as the
- * entries are stored now ([records]): an edited one at its edited amount, a deleted one
- * gone. Both are read at the book's revision.
+ * The [book] with every entry a schedule recorded that is dated in [month] as stored now
+ * ([records]): an edited one at its edited amount and date, a deleted one gone. Both are
+ * read at the book's revision.
  */
 data class ScheduleMonthBook(
     val book: ScheduleBook,

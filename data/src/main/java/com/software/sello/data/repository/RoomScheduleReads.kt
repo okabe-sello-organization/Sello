@@ -47,8 +47,8 @@ class RoomScheduleReads(private val database: SelloDatabase) : ScheduleReads {
     override fun observe(): Flow<ScheduleBookState> = database.observeOnRevision { book() }
 
     /**
-     * The book and, in the same transaction, every expense and income with an origin in
-     * [month], as stored now. One entry that cannot be read fails the read.
+     * The book and, in the same transaction, every expense and income with an origin that
+     * is dated in [month] as stored now. One entry that cannot be read fails the read.
      */
     override suspend fun month(month: YearMonth): Outcome<ScheduleMonthBook, StorageFailure> =
         reading {

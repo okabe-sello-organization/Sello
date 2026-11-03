@@ -98,10 +98,10 @@ object ScheduleListPolicy {
 
     /**
      * [month] for [lines] of one kind, summed exactly; a sum that does not fit fails. What
-     * went through is what the schedules' [records] for an occurrence in [month] hold as
-     * stored now: an edited entry at its edited amount, a deleted one not at all, and an
-     * occurrence the checkpoint passed without recording counts nothing. What is still to
-     * come is each occurrence after the checkpoint, at the schedule's amount.
+     * went through is the schedules' [records] dated in [month] as stored now, where Recibo
+     * files them: an edited entry at its edited amount and date, a deleted one not at all,
+     * and an occurrence the checkpoint passed without recording counts nothing. What is
+     * still to come is each occurrence after the checkpoint, at the schedule's amount.
      */
     fun month(
         lines: List<ScheduleLine>,
@@ -109,7 +109,7 @@ object ScheduleListPolicy {
         month: YearMonth
     ): Outcome<SchedulesMonth, MoneyError> {
         val listed = lines.mapTo(HashSet()) { it.stored.schedule.id }
-        val done = records.filter { it.dayIn({ id -> id in listed }, month) != null }
+        val done = records.filter { it.dateIn({ id -> id in listed }, month) != null }
             .map { it.amount }
         val toCome = mutableListOf<Money>()
         lines.forEach { line ->
@@ -136,15 +136,15 @@ object ScheduleListPolicy {
     }
 
     /**
-     * The day of the last occurrence in [month] that [line]'s schedule has an entry for in
-     * [records], as stored now; null when it has none.
+     * The latest date in [month] among the entries [line]'s schedule recorded, as [records]
+     * store them now; null when it has none there.
      */
     fun recordedOn(
         line: ScheduleLine,
         records: List<ScheduleRecord>,
         month: YearMonth
     ): LocalDate? =
-        records.mapNotNull { it.dayIn({ id -> id == line.stored.schedule.id }, month) }.maxOrNull()
+        records.mapNotNull { it.dateIn({ id -> id == line.stored.schedule.id }, month) }.maxOrNull()
 
     /**
      * The nearest date still to come among active [lines]; one already due that catch-up
@@ -173,10 +173,16 @@ object ScheduleListPolicy {
             is ScheduleRecord.Earning -> income.amount.money
         }
 
-    /** The day of the occurrence [this] recorded for [schedule], when it falls in [month]. */
-    private fun ScheduleRecord.dayIn(schedule: (ScheduleId) -> Boolean, month: YearMonth) =
-        origin?.takeIf { schedule(it.schedule) }?.occurrence?.date
-            ?.takeIf { YearMonth.from(it) == month }
+    /** The date the entry is stored at now, which an edit may have moved. */
+    private val ScheduleRecord.date: LocalDate
+        get() = when (this) {
+            is ScheduleRecord.Payment -> expense.date
+            is ScheduleRecord.Earning -> income.date
+        }
+
+    /** The stored date of [this], when a [schedule] recorded it and it falls in [month]. */
+    private fun ScheduleRecord.dateIn(schedule: (ScheduleId) -> Boolean, month: YearMonth) =
+        date.takeIf { origin?.schedule?.let(schedule) == true && YearMonth.from(it) == month }
 
     private inline fun <T> Outcome<T, MoneyError>.orReturn(
         failed: (Outcome.Failure<MoneyError>) -> Nothing

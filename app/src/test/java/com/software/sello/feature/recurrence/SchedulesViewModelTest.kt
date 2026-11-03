@@ -113,11 +113,12 @@ class SchedulesViewModelTest {
     private var entries = 100
 
     /** The expense schedule [number] recorded for its [occurrence], stored now at [amount]. */
-    private fun paid(number: Int, occurrence: String, amount: Long) = ScheduleRecord.Payment(
-        storedExpense(entries++, 1, occurrence, amount).copy(
-            origin = EntryOrigin(scheduleId(number), Occurrence(d(occurrence), 1))
+    private fun paid(number: Int, occurrence: String, amount: Long, date: String = occurrence) =
+        ScheduleRecord.Payment(
+            storedExpense(entries++, 1, date, amount).copy(
+                origin = EntryOrigin(scheduleId(number), Occurrence(d(occurrence), 1))
+            )
         )
-    )
 
     /** What the schedules recorded, as the entries are stored now. */
     private fun recorded(vararg records: ScheduleRecord) {
@@ -139,9 +140,9 @@ class SchedulesViewModelTest {
     private fun SchedulesViewModel.row(number: Int) =
         (ready.rows + ready.ended).single { it.id == scheduleId(number).value }
 
-    private fun categories() = snapshots.ready(
+    private fun categories(today: String = "2026-10-22") = snapshots.ready(
         monthOf(
-            "2026-10-22",
+            today,
             listOf(
                 categoryIn(1, "Hogar", 400_000, icon = "home"),
                 categoryIn(2, "Transporte", 100_000, icon = "directions_bus"),
@@ -334,5 +335,31 @@ class SchedulesViewModelTest {
         assertEquals(null, model.row(1).recordedOn)
         assertEquals(d("2026-11-05"), model.row(1).next)
         assertEquals(d("2026-10-10"), model.row(7).recordedOn)
+    }
+
+    /**
+     * SELLO-148, ruling on #343 (R1): on 10 Nov an entry counts where it is stored now. The
+     * 5 Nov one moved to 31 Oct leaves November with nothing through; the 5 Oct one moved
+     * to 7 Nov gives November 1.900.000 from two, "anotado 7 nov".
+     */
+    @Test
+    fun anEntryCountsInTheMonthOfItsStoredDate() {
+        clock.goTo("2026-11-10")
+        val model = list()
+        categories("2026-11-10")
+        publish(stored(1, pay(1, 950_000, "Arriendo"), monthly(5), "2026-10-01", "2026-11-05"))
+
+        recorded(paid(1, "2026-10-05", 950_000), paid(1, "2026-11-05", 950_000, "2026-10-31"))
+        assertEquals(listOf("0 pesos", 0, "0 pesos", 0, "0 pesos"), model.plan())
+        assertEquals(ScheduleGroup.Later, model.row(1).group)
+        assertEquals(null, model.row(1).recordedOn)
+
+        recorded(paid(1, "2026-10-05", 950_000, "2026-11-07"), paid(1, "2026-11-05", 950_000))
+        assertEquals(
+            listOf("1.900.000 pesos", 2, "0 pesos", 0, "1.900.000 pesos"),
+            model.plan()
+        )
+        assertEquals(ScheduleGroup.Recorded, model.row(1).group)
+        assertEquals(d("2026-11-07"), model.row(1).recordedOn)
     }
 }

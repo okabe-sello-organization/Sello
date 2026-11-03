@@ -21,13 +21,15 @@ import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordedOccurrence
 import com.software.sello.domain.port.ScheduleMonthBook
+import com.software.sello.domain.port.ScheduleMonthBookState
 import com.software.sello.domain.port.ScheduleRecord
 import java.time.LocalDate
 import java.time.YearMonth
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -101,32 +103,37 @@ class ScheduleMonthReadsTest {
     private suspend fun read(month: YearMonth = october): ScheduleMonthBook =
         (ledger.scheduleReads.month(month) as Outcome.Success).value
 
+    /** Each record as kind, the date it is stored at, its occurrence's day and amount. */
     private fun summary(records: List<ScheduleRecord>) = records.map { record ->
         when (record) {
             is ScheduleRecord.Payment ->
-                "expense|${record.expense.origin?.occurrence?.date}|" +
+                "expense|${record.expense.date}|${record.expense.origin?.occurrence?.date}|" +
                     "${record.expense.amount.money.minorUnits}"
 
             is ScheduleRecord.Earning ->
-                "income|${record.income.origin?.occurrence?.date}|" +
+                "income|${record.income.date}|${record.income.origin?.occurrence?.date}|" +
                     "${record.income.amount.money.minorUnits}"
         }
     }
 
-    /** The payments' month on 22 Oct, worked out from the read as Pagos fijos does. */
-    private fun payments(read: ScheduleMonthBook): SchedulesMonth {
-        val lines = ScheduleListPolicy.lines(
-            read.book.schedules.filter { it.schedule.entry is ScheduledEntry.Payment },
-            d("2026-10-22"),
-            october
-        )
-        return ScheduleListPolicy.month(lines, read.records, october).valueOrFail()
-    }
+    private fun lines(read: ScheduleMonthBook, today: String) = ScheduleListPolicy.lines(
+        read.book.schedules.filter { it.schedule.entry is ScheduledEntry.Payment },
+        d(today),
+        read.month
+    )
+
+    /** The payments' month on [today], worked out from the read as Pagos fijos does. */
+    private fun payments(read: ScheduleMonthBook, today: String = "2026-10-22"): SchedulesMonth =
+        ScheduleListPolicy.month(lines(read, today), read.records, read.month).valueOrFail()
+
+    /** The rent row's "anotado" day on [today]. */
+    private fun rentRecordedOn(read: ScheduleMonthBook, today: String) =
+        ScheduleListPolicy.recordedOn(lines(read, today).single(), read.records, read.month)
 
     /**
      * RE17: rent on the 5th at 950.000, raised to 1.000.000 on 10 Oct. October went through
-     * 950.000; edited to 900.000 (and moved to 7 Oct) it counts 900.000 under its 5 Oct
-     * occurrence; deleted, nothing. A manual expense and the salary are no payment of it.
+     * 950.000; edited to 900.000 and moved to 7 Oct it counts 900.000 there; deleted,
+     * nothing. A manual expense and the salary are no payment of it.
      */
     @Test
     fun theMonthIsReadFromTheEntriesAsStoredNow() = runBlocking {
@@ -150,7 +157,7 @@ class ScheduleMonthReadsTest {
 
         val raised = read()
         assertEquals(
-            listOf("expense|2026-10-05|950000", "income|2026-10-02|3000000"),
+            listOf("expense|2026-10-05|2026-10-05|950000", "income|2026-10-02|2026-10-02|3000000"),
             summary(raised.records)
         )
         assertEquals(
@@ -167,9 +174,10 @@ class ScheduleMonthReadsTest {
             SchedulesMonth(Money.cop(900_000), 1, Money.cop(0), 0, Money.cop(900_000), 1),
             payments(read())
         )
+        assertEquals(d("2026-10-07"), rentRecordedOn(read(), "2026-10-22"))
 
         ledger.expenses.delete(DeleteExpense(ledger.operation(), 1, expense, 2))
-        assertEquals(listOf("income|2026-10-02|3000000"), summary(read().records))
+        assertEquals(listOf("income|2026-10-02|2026-10-02|3000000"), summary(read().records))
         assertEquals(
             SchedulesMonth(Money.cop(0), 0, Money.cop(0), 0, Money.cop(0), 1),
             payments(read())
@@ -198,24 +206,106 @@ class ScheduleMonthReadsTest {
             payments(read)
         )
         assertEquals(
-            listOf("expense|2026-09-05|950000"),
+            listOf("expense|2026-09-05|2026-09-05|950000"),
             summary(read(YearMonth.of(2026, 9)).records)
         )
     }
 
-    /** The month is read again after every commit: Loading first, then each read. */
+    /** Rent from 1 Oct, caught up on mar 10 nov: its 5 Oct and 5 Nov entries, in order. */
+    private suspend fun rentThroughNovember(): List<ExpenseId> {
+        rentFrom("2026-10-01")
+        ledger.goTo("2026-11-10")
+        return catchUp("2026-11-10").filterIsInstance<RecordedOccurrence.Payment>()
+            .map { it.expenseId }
+    }
+
+    /**
+     * Ruling on #343 (R1): on 10 Nov the 5 Nov entry moved to 31 Oct counts in October, where
+     * Recibo files it: November has nothing through for the rent; October 1.900.000.
+     */
     @Test
-    fun theMonthIsReadAgainWhenAnEntryChanges() = runBlocking {
+    fun anEntryMovedBackToOctoberCountsInOctober() = runBlocking {
+        val (_, fifthOfNovember) = rentThroughNovember()
+        ledger.expenses.edit(edit(fifthOfNovember, 1, 950_000, "2026-10-31"))
+
+        val november = read(YearMonth.of(2026, 11))
+        assertEquals(emptyList<String>(), summary(november.records))
+        assertEquals(
+            SchedulesMonth(Money.cop(0), 0, Money.cop(0), 0, Money.cop(0), 1),
+            payments(november, "2026-11-10")
+        )
+        assertEquals(null, rentRecordedOn(november, "2026-11-10"))
+        // 950.000 + 950.000 = 1.900.000.
+        assertEquals(
+            SchedulesMonth(Money.cop(1_900_000), 2, Money.cop(0), 0, Money.cop(1_900_000), 1),
+            payments(read(), "2026-11-10")
+        )
+        assertEquals(d("2026-10-31"), rentRecordedOn(read(), "2026-11-10"))
+    }
+
+    /**
+     * Ruling on #343 (R1): on 10 Nov the 5 Oct entry moved to 7 Nov counts in November:
+     * 950.000 + 950.000 = 1.900.000 from two entries, "anotado 7 nov"; October has none.
+     */
+    @Test
+    fun anEntryMovedForwardToNovemberCountsInNovember() = runBlocking {
+        val (fifthOfOctober, _) = rentThroughNovember()
+        ledger.expenses.edit(edit(fifthOfOctober, 1, 950_000, "2026-11-07"))
+
+        val november = read(YearMonth.of(2026, 11))
+        assertEquals(
+            listOf("expense|2026-11-05|2026-11-05|950000", "expense|2026-11-07|2026-10-05|950000"),
+            summary(november.records)
+        )
+        assertEquals(
+            SchedulesMonth(Money.cop(1_900_000), 2, Money.cop(0), 0, Money.cop(1_900_000), 1),
+            payments(november, "2026-11-10")
+        )
+        assertEquals(d("2026-11-07"), rentRecordedOn(november, "2026-11-10"))
+        assertEquals(emptyList<String>(), summary(read().records))
+    }
+
+    /**
+     * One watcher of October sees the month read again after each commit, without asking:
+     * catch-up's entry, then its edit to 900.000, then its delete.
+     */
+    @Test
+    fun whoeverWatchesTheMonthSeesEveryChangeToItsEntries() = runBlocking {
         rentFrom("2026-10-01")
         ledger.goTo("2026-10-06")
-        val observed = ledger.scheduleReads.observeMonth(october)
+        val states = Channel<ScheduleMonthBookState>(Channel.UNLIMITED)
+        val watching = launch(Dispatchers.Default) {
+            ledger.scheduleReads.observeMonth(october).collect { states.send(it) }
+        }
 
-        assertEquals(ReadState.Loading, observed.first())
-        val before = observed.take(2).toList().last() as ReadState.Ready
-        assertEquals(emptyList<String>(), summary(before.value.records))
-        catchUp("2026-10-06")
-        val after = observed.take(2).toList().last() as ReadState.Ready
-        assertEquals(listOf("expense|2026-10-05|950000"), summary(after.value.records))
+        suspend fun recordsAt(revision: Long): List<String> = withTimeout(15_000) {
+            var ready = states.receive() as? ReadState.Ready
+            while (ready?.value?.book?.revision != revision) {
+                ready = states.receive() as? ReadState.Ready
+            }
+            summary(ready.value.records)
+        }
+
+        assertEquals(ReadState.Loading, states.receive())
+        val before = recordsAt(ledger.revision())
+        val expense = catchUp("2026-10-06").filterIsInstance<RecordedOccurrence.Payment>()
+            .single().expenseId
+        val recorded = recordsAt(ledger.revision())
+        ledger.expenses.edit(edit(expense, 1, 900_000, "2026-10-05"))
+        val edited = recordsAt(ledger.revision())
+        ledger.expenses.delete(DeleteExpense(ledger.operation(), 1, expense, 2))
+        val deleted = recordsAt(ledger.revision())
+        watching.cancel()
+
+        assertEquals(
+            listOf(
+                emptyList(),
+                listOf("expense|2026-10-05|2026-10-05|950000"),
+                listOf("expense|2026-10-05|2026-10-05|900000"),
+                emptyList<String>()
+            ),
+            listOf(before, recorded, edited, deleted)
+        )
     }
 
     private fun edit(expense: ExpenseId, version: Long, pesos: Long, date: String) = EditExpense(

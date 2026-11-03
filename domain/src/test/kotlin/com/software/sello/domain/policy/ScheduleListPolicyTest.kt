@@ -71,22 +71,30 @@ class ScheduleListPolicyTest {
 
     private var entries = 500
 
-    /** The expense schedule [number] recorded for [occurrence], stored now at [pesos]. */
-    private fun paid(number: Int, occurrence: String, pesos: Long, slot: Int = 1) =
-        ScheduleRecord.Payment(
-            Expense(
-                ExpenseId.of("00000000-0000-4000-8000-%012d".format(entries++)).valueOrFail(),
-                home,
-                d(occurrence),
-                entries.toLong(),
-                TransactionAmount.of(Money.cop(pesos)).valueOrFail(),
-                null,
-                1,
-                Instant.EPOCH,
-                Instant.EPOCH,
-                EntryOrigin(id(number), Occurrence(d(occurrence), slot))
-            )
+    /**
+     * The expense schedule [number] recorded for [occurrence], stored now at [pesos] on
+     * [date], its occurrence's day unless an edit moved it.
+     */
+    private fun paid(
+        number: Int,
+        occurrence: String,
+        pesos: Long,
+        slot: Int = 1,
+        date: String = occurrence
+    ) = ScheduleRecord.Payment(
+        Expense(
+            ExpenseId.of("00000000-0000-4000-8000-%012d".format(entries++)).valueOrFail(),
+            home,
+            d(date),
+            entries.toLong(),
+            TransactionAmount.of(Money.cop(pesos)).valueOrFail(),
+            null,
+            1,
+            Instant.EPOCH,
+            Instant.EPOCH,
+            EntryOrigin(id(number), Occurrence(d(occurrence), slot))
         )
+    )
 
     private fun earned(number: Int, occurrence: String, pesos: Long) = ScheduleRecord.Earning(
         Income(
@@ -463,6 +471,74 @@ class ScheduleListPolicyTest {
         assertEquals(
             Outcome.Failure(MoneyError.Overflow),
             ScheduleListPolicy.month(lines, records, october)
+        )
+    }
+
+    /**
+     * SELLO-148, ruling on #343 (R1): on mar 10 nov the rent's 5 Nov entry was moved to
+     * 31 Oct. It counts where it is stored now: November has nothing through for the rent
+     * and nothing to come (5 Nov is past the checkpoint); October has 950.000 twice.
+     */
+    @Test
+    fun anEntryMovedBackToOctoberCountsInOctober() {
+        val tenth = d("2026-11-10")
+        val november = YearMonth.of(2026, 11)
+        val lines = ScheduleListPolicy.lines(
+            listOf(payment(1, monthly(5), "2026-10-01", 950_000, handled = "2026-11-05")),
+            tenth,
+            november
+        )
+        val records = listOf(
+            paid(1, "2026-10-05", 950_000),
+            paid(1, "2026-11-05", 950_000, date = "2026-10-31")
+        )
+
+        assertEquals(
+            SchedulesMonth(Money.cop(0), 0, Money.cop(0), 0, Money.cop(0), 1),
+            ScheduleListPolicy.month(lines, records, november).valueOrFail()
+        )
+        assertEquals(null, ScheduleListPolicy.recordedOn(lines.single(), records, november))
+        // 950.000 + 950.000 = 1.900.000, the last on 31 Oct.
+        assertEquals(
+            SchedulesMonth(Money.cop(1_900_000), 2, Money.cop(0), 0, Money.cop(1_900_000), 1),
+            ScheduleListPolicy.month(lines, records, october).valueOrFail()
+        )
+        assertEquals(
+            d("2026-10-31"),
+            ScheduleListPolicy.recordedOn(lines.single(), records, october)
+        )
+    }
+
+    /**
+     * SELLO-148, ruling on #343 (R1): on mar 10 nov the rent's 5 Oct entry was moved to
+     * 7 Nov. November has both entries, 950.000 + 950.000 = 1.900.000, the last on 7 Nov;
+     * October has nothing through for the rent.
+     */
+    @Test
+    fun anEntryMovedForwardToNovemberCountsInNovember() {
+        val tenth = d("2026-11-10")
+        val november = YearMonth.of(2026, 11)
+        val lines = ScheduleListPolicy.lines(
+            listOf(payment(1, monthly(5), "2026-10-01", 950_000, handled = "2026-11-05")),
+            tenth,
+            november
+        )
+        val records = listOf(
+            paid(1, "2026-10-05", 950_000, date = "2026-11-07"),
+            paid(1, "2026-11-05", 950_000)
+        )
+
+        assertEquals(
+            SchedulesMonth(Money.cop(1_900_000), 2, Money.cop(0), 0, Money.cop(1_900_000), 1),
+            ScheduleListPolicy.month(lines, records, november).valueOrFail()
+        )
+        assertEquals(
+            d("2026-11-07"),
+            ScheduleListPolicy.recordedOn(lines.single(), records, november)
+        )
+        assertEquals(
+            SchedulesMonth(Money.cop(0), 0, Money.cop(0), 0, Money.cop(0), 1),
+            ScheduleListPolicy.month(lines, records, october).valueOrFail()
         )
     }
 }

@@ -66,7 +66,7 @@ class HandScheduleCommands(private val book: HandScheduleReads? = null) : Schedu
 
 /**
  * The schedules a test holds; [failing] makes every read fail. A month observed is [state]
- * with the entries in [records] whose occurrence falls in it.
+ * with the entries in [records] dated in it.
  */
 class HandScheduleReads : ScheduleReads {
     val schedules = mutableListOf<StoredSchedule>()
@@ -109,33 +109,31 @@ class HandScheduleReads : ScheduleReads {
             is Outcome.Failure -> read
         }
 
-    override fun observeMonth(month: YearMonth): Flow<ScheduleMonthBookState> =
-        combine(state, records) { book, records ->
+    /** A failed read keeps the whole last Ready month, as storage's observation does. */
+    override fun observeMonth(month: YearMonth): Flow<ScheduleMonthBookState> {
+        var lastGood: ScheduleMonthBook? = null
+        return combine(state, records) { book, records ->
             when (book) {
                 ReadState.Loading -> ReadState.Loading
 
-                is ReadState.Ready -> ReadState.Ready(monthOf(book.value, month, records))
+                is ReadState.Ready ->
+                    ReadState.Ready(monthOf(book.value, month, records).also { lastGood = it })
 
-                is ReadState.Failed ->
-                    ReadState.Failed(
-                        book.failure,
-                        book.lastGood?.let {
-                            monthOf(it, month, records)
-                        }
-                    )
+                is ReadState.Failed -> ReadState.Failed(book.failure, lastGood)
             }
         }
+    }
 
     private fun monthOf(book: ScheduleBook, month: YearMonth, records: List<ScheduleRecord>) =
         ScheduleMonthBook(
             book,
             month,
             records.filter {
-                val origin = when (it) {
-                    is ScheduleRecord.Payment -> it.expense.origin
-                    is ScheduleRecord.Earning -> it.income.origin
+                val (origin, date) = when (it) {
+                    is ScheduleRecord.Payment -> it.expense.origin to it.expense.date
+                    is ScheduleRecord.Earning -> it.income.origin to it.income.date
                 }
-                origin != null && YearMonth.from(origin.occurrence.date) == month
+                origin != null && YearMonth.from(date) == month
             }
         )
 }
