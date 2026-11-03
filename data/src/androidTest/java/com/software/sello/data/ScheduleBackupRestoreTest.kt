@@ -413,7 +413,8 @@ class ScheduleBackupRestoreTest {
             PreferenceReset { PreferenceWrite.Saved },
             { ledger.zone },
             { ledger.audit },
-            dispatchers
+            dispatchers,
+            Mutex()
         )
         assertTrue(
             resets.reset(resets.preview().valueOrFail(), ledger.operation()) is ResetOutcome.Erased
