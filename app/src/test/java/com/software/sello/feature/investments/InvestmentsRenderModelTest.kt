@@ -414,6 +414,47 @@ class InvestmentsRenderModelTest {
     }
 
     @Test
+    fun aSmallSpreadAroundAMillionReadsInThousandsSoNoTwoMarksMatch() {
+        val chart = detailOf(
+            investment(
+                "CDT",
+                null,
+                listOf(
+                    Triple(aporte, 1_000_000, "2026-10-01"),
+                    Triple(valor, 1_012_000, "2026-10-20")
+                )
+            )
+        ).chart!!
+        // 2.000 and 2.500 need 6 and 5 steps for 1.000.000..1.012.000; 5.000 needs 3.
+        assertEquals(listOf("1.000", "1.005", "1.010", "1.015"), chart.grid.map { it.figure })
+        assertEquals(setOf(AxisUnit.Thousands), chart.grid.map { it.unit }.toSet())
+    }
+
+    @Test
+    fun putInBelowZeroGetsAMarkBelowZero() {
+        // IN39: put in 1.000.000, then −1.500.000 after the retiro; the value 3.000.000.
+        val chart = detailOf(
+            investment(
+                "Local",
+                null,
+                listOf(
+                    Triple(aporte, 1_000_000, "2026-01-05"),
+                    Triple(valor, 3_000_000, "2026-06-01"),
+                    Triple(retiro, 2_500_000, "2026-06-10")
+                )
+            )
+        ).chart!!
+        // −1.500.000..3.000.000: 1.000.000 needs 5 steps (−2 M..3 M); 2.000.000 needs 3.
+        assertEquals(listOf("−2", "0", "2", "4"), chart.grid.map { it.figure })
+        assertEquals(
+            listOf(AxisUnit.Millions, AxisUnit.One, AxisUnit.Millions, AxisUnit.Millions),
+            chart.grid.map { it.unit }
+        )
+        // (−1.500.000 + 2.000.000) ÷ 6.000.000.
+        assertEquals(0.0833f, chart.putIn.last().y, 0.0001f)
+    }
+
+    @Test
     fun in38_eachMovementCarriesItsFigureUnderTheAmount() {
         val figures = detailOf(fondo()).movements.map { it.figure }
         // Newest first: value 5.242.000 (5.242.000 + 500.000 − 6.000.000), the retiro,

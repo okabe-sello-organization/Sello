@@ -13,7 +13,10 @@ import androidx.compose.ui.graphics.PixelMap
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.click
@@ -302,7 +305,11 @@ class InvestmentPartsTest {
                 .performSemanticsAction(SemanticsActions.OnClick)
             assertEquals(scheme, "a", chosen)
             // A tap picks the dot nearest in time: the right edge is 14 oct.
-            rule.onNodeWithTag("investment.chart.dot.a").assertExists()
+            // Read by date, whatever the height.
+            rule.onNodeWithTag("investment.chart.dot.a")
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.TraversalIndex, 0f))
+            rule.onNodeWithTag("investment.chart.dot.b")
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.TraversalIndex, 1f))
             rule.onNodeWithContentDescription("Valores anotados de may 2025 a oct 2026")
                 .performTouchInput { click(Offset(width - 2f, height / 2f)) }
             assertEquals(scheme, "b", chosen)

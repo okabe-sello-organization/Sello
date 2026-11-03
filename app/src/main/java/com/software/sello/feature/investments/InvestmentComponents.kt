@@ -38,10 +38,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -273,13 +275,17 @@ internal fun RecordedValuesChart(
     val measurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelSmall.copy(color = colors.outline)
     val density = LocalDensity.current
+    // The gutter fits the widest amount, so a long label never runs into the lines.
+    val labelWidth = with(density) {
+        (grid.maxOfOrNull { measurer.measure(it.label, labelStyle).size.width } ?: 0).toDp()
+    }
     Column(modifier.fillMaxWidth()) {
         BoxWithConstraints(
             Modifier.fillMaxWidth().height(CHART_HEIGHT).semantics { contentDescription = summary }
         ) {
             val width = with(density) { maxWidth.toPx() }
             val height = with(density) { CHART_HEIGHT.toPx() }
-            val gutter = with(density) { GUTTER.toPx() }
+            val gutter = with(density) { labelWidth.toPx() + LABEL_GAP.toPx() }
             val inset = with(density) { INSET.toPx() }
             fun point(mark: RecordedMark) = Offset(
                 gutter + mark.x.coerceIn(0f, 1f) * (width - gutter - inset),
@@ -287,7 +293,7 @@ internal fun RecordedValuesChart(
             )
             val selected = values.firstOrNull { it.id == selectedId }
             Canvas(
-                Modifier.fillMaxSize().pointerInput(values) {
+                Modifier.fillMaxSize().pointerInput(values, width, gutter) {
                     detectTapGestures { tap ->
                         values.minByOrNull { kotlin.math.abs(point(it).x - tap.x) }
                             ?.let { onSelect(it.id) }
@@ -347,8 +353,8 @@ internal fun RecordedValuesChart(
                 }
             }
             // One named, selectable spot per dot for screen readers; taps go to the canvas.
-            Box(Modifier.fillMaxSize().selectableGroup()) {
-                values.forEach { mark ->
+            Box(Modifier.fillMaxSize().selectableGroup().semantics { isTraversalGroup = true }) {
+                values.forEachIndexed { index, mark ->
                     val p = point(mark)
                     val half = with(density) { (DOT_TARGET / 2).toPx() }
                     Box(
@@ -357,6 +363,8 @@ internal fun RecordedValuesChart(
                             .size(DOT_TARGET)
                             .testTag("investment.chart.dot.${mark.id}")
                             .semantics {
+                                // Read by date, not by height.
+                                traversalIndex = index.toFloat()
                                 contentDescription = mark.spoken
                                 this.selected = mark.id == selectedId
                                 role = Role.RadioButton
@@ -369,7 +377,12 @@ internal fun RecordedValuesChart(
                 }
             }
         }
-        Row(Modifier.fillMaxWidth().padding(start = GUTTER, top = 2.dp)) {
+        Row(
+            Modifier.fillMaxWidth().padding(
+                start = labelWidth + LABEL_GAP,
+                top = 2.dp
+            )
+        ) {
             val style = MaterialTheme.typography.bodySmall
             Text(axis.first, Modifier.weight(1f), style = style, color = colors.inkSoft)
             Text(
@@ -399,7 +412,7 @@ internal fun RecordedValuesChart(
 }
 
 private val CHART_HEIGHT = 150.dp
-private val GUTTER = 40.dp
+private val LABEL_GAP = 6.dp
 private val INSET = 8.dp
 private val DOT_TARGET = 24.dp
 

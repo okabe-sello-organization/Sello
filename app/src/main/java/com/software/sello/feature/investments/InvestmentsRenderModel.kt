@@ -181,55 +181,91 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
         )
     }
 
-    /** Round amounts from [low] to [high] and where each sits, for the chart's gridlines. */
-    private class Grid(val bottom: Long, val top: Long, val marks: List<AxisMark>) {
-        fun y(units: Long): Float =
-            ((units.toDouble() - bottom) / (top.toDouble() - bottom)).toFloat()
+    /** Round amounts from bottom to top and where each sits, for the chart's gridlines. */
+    private class Grid(
+        private val bottom: BigInteger,
+        private val top: BigInteger,
+        val marks: List<AxisMark>
+    ) {
+        fun y(units: Long): Float = y(BigInteger.valueOf(units))
+
+        fun y(units: BigInteger): Float = BigDecimal(units - bottom)
+            .divide(BigDecimal(top - bottom), 6, RoundingMode.HALF_UP)
+            .toFloat()
     }
 
     /**
      * Gridlines a round step apart (1, 2, 2,5 or 5 times a power of ten, in whole pesos or
-     * dollars), the smallest step that splits [low]..[high] into at most three, from the
-     * step at or below [low] to the one at or above [high]; one step either side when
-     * they are equal.
+     * dollars): the smallest step whose marks, from the one at or below [low] to the one
+     * at or above [high], are at most three steps apart, so at most four marks. Equal
+     * heights get a step a third of their size and one mark either side. Exact: no figure
+     * is wrapped or rounded.
      */
     private fun grid(low: Long, high: Long, currency: Currency): Grid {
-        val unit = BigInteger.TEN.pow(currency.scale).toLong()
-        // Equal heights split their own size, so the flat line sits between two marks.
-        val spread = (high.toDouble() - low).takeIf { it > 0 } ?: kotlin.math.abs(high.toDouble())
-        val target = spread / MAX_STEPS
-        val step = STEPS.map { it * unit }.firstOrNull { it >= target } ?: (STEPS.last() * unit)
-        var bottom = Math.floorDiv(low, step) * step
-        var top = -Math.floorDiv(-high, step) * step
-        if (top == bottom) {
+        val unit = BigInteger.TEN.pow(currency.scale)
+        val lowest = BigInteger.valueOf(low)
+        val highest = BigInteger.valueOf(high)
+        fun floor(units: BigInteger, step: BigInteger) = units.subtract(units.mod(step))
+        fun ceil(units: BigInteger, step: BigInteger) =
+            floor(units.add(step).subtract(BigInteger.ONE), step)
+        val equal = lowest == highest
+        val size = highest.abs().max(unit)
+        val step = steps(unit).first { step ->
+            if (equal) {
+                step.multiply(MAX_STEPS) >= size
+            } else {
+                ceil(highest, step).subtract(floor(lowest, step)) <= step.multiply(MAX_STEPS)
+            }
+        }
+        var bottom = floor(lowest, step)
+        var top = ceil(highest, step)
+        if (bottom == top) {
             bottom -= step
             top += step
         }
-        val marks = generateSequence(bottom) { it + step }.takeWhile { it <= top }.map { units ->
-            axisMark(units, currency).copy(
-                y = ((units.toDouble() - bottom) / (top.toDouble() - bottom)).toFloat()
-            )
-        }.toList()
+        val grid = Grid(bottom, top, emptyList())
+        val marks = generateSequence(bottom) { it + step }.takeWhile { it <= top }
+            .map { units -> axisMark(units, step, currency).copy(y = grid.y(units)) }
+            .toList()
         return Grid(bottom, top, marks)
     }
 
+    /** Round steps in minor units: 1, 2, 2,5 and 5 times each power of ten of a whole [unit]. */
+    private fun steps(unit: BigInteger): Sequence<BigInteger> = generateSequence(unit) {
+        it.multiply(BigInteger.TEN)
+    }.flatMap { ten ->
+        listOfNotNull(
+            ten,
+            ten.multiply(TWO),
+            if (ten > unit) ten.multiply(BigInteger.valueOf(25)).divide(BigInteger.TEN) else null,
+            ten.multiply(FIVE)
+        ).asSequence()
+    }
+
     /**
-     * [units] as an axis writes it: from a million in millions ("2,5 M"), from ten
-     * thousand in thousands ("800 mil"), below that whole ("1.020"); up to two decimals.
+     * [units], a multiple of [step], as an axis writes it, exactly: in millions ("2,5 M")
+     * from a million while the step is at least 100.000, in thousands ("800 mil") from
+     * ten thousand while the step is at least 100, otherwise whole ("1.020"). So two marks
+     * never read the same, and a figure has at most two decimals.
      */
-    private fun axisMark(units: Long, currency: Currency): AxisMark {
-        val whole = BigDecimal.valueOf(units, currency.scale)
+    private fun axisMark(units: BigInteger, step: BigInteger, currency: Currency): AxisMark {
+        val whole = BigDecimal(units, currency.scale)
+        val wholeStep = BigDecimal(step, currency.scale)
         val (amount, unit) = when {
-            whole.abs() >= MILLION -> whole.divide(MILLION) to AxisUnit.Millions
-            whole.abs() >= TEN_THOUSAND -> whole.divide(THOUSAND) to AxisUnit.Thousands
+            whole.abs() >= MILLION && wholeStep >= HUNDRED_THOUSAND ->
+                whole.divide(MILLION) to AxisUnit.Millions
+
+            whole.abs() >= TEN_THOUSAND && wholeStep >= HUNDRED ->
+                whole.divide(THOUSAND) to AxisUnit.Thousands
+
             else -> whole to AxisUnit.One
         }
-        val rounded = amount.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros()
-        val plain = rounded.abs().toPlainString()
+        val exact = amount.stripTrailingZeros().let { if (it.scale() < 0) it.setScale(0) else it }
+        val plain = exact.abs().toPlainString()
         val integer = plain.substringBefore('.')
         val grouped = integer.reversed().chunked(3).joinToString(".").reversed()
         val decimals = plain.substringAfter('.', "").let { if (it.isEmpty()) "" else ",$it" }
-        val sign = if (rounded.signum() < 0) "−" else ""
+        val sign = if (exact.signum() < 0) "−" else ""
         return AxisMark(0f, sign + grouped + decimals, unit)
     }
 
@@ -325,13 +361,10 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
         val HUNDRED: BigDecimal = BigDecimal.valueOf(100)
         val THOUSAND: BigDecimal = BigDecimal.valueOf(1_000)
         val TEN_THOUSAND: BigDecimal = BigDecimal.valueOf(10_000)
+        val HUNDRED_THOUSAND: BigDecimal = BigDecimal.valueOf(100_000)
         val MILLION: BigDecimal = BigDecimal.valueOf(1_000_000)
-        const val MAX_STEPS = 3
-
-        /** Round steps in whole units: 1, 2, 2,5 and 5 times each power of ten from 1. */
-        val STEPS: List<Long> = (0..14).flatMap { power ->
-            val ten = BigInteger.TEN.pow(power).toLong()
-            listOfNotNull(ten, 2 * ten, if (power > 0) 25 * ten / 10 else null, 5 * ten)
-        }
+        val TWO: BigInteger = BigInteger.valueOf(2)
+        val FIVE: BigInteger = BigInteger.valueOf(5)
+        val MAX_STEPS: BigInteger = BigInteger.valueOf(3)
     }
 }
