@@ -489,4 +489,25 @@ class EraseThenRestoreTest {
         // What it owes is still kept in its own file, to look at again.
         assertTrue(reset("pending.properties").exists())
     }
+
+    @Test
+    fun somethingThatIsNotAFileInTheMarkersPlaceNeverHoldsARestoreUp() = runBlocking {
+        mercado()
+        val marker = reset("pending.properties").apply { mkdirs() }
+        File(marker, "in-the-way").writeText("x")
+
+        assertTrue(restore(Process()) is RestoreOutcome.Restored)
+        assertFalse(marker.exists())
+        assertEquals(listOf("${uuid(1)}|Comida"), ledger.rows("category", "id", "name"))
+    }
+
+    @Test
+    fun aMarkerWithAMalformedEscapeIsReadAsDamagedNeverACrash() = runBlocking {
+        mercado()
+        files.resetFolder.mkdirs()
+        reset("pending.properties").writeText("operation=\\uZZZZ\n")
+
+        assertTrue(restore(Process()) is RestoreOutcome.Restored)
+        assertEquals(ResetOutcome.Erased(preferencesPending = false), erase(Process()))
+    }
 }

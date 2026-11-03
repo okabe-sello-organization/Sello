@@ -1037,6 +1037,75 @@ class RestoreCommandContractTest {
     }
 
     @Test
+    fun aLaterRestoreCommittedWhileTheClockWasBackStillAppliesItsPreferences() = runBlocking {
+        currentHistory()
+        restores().replace(stage())
+        // The clock goes back an hour: the second restore commits "before" the first.
+        now = now.minusSeconds(60 * 60)
+        preferences.failAppearance = true
+        val second = restores().replace(stage(g01(other)))
+        assertEquals(
+            PendingPreferences(other.appearance, null),
+            (second as RestoreOutcome.Restored).preferences
+        )
+        preferences.failAppearance = false
+
+        val done = restores().applyPending()
+
+        assertEquals(PendingPreferences(null, null), done?.preferences)
+        assertEquals(
+            listOf<Any>(ThemePreference.Light, InkPreference.Cobalto),
+            preferences.written.takeLast(2)
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun theSameFileStagedAgainAfterLaterChangesIsNeverTakenForTheEarlierRestore() = runBlocking {
+        currentHistory()
+        val bytes = g01()
+        restores().replace(stage(bytes))
+        val restoredAt = ledger.revision()
+        ledger.categories.submit(ledger.createCategory("Nueva", finite(10_000), generation = 2))
+        assertEquals(restoredAt + 1, ledger.revision())
+        val written = preferences.written.toList()
+        stage(bytes)
+        File(files.restoreFolder, "staged.properties").writeText("operation=unreadable\n")
+
+        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(emptyList<String>(), stagingFiles())
+        assertNull(restores().pending())
+        assertEquals(written, preferences.written)
+    }
+
+    @Test
+    fun aCommittedRestoresStagedFileDamagedWithItsManifestIsSaidOnceNotForgotten() = runBlocking {
+        currentHistory()
+        val staged = committedBeforeTheRename()
+        File(files.restoreFolder, "staged.json").writeText("{\"version\":")
+        File(files.restoreFolder, "staged.properties").writeText("operation=unreadable\n")
+
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertEquals(true, restores().applyPending()?.preferencesUnreadable)
+        assertNull(restores().pending())
+        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun aDamagedRestoredFileBesideAStagedOneIsStillClearedAndSaidOnce() = runBlocking {
+        orderPending()
+        File(files.restoreFolder, "restored.json").writeText("{\"version\":")
+        File(files.restoreFolder, "staged.json").writeBytes(g01(other))
+
+        val said = restores().applyPending()
+
+        assertEquals(true, said?.preferencesUnreadable)
+        assertEquals(listOf("staged.json", "staged.properties"), stagingFiles())
+        assertFalse(restores().staged() is StagedLookup.Unknown)
+    }
+
+    @Test
     fun aFileTheStartUpCheckReadIsStagedAndRestoredWithoutParsingAgain() = runBlocking {
         currentHistory()
         val file = BackupCodec().checkFile(g01()).valueOrFail()

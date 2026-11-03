@@ -96,7 +96,7 @@ internal class EraseMarker(
 
     /** True when the file is there but cannot be read now. */
     private suspend fun unreadable(): Boolean = io {
-        marker.exists() && try {
+        marker.isFile && try {
             marker.inputStream().use { it.read() }
             false
         } catch (_: IOException) {
@@ -104,11 +104,22 @@ internal class EraseMarker(
         }
     }
 
+    /**
+     * The marker; null when there is none, it cannot be read now, or it is damaged. Something
+     * in its place that is not a file names no erase and would never read: it is removed.
+     */
     suspend fun read(): Marker? = io {
         if (!marker.exists()) return@io null
+        if (!marker.isFile) {
+            marker.deleteRecursively()
+            return@io null
+        }
         val properties = try {
             Properties().apply { marker.inputStream().use(::load) }
         } catch (_: IOException) {
+            return@io null
+        } catch (_: IllegalArgumentException) {
+            // A malformed escape: damaged, as one naming no operation.
             return@io null
         }
         val operation = OperationId.of(properties.getProperty(OPERATION).orEmpty())

@@ -315,7 +315,22 @@ class RoomRestores(
                 // Damaged for good: the receipts say whether this very file was replaced.
                 Named.Damaged -> when (val found = stagedReplacement()) {
                     is Outcome.Failure -> return StagedLookup.Unknown(null)
-                    is Outcome.Success -> found.value
+
+                    is Outcome.Success -> when (val file = found.value) {
+                        StagedFile.NotReplaced -> null
+
+                        is StagedFile.Replaced -> file.operation
+
+                        // Moved as it is: the next answer clears it and says so once.
+                        is StagedFile.Damaged -> return if (io(failed = false) {
+                                moveToRestored()
+                            }
+                        ) {
+                            StagedLookup.Replaced(file.operation)
+                        } else {
+                            StagedLookup.Unknown(file.operation)
+                        }
+                    }
                 }
             }
             if (operation != null) {
@@ -445,13 +460,12 @@ class RoomRestores(
             clearRestored(withManifest = alone)
             return RestoredFile.Erased
         }
-        val operation = (OperationId.of(owner.operationId) as? Outcome.Success)?.value
         val bytes = io(failed = null) { restored.takeIf { it.isFile }?.readBytes() }
-            ?: return RestoredFile.Unreadable(operation)
+            ?: return RestoredFile.Unreadable(owner.operation)
         val contents = parse(bytes)?.contents
         if (contents != null) return RestoredFile.Ready(contents)
-        if (!alone) return RestoredFile.Unreadable(operation)
-        clearRestored(withManifest = true)
+        // Damaged whatever sits beside it; a staged file and its manifest stay.
+        clearRestored(withManifest = alone)
         return RestoredFile.Damaged
     }
 
@@ -465,38 +479,62 @@ class RoomRestores(
         }
     }
 
-    /** The restore that made the history as it is now, read with the profile; null if none. */
-    private suspend fun currentRestore(): Outcome<OperationReceiptEntity?, StorageFailure> =
-        reading {
-            database.withTransaction {
-                when (val profile = profileFrom(database.profileDao().rows())) {
-                    is Outcome.Failure -> profile
+    /** The restore that made the history as it is now, and the revision it is at since. */
+    private class CurrentRestore(val receipt: OperationReceiptEntity, val revision: Long) {
+        val operation: OperationId?
+            get() = (OperationId.of(receipt.operationId) as? Outcome.Success)?.value
+    }
 
-                    is Outcome.Success -> Outcome.Success(
-                        database.operationReceiptDao().latest(OperationKind.RestoreHistory.key)
-                            ?.takeIf { it.generation == profile.value.generation }
-                    )
-                }
+    /** Read with the profile, by its generation; null when no restore made this history. */
+    private suspend fun currentRestore(): Outcome<CurrentRestore?, StorageFailure> = reading {
+        database.withTransaction {
+            when (val profile = profileFrom(database.profileDao().rows())) {
+                is Outcome.Failure -> profile
+
+                is Outcome.Success -> Outcome.Success(
+                    database.operationReceiptDao()
+                        .atGeneration(OperationKind.RestoreHistory.key, profile.value.generation)
+                        ?.let { CurrentRestore(it, profile.value.revision) }
+                )
             }
         }
+    }
+
+    /** What became of a staged file beside a manifest that names no operation. */
+    private sealed interface StagedFile {
+        data object NotReplaced : StagedFile
+
+        data class Replaced(val operation: OperationId) : StagedFile
+
+        /** The restore that made this history may have been its; it no longer reads. */
+        data class Damaged(val operation: OperationId) : StagedFile
+    }
 
     /**
      * Whether the staged file, beside a manifest damaged for good, is the one the restore
-     * that made this history replaced it with: that restore's input digest is worked out
-     * again from the file, at the position just before it (one generation and revision
-     * back). Its operation if so, null if not.
+     * that made this history replaced it with: with nothing written since that restore,
+     * its input digest is worked out again from the file at the position just before it
+     * (one generation and revision back). A file that no longer reads, beside such a
+     * restore, is answered as damaged rather than as never replaced.
      */
-    private suspend fun stagedReplacement(): Outcome<OperationId?, StorageFailure> {
-        val receipt = when (val read = currentRestore()) {
-            is Outcome.Success -> read.value ?: return Outcome.Success(null)
+    private suspend fun stagedReplacement(): Outcome<StagedFile, StorageFailure> {
+        val current = when (val read = currentRestore()) {
+            is Outcome.Success -> read.value ?: return Outcome.Success(StagedFile.NotReplaced)
             is Outcome.Failure -> return read
         }
+        val operation = current.operation ?: return Outcome.Success(StagedFile.NotReplaced)
         val bytes = io(failed = null) { staged.readBytes() }
             ?: return Outcome.Failure(StorageFailure.Unavailable("IOException"))
+        val receipt = current.receipt
         val file = withContext(dispatchers.default) { sha256Hex(bytes) }
-        val same = digest(receipt.generation - 1, receipt.revision - 1, file) == receipt.inputDigest
+        val same = current.revision == receipt.revision &&
+            digest(receipt.generation - 1, receipt.revision - 1, file) == receipt.inputDigest
         return Outcome.Success(
-            if (same) (OperationId.of(receipt.operationId) as? Outcome.Success)?.value else null
+            when {
+                same -> StagedFile.Replaced(operation)
+                parse(bytes) == null -> StagedFile.Damaged(operation)
+                else -> StagedFile.NotReplaced
+            }
         )
     }
 
