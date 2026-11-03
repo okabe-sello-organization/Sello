@@ -5,7 +5,7 @@ import java.util.Locale
 
 /**
  * What expense search compares (SELLO-165): the text with every accent and other mark
- * taken off and in lower case, so "ÑAME ÁREA" and "name area" read the same.
+ * taken off and in lower case, so "\u00d1AME \u00c1REA" and "name area" read the same.
  * A note and a query are folded the same way. Derived only: never backed up, rebuilt
  * whenever an expense is written.
  */

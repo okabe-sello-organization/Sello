@@ -26,8 +26,8 @@ import org.junit.runner.RunWith
 /**
  * Upgrading a version 8 history to version 9 (SELLO-165): every row is kept as it was,
  * each expense gains the search key of its note and the new indexes serve the reads they
- * are for. The history: Hogar (…100), "ÑAME ÁREA" (…201), an expense with no
- * note (…202), the rent a schedule recorded (…203), 1,200 "Árbol" expenses so the
+ * are for. The history: Hogar (...100), "\u00d1AME \u00c1REA" (...201), an expense with no
+ * note (...202), the rent a schedule recorded (...203), 1,200 "\u00c1rbol" expenses so the
  * key is filled across more than one page, a salary a schedule recorded and two receipts.
  */
 @RunWith(AndroidJUnit4::class)
@@ -96,10 +96,10 @@ class SearchIndexMigrationTest {
                 "INSERT INTO category (id, name, name_key, icon, archived, version, " +
                     "created_at, updated_at) VALUES ('$hogar', 'Hogar', 'hogar', 'home', 0, 1, 0, 0)"
             )
-            db.expense(201, 1, "ÑAME ÁREA")
+            db.expense(201, 1, "\u00d1AME \u00c1REA")
             db.expense(202, 2, null)
             db.expense(203, 3, "Arriendo", "'$rent', '2026-10-05', 1")
-            for (index in 0 until 1_200) db.expense(1_000 + index, 10L + index, "Árbol $index")
+            for (index in 0 until 1_200) db.expense(1_000 + index, 10L + index, "\u00c1rbol $index")
             db.execSQL(
                 "INSERT INTO income (id, effective_date, sequence, amount_minor, currency, " +
                     "source_key, source_name, note, version, created_at, updated_at, " +
@@ -191,7 +191,7 @@ class SearchIndexMigrationTest {
         database.close()
 
         assertEquals(9, version)
-        assertEquals(listOf("ÑAME ÁREA"), found.expenses.map { it.note!!.value })
+        assertEquals(listOf("\u00d1AME \u00c1REA"), found.expenses.map { it.note!!.value })
         assertEquals(
             listOf("income|2026-10-02", "expense|2026-10-05"),
             (recorded as Outcome.Success).value.map {

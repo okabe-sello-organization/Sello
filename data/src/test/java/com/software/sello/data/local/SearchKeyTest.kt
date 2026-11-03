@@ -7,16 +7,16 @@ import org.junit.Test
 class SearchKeyTest {
     @Test
     fun capitalsAndAccentsFoldToPlainLowerCase() {
-        assertEquals("name area", SearchKey.of("ÑAME ÁREA"))
-        assertEquals("panaderia", SearchKey.of("Panadería"))
-        assertEquals("pinguino", SearchKey.of("PINGÜINO"))
-        assertEquals("creme brulee", SearchKey.of("Crème brûlée"))
+        assertEquals("name area", SearchKey.of("\u00d1AME \u00c1REA"))
+        assertEquals("panaderia", SearchKey.of("Panader\u00eda"))
+        assertEquals("pinguino", SearchKey.of("PING\u00dcINO"))
+        assertEquals("creme brulee", SearchKey.of("Cr\u00e8me br\u00fbl\u00e9e"))
     }
 
     @Test
     fun combiningAccentsFoldLikeTheLettersThatCarryThem() {
-        assertEquals(SearchKey.of("Café"), SearchKey.of("Café"))
-        assertEquals("cafe", SearchKey.of("Café"))
+        assertEquals(SearchKey.of("Caf\u00e9"), SearchKey.of("Cafe\u0301"))
+        assertEquals("cafe", SearchKey.of("Cafe\u0301"))
     }
 
     @Test

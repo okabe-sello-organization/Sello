@@ -16,9 +16,10 @@ import kotlinx.coroutines.flow.Flow
  * expenses and incomes with an origin created after a moment, so a deleted one is gone
  * and nothing is kept apart from them. One that cannot be read fails the read.
  *
- * Bounded (SELLO-165), even when nothing was ever seen: the earliest created, at most
- * [PER_KIND] of each kind, and then every entry of the moment where it stops. Listo marks
- * seen up to the latest moment shown, so whatever is left out comes after it, next time.
+ * A long catch-up is listed in bounded parts (SELLO-165), even when nothing was ever
+ * seen: the earliest created, at most [PER_KIND] of each kind, then every entry of the
+ * moment where it stops. Listo marks seen up to the latest moment shown, so the rest is
+ * listed after Listo, and none is marked seen unseen.
  */
 class RoomScheduleRecordReads(private val database: SelloDatabase) : ScheduleRecordReads {
     override suspend fun recordedAfter(
