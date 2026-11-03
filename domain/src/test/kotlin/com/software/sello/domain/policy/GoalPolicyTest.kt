@@ -1127,6 +1127,46 @@ class GoalPolicyTest {
         assertEquals(GoalChange(listOf(Half), emptyList(), false), GoalPolicy.change(before, after))
     }
 
+    @Test
+    fun aFadedStampReachedAndLostAgainInsideOneReceiptIsNotLitAgain() {
+        // Target 1.000.000: +600.000 (60 %) earns the quarter and the half, −200.000 leaves
+        // 400.000 (40 %) with the half faded. The receipt: 1 Oct +200.000 makes 600.000
+        // (60 %), 2 Oct −150.000 leaves 450.000 (45 %): the half ends faded, so it is
+        // neither earned again nor lit again (rule 5).
+        val goal = Recorder(1_000_000, today).apply {
+            aporte(600_000)
+            retiro(200_000)
+        }
+        val before = goal.progress()
+        goal.receipt(listOf(aporteLine(200_000, day(10, 1)), retiroLine(150_000, day(10, 2))))
+        val after = goal.progress()
+
+        assertEquals(kept(), before.state(Half))
+        assertEquals(Money.cop(450_000), after.saved)
+        assertEquals(listOf(earned(), kept(), empty, empty), after.states())
+        assertEquals(GoalChange(emptyList(), emptyList(), false), GoalPolicy.change(before, after))
+    }
+
+    @Test
+    fun metaReachedAndLostInsideOneReceiptIsNotAnnounced() {
+        // Target 1.000.000, saved 400.000 (40 %). By date, 1 Oct +700.000 makes 1.100.000
+        // (110 %), passing the half, three quarters and Meta; 2 Oct −300.000 leaves 800.000
+        // (80 %): both stamps are earned and lit, and Meta is not waiting (rule 8).
+        val before = Recorder(1_000_000, today).apply { aporte(400_000) }.progress()
+        val goal = Recorder(1_000_000, today).apply {
+            aporte(400_000)
+            receipt(listOf(aporteLine(700_000, day(10, 1)), retiroLine(300_000, day(10, 2))))
+        }
+        val after = goal.progress()
+
+        assertEquals(Money.cop(800_000), after.saved)
+        assertEquals(listOf(earned(), earned(), earned(), empty), after.states())
+        assertEquals(
+            GoalChange(listOf(Half, ThreeQuarters), emptyList(), false),
+            GoalPolicy.change(before, after)
+        )
+    }
+
     // ---- A receipt of several goals (SELLO-139) ----
 
     @Test
