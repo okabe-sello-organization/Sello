@@ -50,8 +50,9 @@ import com.software.sello.presentation.investments.newInvestmentLabel
 
 /**
  * A replaced history: Restaurado when every preference was applied too, otherwise D09's
- * slip naming only the preferences still pending. Also shown at start-up. [note], when
- * given, is one more line before the buttons.
+ * slip naming only the preferences still pending, or saying the backup's preferences could
+ * not be read. Also shown at start-up. [note], when given, is one more line before the
+ * buttons.
  */
 @Composable
 internal fun RestoredSlip(
@@ -61,7 +62,9 @@ internal fun RestoredSlip(
     onLeave: () -> Unit,
     note: String? = null
 ) {
-    if (outcome.preferences.done) {
+    if (outcome.preferencesUnreadable) {
+        PreferencesUnreadable(note, onLeave)
+    } else if (outcome.preferences.done) {
         Restored(outcome.summary, note, onLeave)
     } else {
         Pending(outcome.preferences, applying, note, onApply, onLeave)
@@ -95,6 +98,17 @@ private fun Restored(summary: BackupSummary, note: String?, onLeave: () -> Unit)
                 )
             )
         )
+        note?.let { RestoreBody(it) }
+        GoToRecibo(onLeave)
+    }
+}
+
+/** D09's heading: the history is restored; the backup's preferences could not be read. */
+@Composable
+private fun PreferencesUnreadable(note: String?, onLeave: () -> Unit) {
+    Slip(Modifier.fillMaxWidth().testTag(RESTORE_PREFERENCES_UNREADABLE_TAG), pinked = false) {
+        RestoreHeading(stringResource(R.string.restore_pending_title))
+        RestoreBody(stringResource(R.string.restore_preferences_unreadable))
         note?.let { RestoreBody(it) }
         GoToRecibo(onLeave)
     }
@@ -242,6 +256,7 @@ private fun CategoryOrderDirection.label() = when (this) {
 
 const val RESTORE_DONE_TAG = "restore:done"
 const val RESTORE_PENDING_TAG = "restore:pending"
+const val RESTORE_PREFERENCES_UNREADABLE_TAG = "restore:preferences-unreadable"
 const val RESTORE_APPLY_TAG = "restore:apply"
 const val RESTORE_LEAVE_TAG = "restore:leave"
 

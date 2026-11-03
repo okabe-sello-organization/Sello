@@ -87,8 +87,11 @@ class RestoreSession(
     val step: StateFlow<RestoreStep> = state.asStateFlow()
 
     private val startUp: Job = scope.launch {
-        // Finished quietly if it can be; only preferences still failing are shown.
-        restores.applyPending()?.takeUnless { it.preferences.done }?.let {
+        // Finished quietly if it can be; only preferences still failing, or gone because
+        // the backup's could not be read, are shown.
+        restores.applyPending()?.takeUnless {
+            it.preferences.done && !it.preferencesUnreadable
+        }?.let {
             state.compareAndSet(RestoreStep.Idle, RestoreStep.Restored(it))
         }
     }

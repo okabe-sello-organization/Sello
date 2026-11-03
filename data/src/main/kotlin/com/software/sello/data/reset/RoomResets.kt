@@ -39,9 +39,9 @@ import kotlinx.coroutines.withContext
  * that never committed and is forgotten; one whose receipt exists is finished: the
  * restore folder and [setAside] copy are deleted, the preferences are reset once, then
  * the file goes. Once a restore has replaced the history the erase made, the restore
- * folder is the restore's and stays; the copy set aside still goes, and the restore has
- * already put the preferences back to first-run before it committed
- * ([EraseMarker.preferencesFirst]). Either way the database file is compacted so no
+ * folder is the restore's and stays; the copy set aside still goes, and the preferences
+ * are not reset again: the restore put them back to first-run before it committed
+ * ([EraseMarker.preferencesFirst]) and may have applied its own since. Either way the database file is compacted so no
  * erased row survives in its free pages; `compact.pending` keeps that owed, apart from
  * the erase, until a compaction is seen through. Nothing about the erased history is
  * written to either file.
@@ -166,10 +166,13 @@ class RoomResets(
             (place == EraseMarker.Place.Replaced || !restoreFolder.exists()) &&
                 setAside.none { it.exists() }
         }
-        // A restore resets them before it commits, so after one this is already done.
+        // A restore resets them before it commits, so after one they are first-run already
+        // and the restore's own may be applied over them: they are only marked done.
         var preferencesDone = marker.preferencesDone
-        if (!preferencesDone && preferences.resetAll() == PreferenceWrite.Saved) {
-            preferencesDone = files.write(marker.copy(preferencesDone = true))
+        if (!preferencesDone) {
+            val reset = place == EraseMarker.Place.Replaced ||
+                preferences.resetAll() == PreferenceWrite.Saved
+            if (reset) preferencesDone = files.write(marker.copy(preferencesDone = true))
         }
         if (owed && filesGone && preferencesDone) files.forget()
         return ResetOutcome.Erased(preferencesPending = !preferencesDone)

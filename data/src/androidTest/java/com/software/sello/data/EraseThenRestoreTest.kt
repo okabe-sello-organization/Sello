@@ -6,6 +6,7 @@ import com.software.sello.data.backup.BackupCodec
 import com.software.sello.data.backup.BackupContents
 import com.software.sello.data.backup.FinancialSnapshot
 import com.software.sello.data.backup.PortablePreferences
+import com.software.sello.data.backup.RoomRestores
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
@@ -38,6 +39,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -435,5 +437,56 @@ class EraseThenRestoreTest {
             listOf("America/Lima|3"),
             ledger.rows("profile", "financial_zone", "generation")
         )
+    }
+
+    /** As an older build restored: without putting the erase's preferences back first. */
+    @Test
+    fun aReplacedEraseOnlyMarksItsPreferencesDoneAndNeverWipesTheRestoredOnes() = runBlocking {
+        mercado()
+        store.failReset = true
+        erase(Process())
+        store.failReset = false
+        val older = RoomRestores(
+            ledger.database,
+            files.restoreFolder,
+            store,
+            store,
+            store,
+            NoticeSeen(),
+            { uuid(nextId++) },
+            { ledger.audit },
+            realDispatchers,
+            Mutex(),
+            { true }
+        )
+        older.replace(older.stage(backup()).valueOrFail())
+
+        val next = startAgain()
+
+        assertEquals(restored.appearance, store.appearance)
+        assertEquals(restored.ordering, store.ordering)
+        assertEquals(restored.investments, store.investments)
+        assertFalse(reset("pending.properties").exists())
+        assertFalse(next.resets.pending())
+    }
+
+    @Test
+    fun anEraseIsCompactedEvenWhenWhatItOwesCannotBeWrittenDown() = runBlocking {
+        mercado()
+        ledger.categories.submit(ledger.createCategory("Farmacia Pasteur", finite(20_000)))
+        // Only `compact.pending` cannot be written: its temporary copy cannot be made.
+        File(files.resetFolder, "compact.pending.tmp").mkdirs()
+
+        erase(Process())
+
+        assertFalse(reset("compact.pending").exists())
+        val folder = files.file.parentFile!!
+        val bytes = folder.listFiles { file -> file.name.startsWith(files.name) }!!
+            .joinToString("") { it.readBytes().toString(Charsets.ISO_8859_1) }
+        for (erased in listOf("Mercado", "Farmacia Pasteur")) {
+            assertFalse("$erased survives in the files", erased in bytes)
+        }
+        // What it owes is still kept in its own file, to look at again.
+        assertTrue(reset("pending.properties").exists())
     }
 }

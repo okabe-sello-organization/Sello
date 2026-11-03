@@ -1128,4 +1128,22 @@ class RestoreViewModelTest {
         val (finished) = model()
         assertEquals(RestoreStep.Idle, finished.state.value.step)
     }
+
+    @Test
+    fun preferencesThatCouldNotBeReadAreSaidOnceAndThenBackupsAreBack() = runTest {
+        val unreadable = done.copy(preferencesUnreadable = true)
+        restores.applyAnswer = unreadable
+        val (first) = model()
+        assertEquals(RestoreStep.Restored(unreadable), first.state.value.step)
+
+        first.onAction(RestoreAction.Leave)
+        assertEquals(RestoreStep.Idle, first.state.value.step)
+        assertFalse(first.state.value.replaced)
+
+        // The storage cleared the file when it said so: the next start shows nothing.
+        restores.applyAnswer = null
+        val (next) = model()
+        assertEquals(RestoreStep.Idle, next.state.value.step)
+        assertFalse(next.state.value.replaced)
+    }
 }

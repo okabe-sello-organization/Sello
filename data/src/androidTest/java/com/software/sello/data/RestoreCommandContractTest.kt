@@ -972,48 +972,68 @@ class RestoreCommandContractTest {
         assertEquals(emptyList<String>(), stagingFiles())
     }
 
+    /** Whose `restored.json` is comes from the receipts, so its manifest is not needed. */
     @Test
-    fun aManifestThatCannotBeReadAfterTheCommitIsUnknownNeverNothing() = runBlocking {
+    fun aManifestThatCannotBeReadAfterTheMoveDoesNotHoldTheRestoreUp() = runBlocking {
         orderPending()
-        val manifest = File(files.restoreFolder, "staged.properties")
-        assertTrue(manifest.setReadable(false, false))
-        val kept = stagingFiles()
+        assertTrue(File(files.restoreFolder, "staged.properties").setReadable(false, false))
 
-        assertEquals(StagedLookup.Unknown(null), restores().staged())
-        assertNull(restores().pending())
-        assertNull(restores().applyPending())
-        assertEquals(kept, stagingFiles())
-        assertTrue(preferences.written.none { it == CategoryOrder.Alphabetical })
-
-        assertTrue(manifest.setReadable(true, false))
+        assertEquals(
+            PendingPreferences(null, wanted.ordering),
+            restores().pending()?.preferences
+        )
         assertEquals(PendingPreferences(null, null), restores().applyPending()?.preferences)
+        assertEquals(emptyList<String>(), stagingFiles())
     }
 
     @Test
-    fun aDamagedRestoredFileIsUnknownUntilAnEraseClearsIt() = runBlocking {
-        val staged = orderPending()
+    fun aDamagedRestoredFileIsClearedSaidOnceAndBackupsGoOn() = runBlocking {
+        orderPending()
         File(files.restoreFolder, "restored.json").writeText("{\"version\":")
+        val history = everyRow()
 
-        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
+        val said = restores().applyPending()
+
+        assertEquals(
+            RestoreOutcome.Restored(
+                BackupSummary(2, 3, 1, 0, 0),
+                PendingPreferences(null, null),
+                preferencesUnreadable = true
+            ),
+            said
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+        // Said once: after that there is nothing pending and nothing unknown.
         assertNull(restores().applyPending())
+        assertNull(restores().pending())
+        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(history, everyRow())
+        assertTrue(preferences.written.none { it == CategoryOrder.Alphabetical })
+        // Another file can be restored, as a backup can be made.
+        assertTrue(restores().replace(stage(g01(other))) is RestoreOutcome.Restored)
+    }
 
-        // Borrar todos los datos, on the same screen, is the way out.
-        val resets = RoomResets(
+    @Test
+    fun aRestoredFileLeftByAnErasedHistoryWithoutItsManifestIsNeverApplied() = runBlocking {
+        orderPending()
+        // An erase whose clean-up took the manifest but not the restored file.
+        RoomResets(
             ledger.database,
             files.resetFolder,
-            files.restoreFolder,
+            File(files.restoreFolder, "elsewhere"),
             emptyList(),
             PreferenceReset { PreferenceWrite.Saved },
             { lima },
             { now },
             dispatchers,
             Mutex()
-        )
-        val erased = resets.reset(resets.preview().valueOrFail(), ledger.operation())
+        ).let { it.reset(it.preview().valueOrFail(), ledger.operation()) }
+        File(files.restoreFolder, "staged.properties").delete()
+        val written = preferences.written.toList()
 
-        assertEquals(ResetOutcome.Erased(preferencesPending = false), erased)
-        assertEquals(StagedLookup.None, restores().staged())
-        assertTrue(restores().replace(stage()) is RestoreOutcome.Restored)
+        assertNull(restores().applyPending())
+        assertEquals(written, preferences.written)
+        assertEquals(emptyList<String>(), stagingFiles())
     }
 
     @Test
@@ -1330,15 +1350,42 @@ class RestoreCommandContractTest {
         key.writeText(key.readLines().filterNot { it.startsWith("stagedAt=") }.joinToString("\n"))
     }
 
+    /** It will not read better later: once its replacement is known committed, it moves on. */
     @Test
-    fun aManifestThatCannotBeReadWholeIsKeptWhileItsReplacementCommitted() = runBlocking {
+    fun aManifestCutShortWhoseReplacementCommittedIsFinishedNotLeftUnknown() = runBlocking {
         currentHistory()
         val staged = committedBeforeTheRename()
         manifestCutShort()
-        val kept = stagingFiles()
 
-        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
-        assertEquals(kept, stagingFiles())
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertTrue(restores().applyPending() is RestoreOutcome.Restored)
+        assertNull(restores().pending())
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun aManifestNamingNoOperationBesideAReplacedFileIsFinishedByItsReceipt() = runBlocking {
+        currentHistory()
+        val staged = committedBeforeTheRename()
+        File(files.restoreFolder, "staged.properties").writeText("operation=unreadable\n")
+
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertEquals(
+            PendingPreferences(null, null),
+            restores().applyPending()?.preferences
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun aManifestNamingNoOperationBesideAFileNeverReplacedIsCleared() = runBlocking {
+        currentHistory()
+        stage()
+        File(files.restoreFolder, "staged.properties").writeText("operation=unreadable\n")
+
+        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(emptyList<String>(), stagingFiles())
+        assertTrue(restores().stage(g01(other)) is Outcome.Success)
     }
 
     @Test

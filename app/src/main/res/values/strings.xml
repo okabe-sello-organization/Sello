@@ -1018,6 +1018,7 @@
     <string name="restore_apply_ordering">Aplicar orden</string>
     <string name="restore_apply_investments">Aplicar inversiones</string>
     <string name="restore_apply_all">Aplicar preferencias</string>
+    <string name="restore_preferences_unreadable">Tus gastos, ingresos, categorías y presupuestos ya se restauraron. No pudimos leer las preferencias del respaldo; puedes elegirlas en Configuración.</string>
     <string name="restore_pending_note">Solo se aplicarán las preferencias indicadas. Tu historial no se reemplazará otra vez.</string>
     <plurals name="restore_categories">
         <item quantity="one">%s categoría</item>

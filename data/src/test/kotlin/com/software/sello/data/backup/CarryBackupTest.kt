@@ -202,14 +202,14 @@ class CarryBackupTest {
 
     @Test
     fun `the check before a start-up restore takes a chain and still refuses a broken one`() {
-        assertTrue(BackupCodec().check(open.toByteArray()) is Outcome.Success)
+        assertTrue(BackupCodec().checkFile(open.toByteArray()) is Outcome.Success)
         assertEquals(
             Outcome.Failure(RestoreRejection.InvalidContent),
-            BackupCodec().check(variant("\"end\": null", "\"end\": \"2026-12\"").toByteArray())
+            BackupCodec().checkFile(variant("\"end\": null", "\"end\": \"2026-12\"").toByteArray())
         )
         assertEquals(
             Outcome.Failure(RestoreRejection.NewerVersion),
-            BackupCodec().check(variant("\"version\": 6,", "\"version\": 8,").toByteArray())
+            BackupCodec().checkFile(variant("\"version\": 6,", "\"version\": 8,").toByteArray())
         )
     }
 

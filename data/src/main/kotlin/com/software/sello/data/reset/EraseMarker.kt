@@ -21,7 +21,10 @@ import kotlinx.coroutines.withContext
  * [preferencesFirst], by a restore about to replace the history: `pending.properties`
  * names the erase's operation and whether the preferences are back to first-run, and
  * `compact.pending` says a compaction is still owed. Neither holds anything of the
- * erased history. Callers that change them hold the storage's recovery turn.
+ * erased history. The erase writes `pending.properties` before its transaction and drops
+ * it when that transaction is refused, outside the storage's recovery turn: no restore can
+ * act on it then, since the erase has not committed. Every other change, after the commit
+ * or by [preferencesFirst], is made in that turn.
  */
 internal class EraseMarker(
     private val database: SelloDatabase,
@@ -52,7 +55,8 @@ internal class EraseMarker(
      * cannot be told whether an erase committed: the restore then waits.
      */
     suspend fun preferencesFirst(preferences: PreferenceReset): Boolean {
-        val marker = read() ?: return true
+        // There but unreadable for now: it may be an erase still owed, so the restore waits.
+        val marker = read() ?: return !unreadable()
         return when (place(marker.operation)) {
             Place.NeverCommitted -> true
 
@@ -88,6 +92,16 @@ internal class EraseMarker(
     ) {
         is Outcome.Success -> read.value
         is Outcome.Failure -> Place.Unknown
+    }
+
+    /** True when the file is there but cannot be read now. */
+    private suspend fun unreadable(): Boolean = io {
+        marker.exists() && try {
+            marker.inputStream().use { it.read() }
+            false
+        } catch (_: IOException) {
+            true
+        }
     }
 
     suspend fun read(): Marker? = io {

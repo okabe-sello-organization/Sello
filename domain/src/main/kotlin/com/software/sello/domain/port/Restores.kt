@@ -175,9 +175,16 @@ data class PendingPreferences(
 }
 
 sealed interface RestoreOutcome {
-    /** The history was replaced. [preferences] are those that could not be applied yet. */
-    data class Restored(val summary: BackupSummary, val preferences: PendingPreferences) :
-        RestoreOutcome
+    /**
+     * The history was replaced. [preferences] are those that could not be applied yet.
+     * [preferencesUnreadable]: the backup's preferences could no longer be read, so none of
+     * them will be applied; said once, when that is found.
+     */
+    data class Restored(
+        val summary: BackupSummary,
+        val preferences: PendingPreferences,
+        val preferencesUnreadable: Boolean = false
+    ) : RestoreOutcome
 
     /** The history changed after the preview; nothing was written. Preview again. */
     data object Stale : RestoreOutcome

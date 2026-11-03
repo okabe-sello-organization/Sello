@@ -6,7 +6,7 @@ import com.software.sello.data.backup.BackupCodec
 import com.software.sello.data.backup.BackupContents
 import com.software.sello.data.backup.FinancialSnapshot
 import com.software.sello.data.backup.PortablePreferences
-import com.software.sello.data.backup.check
+import com.software.sello.data.backup.checkFile
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
@@ -141,14 +141,12 @@ class RestoreAfterSetAsideTest {
     @Test
     fun aBackupIsCheckedWithoutAnyStorage() {
         assertEquals(
-            Outcome.Success(
-                CheckedBackup(
-                    Instant.parse("2026-10-22T14:30:00Z"),
-                    ZoneId.of("America/Lima"),
-                    BackupSummary(categories = 1, expenses = 3, incomes = 1, 0, 0)
-                )
+            CheckedBackup(
+                Instant.parse("2026-10-22T14:30:00Z"),
+                ZoneId.of("America/Lima"),
+                BackupSummary(categories = 1, expenses = 3, incomes = 1, 0, 0)
             ),
-            BackupCodec().check(g01)
+            BackupCodec().checkFile(g01).valueOrFail().checked
         )
         assertFalse(files.file.exists())
     }

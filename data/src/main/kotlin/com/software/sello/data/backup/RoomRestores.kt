@@ -83,10 +83,12 @@ import kotlinx.coroutines.withContext
  * finishing an erase of the same storage through [recovery]; [beforeReplacing] runs in
  * that turn just before a replacement commits, and the replacement fails if it says no.
  *
- * `restored.json` belongs to the replacement its manifest names. When that operation has
- * no receipt, an erase since removed it, and the file and what it would apply are
- * forgotten. When the file or its manifest cannot be read, nothing is applied and a look
- * says so, until they read or an erase clears the folder.
+ * `restored.json` belongs to the replacement that made the history as it is now, found by
+ * its receipt. With none, an erase removed it since, and the file and what it would apply
+ * are forgotten. A file that cannot be read (an I/O error, or receipts that cannot be read)
+ * applies nothing and a look says so, until it reads. A file that reads but is damaged is
+ * cleared, with its manifest and `applied` list, and the next answer says once that its
+ * preferences could not be applied.
  */
 class RoomRestores(
     private val database: SelloDatabase,
@@ -300,14 +302,36 @@ class RoomRestores(
      * and its replacement is unknown, unless the operation it names did not commit.
      */
     private suspend fun withoutStaging(): StagedLookup {
-        // A restored file that cannot be read, or whose manifest cannot, is not nothing.
+        // A restored file that cannot be read is not nothing.
         (restoredFile() as? RestoredFile.Unreadable)?.let {
             return StagedLookup.Unknown(it.operation)
         }
         if (io(failed = true) { manifest.exists() && staged.exists() }) {
-            val operation = io(failed = null) { manifestOperation() }
-                ?: return StagedLookup.Unknown(null)
-            if (committed(operation) != false) return StagedLookup.Unknown(operation)
+            val operation = when (val named = named()) {
+                Named.Unreadable -> return StagedLookup.Unknown(null)
+
+                is Named.Operation -> named.id
+
+                // Damaged for good: the receipts say whether this very file was replaced.
+                Named.Damaged -> when (val found = stagedReplacement()) {
+                    is Outcome.Failure -> return StagedLookup.Unknown(null)
+                    is Outcome.Success -> found.value
+                }
+            }
+            if (operation != null) {
+                when (committed(operation)) {
+                    null -> return StagedLookup.Unknown(operation)
+
+                    // Committed, and the manifest will not read better: the file moves now.
+                    true -> return if (io(failed = false) { moveToRestored() }) {
+                        StagedLookup.Replaced(operation)
+                    } else {
+                        StagedLookup.Unknown(operation)
+                    }
+
+                    false -> Unit
+                }
+            }
         }
         io(failed = Unit) {
             if (!restored.exists()) {
@@ -329,7 +353,7 @@ class RoomRestores(
             parse(bytes) ?: return@withLock RestoreOutcome.Failed
         }
         val contents = parsed.contents
-        val digest = digest(staged, parsed.bytes)
+        val digest = digest(staged.generation, staged.revision, parsed.bytes)
         // An erase still finishing puts the preferences back to first-run first, so the
         // backup's own land on a clean slate; until it can, nothing is replaced.
         if (!beforeReplacing()) return@withLock RestoreOutcome.Failed
@@ -369,6 +393,7 @@ class RoomRestores(
             is RestoredFile.Ready -> pendingFrom(file.contents, appliedGroups())
             RestoredFile.Absent, is RestoredFile.Unreadable -> unmoved()
             RestoredFile.Erased -> null
+            RestoredFile.Damaged -> unreadablePreferences()
         }
     }
 
@@ -378,8 +403,16 @@ class RoomRestores(
             is RestoredFile.Ready -> apply(file.contents)
             RestoredFile.Absent, is RestoredFile.Unreadable -> unmoved()
             RestoredFile.Erased -> null
+            RestoredFile.Damaged -> unreadablePreferences()
         }
     }
+
+    /** Restored, with nothing left to apply because the backup's preferences are gone. */
+    private suspend fun unreadablePreferences() = RestoreOutcome.Restored(
+        (position() as? Outcome.Success)?.value?.current ?: BackupSummary(0, 0, 0, 0, 0),
+        PendingPreferences(null, null),
+        preferencesUnreadable = true
+    )
 
     /** What `restored.json` is now; see the class comment. */
     private sealed interface RestoredFile {
@@ -388,7 +421,10 @@ class RoomRestores(
         /** It belonged to a history an erase removed since; it is gone now. */
         data object Erased : RestoredFile
 
-        /** It, or the manifest naming its operation, cannot be read. */
+        /** It reads but is damaged; it is gone now, and its preferences with it. */
+        data object Damaged : RestoredFile
+
+        /** It, or the receipts saying whose it is, cannot be read. */
         data class Unreadable(val operation: OperationId?) : RestoredFile
 
         class Ready(val contents: BackupContents) : RestoredFile
@@ -396,32 +432,92 @@ class RoomRestores(
 
     private suspend fun restoredFile(): RestoredFile {
         if (!io(failed = true) { restored.exists() }) return RestoredFile.Absent
-        // Beside a staged file the manifest is that file's; this one's went with its clean-up.
-        val named = io(failed = true) { manifest.exists() && !staged.exists() }
-        val operation = if (named) {
-            io(failed = null) { manifestOperation() } ?: return RestoredFile.Unreadable(null)
-        } else {
-            null
+        val owner = when (val read = currentRestore()) {
+            is Outcome.Success -> read.value
+
+            is Outcome.Failure -> return RestoredFile.Unreadable(
+                (named() as? Named.Operation)?.id
+            )
         }
-        if (operation != null) {
-            when (committed(operation)) {
-                true -> Unit
+        // Beside a staged file the manifest is that file's: it stays.
+        val alone = io(failed = false) { !staged.exists() }
+        if (owner == null) {
+            clearRestored(withManifest = alone)
+            return RestoredFile.Erased
+        }
+        val operation = (OperationId.of(owner.operationId) as? Outcome.Success)?.value
+        val bytes = io(failed = null) { restored.takeIf { it.isFile }?.readBytes() }
+            ?: return RestoredFile.Unreadable(operation)
+        val contents = parse(bytes)?.contents
+        if (contents != null) return RestoredFile.Ready(contents)
+        if (!alone) return RestoredFile.Unreadable(operation)
+        clearRestored(withManifest = true)
+        return RestoredFile.Damaged
+    }
 
-                null -> return RestoredFile.Unreadable(operation)
+    /** `restored.json` first, so no `applied` list or manifest outlives it. */
+    private suspend fun clearRestored(withManifest: Boolean) {
+        io(failed = Unit) {
+            if (clear(restored)) {
+                clear(applied)
+                if (withManifest) clear(manifest)
+            }
+        }
+    }
 
-                false -> {
-                    io(failed = Unit) {
-                        clear(manifest)
-                        if (clear(restored)) clear(applied)
-                    }
-                    return RestoredFile.Erased
+    /** The restore that made the history as it is now, read with the profile; null if none. */
+    private suspend fun currentRestore(): Outcome<OperationReceiptEntity?, StorageFailure> =
+        reading {
+            database.withTransaction {
+                when (val profile = profileFrom(database.profileDao().rows())) {
+                    is Outcome.Failure -> profile
+
+                    is Outcome.Success -> Outcome.Success(
+                        database.operationReceiptDao().latest(OperationKind.RestoreHistory.key)
+                            ?.takeIf { it.generation == profile.value.generation }
+                    )
                 }
             }
         }
-        val bytes = io(failed = null) { restored.takeIf { it.isFile }?.readBytes() }
-            ?: return RestoredFile.Unreadable(operation)
-        val contents = parse(bytes)?.contents ?: return RestoredFile.Unreadable(operation)
-        return RestoredFile.Ready(contents)
+
+    /**
+     * Whether the staged file, beside a manifest damaged for good, is the one the restore
+     * that made this history replaced it with: that restore's input digest is worked out
+     * again from the file, at the position just before it (one generation and revision
+     * back). Its operation if so, null if not.
+     */
+    private suspend fun stagedReplacement(): Outcome<OperationId?, StorageFailure> {
+        val receipt = when (val read = currentRestore()) {
+            is Outcome.Success -> read.value ?: return Outcome.Success(null)
+            is Outcome.Failure -> return read
+        }
+        val bytes = io(failed = null) { staged.readBytes() }
+            ?: return Outcome.Failure(StorageFailure.Unavailable("IOException"))
+        val file = withContext(dispatchers.default) { sha256Hex(bytes) }
+        val same = digest(receipt.generation - 1, receipt.revision - 1, file) == receipt.inputDigest
+        return Outcome.Success(
+            if (same) (OperationId.of(receipt.operationId) as? Outcome.Success)?.value else null
+        )
+    }
+
+    /** What the manifest names. */
+    private sealed interface Named {
+        data class Operation(val id: OperationId) : Named
+
+        /** It reads, but names no operation: it will not read better later. */
+        data object Damaged : Named
+
+        data object Unreadable : Named
+    }
+
+    private suspend fun named(): Named = withContext(dispatchers.io) {
+        try {
+            manifestOperation()?.let { Named.Operation(it) } ?: Named.Damaged
+        } catch (_: IOException) {
+            Named.Unreadable
+        } catch (_: IllegalArgumentException) {
+            Named.Damaged
+        }
     }
 
     /**
@@ -872,13 +968,13 @@ class RoomRestores(
          * What the replacement is: the history it was previewed at and the exact file,
          * by the SHA-256 of its bytes.
          */
-        fun digest(staged: StagedRestore, bytes: String): String {
+        fun digest(generation: Long, revision: Long, bytes: String): String {
             val sha256 = MessageDigest.getInstance("SHA-256")
             listOf(
                 OperationKind.RestoreHistory.key,
                 "1",
-                staged.generation.toString(),
-                staged.revision.toString(),
+                generation.toString(),
+                revision.toString(),
                 bytes
             ).forEach { field ->
                 val encoded = field.toByteArray(Charsets.UTF_8)
@@ -914,16 +1010,6 @@ fun BackupCodec.checkFile(bytes: ByteArray): Outcome<CheckedBackupFile, RestoreR
                     RoomRestores.Parsed(this, sha256Hex(bytes))
                 )
             )
-        }
-
-        is Outcome.Failure -> Outcome.Failure(plan.error.reason())
-    }
-
-/** Checks [bytes] as a whole backup without any storage; see [CheckedBackup]. */
-fun BackupCodec.check(bytes: ByteArray): Outcome<CheckedBackup, RestoreRejection> =
-    when (val plan = read(bytes)) {
-        is Outcome.Success -> with(plan.value.contents) {
-            Outcome.Success(CheckedBackup(exportedAt, financial.zone, financial.summary()))
         }
 
         is Outcome.Failure -> Outcome.Failure(plan.error.reason())
