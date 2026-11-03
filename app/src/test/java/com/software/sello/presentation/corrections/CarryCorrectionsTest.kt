@@ -290,6 +290,28 @@ class CarryCorrectionsTest {
         assertNull(corrections.question.value)
     }
 
+    /** As storage offers it: six seconds from the deletion, then no offer at all. */
+    private fun offerLikeStorage() {
+        val deletedAt =
+            mutableMapOf<com.software.sello.domain.model.OperationId, kotlin.time.Duration>()
+        val answer = commands.deleteAnswer
+        commands.deleteAnswer = {
+            deletedAt[it.operationId] = monotonic.elapsed()
+            answer(it)
+        }
+        commands.offer = {
+            commands.deleted.lastOrNull()?.let { sent ->
+                deletedAt[sent.operationId]?.let {
+                    UndoOffer(
+                        sent.operationId,
+                        sent.expenseId,
+                        it + 6.seconds
+                    )
+                }
+            }?.takeIf { monotonic.elapsed() < it.until }
+        }
+    }
+
     private fun offerFor6Seconds() {
         commands.offer = {
             commands.deleted.lastOrNull()?.let {
@@ -401,7 +423,7 @@ class CarryCorrectionsTest {
 
     @Test
     fun anUnknownConfirmedDeletionFoundLateIsSaidWithNothingLeftToUndo() = test {
-        offerFor6Seconds()
+        offerLikeStorage()
         confirmedWithUnknownOutcome()
         // It waits to be checked: its time never runs out like a statement's.
         advanceTimeBy(60_000)
@@ -533,5 +555,68 @@ class CarryCorrectionsTest {
         runCurrent()
         assertEquals(2, commands.restored.size)
         assertEquals(CorrectionNotice.Restored, corrections.notice.value)
+    }
+
+    private fun foundDeletion(
+        operation: com.software.sello.domain.model.OperationId,
+        expense: Int
+    ) = Outcome.Success(
+        commands.committed(
+            operation,
+            expenseId(expense),
+            com.software.sello.domain.model.OperationKind.DeleteExpense
+        )
+    )
+
+    @Test
+    fun aDeletionFoundAfterItsTimeNeverTakesThePlaceOfAnotherDeshacer() = test {
+        offerFor6Seconds()
+        // Another expense is deleted and on offer; then an older one is found deleted.
+        corrections.delete(expenseId(102), 3, 7)
+        val other = corrections.notice.value
+        val old = (
+            com.software.sello.domain.model.OperationId.of(
+                uuid(42)
+            ) as Outcome.Success
+            ).value
+
+        corrections.expenseDeleted(foundDeletion(old, 101).value.receipt)
+        corrections.undo()
+        runCurrent()
+
+        assertEquals(CorrectionNotice.Deleted(canUndo = true), other)
+        assertEquals(
+            listOf(commands.deleted.single().operationId),
+            commands.restored.map {
+                it.deletionId
+            }
+        )
+    }
+
+    @Test
+    fun anUnknownConfirmedDeletionIsNeverLostToALaterNoticeAndHoldsItsExpense() = test {
+        confirmedWithUnknownOutcome()
+        val operation = commands.deleted.last().operationId
+
+        corrections.updated()
+        val later = corrections.notice.value
+        advanceTimeBy(4_001)
+        runCurrent()
+        val back = corrections.notice.value
+        corrections.dismiss()
+        val afterDismiss = corrections.notice.value
+        val held = corrections.holdsDeletionOf(expenseId(101))
+        val other = corrections.holdsDeletionOf(expenseId(102))
+        commands.found = { foundDeletion(it, 101) }
+        corrections.checkDeletion()
+        runCurrent()
+
+        assertEquals(CorrectionNotice.Updated, later)
+        assertEquals(CorrectionNotice.DeleteUnknown(), back)
+        assertEquals(CorrectionNotice.DeleteUnknown(), afterDismiss)
+        assertEquals(true to false, held to other)
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(2, commands.deleted.size)
+        assertEquals(false, corrections.holdsDeletionOf(expenseId(101)))
     }
 }

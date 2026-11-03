@@ -142,6 +142,7 @@ internal fun NavGraphBuilder.reciboDestinations(
         val expenses by model.state.collectAsStateWithLifecycle()
         val query by model.query.collectAsStateWithLifecycle()
         val order by model.order.collectAsStateWithLifecycle()
+        val archived by model.archived.collectAsStateWithLifecycle()
         LaunchedEffect(id) { model.onAction(CategoryExpensesAction.Show(id)) }
         ShellScreen(
             state,
@@ -151,8 +152,9 @@ internal fun NavGraphBuilder.reciboDestinations(
             screenTitle = (expenses as? CategoryExpensesState.Ready)?.categoryName
                 ?: stringResource(R.string.category_expenses_title),
             showMonthAsSubtitle = true,
-            // An archived category takes no new expense here either, as on its detail.
-            dock = categoryDock((expenses as? CategoryExpensesState.Ready)?.archived == true) {
+            // An archived category takes no new expense here either, as on its detail; until
+            // the category is read the dock waits, disabled, instead of offering Anotar.
+            dock = categoryDock(archived = archived == true, known = archived != null) {
                 navigation.navigate(ExpenseEntryRoute(id))
             },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }

@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -50,9 +51,7 @@ sealed interface CategoryExpensesState {
         /** An unresolved deletion is being asked about again. */
         val checking: Boolean = false,
         /** The month could not be read again: these are the rows as last read. */
-        val stale: Boolean = false,
-        /** It takes no new expense: the dock says "Archivada" instead of Anotar. */
-        val archived: Boolean = false
+        val stale: Boolean = false
     ) : CategoryExpensesState
 }
 
@@ -91,6 +90,16 @@ class CategoryExpensesViewModel(
     private data class Said(val place: String, val problem: DeleteProblem, val checking: Boolean)
 
     private val said = MutableStateFlow<Said?>(null)
+
+    /** Whether the category is archived, from the last month read of it, with its id. */
+    private val known = MutableStateFlow<Pair<String?, Boolean>?>(null)
+
+    /**
+     * Whether the category listed is archived, as soon as a month of it is read: null until
+     * then, so the dock never offers Anotar for a category not yet known to take one.
+     */
+    val archived: StateFlow<Boolean?> = known.map { it?.second }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** The month and category listed: the only place whose deletions are said. */
     private var current: String? = null
@@ -171,7 +180,9 @@ class CategoryExpensesViewModel(
     private fun showing(request: Request) {
         val place = request.id?.let { "${request.month}.$it" }
         current = place
-        said.value = null
+        // A check of this place being asked stays said; anything else goes.
+        said.value = said.value?.takeIf { it.place == place && it.problem == DeleteProblem.Unknown }
+        if (known.value?.first != request.id) known.value = null
         if (place != null && deletions.unresolved(place)) check(place)
     }
 
@@ -205,6 +216,7 @@ class CategoryExpensesViewModel(
             return@flow
         }
         val category = budget.categories.firstOrNull { it.category.id == id }?.category
+        category?.let { known.value = request.id to it.archived }
         if (category == null) {
             versions = emptyMap()
             emit(CategoryExpensesState.Failed)
@@ -272,8 +284,7 @@ class CategoryExpensesViewModel(
                     )
                 },
                 more,
-                totalCount,
-                archived = category.archived
+                totalCount
             )
         )
     }
@@ -283,6 +294,8 @@ class CategoryExpensesViewModel(
         val version = versions[raw] ?: return
         val fromGeneration = generation
         val place = current ?: return
+        // One being sent or asked about says its own answer; nothing else is sent meanwhile.
+        if (deletions.busy(place)) return
         // An unresolved deletion is asked about first, never replaced by a new one.
         if (deletions.unresolved(place)) {
             if (said.value?.place != place) say(place, DeleteProblem.Unknown)
@@ -295,9 +308,12 @@ class CategoryExpensesViewModel(
                 when (val ended = deletions.delete(place, id, version, fromGeneration)) {
                     is RowDeletion.NotDeleted -> say(place, ended.problem)
 
-                    // Deleted: the row leaves with the next read. Or another is in flight,
-                    // or the list of later months is asked first.
-                    null, RowDeletion.Deleted, RowDeletion.Asked -> Unit
+                    // The row leaves with the next read of the month, like any change.
+                    RowDeletion.Deleted -> say(place, null)
+
+                    // Nothing was sent (one of it waits on the bar), or the list of later
+                    // months is asked first.
+                    null, RowDeletion.Asked -> Unit
                 }
             } finally {
                 deleting -= raw

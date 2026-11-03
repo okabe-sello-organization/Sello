@@ -105,7 +105,13 @@ enum class DeleteProblem {
     Failed,
 
     /** Whether it was deleted could not be found out. */
-    Unknown
+    Unknown,
+
+    /**
+     * Asked about with its own operation after an unknown outcome: that deletion did not
+     * happen. Nothing more is claimed: the expense may have changed since.
+     */
+    NotDone
 }
 
 /** The expenses listed. An empty list and a list that could not be read are different. */

@@ -128,6 +128,9 @@ fun CategoryExpensesScreen(
                                 message,
                                 { onAction(CategoryExpensesAction.CheckDelete) },
                                 tag,
+                                title = stringResource(
+                                    R.string.category_expenses_delete_unknown_title
+                                ),
                                 retryLabel = stringResource(R.string.expense_edit_check_deleted),
                                 loading = state.checking
                             )

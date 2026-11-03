@@ -574,6 +574,7 @@ internal fun DeleteProblem.text() = when (this) {
     DeleteProblem.DataChanged -> R.string.category_detail_delete_data_changed
     DeleteProblem.Failed -> R.string.category_detail_delete_failed
     DeleteProblem.Unknown -> R.string.correction_delete_unknown
+    DeleteProblem.NotDone -> R.string.category_detail_delete_not_done
 }
 
 @Composable

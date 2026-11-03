@@ -28,30 +28,61 @@ internal class ExpenseRowDeletions(
 ) {
     private val submissions = HashMap<String, Submission>()
 
+    /** Places whose deletion is being sent, or asked about, right now. */
+    private val flying = HashSet<String>()
+
     private fun submission(place: String) =
         submissions.getOrPut(place) { Submission(saved, "$key.$place", ids) }
 
-    /** A deletion asked from [place] whose outcome is still not known. */
-    fun unresolved(place: String): Boolean = submission(place).pending
+    /** A deletion of [place] is being sent or asked about: its own answer will be said. */
+    fun busy(place: String): Boolean = place in flying
+
+    /**
+     * A deletion asked from [place] whose outcome is still not known, and not being sent or
+     * asked about now: an operation in flight is not yet unknown.
+     */
+    fun unresolved(place: String): Boolean = !busy(place) && submission(place).pending
 
     /**
      * Deletes [expense] as it was listed. Null when nothing was sent: another deletion of
-     * [place] is in flight or unresolved.
+     * [place] is in flight or unresolved, or one of [expense] confirmed after its list is
+     * still unresolved (the bar asks about that one instead).
      */
     suspend fun delete(
         place: String,
         expense: ExpenseId,
         version: Long,
         generation: Long
-    ): RowDeletion? = ended(
-        submission(place).send(commands::find) { operation ->
-            corrections.deleteExpense(DeleteExpense(operation, generation, expense, version))
+    ): RowDeletion? {
+        if (busy(place) || corrections.holdsDeletionOf(expense)) return null
+        return flown(place) {
+            submission(place).send(commands::find) { operation ->
+                corrections.deleteExpense(DeleteExpense(operation, generation, expense, version))
+            }
         }
-    )
+    }
 
     /** Asks again, with its own ID, how the unresolved deletion of [place] ended. */
-    suspend fun check(place: String): RowDeletion? =
-        ended(submission(place).recover(commands::find))
+    suspend fun check(place: String): RowDeletion? {
+        if (busy(place)) return null
+        return flown(place) { submission(place).recover(commands::find) }
+    }
+
+    /**
+     * Runs [step] with [place] marked as busy. Cancelled, it leaves the operation saved, so
+     * it is asked about the next time the place is shown.
+     */
+    private suspend fun flown(
+        place: String,
+        step: suspend () -> Settled<CommittedExpense, ExpenseRejection>?
+    ): RowDeletion? {
+        flying += place
+        try {
+            return ended(step())
+        } finally {
+            flying -= place
+        }
+    }
 
     private fun ended(settled: Settled<CommittedExpense, ExpenseRejection>?): RowDeletion? =
         when (settled) {
@@ -66,8 +97,8 @@ internal class ExpenseRowDeletions(
 
             is Settled.Unknown -> RowDeletion.NotDeleted(DeleteProblem.Unknown)
 
-            // Asked with its own ID: nothing was deleted, and it can be asked for again.
-            Settled.NotCommitted -> RowDeletion.NotDeleted(DeleteProblem.Failed)
+            // Asked with its own ID: that deletion did not happen, and it can be asked again.
+            Settled.NotCommitted -> RowDeletion.NotDeleted(DeleteProblem.NotDone)
 
             is Settled.Rejected -> when (val reason = settled.reason) {
                 is CommandRejection.VersionConflict -> RowDeletion.NotDeleted(DeleteProblem.Changed)

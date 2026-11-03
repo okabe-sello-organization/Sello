@@ -1,6 +1,7 @@
 package com.software.sello.feature.recibo
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.CategoryInsights
@@ -49,6 +50,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -1060,7 +1062,7 @@ class CategoryDetailViewModelTest {
         viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
 
         assertEquals(1, whileUnknown)
-        assertEquals(DeleteProblem.Failed, notDeleted)
+        assertEquals(DeleteProblem.NotDone, notDeleted)
         assertEquals(2, commands.deleted.size)
         assertEquals(true, commands.deleted[0].operationId != commands.deleted[1].operationId)
         assertEquals(null, viewModel.ready.deleteProblem)
@@ -1120,5 +1122,70 @@ class CategoryDetailViewModelTest {
         assertEquals(listOf(operation, operation, operation), commands.looked)
         assertEquals(DeleteProblem.Unknown, viewModel.ready.deleteProblem)
         assertEquals(false, viewModel.ready.checkingDelete)
+    }
+
+    @Test
+    fun aSecondSwipeWhileADeletionIsBeingSentSaysNothingFalseAndSendsNothing() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        val held = CompletableDeferred<Unit>()
+        commands.hold = held
+
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(101)))
+        val whileSending = viewModel.ready.deleteProblem to viewModel.ready.checkingDelete
+        // Reading again while it is sent asks nothing about it: it is not unknown yet.
+        viewModel.onAction(CategoryDetailAction.Retry)
+        held.complete(Unit)
+        runCurrent()
+
+        assertEquals(null to false, whileSending)
+        assertEquals(listOf(uuid(100)), commands.deleted.map { it.expenseId.value })
+        assertEquals(emptyList<OperationId>(), commands.looked)
+        assertEquals(null to false, viewModel.ready.run { deleteProblem to checkingDelete })
+    }
+
+    @Test
+    fun aDeletionThatSucceedsClearsWhatWasSaidAboutTheOneBefore() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        commands.deleteAnswer = { Rejected(Specific(ExpenseRejection.ExpenseMissing)) }
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+        val refused = viewModel.ready.deleteProblem
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
+                replayed = false
+            )
+        }
+
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(101)))
+
+        assertEquals(DeleteProblem.Gone, refused)
+        assertEquals(null, viewModel.ready.deleteProblem)
+    }
+
+    @Test
+    fun aDeletionCancelledWithItsScreenIsAskedAboutWithItsOperationWhenReopened() = runTest {
+        val saved = SavedStateHandle()
+        val first = started(saved = saved)
+        commit(many(2))
+        show(first, 1)
+        commands.hold = CompletableDeferred()
+        first.onAction(CategoryDetailAction.Delete(uuid(100)))
+        val operation = commands.deleted.single().operationId
+
+        first.viewModelScope.cancel()
+        commands.hold = null
+        commands.found = { deletionFound(it) }
+        val reopened = started(saved = saved.afterProcessDeath())
+        show(reopened, 1)
+
+        assertEquals(listOf(operation), commands.looked)
+        assertEquals(1, commands.deleted.size)
+        assertEquals(null, reopened.ready.deleteProblem)
     }
 }

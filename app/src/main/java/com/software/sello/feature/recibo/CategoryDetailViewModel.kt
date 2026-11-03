@@ -252,6 +252,8 @@ class CategoryDetailViewModel(
         val id = (ExpenseId.of(expenseId) as? Outcome.Success)?.value ?: return
         val ready = state.value as? CategoryDetailState.Ready ?: return
         val shown = Shown(ready.month, ready.category.id)
+        // One being sent or asked about says its own answer; nothing else is sent meanwhile.
+        if (deletions.busy(shown.place)) return
         // An unresolved deletion is asked about first, never replaced by a new one.
         if (deletions.unresolved(shown.place)) {
             if (said.value?.shown != shown) say(shown, DeleteProblem.Unknown)
@@ -264,11 +266,15 @@ class CategoryDetailViewModel(
             try {
                 when (val ended = deletions.delete(shown.place, id, version, from.generation)) {
                     // The row leaves with the next read of the month, like any change.
-                    RowDeletion.Deleted -> deleted[expenseId] = shownMonth
+                    RowDeletion.Deleted -> {
+                        deleted[expenseId] = shownMonth
+                        say(shown, null)
+                    }
 
                     is RowDeletion.NotDeleted -> say(shown, ended.problem)
 
-                    // Another is in flight; or the list of later months is asked first.
+                    // Nothing was sent (one of it waits on the bar), or the list of later
+                    // months is asked first.
                     null, RowDeletion.Asked -> Unit
                 }
             } finally {
