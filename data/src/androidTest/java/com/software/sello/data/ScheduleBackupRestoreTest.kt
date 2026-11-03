@@ -175,7 +175,8 @@ class ScheduleBackupRestoreTest {
         { uuid(nextId++) },
         { target.audit },
         dispatchers,
-        Mutex()
+        Mutex(),
+        { true }
     )
 
     /** What a schedule is, without its version, which a restore starts again at 1. */

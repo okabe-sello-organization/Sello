@@ -21,6 +21,7 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CheckedBackup
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.RestoreOutcome
 import java.io.File
@@ -176,7 +177,8 @@ class RestoreAfterSetAsideTest {
             NoticeSeen(),
             { uuid(5_000) },
             { recordedAt },
-            dispatchers
+            dispatchers,
+            PreferenceReset { PreferenceWrite.Saved }
         )
         val staged = restores.stage(g01).valueOrFail()
         val outcome = restores.replace(staged)

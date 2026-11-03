@@ -37,6 +37,7 @@ import com.software.sello.data.repository.RoomScheduleRecordReads
 import com.software.sello.data.repository.UndoWindow
 import com.software.sello.data.repository.discardKeptCopies
 import com.software.sello.data.repository.reading
+import com.software.sello.data.reset.EraseMarker
 import com.software.sello.data.reset.RoomResets
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
@@ -207,7 +208,10 @@ class FinancialStorage internal constructor(
     /** Finishing an erase and committing a restore of this storage take turns on it. */
     private val recovery = Mutex()
 
-    /** Restores into this storage, staged in its own private folder. */
+    /**
+     * Restores into this storage, staged in its own private folder. [preferences] resets
+     * them for an erase still finishing, before a restore replaces the history.
+     */
     fun restores(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
@@ -216,6 +220,7 @@ class FinancialStorage internal constructor(
         ids: RecordIdSource,
         audit: AuditClock,
         dispatchers: DispatcherProvider,
+        preferences: PreferenceReset,
         codec: BackupCodec = BackupCodec()
     ): Restores = RoomRestores(
         database,
@@ -228,6 +233,7 @@ class FinancialStorage internal constructor(
         audit,
         dispatchers,
         recovery,
+        { EraseMarker(database, resetFolder, dispatchers).preferencesFirst(preferences) },
         codec
     )
 

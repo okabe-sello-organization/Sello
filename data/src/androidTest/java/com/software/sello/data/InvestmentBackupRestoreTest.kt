@@ -174,7 +174,8 @@ class InvestmentBackupRestoreTest {
         { uuid(nextId++) },
         { ledger.audit },
         dispatchers,
-        Mutex()
+        Mutex(),
+        { true }
     )
 
     private fun resets() = RoomResets(

@@ -60,7 +60,10 @@ class EraseThenRestoreTest {
 
     private val ledger by lazy { TestLedger(files).also { it.start() } }
 
-    /** One preference store for every group, as the app's; its reset can be told to fail. */
+    /**
+     * One preference store for every group, as the app's; its reset can be told to fail.
+     * [lastBackup] stands for what a backup does not carry, such as the last backup's name.
+     */
     private class Store :
         AppearancePreferences,
         CategoryOrderingPreferences,
@@ -69,6 +72,7 @@ class EraseThenRestoreTest {
         var appearance = AppearancePreference()
         var ordering = CategoryOrderingPreference()
         var investments = InvestmentPreference()
+        var lastBackup: String? = null
         var failReset = false
         var failAppearance = false
 
@@ -83,6 +87,7 @@ class EraseThenRestoreTest {
             appearance = AppearancePreference()
             ordering = CategoryOrderingPreference()
             investments = InvestmentPreference()
+            lastBackup = null
         }
 
         override fun observeAppearance(): Flow<PreferenceRead<AppearancePreference>> =
@@ -121,6 +126,7 @@ class EraseThenRestoreTest {
     private val store = Store().apply {
         appearance = AppearancePreference(ThemePreference.Light, InkPreference.Cobalto)
         ordering = CategoryOrderingPreference(CategoryOrder.Limit, CategoryOrderDirection.Ascending)
+        lastBackup = "sello-mercado.json"
     }
     private val lima = ZoneId.of("America/Lima")
     private var nextId = 7_000
@@ -145,7 +151,8 @@ class EraseThenRestoreTest {
                 whenStamped()
                 ledger.audit
             },
-            realDispatchers
+            realDispatchers,
+            store
         )
         val resets: Resets = storage.resets(store, { lima }, { ledger.audit }, realDispatchers)
     }
@@ -159,7 +166,7 @@ class EraseThenRestoreTest {
         }
     }
 
-    private fun backup() = BackupCodec().encode(
+    private fun backup(preferences: PortablePreferences? = restored) = BackupCodec().encode(
         BackupContents(
             exportedAt = Instant.parse("2026-10-20T14:30:00Z"),
             financialMonth = YearMonth.of(2026, 10),
@@ -181,7 +188,7 @@ class EraseThenRestoreTest {
                 usdRates = emptyList(),
                 carryChains = emptyList()
             ),
-            preferences = restored
+            preferences = preferences
         )
     ).valueOrFail()
 
@@ -195,15 +202,21 @@ class EraseThenRestoreTest {
         return process.resets.reset(preview, ledger.operation())
     }
 
-    private suspend fun restore(process: Process): RestoreOutcome =
-        process.restores.replace(process.restores.stage(backup()).valueOrFail())
+    private suspend fun restore(process: Process, bytes: ByteArray = backup()): RestoreOutcome =
+        process.restores.replace(process.restores.stage(bytes).valueOrFail())
 
     private val restoredSummary = BackupSummary(categories = 1, expenses = 2, incomes = 0, 0, 0)
 
+    /** The backup's own, and nothing of the erased history's. */
     private fun assertRestoredPreferences() {
         assertEquals(restored.appearance, store.appearance)
         assertEquals(restored.ordering, store.ordering)
         assertEquals(restored.investments, store.investments)
+        assertNull(store.lastBackup)
+    }
+
+    private val keptCopy: File by lazy {
+        files.context.getDatabasePath(StorageNames(files.name, "unused").setAsideDatabase)
     }
 
     private fun reset(name: String) = File(files.resetFolder, name)
@@ -229,16 +242,23 @@ class EraseThenRestoreTest {
         store.failReset = true
         assertEquals(ResetOutcome.Erased(preferencesPending = true), erase(process))
         assertTrue(reset("pending.properties").exists())
+        val erased = history()
 
-        val outcome = restore(process)
+        // While the erase's preferences cannot be reset, no restore replaces the history.
+        val staged = process.restores.stage(backup()).valueOrFail()
+        assertEquals(RestoreOutcome.Failed, process.restores.replace(staged))
+        assertEquals(erased, history())
+        assertEquals("sello-mercado.json", store.lastBackup)
+
+        store.failReset = false
+        val outcome = process.restores.replace(staged)
 
         assertEquals(
             RestoreOutcome.Restored(restoredSummary, PendingPreferences(null, null)),
             outcome
         )
         assertRestoredPreferences()
-        // Every later start, now with a store that would reset: nothing goes back.
-        store.failReset = false
+        // Every later start, with a store that would reset: nothing goes back.
         repeat(2) {
             val next = startAgain()
             assertFalse(next.resets.pending())
@@ -262,6 +282,7 @@ class EraseThenRestoreTest {
         val process = Process()
         store.failReset = true
         erase(process)
+        store.failReset = false
         store.failAppearance = true
 
         val outcome = restore(process)
@@ -270,7 +291,6 @@ class EraseThenRestoreTest {
             RestoreOutcome.Restored(restoredSummary, PendingPreferences(restored.appearance, null)),
             outcome
         )
-        store.failReset = false
         val next = startAgain()
         // The erase's turn at start-up left the file the appearance still comes from.
         assertEquals(listOf("applied", "restored.json", "staged.properties"), restoreFiles())
@@ -291,6 +311,7 @@ class EraseThenRestoreTest {
         val process = Process()
         store.failReset = true
         erase(process)
+        store.failReset = false
         val staged = process.restores.stage(backup()).valueOrFail()
         val replacing = async(Dispatchers.Default) { process.restores.replace(staged) }
         // The receipt is stamped inside the transaction: the process ends right there,
@@ -301,7 +322,6 @@ class EraseThenRestoreTest {
         assertTrue("$cancelled", cancelled is CancellationException)
         assertEquals(listOf("staged.json", "staged.properties"), restoreFiles())
 
-        store.failReset = false
         startAgain()
 
         assertRestoredPreferences()
@@ -344,5 +364,76 @@ class EraseThenRestoreTest {
         assertRestoredPreferences()
         assertEquals(restoredHistory, history())
         assertEquals(ResetOutcome.Erased(preferencesPending = false), erase(next))
+    }
+
+    @Test
+    fun aBackupWithoutPreferencesStillLeavesNoneOfTheErasedHistorysBehind() = runBlocking {
+        mercado()
+        val process = Process()
+        store.failReset = true
+        erase(process)
+        store.failReset = false
+
+        val outcome = restore(process, backup(preferences = null))
+
+        assertEquals(
+            RestoreOutcome.Restored(restoredSummary, PendingPreferences(null, null)),
+            outcome
+        )
+        repeat(2) { startAgain() }
+        assertEquals(AppearancePreference(), store.appearance)
+        assertEquals(CategoryOrderingPreference(), store.ordering)
+        assertEquals(InvestmentPreference(), store.investments)
+        assertNull(store.lastBackup)
+        assertFalse(reset("pending.properties").exists())
+        assertEquals(restoredHistory, history())
+    }
+
+    @Test
+    fun theCopyKeptAsideGoesEvenAfterARestoreReplacedTheErasedHistory() = runBlocking {
+        mercado()
+        // The copy cannot be deleted while the erase finishes: something sits in its place.
+        keptCopy.mkdirs()
+        File(keptCopy, "in-the-way").writeText("x")
+        val process = Process()
+        erase(process)
+        assertTrue(reset("pending.properties").exists())
+        // Then it is a copy that can go, and a restore replaces the erased history.
+        keptCopy.deleteRecursively()
+        keptCopy.writeBytes(ByteArray(64) { 7 })
+        restore(process)
+
+        val next = startAgain()
+
+        assertFalse(keptCopy.exists())
+        assertFalse(reset("pending.properties").exists())
+        assertFalse(next.resets.pending())
+        assertRestoredPreferences()
+    }
+
+    @Test
+    fun anOlderRestoresPendingPreferencesAreNeverAppliedAfterAnErase() = runBlocking {
+        mercado()
+        val process = Process()
+        store.failAppearance = true
+        restore(process)
+        assertEquals(listOf("applied", "restored.json", "staged.properties"), restoreFiles())
+        // The erase cannot empty the restore folder, so the older file is still there.
+        assertTrue(files.restoreFolder.setWritable(false, false))
+        assertEquals(ResetOutcome.Erased(preferencesPending = false), erase(process))
+        assertTrue(files.restoreFolder.setWritable(true, false))
+        assertEquals(listOf("applied", "restored.json", "staged.properties"), restoreFiles())
+        store.failAppearance = false
+
+        val applied = Process().restores.applyPending()
+
+        assertNull(applied)
+        assertEquals(AppearancePreference(), store.appearance)
+        assertEquals(CategoryOrderingPreference(), store.ordering)
+        assertEquals(emptyList<String>(), restoreFiles())
+        assertEquals(
+            listOf("America/Lima|3"),
+            ledger.rows("profile", "financial_zone", "generation")
+        )
     }
 }

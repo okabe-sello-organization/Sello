@@ -162,7 +162,8 @@ class GoalBackupRestoreTest {
         { uuid(nextId++) },
         { target.audit },
         dispatchers,
-        Mutex()
+        Mutex(),
+        { true }
     )
 
     /** What a person sees of each goal: no identifiers, versions or audit times. */

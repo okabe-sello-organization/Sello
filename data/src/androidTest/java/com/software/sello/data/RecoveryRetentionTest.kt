@@ -20,6 +20,7 @@ import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ResetOutcome
 import com.software.sello.domain.port.RestoreOutcome
@@ -299,7 +300,7 @@ class RecoveryRetentionTest {
         val applied = Preferences(AppearancePreference(), CategoryOrderingPreference())
         val restores = other.restores(applied, applied, HandInvestmentPreferences(), NoticeSeen(), {
             uuid(nextOperation++)
-        }, { at }, dispatchers)
+        }, { at }, dispatchers, PreferenceReset { PreferenceWrite.Saved })
         val restored = restores.replace(restores.stage(prepared.bytes).valueOrFail())
         assertEquals(
             RestoreOutcome.Restored(BackupSummary(3, 5, 2, 0, 0), PendingPreferences(null, null)),

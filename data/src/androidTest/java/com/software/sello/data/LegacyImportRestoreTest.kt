@@ -92,7 +92,8 @@ class LegacyImportRestoreTest {
             Instant.parse("2026-10-25T20:00:00Z")
         },
         dispatchers,
-        Mutex()
+        Mutex(),
+        { true }
     )
 
     /**

@@ -160,6 +160,7 @@ class CarryBackupRestoreTest {
         { target.audit },
         dispatchers,
         Mutex(),
+        { true },
         codec
     )
 
@@ -417,7 +418,8 @@ class CarryBackupRestoreTest {
             notice,
             { uuid(nextId++) },
             { other.audit },
-            dispatchers
+            dispatchers,
+            PreferenceReset { PreferenceWrite.Saved }
         )
         val outcome = restores.replace(restores.stage(bytes).valueOrFail())
 

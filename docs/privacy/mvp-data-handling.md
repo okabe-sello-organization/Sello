@@ -75,8 +75,9 @@ in its free pages or log, and returns every preference to first-run. What remain
 profile (the device's zone, the next generation and revision) and one `history.reset`
 receipt with no subject. Saved backup files are outside Sello and are not touched.
 A compaction that cannot finish, such as a checkpoint kept busy, is retried at each
-start until it does. If a restore replaces the history before an erase's other steps
-finished, the restore's files, preferences and kept copy are left alone.
+start until it does. A restore never replaces the history while an erase's preferences
+are not back to first-run: it resets them first, or does not restore. The kept copy is
+deleted even when a restore came after the erase.
 
 ## Logs
 

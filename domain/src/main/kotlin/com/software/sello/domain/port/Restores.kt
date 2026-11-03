@@ -120,6 +120,16 @@ enum class LegacyReason(val changed: Boolean = false) {
  */
 data class CheckedBackup(val backupAt: Instant, val zone: ZoneId, val contents: BackupSummary)
 
+/**
+ * A backup file read and checked whole before any storage opened, as at start-up: its
+ * bytes and what they hold. Storage may keep more of the check with it, so that staging
+ * the file does not read it again.
+ */
+interface CheckedBackupFile {
+    val bytes: ByteArray
+    val checked: CheckedBackup
+}
+
 /** Why a chosen file cannot be restored. Nothing was changed. */
 enum class RestoreRejection {
     /** The provider could not give the file to Sello. */
@@ -201,8 +211,11 @@ sealed interface StagedLookup {
     /** Its replacement had committed; [Restores.pending] has it now. */
     data class Replaced(val operationId: OperationId) : StagedLookup
 
-    /** Whether its replacement committed could not be read. The file is kept to look again. */
-    data class Unknown(val operationId: OperationId) : StagedLookup
+    /**
+     * Whether its replacement committed, or what it left to apply, could not be read. The
+     * files are kept to look again. [operationId] is null when no file still names it.
+     */
+    data class Unknown(val operationId: OperationId?) : StagedLookup
 }
 
 /**
@@ -213,6 +226,10 @@ sealed interface StagedLookup {
 interface Restores {
     /** Checks [bytes] completely and keeps them privately; nothing financial changes. */
     suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure>
+
+    /** Stages a file already checked whole; what that check read is not read again. */
+    suspend fun stage(file: CheckedBackupFile): Outcome<StagedRestore, StageFailure> =
+        stage(file.bytes)
 
     /**
      * A file staged earlier and what became of it, read again from its operation's

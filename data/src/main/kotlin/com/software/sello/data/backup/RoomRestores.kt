@@ -28,6 +28,7 @@ import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.CatchUpNoticePreferences
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CheckedBackup
+import com.software.sello.domain.port.CheckedBackupFile
 import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.LegacyImportLine
@@ -76,10 +77,16 @@ import kotlinx.coroutines.withContext
  * commit and the move that follows it is found and finished on the next look, and until
  * then every preference it brings is reported pending.
  *
- * A file is parsed once: the contents a stage or a look read are kept in memory for the
- * replacement under that operation, which reads the file again only in a later process.
- * Committing a replacement and applying its preferences take turns with finishing an
- * erase of the same storage through [recovery].
+ * A file is parsed once: the contents a check, stage or look read are kept in memory for
+ * the replacement under that operation, which reads the file again only in a later
+ * process. Committing a replacement and applying its preferences take turns with
+ * finishing an erase of the same storage through [recovery]; [beforeReplacing] runs in
+ * that turn just before a replacement commits, and the replacement fails if it says no.
+ *
+ * `restored.json` belongs to the replacement its manifest names. When that operation has
+ * no receipt, an erase since removed it, and the file and what it would apply are
+ * forgotten. When the file or its manifest cannot be read, nothing is applied and a look
+ * says so, until they read or an erase clears the folder.
  */
 class RoomRestores(
     private val database: SelloDatabase,
@@ -92,6 +99,7 @@ class RoomRestores(
     private val audit: AuditClock,
     private val dispatchers: DispatcherProvider,
     private val recovery: Mutex,
+    private val beforeReplacing: suspend () -> Boolean,
     private val codec: BackupCodec = BackupCodec(),
     private val legacy: LegacyTranslator = LegacyTranslator(ids)
 ) : Restores {
@@ -101,7 +109,7 @@ class RoomRestores(
     private val applied = File(folder, "applied")
 
     /** A file read and checked whole, with the SHA-256 of its bytes. */
-    private class Parsed(val contents: BackupContents, val bytes: String)
+    internal class Parsed(val contents: BackupContents, val bytes: String)
 
     /** The staged file's contents as last parsed, for the replacement under [operation]. */
     private class Held(val operation: OperationId, val parsed: Parsed)
@@ -120,11 +128,22 @@ class RoomRestores(
                 Outcome.Failure(StageFailure.Rejected(read.error.reason()))
             }
         }
+        return stageParsed(bytes, contents)
+    }
+
+    /** A file [checkFile] read is staged from what it read; any other is read here. */
+    override suspend fun stage(file: CheckedBackupFile): Outcome<StagedRestore, StageFailure> =
+        if (file is ParsedBackupFile) stageParsed(file.bytes, file.parsed) else stage(file.bytes)
+
+    private suspend fun stageParsed(
+        bytes: ByteArray,
+        parsed: Parsed
+    ): Outcome<StagedRestore, StageFailure> {
         val position = when (val read = stagingPosition()) {
             is Outcome.Success -> read.value
             is Outcome.Failure -> return read
         }
-        return keep(bytes, contents, position, report = null)
+        return keep(bytes, parsed, position, report = null)
     }
 
     /**
@@ -281,8 +300,13 @@ class RoomRestores(
      * and its replacement is unknown, unless the operation it names did not commit.
      */
     private suspend fun withoutStaging(): StagedLookup {
+        // A restored file that cannot be read, or whose manifest cannot, is not nothing.
+        (restoredFile() as? RestoredFile.Unreadable)?.let {
+            return StagedLookup.Unknown(it.operation)
+        }
         if (io(failed = true) { manifest.exists() && staged.exists() }) {
-            val operation = io(failed = null) { manifestOperation() } ?: return StagedLookup.None
+            val operation = io(failed = null) { manifestOperation() }
+                ?: return StagedLookup.Unknown(null)
             if (committed(operation) != false) return StagedLookup.Unknown(operation)
         }
         io(failed = Unit) {
@@ -306,6 +330,9 @@ class RoomRestores(
         }
         val contents = parsed.contents
         val digest = digest(staged, parsed.bytes)
+        // An erase still finishing puts the preferences back to first-run first, so the
+        // backup's own land on a clean slate; until it can, nothing is replaced.
+        if (!beforeReplacing()) return@withLock RestoreOutcome.Failed
         markAttempted(staged.operationId, attempted = true)
         val run = database.runCommand { write(staged, contents, digest) }
         when (run) {
@@ -338,13 +365,63 @@ class RoomRestores(
 
     override suspend fun pending(): RestoreOutcome.Restored? {
         settleMove()
-        val contents = restoredContents() ?: return unmoved()
-        return pendingFrom(contents, appliedGroups())
+        return when (val file = restoredFile()) {
+            is RestoredFile.Ready -> pendingFrom(file.contents, appliedGroups())
+            RestoredFile.Absent, is RestoredFile.Unreadable -> unmoved()
+            RestoredFile.Erased -> null
+        }
     }
 
     override suspend fun applyPending(): RestoreOutcome.Restored? = recovery.withLock {
         settleMove()
-        restoredContents()?.let { apply(it) } ?: unmoved()
+        when (val file = restoredFile()) {
+            is RestoredFile.Ready -> apply(file.contents)
+            RestoredFile.Absent, is RestoredFile.Unreadable -> unmoved()
+            RestoredFile.Erased -> null
+        }
+    }
+
+    /** What `restored.json` is now; see the class comment. */
+    private sealed interface RestoredFile {
+        data object Absent : RestoredFile
+
+        /** It belonged to a history an erase removed since; it is gone now. */
+        data object Erased : RestoredFile
+
+        /** It, or the manifest naming its operation, cannot be read. */
+        data class Unreadable(val operation: OperationId?) : RestoredFile
+
+        class Ready(val contents: BackupContents) : RestoredFile
+    }
+
+    private suspend fun restoredFile(): RestoredFile {
+        if (!io(failed = true) { restored.exists() }) return RestoredFile.Absent
+        // Beside a staged file the manifest is that file's; this one's went with its clean-up.
+        val named = io(failed = true) { manifest.exists() && !staged.exists() }
+        val operation = if (named) {
+            io(failed = null) { manifestOperation() } ?: return RestoredFile.Unreadable(null)
+        } else {
+            null
+        }
+        if (operation != null) {
+            when (committed(operation)) {
+                true -> Unit
+
+                null -> return RestoredFile.Unreadable(operation)
+
+                false -> {
+                    io(failed = Unit) {
+                        clear(manifest)
+                        if (clear(restored)) clear(applied)
+                    }
+                    return RestoredFile.Erased
+                }
+            }
+        }
+        val bytes = io(failed = null) { restored.takeIf { it.isFile }?.readBytes() }
+            ?: return RestoredFile.Unreadable(operation)
+        val contents = parse(bytes)?.contents ?: return RestoredFile.Unreadable(operation)
+        return RestoredFile.Ready(contents)
     }
 
     /**
@@ -716,11 +793,6 @@ class RoomRestores(
         return LegacyImportReport(lines)
     }
 
-    private suspend fun restoredContents(): BackupContents? {
-        val bytes = io(failed = null) { restored.takeIf { it.isFile }?.readBytes() } ?: return null
-        return parse(bytes)?.contents
-    }
-
     /** The groups applied so far; null when the list cannot be read. */
     private suspend fun appliedGroups(): Set<String>? = io(failed = null) {
         if (applied.exists()) applied.readLines().toSet() else emptySet()
@@ -815,13 +887,37 @@ class RoomRestores(
             }
             return sha256.digest().joinToString("") { "%02x".format(it) }
         }
-
-        fun sha256Hex(bytes: ByteArray): String =
-            MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") {
-                "%02x".format(it)
-            }
     }
 }
+
+internal fun sha256Hex(bytes: ByteArray): String =
+    MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+
+/** A backup file [checkFile] read whole: what it holds, kept for staging it. */
+internal class ParsedBackupFile(
+    override val bytes: ByteArray,
+    override val checked: CheckedBackup,
+    val parsed: RoomRestores.Parsed
+) : CheckedBackupFile
+
+/**
+ * Checks [bytes] as a whole backup without any storage, keeping what it read, so that
+ * staging the file later reads nothing again.
+ */
+fun BackupCodec.checkFile(bytes: ByteArray): Outcome<CheckedBackupFile, RestoreRejection> =
+    when (val plan = read(bytes)) {
+        is Outcome.Success -> with(plan.value.contents) {
+            Outcome.Success(
+                ParsedBackupFile(
+                    bytes,
+                    CheckedBackup(exportedAt, financial.zone, financial.summary()),
+                    RoomRestores.Parsed(this, sha256Hex(bytes))
+                )
+            )
+        }
+
+        is Outcome.Failure -> Outcome.Failure(plan.error.reason())
+    }
 
 /** Checks [bytes] as a whole backup without any storage; see [CheckedBackup]. */
 fun BackupCodec.check(bytes: ByteArray): Outcome<CheckedBackup, RestoreRejection> =

@@ -58,7 +58,8 @@ The restored rows equal the originals for all five.
 | Another file while preferences are pending | Refused until they are finished | `aPendingReplacementBlocksStagingAnotherFile` |
 | The file cannot move after the commit | Every preference it brings is named pending and none applied; the next look moves it, then applies them | `aFileThatCannotMoveAfterTheCommitIsNeverReportedComplete` |
 | A restore file cannot be read | Before the commit: refused, nothing written. Its `applied` list: every group stays pending, none applied twice. Never a crash | `aStagedFileThatCannotBeReadFailsTheReplacementInsteadOfCrashing`, `anAppliedListThatCannotBeReadAppliesNothingAgainAndStaysPending` |
-| Confirmed, staged in this process or after a restart | The file is parsed once, on the computation dispatcher, never on the caller | `aRestoreConfirmedAfterItsStageParsesTheFileNoMore`, `aRestoreAfterARestartParsesItsFileOnceAndNotOnTheCaller` |
+| `restored.json` or its manifest cannot be read, or the file is damaged | Unknown, never nothing: nothing applied, files kept, other files refused; Borrar todos los datos clears it | `aRestoredFileThatCannotBeReadIsUnknownNeverNothing`, `aManifestThatCannotBeReadAfterTheCommitIsUnknownNeverNothing`, `aDamagedRestoredFileIsUnknownUntilAnEraseClearsIt` |
+| Confirmed, staged in this process, after a restart or from the start-up screen | The file is parsed once, on the computation dispatcher, never on the caller | `aRestoreConfirmedAfterItsStageParsesTheFileNoMore`, `aRestoreAfterARestartParsesItsFileOnceAndNotOnTheCaller`, `aFileTheStartUpCheckReadIsStagedAndRestoredWithoutParsingAgain`, `StartupTest` |
 | Leaving after a restore, by Back or the top bar's arrow | The app starts again on the restored history | `RestoreJourneyTest`, including `theTopBarsBackArrowAfterARestoreStartsTheAppAgain` |
 
 ## Reset
@@ -71,8 +72,11 @@ The restored rows equal the originals for all five.
 | Process ends before the commit | The pending file is forgotten; nothing erased | `anEraseThatNeverCommittedIsForgottenAndChangesNothing` |
 | Caller cancelled around the commit | Found by receipt; asking again never erases twice | `aCallerCancelledAroundTheCommitStillFindsTheEraseDoneAndNeverErasesTwice` |
 | Preferences fail after the commit | Named; finished later, once, without a second erase | `preferencesThatFailStayPendingAndAreFinishedLaterWithoutASecondErase` |
-| Preferences fail after the commit, then a restore | The restore's theme, order and investment settings stay at every start; a new erase is accepted | `EraseThenRestoreTest.anEraseWhosePreferencesFailedNeverUndoesTheRestoreMadeAfterIt` |
+| Preferences fail after the commit, then a restore | Refused until the erase's preferences reset; then the backup's land on first-run values and stay at every start; a new erase is accepted | `EraseThenRestoreTest.anEraseWhosePreferencesFailedNeverUndoesTheRestoreMadeAfterIt` |
+| The same, with a backup that holds no preferences | First-run values, nothing of the erased history's | `aBackupWithoutPreferencesStillLeavesNoneOfTheErasedHistorysBehind` |
 | The same, with the restore's preferences pending or its move cut short | `restored.json` or the staged file is kept and applied at the next start | `aRestoresPendingFileOutlivesAnEraseThatCouldNotFinishBeforeIt`, `aRestoreCutShortAfterItsCommitIsFinishedAfterAnEraseThatCouldNotFinish` |
+| The kept copy could not go, then a restore | Deleted at the next start all the same | `theCopyKeptAsideGoesEvenAfterARestoreReplacedTheErasedHistory` |
+| An older restore's preferences pending, and the erase cannot empty its folder | Forgotten, never applied over the erase | `anOlderRestoresPendingPreferencesAreNeverAppliedAfterAnErase` |
 | Compaction's checkpoint kept busy | Not compacted: `compact.pending` stays and it is retried at the next start; restores and new erases go on | `aCompactionKeptBusyStaysOwedAndIsDoneLaterWithoutBlockingAnything` |
 | What survives | Profile and one `history.reset` receipt; no erased name or note in the file's bytes | `nothingLeftInTheFilesHoldsAnOldNameOrNote` |
 | After the erase | A new category and expense from empty; a backup restores across it | `theNewHistoryCanBeUsedFromEmpty`; `RecoveryRetentionTest` |

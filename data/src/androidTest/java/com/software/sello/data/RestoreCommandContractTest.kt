@@ -6,6 +6,8 @@ import com.software.sello.data.backup.BackupContents
 import com.software.sello.data.backup.FinancialSnapshot
 import com.software.sello.data.backup.PortablePreferences
 import com.software.sello.data.backup.RoomRestores
+import com.software.sello.data.backup.checkFile
+import com.software.sello.data.reset.RoomResets
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.AutomaticBudget
 import com.software.sello.domain.model.CategoryOrder
@@ -36,7 +38,9 @@ import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.PreferenceFailure
 import com.software.sello.domain.port.PreferenceRead
+import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ResetOutcome
 import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
@@ -139,7 +143,8 @@ class RestoreCommandContractTest {
             now
         },
         dispatchers,
-        Mutex()
+        Mutex(),
+        { true }
     )
 
     private val lima = ZoneId.of("America/Lima")
@@ -928,6 +933,97 @@ class RestoreCommandContractTest {
         val staged = restores.stage(g01()).valueOrFail()
         computation.handed.set(0)
 
+        val outcome = restores.replace(staged)
+
+        assertEquals(
+            RestoreOutcome.Restored(BackupSummary(2, 3, 1, 0, 0), PendingPreferences(null, null)),
+            outcome
+        )
+        assertEquals(0, computation.handed.get())
+    }
+
+    /** G01 replaced the history and its order is still to apply. */
+    private suspend fun orderPending(): StagedRestore {
+        currentHistory()
+        preferences.failOrdering = true
+        val staged = stage()
+        restores().replace(staged)
+        preferences.failOrdering = false
+        assertEquals(listOf("applied", "restored.json", "staged.properties"), stagingFiles())
+        return staged
+    }
+
+    @Test
+    fun aRestoredFileThatCannotBeReadIsUnknownNeverNothing() = runBlocking {
+        val staged = orderPending()
+        val restored = File(files.restoreFolder, "restored.json")
+        assertTrue(restored.setReadable(false, false))
+        val kept = stagingFiles()
+
+        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
+        assertNull(restores().applyPending())
+        assertEquals(Outcome.Failure(StageFailure.Storage), restores().stage(g01(other)))
+        assertEquals(kept, stagingFiles())
+
+        assertTrue(restored.setReadable(true, false))
+        val done = restores().applyPending()
+
+        assertEquals(PendingPreferences(null, null), done?.preferences)
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun aManifestThatCannotBeReadAfterTheCommitIsUnknownNeverNothing() = runBlocking {
+        orderPending()
+        val manifest = File(files.restoreFolder, "staged.properties")
+        assertTrue(manifest.setReadable(false, false))
+        val kept = stagingFiles()
+
+        assertEquals(StagedLookup.Unknown(null), restores().staged())
+        assertNull(restores().pending())
+        assertNull(restores().applyPending())
+        assertEquals(kept, stagingFiles())
+        assertTrue(preferences.written.none { it == CategoryOrder.Alphabetical })
+
+        assertTrue(manifest.setReadable(true, false))
+        assertEquals(PendingPreferences(null, null), restores().applyPending()?.preferences)
+    }
+
+    @Test
+    fun aDamagedRestoredFileIsUnknownUntilAnEraseClearsIt() = runBlocking {
+        val staged = orderPending()
+        File(files.restoreFolder, "restored.json").writeText("{\"version\":")
+
+        assertEquals(StagedLookup.Unknown(staged.operationId), restores().staged())
+        assertNull(restores().applyPending())
+
+        // Borrar todos los datos, on the same screen, is the way out.
+        val resets = RoomResets(
+            ledger.database,
+            files.resetFolder,
+            files.restoreFolder,
+            emptyList(),
+            PreferenceReset { PreferenceWrite.Saved },
+            { lima },
+            { now },
+            dispatchers,
+            Mutex()
+        )
+        val erased = resets.reset(resets.preview().valueOrFail(), ledger.operation())
+
+        assertEquals(ResetOutcome.Erased(preferencesPending = false), erased)
+        assertEquals(StagedLookup.None, restores().staged())
+        assertTrue(restores().replace(stage()) is RestoreOutcome.Restored)
+    }
+
+    @Test
+    fun aFileTheStartUpCheckReadIsStagedAndRestoredWithoutParsingAgain() = runBlocking {
+        currentHistory()
+        val file = BackupCodec().checkFile(g01()).valueOrFail()
+        val computation = Computation()
+        val restores = restores(on(computation))
+
+        val staged = restores.stage(file).valueOrFail()
         val outcome = restores.replace(staged)
 
         assertEquals(
