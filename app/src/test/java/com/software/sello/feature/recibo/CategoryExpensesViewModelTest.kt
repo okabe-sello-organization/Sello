@@ -31,9 +31,11 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -55,6 +57,7 @@ class CategoryExpensesViewModelTest {
     private var replyRevision = 1L
     private var hold: CompletableDeferred<Unit>? = null
     private var nextOperation = 900
+    private var watching: Job? = null
     private val search = object : CategoryExpenseSearch {
         override suspend fun read(
             categoryId: CategoryId,
@@ -120,7 +123,10 @@ class CategoryExpensesViewModelTest {
                 testMoney(),
                 corrections
             )
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
+        watching =
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                model.state.collect {}
+            }
         model.onAction(CategoryExpensesAction.Show(uuid(1)))
         runCurrent()
         return model
@@ -150,6 +156,53 @@ class CategoryExpensesViewModelTest {
         assertEquals(observedBefore + 1, snapshots.observed.size)
         assertEquals(40 to true, stillOlder.rows.size to stillOlder.stale)
         assertEquals(40 to false, model.ready.rows.size to model.ready.stale)
+    }
+
+    @Test
+    fun olderRowsOfferNoMoreUntilAReadWorks() = runTest {
+        val model = started()
+        model.onAction(CategoryExpensesAction.More)
+        runCurrent()
+        snapshots.of(month).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        val asked = requests.size
+
+        val older = model.ready
+        model.onAction(CategoryExpensesAction.More)
+        runCurrent()
+        val afterMore = model.ready
+        replyRevision = 2
+        snapshots.ready(
+            monthOf("2026-10-22", listOf(categoryIn(1, "Comida", 200_000)), rows).copy(revision = 2)
+        )
+        runCurrent()
+
+        assertEquals(false to true, older.more to older.stale)
+        assertEquals(older, afterMore)
+        assertEquals(40 to true, model.ready.rows.size to model.ready.more)
+        // Only the read the working month asked for: none for the tap on older rows.
+        assertEquals(listOf(40), requests.drop(asked).map { it.third })
+    }
+
+    @Test
+    fun comingBackAfterTheSharingStoppedShowsTheRowsNotASkeleton() = runTest {
+        val model = started()
+        val shown = model.ready
+        watching?.cancel()
+        advanceTimeBy(5_001)
+        runCurrent()
+        val observedBefore = snapshots.observed.size
+        val seen = mutableListOf<CategoryExpensesState>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            model.state.collect { seen += it }
+        }
+        runCurrent()
+
+        assertEquals(observedBefore + 1, snapshots.observed.size)
+        assertEquals(true, seen.isNotEmpty())
+        assertEquals(true, seen.none { it !is CategoryExpensesState.Ready })
+        assertEquals(shown.rows, model.ready.rows)
+        assertEquals(false, model.ready.busy)
     }
 
     @Test

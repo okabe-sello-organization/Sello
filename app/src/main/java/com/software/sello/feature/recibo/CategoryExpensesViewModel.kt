@@ -143,10 +143,11 @@ class CategoryExpensesViewModel(
         val id = (request.id?.let(CategoryId::of) as? Outcome.Success)?.value
         val budget = (snapshot as? ReadState.Ready)?.value
         // A month that could not be read again keeps the rows listed, said to be older.
+        // No more pages are offered from them: Reintentar is the way on.
         val listed = (state.value as? CategoryExpensesState.Ready)
             ?.takeIf { keptRequest == request && snapshot is ReadState.Failed && id != null }
         if (listed != null) {
-            emit(listed.copy(busy = false, pageFailed = false, stale = true))
+            emit(listed.copy(busy = false, pageFailed = false, more = false, stale = true))
             return@flow
         }
         if (id == null || budget == null) {
