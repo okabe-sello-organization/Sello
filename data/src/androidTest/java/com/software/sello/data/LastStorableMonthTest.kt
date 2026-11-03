@@ -10,11 +10,16 @@ import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.port.CreateIncome
 import com.software.sello.domain.port.Disposal
+import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpenseOrder
+import com.software.sello.domain.port.ExpensePage
+import com.software.sello.domain.port.IncomeCursor
+import com.software.sello.domain.port.IncomePage
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -93,6 +98,61 @@ class LastStorableMonthTest {
             searched(december).expenses.map { it.date to it.amount.money.minorUnits }.shown()
         )
         assertEquals(1L, searched(november).totalCount)
+    }
+
+    @Test
+    fun oneByOnePagesOfDecemberReturnEachEntryOnceInOrder() = runBlocking {
+        entriesAroundTheLastMonth()
+        // A second entry on the last day, so a page boundary falls inside 9999-12-31.
+        ledger.expenses.create(ledger.createExpense(100, "9999-12-31", 4_000))
+        listOf("9999-12-31" to 60_000L, "9999-12-01" to 70_000L).forEach { (date, pesos) ->
+            ledger.incomes.create(
+                CreateIncome(
+                    ledger.operation(),
+                    1,
+                    transactionPesos(pesos),
+                    IncomeSource.of("salary", null).valueOrFail(),
+                    LocalDate.parse(date),
+                    Note.of(null).valueOrFail()
+                )
+            )
+        }
+
+        val expensePages = mutableListOf<ExpensePage>()
+        var expenseCursor: ExpenseCursor? = null
+        do {
+            val page = ledger.expenseReads
+                .inCategory(ledger.categoryId(100), december, expenseCursor, limit = 1)
+                .valueOrFail()
+            expensePages += page
+            expenseCursor = page.next
+        } while (expenseCursor != null && expensePages.size < 10)
+        val incomePages = mutableListOf<IncomePage>()
+        var incomeCursor: IncomeCursor? = null
+        do {
+            val page = ledger.incomeReads.inMonth(december, incomeCursor, limit = 1).valueOrFail()
+            incomePages += page
+            incomeCursor = page.next
+        } while (incomeCursor != null && incomePages.size < 10)
+
+        assertEquals(
+            listOf(listOf("9999-12-31 4000"), listOf("9999-12-31 3000"), listOf("9999-12-01 2000")),
+            expensePages.map { page ->
+                page.expenses.map { it.date to it.amount.money.minorUnits }.shown()
+            }
+        )
+        assertNull(expensePages.last().next)
+        assertEquals(
+            listOf(
+                listOf("9999-12-31 60000"),
+                listOf("9999-12-31 50000"),
+                listOf("9999-12-01 70000")
+            ),
+            incomePages.map { page ->
+                page.incomes.map { it.date to it.amount.money.minorUnits }.shown()
+            }
+        )
+        assertNull(incomePages.last().next)
     }
 
     @Test
