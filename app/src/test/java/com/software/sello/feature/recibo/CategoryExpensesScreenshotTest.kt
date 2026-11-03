@@ -39,10 +39,10 @@ class CategoryExpensesScreenshotTest {
         totalCount = 4
     )
 
-    private fun capture(look: Look, file: String) {
+    private fun capture(look: Look, file: String, state: CategoryExpensesState = ready) {
         rule.showSello(look) {
             CategoryExpensesScreen(
-                state = ready,
+                state = state,
                 query = "",
                 order = "Date",
                 onAction = {},
@@ -58,4 +58,13 @@ class CategoryExpensesScreenshotTest {
 
     @Test
     fun oscuro() = capture(Look(dark = true), "category-expenses-oscuro")
+
+    /** A refresh that failed: the rows as last read, with the notice and Reintentar. */
+    @Test
+    fun olderClaro() = capture(Look(), "category-expenses-stale-claro", ready.copy(stale = true))
+
+    /** Nothing was ever read: the only case that shows the error. */
+    @Test
+    fun failedClaro() =
+        capture(Look(), "category-expenses-failed-claro", CategoryExpensesState.Failed)
 }

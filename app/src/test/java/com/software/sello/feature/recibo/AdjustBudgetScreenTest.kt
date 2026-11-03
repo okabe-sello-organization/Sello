@@ -161,6 +161,19 @@ class AdjustBudgetScreenTest {
     }
 
     @Test
+    fun anOlderMonthKeepsTheSheetsFactsWithTheNoticeAndItsRetry() {
+        sheet = openSheet.copy(stale = true)
+        show(ready)
+
+        rule.onNodeWithTag("limit.sheet.stale").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Tu límite total de octubre pasaría a 1.100.000. Te quedarían 20.000.")
+            .performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Reintentar").performScrollTo().press()
+
+        assertEquals(listOf<LimitSheetAction>(LimitSheetAction.Retry), sheetActions)
+    }
+
+    @Test
     fun theFactLineAndTheButtonFollowTheScope() {
         sheet = openSheet
         show(ready)

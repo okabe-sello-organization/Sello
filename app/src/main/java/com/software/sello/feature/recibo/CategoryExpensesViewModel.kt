@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
+import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseReads
@@ -17,6 +19,7 @@ import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.DeleteResult
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -42,7 +45,9 @@ sealed interface CategoryExpensesState {
         val totalCount: Long,
         val busy: Boolean = false,
         val pageFailed: Boolean = false,
-        val problem: DeleteProblem? = null
+        val problem: DeleteProblem? = null,
+        /** The month could not be read again: these are the rows as last read. */
+        val stale: Boolean = false
     ) : CategoryExpensesState
 }
 
@@ -76,6 +81,9 @@ class CategoryExpensesViewModel(
     private var keptRequest: Request? = null
     private var keptGeneration: Long? = null
     private val deleting = mutableSetOf<String>()
+
+    /** The month as last read, so a Retry or a return never blanks rows already listed. */
+    private val lastGood = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
     private data class Request(
         val id: String?,
         val month: YearMonth,
@@ -97,10 +105,11 @@ class CategoryExpensesViewModel(
         wanted.value = PAGE_SIZE
         problem.value = null
         versions = emptyMap()
-        combine(snapshots.observe(request.month), wanted, retry) { snapshot, count, _ ->
-            snapshot to
-                count
-        }
+        // Reintentar observes the month again, as well as reading the rows again.
+        combine(
+            retry.flatMapLatest { lastGood.keep(request.month, snapshots.observe(request.month)) },
+            wanted
+        ) { snapshot, count -> snapshot to count }
             .flatMapLatest { (snapshot, count) -> load(request, snapshot, count) }
     }.combine(problem) { state, problem ->
         if (state is CategoryExpensesState.Ready) state.copy(problem = problem) else state
@@ -133,6 +142,14 @@ class CategoryExpensesViewModel(
     private fun load(request: Request, snapshot: SnapshotState, count: Int) = flow {
         val id = (request.id?.let(CategoryId::of) as? Outcome.Success)?.value
         val budget = (snapshot as? ReadState.Ready)?.value
+        // A month that could not be read again keeps the rows listed, said to be older.
+        // No more pages are offered from them: Reintentar is the way on.
+        val listed = (state.value as? CategoryExpensesState.Ready)
+            ?.takeIf { keptRequest == request && snapshot is ReadState.Failed && id != null }
+        if (listed != null) {
+            emit(listed.copy(busy = false, pageFailed = false, more = false, stale = true))
+            return@flow
+        }
         if (id == null || budget == null) {
             versions = emptyMap()
             emit(

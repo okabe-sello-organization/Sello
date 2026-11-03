@@ -101,6 +101,14 @@ fun CategoryExpensesScreen(
             }
 
             is CategoryExpensesState.Ready -> {
+                if (state.stale) {
+                    item(key = "stale") {
+                        StaleSlip(
+                            { onAction(CategoryExpensesAction.Retry) },
+                            Modifier.testTag("category.expenses.stale")
+                        )
+                    }
+                }
                 if (state.rows.isEmpty()) {
                     item {
                         EmptySlip(
