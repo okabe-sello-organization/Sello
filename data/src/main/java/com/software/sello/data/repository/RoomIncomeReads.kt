@@ -13,6 +13,7 @@ import com.software.sello.domain.model.Income
 import com.software.sello.domain.model.IncomeId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.IncomeCursor
 import com.software.sello.domain.port.IncomeMonth
 import com.software.sello.domain.port.IncomeMonthState
@@ -46,12 +47,11 @@ class RoomIncomeReads(private val database: SelloDatabase) : IncomeReads {
         require(limit in 1..IncomeReads.MAX_PAGE) {
             "a page holds 1 to ${IncomeReads.MAX_PAGE} incomes"
         }
-        val until = month.plusMonths(1).atDay(1).toString()
         // One more than asked for, only to learn whether another page exists.
         val rows = database.incomeDao().newest(
-            from = month.atDay(1).toString(),
-            until = until,
-            beforeDate = after?.date?.toString() ?: until,
+            from = month.firstDayText,
+            through = month.lastDayText,
+            beforeDate = after?.date?.let(EffectiveDates::storedText),
             beforeSequence = after?.sequence ?: Long.MAX_VALUE,
             limit = limit + 1
         )

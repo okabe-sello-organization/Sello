@@ -9,19 +9,19 @@ import com.software.sello.data.local.entity.ExpenseEntity
 interface ExpenseDao {
     @Query(
         "SELECT COUNT(*) FROM expense WHERE category_id = :categoryId " +
-            "AND effective_date >= :from AND effective_date < :until " +
+            "AND effective_date >= :from AND effective_date <= :through " +
             "AND instr(lower(COALESCE(note, '')), lower(:query)) > 0"
     )
     suspend fun countSearchInCategory(
         categoryId: String,
         from: String,
-        until: String,
+        through: String,
         query: String
     ): Long
 
     @Query(
         "SELECT * FROM expense WHERE category_id = :categoryId " +
-            "AND effective_date >= :from AND effective_date < :until " +
+            "AND effective_date >= :from AND effective_date <= :through " +
             "AND instr(lower(COALESCE(note, '')), lower(:query)) > 0 " +
             "ORDER BY CASE WHEN :sort = 'amount' THEN amount_minor END DESC, " +
             "CASE WHEN :sort = 'name' THEN COALESCE(note, '') END COLLATE NOCASE ASC, " +
@@ -30,7 +30,7 @@ interface ExpenseDao {
     suspend fun searchInCategory(
         categoryId: String,
         from: String,
-        until: String,
+        through: String,
         sort: String,
         query: String,
         offset: Int,
@@ -45,22 +45,23 @@ interface ExpenseDao {
     suspend fun highestSequence(): Long?
 
     /**
-     * A category's expenses dated from [from] up to but not including [until], newest
+     * A category's expenses dated from [from] up to and including [through], newest
      * day first and within a day the highest sequence first, starting before the
-     * position ([beforeDate], [beforeSequence]) and returning at most [limit].
+     * position ([beforeDate], [beforeSequence]), or with the newest when [beforeDate] is
+     * null, and returning at most [limit].
      */
     @Query(
         "SELECT * FROM expense WHERE category_id = :categoryId " +
-            "AND effective_date >= :from AND effective_date < :until " +
-            "AND (effective_date < :beforeDate " +
+            "AND effective_date >= :from AND effective_date <= :through " +
+            "AND (:beforeDate IS NULL OR effective_date < :beforeDate " +
             "OR (effective_date = :beforeDate AND sequence < :beforeSequence)) " +
             "ORDER BY effective_date DESC, sequence DESC LIMIT :limit"
     )
     suspend fun newestInCategory(
         categoryId: String,
         from: String,
-        until: String,
-        beforeDate: String,
+        through: String,
+        beforeDate: String?,
         beforeSequence: Long,
         limit: Int
     ): List<ExpenseEntity>
@@ -138,31 +139,31 @@ interface ExpenseDao {
     suspend fun delete(id: String, expectedVersion: Long): Int
 
     /**
-     * Expenses dated from [from] up to but not including [until], in date then
+     * Expenses dated from [from] up to and including [through], in date then
      * sequence order, starting after the position ([afterDate], [afterSequence]) and
      * returning at most [limit]. Pass the last row of one page to get the next.
      */
     @Query(
-        "SELECT * FROM expense WHERE effective_date >= :from AND effective_date < :until " +
+        "SELECT * FROM expense WHERE effective_date >= :from AND effective_date <= :through " +
             "AND (effective_date > :afterDate " +
             "OR (effective_date = :afterDate AND sequence > :afterSequence)) " +
             "ORDER BY effective_date, sequence LIMIT :limit"
     )
     suspend fun page(
         from: String,
-        until: String,
+        through: String,
         afterDate: String,
         afterSequence: Long,
         limit: Int
     ): List<ExpenseEntity>
 
     /**
-     * A category's expenses dated from [from] up to but not including [until], in date
+     * A category's expenses dated from [from] up to and including [through], in date
      * then sequence order, after the position ([afterDate], [afterSequence]), at most [limit].
      */
     @Query(
         "SELECT * FROM expense WHERE category_id = :categoryId " +
-            "AND effective_date >= :from AND effective_date < :until " +
+            "AND effective_date >= :from AND effective_date <= :through " +
             "AND (effective_date > :afterDate " +
             "OR (effective_date = :afterDate AND sequence > :afterSequence)) " +
             "ORDER BY effective_date, sequence LIMIT :limit"
@@ -170,7 +171,7 @@ interface ExpenseDao {
     suspend fun pageInCategory(
         categoryId: String,
         from: String,
-        until: String,
+        through: String,
         afterDate: String,
         afterSequence: Long,
         limit: Int
