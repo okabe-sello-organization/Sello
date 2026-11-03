@@ -954,6 +954,10 @@ class Corrections(
     ) {
         val until = completionOffer(receipt)?.let { it - askedFor + shownFor }
             ?.takeIf { it > monotonic.elapsed() }
+        // Only said, it never takes the place of another deletion still on offer.
+        if (until == null && pending.let { it != null && it.deletionId != receipt.operationId }) {
+            return
+        }
         deleted(Kind.GoalCompletion, receipt.operationId, receipt.generation, until, goalName)
     }
 

@@ -320,6 +320,52 @@ class GoalCompleterTest {
     }
 
     @Test
+    fun listoAfterAnUndoThatRestoredTheGoalKeepsSayingItIsBack() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+        // The undo commits: storage keeps nothing more for Deshacer.
+        corrections.undo()
+        commands.completionOffer = { null }
+        assertEquals(
+            CorrectionNotice.GoalCompletionUndone("Viaje a la costa"),
+            corrections.notice.value
+        )
+
+        completer.done()
+
+        assertEquals(
+            CorrectionNotice.GoalCompletionUndone("Viaje a la costa"),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun aCompletionFoundTooLateLeavesAnotherDeletionOnOfferInPlace() = runTest {
+        val completer = completer()
+        commands.next =
+            CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        completer.complete(viaje)
+        scheduler.advanceTimeBy(60.seconds)
+        scheduler.runCurrent()
+        val movement = (OperationId.of(ids.next()) as Outcome.Success).value
+        commands.undoOffer = {
+            GoalUndoOffer(movement, (GoalId.of(goal) as Outcome.Success).value, 120.seconds)
+        }
+        corrections.goalMovementDeleted(
+            OperationReceipt(movement, OperationKind.DeleteGoalMovement, 3, 12, Instant.EPOCH)
+        )
+
+        commands.found = Outcome.Success(receipt(commands.sent.single().operationId))
+        completer.retry()
+
+        assertEquals(
+            CorrectionNotice.GoalMovementDeleted(canUndo = true),
+            corrections.notice.value
+        )
+    }
+
+    @Test
     fun listoLeavesAnotherDeletionOnOfferInPlace() = runTest {
         val completer = completer()
         completer.complete(viaje)
