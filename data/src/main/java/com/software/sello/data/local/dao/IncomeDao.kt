@@ -71,34 +71,35 @@ interface IncomeDao {
     suspend fun delete(id: String, expectedVersion: Long): Int
 
     /**
-     * Incomes dated from [from] up to but not including [until], newest day first and
+     * Incomes dated from [from] up to and including [through], newest day first and
      * within a day the highest sequence first, starting before the position
-     * ([beforeDate], [beforeSequence]) and returning at most [limit].
+     * ([beforeDate], [beforeSequence]), or with the newest when [beforeDate] is null, and
+     * returning at most [limit].
      */
     @Query(
-        "SELECT * FROM income WHERE effective_date >= :from AND effective_date < :until " +
-            "AND (effective_date < :beforeDate " +
+        "SELECT * FROM income WHERE effective_date >= :from AND effective_date <= :through " +
+            "AND (:beforeDate IS NULL OR effective_date < :beforeDate " +
             "OR (effective_date = :beforeDate AND sequence < :beforeSequence)) " +
             "ORDER BY effective_date DESC, sequence DESC LIMIT :limit"
     )
     suspend fun newest(
         from: String,
-        until: String,
-        beforeDate: String,
+        through: String,
+        beforeDate: String?,
         beforeSequence: Long,
         limit: Int
     ): List<IncomeEntity>
 
     /** Same paging contract as [ExpenseDao.page]. */
     @Query(
-        "SELECT * FROM income WHERE effective_date >= :from AND effective_date < :until " +
+        "SELECT * FROM income WHERE effective_date >= :from AND effective_date <= :through " +
             "AND (effective_date > :afterDate " +
             "OR (effective_date = :afterDate AND sequence > :afterSequence)) " +
             "ORDER BY effective_date, sequence LIMIT :limit"
     )
     suspend fun page(
         from: String,
-        until: String,
+        through: String,
         afterDate: String,
         afterSequence: Long,
         limit: Int

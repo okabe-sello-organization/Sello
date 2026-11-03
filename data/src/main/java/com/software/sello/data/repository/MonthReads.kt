@@ -93,10 +93,10 @@ internal suspend fun SelloDatabase.monthBudget(
 internal suspend fun SelloDatabase.monthExpenses(
     month: YearMonth
 ): Outcome<List<Expense>, StorageFailure.Integrity> {
-    val from = month.atDay(1).toString()
-    val until = month.plusMonths(1).atDay(1).toString()
+    val from = month.firstDayText
+    val through = month.lastDayText
     return pages<ExpenseEntity> { after ->
-        expenseDao().page(from, until, after?.effectiveDate.orEmpty(), after?.sequence ?: 0, PAGE)
+        expenseDao().page(from, through, after?.effectiveDate.orEmpty(), after?.sequence ?: 0, PAGE)
     }.decodeAll { it.toDomain() }
 }
 
@@ -104,10 +104,10 @@ internal suspend fun SelloDatabase.monthExpenses(
 internal suspend fun SelloDatabase.monthIncomes(
     month: YearMonth
 ): Outcome<List<Income>, StorageFailure.Integrity> {
-    val from = month.atDay(1).toString()
-    val until = month.plusMonths(1).atDay(1).toString()
+    val from = month.firstDayText
+    val through = month.lastDayText
     return pages<IncomeEntity> { after ->
-        incomeDao().page(from, until, after?.effectiveDate.orEmpty(), after?.sequence ?: 0, PAGE)
+        incomeDao().page(from, through, after?.effectiveDate.orEmpty(), after?.sequence ?: 0, PAGE)
     }.decodeAll { it.toDomain() }
 }
 

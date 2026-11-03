@@ -207,10 +207,10 @@ class DatabaseIntegrityTest {
         )
         written.forEach { database.expenseDao().insert(it.toEntity()) }
 
-        val first = database.expenseDao().page("2026-10-01", "2026-11-01", "", 0, 3)
+        val first = database.expenseDao().page("2026-10-01", "2026-10-31", "", 0, 3)
         val last = first.last()
         val second = database.expenseDao()
-            .page("2026-10-01", "2026-11-01", last.effectiveDate, last.sequence, 3)
+            .page("2026-10-01", "2026-10-31", last.effectiveDate, last.sequence, 3)
 
         assertEquals(listOf(uuid(12), uuid(10), uuid(14)), first.map { it.id })
         assertEquals(listOf(uuid(11)), second.map { it.id })
