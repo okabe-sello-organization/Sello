@@ -50,7 +50,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -144,8 +146,17 @@ class GoalsViewModelTest {
         )
     )
 
-    private fun detail(saved: SavedStateHandle = SavedStateHandle(mapOf("goalId" to viajeId))) =
-        GoalDetailViewModel(saved, reads, commands, clock, money, ids, corrections) { false }
+    private fun detail(
+        saved: SavedStateHandle = SavedStateHandle(mapOf("goalId" to viajeId)),
+        source: HandGoalReads = reads
+    ) = GoalDetailViewModel(saved, source, commands, clock, money, ids, corrections) { false }
+
+    private fun metas(source: HandGoalReads = reads) =
+        MetasViewModel(SavedStateHandle(), source, commands, clock, money, ids, corrections) {
+            false
+        }
+
+    private val failure = StorageFailure.Unavailable("SQLiteException")
 
     private fun TestScope.watch(model: GoalDetailViewModel) =
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }
@@ -625,6 +636,128 @@ class GoalsViewModelTest {
         model.onAction(GoalDetailAction.MarkComplete)
 
         assertEquals(emptyList<GoalCommand>(), commands.sent)
+    }
+
+    @Test
+    fun metasRetryOnOlderGoalsKeepsThemAndAFailureAgainLeavesThemOlder() = runTest {
+        val fresh = HandGoalReads(newObservations = true)
+        val model = metas(fresh)
+        watch(model)
+        fresh.board.value = board(summary(viajeId, 1_710_000, 3_000_000))
+        fresh.board.value = ReadState.Failed(failure, null)
+        assertEquals(true, (model.state.value as MetasState.Ready).stale)
+        val seen = mutableListOf<MetasState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            model.state.collect { seen += it }
+        }
+
+        model.onAction(MetasAction.Retry)
+
+        assertEquals(2, fresh.started)
+        assertTrue(seen.all { it is MetasState.Ready && it.stale })
+        assertEquals(listOf(viajeId), (model.state.value as MetasState.Ready).goals.map { it.id })
+    }
+
+    @Test
+    fun comingBackToMetasAfterTheSharingStoppedShowsTheGoalsNotASkeleton() = runTest {
+        val fresh = HandGoalReads(newObservations = true)
+        val model = metas(fresh)
+        val first = watch(model)
+        fresh.board.value = board(summary(viajeId, 1_710_000, 3_000_000))
+        first.cancel()
+        // The state stops 5 s after the screen leaves, then the board 5 s after it.
+        advanceTimeBy(10_001)
+        runCurrent()
+        val seen = mutableListOf<MetasState>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            model.state.collect { seen += it }
+        }
+
+        assertEquals(2, fresh.started)
+        assertTrue(seen.isNotEmpty())
+        assertTrue(seen.all { it is MetasState.Ready && !it.stale })
+    }
+
+    @Test
+    fun metasMarksAGoalLogradaOnOlderGoalsWithTheVersionShown() = runTest {
+        // 3.060.000 of 3.000.000: waiting to be marked; then a refresh fails.
+        val fresh = HandGoalReads(newObservations = true)
+        val model = metas(fresh)
+        watch(model)
+        fresh.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        fresh.board.value = ReadState.Failed(failure, null)
+        assertEquals(true, (model.state.value as MetasState.Ready).stale)
+
+        model.onAction(MetasAction.MarkComplete(viajeId))
+
+        val sent = commands.sent.single() as CompleteGoal
+        assertEquals(GoalId.of(viajeId).value() to 4L, sent.goalId to sent.expectedVersion)
+    }
+
+    @Test
+    fun aStaleVersionMarkedFromOlderGoalsSaysItWasNotSaved() = runTest {
+        val fresh = HandGoalReads(newObservations = true)
+        val model = metas(fresh)
+        watch(model)
+        fresh.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        fresh.board.value = ReadState.Failed(failure, null)
+        commands.next = CommandOutcome.Rejected(CommandRejection.VersionConflict(5))
+
+        model.onAction(MetasAction.MarkComplete(viajeId))
+
+        assertEquals(1, commands.sent.size)
+        assertEquals(
+            CompletionState.Failed(GoalDetailError.NotSaved),
+            (model.state.value as MetasState.Ready).completion
+        )
+    }
+
+    @Test
+    fun theGoalPageKeepsItsFiguresOnRetryAndOnReturn() = runTest {
+        val fresh = HandGoalReads(newObservations = true)
+        val model = detail(source = fresh)
+        val first = watch(model)
+        fresh.board.value = board(summary(viajeId, 1_710_000, 3_000_000))
+        fresh.board.value = ReadState.Failed(failure, null)
+        assertEquals(true, ready(model).stale)
+        val seen = mutableListOf<GoalDetailState>()
+        val second = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            model.state.collect { seen += it }
+        }
+
+        model.onAction(GoalDetailAction.Retry)
+        assertTrue(seen.all { it is GoalDetailState.Ready && it.stale })
+
+        fresh.board.value = board(summary(viajeId, 1_710_000, 3_000_000))
+        first.cancel()
+        second.cancel()
+        advanceTimeBy(5_001)
+        runCurrent()
+        seen.clear()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            model.state.collect { seen += it }
+        }
+
+        assertEquals(3, fresh.started)
+        assertTrue(seen.isNotEmpty())
+        assertTrue(seen.all { it is GoalDetailState.Ready && !it.stale })
+    }
+
+    @Test
+    fun theGoalPageMarksAGoalLogradaOnOlderFiguresWithTheVersionShown() = runTest {
+        val fresh = HandGoalReads(newObservations = true)
+        val model = detail(source = fresh)
+        watch(model)
+        fresh.board.value = board(summary(viajeId, 3_060_000, 3_000_000))
+        fresh.board.value = ReadState.Failed(failure, null)
+        model.onAction(GoalDetailAction.Retry)
+        assertEquals(true, ready(model).stale)
+
+        model.onAction(GoalDetailAction.MarkComplete)
+
+        val sent = commands.sent.single() as CompleteGoal
+        assertEquals(GoalId.of(viajeId).value() to 4L, sent.goalId to sent.expectedVersion)
     }
 
     private fun committed() = CommandOutcome.Committed(

@@ -43,7 +43,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -158,10 +160,10 @@ class ReciboGoalViewModelTest {
     /** The first goal, the one Recibo opens on. */
     private val ReciboGoalState.Shown.pill get() = pills.firstOrNull()
 
-    private fun model() = ReciboGoalViewModel(
+    private fun model(source: HandGoalReads = reads) = ReciboGoalViewModel(
         SavedStateHandle(),
         session,
-        reads,
+        source,
         commands,
         clock,
         money,
@@ -324,6 +326,54 @@ class ReciboGoalViewModelTest {
         watch(model)
 
         model.onAction(ReciboGoalAction.MarkComplete(viaje))
+        model.onAction(ReciboGoalAction.MarkComplete(viaje))
+
+        val sent = commands.sent.single() as CompleteGoal
+        assertEquals(GoalId.of(viaje).value() to 4L, sent.goalId to sent.expectedVersion)
+    }
+
+    @Test
+    fun retryAndComingBackKeepTheGoalsShownAndAFailureAgainLeavesThemOlder() = runTest {
+        val fresh = HandGoalReads(newObservations = true)
+        val model = model(fresh)
+        val first = watch(model)
+        fresh.board.value = ReadState.Ready(board(a, b, recibo = listOf(viaje, celular)))
+        fresh.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
+        assertTrue(shown(model).stale)
+        val seen = mutableListOf<ReciboGoalState>()
+        val second = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            model.state.collect { seen += it }
+        }
+
+        model.onAction(ReciboGoalAction.Retry)
+        assertTrue(seen.all { it is ReciboGoalState.Shown && it.stale && it.pills.size == 2 })
+
+        fresh.board.value = ReadState.Ready(board(a, b, recibo = listOf(viaje, celular)))
+        first.cancel()
+        second.cancel()
+        // The state stops 5 s after the screen leaves, then the board 5 s after it.
+        advanceTimeBy(10_001)
+        runCurrent()
+        seen.clear()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            model.state.collect { seen += it }
+        }
+
+        assertEquals(3, fresh.started)
+        assertTrue(seen.isNotEmpty())
+        assertTrue(seen.all { it is ReciboGoalState.Shown && !it.stale && it.pills.size == 2 })
+    }
+
+    @Test
+    fun aWaitingGoalIsMarkedLogradaOnOlderGoalsWithTheVersionShown() = runTest {
+        val fresh = HandGoalReads(newObservations = true)
+        val model = model(fresh)
+        watch(model)
+        val over = goal(viaje, "Viaje a la costa", 3_360_000, 3_000_000)
+        fresh.board.value = ReadState.Ready(board(over, b, featured = viaje))
+        fresh.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
+        assertTrue(shown(model).stale)
+
         model.onAction(ReciboGoalAction.MarkComplete(viaje))
 
         val sent = commands.sent.single() as CompleteGoal

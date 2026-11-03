@@ -31,6 +31,7 @@ import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.InvestmentUndoOffer
@@ -54,6 +55,8 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -663,6 +666,36 @@ class InvestmentMovementViewModelTest {
         assertTrue(model.now.loadFailed)
         assertFalse(model.now.loading)
         assertFalse(model.now.canSubmit)
+    }
+
+    @Test
+    fun vuelveAIntentarloAfterAFailedFirstReadReadsTheBoardAgain() = runTest {
+        val failed = ReadState.Failed(StorageFailure.Unavailable("hand"), null)
+        val answers = ArrayDeque(listOf(failed, board(ecopetrolAcciones)))
+        val once = object : InvestmentReads by reads {
+            var reads = 0
+
+            override fun observeBoard(): Flow<InvestmentBoardState> {
+                reads++
+                return flowOf(answers.removeFirst())
+            }
+        }
+        val model = InvestmentMovementViewModel(
+            SavedStateHandle(mapOf(InvestmentMovementViewModel.KEY_INVESTMENT to ecopetrol)),
+            once,
+            commands,
+            clock,
+            ids,
+            money,
+            corrections
+        )
+        assertTrue(model.now.loadFailed)
+
+        model.onAction(InvestmentMovementAction.Retry)
+
+        assertEquals(2, once.reads)
+        assertFalse(model.now.loadFailed)
+        assertEquals(ecopetrol, model.now.investmentId)
     }
 
     @Test

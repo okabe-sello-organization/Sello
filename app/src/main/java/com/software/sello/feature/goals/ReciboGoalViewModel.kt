@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.GoalPlace
 import com.software.sello.domain.model.PlaceState
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.GoalPolicy
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.GoalBoard
@@ -17,6 +18,7 @@ import com.software.sello.navigation.MonthSession
 import com.software.sello.platform.ScreenReader
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -47,7 +49,10 @@ class ReciboGoalViewModel(
     private val attempts = MutableStateFlow(0)
     private val completer =
         GoalCompleter(saved, commands, corrections, ids, clock, screenReader, viewModelScope)
-    private val board = attempts.flatMapLatest { reads.observeBoard() }
+
+    /** The board as last read, so a Retry or a return never blanks figures already shown. */
+    private val lastGood = LastGoodRead<GoalBoard, StorageFailure>()
+    private val board = attempts.flatMapLatest { lastGood.keep(Unit, reads.observeBoard()) }
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
@@ -95,7 +100,9 @@ class ReciboGoalViewModel(
             }
 
             is ReciboGoalAction.MarkComplete -> {
-                val read = (board.value as? ReadState.Ready)?.value ?: return
+                // Older goals are marked too, at the version they show: storage refuses a
+                // stale one.
+                val read = goodIn(board.value) ?: return
                 val shown = state.value as? ReciboGoalState.Shown
                 val waiting = shown?.reached?.id == action.id ||
                     shown?.pills.orEmpty().any { it.reached && it.id == action.id }
@@ -132,6 +139,13 @@ class ReciboGoalViewModel(
                     it.progress.state(GoalPlace.Meta) == PlaceState.Ready
             }
             ?.history?.goal?.let { ReciboReachedGoal(it.id.value, it.name.value, it.icon.value) }
+
+    /** The goals as last read, also after a failed refresh; none before any read. */
+    private fun goodIn(board: GoalBoardState): GoalBoard? = when (board) {
+        ReadState.Loading -> null
+        is ReadState.Ready -> board.value
+        is ReadState.Failed -> board.lastGood
+    }
 
     private companion object {
         /** Long enough to outlast a rotation without reading again. */

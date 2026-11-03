@@ -3,11 +3,14 @@ package com.software.sello.feature.investments
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.InvestmentOrder
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentPreferences
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,7 +34,10 @@ class InversionesViewModel(
 ) : ViewModel() {
     private val render = InvestmentsRenderModel(money)
     private val attempts = MutableStateFlow(0)
-    private val board = attempts.flatMapLatest { reads.observeBoard() }
+
+    /** The board as last read, so a Retry or a return never blanks figures already shown. */
+    private val lastGood = LastGoodRead<InvestmentBoard, StorageFailure>()
+    private val board = attempts.flatMapLatest { lastGood.keep(Unit, reads.observeBoard()) }
 
     /** An order that cannot be read is the last one known, or the default: it moves no money. */
     private val order = preferences.observeInvestments().map { read ->
