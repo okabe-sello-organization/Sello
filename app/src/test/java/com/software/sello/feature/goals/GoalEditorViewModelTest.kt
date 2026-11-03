@@ -484,6 +484,32 @@ class GoalEditorViewModelTest {
     }
 
     @Test
+    fun anEditStillUnresolvedAfterProcessDeathIsShownAsUnresolvedUntilKnown() = runTest {
+        val saved = editing(goal(3_000_000, 1_710_000))
+        val first = model(saved)
+        first.onAction(GoalEditorAction.NameChanged("Viaje a Cartagena"))
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        first.onAction(GoalEditorAction.Submit)
+
+        val restored = model(saved)
+
+        assertTrue(restored.state.value.unresolved)
+        restored.onAction(GoalEditorAction.AskToDelete)
+        assertFalse(restored.state.value.confirmDelete)
+
+        // Asked again with its own operation: nothing was written, so the form is free.
+        commands.found = Outcome.Success(null)
+        restored.onAction(GoalEditorAction.Retry)
+
+        assertFalse(restored.state.value.unresolved)
+        assertEquals(GoalSaveError.NotSaved, restored.state.value.saveError)
+        restored.onAction(GoalEditorAction.AskToDelete)
+        assertTrue(restored.state.value.confirmDelete)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
     fun anUnknownDeleteClosesTheSlipAndIsCheckedWithItsOwnOperation() = runTest {
         val model = model(editing(goal(3_000_000, 1_710_000)))
         commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())

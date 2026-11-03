@@ -363,6 +363,7 @@ class GoalEditorViewModel(
                 },
                 movementCount = summary?.history?.events?.count { it is GoalMovement } ?: 0,
                 confirmDelete = saved[KEY_CONFIRM] ?: false,
+                unresolved = submission.pending,
                 changed = summary != null && (detailsChanged(summary) || targetChanged(summary)),
                 result = state.result ?: saved.get<String>(KEY_RESULT)?.let(::result)
             )
@@ -533,7 +534,10 @@ class GoalEditorViewModel(
         val step = submission.step ?: STEP_CREATE
         mutable.update { it.copy(busy = true, saveError = null) }
         when (val settled = submission.recover(commands::find)) {
-            null -> mutable.update { it.copy(busy = false) }
+            null -> {
+                mutable.update { it.copy(busy = false) }
+                render()
+            }
 
             is Settled.Unknown -> unknown()
 
@@ -544,6 +548,7 @@ class GoalEditorViewModel(
             } else {
                 if (read() && !mutable.value.changed) finish(GoalEditorResult.Updated)
                 mutable.update { it.copy(busy = false) }
+                render()
             }
         }
     }
@@ -557,7 +562,13 @@ class GoalEditorViewModel(
             GoalEditorResult.Discarded -> "discarded"
         }
         mutable.update {
-            it.copy(busy = false, confirmDiscard = false, confirmDelete = false, result = result)
+            it.copy(
+                busy = false,
+                confirmDiscard = false,
+                confirmDelete = false,
+                unresolved = submission.pending,
+                result = result
+            )
         }
     }
 
