@@ -76,7 +76,9 @@ class SpendingHistory private constructor(
 
     /**
      * The same history without one expense of [amount] dated [date] that it holds, as it was
-     * before a catch-up recorded it. A date outside the history is its own failure.
+     * before a catch-up recorded it. A date outside the history is its own failure, and so
+     * is an amount larger than the month's spending: it was never in it, so the month is
+     * refused, never left with a negative spending.
      */
     fun minus(date: LocalDate, amount: Money): Outcome<SpendingHistory, CarryoverFailure> {
         val month = YearMonth.from(date)
@@ -88,6 +90,7 @@ class SpendingHistory private constructor(
             is Outcome.Success -> difference.value
             is Outcome.Failure -> return Outcome.Failure(difference.error.toCarryover())
         }
+        if (total.minorUnits < 0) return Outcome.Failure(CarryoverFailure.SpendingNotHeld(month))
         return Outcome.Success(SpendingHistory(from, through, byMonth + (month to total)))
     }
 
@@ -195,6 +198,9 @@ data class CarryBreakdown(
 sealed interface CarryoverFailure {
     /** A month's spending was not read, which is not the same as nothing spent. */
     data class MissingHistory(val month: YearMonth) : CarryoverFailure
+
+    /** An amount taken out of [month]'s spending is more than the month holds. */
+    data class SpendingNotHeld(val month: YearMonth) : CarryoverFailure
 
     /** A month of a chain has no finite base: unlimited, paused or never configured. */
     data class NoFiniteBase(val month: YearMonth) : CarryoverFailure

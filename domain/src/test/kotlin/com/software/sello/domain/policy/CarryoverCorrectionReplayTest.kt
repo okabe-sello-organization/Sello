@@ -560,6 +560,73 @@ class CarryoverCorrectionReplayTest {
     }
 
     @Test
+    fun paymentsInTwoEarlierMonthsAcrossTheYearShiftTheCurrentMonthByTheirSum() {
+        // Comida carries from dic 2026, base 100.000; today 10 feb 2027. Catch-up recorded
+        // 50.000 dated 20 dic and 70.000 dated 15 ene; dic also spent 30.000, ene 60.000,
+        // feb 40.000. Worked by hand:
+        //   before: dic S 30.000, R 70.000, Cumplido; ene K 70.000, C 170.000, S 60.000,
+        //           R 110.000, Cumplido; feb K 110.000, C 210.000, R 170.000, Al día
+        //   after:  dic S 80.000, R 20.000, Cumplido; ene K 20.000, C 120.000, S 130.000,
+        //           R -10.000, Excedido; feb K -10.000, C 90.000, R 50.000, Al día
+        // feb moves by -(50.000 + 70.000) = -120.000; ene by -50.000. dic's carry-in stays 0,
+        // so it is the edited month; ene's carry-in changes, so it is listed with feb.
+        val dic = YearMonth.of(2026, 12)
+        val december = due("2026-12-20", 50_000, comida)
+        val january = due("2027-01-15", 70_000, comida)
+        val recorded = Carry.comidaInput(
+            chains = listOf(chain(dic)),
+            from = dic,
+            through = feb,
+            asOf = "2027-02-10",
+            spent = listOf(
+                "2026-12-05" to 30_000L,
+                "2026-12-20" to 50_000L,
+                "2027-01-08" to 60_000L,
+                "2027-01-15" to 70_000L,
+                "2027-02-03" to 40_000L
+            ),
+            defaults = listOf(monthly(dic, 100_000))
+        )
+
+        val result = CarryoverCorrectionReplay.catchUp(recorded, listOf(december, january), feb)
+            .valueOrFail()
+
+        val edited = result.edited.single()
+        assertEquals(dic, edited.month)
+        assertEquals(70_000L to 20_000L, edited.remaining())
+        assertEquals(CarryVerdict.Closed(PastVerdict.WithinLimit), edited.before.verdict)
+        assertEquals(CarryVerdict.Closed(PastVerdict.WithinLimit), edited.after.verdict)
+        assertEquals(
+            listOf(
+                listOf(ene, 70_000L to 20_000L, 170_000L to 120_000L, 110_000L to -10_000L),
+                listOf(feb, 110_000L to -10_000L, 210_000L to 90_000L, 170_000L to 50_000L)
+            ),
+            result.listed()
+        )
+        assertEquals(CarryVerdict.Closed(PastVerdict.WithinLimit), result.months[0].before.verdict)
+        assertEquals(CarryVerdict.Closed(PastVerdict.Over), result.months[0].after.verdict)
+        assertEquals(CarryVerdict.InProgress(Verdict.OnTrack), result.months[1].before.verdict)
+        assertEquals(CarryVerdict.InProgress(Verdict.OnTrack), result.months[1].after.verdict)
+        assertEquals(
+            listOf(cop(-120_000)),
+            result.months.filter { it.month == feb }.map { it.capacityChange }
+        )
+        assertEquals(mapOf(ene to cop(-50_000), feb to cop(-120_000)), result.overallCapacityChange)
+    }
+
+    @Test
+    fun aPaymentTheCategoryDoesNotHoldIsRefusedNotTakenBelowZero() {
+        // Hogar's feb holds 800.000; a listed 900.000 dated feb was never recorded there.
+        val result = CarryoverCorrectionReplay.catchUp(
+            hogarInput(),
+            listOf(due("2027-02-05", 900_000)),
+            mar
+        )
+
+        assertEquals(CarryoverFailure.SpendingNotHeld(feb), result.errorOrFail())
+    }
+
+    @Test
     fun monthsAreListedInMonthOrderThenCategoryAndOnlyOnceEach() {
         val result = preview(
             comidaWith(
