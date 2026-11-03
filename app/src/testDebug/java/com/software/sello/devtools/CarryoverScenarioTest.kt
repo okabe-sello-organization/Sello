@@ -1,12 +1,14 @@
 package com.software.sello.devtools
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.devtools.ScenarioStep.AdvanceTo
 import com.software.sello.devtools.ScenarioStep.Archive
 import com.software.sello.devtools.ScenarioStep.CatchUp
 import com.software.sello.devtools.ScenarioStep.Category
 import com.software.sello.devtools.ScenarioStep.DisableCarry
 import com.software.sello.devtools.ScenarioStep.EnableCarry
 import com.software.sello.devtools.ScenarioStep.Expense
+import com.software.sello.devtools.ScenarioStep.Schedule
 import com.software.sello.devtools.ScenarioStep.SetDefaultLimit
 import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.BudgetStanding
@@ -54,6 +56,7 @@ import com.software.sello.domain.port.UndoOffer
 import com.software.sello.domain.usecase.CatchUpNow
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
@@ -815,6 +818,75 @@ class CarryoverScenarioTest {
         )
         assertEquals(CarryVerdict.Closed(PastVerdict.WithinLimit), feb.before.verdict)
         assertEquals(CarryVerdict.Closed(PastVerdict.Over), feb.after.verdict)
+    }
+
+    @Test
+    fun theNoticeKeepsAPaymentOfTheCurrentMonthInItsFiguresAsReciboDoes() {
+        // SELLO-147. Servicios carries from oct 2026 with base 200.000; oct spent 150.000.
+        // On 3 nov catch-up records internet 80.000 dated 30 oct and electricity 190.000
+        // dated 1 nov. Worked by hand: oct S 230.000, R −30.000; nov K −30.000,
+        // C 170.000, S 190.000, R −20.000, Excedido. Before: nov C 250.000, R 60.000, Al día.
+        val day = { month: Int, of: Int -> LocalDate.of(2026, month, of) }
+        val bills = JvmSandbox(
+            Scenario(
+                id = "sello-147",
+                version = 1,
+                seed = 1,
+                zone = ZoneId.of("America/Bogota"),
+                start = day(10, 1),
+                today = day(11, 3),
+                title = "Servicios",
+                summary = "Two bills recorded on 3 nov, one of each month.",
+                steps = listOf(
+                    Category("servicios", "Servicios", "home", 200_000),
+                    EnableCarry("servicios", 1),
+                    AdvanceTo(day(10, 12)),
+                    Expense("servicios", 150_000, "Gas", day(10, 12)),
+                    Schedule(
+                        "internet",
+                        Scheduled.Payment("servicios", 80_000, "Internet"),
+                        Every.Month(30),
+                        start = day(10, 30),
+                        end = day(10, 30)
+                    ),
+                    Schedule(
+                        "luz",
+                        Scheduled.Payment("servicios", 190_000, "Luz"),
+                        Every.Month(1),
+                        start = day(11, 1),
+                        end = day(11, 1)
+                    ),
+                    AdvanceTo(day(11, 3)),
+                    CatchUp
+                )
+            )
+        ).also {
+            sandbox = it
+            it.erase()
+            it.open()
+            it.finish()
+        }
+        val listed = bills.rows("SELECT id FROM expense WHERE note IN ('Internet', 'Luz')")
+            .map { ExpenseId.of(it).value() }
+        assertEquals(2, listed.size)
+
+        assertEquals(Row(-30_000, 170_000, 190_000, -20_000), bills.row(2026, 11, "Servicios"))
+        assertEquals(Verdict.Over, bills.currentVerdict(2026, 11, "Servicios"))
+        val servicios = runBlocking {
+            bills.koin.get<CarryoverReads>().catchUpNotice(listed).value()
+        }.categories.single()
+        val november = servicios.months.single()
+        assertEquals(YearMonth.of(2026, 11), november.month)
+        assertEquals(
+            250_000L to 170_000L,
+            november.before.capacity.minorUnits to november.after.capacity.minorUnits
+        )
+        assertEquals(
+            60_000L to -20_000L,
+            november.before.remaining.minorUnits to november.after.remaining.minorUnits
+        )
+        assertEquals(CarryVerdict.InProgress(Verdict.OnTrack), november.before.verdict)
+        assertEquals(CarryVerdict.InProgress(Verdict.Over), november.after.verdict)
     }
 
     // --- Resume, restore and reset ---------------------------------------------------------

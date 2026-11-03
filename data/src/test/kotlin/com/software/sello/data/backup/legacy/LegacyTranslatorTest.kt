@@ -852,6 +852,57 @@ class LegacyTranslatorTest {
         assertRoundTrip(result.contents)
     }
 
+    /**
+     * A rate whose exponent is far out of range is out of range, never rounded: rounding
+     * 1e-999999999 to the centavo would work through a billion digits (SELLO-162). One
+     * that rounds into range is still kept.
+     */
+    @Test(timeout = 10_000)
+    fun `a rate with a huge exponent is skipped as out of range, not worked out`() {
+        val text = legacy(
+            rates(
+                rate("USD", "1e-999999999"),
+                rate("USD", "1E999999999"),
+                rate("USD", "-4e-999999999"),
+                rate("USD", "0.995")
+            )
+        )
+
+        val result = translated(text)
+
+        assertEquals(
+            listOf(
+                LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.Rounded, 1),
+                LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.AmountOutOfRange, 3)
+            ),
+            result.report.lines
+        )
+        assertEquals(listOf(100L), result.contents.financial.usdRates.map { it.rate.hundredths })
+    }
+
+    /** A rate's text is read as a number only up to 64 characters (SELLO-162). */
+    @Test(timeout = 10_000)
+    fun `a rate written with very many digits is skipped as out of range, not read`() {
+        val text = legacy(
+            rates(
+                rate("USD", "4000." + "0".repeat(59)),
+                rate("USD", "4000." + "0".repeat(60)),
+                rate("USD", "4000." + "0".repeat(5_000_000))
+            )
+        )
+
+        val result = translated(text)
+
+        assertEquals(
+            listOf(LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.AmountOutOfRange, 2)),
+            result.report.lines
+        )
+        assertEquals(
+            listOf(400_000L),
+            result.contents.financial.usdRates.map { it.rate.hundredths }
+        )
+    }
+
     @Test
     fun `merchant rules are still reported as not imported`() {
         val text = legacy(

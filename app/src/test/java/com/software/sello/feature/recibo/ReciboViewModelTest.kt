@@ -18,6 +18,7 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
@@ -26,6 +27,7 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
@@ -39,7 +41,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -71,10 +75,12 @@ class ReciboViewModelTest {
     @After
     fun resetDispatcher() = Dispatchers.resetMain()
 
-    private fun TestScope.started(): Pair<ReciboViewModel, Job> {
+    private fun TestScope.started(
+        source: MonthlySnapshots = snapshots
+    ): Pair<ReciboViewModel, Job> {
         val viewModel = ReciboViewModel(
             session,
-            snapshots,
+            source,
             orderings,
             testMoney(),
             HandInvitations(),
@@ -159,12 +165,65 @@ class ReciboViewModelTest {
         val (viewModel) = started()
         val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
 
+        snapshots.of(october).value = ReadState.Failed(failure, lastGood = null)
+        val withoutAny = viewModel.state.value
         snapshots.of(october).value =
             ReadState.Failed(failure, lastGood = snapshot(october, 5_000, categories = 1))
-        val withOlder = viewModel.state.value
-        snapshots.of(october).value = ReadState.Failed(failure, lastGood = null)
 
-        assertEquals(true, (withOlder as ReciboState.Month).stale)
+        assertEquals(ReciboState.Failed, withoutAny)
+        assertEquals(true, (viewModel.state.value as ReciboState.Month).stale)
+    }
+
+    @Test
+    fun retryOnOlderFiguresKeepsThemAndAFailureAgainLeavesThemOlder() = runTest {
+        val fresh = NewObservationSnapshots()
+        val (viewModel) = started(fresh)
+        val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
+        fresh.of(october).value = ReadState.Ready(snapshot(october, 5_000, categories = 1))
+        fresh.of(october).value = ReadState.Failed(failure, lastGood = null)
+        val older = viewModel.state.value as ReciboState.Month
+        val seen = mutableListOf<ReciboState>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect { seen += it }
+        }
+
+        viewModel.onAction(ReciboAction.Retry)
+
+        assertEquals(listOf(october, october), fresh.observed)
+        assertEquals(listOf<ReciboState>(older), seen.distinct())
+        assertEquals(true, older.stale)
+        assertEquals("5.000", older.summary.amount.digits)
+    }
+
+    @Test
+    fun comingBackAfterTheSharingStoppedShowsTheFiguresNotASkeleton() = runTest {
+        val fresh = NewObservationSnapshots()
+        val (viewModel, watching) = started(fresh)
+        fresh.of(october).value = ReadState.Ready(snapshot(october, 5_000, categories = 1))
+        val shown = viewModel.state.value as ReciboState.Month
+        watching.cancel()
+        advanceTimeBy(5_001)
+        runCurrent()
+        val seen = mutableListOf<ReciboState>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.collect { seen += it }
+        }
+
+        assertEquals(listOf(october, october), fresh.observed)
+        assertEquals(listOf<ReciboState>(shown), seen.distinct())
+    }
+
+    @Test
+    fun retryWhenNothingEverLoadedIsTheErrorUntilARead() = runTest {
+        val fresh = NewObservationSnapshots()
+        val (viewModel) = started(fresh)
+        val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
+        fresh.of(october).value = ReadState.Failed(failure, lastGood = null)
+        assertEquals(ReciboState.Failed, viewModel.state.value)
+
+        viewModel.onAction(ReciboAction.Retry)
+
         assertEquals(ReciboState.Failed, viewModel.state.value)
     }
 

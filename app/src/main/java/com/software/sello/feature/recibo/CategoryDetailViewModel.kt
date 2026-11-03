@@ -9,6 +9,7 @@ import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.policy.ScheduleStatus
 import com.software.sello.domain.port.CategoryInsightsSnapshots
@@ -28,6 +29,7 @@ import com.software.sello.presentation.carry.carryProblem
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.DeleteResult
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration
@@ -72,6 +74,13 @@ class CategoryDetailViewModel(
     private val render = ReciboRenderModel(money)
     private val category = MutableStateFlow<String?>(null)
     private val attempt = MutableStateFlow(0)
+
+    /**
+     * The month and its detail figures as last read, so a Retry or a return never blanks
+     * what is shown.
+     */
+    private val lastMonth = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
+    private val lastFigures = LastGoodRead<CategoryInsights, SnapshotFailure>()
 
     /** How many pages are wanted of the list being shown. */
     private val pagesWanted = MutableStateFlow(1)
@@ -121,8 +130,10 @@ class CategoryDetailViewModel(
 
                     id == null -> flowOf(CategoryDetailState.Gone)
 
-                    else -> snapshots.observe(shown.month)
-                        .combine(insightsSnapshots.observe(id, shown.month)) { snapshot, insights ->
+                    else -> lastMonth.keep(shown.month, snapshots.observe(shown.month))
+                        .combine(
+                            lastFigures.keep(shown, insightsSnapshots.observe(id, shown.month))
+                        ) { snapshot, insights ->
                             snapshot to
                                 insights
                         }

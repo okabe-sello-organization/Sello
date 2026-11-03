@@ -11,7 +11,8 @@ import com.software.sello.domain.model.PortfolioItem
  * order rows were read in.
  *
  * - Mayor valor: value in pesos, largest first; those without one last, oldest first.
- * - Rendimiento: the simple return, highest first, losses below even; those without a
+ * - Rendimiento: gains, then even, then losses, by the return's sign even when it rounds
+ *   to 0,0 % (IN16); then the simple return in tenths, highest first; those without a
  *   return (no value or nothing contributed) last.
  * - Alfabético: by name.
  * - Más reciente: the newest investment first.
@@ -35,6 +36,7 @@ object InvestmentOrderPolicy {
 
         InvestmentOrder.Return ->
             compareBy<PortfolioItem> { it.figures.`return` == null }
+                .thenBy { it.figures.`return`?.direction?.let(::rank) }
                 .thenByDescending { signedTenths(it) }
 
         InvestmentOrder.Alphabetical -> Comparator { _, _ -> 0 }
@@ -46,6 +48,13 @@ object InvestmentOrderPolicy {
             compareBy<PortfolioItem> { latest(it) == null }
                 .thenByDescending { latest(it)?.date }
                 .thenByDescending { latest(it)?.createdAt }
+    }
+
+    /** Gana before even before Pierde, whatever the tenths round to. */
+    private fun rank(direction: GainDirection): Int = when (direction) {
+        GainDirection.Gain -> 0
+        GainDirection.Even -> 1
+        GainDirection.Loss -> 2
     }
 
     private fun signedTenths(item: PortfolioItem): Long? = item.figures.`return`?.let {

@@ -195,7 +195,7 @@ class CarryoverReadContractTest {
 
         val batch = RoomScheduleCatchUp(ledger.database, { ledger.audit }, {
             uuid(ledger.nextRecord++)
-        }).recordDue(LocalDate.parse("2027-03-10"), 50) as CatchUpBatch.Recorded
+        }).recordDue(1, LocalDate.parse("2027-03-10"), 50) as CatchUpBatch.Recorded
         val recorded = (batch.occurrences.single() as RecordedOccurrence.Payment).expenseId
         val after = snapshot("2027-03").valueOrFail()
         val notice = ledger.carry.catchUpNotice(listOf(recorded)).valueOrFail()

@@ -75,7 +75,11 @@ class ScheduleSandboxPortsTest {
     private class Batches(val answers: ArrayDeque<CatchUpBatch>) : ScheduleCatchUpStore {
         var asked = 0
 
-        override suspend fun recordDue(today: LocalDate, limit: Int): CatchUpBatch {
+        override suspend fun recordDue(
+            generation: Long,
+            today: LocalDate,
+            limit: Int
+        ): CatchUpBatch {
             asked++
             return answers.removeFirst()
         }
@@ -96,12 +100,12 @@ class ScheduleSandboxPortsTest {
         )
         val fenced = FencedScheduleCatchUp(store, fence) { saved++ }
 
-        assertEquals(recorded, fenced.recordDue(today, 50))
-        repeat(3) { fenced.recordDue(today, 50) }
+        assertEquals(recorded, fenced.recordDue(1, today, 50))
+        repeat(3) { fenced.recordDue(1, today, 50) }
         assertEquals(1, saved)
 
         fence.close()
-        val late = launch { fenced.recordDue(today, 50) }
+        val late = launch { fenced.recordDue(1, today, 50) }
         runCurrent()
         assertEquals(4, store.asked)
         assertFalse(late.isCompleted)

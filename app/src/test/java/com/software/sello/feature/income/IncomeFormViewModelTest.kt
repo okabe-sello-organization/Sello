@@ -185,6 +185,46 @@ class IncomeFormViewModelTest {
     }
 
     @Test
+    fun otrosNameWithAnInvisibleOrDirectionCharacterCannotBeFinished() {
+        for (text in listOf("Bono\u200B", "Bo\u00ADno", "\u202EBono")) {
+            val form = ready()
+            form.type("5000")
+            form.onAction(IncomeFormAction.SourcePicked("other"))
+            form.onAction(IncomeFormAction.OpenComposer(IncomeComposer.SourceName))
+            form.onAction(IncomeFormAction.ComposerChanged(text))
+            form.onAction(IncomeFormAction.ComposerDone)
+
+            assertEquals(text, IncomeTextProblem.NotAllowed, form.now.composerProblem)
+            assertEquals(text, IncomeComposer.SourceName, form.now.composer)
+            assertEquals(text, "", form.now.otherName)
+            form.onAction(IncomeFormAction.Submit)
+        }
+        assertEquals(emptyList<Any>(), commands.created)
+    }
+
+    @Test
+    fun otrosNameSavedBeforeTheInvisibleCharacterRuleIsKeptByACorrection() {
+        val older = IncomeSource.Other(
+            (SourceName.of("Dise\u00F1o\u200B") as Outcome.Success).value
+        )
+        val form = opened(logo.copy(source = older))
+        form.onAction(IncomeFormAction.OpenComposer(IncomeComposer.SourceName))
+        form.onAction(IncomeFormAction.ComposerDone)
+        val reconfirmed = form.now
+        form.retype("900000")
+
+        form.onAction(IncomeFormAction.Submit)
+
+        assertNull(reconfirmed.composerProblem)
+        assertNull(reconfirmed.composer)
+        val sent = commands.edited.single().source as IncomeSource.Other
+        assertEquals(
+            "44 69 73 65 C3 B1 6F E2 80 8B",
+            sent.name.value.toByteArray(Charsets.UTF_8).joinToString(" ") { "%02X".format(it) }
+        )
+    }
+
+    @Test
     fun anOpenComposerAndItsTextComeBackAfterTheProcessIsKilled() {
         val saved = SavedStateHandle()
         val first = ready(saved)

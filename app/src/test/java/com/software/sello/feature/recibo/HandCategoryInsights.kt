@@ -7,12 +7,16 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryInsightsState
 import com.software.sello.domain.port.ReadState
+import com.software.sello.testing.asNewObservation
 import java.time.YearMonth
 import kotlinx.coroutines.flow.MutableStateFlow
 
-internal class HandCategoryInsights : CategoryInsightsSnapshots {
+/** [newObservations]: every observation starts from Loading, as the real one does. */
+internal class HandCategoryInsights(private val newObservations: Boolean = false) :
+    CategoryInsightsSnapshots {
     val state = MutableStateFlow<CategoryInsightsState>(ReadState.Loading)
-    override fun observe(categoryId: CategoryId, month: YearMonth) = state
+    override fun observe(categoryId: CategoryId, month: YearMonth) =
+        if (newObservations) state.asNewObservation() else state
     override suspend fun read(
         categoryId: CategoryId,
         month: YearMonth

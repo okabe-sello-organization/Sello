@@ -29,6 +29,7 @@ import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -73,13 +74,10 @@ class GoalCompleterTest {
             HandCategoryReads(),
             testMoney()
         )
+        // Storage's offer as RoomGoalCommands keeps it: the time asked, from the save at 0.
         commands.completionOffer = {
-            commands.sent.lastOrNull()?.let {
-                GoalUndoOffer(
-                    it.operationId,
-                    (GoalId.of(goal) as Outcome.Success).value,
-                    60.seconds
-                )
+            (commands.sent.lastOrNull() as? CompleteGoal)?.let {
+                GoalUndoOffer(it.operationId, it.goalId, 5.seconds + it.undoFor)
             }
         }
     }
@@ -146,14 +144,279 @@ class GoalCompleterTest {
     }
 
     @Test
-    fun deshacerLastsAboutTenSecondsAfterTheMomentAndLongerWithAScreenReader() = runTest {
+    fun storageKeepsDeshacerPossibleWhileTheMomentShowsAndOffersAboutTenSeconds() = runTest {
         completer().complete(viaje)
-        reading = true
-        completer().complete(viaje)
+        assertEquals(5.minutes, (commands.sent.single() as CompleteGoal).undoFor)
 
-        val (plain, read) = commands.sent.map { (it as CompleteGoal).undoFor }
-        assertEquals(14.seconds, plain)
-        assertEquals(34.seconds, read)
+        // A moment that never closes here: about ten seconds from the save.
+        scheduler.advanceTimeBy(9999.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = true),
+            corrections.notice.value
+        )
+        scheduler.advanceTimeBy(1.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(null, corrections.notice.value)
+    }
+
+    @Test
+    fun listoNineSecondsAfterTheSaveOffersDeshacerUntilNineteenSeconds() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+
+        scheduler.advanceTimeBy(9.seconds)
+        scheduler.runCurrent()
+        completer.done()
+
+        scheduler.advanceTimeBy(9999.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = true),
+            corrections.notice.value
+        )
+        scheduler.advanceTimeBy(1.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(null, corrections.notice.value)
+    }
+
+    @Test
+    fun withAScreenReaderListoAfterFortySecondsOffersDeshacerThirtySecondsMore() = runTest {
+        reading = true
+        val completer = completer()
+        completer.complete(viaje)
+
+        // The time the save asked ran out behind the moment.
+        scheduler.advanceTimeBy(40.seconds)
+        scheduler.runCurrent()
+        assertEquals(null, corrections.notice.value)
+        completer.done()
+
+        scheduler.advanceTimeBy(29999.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = true),
+            corrections.notice.value
+        )
+        scheduler.advanceTimeBy(1.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(null, corrections.notice.value)
+    }
+
+    @Test
+    fun closingTheMomentAgainNeverGrowsTheOffer() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+        scheduler.advanceTimeBy(2.seconds)
+        scheduler.runCurrent()
+
+        // Listo, then Listo again from a recreated screen on the same ViewModel.
+        completer.done()
+        scheduler.advanceTimeBy(5.seconds)
+        scheduler.runCurrent()
+        completer.done()
+
+        scheduler.advanceTimeBy(4999.milliseconds)
+        scheduler.runCurrent()
+        assertTrue(corrections.notice.value is CorrectionNotice.GoalCompleted)
+        scheduler.advanceTimeBy(1.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(null, corrections.notice.value)
+    }
+
+    @Test
+    fun aCompletionFoundAgainOffersAboutTenSecondsNotStoragesWholeTime() = runTest {
+        val completer = completer()
+        commands.next =
+            CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        completer.complete(viaje)
+        commands.found = Outcome.Success(receipt(commands.sent.single().operationId))
+        completer.retry()
+
+        scheduler.advanceTimeBy(9999.milliseconds)
+        scheduler.runCurrent()
+        assertTrue(corrections.notice.value is CorrectionNotice.GoalCompleted)
+        scheduler.advanceTimeBy(1.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(null, corrections.notice.value)
+    }
+
+    @Test
+    fun aCompletionFoundSixtySecondsAfterItsSaveIsOnlySaid() = runTest {
+        val completer = completer()
+        commands.next =
+            CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        completer.complete(viaje)
+
+        scheduler.advanceTimeBy(60.seconds)
+        scheduler.runCurrent()
+        commands.found = Outcome.Success(receipt(commands.sent.single().operationId))
+        completer.retry()
+
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = false),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun aRecreationThatFindsTheCompletionDoesNotOpenANewWindow() = runTest {
+        val saved = SavedStateHandle()
+        commands.next =
+            CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        completer(saved).complete(viaje)
+
+        // Recreated 8 seconds after the save: Deshacer has the 2 seconds left, not 10.
+        scheduler.advanceTimeBy(8.seconds)
+        scheduler.runCurrent()
+        commands.found = Outcome.Success(receipt(commands.sent.single().operationId))
+        completer(saved)
+
+        scheduler.advanceTimeBy(1999.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = true),
+            corrections.notice.value
+        )
+        scheduler.advanceTimeBy(1.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(null, corrections.notice.value)
+    }
+
+    @Test
+    fun listoAfterStoragesFiveMinutesSaysLogradaWithoutDeshacer() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+
+        scheduler.advanceTimeBy(5.minutes)
+        scheduler.runCurrent()
+        completer.done()
+
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = false),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun listoNeverOffersDeshacerAgainOnceItsUndoWasBlocked() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+        // Blocked: storage still keeps the completion, in time, for Deshacer.
+        val completion = commands.sent.single() as CompleteGoal
+        commands.completionOffer =
+            { GoalUndoOffer(completion.operationId, completion.goalId, 5.minutes) }
+        commands.next =
+            CommandOutcome.Rejected(CommandRejection.Specific(GoalRejection.UndoConflict))
+        corrections.undo()
+        assertEquals(CorrectionNotice.GoalCompletionUndoTooLate, corrections.notice.value)
+
+        completer.done()
+
+        assertEquals(CorrectionNotice.GoalCompletionUndoTooLate, corrections.notice.value)
+    }
+
+    @Test
+    fun listoAfterAnUndoThatRestoredTheGoalKeepsSayingItIsBack() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+        // The undo commits: storage keeps nothing more for Deshacer.
+        corrections.undo()
+        commands.completionOffer = { null }
+        assertEquals(
+            CorrectionNotice.GoalCompletionUndone("Viaje a la costa"),
+            corrections.notice.value
+        )
+
+        completer.done()
+
+        assertEquals(
+            CorrectionNotice.GoalCompletionUndone("Viaje a la costa"),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun aCompletionFoundTooLateLeavesAnotherDeletionOnOfferInPlace() = runTest {
+        val completer = completer()
+        commands.next =
+            CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        completer.complete(viaje)
+        scheduler.advanceTimeBy(60.seconds)
+        scheduler.runCurrent()
+        val movement = (OperationId.of(ids.next()) as Outcome.Success).value
+        commands.undoOffer = {
+            GoalUndoOffer(movement, (GoalId.of(goal) as Outcome.Success).value, 120.seconds)
+        }
+        corrections.goalMovementDeleted(
+            OperationReceipt(movement, OperationKind.DeleteGoalMovement, 3, 12, Instant.EPOCH)
+        )
+
+        commands.found = Outcome.Success(receipt(commands.sent.single().operationId))
+        completer.retry()
+
+        assertEquals(
+            CorrectionNotice.GoalMovementDeleted(canUndo = true),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun listoLeavesAnotherDeletionOnOfferInPlace() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+        val movement = (OperationId.of(ids.next()) as Outcome.Success).value
+        commands.undoOffer = {
+            GoalUndoOffer(movement, (GoalId.of(goal) as Outcome.Success).value, 60.seconds)
+        }
+        corrections.goalMovementDeleted(
+            OperationReceipt(movement, OperationKind.DeleteGoalMovement, 3, 12, Instant.EPOCH)
+        )
+
+        completer.done()
+
+        assertEquals(
+            CorrectionNotice.GoalMovementDeleted(canUndo = true),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun listoNeverOffersDeshacerPastWhatStorageKeeps() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+
+        // Five minutes of storage's time; Listo with four minutes and 55 seconds gone.
+        scheduler.advanceTimeBy(295.seconds)
+        scheduler.runCurrent()
+        completer.done()
+
+        scheduler.advanceTimeBy(4999.milliseconds)
+        scheduler.runCurrent()
+        assertTrue(corrections.notice.value is CorrectionNotice.GoalCompleted)
+        scheduler.advanceTimeBy(1.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(null, corrections.notice.value)
+    }
+
+    @Test
+    fun whenStorageNoLongerKeepsTheCompletionClosingTheMomentOnlySaysIt() = runTest {
+        val completer = completer()
+        commands.completionOffer = { null }
+        completer.complete(viaje)
+        scheduler.advanceTimeBy(5.seconds)
+        scheduler.runCurrent()
+
+        completer.done()
+
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = false),
+            corrections.notice.value
+        )
     }
 
     @Test

@@ -126,14 +126,9 @@ class RoomCarryoverReads(
         return withContext(computation) {
             val categories = ArrayList<CarryCorrection>(reached.size)
             for (category in reached) {
-                val listed = category.recorded.map { it.id }.toSet()
-                // The month before catch-up: the listed payments not yet recorded.
-                val before = when (
-                    val input = category.rows.input(
-                        today,
-                        expenses = category.rows.expenses.filterNot { it.id in listed }
-                    )
-                ) {
+                // As recorded now, the same input Recibo reads; the replay works out the
+                // months as they were before catch-up from the listed payments (CP18).
+                val recordedNow = when (val input = category.rows.input(today)) {
                     is Outcome.Success -> input.value
 
                     is Outcome.Failure ->
@@ -150,7 +145,7 @@ class RoomCarryoverReads(
                     )
                 }
                 when (
-                    val change = CarryoverCorrectionReplay.catchUp(before, payments, month)
+                    val change = CarryoverCorrectionReplay.catchUp(recordedNow, payments, month)
                 ) {
                     is Outcome.Success -> if (!change.value.isEmpty) categories += change.value
 

@@ -119,7 +119,7 @@ read in it. Records are taken in the old app's order (by `id`) and get new ident
 | --- | --- |
 | Not in the expected shape | any record whose fields are missing or of the wrong type |
 | Repeated identifier | the second and later records with one `id` |
-| Amount out of range | amounts outside 1 to 999.999.999.999 (a recorded value may be 0); a negative limit, which leaves its category without a limit; a rate outside 1,00 to 100.000,00 after rounding |
+| Amount out of range | amounts outside 1 to 999.999.999.999 (a recorded value may be 0); a negative limit, which leaves its category without a limit; a rate outside 1,00 to 100.000,00 after rounding, or written with more than 64 characters |
 | Invalid date | a day that is not a real date or that Sello cannot store; a `nextDueDate` before the start |
 | Date after the export | an expense or income dated after the export day |
 | Invalid text | a name that is empty or text with control characters such as line breaks |

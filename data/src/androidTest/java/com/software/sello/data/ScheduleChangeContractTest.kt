@@ -96,7 +96,7 @@ class ScheduleChangeContractTest {
             RoomScheduleCatchUp(ledger.database, { ledger.audit }, { uuid(ledger.nextRecord++) })
         val recorded = mutableListOf<String>()
         while (true) {
-            val batch = store.recordDue(d(today), 50)
+            val batch = store.recordDue(1, d(today), 50)
             assertTrue("$batch", batch is CatchUpBatch.Recorded)
             val occurrences = (batch as CatchUpBatch.Recorded).occurrences
             recorded += occurrences.map { it.origin.occurrence.date.toString() }

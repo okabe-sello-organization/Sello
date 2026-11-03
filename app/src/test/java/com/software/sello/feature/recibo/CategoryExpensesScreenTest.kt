@@ -6,6 +6,9 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.component.MoneySign
@@ -13,6 +16,7 @@ import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.showSello
 import java.time.LocalDate
 import java.time.YearMonth
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,5 +76,42 @@ class CategoryExpensesScreenTest {
         ).assertExists()
         rule.onNode(hasText("Aún no cuenta") and inRow("2"), useUnmergedTree = true)
             .assertDoesNotExist()
+    }
+
+    @Test
+    fun olderRowsStayWithTheNoticeAndItsRetry() {
+        val actions = mutableListOf<CategoryExpensesAction>()
+        rule.showSello {
+            CategoryExpensesScreen(
+                state = CategoryExpensesState.Ready(
+                    categoryName = "Alimentación",
+                    month = YearMonth.of(2026, 10),
+                    today = LocalDate.of(2026, 10, 21),
+                    rows = listOf(
+                        ExpenseRow(
+                            "2",
+                            LocalDate.of(2026, 10, 21),
+                            "Mercado",
+                            plain("20.600"),
+                            false
+                        )
+                    ),
+                    more = false,
+                    totalCount = 1,
+                    stale = true
+                ),
+                query = "",
+                order = "Date",
+                onAction = { actions += it },
+                onEdit = {},
+                padding = PaddingValues(12.dp)
+            )
+        }
+
+        rule.onNodeWithTag("category.expenses.stale").assertExists()
+        rule.onNode(hasText("Mercado") and inRow("2"), useUnmergedTree = true).assertExists()
+        rule.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(listOf<CategoryExpensesAction>(CategoryExpensesAction.Retry), actions)
     }
 }

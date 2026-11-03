@@ -203,7 +203,10 @@ class BulkEntryViewModel(
         val source = saved.get<String>(KEY_PREFILL_SOURCE)
             ?.takeIf { kind == BulkKind.Income && it in IncomeSource.keys }
         val otherName = saved.get<String>(KEY_PREFILL_SOURCE_NAME)
-            ?.takeIf { source == IncomeSource.Other.KEY && SourceName.of(it) is Outcome.Success }
+            ?.takeIf {
+                source == IncomeSource.Other.KEY &&
+                    SourceName.fromInput(it) is Outcome.Success
+            }
             .orEmpty()
         // A hint that is not valid is dropped, not shown as an error the person did not make.
         val amount = saved.get<String>(KEY_PREFILL_AMOUNT)?.let(AmountDraft::paste)
@@ -380,7 +383,7 @@ class BulkEntryViewModel(
                 when {
                     written == null || !now.editable -> Unit
 
-                    composing.value -> if (SourceName.of(written) is Outcome.Success) {
+                    composing.value -> if (SourceName.fromInput(written) is Outcome.Success) {
                         editLine { it.copy(otherName = written) }
                         saved[KEY_NOTE_DRAFT] = null
                     }
@@ -548,7 +551,7 @@ class BulkEntryViewModel(
     private fun Line.source(): IncomeSource? {
         val key = sourceKey ?: return null
         val name = otherName.takeIf { key == IncomeSource.Other.KEY }
-        return (IncomeSource.of(key, name) as? Outcome.Success)?.value
+        return (IncomeSource.fromInput(key, name) as? Outcome.Success)?.value
     }
 
     /** [refused] reads a refusal; asking about a saved operation never gets one. */
@@ -743,7 +746,7 @@ class BulkEntryViewModel(
         val amounts = amounts(draft)
         val noteDraft = writing?.takeIf { !progress.recorded }
         val checkedNote = noteDraft?.let {
-            if (naming) SourceName.of(it) else Note.of(it)
+            if (naming) SourceName.fromInput(it) else Note.of(it)
         } as? Outcome.Failure
         return BulkEntryState(
             kind = draft.kind,

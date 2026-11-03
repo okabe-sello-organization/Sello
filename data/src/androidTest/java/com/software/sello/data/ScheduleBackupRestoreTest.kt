@@ -25,17 +25,25 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateSchedule
+import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ResetOutcome
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.StoredSchedule
+import com.software.sello.domain.usecase.CatchUpResult
+import com.software.sello.domain.usecase.CatchUpSchedules
+import com.software.sello.domain.usecase.CatchUpStop
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -103,12 +111,13 @@ class ScheduleBackupRestoreTest {
         return (created as CommandOutcome.Committed).value.scheduleId
     }
 
-    /** Everything due up to [today], in as many batches as it takes. */
+    /** Everything due up to [today], in as many batches as it takes, by a process started now. */
     private suspend fun TestLedger.catchUp(today: String): List<String> {
         val store = RoomScheduleCatchUp(database, { audit }, { uuid(nextRecord++) })
+        val generation = long("SELECT generation FROM profile")
         val recorded = mutableListOf<String>()
         while (true) {
-            val batch = store.recordDue(d(today), 50) as CatchUpBatch.Recorded
+            val batch = store.recordDue(generation, d(today), 50) as CatchUpBatch.Recorded
             recorded += batch.occurrences.map { it.origin.occurrence.date.toString() }
             if (batch.occurrences.size < 50) return recorded
         }
@@ -257,6 +266,41 @@ class ScheduleBackupRestoreTest {
     }
 
     /**
+     * SELLO-146: this process started in Madrid; at 01:00 on 15 November there (still
+     * the 14th in Bogotá) a backup made in Bogotá is restored. Catch-up records nothing,
+     * least of all the salary of the 15th, until a new process reads the restored zone;
+     * that one records the salary of 30 October and the rent of 5 November.
+     */
+    @Test
+    fun afterARestoreCatchUpWaitsForTheRestartAndItsZone() = runBlocking {
+        history()
+        val bytes = backup()
+        val entries = ledger.entries()
+        other.database.openHelper.writableDatabase.execSQL(
+            "UPDATE profile SET financial_zone = 'Europe/Madrid'"
+        )
+        val madrid = ZoneId.of("Europe/Madrid")
+        val processDay = object : FinancialClock {
+            override val today = MutableStateFlow(FinancialDay(d("2026-11-15"), madrid))
+        }
+        val started = other.long("SELECT generation FROM profile")
+        val store =
+            RoomScheduleCatchUp(other.database, { other.audit }, { uuid(other.nextRecord++) })
+        val restores = restoresInto(other, fresh)
+
+        restores.replace(restores.stage(bytes).valueOrFail())
+        val result = CatchUpSchedules(store, processDay, started).run()
+
+        assertEquals(CatchUpResult(emptyList(), CatchUpStop.Stale), result)
+        assertEquals(entries, other.entries())
+        assertEquals("America/Bogota", other.rows("profile", "financial_zone").single())
+
+        // The restart: a new process on the restored zone, where it is still the 14th.
+        other.reopen()
+        assertEquals(listOf("2026-10-30", "2026-11-05"), other.catchUp("2026-11-14"))
+    }
+
+    /**
      * SELLO-145: rent twice a month on 15 and 30, recorded through [recordedOn] (its second
      * slot), becomes monthly on 15 from the day after [changedOn]. The backup restores, and
      * the restored schedule records nothing again, then [next] up to 15 December.
@@ -351,6 +395,50 @@ class ScheduleBackupRestoreTest {
                 it.schedule.entry.amount.money.minorUnits
             }
         )
+    }
+
+    /** SELLO-146: after an erase, too, catch-up waits for the restart. */
+    @Test
+    fun afterAnEraseCatchUpWaitsForTheRestart() = runBlocking {
+        history()
+        val started = ledger.long("SELECT generation FROM profile")
+        val resets = RoomResets(
+            ledger.database,
+            files.resetFolder,
+            files.restoreFolder,
+            emptyList(),
+            PreferenceReset { PreferenceWrite.Saved },
+            { ledger.zone },
+            { ledger.audit },
+            dispatchers
+        )
+        assertTrue(
+            resets.reset(resets.preview().valueOrFail(), ledger.operation()) is ResetOutcome.Erased
+        )
+        // The new history gets a monthly gym payment, due today, before the restart.
+        val erased = ledger.long("SELECT generation FROM profile")
+        val gym = ledger.nextRecord
+        ledger.categories.submit(ledger.createCategory("Gimnasio", generation = erased))
+        val created = ledger.schedules.submit(
+            CreateSchedule(
+                ledger.operation(),
+                erased,
+                ScheduledEntry.Payment(ledger.categoryId(gym), transactionPesos(99_900), null),
+                RepeatRule.Monthly.of(24).valueOrFail(),
+                d("2026-10-24"),
+                null
+            )
+        )
+        assertTrue("$created", created is CommandOutcome.Committed)
+        val store =
+            RoomScheduleCatchUp(ledger.database, { ledger.audit }, { uuid(ledger.nextRecord++) })
+
+        assertEquals(CatchUpBatch.Stale, store.recordDue(started, d("2026-10-24"), 50))
+        assertEquals(0L, ledger.long("SELECT COUNT(*) FROM expense"))
+        // The restart: a new process records it once.
+        ledger.reopen()
+        assertEquals(listOf("2026-10-24"), ledger.catchUp("2026-10-24"))
+        assertEquals(1L, ledger.long("SELECT COUNT(*) FROM expense"))
     }
 
     @Test

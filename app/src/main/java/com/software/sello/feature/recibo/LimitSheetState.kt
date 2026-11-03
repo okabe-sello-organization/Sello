@@ -84,7 +84,9 @@ data class LimitSheetState(
     val canSave: Boolean = false,
     val error: LimitSheetError? = null,
     /** While it carries: its carry into the month, signed; the sheet edits the base. */
-    val carry: MoneyTextValue? = null
+    val carry: MoneyTextValue? = null,
+    /** The month could not be read again: [spent], [chips] and [fact] are as last read. */
+    val stale: Boolean = false
 )
 
 sealed interface LimitSheetAction {

@@ -33,6 +33,38 @@ private fun isControl(codePoint: Int): Boolean = when (Character.getType(codePoi
     else -> false
 }
 
+/**
+ * The stricter rule for a name being typed now (SELLO-164): [boundedText], and also no
+ * character that draws nothing or turns the text around, so a new name can't pass for
+ * another. [stored] is the name already saved: it passes as it is, so a name saved
+ * before this rule can be kept while the rest is edited. Text read back from storage
+ * or a backup keeps the [boundedText] rule only.
+ */
+private fun typedText(
+    raw: String,
+    maxCodePoints: Int,
+    stored: String?
+): Outcome<String, TextError> {
+    val text = boundedText(raw, maxCodePoints)
+    if (text !is Outcome.Success || text.value == stored) return text
+    val invisible = text.value.codePoints().anyMatch(::isInvisible)
+    return if (invisible) Outcome.Failure(TextError.ControlCharacter) else text
+}
+
+private const val ZERO_WIDTH_NON_JOINER = 0x200C
+private const val ZERO_WIDTH_JOINER = 0x200D
+
+/**
+ * Format characters (Cf): zero-width space U+200B, soft hyphen U+00AD, word joiner and
+ * invisible operators U+2060-U+2064, U+FEFF, the bidi marks U+200E, U+200F, U+061C and
+ * controls U+202A-U+202E, U+2066-U+2069, and the rest of Cf. The joiners U+200C and
+ * U+200D stay, as variation selectors (not Cf) do: emoji sequences are built with them.
+ */
+private fun isInvisible(codePoint: Int): Boolean = when (codePoint) {
+    ZERO_WIDTH_NON_JOINER, ZERO_WIDTH_JOINER -> false
+    else -> Character.getType(codePoint).toByte() == Character.FORMAT
+}
+
 private val combiningMarks = Regex("\\p{M}+")
 private val whitespaceRuns = Regex("[\\s\\p{Z}]+")
 
@@ -59,6 +91,13 @@ data class CategoryName private constructor(val value: String) {
 
         fun of(raw: String): Outcome<CategoryName, TextError> =
             when (val text = boundedText(raw, MAX_CODE_POINTS)) {
+                is Outcome.Success -> Outcome.Success(CategoryName(text.value))
+                is Outcome.Failure -> text
+            }
+
+        /** What a person types: [of], and nothing invisible or direction-changing. */
+        fun fromInput(raw: String, stored: String? = null): Outcome<CategoryName, TextError> =
+            when (val text = typedText(raw, MAX_CODE_POINTS, stored)) {
                 is Outcome.Success -> Outcome.Success(CategoryName(text.value))
                 is Outcome.Failure -> text
             }
@@ -92,6 +131,13 @@ data class SourceName private constructor(val value: String) {
                 is Outcome.Success -> Outcome.Success(SourceName(text.value))
                 is Outcome.Failure -> text
             }
+
+        /** What a person types: [of], and nothing invisible or direction-changing. */
+        fun fromInput(raw: String, stored: String? = null): Outcome<SourceName, TextError> =
+            when (val text = typedText(raw, MAX_CODE_POINTS, stored)) {
+                is Outcome.Success -> Outcome.Success(SourceName(text.value))
+                is Outcome.Failure -> text
+            }
     }
 }
 
@@ -103,6 +149,13 @@ data class GoalName private constructor(val value: String) {
 
         fun of(raw: String): Outcome<GoalName, TextError> =
             when (val text = boundedText(raw, MAX_CODE_POINTS)) {
+                is Outcome.Success -> Outcome.Success(GoalName(text.value))
+                is Outcome.Failure -> text
+            }
+
+        /** What a person types: [of], and nothing invisible or direction-changing. */
+        fun fromInput(raw: String, stored: String? = null): Outcome<GoalName, TextError> =
+            when (val text = typedText(raw, MAX_CODE_POINTS, stored)) {
                 is Outcome.Success -> Outcome.Success(GoalName(text.value))
                 is Outcome.Failure -> text
             }
@@ -121,6 +174,13 @@ data class InvestmentName private constructor(val value: String) {
 
         fun of(raw: String): Outcome<InvestmentName, TextError> =
             when (val text = boundedText(raw, MAX_CODE_POINTS)) {
+                is Outcome.Success -> Outcome.Success(InvestmentName(text.value))
+                is Outcome.Failure -> text
+            }
+
+        /** What a person types: [of], and nothing invisible or direction-changing. */
+        fun fromInput(raw: String, stored: String? = null): Outcome<InvestmentName, TextError> =
+            when (val text = typedText(raw, MAX_CODE_POINTS, stored)) {
                 is Outcome.Success -> Outcome.Success(InvestmentName(text.value))
                 is Outcome.Failure -> text
             }

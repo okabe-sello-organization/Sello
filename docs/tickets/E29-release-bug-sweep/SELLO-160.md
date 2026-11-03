@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P2
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** None
 - **Gate:** G2
 
@@ -24,3 +24,7 @@ Audit findings: `GoalPolicy.kt:203-208` with `RoomGoalCommands.kt:559-561` (end 
 only); `InvestmentOrderPolicy.kt:51-57`; #275's two `nextSequence + 1` lines in
 `RoomGoalCommands.kt`. Goal rules 4 and 5 in [goal examples](../../testing/goal-examples.md).
 Review: adversarial (money rules, storage).
+
+### Progress
+AC 1–2 delivered by #335; AC 3 (#275) by #330 (SELLO-162), moved by the orchestrator.
+AC 3 (#275) delivered by #330 (SELLO-162).
