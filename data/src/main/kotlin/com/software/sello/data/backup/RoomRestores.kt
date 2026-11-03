@@ -51,6 +51,8 @@ import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Properties
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -68,9 +70,16 @@ import kotlinx.coroutines.withContext
  * - `<file>.tmp`: a write in progress, renamed over its file once synced. A death before
  *   the rename leaves it; it goes with its file, or with what a look finds left over.
  *
- * Files are only ever read or written outside a transaction. A restore whose receipt
- * exists is committed whatever the files say, so a crash between the commit and the
- * rename that follows it is found and finished on the next look.
+ * Files are only ever read or written outside a transaction, off the caller's thread; an
+ * I/O error is a failure of the step that met it, never a crash. A restore whose receipt
+ * exists is committed whatever the files say, so a crash or a failed rename between the
+ * commit and the move that follows it is found and finished on the next look, and until
+ * then every preference it brings is reported pending.
+ *
+ * A file is parsed once: the contents a stage or a look read are kept in memory for the
+ * replacement under that operation, which reads the file again only in a later process.
+ * Committing a replacement and applying its preferences take turns with finishing an
+ * erase of the same storage through [recovery].
  */
 class RoomRestores(
     private val database: SelloDatabase,
@@ -82,6 +91,7 @@ class RoomRestores(
     private val ids: RecordIdSource,
     private val audit: AuditClock,
     private val dispatchers: DispatcherProvider,
+    private val recovery: Mutex,
     private val codec: BackupCodec = BackupCodec(),
     private val legacy: LegacyTranslator = LegacyTranslator(ids)
 ) : Restores {
@@ -90,15 +100,24 @@ class RoomRestores(
     private val restored = File(folder, "restored.json")
     private val applied = File(folder, "applied")
 
-    override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
-        val plan = withContext(dispatchers.default) { codec.read(bytes) }
-        val contents = when (plan) {
-            is Outcome.Success -> plan.value.contents
+    /** A file read and checked whole, with the SHA-256 of its bytes. */
+    private class Parsed(val contents: BackupContents, val bytes: String)
 
-            is Outcome.Failure -> return if (plan.error == BackupRejection.NotSelloBackup) {
+    /** The staged file's contents as last parsed, for the replacement under [operation]. */
+    private class Held(val operation: OperationId, val parsed: Parsed)
+
+    @Volatile
+    private var held: Held? = null
+
+    override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
+        val plan = withContext(dispatchers.default) { codec.read(bytes) to sha256Hex(bytes) }
+        val contents = when (val read = plan.first) {
+            is Outcome.Success -> Parsed(read.value.contents, plan.second)
+
+            is Outcome.Failure -> return if (read.error == BackupRejection.NotSelloBackup) {
                 stageLegacy(bytes)
             } else {
-                Outcome.Failure(StageFailure.Rejected(plan.error.reason()))
+                Outcome.Failure(StageFailure.Rejected(read.error.reason()))
             }
         }
         val position = when (val read = stagingPosition()) {
@@ -127,12 +146,18 @@ class RoomRestores(
             is LegacyTranslation.Translated -> translation
         }
         // Encoding reads the file back, so only what the released reader accepts is kept.
-        val file = withContext(dispatchers.default) { codec.encode(translated.contents) }
-        val written = when (file) {
-            is Outcome.Success -> file.value
-            is Outcome.Failure -> return rejected(RestoreRejection.InvalidContent)
-        }
-        return keep(written, translated.contents, position, translated.report)
+        val file = withContext(dispatchers.default) {
+            (codec.encode(translated.contents) as? Outcome.Success)?.value?.let {
+                it to
+                    sha256Hex(it)
+            }
+        } ?: return rejected(RestoreRejection.InvalidContent)
+        return keep(
+            file.first,
+            Parsed(translated.contents, file.second),
+            position,
+            translated.report
+        )
     }
 
     private fun rejected(reason: RestoreRejection) = Outcome.Failure(StageFailure.Rejected(reason))
@@ -143,22 +168,18 @@ class RoomRestores(
         // the two is then still seen.
         // A manifest beside its file that cannot be read whole still names its operation;
         // one that names none cannot be told apart from a committed one.
-        val earlier = try {
-            if (io { manifest.exists() && staged.exists() }) {
-                readManifest()?.operation
-                    ?: io { manifestOperation() }
-                    ?: return Outcome.Failure(StageFailure.Storage)
-            } else {
-                null
-            }
-        } catch (_: IOException) {
-            return Outcome.Failure(StageFailure.Storage)
+        val earlier = if (io(failed = true) { manifest.exists() && staged.exists() }) {
+            readManifest()?.operation
+                ?: io(failed = null) { manifestOperation() }
+                ?: return Outcome.Failure(StageFailure.Storage)
+        } else {
+            null
         }
         if (earlier != null && committed(earlier) != false) {
             return Outcome.Failure(StageFailure.Unsettled)
         }
         // A replacement whose preferences are still pending is finished first.
-        if (io { restored.exists() }) return Outcome.Failure(StageFailure.Storage)
+        if (io(failed = true) { restored.exists() }) return Outcome.Failure(StageFailure.Storage)
         return when (val read = position()) {
             is Outcome.Success -> read
             is Outcome.Failure -> Outcome.Failure(StageFailure.Storage)
@@ -167,7 +188,7 @@ class RoomRestores(
 
     private suspend fun keep(
         bytes: ByteArray,
-        contents: BackupContents,
+        parsed: Parsed,
         position: Position,
         report: LegacyImportReport?
     ): Outcome<StagedRestore, StageFailure> {
@@ -175,7 +196,7 @@ class RoomRestores(
             is Outcome.Success -> id.value
             is Outcome.Failure -> error("The identifier source returned a malformed identifier")
         }
-        val written = io {
+        val written = io(failed = false) {
             folder.mkdirs()
             val properties = Properties().apply {
                 setProperty(OPERATION, operation.value)
@@ -192,7 +213,8 @@ class RoomRestores(
                 writeAtomically(manifest, properties.text())
         }
         if (!written) return Outcome.Failure(StageFailure.Storage)
-        return Outcome.Success(position.preview(operation, contents, report))
+        held = Held(operation, parsed)
+        return Outcome.Success(position.preview(operation, parsed.contents, report))
     }
 
     override suspend fun staged(): StagedLookup {
@@ -201,7 +223,7 @@ class RoomRestores(
             // A crash came between the commit and the rename that follows it. Replaced
             // only once [pending] can read it; otherwise it stays to look at again.
             true -> {
-                val moved = io { moveToRestored() && restored.isFile }
+                val moved = io(failed = false) { moveToRestored() && restored.isFile }
                 return if (moved) {
                     StagedLookup.Replaced(manifest.operation)
                 } else {
@@ -221,12 +243,12 @@ class RoomRestores(
             discard()
             return manifest.notReplaced()
         }
-        val bytes = io { staged.takeIf { it.exists() }?.readBytes() }
+        val bytes = io(failed = null) { staged.takeIf { it.exists() }?.readBytes() }
             ?: return manifest.notReplaced()
-        val plan = codec.read(bytes) as? Outcome.Success
-            ?: return manifest.notReplaced().also { discard() }
+        val parsed = parse(bytes) ?: return manifest.notReplaced().also { discard() }
+        held = Held(manifest.operation, parsed)
         return StagedLookup.Waiting(
-            position.preview(manifest.operation, plan.value.contents, manifest.report),
+            position.preview(manifest.operation, parsed.contents, manifest.report),
             attempted = manifest.attempted
         )
     }
@@ -242,7 +264,8 @@ class RoomRestores(
     }
 
     override suspend fun discard() {
-        io {
+        held = null
+        io(failed = Unit) {
             if (!restored.exists()) {
                 clear(staged)
                 clear(manifest)
@@ -258,11 +281,11 @@ class RoomRestores(
      * and its replacement is unknown, unless the operation it names did not commit.
      */
     private suspend fun withoutStaging(): StagedLookup {
-        if (io { manifest.exists() && staged.exists() }) {
-            val operation = io { manifestOperation() } ?: return StagedLookup.None
+        if (io(failed = true) { manifest.exists() && staged.exists() }) {
+            val operation = io(failed = null) { manifestOperation() } ?: return StagedLookup.None
             if (committed(operation) != false) return StagedLookup.Unknown(operation)
         }
-        io {
+        io(failed = Unit) {
             if (!restored.exists()) {
                 clear(staged)
                 clear(manifest)
@@ -272,22 +295,30 @@ class RoomRestores(
         return StagedLookup.None
     }
 
-    override suspend fun replace(staged: StagedRestore): RestoreOutcome {
-        val bytes = io { this.staged.takeIf { it.exists() }?.readBytes() }
-            ?: return pending() ?: RestoreOutcome.Failed
-        val contents = (codec.read(bytes) as? Outcome.Success)?.value?.contents
-            ?: return RestoreOutcome.Failed
-        val digest = digest(staged, bytes)
+    override suspend fun replace(staged: StagedRestore): RestoreOutcome = recovery.withLock {
+        val kept = held?.takeIf { it.operation == staged.operationId }
+        val parsed = if (kept != null && io(failed = false) { this.staged.isFile }) {
+            kept.parsed
+        } else {
+            val bytes = io(failed = null) { this.staged.takeIf { it.exists() }?.readBytes() }
+                ?: return@withLock pending() ?: RestoreOutcome.Failed
+            parse(bytes) ?: return@withLock RestoreOutcome.Failed
+        }
+        val contents = parsed.contents
+        val digest = digest(staged, parsed.bytes)
         markAttempted(staged.operationId, attempted = true)
         val run = database.runCommand { write(staged, contents, digest) }
-        return when (run) {
+        when (run) {
             is CommandRun.Finished -> when (run.value) {
+                // Applied from what was just read. A file that did not move keeps every
+                // preference pending; the next look moves it before applying any.
                 Replacement.Done, Replacement.AlreadyDone -> {
-                    io { moveToRestored() }
-                    applyPending() ?: RestoreOutcome.Restored(
-                        contents.financial.summary(),
-                        PendingPreferences(null, null)
-                    )
+                    held = null
+                    if (io(failed = false) { moveToRestored() }) {
+                        apply(contents)
+                    } else {
+                        pendingFrom(contents, done = null)
+                    }
                 }
 
                 // Previewed again with the new counts, as a file not confirmed yet.
@@ -306,21 +337,58 @@ class RoomRestores(
     }
 
     override suspend fun pending(): RestoreOutcome.Restored? {
-        val contents = restoredContents() ?: return null
-        val done = io { applied.takeIf { it.exists() }?.readLines()?.toSet() } ?: emptySet()
+        settleMove()
+        val contents = restoredContents() ?: return unmoved()
+        return pendingFrom(contents, appliedGroups())
+    }
+
+    override suspend fun applyPending(): RestoreOutcome.Restored? = recovery.withLock {
+        settleMove()
+        restoredContents()?.let { apply(it) } ?: unmoved()
+    }
+
+    /**
+     * What of [contents] is still to apply. [done] is the groups applied; null when that
+     * cannot be read, and then every group is pending: none is applied twice.
+     */
+    private fun pendingFrom(contents: BackupContents, done: Set<String>?): RestoreOutcome.Restored {
         val preferences = contents.preferences
+        fun applied(group: String) = done != null && group in done
         return RestoreOutcome.Restored(
             contents.financial.summary(),
             PendingPreferences(
-                appearance = preferences?.appearance?.takeUnless { APPEARANCE in done },
-                ordering = preferences?.ordering?.takeUnless { ORDERING in done },
-                investments = preferences?.investments?.takeUnless { INVESTMENTS in done }
+                appearance = preferences?.appearance?.takeUnless { applied(APPEARANCE) },
+                ordering = preferences?.ordering?.takeUnless { applied(ORDERING) },
+                investments = preferences?.investments?.takeUnless { applied(INVESTMENTS) }
             )
         )
     }
 
-    override suspend fun applyPending(): RestoreOutcome.Restored? {
-        val pending = pending() ?: return null
+    /**
+     * A replacement that committed while its file is still staged, as after a crash or a
+     * rename that failed: nothing of it was applied, so every preference it brings is
+     * pending. Null when there is none.
+     */
+    private suspend fun unmoved(): RestoreOutcome.Restored? {
+        val manifest = readManifest() ?: return null
+        if (committed(manifest.operation) != true) return null
+        val bytes = io(failed = null) { staged.takeIf { it.isFile }?.readBytes() } ?: return null
+        return pendingFrom(parse(bytes)?.contents ?: return null, done = null)
+    }
+
+    /** A committed replacement whose file is still staged is moved first, as a look does. */
+    private suspend fun settleMove() {
+        if (io(failed = true) { restored.exists() }) return
+        val manifest = readManifest() ?: return
+        if (committed(manifest.operation) == true) io(failed = false) { moveToRestored() }
+    }
+
+    /** Applies what of [contents], the restored file, is not applied yet. */
+    private suspend fun apply(contents: BackupContents): RestoreOutcome.Restored {
+        val done = appliedGroups()
+        val pending = pendingFrom(contents, done)
+        // What was applied cannot be read: nothing is applied again until it can.
+        if (done == null) return pending
         var appearanceLeft = pending.preferences.appearance
         var orderingLeft = pending.preferences.ordering
         var investmentsLeft = pending.preferences.investments
@@ -345,7 +413,7 @@ class RoomRestores(
             // The manifest first and `applied` last: a death between them leaves either this
             // replacement with every group applied, finished again quietly, or a list with no
             // replacement, which nothing reads and a later look or stage clears.
-            io {
+            io(failed = Unit) {
                 clear(manifest)
                 if (restored.delete() || !restored.exists()) clear(applied)
             }
@@ -361,7 +429,7 @@ class RoomRestores(
      * case is a notice listing what the backup brought.
      */
     private suspend fun reviewRestoredEntries() {
-        val done = io { applied.takeIf { it.exists() }?.readLines()?.toSet() } ?: emptySet()
+        val done = appliedGroups() ?: return
         if (NOTICE in done) return
         val restoredAt = (
             reading {
@@ -571,23 +639,20 @@ class RoomRestores(
      * file without saying it was confirmed, never anything untrue.
      */
     private suspend fun markAttempted(operation: OperationId, attempted: Boolean) {
-        io {
-            try {
-                if (!manifest.exists()) return@io
-                val properties = Properties().apply { manifest.inputStream().use(::load) }
-                if (properties.getProperty(OPERATION) != operation.value) return@io
-                if ((properties.getProperty(ATTEMPTED) == true.toString()) == attempted) {
-                    return@io
-                }
-                if (attempted) {
-                    properties.setProperty(ATTEMPTED, true.toString())
-                } else {
-                    properties.remove(ATTEMPTED)
-                }
-                writeAtomically(manifest, properties.text())
-            } catch (_: IOException) {
-                // Left unmarked; see above.
+        // Left unmarked when it cannot be read or written; see above.
+        io(failed = Unit) {
+            if (!manifest.exists()) return@io
+            val properties = Properties().apply { manifest.inputStream().use(::load) }
+            if (properties.getProperty(OPERATION) != operation.value) return@io
+            if ((properties.getProperty(ATTEMPTED) == true.toString()) == attempted) {
+                return@io
             }
+            if (attempted) {
+                properties.setProperty(ATTEMPTED, true.toString())
+            } else {
+                properties.remove(ATTEMPTED)
+            }
+            writeAtomically(manifest, properties.text())
         }
     }
 
@@ -598,7 +663,7 @@ class RoomRestores(
             ?.value
     }
 
-    private suspend fun readManifest(): Manifest? = io {
+    private suspend fun readManifest(): Manifest? = io(failed = null) {
         if (!manifest.exists() || !staged.exists()) return@io null
         val properties = Properties().apply { manifest.inputStream().use(::load) }
         val operation = when (
@@ -652,19 +717,37 @@ class RoomRestores(
     }
 
     private suspend fun restoredContents(): BackupContents? {
-        val bytes = io { restored.takeIf { it.exists() }?.readBytes() } ?: return null
-        return (codec.read(bytes) as? Outcome.Success)?.value?.contents
+        val bytes = io(failed = null) { restored.takeIf { it.isFile }?.readBytes() } ?: return null
+        return parse(bytes)?.contents
     }
 
-    private suspend fun markApplied(group: String): Boolean = io {
+    /** The groups applied so far; null when the list cannot be read. */
+    private suspend fun appliedGroups(): Set<String>? = io(failed = null) {
+        if (applied.exists()) applied.readLines().toSet() else emptySet()
+    }
+
+    private suspend fun markApplied(group: String): Boolean = io(failed = false) {
         val done = applied.takeIf { it.exists() }?.readLines().orEmpty() + group
         writeAtomically(applied, done.distinct().joinToString("\n").toByteArray())
     }
 
+    /** Reads [bytes] as a backup on the computation dispatcher; null if it is not one. */
+    private suspend fun parse(bytes: ByteArray): Parsed? = withContext(dispatchers.default) {
+        (codec.read(bytes) as? Outcome.Success)?.value?.contents?.let {
+            Parsed(it, sha256Hex(bytes))
+        }
+    }
+
     private fun PreferenceWrite.saved() = this == PreferenceWrite.Saved
 
-    /** File work off the main thread; any I/O error is null or false, never a crash. */
-    private suspend fun <T> io(block: () -> T): T = withContext(dispatchers.io) { block() }
+    /** File work off the main thread; an I/O error answers [failed], never a crash. */
+    private suspend fun <T> io(failed: T, block: () -> T): T = withContext(dispatchers.io) {
+        try {
+            block()
+        } catch (_: IOException) {
+            failed
+        }
+    }
 
     /** A write that fails takes its temporary copy with it, which may hold part of a backup. */
     private fun writeAtomically(target: File, bytes: ByteArray): Boolean {
@@ -713,15 +796,18 @@ class RoomRestores(
         /** An unconfirmed file is forgotten after a day; a new one can always be chosen. */
         val STAGING_LIFETIME: Duration = Duration.ofDays(1)
 
-        /** What the replacement is: the history it was previewed at and the exact file. */
-        fun digest(staged: StagedRestore, bytes: ByteArray): String {
+        /**
+         * What the replacement is: the history it was previewed at and the exact file,
+         * by the SHA-256 of its bytes.
+         */
+        fun digest(staged: StagedRestore, bytes: String): String {
             val sha256 = MessageDigest.getInstance("SHA-256")
             listOf(
                 OperationKind.RestoreHistory.key,
                 "1",
                 staged.generation.toString(),
                 staged.revision.toString(),
-                sha256Hex(bytes)
+                bytes
             ).forEach { field ->
                 val encoded = field.toByteArray(Charsets.UTF_8)
                 sha256.update("${encoded.size}:".toByteArray(Charsets.UTF_8))

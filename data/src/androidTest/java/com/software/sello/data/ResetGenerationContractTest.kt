@@ -31,6 +31,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -90,7 +91,8 @@ class ResetGenerationContractTest {
             whenStamped()
             ledger.audit
         },
-        dispatchers
+        dispatchers,
+        Mutex()
     )
 
     /** The history, through the real commands, and files that hold older data. */

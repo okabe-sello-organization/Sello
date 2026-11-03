@@ -29,6 +29,7 @@ import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.DispatcherProvider
 import com.software.sello.domain.port.EnableCarry
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseRejection
@@ -46,8 +47,13 @@ import java.io.File
 import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneId
+import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +65,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -119,7 +126,7 @@ class RestoreCommandContractTest {
     private var whenStamped: () -> Unit = {}
     private var nextId = 5_000
 
-    private fun restores() = RoomRestores(
+    private fun restores(dispatchers: DispatcherProvider = this.dispatchers) = RoomRestores(
         ledger.database,
         files.restoreFolder,
         preferences,
@@ -131,7 +138,8 @@ class RestoreCommandContractTest {
             whenStamped()
             now
         },
-        dispatchers
+        dispatchers,
+        Mutex()
     )
 
     private val lima = ZoneId.of("America/Lima")
@@ -769,6 +777,164 @@ class RestoreCommandContractTest {
 
         assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
         assertTrue(restores().pending() is RestoreOutcome.Restored)
+    }
+
+    /** Every preference G01 brings, none applied. */
+    private val everyPreference = RestoreOutcome.Restored(
+        BackupSummary(2, 3, 1, 0, 0),
+        PendingPreferences(wanted.appearance, wanted.ordering, InvestmentPreference())
+    )
+
+    @Test
+    fun aFileThatCannotMoveAfterTheCommitIsNeverReportedComplete() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        // Something already sits where the file moves to, so the rename after the commit
+        // fails, and reading what sits there fails too.
+        val blocker = File(files.restoreFolder, "restored.json").apply { mkdirs() }
+        File(blocker, "in-the-way").writeText("x")
+
+        val outcome = restores().replace(staged)
+
+        assertEquals(everyPreference, outcome)
+        assertEquals("America/Lima|2|${ledger.revision()}", everyRow().last().single())
+        assertTrue(preferences.written.isEmpty())
+        assertEquals(everyPreference, restores().pending())
+        assertEquals(everyPreference, restores().applyPending())
+        assertTrue(preferences.written.isEmpty())
+
+        // After a restart with the way clear, the file moves and every preference applies.
+        blocker.deleteRecursively()
+        ledger.reopen()
+        val done = restores().applyPending()
+
+        assertEquals(PendingPreferences(null, null), done?.preferences)
+        assertEquals(
+            listOf<Any>(
+                ThemePreference.Dark,
+                InkPreference.Violeta,
+                CategoryOrder.Alphabetical,
+                CategoryOrderDirection.Ascending
+            ),
+            preferences.written
+        )
+        assertNull(restores().pending())
+        assertEquals(emptyList<String>(), stagingFiles())
+        assertEquals(1, ledger.rows("operation_receipt", "kind").count { it == "history.restore" })
+    }
+
+    @Test
+    fun aStagedFileThatCannotBeReadFailsTheReplacementInsteadOfCrashing() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val before = everyRow()
+        val file = File(files.restoreFolder, "staged.json")
+        assertTrue(file.setReadable(false, false))
+
+        val outcome = restores().replace(staged)
+
+        assertEquals(RestoreOutcome.Failed, outcome)
+        assertEquals(before, everyRow())
+        assertNull(restores().pending())
+
+        assertTrue(file.setReadable(true, false))
+        assertTrue(restores().replace(staged) is RestoreOutcome.Restored)
+    }
+
+    @Test
+    fun anAppliedListThatCannotBeReadAppliesNothingAgainAndStaysPending() = runBlocking {
+        currentHistory()
+        preferences.failOrdering = true
+        restores().replace(stage())
+        val written = preferences.written.toList()
+        val applied = File(files.restoreFolder, "applied")
+        assertTrue(applied.setReadable(false, false))
+        preferences.failOrdering = false
+
+        val retried = restores().applyPending()
+
+        assertEquals(everyPreference, retried)
+        assertEquals(everyPreference, restores().pending())
+        assertEquals(written, preferences.written)
+
+        assertTrue(applied.setReadable(true, false))
+        val done = restores().applyPending()
+
+        assertEquals(PendingPreferences(null, null), done?.preferences)
+        assertEquals(
+            written + listOf<Any>(CategoryOrder.Alphabetical, CategoryOrderDirection.Ascending),
+            preferences.written
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    /**
+     * The computation dispatcher of a restore: it runs on [Dispatchers.Default] and counts
+     * what it is handed; while [hold] is set it keeps that until [release].
+     */
+    private class Computation : CoroutineDispatcher() {
+        val handed = AtomicInteger()
+        private val arrived = Semaphore(0)
+        private val held = ConcurrentLinkedQueue<Runnable>()
+
+        @Volatile
+        var hold = false
+
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            handed.incrementAndGet()
+            if (hold) held += block else Dispatchers.Default.dispatch(context, block)
+            arrived.release()
+        }
+
+        fun waitForWork(): Boolean = arrived.tryAcquire(10, TimeUnit.SECONDS)
+
+        fun release() {
+            hold = false
+            while (true) Dispatchers.Default.dispatch(EmptyCoroutineContext, held.poll() ?: return)
+        }
+    }
+
+    private fun on(computation: Computation) = object : DispatcherProvider {
+        override val main = Dispatchers.Default
+        override val default: CoroutineDispatcher = computation
+        override val io = Dispatchers.IO
+    }
+
+    @Test
+    fun aRestoreAfterARestartParsesItsFileOnceAndNotOnTheCaller() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        ledger.reopen()
+        val computation = Computation().apply { hold = true }
+        val restores = restores(on(computation))
+
+        val replacing = async(Dispatchers.IO) { restores.replace(staged) }
+
+        assertTrue("nothing was handed to the computation dispatcher", computation.waitForWork())
+        assertFalse(replacing.isCompleted)
+        computation.release()
+        assertEquals(
+            RestoreOutcome.Restored(BackupSummary(2, 3, 1, 0, 0), PendingPreferences(null, null)),
+            replacing.await()
+        )
+        assertEquals(1, computation.handed.get())
+    }
+
+    @Test
+    fun aRestoreConfirmedAfterItsStageParsesTheFileNoMore() = runBlocking {
+        currentHistory()
+        val computation = Computation()
+        val restores = restores(on(computation))
+        val staged = restores.stage(g01()).valueOrFail()
+        computation.handed.set(0)
+
+        val outcome = restores.replace(staged)
+
+        assertEquals(
+            RestoreOutcome.Restored(BackupSummary(2, 3, 1, 0, 0), PendingPreferences(null, null)),
+            outcome
+        )
+        assertEquals(0, computation.handed.get())
     }
 
     @Test

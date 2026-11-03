@@ -56,6 +56,9 @@ The restored rows equal the originals for all five.
 | Crash between the commit and the file rename | Replayed by receipt, not replaced twice | `askingAgainAfterACrashBeforeTheFileMovedReplaysTheSameReplacement` |
 | Preferences fail after the commit | "Historial financiero restaurado" with only those preferences; retried without a second replacement, also after a restart | `preferencesThatFailAreNamedAndRetriedWithoutASecondReplacement` |
 | Another file while preferences are pending | Refused until they are finished | `aPendingReplacementBlocksStagingAnotherFile` |
+| The file cannot move after the commit | Every preference it brings is named pending and none applied; the next look moves it, then applies them | `aFileThatCannotMoveAfterTheCommitIsNeverReportedComplete` |
+| A restore file cannot be read | Before the commit: refused, nothing written. Its `applied` list: every group stays pending, none applied twice. Never a crash | `aStagedFileThatCannotBeReadFailsTheReplacementInsteadOfCrashing`, `anAppliedListThatCannotBeReadAppliesNothingAgainAndStaysPending` |
+| Confirmed, staged in this process or after a restart | The file is parsed once, on the computation dispatcher, never on the caller | `aRestoreConfirmedAfterItsStageParsesTheFileNoMore`, `aRestoreAfterARestartParsesItsFileOnceAndNotOnTheCaller` |
 | Leaving after a restore, by Back or the top bar's arrow | The app starts again on the restored history | `RestoreJourneyTest`, including `theTopBarsBackArrowAfterARestoreStartsTheAppAgain` |
 
 ## Reset
@@ -68,6 +71,9 @@ The restored rows equal the originals for all five.
 | Process ends before the commit | The pending file is forgotten; nothing erased | `anEraseThatNeverCommittedIsForgottenAndChangesNothing` |
 | Caller cancelled around the commit | Found by receipt; asking again never erases twice | `aCallerCancelledAroundTheCommitStillFindsTheEraseDoneAndNeverErasesTwice` |
 | Preferences fail after the commit | Named; finished later, once, without a second erase | `preferencesThatFailStayPendingAndAreFinishedLaterWithoutASecondErase` |
+| Preferences fail after the commit, then a restore | The restore's theme, order and investment settings stay at every start; a new erase is accepted | `EraseThenRestoreTest.anEraseWhosePreferencesFailedNeverUndoesTheRestoreMadeAfterIt` |
+| The same, with the restore's preferences pending or its move cut short | `restored.json` or the staged file is kept and applied at the next start | `aRestoresPendingFileOutlivesAnEraseThatCouldNotFinishBeforeIt`, `aRestoreCutShortAfterItsCommitIsFinishedAfterAnEraseThatCouldNotFinish` |
+| Compaction's checkpoint kept busy | Not compacted: `compact.pending` stays and it is retried at the next start; restores and new erases go on | `aCompactionKeptBusyStaysOwedAndIsDoneLaterWithoutBlockingAnything` |
 | What survives | Profile and one `history.reset` receipt; no erased name or note in the file's bytes | `nothingLeftInTheFilesHoldsAnOldNameOrNote` |
 | After the erase | A new category and expense from empty; a backup restores across it | `theNewHistoryCanBeUsedFromEmpty`; `RecoveryRetentionTest` |
 

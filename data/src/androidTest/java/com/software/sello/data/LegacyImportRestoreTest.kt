@@ -26,6 +26,7 @@ import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -90,7 +91,8 @@ class LegacyImportRestoreTest {
             whenStamped()
             Instant.parse("2026-10-25T20:00:00Z")
         },
-        dispatchers
+        dispatchers,
+        Mutex()
     )
 
     /**

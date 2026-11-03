@@ -80,6 +80,7 @@ import com.software.sello.domain.port.ScheduleRecordReads
 import java.io.File
 import java.time.ZoneId
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.sync.Mutex
 
 /**
  * What the composition root gets from storage: domain ports backed by the one real
@@ -203,6 +204,9 @@ class FinancialStorage internal constructor(
     fun carryoverReads(clock: FinancialClock, computation: CoroutineContext): CarryoverReads =
         RoomCarryoverReads(database, clock, computation)
 
+    /** Finishing an erase and committing a restore of this storage take turns on it. */
+    private val recovery = Mutex()
+
     /** Restores into this storage, staged in its own private folder. */
     fun restores(
         appearance: AppearancePreferences,
@@ -223,6 +227,7 @@ class FinancialStorage internal constructor(
         ids,
         audit,
         dispatchers,
+        recovery,
         codec
     )
 
@@ -244,7 +249,8 @@ class FinancialStorage internal constructor(
         preferences,
         deviceZone,
         audit,
-        dispatchers
+        dispatchers,
+        recovery
     )
 
     /**

@@ -37,6 +37,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -160,7 +161,8 @@ class GoalBackupRestoreTest {
         NoticeSeen(),
         { uuid(nextId++) },
         { target.audit },
-        dispatchers
+        dispatchers,
+        Mutex()
     )
 
     /** What a person sees of each goal: no identifiers, versions or audit times. */
@@ -284,7 +286,8 @@ class GoalBackupRestoreTest {
             PreferenceReset { PreferenceWrite.Saved },
             { ledger.zone },
             { ledger.audit },
-            dispatchers
+            dispatchers,
+            Mutex()
         )
         val preview = resets.preview().valueOrFail()
         assertEquals(2, preview.current.goals)
