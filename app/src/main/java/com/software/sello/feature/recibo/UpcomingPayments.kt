@@ -30,7 +30,9 @@ import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.OverallBudget
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
@@ -39,6 +41,7 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.read.LastGoodRead
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -68,14 +71,19 @@ sealed interface UpcomingState {
     /** The month could not be read: never shown as nothing reserved. */
     data object Failed : UpcomingState
 
-    /** Nothing is reserved any more this month: all of it was recorded. */
-    data class Empty(val month: YearMonth) : UpcomingState
+    /**
+     * Nothing is reserved any more this month: all of it was recorded. [stale]: the month
+     * could not be read again and this is how it was last read.
+     */
+    data class Empty(val month: YearMonth, val stale: Boolean = false) : UpcomingState
 
+    /** [stale]: the month could not be read again; these are the payments as last read. */
     data class Ready(
         val month: YearMonth,
         val today: LocalDate,
         val total: MoneyTextValue,
-        val payments: List<UpcomingPayment>
+        val payments: List<UpcomingPayment>,
+        val stale: Boolean = false
     ) : UpcomingState
 }
 
@@ -91,12 +99,16 @@ class UpcomingPaymentsViewModel(
 ) : ViewModel() {
     private val attempts = MutableStateFlow(0)
 
+    /** The month as last read, so a Retry never blanks the payments already listed. */
+    private val lastGood = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
+
     val state: StateFlow<UpcomingState> = combine(
         clock.today.map { it.date }.distinctUntilChanged(),
         attempts
     ) { today, _ -> today }
         .flatMapLatest { today ->
-            snapshots.observe(YearMonth.from(today)).map { render(it, today) }
+            val month = YearMonth.from(today)
+            lastGood.keep(month, snapshots.observe(month)).map { render(it, today) }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, UpcomingState.Loading)
 
@@ -105,11 +117,12 @@ class UpcomingPaymentsViewModel(
     private fun render(state: SnapshotState, today: LocalDate): UpcomingState {
         val snapshot = when (state) {
             ReadState.Loading -> return UpcomingState.Loading
-            is ReadState.Failed -> return UpcomingState.Failed
+            is ReadState.Failed -> state.lastGood ?: return UpcomingState.Failed
             is ReadState.Ready -> state.value
         }
+        val stale = state is ReadState.Failed
         val reservation = (snapshot.overall as? OverallBudget.Limited)?.reservation
-            ?: return UpcomingState.Empty(snapshot.month)
+            ?: return UpcomingState.Empty(snapshot.month, stale)
         val categories = snapshot.categories.associateBy { it.category.id }
         return UpcomingState.Ready(
             month = snapshot.month,
@@ -125,7 +138,8 @@ class UpcomingPaymentsViewModel(
                     date = payment.occurrence.date,
                     amount = money.format(payment.amount.money)
                 )
-            }
+            },
+            stale = stale
         )
     }
 }
@@ -169,20 +183,24 @@ fun UpcomingPaymentsScreen(
                 )
             }
 
-            is UpcomingState.Empty -> item {
-                EmptySlip(
-                    title = stringResource(
-                        R.string.upcoming_empty_title,
-                        months.inSentence(state.month)
-                    ),
-                    body = stringResource(R.string.upcoming_empty_body),
-                    icon = SelloIcon.Check,
-                    actionLabel = stringResource(R.string.upcoming_all_schedules),
-                    onAction = onAllSchedules
-                )
+            is UpcomingState.Empty -> {
+                if (state.stale) item { StaleSlip(onRetry, Modifier.testTag(UPCOMING_STALE_TAG)) }
+                item {
+                    EmptySlip(
+                        title = stringResource(
+                            R.string.upcoming_empty_title,
+                            months.inSentence(state.month)
+                        ),
+                        body = stringResource(R.string.upcoming_empty_body),
+                        icon = SelloIcon.Check,
+                        actionLabel = stringResource(R.string.upcoming_all_schedules),
+                        onAction = onAllSchedules
+                    )
+                }
             }
 
             is UpcomingState.Ready -> {
+                if (state.stale) item { StaleSlip(onRetry, Modifier.testTag(UPCOMING_STALE_TAG)) }
                 item {
                     val count = pluralStringResource(
                         R.plurals.recibo_reserved_payments,
@@ -257,3 +275,4 @@ fun UpcomingPaymentsScreen(
 }
 
 const val UPCOMING_TAG = "upcoming"
+const val UPCOMING_STALE_TAG = "upcoming.stale"

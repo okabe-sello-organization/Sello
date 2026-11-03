@@ -3,11 +3,13 @@ package com.software.sello.feature.recibo
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CategoryExpenseSearch
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ExpenseSearchPage
+import com.software.sello.domain.port.ReadState
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
@@ -21,7 +23,7 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.Corrections
-import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
 import java.time.YearMonth
 import kotlin.time.Duration.Companion.milliseconds
@@ -45,7 +47,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class CategoryExpensesViewModelTest {
     private val month = YearMonth.of(2026, 10)
-    private val snapshots = HandSnapshots()
+    private val snapshots = NewObservationSnapshots()
     private val commands = HandExpenseCommands()
     private val rows = List(45) { storedExpense(100 + it, 1, "2026-10-01", 1_000, "Compra $it") }
     private val requests = mutableListOf<Triple<ExpenseOrder, String, Int>>()
@@ -89,9 +91,12 @@ class CategoryExpensesViewModelTest {
     @After fun reset() = Dispatchers.resetMain()
 
     private fun TestScope.started(
-        saved: SavedStateHandle = SavedStateHandle()
+        saved: SavedStateHandle = SavedStateHandle(),
+        ready: Boolean = true
     ): CategoryExpensesViewModel {
-        snapshots.ready(monthOf("2026-10-22", listOf(categoryIn(1, "Comida", 200_000)), rows))
+        if (ready) {
+            snapshots.ready(monthOf("2026-10-22", listOf(categoryIn(1, "Comida", 200_000)), rows))
+        }
         val corrections =
             Corrections(
                 commands,
@@ -121,6 +126,39 @@ class CategoryExpensesViewModelTest {
         return model
     }
     private val CategoryExpensesViewModel.ready get() = state.value as CategoryExpensesState.Ready
+
+    @Test
+    fun aFailedRefreshKeepsItsRowsAsOlderAndRetryReadsAgain() = runTest {
+        val model = started()
+        model.onAction(CategoryExpensesAction.More)
+        runCurrent()
+        assertEquals(40, model.ready.rows.size)
+        snapshots.of(month).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+
+        val older = model.ready
+        val observedBefore = snapshots.observed.size
+        model.onAction(CategoryExpensesAction.Retry)
+        runCurrent()
+        val stillOlder = model.ready
+        replyRevision = 2
+        snapshots.ready(
+            monthOf("2026-10-22", listOf(categoryIn(1, "Comida", 200_000)), rows).copy(revision = 2)
+        )
+        runCurrent()
+
+        assertEquals(40 to true, older.rows.size to older.stale)
+        assertEquals(observedBefore + 1, snapshots.observed.size)
+        assertEquals(40 to true, stillOlder.rows.size to stillOlder.stale)
+        assertEquals(40 to false, model.ready.rows.size to model.ready.stale)
+    }
+
+    @Test
+    fun aFailedReadBeforeAnyRowsIsTheError() = runTest {
+        snapshots.of(month).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        val model = started(ready = false)
+
+        assertEquals(CategoryExpensesState.Failed, model.state.value)
+    }
 
     @Test
     fun aRefreshKeepsAllLoadedRowsWhileTheirReplacementIsRead() = runTest {

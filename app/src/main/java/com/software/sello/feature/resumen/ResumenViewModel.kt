@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.DismissedSuggestion
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.ResumenSnapshot
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.PreferenceRead
@@ -16,6 +18,7 @@ import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SuggestionPreferences
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -43,8 +46,12 @@ class ResumenViewModel(
     private val render = ResumenRenderModel(money)
     private var weekdayExpiry: Job? = null
     private var historyExpiry: Job? = null
+
+    /** The month as last read, so a Retry or a return never blanks figures already shown. */
+    private val lastGood = LastGoodRead<ResumenSnapshot, SnapshotFailure>()
     private val snapshot = combine(session.selectedMonth, attempts) { month, _ -> month }
-        .flatMapLatest(reads::observe).combine(session.currentMonth, render::render)
+        .flatMapLatest { month -> lastGood.keep(month, reads.observe(month)) }
+        .combine(session.currentMonth, render::render)
 
     /** What was dismissed, as last read. A failed read hides nothing: it is only advice. */
     private val dismissed = suggestions.observeDismissedSuggestion().map { read ->
@@ -97,7 +104,9 @@ class ResumenViewModel(
         } else {
             state
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, 0), ResumenState.Loading)
+    }
+        // The last state is kept while the tab is away, so coming back keeps the scroll.
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ResumenState.Loading)
 
     init {
         if (saved.get<String>(HISTORY) != null) historyExpiry = expire(HISTORY)
