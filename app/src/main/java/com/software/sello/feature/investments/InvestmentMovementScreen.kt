@@ -294,7 +294,12 @@ private fun Choices(state: InvestmentMovementState, onAction: (InvestmentMovemen
 
 @Composable
 private fun Heading(text: String) {
-    Text(text, Modifier.semantics { heading() }, style = MaterialTheme.typography.titleSmall)
+    Text(
+        text,
+        Modifier.semantics { heading() },
+        color = SelloTheme.colors.ink,
+        style = MaterialTheme.typography.titleSmall
+    )
 }
 
 /** One plain sentence with its figure in bold, and Anotar el valor de hoy when a retiro waits. */

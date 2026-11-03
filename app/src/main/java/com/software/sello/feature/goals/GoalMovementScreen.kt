@@ -239,6 +239,7 @@ private fun Choices(state: GoalMovementState, onAction: (GoalMovementAction) -> 
     Text(
         stringResource(R.string.goal_movement_goal),
         Modifier.semantics { heading() },
+        color = SelloTheme.colors.ink,
         style = MaterialTheme.typography.titleSmall
     )
     if (state.goals.isEmpty()) {

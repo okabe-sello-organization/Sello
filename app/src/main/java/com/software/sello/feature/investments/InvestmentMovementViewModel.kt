@@ -227,8 +227,11 @@ class InvestmentMovementViewModel(
                 }
             }
 
-            InvestmentMovementAction.TripleZero ->
-                if (editable && !now.usd) pesos(draft.value.pesos.tripleZero())
+            // 000 after a typed 0 keeps the 0: it is a value, not the start of a number.
+            InvestmentMovementAction.TripleZero -> if (editable && !now.usd) {
+                val current = draft.value.pesos
+                if (current != ZeroPesos) pesos(current.tripleZero())
+            }
 
             InvestmentMovementAction.Comma ->
                 if (editable && now.usd) dollars(draft.value.dollars.comma())
@@ -814,6 +817,13 @@ class InvestmentMovementViewModel(
                     )
                 )
             }
+        }
+        // Saved: a process death before the screen closes must not bring the same amount back
+        // ready to save again. A correction reads the movement afresh, as it is now stored; a
+        // deleted one keeps its draft, as there is nothing left to read.
+        if (step != STEP_DELETE) {
+            drafts.clear()
+            saved.remove<Boolean>(DRAFTED)
         }
         progress.update { it.copy(busy = false, error = null, closed = true) }
     }

@@ -401,6 +401,40 @@ class GoalMovementViewModelTest {
     }
 
     @Test
+    fun afterASavedAporteProcessDeathBringsNothingBackToSaveAgain() = runTest {
+        val saved = SavedStateHandle(mapOf("goalId" to viaje, "withdrawal" to false))
+        val first = model(saved = saved)
+        first.keys("4", "5", "000")
+        first.onAction(GoalMovementAction.Submit)
+        assertTrue(first.state.value.closed)
+
+        val restored = model(saved = saved)
+
+        assertNull(restored.state.value.amount)
+        assertFalse(restored.state.value.canSubmit)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
+    fun afterASavedCorrectionProcessDeathReadsTheMovementAsStored() = runTest {
+        val saved = SavedStateHandle(
+            mapOf("goalId" to viaje, "withdrawal" to false, "movementId" to movementId(12).value)
+        )
+        val first = model(saved = saved)
+        first.onAction(GoalMovementAction.ClearAmount)
+        first.keys("9", "0", "0", "000")
+        first.onAction(GoalMovementAction.Submit)
+        assertTrue(first.state.value.closed)
+
+        val restored = model(saved = saved)
+
+        // The fake keeps the movement at 960.000; storage, not the sent draft, is shown.
+        assertEquals("960.000", restored.state.value.amount!!.digits)
+        assertFalse(restored.state.value.canSubmit)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
     fun aNoteOverSixtyCharactersKeepsTheComposerOpenWithTheText() = runTest {
         val model = model(goal = viaje)
         model.onAction(GoalMovementAction.OpenComposer)

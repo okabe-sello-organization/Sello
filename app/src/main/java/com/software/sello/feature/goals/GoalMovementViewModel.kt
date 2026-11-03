@@ -558,6 +558,13 @@ class GoalMovementViewModel(
                 )
             )
         }
+        // Saved: a process death before the screen closes must not bring the same amount back
+        // ready to save again. A correction reads the movement afresh, as it is now stored; a
+        // deleted one keeps its draft, as there is nothing left to read.
+        if (step != STEP_DELETE) {
+            drafts.clear()
+            saved.remove<Boolean>(DRAFTED)
+        }
         progress.update { it.copy(busy = false, error = null, closed = true) }
     }
 
