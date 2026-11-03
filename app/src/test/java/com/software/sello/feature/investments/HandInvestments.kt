@@ -40,10 +40,12 @@ import com.software.sello.domain.port.InvestmentUndoOffer
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ReadState
+import com.software.sello.testing.asNewObservation
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.onStart
 
 /** A rate entered on [date] in [sequence] order, [hundredths] pesos per dollar. */
 fun rateEntry(hundredths: Long, date: String, sequence: Long = 1) = UsdRateEntry(
@@ -66,10 +68,16 @@ fun ratesBoard(vararg rates: UsdRateEntry) = InvestmentBoard(
     overview = Outcome.Success(PortfolioOverview(emptyList(), null, null))
 )
 
-/** The board as a test sets it. */
-class HandInvestmentReads(initial: InvestmentBoardState = ReadState.Ready(ratesBoard())) :
-    InvestmentReads {
+/**
+ * The board as a test sets it; [started] counts observations. With [newObservations] every
+ * observation starts from Loading, as the real one does.
+ */
+class HandInvestmentReads(
+    initial: InvestmentBoardState = ReadState.Ready(ratesBoard()),
+    private val newObservations: Boolean = false
+) : InvestmentReads {
     val board = MutableStateFlow(initial)
+    var started = 0
 
     override suspend fun board(): Outcome<InvestmentBoard, StorageFailure> =
         when (val state = board.value) {
@@ -77,7 +85,8 @@ class HandInvestmentReads(initial: InvestmentBoardState = ReadState.Ready(ratesB
             else -> Outcome.Failure(StorageFailure.Unavailable("hand"))
         }
 
-    override fun observeBoard(): Flow<InvestmentBoardState> = board
+    override fun observeBoard(): Flow<InvestmentBoardState> =
+        (if (newObservations) board.asNewObservation() else board).onStart { started++ }
 
     override suspend fun investment(id: InvestmentId): Outcome<InvestmentSummary?, StorageFailure> =
         Outcome.Success(null)

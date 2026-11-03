@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -105,9 +106,22 @@ class UsdRateViewModelTest {
         runCurrent()
         assertNull((model.state.value as UsdRateState.Ready).current)
 
+        // A failed refresh keeps "no rate yet" as read, marked older; it is never a fresh no rate.
         reads.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         runCurrent()
-        assertEquals(UsdRateState.Failed, model.state.value)
+        val older = model.state.value as UsdRateState.Ready
+        assertNull(older.current)
+        assertTrue(older.stale)
+
+        // With nothing ever read, a failed read is the error, never no rate.
+        val never = UsdRateViewModel(
+            HandInvestmentReads(ReadState.Failed(StorageFailure.Unavailable("x"), null)),
+            clock,
+            testMoney()
+        )
+        backgroundScope.launch { never.state.collect {} }
+        runCurrent()
+        assertEquals(UsdRateState.Failed, never.state.value)
     }
 
     @Test
@@ -305,5 +319,42 @@ class UsdRateViewModelTest {
         assertEquals(RateEntryError.DataChanged, model.state.value.error)
         assertEquals("4.000", model.state.value.rate)
         assertFalse(model.state.value.closed)
+    }
+
+    @Test
+    fun retryAndComingBackKeepTheRatesAndAFailureAgainLeavesThemOlder() = runTest {
+        val good = ReadState.Ready(ratesBoard(rateEntry(415_025, "2026-10-20")))
+        val fresh = HandInvestmentReads(good, newObservations = true)
+        val model = UsdRateViewModel(fresh, clock, testMoney())
+        val first = backgroundScope.launch { model.state.collect {} }
+        runCurrent()
+        fresh.board.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
+        runCurrent()
+        assertTrue((model.state.value as UsdRateState.Ready).stale)
+        val seen = mutableListOf<UsdRateState>()
+        val second = backgroundScope.launch { model.state.collect { seen += it } }
+        runCurrent()
+
+        model.onAction(UsdRateAction.Retry)
+        runCurrent()
+        assertTrue(seen.all { it is UsdRateState.Ready && it.stale })
+
+        fresh.board.value = good
+        runCurrent()
+        first.cancel()
+        second.cancel()
+        advanceTimeBy(5_001)
+        runCurrent()
+        seen.clear()
+        backgroundScope.launch { model.state.collect { seen += it } }
+        runCurrent()
+
+        assertEquals(3, fresh.started)
+        assertTrue(seen.isNotEmpty())
+        assertTrue(seen.all { it is UsdRateState.Ready && !it.stale })
+        assertEquals(
+            RateModel("4.150,25", LocalDate.of(2026, 10, 20)),
+            (model.state.value as UsdRateState.Ready).current
+        )
     }
 }
