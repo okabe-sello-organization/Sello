@@ -2,7 +2,10 @@ package com.software.sello.feature.recibo
 
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Expense
+import com.software.sello.domain.model.Money
+import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
@@ -40,7 +43,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -90,7 +95,9 @@ class CategoryDetailViewModelTest {
                 testMoney(),
                 corrections,
                 insights,
-                HandScheduleReads()
+                HandScheduleReads(),
+                // Moves with the test's own time, as the wait for detail figures does.
+                { testScheduler.currentTime.milliseconds }
             )
         // Something has to be watching for the state to be kept up to date.
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -161,6 +168,151 @@ class CategoryDetailViewModelTest {
             )
         assertEquals(DetailInsightsState.Failed, vm.ready.insights)
         assertEquals(plain("3.000"), vm.ready.category.spent)
+    }
+
+    /** Detail figures worked out from [budget], whose average expense is [average]. */
+    private fun figuresOf(budget: MonthlySnapshot, average: Long) = ReadState.Ready(
+        CategoryInsights(
+            budget, food.category.id, null, null, 23, Money.cop(average),
+            null, null, null, emptyList(), null, emptyList()
+        )
+    )
+
+    /** Opens Alimentación with [count] expenses of 1.000, its detail figures worked out. */
+    private fun TestScope.openedWithFigures(count: Int = 3): CategoryDetailViewModel {
+        val vm = started()
+        commit(many(count))
+        show(vm, 1)
+        insights.state.value =
+            figuresOf(monthOf("2026-10-23", listOf(food, coffee), many(count)), 1_000)
+        // Shown whole, so a change has something to keep.
+        assertEquals(true, vm.ready.insights is DetailInsightsState.Ready)
+        return vm
+    }
+
+    /** The last of [count] expenses deleted: the month is worked out again, a new revision. */
+    private fun deletedOne(count: Int = 3): MonthlySnapshot {
+        reads.stored.clear()
+        many(count - 1).forEach { reads.stored[it.id] = it }
+        return monthOf("2026-10-23", listOf(food, coffee), many(count - 1)).copy(revision = 2)
+            .also(snapshots::ready)
+    }
+
+    @Test
+    fun aChangeKeepsTheWholeScreenUntilItsDetailFiguresAreWorkedOutThenShowsThemTogether() =
+        runTest {
+            val vm = openedWithFigures()
+
+            val after = deletedOne()
+
+            // Nothing moves while the detail figures are behind the total.
+            assertEquals(plain("3.000"), vm.ready.category.spent)
+            assertEquals(
+                plain("1.000"),
+                (vm.ready.insights as DetailInsightsState.Ready).figures.averageExpense
+            )
+            insights.state.value = figuresOf(after, 900)
+            assertEquals(plain("2.000"), vm.ready.category.spent)
+            assertEquals(
+                plain("900"),
+                (vm.ready.insights as DetailInsightsState.Ready).figures.averageExpense
+            )
+        }
+
+    @Test
+    fun detailFiguresThatTakeTooLongNeverHoldBackTheNewTotal() = runTest {
+        val vm = openedWithFigures()
+
+        deletedOne()
+        advanceTimeBy(DETAIL_FIGURES_WAIT_MILLIS - 1)
+        assertEquals(plain("3.000"), vm.ready.category.spent)
+        advanceTimeBy(1)
+        runCurrent()
+
+        assertEquals(plain("2.000"), vm.ready.category.spent)
+        assertEquals(DetailInsightsState.Loading, vm.ready.insights)
+    }
+
+    @Test
+    fun changesInQuickSuccessionShareOneWait() = runTest {
+        val vm = openedWithFigures()
+
+        deletedOne()
+        advanceTimeBy(300)
+        snapshots.ready(monthOf("2026-10-23", listOf(food, coffee), many(1)).copy(revision = 3))
+        advanceTimeBy(DETAIL_FIGURES_WAIT_MILLIS - 300 - 1)
+        assertEquals(plain("3.000"), vm.ready.category.spent)
+        advanceTimeBy(1)
+        runCurrent()
+
+        assertEquals(plain("1.000"), vm.ready.category.spent)
+    }
+
+    @Test
+    fun aFailedReadIsShownAtOnceNeverHeldBack() = runTest {
+        val vm = openedWithFigures()
+        val failure = SnapshotFailure.Storage(StorageFailure.Unavailable("SQLiteException"))
+
+        snapshots.of(october).value = ReadState.Failed(
+            failure,
+            lastGood = monthOf("2026-10-23", listOf(food, coffee), many(2)).copy(revision = 2)
+        )
+
+        assertEquals(true, vm.ready.stale)
+        assertEquals(plain("2.000"), vm.ready.category.spent)
+    }
+
+    @Test
+    fun detailFiguresThatFailWhileTheScreenWaitsAreShownAtOnce() = runTest {
+        val vm = openedWithFigures()
+
+        val after = deletedOne()
+        insights.state.value = ReadState.Failed(
+            SnapshotFailure.Unrepresentable,
+            (figuresOf(after, 900) as ReadState.Ready).value
+        )
+
+        assertEquals(DetailInsightsState.Failed, vm.ready.insights)
+        assertEquals(plain("2.000"), vm.ready.category.spent)
+    }
+
+    @Test
+    fun aDeletedRowSwipedAgainWhileTheScreenWaitsAsksNothingMore() = runTest {
+        val vm = openedWithFigures()
+
+        vm.onAction(CategoryDetailAction.Delete(uuid(102)))
+        deletedOne()
+        vm.onAction(CategoryDetailAction.Delete(uuid(102)))
+
+        assertEquals(listOf(uuid(102)), commands.deleted.map { it.expenseId.value })
+        assertEquals(null, vm.ready.deleteProblem)
+    }
+
+    @Test
+    fun aPageReadOfTheSameMonthDoesNotLetADeletedRowBeAskedForAgain() = runTest {
+        val vm = openedWithFigures(45)
+        reads.hold = CompletableDeferred()
+
+        vm.onAction(CategoryDetailAction.ShowMore)
+        vm.onAction(CategoryDetailAction.Delete(uuid(122)))
+        reads.hold?.complete(Unit)
+        vm.onAction(CategoryDetailAction.Delete(uuid(122)))
+
+        assertEquals(40, vm.rows.rows.size)
+        assertEquals(listOf(uuid(122)), commands.deleted.map { it.expenseId.value })
+    }
+
+    @Test
+    fun showMoreWhileTheScreenWaitsAsksForNoPage() = runTest {
+        val vm = openedWithFigures(45)
+
+        deletedOne(45)
+        repeat(3) { vm.onAction(CategoryDetailAction.ShowMore) }
+        advanceTimeBy(DETAIL_FIGURES_WAIT_MILLIS)
+        runCurrent()
+
+        assertEquals(plain("44.000"), vm.ready.category.spent)
+        assertEquals(20, vm.rows.rows.size)
     }
 
     @Test

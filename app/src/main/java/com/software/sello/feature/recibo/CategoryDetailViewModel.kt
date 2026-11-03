@@ -3,6 +3,7 @@ package com.software.sello.feature.recibo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryId
+import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.MonthlySnapshot
@@ -15,6 +16,7 @@ import com.software.sello.domain.port.CategoryInsightsState
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpensePage
 import com.software.sello.domain.port.ExpenseReads
+import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ScheduleBook
@@ -28,12 +30,16 @@ import com.software.sello.presentation.corrections.DeleteResult
 import com.software.sello.presentation.money.MoneyFormatter
 import java.time.LocalDate
 import java.time.YearMonth
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -60,7 +66,8 @@ class CategoryDetailViewModel(
     private val money: MoneyFormatter,
     private val corrections: Corrections,
     private val insightsSnapshots: CategoryInsightsSnapshots,
-    schedules: ScheduleReads
+    schedules: ScheduleReads,
+    private val clock: MonotonicClock
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val category = MutableStateFlow<String?>(null)
@@ -89,7 +96,19 @@ class CategoryDetailViewModel(
 
     private var listed = Listed(0, emptyMap())
     private val deleting = mutableSetOf<String>()
+
+    /**
+     * Deleted, but still listed until the month is read again: asked for no more. Each is
+     * kept with the month it was deleted from, so only a read of a later one lets it go.
+     */
+    private val deleted = mutableMapOf<String, Pair<Long, Long>>()
     private val deleteProblem = MutableStateFlow<DeleteProblem?>(null)
+
+    /** What was last shown whole: its figures and its detail figures, of one revision. */
+    private var shownWhole: Shown? = null
+
+    /** When a change began waiting for its detail figures; later changes share the wait. */
+    private var waitingSince: Duration? = null
 
     val state: StateFlow<CategoryDetailState> =
         combine(session.selectedMonth, category, attempt) { month, id, _ -> Shown(month, id) }
@@ -108,7 +127,22 @@ class CategoryDetailViewModel(
                                 insights
                         }
                         .flatMapLatest { (snapshot, insights) ->
-                            detail(snapshot, shown, id, insights)
+                            val next = { detail(snapshot, shown, id, insights) }
+                            // A change keeps the screen whole until its detail figures are
+                            // worked out, so they change together instead of the figures
+                            // under the total vanishing and the screen jumping.
+                            if (shownWhole == shown && behind(snapshot, insights, id)) {
+                                val since =
+                                    waitingSince ?: clock.elapsed().also { waitingSince = it }
+                                val left = since + DETAIL_FIGURES_WAIT_MILLIS.milliseconds -
+                                    clock.elapsed()
+                                flow {
+                                    delay(left)
+                                    emitAll(next())
+                                }
+                            } else {
+                                next()
+                            }
                         }
                 }
             }
@@ -150,7 +184,9 @@ class CategoryDetailViewModel(
                 // One page per request: a second tap while one is being read asks nothing.
                 // Nor does a tap while the list is being read again: that read brings
                 // back what is listed now, and a page asked for meanwhile would be lost.
-                val idle = list is ExpenseListState.Rows && !list.loadingMore && !list.refreshing
+                // Nor while a change waits for its detail figures: its read is still to come.
+                val idle = list is ExpenseListState.Rows && !list.loadingMore &&
+                    !list.refreshing && waitingSince == null
                 if (list is ExpenseListState.Rows && list.more && idle) {
                     pagesWanted.update { it + 1 }
                 }
@@ -164,13 +200,18 @@ class CategoryDetailViewModel(
         val from = listed
         val version = from.versions[expenseId] ?: return
         val id = (ExpenseId.of(expenseId) as? Outcome.Success)?.value ?: return
-        if (!deleting.add(expenseId)) return
+        if (expenseId in deleted || !deleting.add(expenseId)) return
+        val shownMonth = (state.value as? CategoryDetailState.Ready)
+            ?.let { it.generation to it.revision }
         deleteProblem.value = null
         viewModelScope.launch {
             try {
                 deleteProblem.value = when (corrections.delete(id, version, from.generation)) {
                     // The row leaves with the next read of the month, like any change.
-                    DeleteResult.Deleted -> null
+                    DeleteResult.Deleted -> {
+                        shownMonth?.let { deleted[expenseId] = it }
+                        null
+                    }
 
                     DeleteResult.Gone -> DeleteProblem.Gone
 
@@ -191,12 +232,30 @@ class CategoryDetailViewModel(
         }
     }
 
+    /** Whether [insights] are still of an earlier revision than a newly read month. */
+    private fun behind(state: SnapshotState, insights: CategoryInsightsState, id: CategoryId) =
+        state is ReadState.Ready && when (insights) {
+            ReadState.Loading -> true
+            is ReadState.Failed -> false
+            is ReadState.Ready -> !insights.value.isOf(state.value, id)
+        }
+
+    private fun CategoryInsights.isOf(snapshot: MonthlySnapshot, id: CategoryId) =
+        categoryId == id &&
+            budget.generation == snapshot.generation &&
+            budget.revision == snapshot.revision &&
+            budget.asOf == snapshot.asOf && budget.zone == snapshot.zone &&
+            budget.month == snapshot.month
+
     private fun detail(
         state: SnapshotState,
         shown: Shown,
         id: CategoryId,
         insights: CategoryInsightsState
     ): Flow<CategoryDetailState> {
+        // Until shown whole again, nothing waits: a screen not showing figures has none to keep.
+        shownWhole = null
+        waitingSince = null
         val (snapshot, stale) = when (state) {
             ReadState.Loading -> return flowOf(CategoryDetailState.Loading)
 
@@ -240,13 +299,7 @@ class CategoryDetailViewModel(
                 is ReadState.Failed -> DetailInsightsState.Failed
 
                 is ReadState.Ready -> {
-                    val other = insights.value.budget
-                    if (insights.value.categoryId == id &&
-                        other.generation == snapshot.generation &&
-                        other.revision == snapshot.revision &&
-                        other.asOf == snapshot.asOf && other.zone == snapshot.zone &&
-                        other.month == snapshot.month
-                    ) {
+                    if (insights.value.isOf(snapshot, id)) {
                         DetailInsightsState.Ready(
                             CategoryInsightsRenderModel(money).render(insights.value)
                         )
@@ -269,6 +322,7 @@ class CategoryDetailViewModel(
             }
         )
         return flow {
+            shownWhole = shown.takeIf { ready.insights is DetailInsightsState.Ready }
             emit(ready)
             list(id, snapshot).collect { list ->
                 // Only a list that was read is worth showing again while refreshing.
@@ -391,6 +445,8 @@ class CategoryDetailViewModel(
                 rows += read.expenses.map { row(it, snapshot) }
                 versions += read.expenses.associate { it.id.value to it.version }
                 listed = Listed(snapshot.generation, versions.toMap())
+                val month = snapshot.generation to snapshot.revision
+                deleted.values.removeAll { it != month }
                 next = read.next
                 pages += step
                 emit(
@@ -447,3 +503,9 @@ class CategoryDetailViewModel(
         const val PAGE_SIZE = 20
     }
 }
+
+/**
+ * How long a change waits for its own detail figures before it is shown without them:
+ * long enough for them to arrive together, short enough that a new total is never held.
+ */
+internal const val DETAIL_FIGURES_WAIT_MILLIS = 500L

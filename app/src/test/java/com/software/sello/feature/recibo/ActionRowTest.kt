@@ -2,6 +2,7 @@ package com.software.sello.feature.recibo
 
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.theme.SelloTheme
+import kotlinx.coroutines.test.StandardTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -34,8 +36,9 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ActionRowTest {
+    // Launched work waits its turn, as on a device, so drags race with their own end.
     @get:Rule
-    val rule = createComposeRule()
+    val rule = createComposeRule(StandardTestDispatcher())
 
     private val done = mutableListOf<String>()
 
@@ -132,6 +135,25 @@ class ActionRowTest {
         }
         rule.waitForIdle()
 
+        assertEquals(emptyList<String>(), done)
+    }
+
+    @Test
+    fun aLineLetGoBeforeTheThresholdGoesBackToItsPlace() {
+        line()
+        val start = rule.onNodeWithTag("line").getUnclippedBoundsInRoot().left
+
+        // Moves arrive faster than frames, as they do from a real finger.
+        rule.mainClock.autoAdvance = false
+        rule.onNodeWithTag("line").performTouchInput {
+            down(centerRight - Offset(4f, 0f))
+            repeat(10) { moveBy(Offset(-width * 0.025f, 0f), delayMillis = 0) }
+            up()
+        }
+        rule.mainClock.autoAdvance = true
+        rule.waitForIdle()
+
+        assertEquals(start, rule.onNodeWithTag("line").getUnclippedBoundsInRoot().left)
         assertEquals(emptyList<String>(), done)
     }
 

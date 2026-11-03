@@ -141,7 +141,8 @@ class CategoryDetailCarryTest {
             money,
             corrections,
             HandCategoryInsights(),
-            HandScheduleReads()
+            HandScheduleReads(),
+            { testScheduler.currentTime.milliseconds }
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
