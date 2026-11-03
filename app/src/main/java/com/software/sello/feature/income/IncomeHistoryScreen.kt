@@ -47,6 +47,7 @@ import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
 import java.time.LocalDate
+import java.time.YearMonth
 
 /**
  * The month's income: what came in and where it went, from the same summary Resumen
@@ -108,7 +109,7 @@ fun IncomeHistoryScreen(
                 planItem(plan, today, onAction)
             } else {
                 staleItem(state, split, onAction)
-                item { CameIn(state, split, months.inSentence(state.month)) }
+                item { CameIn(state, split, today, months.inSentence(state.month)) }
                 planItem(plan, today, onAction)
                 assign?.let { item { AssignNote(it, onAssign, onAction) } }
                 item {
@@ -297,15 +298,26 @@ private fun MonthPlan(plan: IncomePlanView, today: LocalDate) {
  * "Entró en octubre" and the summary's income, dated up to today as Resumen counts it;
  * under the tear line, the split between category budgets and what is unassigned. A
  * negative unassigned amount is signed and red, with the two facts behind it, and draws
- * no segment of its own. Without the summary, only the recorded total is shown: no
- * figure stands in for one that was not read.
+ * no segment of its own. Without the summary, a month before today's shows only its
+ * recorded total, which holds nothing dated after today; today's month or a later one
+ * keeps a skeleton, since its total can count income still to come. No figure stands in
+ * for one that was not read.
  */
 @Composable
-private fun CameIn(state: IncomeHistoryState.Ready, split: IncomeSplit?, month: String) {
+private fun CameIn(
+    state: IncomeHistoryState.Ready,
+    split: IncomeSplit?,
+    today: LocalDate,
+    month: String
+) {
+    // What came in up to today, as Resumen counts it; the list's total has every income.
+    val amount = split?.income ?: state.total.takeIf { state.month < YearMonth.from(today) }
+    if (amount == null) {
+        return SlipSkeleton(Modifier.testTag("income.hero.pending"), lines = 1)
+    }
     AnswerSlip(
         label = stringResource(R.string.income_came_in, month),
-        // What came in up to today, as Resumen counts it; the list's total has every income.
-        amount = split?.income ?: state.total,
+        amount = amount,
         stamp = null,
         ink = StampInk.Neutral,
         modifier = Modifier.testTag("income.hero")

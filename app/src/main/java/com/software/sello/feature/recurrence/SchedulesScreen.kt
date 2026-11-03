@@ -41,12 +41,12 @@ import com.software.sello.designsystem.component.StubButton
 import com.software.sello.designsystem.component.TearLine
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
-import com.software.sello.feature.recibo.StaleSlip
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.read.StaleSlip
 import com.software.sello.presentation.recurrence.repeatRuleLabel
 import java.time.LocalDate
 import java.time.YearMonth
@@ -119,6 +119,7 @@ fun SchedulesScreen(
                 if (state.stale) {
                     item {
                         StaleSlip(
+                            stringResource(R.string.recibo_stale),
                             { onAction(SchedulesAction.Retry) },
                             Modifier.testTag("schedules.stale")
                         )

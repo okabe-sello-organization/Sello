@@ -30,6 +30,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.read.StaleSlip
 
 @Composable
 fun CategoryExpensesScreen(
@@ -104,6 +105,7 @@ fun CategoryExpensesScreen(
                 if (state.stale) {
                     item(key = "stale") {
                         StaleSlip(
+                            stringResource(R.string.recibo_stale),
                             { onAction(CategoryExpensesAction.Retry) },
                             Modifier.testTag("category.expenses.stale")
                         )

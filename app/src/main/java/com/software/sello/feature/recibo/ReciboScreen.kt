@@ -78,6 +78,7 @@ import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.carry.CarryProblemSlip
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.read.StaleSlip
 import kotlinx.coroutines.launch
 
 /**
@@ -138,7 +139,11 @@ fun ReciboScreen(
                     )
                 }
                 if (state.stale) {
-                    StaleSlip({ onAction(ReciboAction.Retry) }, Modifier.testTag(RECIBO_STALE_TAG))
+                    StaleSlip(
+                        stringResource(R.string.recibo_stale),
+                        { onAction(ReciboAction.Retry) },
+                        Modifier.testTag(RECIBO_STALE_TAG)
+                    )
                 }
                 SummarySlip(
                     state.summary,
@@ -174,24 +179,6 @@ fun ReciboScreen(
                 icon = SelloIcon.Error
             )
         }
-    }
-}
-
-/** Says that what follows is older data, and offers to read again. */
-@Composable
-internal fun StaleSlip(onRetry: () -> Unit, modifier: Modifier = Modifier) {
-    Slip(modifier = modifier.fillMaxWidth(), pinked = false) {
-        Text(
-            text = stringResource(R.string.recibo_stale),
-            style = MaterialTheme.typography.bodyLarge,
-            color = SelloTheme.colors.semantic.loss,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }
-        )
-        SelloButton(
-            text = stringResource(R.string.recibo_stale_retry),
-            onClick = onRetry,
-            kind = ButtonKind.Text
-        )
     }
 }
 

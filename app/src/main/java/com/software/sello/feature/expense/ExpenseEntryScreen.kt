@@ -90,13 +90,13 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Note
-import com.software.sello.feature.recibo.StaleSlip
 import com.software.sello.presentation.carry.CarryCorrectionContent
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionAnnouncementState
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.read.StaleSlip
 import com.software.sello.presentation.recurrence.FollowingChoice
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoiceSheet
@@ -429,7 +429,11 @@ private fun Choices(
 ) {
     // A refresh failed: the categories are those last read and the draft stays.
     if (state.stale) {
-        StaleSlip({ onAction(ExpenseEntryAction.Retry) }, Modifier.testTag(ENTRY_STALE_TAG))
+        StaleSlip(
+            stringResource(R.string.recibo_stale),
+            { onAction(ExpenseEntryAction.Retry) },
+            Modifier.testTag(ENTRY_STALE_TAG)
+        )
     }
     val addNew = onCreateCategory.takeIf { !state.editing }
     val order = rememberSelectedFirst(state.categories, state.categoryId) { it.id }
