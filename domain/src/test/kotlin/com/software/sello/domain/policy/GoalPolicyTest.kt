@@ -1110,6 +1110,23 @@ class GoalPolicyTest {
         )
     }
 
+    @Test
+    fun aStampEarnedAndLostInsideOneReceiptIsEarnedAndKeptFaded() {
+        // Target 1.000.000, saved 400.000 (40 %): the quarter only. By date, 1 Oct +200.000
+        // makes 600.000 (60 %) and earns the half; 2 Oct −150.000 leaves 450.000 (45 %),
+        // so the half stays, faded (rules 4 and 5), and is celebrated as earned.
+        val before = Recorder(1_000_000, today).apply { aporte(400_000) }.progress()
+        val goal = Recorder(1_000_000, today).apply {
+            aporte(400_000)
+            receipt(listOf(aporteLine(200_000, day(10, 1)), retiroLine(150_000, day(10, 2))))
+        }
+        val after = goal.progress()
+
+        assertEquals(Money.cop(450_000), after.saved)
+        assertEquals(listOf(earned(), kept(), empty, empty), after.states())
+        assertEquals(GoalChange(listOf(Half), emptyList(), false), GoalPolicy.change(before, after))
+    }
+
     // ---- A receipt of several goals (SELLO-139) ----
 
     @Test
