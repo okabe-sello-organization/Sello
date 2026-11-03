@@ -18,14 +18,18 @@ import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.GoalUndoOffer
 import com.software.sello.domain.port.ReadState
+import com.software.sello.testing.asNewObservation
 import java.time.Instant
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.onStart
 
-/** The board a test sets by hand; [started] counts observations. */
-class HandGoalReads : GoalReads {
+/**
+ * The board a test sets by hand; [started] counts observations. With [newObservations]
+ * every observation starts from Loading, as the real one does.
+ */
+class HandGoalReads(private val newObservations: Boolean = false) : GoalReads {
     val board = MutableStateFlow<GoalBoardState>(ReadState.Loading)
     var started = 0
 
@@ -39,7 +43,8 @@ class HandGoalReads : GoalReads {
         return read
     }
 
-    override fun observeBoard(): Flow<GoalBoardState> = board.onStart { started++ }
+    override fun observeBoard(): Flow<GoalBoardState> =
+        (if (newObservations) board.asNewObservation() else board).onStart { started++ }
 
     override suspend fun goal(id: GoalId): Outcome<GoalSummary?, StorageFailure> =
         Outcome.Failure(StorageFailure.Unavailable("not used"))

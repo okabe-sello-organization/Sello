@@ -3,7 +3,9 @@ package com.software.sello.feature.goals
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
@@ -12,6 +14,7 @@ import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.platform.ScreenReader
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,7 +43,10 @@ class MetasViewModel(
     private val attempts = MutableStateFlow(0)
     private val completer =
         GoalCompleter(saved, commands, corrections, ids, clock, screenReader, viewModelScope)
-    private val board = attempts.flatMapLatest { reads.observeBoard() }
+
+    /** The board as last read, so a Retry or a return never blanks figures already shown. */
+    private val lastGood = LastGoodRead<GoalBoard, StorageFailure>()
+    private val board = attempts.flatMapLatest { lastGood.keep(Unit, reads.observeBoard()) }
         .stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(STOP_AFTER_MILLIS),
@@ -64,6 +70,8 @@ class MetasViewModel(
             // A new attempt starts a new observation.
             MetasAction.Retry -> if (completer.state.value is CompletionState.Failed) {
                 completer.retry()
+                // Retry always reads again, also when it clears a failed completion.
+                attempts.update { it + 1 }
             } else {
                 attempts.update { it + 1 }
             }
@@ -72,7 +80,9 @@ class MetasViewModel(
             is MetasAction.Open -> Unit
 
             is MetasAction.MarkComplete -> {
-                val read = (board.value as? ReadState.Ready)?.value ?: return
+                // Older goals are marked too, at the version they show: storage refuses a
+                // stale one.
+                val read = goodIn(board.value) ?: return
                 val card = (state.value as? MetasState.Ready)?.goals?.firstOrNull {
                     it.id ==
                         action.id
@@ -84,6 +94,13 @@ class MetasViewModel(
 
             MetasAction.CelebrationDone -> completer.done()
         }
+    }
+
+    /** The goals as last read, also after a failed refresh; none before any read. */
+    private fun goodIn(board: GoalBoardState): GoalBoard? = when (board) {
+        ReadState.Loading -> null
+        is ReadState.Ready -> board.value
+        is ReadState.Failed -> board.lastGood
     }
 
     private companion object {
