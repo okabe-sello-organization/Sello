@@ -74,23 +74,10 @@ class GoalCompleterTest {
             HandCategoryReads(),
             testMoney()
         )
-        commands.completionOffer = {
-            commands.sent.lastOrNull()?.let {
-                GoalUndoOffer(
-                    it.operationId,
-                    (GoalId.of(goal) as Outcome.Success).value,
-                    60.seconds
-                )
-            }
-        }
-    }
-
-    /** Storage's offer as RoomGoalCommands keeps it: the time the completion asked, from its save. */
-    private fun storageKeepsDeshacer() {
-        val saved = 5.seconds + scheduler.currentTime.milliseconds
+        // Storage's offer as RoomGoalCommands keeps it: the time asked, from the save at 0.
         commands.completionOffer = {
             (commands.sent.lastOrNull() as? CompleteGoal)?.let {
-                GoalUndoOffer(it.operationId, it.goalId, saved + it.undoFor)
+                GoalUndoOffer(it.operationId, it.goalId, 5.seconds + it.undoFor)
             }
         }
     }
@@ -158,7 +145,6 @@ class GoalCompleterTest {
 
     @Test
     fun storageKeepsDeshacerPossibleWhileTheMomentShowsAndOffersAboutTenSeconds() = runTest {
-        storageKeepsDeshacer()
         completer().complete(viaje)
         assertEquals(5.minutes, (commands.sent.single() as CompleteGoal).undoFor)
 
@@ -176,7 +162,6 @@ class GoalCompleterTest {
 
     @Test
     fun listoNineSecondsAfterTheSaveOffersDeshacerUntilNineteenSeconds() = runTest {
-        storageKeepsDeshacer()
         val completer = completer()
         completer.complete(viaje)
 
@@ -197,7 +182,6 @@ class GoalCompleterTest {
 
     @Test
     fun withAScreenReaderListoAfterFortySecondsOffersDeshacerThirtySecondsMore() = runTest {
-        storageKeepsDeshacer()
         reading = true
         val completer = completer()
         completer.complete(viaje)
@@ -221,7 +205,6 @@ class GoalCompleterTest {
 
     @Test
     fun closingTheMomentAgainNeverGrowsTheOffer() = runTest {
-        storageKeepsDeshacer()
         val completer = completer()
         completer.complete(viaje)
         scheduler.advanceTimeBy(2.seconds)
@@ -243,7 +226,6 @@ class GoalCompleterTest {
 
     @Test
     fun aCompletionFoundAgainOffersAboutTenSecondsNotStoragesWholeTime() = runTest {
-        storageKeepsDeshacer()
         val completer = completer()
         commands.next =
             CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
@@ -251,7 +233,6 @@ class GoalCompleterTest {
         completer.complete(viaje)
         commands.found = Outcome.Success(receipt(commands.sent.single().operationId))
         completer.retry()
-        completer.done()
 
         scheduler.advanceTimeBy(9999.milliseconds)
         scheduler.runCurrent()
@@ -262,8 +243,104 @@ class GoalCompleterTest {
     }
 
     @Test
+    fun aCompletionFoundSixtySecondsAfterItsSaveIsOnlySaid() = runTest {
+        val completer = completer()
+        commands.next =
+            CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        completer.complete(viaje)
+
+        scheduler.advanceTimeBy(60.seconds)
+        scheduler.runCurrent()
+        commands.found = Outcome.Success(receipt(commands.sent.single().operationId))
+        completer.retry()
+
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = false),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun aRecreationThatFindsTheCompletionDoesNotOpenANewWindow() = runTest {
+        val saved = SavedStateHandle()
+        commands.next =
+            CommandOutcome.OutcomeUnknown((OperationId.of(ids.next()) as Outcome.Success).value)
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        completer(saved).complete(viaje)
+
+        // Recreated 8 seconds after the save: Deshacer has the 2 seconds left, not 10.
+        scheduler.advanceTimeBy(8.seconds)
+        scheduler.runCurrent()
+        commands.found = Outcome.Success(receipt(commands.sent.single().operationId))
+        completer(saved)
+
+        scheduler.advanceTimeBy(1999.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = true),
+            corrections.notice.value
+        )
+        scheduler.advanceTimeBy(1.milliseconds)
+        scheduler.runCurrent()
+        assertEquals(null, corrections.notice.value)
+    }
+
+    @Test
+    fun listoAfterStoragesFiveMinutesSaysLogradaWithoutDeshacer() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+
+        scheduler.advanceTimeBy(5.minutes)
+        scheduler.runCurrent()
+        completer.done()
+
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = false),
+            corrections.notice.value
+        )
+    }
+
+    @Test
+    fun listoNeverOffersDeshacerAgainOnceItsUndoWasBlocked() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+        // Blocked: storage still keeps the completion, in time, for Deshacer.
+        val completion = commands.sent.single() as CompleteGoal
+        commands.completionOffer =
+            { GoalUndoOffer(completion.operationId, completion.goalId, 5.minutes) }
+        commands.next =
+            CommandOutcome.Rejected(CommandRejection.Specific(GoalRejection.UndoConflict))
+        corrections.undo()
+        assertEquals(CorrectionNotice.GoalCompletionUndoTooLate, corrections.notice.value)
+
+        completer.done()
+
+        assertEquals(CorrectionNotice.GoalCompletionUndoTooLate, corrections.notice.value)
+    }
+
+    @Test
+    fun listoLeavesAnotherDeletionOnOfferInPlace() = runTest {
+        val completer = completer()
+        completer.complete(viaje)
+        val movement = (OperationId.of(ids.next()) as Outcome.Success).value
+        commands.undoOffer = {
+            GoalUndoOffer(movement, (GoalId.of(goal) as Outcome.Success).value, 60.seconds)
+        }
+        corrections.goalMovementDeleted(
+            OperationReceipt(movement, OperationKind.DeleteGoalMovement, 3, 12, Instant.EPOCH)
+        )
+
+        completer.done()
+
+        assertEquals(
+            CorrectionNotice.GoalMovementDeleted(canUndo = true),
+            corrections.notice.value
+        )
+    }
+
+    @Test
     fun listoNeverOffersDeshacerPastWhatStorageKeeps() = runTest {
-        storageKeepsDeshacer()
         val completer = completer()
         completer.complete(viaje)
 
@@ -281,7 +358,7 @@ class GoalCompleterTest {
     }
 
     @Test
-    fun whenStorageNoLongerKeepsTheCompletionClosingTheMomentOffersNothing() = runTest {
+    fun whenStorageNoLongerKeepsTheCompletionClosingTheMomentOnlySaysIt() = runTest {
         val completer = completer()
         commands.completionOffer = { null }
         completer.complete(viaje)
@@ -290,7 +367,10 @@ class GoalCompleterTest {
 
         completer.done()
 
-        assertEquals(null, corrections.notice.value)
+        assertEquals(
+            CorrectionNotice.GoalCompleted("Viaje a la costa", canUndo = false),
+            corrections.notice.value
+        )
     }
 
     @Test

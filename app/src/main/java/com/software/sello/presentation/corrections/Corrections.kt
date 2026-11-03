@@ -415,6 +415,9 @@ class Corrections(
     val notice: StateFlow<CorrectionNotice?> = shown
 
     private var pending: Pending? = null
+
+    /** The last completion whose undo was answered: restored, blocked or too late. */
+    private var answered: OperationId? = null
     private var ending: Job? = null
     private var landed: GoalCelebration? = null
 
@@ -806,6 +809,10 @@ class Corrections(
         // A later deletion took this one's place while it was being undone.
         if (pending !== offered) return
         val kind = offered.kind
+        val retried = outcome == Undone.Retry && monotonic.elapsed() < offered.until
+        if (kind == Kind.GoalCompletion && outcome != Undone.Asked && !retried) {
+            answered = offered.deletionId
+        }
         when {
             // The list is shown; the offer waits under it, as it was.
             outcome == Undone.Asked -> show(
@@ -850,7 +857,7 @@ class Corrections(
 
             // Nothing was restored and nothing forbids it: it can be asked again while
             // the time lasts.
-            outcome == Undone.Retry && monotonic.elapsed() < offered.until ->
+            retried ->
                 show(
                     offer(kind, canUndo = true, failed = true, goalName = offered.goalName),
                     offered.until
@@ -918,9 +925,9 @@ class Corrections(
         said(CorrectionNotice.InvestmentMovementsRecorded(count, investmentName))
 
     /**
-     * Marks a goal lograda and offers Deshacer, in its name, for [shownFor], never longer
-     * than storage keeps it possible, the time [command] asked. It runs to its end even if
-     * the caller is cancelled meanwhile.
+     * Marks a goal lograda and offers Deshacer, in its name, for [shownFor] from the save,
+     * never longer than storage keeps it possible, the time [command] asked. It runs to its
+     * end even if the caller is cancelled meanwhile.
      */
     suspend fun completeGoal(
         command: CompleteGoal,
@@ -929,39 +936,51 @@ class Corrections(
     ): GoalCommandOutcome = scope.async {
         val outcome = goals.submit(command)
         if (outcome is CommandOutcome.Committed) {
-            goalCompleted(outcome.value.receipt, goalName, shownFor)
+            goalCompleted(outcome.value.receipt, goalName, shownFor, command.undoFor)
         }
         outcome
     }.await()
 
-    /** A completion committed, as found again after its outcome was not known. */
-    fun goalCompleted(receipt: OperationReceipt, goalName: String, shownFor: Duration) {
-        val until = completionUntil(receipt, shownFor)
+    /**
+     * A completion committed, as found again after its outcome was not known: Deshacer for
+     * [shownFor] counted from the save, not from the find. Storage keeps it for [askedFor]
+     * from the save, which places the save on the clock.
+     */
+    fun goalCompleted(
+        receipt: OperationReceipt,
+        goalName: String,
+        shownFor: Duration,
+        askedFor: Duration
+    ) {
+        val until = completionOffer(receipt)?.let { it - askedFor + shownFor }
+            ?.takeIf { it > monotonic.elapsed() }
         deleted(Kind.GoalCompletion, receipt.operationId, receipt.generation, until, goalName)
     }
 
     /**
      * The big moment after the completion [receipt] closed: Deshacer is offered again, in
      * [goalName], for [shownFor] from now (SELLO-092), within the time storage keeps it
-     * possible. Nothing changes once storage no longer offers that completion.
+     * possible; past that, the completion is only said. Nothing changes while another
+     * deletion is on offer or once an undo of this completion was answered.
      */
     fun goalCompletionMomentClosed(
         receipt: OperationReceipt,
         goalName: String,
         shownFor: Duration
     ) {
+        val offered = pending
+        if (offered != null && offered.deletionId != receipt.operationId) return
+        if (receipt.operationId == answered) return
         // An undo already asked is answered by its own outcome, not offered again.
-        if (offerShown()?.second == true) return
-        val until = completionUntil(receipt, shownFor) ?: return
+        if (offered != null && offerShown()?.second == true) return
+        val until = completionOffer(receipt)?.let { minOf(it, monotonic.elapsed() + shownFor) }
         deleted(Kind.GoalCompletion, receipt.operationId, receipt.generation, until, goalName)
     }
 
-    /** [shownFor] from now, cut to storage's offer for [receipt]; null with no offer. */
-    private fun completionUntil(receipt: OperationReceipt, shownFor: Duration): Duration? =
-        goals.completionUndoOffer()
-            ?.takeIf { it.operationId == receipt.operationId }
-            ?.until
-            ?.let { minOf(it, monotonic.elapsed() + shownFor) }
+    /** Until when storage keeps [receipt] for Deshacer; null when it no longer does. */
+    private fun completionOffer(receipt: OperationReceipt): Duration? = goals.completionUndoOffer()
+        ?.takeIf { it.operationId == receipt.operationId && monotonic.elapsed() < it.until }
+        ?.until
 
     /** A screen reports that a correction of a goal's movement was saved. */
     fun goalMovementUpdated() = said(CorrectionNotice.GoalMovementUpdated)

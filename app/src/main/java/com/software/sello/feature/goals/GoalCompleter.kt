@@ -157,7 +157,12 @@ class GoalCompleter(
                     )
                 )
             } else {
-                corrections.goalCompleted(settled.value.receipt, saved[NAME] ?: "", undoFor())
+                corrections.goalCompleted(
+                    settled.value.receipt,
+                    saved[NAME] ?: "",
+                    undoFor(),
+                    KEPT
+                )
                 CompletionState.Idle
             }
 
