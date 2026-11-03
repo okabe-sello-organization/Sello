@@ -67,9 +67,9 @@ class InvestmentEditorViewModelTest {
     }
 
     /** Ecopetrol (IN05, IN23): 2 aportes, 2 dividends, its first value and 4 more = 9 movements. */
-    private fun ecopetrol() = handInvestment(
+    private fun ecopetrol(name: String = "Ecopetrol") = handInvestment(
         ecopetrolId,
-        "Ecopetrol",
+        name,
         "Acciones",
         "trending_up",
         listOf(
@@ -323,6 +323,40 @@ class InvestmentEditorViewModelTest {
 
         model.onAction(InvestmentEditorAction.NameChanged("a".repeat(40)))
         assertTrue(model.state.value.canSubmit)
+    }
+
+    @Test
+    fun aNameWithAnInvisibleOrDirectionCharacterIsRefusedAndNothingIsSent() = runTest {
+        for (text in listOf("CDT\u200B Banco", "CDT Ban\u00ADco", "\u202ECDT Banco")) {
+            val model = editor()
+            model.identity(name = text)
+            model.onAction(InvestmentEditorAction.TypeInto(InvestmentField.First))
+            model.type("1000")
+
+            assertEquals(text, InvestmentTextError.NotAllowed, model.state.value.nameError)
+            assertFalse(text, model.state.value.canSubmit)
+            model.onAction(InvestmentEditorAction.Submit)
+        }
+        assertTrue(commands.sent.isEmpty())
+    }
+
+    @Test
+    fun aNameSavedBeforeTheInvisibleCharacterRuleIsKeptByAnEdit() = runTest {
+        reads.board.value =
+            ReadState.Ready(investmentsBoard(listOf(ecopetrol(name = "Ecopetrol\u200B"))))
+        commands.answers +=
+            committedInvestment(operation(1), OperationKind.EditInvestment, ecopetrolId)
+        val model = editing()
+        model.onAction(InvestmentEditorAction.IconPicked("insights"))
+
+        model.onAction(InvestmentEditorAction.Submit)
+
+        assertNull(model.state.value.nameError)
+        assertEquals(
+            "45 63 6F 70 65 74 72 6F 6C E2 80 8B",
+            (commands.sent.single() as EditInvestment).name.value.toByteArray(Charsets.UTF_8)
+                .joinToString(" ") { "%02X".format(it) }
+        )
     }
 
     @Test

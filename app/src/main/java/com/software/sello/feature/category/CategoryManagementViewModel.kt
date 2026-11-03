@@ -534,7 +534,8 @@ class CategoryManagementViewModel(
 
     /** Said while typing: a name another category has, however it is written, cannot be saved. */
     private fun takenError(text: String): NameError? {
-        val name = (CategoryName.of(text) as? Outcome.Success)?.value ?: return null
+        val name = (CategoryName.fromInput(text, original?.name) as? Outcome.Success)?.value
+            ?: return null
         return NameError.Taken.takeIf { name.uniquenessKey in takenNames }
     }
 
@@ -689,7 +690,7 @@ class CategoryManagementViewModel(
         val stored = original ?: return
         val generation = generation ?: return
         val id = categoryId ?: return
-        val name = when (val name = CategoryName.of(state.name)) {
+        val name = when (val name = CategoryName.fromInput(state.name, stored.name)) {
             is Outcome.Success -> name.value
 
             is Outcome.Failure -> return mutable.update {

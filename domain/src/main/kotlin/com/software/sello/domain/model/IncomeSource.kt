@@ -48,6 +48,24 @@ sealed interface IncomeSource {
         /** Keys in the approved order, for pickers and codecs. */
         val keys: List<String> = fixed.map { it.key } + Other.KEY
 
+        /**
+         * What a person picks and types: [of], with an "Otro" name held to
+         * [SourceName.fromInput]; [stored] is the name already saved.
+         */
+        fun fromInput(
+            key: String,
+            otherName: String?,
+            stored: String? = null
+        ): Outcome<IncomeSource, IncomeSourceError> {
+            if (key == Other.KEY) {
+                val typed = SourceName.fromInput(otherName.orEmpty(), stored)
+                if (typed is Outcome.Failure) {
+                    return Outcome.Failure(IncomeSourceError.InvalidOtherName(typed.error))
+                }
+            }
+            return of(key, otherName)
+        }
+
         fun of(key: String, otherName: String?): Outcome<IncomeSource, IncomeSourceError> {
             if (key == Other.KEY) {
                 return when (val name = SourceName.of(otherName.orEmpty())) {

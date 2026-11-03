@@ -245,6 +245,9 @@ class GoalEditorViewModel(
 
     private fun name(): String = form.name
 
+    /** The name as saved, which passes as it is even if typed before SELLO-164's rule. */
+    private fun storedName(): String? = stored?.history?.goal?.name?.value
+
     private fun storedTarget(summary: GoalSummary): TransactionAmount? =
         summary.history.events.filterIsInstance<GoalTargetChange>()
             .maxByOrNull(GoalTargetChange::sequence)?.target
@@ -313,6 +316,7 @@ class GoalEditorViewModel(
         val summary = stored
         val text = name()
         val trimmed = text.trim()
+        val typed = GoalName.fromInput(text, storedName()) as? Outcome.Failure
         val target = target()
         val month = month()
         val preview: GoalProgress? = summary?.let {
@@ -336,7 +340,7 @@ class GoalEditorViewModel(
                 completed = summary?.history?.goal?.completedOn != null,
                 name = text,
                 nameLength = trimmed.codePointCount(0, trimmed.length),
-                nameError = when ((GoalName.of(text) as? Outcome.Failure)?.error) {
+                nameError = when (typed?.error) {
                     is TextError.TooLong -> GoalNameError.TooLong
                     TextError.ControlCharacter -> GoalNameError.NotAllowed
                     TextError.Required, null -> null
@@ -371,7 +375,7 @@ class GoalEditorViewModel(
     }
 
     private fun submit() {
-        val name = (GoalName.of(name()) as? Outcome.Success)?.value ?: return
+        val name = (GoalName.fromInput(name(), storedName()) as? Outcome.Success)?.value ?: return
         val icon = form.icon?.let { (IconKey.of(it) as? Outcome.Success)?.value }
             ?: return
         val target = target() ?: return

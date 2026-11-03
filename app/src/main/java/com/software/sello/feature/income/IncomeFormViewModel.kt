@@ -375,14 +375,17 @@ class IncomeFormViewModel(
         }
     }
 
-    private fun source(draft: Draft) = IncomeSource.of(
-        draft.source,
-        draft.other.takeIf { draft.source == "other" }
-    )
+    /** The "Otro" name as saved passes as it is, even if typed before SELLO-164's rule. */
+    private fun source(draft: Draft, original: Original? = progress.value.original) =
+        IncomeSource.fromInput(
+            draft.source,
+            draft.other.takeIf { draft.source == "other" },
+            stored = original?.draft?.takeIf { it.source == "other" }?.other
+        )
 
     private fun changed(draft: Draft, original: Original): Boolean =
         draft.amount != original.draft.amount || draft.date != original.draft.date ||
-            source(draft) != source(original.draft) ||
+            source(draft, original) != source(original.draft, original) ||
             Note.of(draft.note) != Note.of(original.draft.note)
 
     private fun typed() = progress.value.original?.let { changed(draft.value, it) }
@@ -433,7 +436,8 @@ class IncomeFormViewModel(
 
     /** Amount, source or note: what a schedule's following incomes can take on. */
     private fun termsChanged(draft: Draft, original: Original): Boolean =
-        draft.amount != original.draft.amount || source(draft) != source(original.draft) ||
+        draft.amount != original.draft.amount ||
+            source(draft, original) != source(original.draft, original) ||
             Note.of(draft.note) != Note.of(original.draft.note)
 
     private fun submit() {
@@ -735,13 +739,17 @@ class IncomeFormViewModel(
         saved[COMPOSER_TEXT] = null
     }
 
+    private fun storedOther(): String? =
+        progress.value.original?.draft?.takeIf { it.source == "other" }?.other
+
     /** An empty name is allowed here: "Otro" then still says it needs one. */
     private fun composerProblem(what: IncomeComposer, text: String): IncomeTextProblem? {
         val error = when (what) {
             IncomeComposer.Note -> (Note.of(text) as? Outcome.Failure)?.error
 
-            IncomeComposer.SourceName -> (SourceName.of(text) as? Outcome.Failure)?.error
-                ?.takeIf { it != TextError.Required }
+            IncomeComposer.SourceName ->
+                (SourceName.fromInput(text, storedOther()) as? Outcome.Failure)?.error
+                    ?.takeIf { it != TextError.Required }
         }
         return error?.let(::textProblem)
     }
@@ -759,7 +767,7 @@ class IncomeFormViewModel(
         writing: Pair<IncomeComposer, String>?
     ): IncomeFormState {
         val amount = (draft.amount.toTransactionAmount() as? Outcome.Success)?.value
-        val source = source(draft)
+        val source = source(draft, progress.original)
         val otherProblem = (source as? Outcome.Failure)?.error?.let {
             (it as? IncomeSourceError.InvalidOtherName)?.reason?.let(
                 ::textProblem
