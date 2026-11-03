@@ -91,11 +91,12 @@ internal fun OpenDocument.writeAll(bytes: ByteArray, cannotSync: Set<Int>) {
 
 /**
  * The error numbers a sync gives when the document cannot be synced at all: a pipe or
- * socket to its provider, or a provider's proxy file that does not sync. Any other
- * number, such as a failed disk or a full one, means what was written may be lost.
+ * socket to its provider, a provider's proxy file that does not sync, or a file system
+ * without sync (EOPNOTSUPP, which on Linux is also ENOTSUP). Any other number, such as a
+ * failed disk, a full one or a closed descriptor, means what was written may be lost.
  */
 private val cannotSync: Set<Int>
-    get() = setOf(OsConstants.EINVAL, OsConstants.EROFS)
+    get() = setOf(OsConstants.EINVAL, OsConstants.EROFS, OsConstants.EOPNOTSUPP)
 
 private class DescriptorDocument(private val descriptor: ParcelFileDescriptor) : OpenDocument {
     private val file = ParcelFileDescriptor.AutoCloseOutputStream(descriptor)

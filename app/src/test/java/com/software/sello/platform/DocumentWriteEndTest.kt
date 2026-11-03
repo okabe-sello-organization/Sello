@@ -24,37 +24,31 @@ class DocumentWriteEndTest {
     }
 
     @Test
-    fun aPipeOrSocketThatCannotSyncStillCompletes() {
-        val document = HandDocument(syncError = EINVAL)
+    fun aDocumentThatCannotBeSyncedAtAllStillCompletes() {
+        // A pipe or socket, or a provider's proxy file that looks like a regular file but
+        // does not sync, gives EINVAL; read-only storage EROFS; a file system without
+        // sync EOPNOTSUPP.
+        listOf(EINVAL, EROFS, EOPNOTSUPP).forEach { error ->
+            val document = HandDocument(syncError = error)
 
-        document.writeAll(bytes, CANNOT_SYNC)
+            document.writeAll(bytes, CANNOT_SYNC)
 
-        assertArrayEquals(bytes, document.received.toByteArray())
-        assertTrue(document.closed)
-    }
-
-    @Test
-    fun aProvidersProxyFileThatCannotSyncStillCompletes() {
-        // A proxy file looks like a regular file, yet its provider may not sync it.
-        val document = HandDocument(syncError = EINVAL)
-
-        document.writeAll(bytes, CANNOT_SYNC)
-
-        assertArrayEquals(bytes, document.received.toByteArray())
-    }
-
-    @Test
-    fun aDocumentOnStorageThatCannotSyncStillCompletes() {
-        val document = HandDocument(syncError = EROFS)
-
-        document.writeAll(bytes, CANNOT_SYNC)
-
-        assertTrue(document.closed)
+            assertArrayEquals(bytes, document.received.toByteArray())
+            assertTrue(document.closed)
+        }
     }
 
     @Test
     fun aSyncThatFailsOnTheDiskIsAFailureAndTheDocumentIsStillClosed() {
         val document = HandDocument(syncError = EIO)
+
+        assertThrows(IOException::class.java) { document.writeAll(bytes, CANNOT_SYNC) }
+        assertTrue(document.closed)
+    }
+
+    @Test
+    fun aSyncOnADescriptorThatIsNoLongerOpenIsAFailure() {
+        val document = HandDocument(syncError = EBADF)
 
         assertThrows(IOException::class.java) { document.writeAll(bytes, CANNOT_SYNC) }
         assertTrue(document.closed)
@@ -117,11 +111,13 @@ class DocumentWriteEndTest {
     private companion object {
         // Linux's error numbers, as Android's OsConstants hold them on a device.
         const val EIO = 5
+        const val EBADF = 9
         const val EINVAL = 22
         const val ENOSPC = 28
         const val EROFS = 30
+        const val EOPNOTSUPP = 95
         const val EDQUOT = 122
 
-        val CANNOT_SYNC = setOf(EINVAL, EROFS)
+        val CANNOT_SYNC = setOf(EINVAL, EROFS, EOPNOTSUPP)
     }
 }

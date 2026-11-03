@@ -50,6 +50,11 @@ class DocumentWriteContractTest {
     }
 
     @Test
+    fun aPipeThatCannotSyncButTakesEveryByteIsComplete() {
+        assertEquals(DocumentWrite.Completed("pipe", bytes.size.toLong()), write("pipe"))
+    }
+
+    @Test
     fun aProviderThatRefusesTheDocumentIsAFailure() {
         assertEquals(DocumentWrite.Failed, write("refuse"))
     }

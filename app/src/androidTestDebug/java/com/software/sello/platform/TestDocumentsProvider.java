@@ -18,7 +18,9 @@ import java.util.List;
  * Documents for tests, each path a way a real provider behaves:
  * {@code ok/<name>}, a file in this provider's cache; {@code refuse}, the provider will
  * not open it; {@code readonly}, it opens only for reading, so the first write fails;
- * {@code broken}, a pipe whose reader has already gone, as when an upload is cut off;
+ * {@code pipe}, a pipe whose reader takes every byte and reports no error, as a
+ * provider that uploads a stream does; {@code broken}, a pipe whose reader has already
+ * gone, as when an upload is cut off;
  * {@code reported}, a pipe that takes every byte but whose provider has reported that
  * it failed, as when an upload is refused after it started.
  *
@@ -49,6 +51,14 @@ public final class TestDocumentsProvider extends ContentProvider {
                     throw new FileNotFoundException(e.getMessage());
                 }
                 return ParcelFileDescriptor.open(readOnly, ParcelFileDescriptor.MODE_READ_ONLY);
+            case "pipe":
+                try {
+                    ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
+                    drain(pipe[0]);
+                    return pipe[1];
+                } catch (IOException e) {
+                    throw new FileNotFoundException(e.getMessage());
+                }
             case "broken":
                 try {
                     ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createReliablePipe();
