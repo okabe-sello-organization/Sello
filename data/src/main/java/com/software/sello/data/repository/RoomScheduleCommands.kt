@@ -204,13 +204,20 @@ class RoomScheduleCommands internal constructor(
         ) {
             categoryRejection(payment.categoryId)?.let { return refused(it) }
         }
-        // Pauses before a new start no longer matter; one across it starts with it.
+        // Pauses before a new start no longer matter; one across it starts with it, and so
+        // does the open one, even when it was set before the old start (rule 8).
         val pauses = if (command.start == current.recurrence.start) {
             current.recurrence.pauses
         } else {
             current.recurrence.pauses
                 .filter { it.until?.isAfter(command.start) ?: true }
-                .map { if (it.from.isBefore(command.start)) it.copy(from = command.start) else it }
+                .map {
+                    if (it.until == null || it.from.isBefore(command.start)) {
+                        it.copy(from = command.start)
+                    } else {
+                        it
+                    }
+                }
         }
         val recurrence =
             when (val built = Recurrence.of(command.rule, command.start, command.end, pauses)) {
@@ -219,6 +226,15 @@ class RoomScheduleCommands internal constructor(
                 is Outcome.Failure -> return refused(
                     ScheduleRejection.InvalidRecurrence(built.error)
                 )
+            }
+        // Rule 7: nothing dated today or earlier is recorded under the new terms. A new rule
+        // or an end that lets the schedule run again moves the checkpoint to today's end.
+        val handled = loaded.stored.handled
+        val checkpoint =
+            if (ruleChanged || SchedulePolicy.due(recurrence, handled, today, 1).isNotEmpty()) {
+                SchedulePolicy.handledAfterChange(recurrence.rule, handled, today)
+            } else {
+                handled
             }
         val entry = command.entry.stored
         val rule = recurrence.rule.stored
@@ -245,6 +261,14 @@ class RoomScheduleCommands internal constructor(
             updatedAt = now.toEpochMilli()
         )
         check(updated == 1) { "The schedule changed inside the transaction that read it" }
+        if (checkpoint != null && checkpoint != handled) {
+            val set = database.scheduleDao().setHandled(
+                loaded.row.id,
+                EffectiveDates.storedText(checkpoint.date),
+                checkpoint.slot
+            )
+            check(set == 1) { "The schedule changed inside the transaction that read it" }
+        }
         if (pauses != current.recurrence.pauses) {
             database.scheduleDao().removePauses(loaded.row.id)
             pauses.forEach { database.scheduleDao().insertPause(it.toEntity(current.id)) }

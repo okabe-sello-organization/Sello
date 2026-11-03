@@ -70,8 +70,11 @@ import org.koin.core.module.dsl.factoryOf
 import org.koin.core.parameter.parametersOf
 import org.koin.dsl.module
 
-/** What screens share: the one month session and the money formatter. */
-fun presentationModule(): Module = module {
+/**
+ * What screens share: the one month session and the money formatter. [generation] is the
+ * history's when this process opened it, the one its financial zone was read from.
+ */
+fun presentationModule(generation: Long): Module = module {
     single { MonthSession(get(), get()) }
     single { MoneyFormatter(ResourceMoneyLabels(get<Context>().resources)) }
     // On the main thread, like the screens that call it, and for as long as the process.
@@ -90,8 +93,9 @@ fun presentationModule(): Module = module {
     }
     // Likewise an erase committed by an earlier process is finished at start.
     single(createdAtStart = true) { ResetSession(get(), get(), get<CoroutineScope>()) }
-    // Recurring payments and incomes are recorded from the moment the graph exists.
-    single { CatchUpSchedules(get(), get()) }
+    // Recurring payments and incomes are recorded from the moment the graph exists, and
+    // only into the history whose zone this process counts days in.
+    single { CatchUpSchedules(get(), get(), generation) }
     single(createdAtStart = true) { CatchUpRunner(get(), get(), get(), get<CoroutineScope>()) }
     single<CatchUpNow> { get<CatchUpRunner>() }
     viewModels()

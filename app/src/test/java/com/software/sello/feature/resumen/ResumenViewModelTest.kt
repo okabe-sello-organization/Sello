@@ -33,6 +33,7 @@ import com.software.sello.feature.recurrence.scheduleId
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
+import com.software.sello.testing.asNewObservation
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -104,13 +105,46 @@ class ResumenViewModelTest {
         reads.of(october).value = ReadState.Ready(resumenSnapshot())
         assertEquals("150.000 pesos", (model.state.value as ResumenState.Ready).income.spoken)
         reads.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
-        assertEquals(ResumenState.Failed, model.state.value)
+        assertEquals(true, (model.state.value as ResumenState.Ready).stale)
         model.onAction(ResumenAction.Retry)
         assertEquals(2, reads.started)
+        assertEquals(true, (model.state.value as ResumenState.Ready).stale)
         val september = YearMonth.of(2026, 9)
         session.select(september)
         assertEquals(ResumenState.Loading, model.state.value)
         assertEquals(1, reads.active)
+    }
+
+    @Test
+    fun aFailedReadBeforeAnyIsTheErrorAndRetryKeepsItUntilARead() = runTest {
+        val model = model()
+        watch(model)
+        reads.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        assertEquals(ResumenState.Failed, model.state.value)
+        model.onAction(ResumenAction.Retry)
+        assertEquals(ResumenState.Failed, model.state.value)
+        reads.of(october).value = ReadState.Ready(resumenSnapshot())
+        assertEquals(false, (model.state.value as ResumenState.Ready).stale)
+    }
+
+    @Test
+    fun comingBackAfterTheTabStoppedKeepsTheFiguresWithNoSkeleton() = runTest {
+        val model = model()
+        val first = watch(model)
+        reads.of(october).value = ReadState.Ready(resumenSnapshot())
+        val shown = model.state.value as ResumenState.Ready
+        first.cancel()
+        advanceTimeBy(5_001)
+        runCurrent()
+        assertEquals(0, reads.active)
+        val seen = mutableListOf<ResumenState>()
+
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            model.state.collect { seen += it }
+        }
+
+        assertEquals(2, reads.started)
+        assertEquals(listOf<ResumenState>(shown), seen.distinct())
     }
 
     @Test
@@ -313,7 +347,9 @@ private class HandResumenSnapshots : ResumenSnapshots {
     override suspend fun read(month: YearMonth): Outcome<ResumenSnapshot, SnapshotFailure> =
         error("The screen observes once, not per chart")
 
+    /** Each observation is new, as the real one is: Loading first, no earlier read kept. */
     override fun observe(month: YearMonth): Flow<ResumenSnapshotState> = of(month)
+        .asNewObservation()
         .onStart {
             active++
             started++

@@ -56,10 +56,10 @@ data class UsdRateEntryState(
     val error: RateEntryError? = null,
     val closed: Boolean = false
 ) {
-    val editable: Boolean get() = !busy && !closed
+    /** A save with an unknown outcome locks the pad: only asking again is offered. */
+    val editable: Boolean get() = !busy && !closed && error != RateEntryError.Unknown
     val canSubmit: Boolean
-        get() = editable && !loading && !loadFailed && rate != null && problem == null &&
-            error != RateEntryError.Unknown
+        get() = editable && !loading && !loadFailed && rate != null && problem == null
 }
 
 sealed interface UsdRateEntryAction {

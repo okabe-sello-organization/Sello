@@ -2,6 +2,7 @@ package com.software.sello.feature.recibo
 
 import androidx.lifecycle.SavedStateHandle
 import com.software.sello.domain.model.SnapshotFailure
+import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
@@ -11,6 +12,7 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
 import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
@@ -65,7 +67,8 @@ class AdjustBudgetViewModelTest {
     @After
     fun reset() = Dispatchers.resetMain()
 
-    private fun model() = AdjustBudgetViewModel(SavedStateHandle(), session, snapshots, money)
+    private fun model(source: MonthlySnapshots = snapshots) =
+        AdjustBudgetViewModel(SavedStateHandle(), session, source, money)
 
     @Test
     fun readyShowsTheSummaryTheLinesAndBothGroups() {
@@ -135,5 +138,32 @@ class AdjustBudgetViewModelTest {
         model.onAction(AdjustBudgetAction.Retry)
 
         assertEquals(listOf(october, october), snapshots.observed)
+    }
+
+    @Test
+    fun retryOnOlderFiguresKeepsThemAndAFailureAgainLeavesThemOlder() {
+        val fresh = NewObservationSnapshots()
+        val model = model(fresh)
+        fresh.ready(month)
+        fresh.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        val older = model.state.value as AdjustBudgetState.Ready
+
+        model.onAction(AdjustBudgetAction.Retry)
+
+        assertEquals(listOf(october, october), fresh.observed)
+        assertEquals(older, model.state.value)
+        assertTrue(older.stale)
+        assertEquals("860.000 pesos", older.spent.spoken)
+    }
+
+    @Test
+    fun retryWhenNothingEverLoadedIsTheErrorUntilARead() {
+        val fresh = NewObservationSnapshots()
+        val model = model(fresh)
+        fresh.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+
+        model.onAction(AdjustBudgetAction.Retry)
+
+        assertEquals(AdjustBudgetState.Failed, model.state.value)
     }
 }

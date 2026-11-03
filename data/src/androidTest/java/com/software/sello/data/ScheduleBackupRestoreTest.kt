@@ -22,19 +22,28 @@ import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateSchedule
+import com.software.sello.domain.port.FinancialClock
+import com.software.sello.domain.port.FinancialDay
 import com.software.sello.domain.port.PauseSchedule
 import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.PreferenceReset
 import com.software.sello.domain.port.PreferenceWrite
+import com.software.sello.domain.port.ResetOutcome
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRecord
 import com.software.sello.domain.port.StoredSchedule
+import com.software.sello.domain.usecase.CatchUpResult
+import com.software.sello.domain.usecase.CatchUpSchedules
+import com.software.sello.domain.usecase.CatchUpStop
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -103,12 +112,13 @@ class ScheduleBackupRestoreTest {
         return (created as CommandOutcome.Committed).value.scheduleId
     }
 
-    /** Everything due up to [today], in as many batches as it takes. */
+    /** Everything due up to [today], in as many batches as it takes, by a process started now. */
     private suspend fun TestLedger.catchUp(today: String): List<String> {
         val store = RoomScheduleCatchUp(database, { audit }, { uuid(nextRecord++) })
+        val generation = long("SELECT generation FROM profile")
         val recorded = mutableListOf<String>()
         while (true) {
-            val batch = store.recordDue(d(today), 50) as CatchUpBatch.Recorded
+            val batch = store.recordDue(generation, d(today), 50) as CatchUpBatch.Recorded
             recorded += batch.occurrences.map { it.origin.occurrence.date.toString() }
             if (batch.occurrences.size < 50) return recorded
         }
@@ -258,6 +268,113 @@ class ScheduleBackupRestoreTest {
         )
     }
 
+    /**
+     * SELLO-146: this process started in Madrid; at 01:00 on 15 November there (still
+     * the 14th in Bogotá) a backup made in Bogotá is restored. Catch-up records nothing,
+     * least of all the salary of the 15th, until a new process reads the restored zone;
+     * that one records the salary of 30 October and the rent of 5 November.
+     */
+    @Test
+    fun afterARestoreCatchUpWaitsForTheRestartAndItsZone() = runBlocking {
+        history()
+        val bytes = backup()
+        val entries = ledger.entries()
+        other.database.openHelper.writableDatabase.execSQL(
+            "UPDATE profile SET financial_zone = 'Europe/Madrid'"
+        )
+        val madrid = ZoneId.of("Europe/Madrid")
+        val processDay = object : FinancialClock {
+            override val today = MutableStateFlow(FinancialDay(d("2026-11-15"), madrid))
+        }
+        val started = other.long("SELECT generation FROM profile")
+        val store =
+            RoomScheduleCatchUp(other.database, { other.audit }, { uuid(other.nextRecord++) })
+        val restores = restoresInto(other, fresh)
+
+        restores.replace(restores.stage(bytes).valueOrFail())
+        val result = CatchUpSchedules(store, processDay, started).run()
+
+        assertEquals(CatchUpResult(emptyList(), CatchUpStop.Stale), result)
+        assertEquals(entries, other.entries())
+        assertEquals("America/Bogota", other.rows("profile", "financial_zone").single())
+
+        // The restart: a new process on the restored zone, where it is still the 14th.
+        other.reopen()
+        assertEquals(listOf("2026-10-30", "2026-11-05"), other.catchUp("2026-11-14"))
+    }
+
+    /**
+     * SELLO-145: rent twice a month on 15 and 30, recorded through [recordedOn] (its second
+     * slot), becomes monthly on 15 from the day after [changedOn]. The backup restores, and
+     * the restored schedule records nothing again, then [next] up to 15 December.
+     */
+    private fun aRuleChangedFromTwiceAMonthRestores(
+        recordedOn: String,
+        changedOn: String,
+        next: List<String>
+    ) = runBlocking {
+        ledger.goTo("2026-10-01")
+        ledger.categories.submit(ledger.createCategory("Hogar"))
+        val rent = ScheduledEntry.Payment(
+            ledger.categoryId(100),
+            transactionPesos(300_000),
+            null
+        )
+        val id = ledger.schedule(
+            "2026-10-01",
+            RepeatRule.TwiceMonthly.of(15, 30).valueOrFail(),
+            rent
+        )
+        ledger.goTo(recordedOn)
+        ledger.catchUp(recordedOn)
+        ledger.goTo(changedOn)
+        val changed = ledger.schedules.submit(
+            ChangeSchedule(
+                ledger.operation(),
+                1,
+                id,
+                1,
+                rent,
+                RepeatRule.Monthly.of(15).valueOrFail(),
+                d(changedOn).plusDays(1),
+                null
+            )
+        )
+        assertTrue("$changed", changed is CommandOutcome.Committed)
+        val before = ledger.scheduleReads.book().valueOrFail().schedules
+        val entries = ledger.entries()
+
+        val bytes = backup()
+        other.goTo(changedOn)
+        val restores = restoresInto(other, fresh)
+        val outcome = restores.replace(restores.stage(bytes).valueOrFail())
+
+        assertTrue("$outcome", outcome is RestoreOutcome.Restored)
+        assertEquals(
+            before.map { it.terms() },
+            other.scheduleReads.book().valueOrFail().schedules.map { it.terms() }
+        )
+        assertEquals(entries, other.entries())
+        assertEquals(emptyList<String>(), other.catchUp(changedOn))
+        other.goTo("2026-12-15")
+        assertEquals(next, other.catchUp("2026-12-15"))
+    }
+
+    @Test
+    fun aRuleChangedAfterTheSecondSlotOfTwiceAMonthRestores() = aRuleChangedFromTwiceAMonthRestores(
+        recordedOn = "2026-10-30",
+        changedOn = "2026-11-02",
+        next = listOf("2026-11-15", "2026-12-15")
+    )
+
+    @Test
+    fun aRuleChangedOnTheDayOfTheSecondSlotOfTwiceAMonthRestores() =
+        aRuleChangedFromTwiceAMonthRestores(
+            recordedOn = "2026-11-30",
+            changedOn = "2026-11-30",
+            next = listOf("2026-12-15")
+        )
+
     @Test
     fun aRestoreReplacesTheSchedulesThereNeverMerges() = runBlocking {
         history()
@@ -281,6 +398,50 @@ class ScheduleBackupRestoreTest {
                 it.schedule.entry.amount.money.minorUnits
             }
         )
+    }
+
+    /** SELLO-146: after an erase, too, catch-up waits for the restart. */
+    @Test
+    fun afterAnEraseCatchUpWaitsForTheRestart() = runBlocking {
+        history()
+        val started = ledger.long("SELECT generation FROM profile")
+        val resets = RoomResets(
+            ledger.database,
+            files.resetFolder,
+            files.restoreFolder,
+            emptyList(),
+            PreferenceReset { PreferenceWrite.Saved },
+            { ledger.zone },
+            { ledger.audit },
+            dispatchers
+        )
+        assertTrue(
+            resets.reset(resets.preview().valueOrFail(), ledger.operation()) is ResetOutcome.Erased
+        )
+        // The new history gets a monthly gym payment, due today, before the restart.
+        val erased = ledger.long("SELECT generation FROM profile")
+        val gym = ledger.nextRecord
+        ledger.categories.submit(ledger.createCategory("Gimnasio", generation = erased))
+        val created = ledger.schedules.submit(
+            CreateSchedule(
+                ledger.operation(),
+                erased,
+                ScheduledEntry.Payment(ledger.categoryId(gym), transactionPesos(99_900), null),
+                RepeatRule.Monthly.of(24).valueOrFail(),
+                d("2026-10-24"),
+                null
+            )
+        )
+        assertTrue("$created", created is CommandOutcome.Committed)
+        val store =
+            RoomScheduleCatchUp(ledger.database, { ledger.audit }, { uuid(ledger.nextRecord++) })
+
+        assertEquals(CatchUpBatch.Stale, store.recordDue(started, d("2026-10-24"), 50))
+        assertEquals(0L, ledger.long("SELECT COUNT(*) FROM expense"))
+        // The restart: a new process records it once.
+        ledger.reopen()
+        assertEquals(listOf("2026-10-24"), ledger.catchUp("2026-10-24"))
+        assertEquals(1L, ledger.long("SELECT COUNT(*) FROM expense"))
     }
 
     @Test

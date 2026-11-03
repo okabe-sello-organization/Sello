@@ -109,13 +109,14 @@ class GoalEditorViewModelTest {
         saved: Long,
         targetMonth: YearMonth? = YearMonth.of(2026, 12),
         completedOn: LocalDate? = null,
-        version: Long = 4
+        version: Long = 4,
+        name: String = "Viaje a la costa"
     ): GoalSummary {
         val day = LocalDate.of(2026, 10, 1)
         val history = GoalHistory(
             Goal(
                 GoalId.of(viajeId).value(),
-                GoalName.of("Viaje a la costa").value(),
+                GoalName.of(name).value(),
                 IconKey.of("flight").value(),
                 targetMonth,
                 completedOn,
@@ -275,6 +276,36 @@ class GoalEditorViewModelTest {
         assertFalse(model.state.value.canSubmit)
         model.onAction(GoalEditorAction.Submit)
         assertEquals(emptyList<GoalCommand>(), commands.sent)
+    }
+
+    @Test
+    fun aNameWithAnInvisibleOrDirectionCharacterIsRefusedAndNothingIsSent() = runTest {
+        for (text in listOf("Casa\u200B propia", "Ca\u00ADsa propia", "\u202ECasa propia")) {
+            val model = model()
+            model.casaPropia()
+            model.onAction(GoalEditorAction.NameChanged(text))
+
+            model.onAction(GoalEditorAction.Submit)
+
+            assertEquals(text, GoalNameError.NotAllowed, model.state.value.nameError)
+            assertFalse(text, model.state.value.canSubmit)
+        }
+        assertEquals(emptyList<GoalCommand>(), commands.sent)
+    }
+
+    @Test
+    fun aNameSavedBeforeTheInvisibleCharacterRuleIsKeptByAnEdit() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000, name = "Viaje\u200B a la costa")))
+        model.onAction(GoalEditorAction.IconPicked("home"))
+
+        model.onAction(GoalEditorAction.Submit)
+
+        assertNull(model.state.value.nameError)
+        assertEquals(
+            "56 69 61 6A 65 E2 80 8B 20 61 20 6C 61 20 63 6F 73 74 61",
+            (commands.sent.single() as EditGoal).name.value.toByteArray(Charsets.UTF_8)
+                .joinToString(" ") { "%02X".format(it) }
+        )
     }
 
     @Test
@@ -440,6 +471,133 @@ class GoalEditorViewModelTest {
 
         assertEquals(listOf(operation, operation), commands.asked)
         assertEquals(GoalEditorResult.Created(viajeId), model.state.value.result)
+    }
+
+    @Test
+    fun anUnknownCreateWhoseLookupFailsCanOnlyBeCheckedAgainNeverLeft() = runTest {
+        val model = model()
+        model.casaPropia()
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        model.onAction(GoalEditorAction.Submit)
+        val operation = commands.sent.single().operationId
+
+        model.onAction(GoalEditorAction.Back)
+        assertFalse(model.state.value.confirmDiscard)
+        model.onAction(GoalEditorAction.DiscardConfirmed)
+        assertNull(model.state.value.result)
+        assertEquals(GoalSaveError.Unknown, model.state.value.saveError)
+
+        commands.found = Outcome.Success(created().value)
+        model.onAction(GoalEditorAction.Retry)
+
+        assertEquals(listOf(operation, operation), commands.asked)
+        assertEquals(1, commands.sent.size)
+        assertEquals(GoalEditorResult.Created(viajeId), model.state.value.result)
+    }
+
+    @Test
+    fun withAnEditUnresolvedBorrarIsNotOfferedAndNothingIsLeftBusy() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        model.onAction(GoalEditorAction.NameChanged("Viaje a Cartagena"))
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        model.onAction(GoalEditorAction.Submit)
+
+        model.onAction(GoalEditorAction.AskToDelete)
+        model.onAction(GoalEditorAction.Delete)
+
+        assertFalse(model.state.value.confirmDelete)
+        assertFalse(model.state.value.busy)
+        assertTrue(commands.sent.single() is EditGoal)
+        model.onAction(GoalEditorAction.Back)
+        assertNull(model.state.value.result)
+    }
+
+    @Test
+    fun anEditStillUnresolvedAfterProcessDeathIsShownAsUnresolvedUntilKnown() = runTest {
+        val saved = editing(goal(3_000_000, 1_710_000))
+        val first = model(saved)
+        first.onAction(GoalEditorAction.NameChanged("Viaje a Cartagena"))
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        first.onAction(GoalEditorAction.Submit)
+
+        val restored = model(saved)
+
+        assertTrue(restored.state.value.unresolved)
+        restored.onAction(GoalEditorAction.AskToDelete)
+        assertFalse(restored.state.value.confirmDelete)
+
+        // Asked again with its own operation: nothing was written, so the form is free.
+        commands.found = Outcome.Success(null)
+        restored.onAction(GoalEditorAction.Retry)
+
+        assertFalse(restored.state.value.unresolved)
+        assertEquals(GoalSaveError.NotSaved, restored.state.value.saveError)
+        restored.onAction(GoalEditorAction.AskToDelete)
+        assertTrue(restored.state.value.confirmDelete)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
+    fun anUnknownDeleteClosesTheSlipAndIsCheckedWithItsOwnOperation() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        model.onAction(GoalEditorAction.AskToDelete)
+        model.onAction(GoalEditorAction.Delete)
+        val operation = commands.sent.single().operationId
+
+        val unknown = model.state.value
+        assertEquals(GoalSaveError.Unknown, unknown.saveError)
+        assertFalse(unknown.confirmDelete)
+        assertFalse(unknown.busy)
+        model.onAction(GoalEditorAction.AskToDelete)
+        assertFalse(model.state.value.confirmDelete)
+
+        commands.found = Outcome.Success(created().value)
+        model.onAction(GoalEditorAction.Retry)
+
+        assertEquals(listOf(operation, operation), commands.asked)
+        assertEquals(1, commands.sent.size)
+        assertEquals(GoalEditorResult.Deleted, model.state.value.result)
+    }
+
+    @Test
+    fun aDeletedGoalClearsTheSlipAndIsNeverDeletedTwice() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        model.onAction(GoalEditorAction.AskToDelete)
+        model.onAction(GoalEditorAction.Delete)
+
+        assertEquals(GoalEditorResult.Deleted, model.state.value.result)
+        assertFalse(model.state.value.confirmDelete)
+        model.onAction(GoalEditorAction.AskToDelete)
+        model.onAction(GoalEditorAction.Delete)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
+    fun whenTheNameSavesAndTheTargetDoesNotGuardarSendsOnlyTheTarget() = runTest {
+        val model = model(editing(goal(3_000_000, 1_710_000)))
+        model.onAction(GoalEditorAction.NameChanged("Viaje a Cartagena"))
+        model.onAction(GoalEditorAction.ClearAmount)
+        model.type("2", "000", "000")
+        // The name commits; the target's outcome is unknown and the lookup finds nothing.
+        commands.queue += targetChanged(change = null)
+        commands.next = CommandOutcome.OutcomeUnknown(OperationId.of(ids.next()).value())
+        commands.found = Outcome.Success(null)
+        model.onAction(GoalEditorAction.Submit)
+
+        assertEquals(GoalSaveError.NotSaved, model.state.value.saveError)
+        assertTrue(model.state.value.changed)
+        assertEquals("Viaje a Cartagena", model.state.value.name)
+
+        model.onAction(GoalEditorAction.Submit)
+
+        val again = commands.sent.drop(2).single() as ChangeGoalTarget
+        assertEquals(pesos(2_000_000) to 5L, again.target to again.expectedVersion)
+        assertEquals(GoalEditorResult.Updated, model.state.value.result)
     }
 
     @Test

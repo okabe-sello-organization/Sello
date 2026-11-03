@@ -14,7 +14,7 @@ import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
 import com.software.sello.navigation.HandFinancialClock
-import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.time.LocalDate
@@ -34,7 +34,7 @@ import org.junit.Test
 @OptIn(ExperimentalCoroutinesApi::class)
 class UpcomingPaymentsViewModelTest {
     private val october = YearMonth.of(2026, 10)
-    private val snapshots = HandSnapshots()
+    private val snapshots = NewObservationSnapshots()
     private val clock = HandFinancialClock("2026-10-22")
     private val money = testMoney()
 
@@ -87,13 +87,38 @@ class UpcomingPaymentsViewModelTest {
     }
 
     @Test
-    fun nothingReservedIsEmptyAndAFailedReadIsFailedNeverEmpty() {
+    fun nothingReservedIsEmptyAndAFailedReadBeforeAnyIsFailedNeverEmpty() {
+        val failing = UpcomingPaymentsViewModel(snapshots, clock, money)
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        val failed = failing.state.value
+        publish()
+
+        assertEquals(UpcomingState.Failed, failed)
+        assertEquals(UpcomingState.Empty(october), failing.state.value)
+    }
+
+    @Test
+    fun aFailedReadKeepsTheLastListAsOlderAndRetryKeepsIt() {
+        val model = UpcomingPaymentsViewModel(snapshots, clock, money)
+        publish(payment(700, "2026-10-25", 120_000, "Suscripciones"))
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        val older = model.state.value as UpcomingState.Ready
+
+        model.retry()
+
+        assertEquals(true, older.stale)
+        assertEquals("120.000 pesos", older.total.spoken)
+        assertEquals(listOf(uuid(700)), older.payments.map { it.scheduleId })
+        assertEquals(older, model.state.value)
+        assertEquals(listOf(october, october), snapshots.observed)
+    }
+
+    @Test
+    fun aFailedReadAfterNothingReservedStaysNothingReservedAsOlder() {
         val model = UpcomingPaymentsViewModel(snapshots, clock, money)
         publish()
-        val empty = model.state.value
         snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
 
-        assertEquals(UpcomingState.Empty(october), empty)
-        assertEquals(UpcomingState.Failed, model.state.value)
+        assertEquals(UpcomingState.Empty(october, stale = true), model.state.value)
     }
 }

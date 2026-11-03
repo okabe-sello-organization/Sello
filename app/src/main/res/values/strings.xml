@@ -339,6 +339,9 @@
     <string name="category_edit_limit_locked">Está archivada: no tiene límite de aquí en adelante. Desarchívala para ponerle uno.</string>
     <string name="category_edit_archived">No acepta gastos nuevos; su historia sigue aquí.</string>
     <string name="category_edit_archived_label">Archivada</string>
+    <string name="category_edit_month_ended">%1$s terminó y el límite no se guardó. Ahora ves %2$s: el límite que guardes vale desde ese mes.</string>
+    <string name="category_edit_month_ended_saved_parts">Se guardó: %1$s. %2$s terminó y el límite no se guardó. Ahora ves %3$s: el límite que guardes vale desde ese mes.</string>
+    <string name="category_edit_month_ended_carry">%1$s terminó y no se empezó a pasar lo que sobra. Ahora ves %2$s: si lo activas, empieza en ese mes.</string>
     <string name="category_edit_saved_parts">Se guardó: %1$s. Lo demás no se guardó; inténtalo de nuevo.</string>
     <string name="category_edit_part_name">nombre</string>
     <string name="category_edit_part_icon">ícono</string>
@@ -622,6 +625,8 @@
     <string name="expense_edit_gone">Este gasto ya no existe. No se cambió nada.</string>
     <string name="expense_edit_changed">Este gasto cambió mientras lo corregías. No se guardó nada; sal y vuelve a abrirlo.</string>
     <string name="expense_edit_not_deleted">No se pudo borrar. El gasto sigue anotado.</string>
+    <string name="expense_edit_delete_unknown">Aún no sabemos si se borró. Compruébalo antes de volver a intentarlo.</string>
+    <string name="expense_edit_check_deleted">Comprobar si se borró</string>
     <string name="expense_edit_load_failed">No pudimos leer este gasto.</string>
     <string name="expense_edit_discard_title">¿Descartar los cambios?</string>
     <string name="expense_edit_discard_message">El gasto queda como estaba.</string>

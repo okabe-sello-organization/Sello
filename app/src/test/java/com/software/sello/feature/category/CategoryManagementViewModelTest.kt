@@ -125,7 +125,8 @@ class CategoryManagementViewModelTest {
     private var caughtUp = CatchUpResult(emptyList(), stopped = null)
     private val reads = HandCategoryReads().apply { generation = 7 }
     private val snapshots = HandSnapshots()
-    private val session = MonthSession(HandFinancialClock("2026-10-09"), HandMonotonicClock())
+    private val clock = HandFinancialClock("2026-10-09")
+    private val session = MonthSession(clock, HandMonotonicClock())
     private var nextId = 500
     private val money = testMoney()
     private lateinit var notices: Corrections
@@ -305,6 +306,37 @@ class CategoryManagementViewModelTest {
         assertEquals("CAFE", (commands.submitted.single() as RenameCategory).name.value)
     }
 
+    @Test
+    fun aRenameToAnInvisibleOrDirectionLookAlikeIsRefusedBeforeAnythingIsSent() {
+        for (text in listOf("Caf\u00E9\u200B", "Ca\u00ADf\u00E9", "\u202ECaf\u00E9")) {
+            val form = form(opening(category = 2))
+            form.name(text)
+
+            form.save()
+
+            assertEquals(text, NameError.NotAllowed, form.now.nameError)
+            assertEquals(text, text, form.now.name)
+        }
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
+    @Test
+    fun aNameSavedBeforeTheInvisibleCharacterRuleIsKeptWhileTheRestChanges() {
+        val older = stored(1, "Caf\u00E9\u200B", limited)
+        reads.categories = listOf(older, mercado)
+        val form = form()
+
+        form.onAction(CategoryEditorAction.IconPicked("restaurant"))
+        form.save()
+
+        assertNull(form.now.nameError)
+        assertEquals(listOf(ChangeCategoryIcon::class), commands.submitted.map { it::class })
+        assertEquals(
+            "43 61 66 C3 A9 E2 80 8B",
+            form.now.name.toByteArray(Charsets.UTF_8).joinToString(" ") { "%02X".format(it) }
+        )
+    }
+
     // --- Saving ---
 
     @Test
@@ -353,6 +385,119 @@ class CategoryManagementViewModelTest {
         assertEquals(finite(120_000), (commands.submitted[2] as SetDefaultLimit).limit)
         assertEquals("restaurant", (commands.submitted[1] as ChangeCategoryIcon).icon.value)
         assertEquals(EditorResult.Updated, form.now.result)
+    }
+
+    // --- The month ends while the form is open (SELLO-154) ---
+
+    private val november = YearMonth.of(2026, 11)
+
+    /** November as storage holds it: Café's limit there is 200.000. */
+    private val cafeInNovember =
+        stored(1, "Café", MonthBudgetState.Limited(finite(200_000), explicit = true))
+
+    @Test
+    fun aLimitSavedAfterItsMonthEndedIsRefusedAndTheFormReadsTheNewMonth() {
+        clock.goTo("2026-10-31")
+        val form = form()
+        form.limit("150000")
+        val opened = form.now
+        clock.goTo("2026-11-01")
+        reads.categories = listOf(cafeInNovember, mercado)
+
+        form.save()
+
+        assertEquals(october to false, opened.targetMonth to opened.historical)
+        // Nothing is written: no limit lands on November.
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+        assertEquals(SaveError.MonthEnded, form.now.saveError)
+        assertEquals(MonthEnded(october, carry = false), form.now.monthEnded)
+        assertEquals(november to false, form.now.targetMonth to form.now.historical)
+        // What was typed stays; it differs from November's own 200.000.
+        assertEquals("150000", form.now.limitText)
+        assertTrue(form.now.changed && !form.now.busy)
+        assertNull(form.now.result)
+    }
+
+    @Test
+    fun afterTheRefusalSavingAgainSetsTheLimitOfTheMonthNowShown() {
+        clock.goTo("2026-10-31")
+        val form = form()
+        form.limit("150000")
+        clock.goTo("2026-11-01")
+        reads.categories = listOf(cafeInNovember, mercado)
+        form.save()
+
+        form.save()
+
+        val sent = commands.submitted.single() as SetDefaultLimit
+        assertEquals(finite(150_000), sent.limit)
+        assertEquals(EditorResult.Updated, form.now.result)
+    }
+
+    @Test
+    fun aDraftRestoredAfterTheMonthChangedIsRefusedTooAndNothingIsWritten() {
+        clock.goTo("2026-10-31")
+        val saved = opening()
+        form(saved).limit("150000")
+        clock.goTo("2026-11-01")
+        reads.categories = listOf(cafeInNovember, mercado)
+
+        val restored = form(saved.afterProcessDeath())
+        val back = restored.now
+        restored.save()
+
+        assertEquals(october to "150000", back.targetMonth to back.limitText)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+        assertEquals(SaveError.MonthEnded, restored.now.saveError)
+        assertEquals(november, restored.now.targetMonth)
+    }
+
+    @Test
+    fun aMonthEndingWhileTheRenameIsSentStopsBeforeTheLimit() {
+        clock.goTo("2026-10-31")
+        val form = form()
+        form.name("Cafetería")
+        form.limit("150000")
+        commands.hold = CompletableDeferred()
+        form.save()
+        clock.goTo("2026-11-01")
+        val renamed = stored(1, "Cafetería", cafeInNovember.state, version = 6)
+        reads.categories = listOf(renamed, mercado)
+        commands.hold!!.complete(Unit)
+
+        assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
+        // The screen names the rename as saved and only the limit as not.
+        assertEquals(listOf(EditPart.Name), form.now.savedParts)
+        assertEquals(SaveError.MonthEnded, form.now.saveError)
+        assertEquals(MonthEnded(october, carry = false), form.now.monthEnded)
+        assertEquals(november, form.now.targetMonth)
+        assertFalse(form.now.busy)
+    }
+
+    @Test
+    fun aRenameAfterTheMonthEndedIsStillSaved() {
+        clock.goTo("2026-10-31")
+        val form = form()
+        form.name("Cafetería")
+        clock.goTo("2026-11-01")
+
+        form.save()
+
+        assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
+        assertEquals(EditorResult.Updated, form.now.result)
+    }
+
+    @Test
+    fun aFinishedMonthsLimitIsStillSavedForThatMonthAfterAnotherMonthEnds() {
+        clock.goTo("2026-10-31")
+        val form = form(opening(month = september))
+        form.limit("150000")
+        clock.goTo("2026-11-01")
+
+        form.save()
+
+        val sent = commands.submitted.single() as SetMonthLimit
+        assertEquals(september to finite(150_000), sent.month to sent.limit)
     }
 
     @Test

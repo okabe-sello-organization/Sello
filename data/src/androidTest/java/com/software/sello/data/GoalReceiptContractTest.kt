@@ -16,6 +16,7 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.PlaceState
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
@@ -118,15 +119,18 @@ class GoalReceiptContractTest {
 
     private fun committed(outcome: GoalCommandOutcome) = (outcome as Committed).value
 
-    /** The goal, at version 1 and revision 1, and [saved] in one aporte before the receipt. */
-    private suspend fun started(saved: Long = 0) {
+    /**
+     * The goal with [target], at version 1 and revision 1, and [saved] in one aporte
+     * before the receipt.
+     */
+    private suspend fun started(saved: Long = 0, target: Long = 3_000_000) {
         val created = ledger.goals.submit(
             CreateGoal(
                 ledger.operation(),
                 1,
                 GoalName.of("Viaje a la costa").valueOrFail(),
                 IconKey.of("flight").valueOrFail(),
-                transactionPesos(3_000_000),
+                transactionPesos(target),
                 YearMonth.of(2026, 12)
             )
         )
@@ -259,6 +263,25 @@ class GoalReceiptContractTest {
             saved.goals.single().change
         )
         assertEquals(100L, summary().progress.percentage)
+    }
+
+    @Test
+    fun aStampEarnedAndLostInsideTheReceiptIsCelebratedOnceAndKeptFaded() = runBlocking {
+        started(saved = 400_000, target = 1_000_000)
+        val command = receipt(aporte(200_000, day(10, 1)), retiro(150_000, day(10, 2)))
+
+        // By date: 400.000 + 200.000 = 600.000 (60 %) earns the 50 %; then 600.000 −
+        // 150.000 = 450.000 (45 %) falls below it, which keeps it faded (rules 4 and 5).
+        val saved = committed(submit(command))
+
+        assertEquals(
+            GoalChange(listOf(GoalPlace.Half), emptyList(), false),
+            saved.goals.single().change
+        )
+        val progress = summary().progress
+        assertEquals(Money.cop(450_000), progress.saved)
+        assertEquals(PlaceState.Kept(today), progress.state(GoalPlace.Half))
+        assertEquals(Committed(replayOf(saved), replayed = true), submit(command))
     }
 
     @Test

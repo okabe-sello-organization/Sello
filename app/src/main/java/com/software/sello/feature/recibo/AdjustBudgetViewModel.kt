@@ -7,6 +7,7 @@ import com.software.sello.domain.model.BudgetLimit
 import com.software.sello.domain.model.CategoryMonth
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.OverallBudget
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.LimitAdjustmentPolicy
 import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.port.MonthlySnapshots
@@ -15,6 +16,7 @@ import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.carry.carryFigures
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +42,9 @@ class AdjustBudgetViewModel(
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val attempt = MutableStateFlow(0)
+
+    /** The month as last read, so a Retry never blanks figures already shown. */
+    private val lastGood = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
     private val month: YearMonth =
         saved.get<String>(KEY_MONTH)?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
             ?: session.currentMonthNow
@@ -49,7 +54,7 @@ class AdjustBudgetViewModel(
     }
 
     val state: StateFlow<AdjustBudgetState> = attempt
-        .flatMapLatest { snapshots.observe(month) }
+        .flatMapLatest { lastGood.keep(month, snapshots.observe(month)) }
         .map(::render)
         .stateIn(viewModelScope, SharingStarted.Eagerly, AdjustBudgetState.Loading)
 

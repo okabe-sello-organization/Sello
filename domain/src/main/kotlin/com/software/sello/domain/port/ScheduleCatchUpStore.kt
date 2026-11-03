@@ -25,6 +25,12 @@ sealed interface CatchUpBatch {
     /** Certainly nothing was written. */
     data class Failed(val failure: StorageFailure) : CatchUpBatch
 
+    /**
+     * The history was restored or erased after the caller read its generation, so its
+     * today may be in another zone. Nothing was written; catch-up waits for a new process.
+     */
+    data object Stale : CatchUpBatch
+
     /** The commit's outcome is not known. The next run reads the checkpoints again. */
     data object Unknown : CatchUpBatch
 }
@@ -36,6 +42,10 @@ sealed interface CatchUpBatch {
  * again, so running a batch twice records nothing twice.
  */
 fun interface ScheduleCatchUpStore {
-    /** Up to [limit] occurrences due on [today] or earlier, by date, then schedule, then slot. */
-    suspend fun recordDue(today: LocalDate, limit: Int): CatchUpBatch
+    /**
+     * Up to [limit] occurrences due on [today] or earlier, by date, then schedule, then
+     * slot, written only while the history is still [generation], the one [today] was
+     * worked out for.
+     */
+    suspend fun recordDue(generation: Long, today: LocalDate, limit: Int): CatchUpBatch
 }

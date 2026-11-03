@@ -3,7 +3,9 @@ package com.software.sello.feature.recibo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryOrderingPreference
+import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.ClosedMonthInvitePolicy
 import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CategoryReads
@@ -14,6 +16,7 @@ import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.ReadState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +49,9 @@ class ReciboViewModel(
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val attempt = MutableStateFlow(0)
+
+    /** The month as last read, so a Retry or a return never blanks figures already shown. */
+    private val lastGood = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
 
     private val ordering = preferences.observeCategoryOrdering()
         .map { result ->
@@ -108,7 +114,7 @@ class ReciboViewModel(
     val state: StateFlow<ReciboState> =
         combine(session.selectedMonth, attempt) { month, _ -> month }
             .flatMapLatest { month ->
-                snapshots.observe(month)
+                lastGood.keep(month, snapshots.observe(month))
                     .combine(ordering) { snapshot, preference ->
                         render.recibo(snapshot, preference)
                     }

@@ -266,4 +266,29 @@ class GoalEditorScreenTest {
         rule.onNodeWithText("¿Borrar Viaje a la costa?").assertExists()
         rule.onNodeWithText(consequences).assertExists()
     }
+
+    @Test
+    fun withASaveUnresolvedOnlyComprobarIsOfferedNotBorrar() {
+        show(
+            planned.copy(
+                editing = true,
+                changed = true,
+                saveError = GoalSaveError.Unknown,
+                unresolved = true
+            )
+        )
+
+        rule.onNodeWithTag(MORE_MENU_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).assertIsNotEnabled()
+        rule.onNodeWithText("Comprobar").performClick()
+        assertEquals(listOf(GoalEditorAction.Retry), actions)
+    }
+
+    @Test
+    fun anUnresolvedSaveWithoutItsErrorYetStillHidesBorrar() {
+        // Restored after process death: the save is asked about before its error is known.
+        show(planned.copy(editing = true, unresolved = true))
+
+        rule.onNodeWithTag(MORE_MENU_TAG).assertDoesNotExist()
+    }
 }

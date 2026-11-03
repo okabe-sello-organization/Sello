@@ -36,7 +36,8 @@ class InvestmentOrderPolicyTest {
     /**
      * One row: [pesos] is the value in pesos the overview would place it by, [tenths] the
      * signed return in tenths of a percent, [movedOn] each movement's date and recording
-     * time ("2026-10-20@10:00").
+     * time ("2026-10-20@10:00"). [direction] names the return's sign when [tenths] rounds
+     * to 0 but the gain does not (IN16).
      */
     private fun item(
         name: String,
@@ -44,7 +45,8 @@ class InvestmentOrderPolicyTest {
         pesos: Long? = null,
         tenths: Long? = null,
         vararg movedOn: String,
-        id: String = id()
+        id: String = id(),
+        direction: GainDirection? = null
     ): PortfolioItem {
         val investment = Investment(
             InvestmentId.of(id).valueOrFail(),
@@ -78,7 +80,7 @@ class InvestmentOrderPolicyTest {
             gain = null,
             `return` = tenths?.let {
                 InvestmentReturn(
-                    when {
+                    direction ?: when {
                         it > 0 -> GainDirection.Gain
                         it < 0 -> GainDirection.Loss
                         else -> GainDirection.Even
@@ -125,6 +127,26 @@ class InvestmentOrderPolicyTest {
         assertEquals(
             listOf("CDT", "fondo", "ÉTF global", "Acciones", "Nuevo"),
             names(InvestmentOrder.Return)
+        )
+    }
+
+    @Test
+    fun rendimientoPutsGainsThenEvenThenLossesEvenWhenTheyRoundToZero() {
+        // Gana +0,04 % and IN16's Pierde −1 peso ("−0,0 %") both round to 0 tenths, like
+        // an even 0,0 %; their names alone would put them A, B, C, D, E.
+        val on = "2026-01-01T12:00:00Z"
+        val portfolio = listOf(
+            item("A pierde poco", on, 2_999_999, 0, direction = GainDirection.Loss),
+            item("B parejo", on, 3_000_000, 0),
+            item("C gana poco", on, 3_001_200, 0, direction = GainDirection.Gain),
+            item("D gana", on, 3_243_000, 81),
+            item("E pierde", on, 2_925_000, -25)
+        )
+
+        assertEquals(
+            listOf("D gana", "C gana poco", "B parejo", "A pierde poco", "E pierde"),
+            InvestmentOrderPolicy.order(portfolio, InvestmentOrder.Return)
+                .map { it.history.investment.name.value }
         )
     }
 

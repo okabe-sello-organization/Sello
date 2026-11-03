@@ -88,18 +88,22 @@ class AdjustBudgetScreenshotTest {
         archived = listOf(viejo)
     )
 
-    private fun capture(look: Look) {
+    private fun capture(
+        look: Look,
+        sheet: LimitSheetState = LimitSheetState(october),
+        file: String = "adjust-budget-${look.label}"
+    ) {
         rule.showSello(look) {
             AdjustBudgetScreen(
                 state = ready,
-                sheet = LimitSheetState(october),
+                sheet = sheet,
                 onAction = {},
                 onSheet = {},
                 onEditCategory = {},
                 contentPadding = PaddingValues(12.dp)
             )
         }
-        rule.captureStill("src/test/screenshots/adjust-budget-${look.label}.png")
+        rule.captureStill("src/test/screenshots/$file.png")
     }
 
     @Test
@@ -110,4 +114,27 @@ class AdjustBudgetScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    /** The month could not be read again: the sheet keeps its facts, with the notice. */
+    @Test
+    fun limitSheetOlderClaro() = capture(
+        Look(),
+        LimitSheetState(
+            month = october,
+            categoryId = "cafe",
+            name = "Café",
+            iconKey = "local_cafe",
+            spent = plain("90.000"),
+            current = plain("50.000"),
+            amount = plain("150.000"),
+            chips = listOf(
+                LimitChip(ChipKind.Spent, plain("90.000"), 90_000),
+                LimitChip(ChipKind.CoverMonth, plain("130.000"), 130_000)
+            ),
+            fact = LimitFact(plain("1.100.000"), plain("20.000"), FactOutcome.Left, false),
+            canSave = true,
+            stale = true
+        ),
+        "limit-sheet-stale-claro"
+    )
 }

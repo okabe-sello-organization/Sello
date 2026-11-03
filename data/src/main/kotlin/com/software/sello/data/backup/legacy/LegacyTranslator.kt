@@ -900,13 +900,22 @@ class LegacyTranslator(
             ) { fields ->
                 val from = fields.text("fromCurrency")
                 val to = fields.text("toCurrency")
-                val exact = fields.decimal("rate")
+                val exact = fields.decimal("rate", RATE_TEXT_LIMIT)
                 val updated = fields.text("updatedDate")
                 if (from != "USD" || to != "COP") {
                     return@records Skip(LegacyReason.UnsupportedCurrency)
                 }
                 val day = rateDay(updated) ?: return@records Skip(LegacyReason.InvalidDate)
                 if (day.isAfter(exportDay)) return@records Skip(LegacyReason.DateAfterExport)
+                // Only a short rate from 0,1 to below 1.000.000 is worked out; any other is
+                // out of range as it is. Reading a very long one, or rounding one with a huge
+                // exponent, would work through as many digits as it has or says.
+                if (exact == null || exact.signum() <= 0) {
+                    return@records Skip(LegacyReason.AmountOutOfRange)
+                }
+                if (exact.precision().toLong() - exact.scale() !in RATE_DIGITS) {
+                    return@records Skip(LegacyReason.AmountOutOfRange)
+                }
                 val rounded = exact.stripTrailingZeros().scale() > 2
                 val centavos = if (rounded) exact.setScale(2, RoundingMode.HALF_UP) else exact
                 val rate = UsdRate.of(centavos).orNull()
@@ -1090,10 +1099,14 @@ class LegacyTranslator(
 
         fun has(key: String): Boolean = present(key) != null
 
-        /** A bare JSON number read from its text, exactly: never through a `Double`. */
-        fun decimal(key: String): BigDecimal {
+        /**
+         * A bare JSON number read from its text, exactly: never through a `Double`. Null
+         * when the text is longer than [maxLength], which is then never read as a number.
+         */
+        fun decimal(key: String, maxLength: Int): BigDecimal? {
             val primitive = present(key) as? JsonPrimitive
             if (primitive == null || primitive.isString) throw UnreadableRecord()
+            if (primitive.content.length > maxLength) return null
             return try {
                 BigDecimal(primitive.content)
             } catch (_: NumberFormatException) {
@@ -1111,6 +1124,12 @@ class LegacyTranslator(
     private companion object {
         const val NEWEST_VERSION = 2L
         const val CUSTOM = "CUSTOM:"
+
+        /** How many digits a rate worth working out has before its decimal point. */
+        val RATE_DIGITS = 0L..6L
+
+        /** The longest rate text read as a number; FinanceTracker writes far shorter. */
+        const val RATE_TEXT_LIMIT = 64
 
         /** How FinanceTracker writes `exportedAt`: local time, no zone, no seconds. */
         val exportedFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")

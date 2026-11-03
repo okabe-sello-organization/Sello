@@ -15,6 +15,7 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.PlaceState
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ChangeGoalTarget
 import com.software.sello.domain.port.CommandOutcome.Committed
 import com.software.sello.domain.port.CommandOutcome.Rejected
@@ -216,6 +217,41 @@ class GoalCommandContractTest {
         )
         assertEquals(before, events())
         assertEquals(2L, ledger.revision())
+    }
+
+    /** #275: the next recording position never wraps past the largest value. */
+    @Test
+    fun aGoalAtTheLastRecordingPositionRefusesAnAporteAndATargetAndStillReads() = runBlocking {
+        started()
+        ledger.database.openHelper.writableDatabase.execSQL(
+            "UPDATE goal SET next_sequence = ${Long.MAX_VALUE}"
+        )
+        val goal = { ledger.rows("goal", "next_sequence", "version") }
+        val before = listOf(goal(), events(), receipts())
+        val exhausted = Rejected(
+            CommandRejection.StorageFailed(
+                StorageFailure.Integrity("goal", uuid(100), "next_sequence")
+            )
+        )
+
+        assertEquals(exhausted, aporte(10_000))
+        assertEquals(
+            exhausted,
+            submit(
+                ChangeGoalTarget(
+                    ledger.operation(),
+                    1,
+                    viaje,
+                    version(),
+                    transactionPesos(2_000_000)
+                )
+            )
+        )
+
+        assertEquals(before, listOf(goal(), events(), receipts()))
+        assertEquals(listOf("9223372036854775807|1"), goal())
+        assertEquals(transactionPesos(3_000_000), summary().progress.target)
+        assertEquals(1L, ledger.revision())
     }
 
     @Test

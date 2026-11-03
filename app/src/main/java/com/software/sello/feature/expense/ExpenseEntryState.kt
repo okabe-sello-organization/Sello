@@ -49,7 +49,7 @@ enum class EntryError {
     /** Deleting failed and the expense is still there. */
     NotDeleted,
 
-    /** Whether the deletion was saved could not be found out. */
+    /** It is not known yet whether the deletion was saved; asking again will tell. */
     DeleteUnknown,
 
     /** A schedule starts today or later; the date was earlier. */
@@ -148,7 +148,7 @@ data class ExpenseEntryState(
             recorded == null
 
     /**
-     * While saving, while a save's outcome is unknown, or once the expense is known to
+     * While saving, while a save's or deletion's outcome is unknown, or once the expense is known to
      * be gone or changed underneath this form, the draft must not change.
      */
     val editable: Boolean get() = !busy && error !in Blocking && recorded == null
@@ -167,7 +167,12 @@ data class ExpenseEntryState(
 
     private companion object {
         /** After these nothing in the form can be sent as it is. */
-        val Blocking = setOf(EntryError.Unknown, EntryError.ExpenseGone, EntryError.ExpenseChanged)
+        val Blocking = setOf(
+            EntryError.Unknown,
+            EntryError.DeleteUnknown,
+            EntryError.ExpenseGone,
+            EntryError.ExpenseChanged
+        )
     }
 }
 

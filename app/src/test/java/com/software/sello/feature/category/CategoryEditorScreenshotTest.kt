@@ -1,6 +1,8 @@
 package com.software.sello.feature.category
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureStill
@@ -59,6 +61,26 @@ class CategoryEditorScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    /** SELLO-154: October ended before the limit was saved; the form reads November. */
+    @Test
+    fun aLimitRefusedBecauseItsMonthEnded() {
+        val refused = editing.copy(
+            name = "Café",
+            limitText = "150000",
+            limitAmount = MoneyTextValue(MoneySign.None, "", "150.000", "150.000 pesos"),
+            targetMonth = YearMonth.of(2026, 11),
+            saveError = SaveError.MonthEnded,
+            monthEnded = MonthEnded(YearMonth.of(2026, 10), carry = false)
+        )
+        val look = Look()
+        rule.showSello(look) {
+            CategoryEditorScreen(refused, {})
+        }
+        // The message sits under the limit, below the first screenful.
+        rule.onNodeWithTag(EDITOR_SAVE_ERROR_TAG).performScrollTo()
+        rule.captureStill("src/test/screenshots/category-editor-month-ended-${look.label}.png")
+    }
 
     /** A 13-digit limit pasted over it: kept as pasted, with why it cannot be set. */
     @Test

@@ -8,6 +8,7 @@ import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.LimitAdjustmentPolicy
 import com.software.sello.domain.policy.MonthBudgetState
@@ -28,6 +29,7 @@ import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import java.time.YearMonth
@@ -72,6 +74,10 @@ class LimitSheetViewModel(
     /** The month's finite limit as read, or null without one. */
     private var currentLimit: Money? = null
     private var snapshot: MonthlySnapshot? = null
+
+    /** The month as last read, so a failed or new observation keeps the chips and fact. */
+    private val lastGood = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
+    private var snapshotStale = false
     private var watching: Job? = null
 
     init {
@@ -130,7 +136,11 @@ class LimitSheetViewModel(
                 val id = now.categoryId
                 val reread = now.loadFailed || now.error == LimitSheetError.Conflict ||
                     now.error == LimitSheetError.DataChanged
-                if (id != null && !now.busy && reread) viewModelScope.launch { open(id) }
+                if (id != null && !now.busy && reread) {
+                    viewModelScope.launch { open(id) }
+                } else if (id != null && !now.busy && now.stale) {
+                    watch()
+                }
             }
         }
     }
@@ -183,14 +193,24 @@ class LimitSheetViewModel(
                 }
             )
         }
+        watch()
+        render()
+    }
+
+    /** Follows the month for its figures; a failed read keeps the last good ones, as older. */
+    private fun watch() {
         watching?.cancel()
         watching = viewModelScope.launch {
-            snapshots.observe(month).collect { observed ->
-                snapshot = (observed as? ReadState.Ready)?.value
+            lastGood.keep(month, snapshots.observe(month)).collect { observed ->
+                snapshot = when (observed) {
+                    ReadState.Loading -> null
+                    is ReadState.Ready -> observed.value
+                    is ReadState.Failed -> observed.lastGood
+                }
+                snapshotStale = observed is ReadState.Failed && snapshot != null
                 render()
             }
         }
-        render()
     }
 
     /** Everything that follows from the draft, the scope and the latest snapshot. */
@@ -240,7 +260,8 @@ class LimitSheetViewModel(
                 chips = chips,
                 chosen = saved.get<String>(KEY_CHOSEN)
                     ?.let { name -> ChipKind.entries.firstOrNull { it.name == name } },
-                fact = fact
+                fact = fact,
+                stale = snapshotStale
             ).let { it.copy(canSave = canSave(it, limit?.amount?.minorUnits)) }
         }
     }
