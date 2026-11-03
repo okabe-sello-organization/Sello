@@ -9,6 +9,7 @@ import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
+import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpensePage
 import com.software.sello.domain.port.ExpenseReads
@@ -31,13 +32,12 @@ class RoomExpenseReads(private val database: SelloDatabase) : ExpenseReads {
         require(limit in 1..ExpenseReads.MAX_PAGE) {
             "a page holds 1 to ${ExpenseReads.MAX_PAGE} expenses"
         }
-        val until = month.plusMonths(1).atDay(1).toString()
         // One more than asked for, only to learn whether another page exists.
         val rows = database.expenseDao().newestInCategory(
             categoryId = categoryId.value,
-            from = month.atDay(1).toString(),
-            until = until,
-            beforeDate = after?.date?.toString() ?: until,
+            from = month.firstDayText,
+            through = month.lastDayText,
+            beforeDate = after?.date?.let(EffectiveDates::storedText),
             beforeSequence = after?.sequence ?: Long.MAX_VALUE,
             limit = limit + 1
         )

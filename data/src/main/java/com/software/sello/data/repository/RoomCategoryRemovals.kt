@@ -169,13 +169,13 @@ private suspend fun SelloDatabase.monthFigures(
     today: LocalDate
 ): MonthRead {
     val month = YearMonth.from(today)
-    val from = month.atDay(1).toString()
-    val until = month.plusMonths(1).atDay(1).toString()
+    val from = month.firstDayText
+    val through = month.lastDayText
     val expenses = pages<ExpenseEntity> { after ->
         expenseDao().pageInCategory(
             categoryId.value,
             from,
-            until,
+            through,
             after?.effectiveDate.orEmpty(),
             after?.sequence ?: 0,
             PAGE
