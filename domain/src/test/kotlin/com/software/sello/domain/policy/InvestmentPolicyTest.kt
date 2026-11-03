@@ -598,4 +598,118 @@ class InvestmentPolicyTest {
         assertNull(InvestmentPolicy.inPesos(cop(Long.MAX_VALUE), usd(100), rate))
         assertNull(InvestmentPolicy.inPesos(usd(100), cop(100), rate))
     }
+
+    /** The ledger of [recorder] as (putIn, dividends, gain) per line, newest first. */
+    private fun ledger(recorder: Recorder): List<Triple<Money, Money, Money?>> =
+        InvestmentPolicy.ledger(recorder.history).valueOrFail().map {
+            Triple(it.putIn, it.dividends, it.gain)
+        }
+
+    @Test
+    fun in37_eachMovementCarriesWhatWasPutInTheDividendsAndAValuesGain() {
+        val eco = Recorder("Ecopetrol").apply {
+            aporte(2_000_000, "2025-03-02")
+            valor(2_000_000, "2025-03-02")
+            aporte(1_000_000, "2025-07-03")
+            valor(3_010_000, "2025-07-03")
+            valor(2_900_000, "2025-12-01")
+            dividendo(89_000, "2026-03-15")
+            valor(3_120_000, "2026-04-02")
+            dividendo(89_000, "2026-09-15")
+            valor(3_050_000, "2026-10-09")
+        }
+        assertEquals(
+            listOf(
+                Triple(cop(3_000_000), cop(178_000), cop(228_000)),
+                Triple(cop(3_000_000), cop(178_000), null),
+                Triple(cop(3_000_000), cop(89_000), cop(209_000)),
+                Triple(cop(3_000_000), cop(89_000), null),
+                Triple(cop(3_000_000), cop(0), cop(-100_000)),
+                Triple(cop(3_000_000), cop(0), cop(10_000)),
+                Triple(cop(3_000_000), cop(0), null),
+                Triple(cop(2_000_000), cop(0), cop(0)),
+                Triple(cop(2_000_000), cop(0), null)
+            ),
+            ledger(eco)
+        )
+        // Newest first, the later recorded first on a shared day.
+        assertEquals(
+            eco.movements.asReversed().map { it.id },
+            InvestmentPolicy.ledger(eco.history).valueOrFail().map { it.movement.id }
+        )
+        // The newest value's gain is the slip's.
+        assertEquals(cop(228_000), figures(eco).gain)
+    }
+
+    @Test
+    fun in38_aRetiroLowersWhatWasPutInAndTheValueReadsTheSlipsLoss() {
+        assertEquals(
+            listOf(
+                Triple(cop(5_500_000), cop(0), cop(-258_000)),
+                Triple(cop(5_500_000), cop(0), null),
+                Triple(cop(6_000_000), cop(0), null),
+                Triple(cop(3_000_000), cop(0), cop(0)),
+                Triple(cop(3_000_000), cop(0), null)
+            ),
+            ledger(fondo())
+        )
+    }
+
+    @Test
+    fun in39_takingOutMoreThanWasPutInReadsBelowZero() {
+        val r = Recorder("Local").apply {
+            aporte(1_000_000, "2026-01-05")
+            valor(3_000_000, "2026-06-01")
+            retiro(2_500_000, "2026-06-10")
+        }
+        assertEquals(
+            listOf(
+                Triple(cop(-1_500_000), cop(0), null),
+                Triple(cop(1_000_000), cop(0), cop(2_000_000)),
+                Triple(cop(1_000_000), cop(0), null)
+            ),
+            ledger(r)
+        )
+        figures(r).run {
+            assertEquals(cop(500_000), value!!.amount)
+            assertEquals(cop(2_000_000), gain)
+        }
+    }
+
+    @Test
+    fun in40_aLaterDividendAddsToTheSlipsGainButNotToTheValuesRow() {
+        val r = Recorder("CDT").apply {
+            aporte(1_000_000, "2026-09-01")
+            valor(1_100_000, "2026-10-01")
+            dividendo(50_000, "2026-10-10")
+            aporte(500_000, "2026-10-12")
+        }
+        assertEquals(
+            listOf(
+                Triple(cop(1_500_000), cop(50_000), null),
+                Triple(cop(1_000_000), cop(50_000), null),
+                Triple(cop(1_000_000), cop(0), cop(100_000)),
+                Triple(cop(1_000_000), cop(0), null)
+            ),
+            ledger(r)
+        )
+        assertEquals(cop(150_000), figures(r).gain)
+    }
+
+    @Test
+    fun theLedgerRefusesAMovementInAnotherCurrency() {
+        val r = Recorder("Mixta").apply { aporte(1_000_000, "2026-09-01") }
+        val dollars = Recorder("USD", Currency.USD)
+            .movement(InvestmentMovementKind.Contribution, 100, "2026-09-02")
+        r.movements += dollars
+        assertEquals(
+            InvestmentHistoryError.CurrencyMismatch(dollars.id),
+            InvestmentPolicy.ledger(r.history).errorOrFail()
+        )
+    }
+
+    @Test
+    fun anEmptyHistoryHasAnEmptyLedger() {
+        assertEquals(emptyList<Triple<Money, Money, Money?>>(), ledger(Recorder("Nada")))
+    }
 }

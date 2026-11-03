@@ -2,6 +2,7 @@ package com.software.sello.feature.investments
 
 import androidx.compose.runtime.Immutable
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.domain.model.GainDirection
 import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.domain.model.InvestmentReturn
 import java.time.LocalDate
@@ -41,41 +42,72 @@ sealed interface InvestmentDetailState {
         val movements: List<InvestmentMovementModel>,
         val today: LocalDate,
         val allMovements: Boolean = false,
+        /** The value the line above the chart reads; null reads the newest. */
         val selectedValue: String? = null,
         val stale: Boolean = false
     ) : InvestmentDetailState
 }
 
-/** A recorded movement as the list shows it: kind, day, note and the signed amount. */
+/**
+ * A recorded movement as the list shows it: kind, day, note, the signed amount and the
+ * [figure] under it (IN37–IN40), null when the history could not be worked out.
+ */
 @Immutable
 data class InvestmentMovementModel(
     val id: String,
     val kind: InvestmentMovementKind,
     val date: LocalDate,
     val note: String?,
-    val amount: MoneyTextValue
+    val amount: MoneyTextValue,
+    val figure: MovementFigure? = null
 )
 
-/** A point of the chart, placed in 0..1 on both axes, and what it stands for. */
+/** What a movement's row says under its amount. */
+@Immutable
+sealed interface MovementFigure {
+    /** A recorded value: the gain at it, "ganancia +228.000", "pérdida −100.000" or "sin ganancia". */
+    data class Gain(val direction: GainDirection, val amount: MoneyTextValue) : MovementFigure
+
+    /** An aporte or retiro: what was put in so far, "pusiste 3.000.000". */
+    data class PutIn(val amount: MoneyTextValue) : MovementFigure
+
+    /** A dividend: the dividends so far, "dividendos 178.000". */
+    data class Dividends(val amount: MoneyTextValue) : MovementFigure
+}
+
+/**
+ * A point of the chart, placed in 0..1 on both axes, and what it stands for. A recorded
+ * value also carries what was put in by then, [putIn], for the line above the chart.
+ */
 @Immutable
 data class ChartPoint(
     val id: String,
     val x: Float,
     val y: Float,
     val date: LocalDate,
-    val amount: MoneyTextValue
+    val amount: MoneyTextValue,
+    val putIn: MoneyTextValue? = null
 )
+
+/** A gridline at [y] in 0..1, labelled short: "2,5 M", "800 mil", "500". */
+@Immutable
+data class AxisMark(val y: Float, val figure: String, val unit: AxisUnit)
+
+enum class AxisUnit { One, Thousands, Millions }
 
 /**
  * Recorded values only, as dots ([values]); what was put in (aportes − retiros) as steps
- * ([putIn]); from the month of the first aporte, [start], to [end].
+ * ([putIn]); [grid] marks round amounts across them; from the month of the first aporte,
+ * [start], through [middle] to [end].
  */
 @Immutable
 data class ValuesChartModel(
     val values: List<ChartPoint>,
     val putIn: List<ChartPoint>,
     val start: YearMonth,
-    val end: YearMonth
+    val end: YearMonth,
+    val middle: YearMonth = start,
+    val grid: List<AxisMark> = emptyList()
 )
 
 sealed interface InvestmentDetailAction {

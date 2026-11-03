@@ -23,8 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -37,7 +35,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
@@ -51,8 +48,8 @@ import com.software.sello.designsystem.component.FittedMoneyText
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MilestoneRow
 import com.software.sello.designsystem.component.MoneyText
-import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.MovementBalance
+import com.software.sello.designsystem.component.MovementMonthLine
 import com.software.sello.designsystem.component.MovementRow
 import com.software.sello.designsystem.component.MovementTone
 import com.software.sello.designsystem.component.SelloButton
@@ -426,7 +423,7 @@ private fun Movements(
         shown.forEachIndexed { index, movement ->
             val first = index == 0 || month(shown[index - 1]) != month(movement)
             if (state.allMovements && first) {
-                MonthLine(
+                MovementMonthLine(
                     // Another year's month says its year, as its rows' days do.
                     month(movement).let {
                         if (it.year == state.today.year) months.name(it) else months.title(it)
@@ -514,30 +511,6 @@ private fun Movements(
                 }
             }
         }
-    }
-}
-
-/** A month of the full movement list: its name and its net change, over a rule. */
-@Composable
-private fun MonthLine(name: String, net: MoneyTextValue, modifier: Modifier = Modifier) {
-    val colors = SelloTheme.colors
-    val style = MaterialTheme.typography.labelSmall.copy(
-        fontWeight = FontWeight.W800,
-        letterSpacing = 0.06.em
-    )
-    Row(
-        modifier
-            .fillMaxWidth()
-            .semantics(mergeDescendants = true) { heading() }
-            .drawBehind {
-                val y = size.height - 0.5.dp.toPx()
-                drawLine(colors.rule, Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
-            }
-            .padding(top = 12.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(name.uppercase(), Modifier.weight(1f), style = style, color = colors.outline)
-        MoneyText(net, color = colors.outline, textStyle = style)
     }
 }
 

@@ -533,7 +533,18 @@ benchmark, value target or interest accrual. COP and USD with one rate the perso
 "Valor anotado el 9 oct · desde mar 2025", the breakdown) with **Anotar el valor de hoy**;
 a chart of recorded values only, as dots joined by a thin line, with a dashed step line
 for what was put in (contributions minus withdrawals); then Movimientos (Valor de hoy,
-Dividendo, Aporte, Retiro). Dock: Anotar movimiento.
+Dividendo, Aporte, Retiro). Dock: Anotar movimiento. Owner, 2026-11-02:
+
+- **Valor y lo que pusiste:** faint gridlines with short amounts ("2,5 M", "800 mil",
+  whole below 10.000), the first, middle and last month, and a line above the chart with
+  the picked value's day, **Vale** and **Pusiste** by then: the newest until a dot is
+  tapped. The recorded values are not written out under the chart; each dot is a named
+  radio for screen readers.
+- **Movimientos** use the goal's row: the amount at the end (aporte and dividendo green
+  with +, retiro −, a value without a sign) and a figure under it: a value's **ganancia**
+  or **pérdida** (green or red; "sin ganancia" at 0), **pusiste** so far for an aporte
+  or retiro, **dividendos** so far for a dividendo (IN37–IN40). A note is the title.
+  The full list (after **Ver los N**) gets a line per month, without a net.
 
 **Anotar movimiento** reuses the locked entry screen: pinked amount slip, Sello pad, the
 action above the pad, note row, one plain fact and no live preview.
