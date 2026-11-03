@@ -418,12 +418,12 @@ class ExportedSchemaOnDeviceTest {
                 profile
             )
             assertEquals(listOf(48_700L), expenses.map { it.amountMinor })
-            assertEquals(7, version)
+            assertEquals(8, version)
         }
 
     @Test
     fun aDatabaseBuiltFromTheExportedCurrentSchemaOpensAndKeepsItsRows() = runBlocking {
-        helper.createDatabase(name, 7).use { exported ->
+        helper.createDatabase(name, 8).use { exported ->
             exported.execSQL(
                 "INSERT INTO profile (id, financial_zone, generation, revision, created_at) " +
                     "VALUES (1, 'America/Bogota', 4, 17, 0)"

@@ -23,12 +23,13 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.DeleteGoal
-import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.domain.port.ReplaceStar
+import com.software.sello.domain.port.StarGoal
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.income.HandIncomeCommands
 import com.software.sello.feature.investments.HandInvestmentCommands
@@ -125,8 +126,19 @@ class GoalsViewModelTest {
             GoalSummary(history, GoalPolicy.progress(history).value())
         }
 
-    private fun board(vararg goals: GoalSummary, featured: String? = null) = ReadState.Ready(
-        GoalBoard(3, 9, goals.toList(), featured?.let { GoalId.of(it).value() })
+    /** [featured] heads Recibo's list; [starred] are the goals starred. */
+    private fun board(
+        vararg goals: GoalSummary,
+        featured: String? = null,
+        starred: Set<String> = emptySet()
+    ) = ReadState.Ready(
+        GoalBoard(
+            3,
+            9,
+            goals.toList(),
+            starred.map { GoalId.of(it).value() }.toSet(),
+            listOfNotNull(featured?.let { GoalId.of(it).value() })
+        )
     )
 
     private fun detail(saved: SavedStateHandle = SavedStateHandle(mapOf("goalId" to viajeId))) =
@@ -176,11 +188,35 @@ class GoalsViewModelTest {
         assertTrue(ready(model).busy)
         commands.release(committed())
 
-        val sent = commands.sent.single() as FeatureGoal
+        val sent = commands.sent.single() as StarGoal
         assertEquals(GoalId.of(viajeId).value(), sent.goalId)
         assertEquals(3L, sent.generation)
         assertEquals(false, ready(model).busy)
         assertNull(ready(model).error)
+    }
+
+    @Test
+    fun choosingTheGoalWhileAnotherIsStarredMovesThatStarInOneCommand() = runTest {
+        reads.board.value = board(
+            summary(viajeId, 1_710_000, 3_000_000),
+            summary(celularId, 450_000, 1_200_000),
+            featured = celularId,
+            starred = setOf(celularId)
+        )
+        val model = detail()
+        watch(model)
+
+        model.onAction(GoalDetailAction.Feature)
+
+        assertEquals(
+            ReplaceStar(
+                commands.sent.single().operationId,
+                3,
+                GoalId.of(celularId).value(),
+                GoalId.of(viajeId).value()
+            ),
+            commands.sent.single()
+        )
     }
 
     @Test
@@ -341,7 +377,7 @@ class GoalsViewModelTest {
         CommittedGoal(
             OperationReceipt(
                 OperationId.of(ids.next()).value(),
-                OperationKind.FeatureGoal,
+                OperationKind.StarGoal,
                 3,
                 10,
                 Instant.EPOCH

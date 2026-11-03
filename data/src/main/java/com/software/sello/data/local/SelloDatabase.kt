@@ -26,7 +26,6 @@ import com.software.sello.data.local.entity.DeletedGoalEventEntity
 import com.software.sello.data.local.entity.DeletedIncomeEntity
 import com.software.sello.data.local.entity.DeletedInvestmentMovementEntity
 import com.software.sello.data.local.entity.ExpenseEntity
-import com.software.sello.data.local.entity.FeaturedGoalEntity
 import com.software.sello.data.local.entity.GoalEntity
 import com.software.sello.data.local.entity.GoalEventEntity
 import com.software.sello.data.local.entity.IncomeEntity
@@ -37,6 +36,7 @@ import com.software.sello.data.local.entity.OperationReceiptEntity
 import com.software.sello.data.local.entity.ProfileEntity
 import com.software.sello.data.local.entity.ScheduleEntity
 import com.software.sello.data.local.entity.SchedulePauseEntity
+import com.software.sello.data.local.entity.StarredGoalEntity
 import com.software.sello.data.local.entity.UsdRateEntity
 import kotlin.coroutines.CoroutineContext
 
@@ -47,7 +47,8 @@ import kotlin.coroutines.CoroutineContext
  * goals: `goal`, `goal_event`, `deleted_goal_event` and `featured_goal`; version 5
  * added `schedule`, `schedule_pause` and the origin of a recorded entry; version 6 added
  * investments: `investment`, `investment_movement`, `deleted_investment_movement` and
- * `usd_rate`; version 7 added `carry_chain`.
+ * `usd_rate`; version 7 added `carry_chain`; version 8 replaced `featured_goal` with
+ * `starred_goal`.
  */
 @Database(
     entities = [
@@ -63,7 +64,7 @@ import kotlin.coroutines.CoroutineContext
         GoalEntity::class,
         GoalEventEntity::class,
         DeletedGoalEventEntity::class,
-        FeaturedGoalEntity::class,
+        StarredGoalEntity::class,
         ScheduleEntity::class,
         SchedulePauseEntity::class,
         InvestmentEntity::class,
@@ -72,7 +73,7 @@ import kotlin.coroutines.CoroutineContext
         UsdRateEntity::class,
         CarryChainEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 abstract class SelloDatabase : RoomDatabase() {
@@ -127,7 +128,8 @@ internal fun openSelloDatabase(
             Migration3To4,
             Migration4To5,
             Migration5To6,
-            Migration6To7
+            Migration6To7,
+            Migration7To8
         )
         .setQueryCoroutineContext(queries)
         .build()

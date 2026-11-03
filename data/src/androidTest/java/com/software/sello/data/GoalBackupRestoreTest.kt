@@ -21,7 +21,6 @@ import com.software.sello.domain.port.CategoryOrderingPreferences
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CompleteGoal
 import com.software.sello.domain.port.CreateGoal
-import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommandOutcome
@@ -31,6 +30,7 @@ import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.ResetOutcome
 import com.software.sello.domain.port.RestoreOutcome
+import com.software.sello.domain.port.StarGoal
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration.Companion.seconds
@@ -137,7 +137,7 @@ class GoalBackupRestoreTest {
         ledger.submit(
             CompleteGoal(ledger.operation(), 1, celular, ledger.version(celular), 10.seconds)
         )
-        ledger.submit(FeatureGoal(ledger.operation(), 1, viaje))
+        ledger.submit(StarGoal(ledger.operation(), 1, viaje))
     }
 
     private suspend fun backup(): ByteArray = BackupExport(
@@ -171,7 +171,7 @@ class GoalBackupRestoreTest {
             it.progress.percentage,
             it.progress.places.map { place -> place.state },
             it.progress.completed,
-            it.history.goal.id == featured
+            it.history.goal.id in starred
         )
     }
 
@@ -217,8 +217,64 @@ class GoalBackupRestoreTest {
         )
     }
 
+    /** Each starred goal by name, as [this] holds them now. */
+    private suspend fun TestLedger.starredNames() = board().goals
+        .filter { it.history.goal.id in board().starred }
+        .map { it.history.goal.name.value }
+        .sorted()
+
     @Test
-    fun erasingEverythingRemovesEveryGoalItsHistoryAndTheChoice() = runBlocking {
+    fun everyStarComesBackAndReplacesTheStarsThereNeverMerges() = runBlocking {
+        history()
+        val moto = ledger.goal("Moto", 9_000_000)
+        ledger.submit(StarGoal(ledger.operation(), 1, moto))
+        val bytes = backup()
+        val bici = other.goal("Bici", 2_000_000)
+        other.submit(StarGoal(other.operation(), 1, bici))
+
+        val restores = restoresInto(other, fresh)
+        restores.replace(restores.stage(bytes).valueOrFail())
+
+        assertEquals(listOf("Moto", "Viaje a la costa"), other.starredNames())
+        assertEquals(ledger.board().reciboGoals, other.board().reciboGoals)
+        assertEquals(2, other.rows("starred_goal", "goal_id").size)
+    }
+
+    /** [bytes] as version 6 wrote them: [chosen] as the one chosen goal. */
+    private fun asVersion6(bytes: ByteArray, chosen: GoalId): ByteArray {
+        val text = String(bytes)
+        val stars = Regex("\"starredGoals\": \\[[^]]*]")
+        check(stars.findAll(text).count() == 1 && text.contains("\"version\": 7,"))
+        return text.replace("\"version\": 7,", "\"version\": 6,")
+            .replace(stars, "\"featuredGoal\": \"${chosen.value}\"")
+            .toByteArray()
+    }
+
+    @Test
+    fun aVersion6ChoiceRestoresAsItsOneStarAndIsDroppedOnACompletedGoal() = runBlocking {
+        history()
+        val goals = ledger.board().goals.associate {
+            it.history.goal.name.value to
+                it.history.goal.id
+        }
+        val bytes = backup()
+
+        for ((chosen, expected) in listOf(
+            "Viaje a la costa" to listOf("Viaje a la costa"),
+            // Celular nuevo is completed: a star never sits on a completed goal.
+            "Celular nuevo" to emptyList()
+        )) {
+            val restores = restoresInto(other, fresh)
+            val staged = restores.stage(asVersion6(bytes, goals.getValue(chosen))).valueOrFail()
+            val outcome = restores.replace(staged)
+
+            assertTrue("$outcome", outcome is RestoreOutcome.Restored)
+            assertEquals(chosen, expected, other.starredNames())
+        }
+    }
+
+    @Test
+    fun erasingEverythingRemovesEveryGoalItsHistoryAndTheStars() = runBlocking {
         history()
         val resets = RoomResets(
             ledger.database,
@@ -236,7 +292,7 @@ class GoalBackupRestoreTest {
         val outcome = resets.reset(preview, ledger.operation())
 
         assertEquals(ResetOutcome.Erased(preferencesPending = false), outcome)
-        for (table in listOf("goal", "goal_event", "deleted_goal_event", "featured_goal")) {
+        for (table in listOf("goal", "goal_event", "deleted_goal_event", "starred_goal")) {
             assertEquals(table, 0L, ledger.long("SELECT COUNT(*) FROM $table"))
         }
     }

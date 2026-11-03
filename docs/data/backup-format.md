@@ -1,4 +1,4 @@
-# Backup file format, version 6
+# Backup file format, version 7
 
 Rules: [architecture](../../ARCHITECTURE.md) §7, [D05, D08 and D09](../decisions/0001-mvp-contract.md#d08--privacy-and-portable-files),
 [ADR 0003](../decisions/0003-mvp-transaction-amount-range.md). Code: `data/.../backup`.
@@ -14,23 +14,26 @@ its financial zone (`BackupFormat.fileName`). MIME type: `application/json`.
 
 ## Shape
 
-Sello writes version 6 (SELLO-040) and reads versions 1 to 6. Version 2 is version 1
+Sello writes version 7 (SELLO-143) and reads versions 1 to 7. Version 2 is version 1
 plus `financial.goals` and `financial.featuredGoal` (SELLO-088); version 3 is version 2
 plus `financial.schedules` and each expense's and income's `origin` (SELLO-099);
 version 4 is version 3 plus `financial.investments` and `financial.usdRates` (SELLO-108);
 version 5 is version 4 plus `preferences.investmentCurrency` and
 `preferences.investmentOrder` (SELLO-120); version 6 is version 5 plus `financial.carryChains`
-(SELLO-040, [ADR 0020](../decisions/0020-signed-carryover-policy.md) CP26) and `financial.financialMonth`. A version 1 file
+(SELLO-040, [ADR 0020](../decisions/0020-signed-carryover-policy.md) CP26) and `financial.financialMonth`;
+version 7 is version 6 with `financial.starredGoals` in place of `financial.featuredGoal`
+(SELLO-143). A version 1 file
 reads as having no goals, versions 1 and 2 as having no schedules and no origins, versions
 1 to 3 as having no investments and no rates, versions 1 to 4 as starting investments in
 `COP`, largest value first, and versions 1 to 5 as having no carry chains: **every category
-is off and no starting deficit or surplus is guessed**. A backup with none of them is still
-version 6, so an app that reads only version 5 cannot read it.
+is off and no starting deficit or surplus is guessed**; versions 2 to 6 read with their
+`featuredGoal` as the one starred goal, or none when that goal is completed. A backup with
+none of them is still version 7, so an app that reads only version 6 cannot read it.
 
 ```json
 {
   "format": "sello-backup",
-  "version": 6,
+  "version": 7,
   "exportedAt": "2026-10-22T14:30:00Z",
   "financial": {
     "sourceRevision": 9,
@@ -42,7 +45,7 @@ version 6, so an app that reads only version 5 cannot read it.
     "expenses": [ … ],
     "incomes": [ … ],
     "goals": [ … ],
-    "featuredGoal": "…" | null,
+    "starredGoals": [ … ],
     "schedules": [ … ],
     "investments": [ … ],
     "usdRates": [ … ],
@@ -60,8 +63,10 @@ category. [`valid-g01-v2.json`](../../data/src/test/resources/backup/valid-g01-v
 same data in versions 2 to 4, and
 [`valid-g01-v5.json`](../../data/src/test/resources/backup/valid-g01-v5.json) and
 [`valid-g01-v6.json`](../../data/src/test/resources/backup/valid-g01-v6.json) are the
-same data in versions 5 and 6, the latter as Sello writes it now, with its investments
-starting in dollars and no carry chains;
+same data in versions 5 and 6, and
+[`valid-g01-v7.json`](../../data/src/test/resources/backup/valid-g01-v7.json) the same data
+as Sello writes it now, with its investments starting in dollars, no carry chains and no
+starred goal;
 [`valid-goals-v2.json`](../../data/src/test/resources/backup/valid-goals-v2.json) adds one
 goal (approved example MT07), and
 [`valid-schedules-v3.json`](../../data/src/test/resources/backup/valid-schedules-v3.json)
@@ -78,12 +83,13 @@ SC43 and SC22). The `invalid-*.json` files beside them each break one rule.
 | Key | Value |
 | --- | --- |
 | `format` | Always `"sello-backup"`. |
-| `version` | `1` to `6`. Any other number is refused as a version this app cannot read. |
+| `version` | `1` to `7`. Any other number is refused as a version this app cannot read. |
 | `exportedAt` | When the backup was made, UTC. |
 | `financial.sourceRevision` | The revision all financial rows were read at: one transaction, one revision. Informative; a restore does not reuse it. |
 | `financial.zone` | The financial zone, an IANA identifier such as `America/Bogota`. |
-| `financial.financialMonth` | Version 6: `yyyy-MM`, the **financial** month the backup was made in, by the financial clock, not by the audit clock that `exportedAt` comes from. It is required and must be a real month: a file without it, or with `null` or another spelling, is refused. A file Sello writes says the later of its financial clock's month and the latest month any chain starts or ends in, so a sandbox or a clock moved back still writes a file Sello reads. Versions 1 to 5 have none and read as the month of `exportedAt` in `zone`; they have no chains for it to judge. |
-| `financial.featuredGoal` | Version 2: the `id` of the goal chosen for Recibo, one of `goals`, or `null`. |
+| `financial.financialMonth` | From version 6: `yyyy-MM`, the **financial** month the backup was made in, by the financial clock, not by the audit clock that `exportedAt` comes from. It is required and must be a real month: a file without it, or with `null` or another spelling, is refused. A file Sello writes says the later of its financial clock's month and the latest month any chain starts or ends in, so a sandbox or a clock moved back still writes a file Sello reads. Versions 1 to 5 have none and read as the month of `exportedAt` in `zone`; they have no chains for it to judge. |
+| `financial.featuredGoal` | Versions 2 to 6: the `id` of the goal chosen for Recibo, one of `goals`, or `null`. It reads as that goal's star; a completed goal's is dropped, since a star never sits on a completed goal. |
+| `financial.starredGoals` | Version 7: the `id`s of the goals starred for Recibo, by identifier: at most 5, each one of `goals`, active (`completedOn` `null`) and named once. A file that breaks any of these is refused whole, never trimmed. |
 | `preferences` | Read separately from the financial rows, after them; they never shared a transaction. `null` when they could not be read: the money is backed up regardless. |
 
 ### Records
@@ -205,7 +211,7 @@ Every key is required, even when its value is `null`, and no other key is allowe
   by date then sequence, goals by creation then ID with each history by sequence,
   schedules by `sequence` with each schedule's pauses by first day, investments by
   creation then ID with each history by sequence, rates by `sequence`, carry chains by
-  category ID then start month; the same data
+  category ID then start month, starred goals by ID; the same data
   always makes the same bytes.
 
 ## Not in a backup
@@ -268,7 +274,7 @@ history position (generation, revision) it was previewed at, and the time. A sta
 file survives a restart, but is forgotten after a day or once the generation changes.
 
 The replacement refuses a history that moved since the preview; the person previews
-again. Goals and Recibo's choice are replaced with the rest, never merged: each goal's
+again. Goals and their stars are replaced with the rest, never merged: each goal's
 next recording position follows its last event, and each target gets a new identifier.
 Schedules are replaced the same way, each with its pauses and `handled` checkpoint, and
 entries keep their `origin`; catch-up then goes on from each checkpoint, so nothing the
@@ -293,6 +299,6 @@ there as above.
 
 ## Changing the format
 
-Any change to keys, meanings or rules is a new `version`. Versions 1 to 6 stay
+Any change to keys, meanings or rules is a new `version`. Versions 1 to 7 stay
 readable for as long as the app supports restoring them; nothing translates older Sello
 databases or other apps' files.

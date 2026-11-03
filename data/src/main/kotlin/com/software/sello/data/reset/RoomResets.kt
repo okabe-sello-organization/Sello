@@ -185,7 +185,7 @@ class RoomResets(
             investmentDao().deleteAllMovements()
             investmentDao().deleteAll()
             investmentDao().deleteAllRates()
-            goalDao().deleteFeatured()
+            goalDao().deleteAllStars()
             goalDao().deleteAllEvents()
             goalDao().deleteAll()
             scheduleDao().deleteAllPauses()

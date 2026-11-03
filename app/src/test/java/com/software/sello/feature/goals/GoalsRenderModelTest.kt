@@ -118,11 +118,19 @@ class GoalsRenderModelTest {
         completedOn = day(9, 30)
     }
 
-    private fun board(vararg goals: Goals, featured: String? = null) = GoalBoard(
+    private fun goalId(id: String) = (GoalId.of(id) as Outcome.Success).value
+
+    /** [featured] heads Recibo's list; [starred] are the goals starred. */
+    private fun board(
+        vararg goals: Goals,
+        featured: String? = null,
+        starred: Set<String> = emptySet()
+    ) = GoalBoard(
         generation = 1,
         revision = 7,
         goals = goals.map { it.summary() },
-        featured = featured?.let { (GoalId.of(it) as Outcome.Success).value }
+        starred = starred.map(::goalId).toSet(),
+        reciboGoals = listOfNotNull(featured?.let(::goalId))
     )
 
     private fun ready(state: GoalBoardState) = render.metas(state, today) as MetasState.Ready
@@ -211,9 +219,14 @@ class GoalsRenderModelTest {
         assertEquals(listOf("Viaje a la costa"), state.goals.map { it.name })
     }
 
-    private fun detail(goal: Goals, vararg others: Goals, featured: String? = null) = (
+    private fun detail(
+        goal: Goals,
+        vararg others: Goals,
+        featured: String? = null,
+        starred: Set<String> = emptySet()
+    ) = (
         render.detail(
-            ReadState.Ready(board(goal, *others, featured = featured)),
+            ReadState.Ready(board(goal, *others, featured = featured, starred = starred)),
             goal.id,
             today
         ) as GoalDetailState.Ready
@@ -325,6 +338,22 @@ class GoalsRenderModelTest {
         val celular = celular()
 
         assertEquals(false, detail(viaje(), celular, featured = celular.id).featured)
+    }
+
+    @Test
+    fun choosingAGoalWhileAnotherIsStarredAndShownMovesThatStarHere() {
+        val celular = celular()
+        val viaje = viaje()
+
+        val other = detail(viaje, celular, featured = celular.id, starred = setOf(celular.id))
+        val shownItself =
+            detail(celular, viaje, featured = celular.id, starred = setOf(celular.id))
+        // Nothing starred: Viaje is shown by the fallback rule, and no star moves.
+        val byFallback = detail(celular, viaje, featured = viaje.id)
+
+        assertEquals(false to celular.id, other.featured to other.replacesStar)
+        assertEquals(true to null, shownItself.featured to shownItself.replacesStar)
+        assertEquals(false to null, byFallback.featured to byFallback.replacesStar)
     }
 
     @Test

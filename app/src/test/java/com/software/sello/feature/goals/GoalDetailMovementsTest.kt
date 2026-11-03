@@ -113,7 +113,9 @@ class GoalDetailMovementsTest {
     )
 
     private fun show(all: Boolean = false, look: Look = Look(), lastYear: Boolean = false) {
-        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(summary(lastYear)), null))
+        val ready = ReadState.Ready(
+            GoalBoard(1, 1, listOf(summary(lastYear)), emptySet(), emptyList())
+        )
         val detail = GoalsRenderModel(testMoney()).detail(ready, id, today)
             as GoalDetailState.Ready
         rule.showSello(look) {

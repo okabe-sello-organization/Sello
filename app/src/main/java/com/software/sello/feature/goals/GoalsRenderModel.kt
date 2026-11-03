@@ -182,7 +182,9 @@ class GoalsRenderModel(private val money: MoneyFormatter) {
                 movementMonths = ledger.months.mapValues { (_, net) ->
                     money.format(net, signed = true)
                 },
-                featured = board.featured == goal.id,
+                featured = board.reciboGoals.firstOrNull() == goal.id,
+                replacesStar = board.reciboGoals.firstOrNull()
+                    ?.takeIf { it != goal.id && it in board.starred }?.value,
                 generation = board.generation,
                 version = goal.version
             ),

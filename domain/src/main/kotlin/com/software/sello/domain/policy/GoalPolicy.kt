@@ -41,6 +41,12 @@ object GoalPolicy {
     /** How many months Aportes por mes shows at most. */
     const val CHART_MONTHS = 6
 
+    /** How many goals may be starred for Recibo at once. */
+    const val MAX_STARRED = 5
+
+    /** How many goals Recibo shows at most. */
+    const val RECIBO_GOALS = 5
+
     /** How many lines one receipt of several movements may hold. */
     const val MAX_RECEIPT_LINES = 30
 
@@ -235,16 +241,19 @@ object GoalPolicy {
      */
     fun <T> ordered(goals: List<T>, goal: (T) -> Goal, progress: (T) -> GoalProgress): List<T> {
         val (active, completed) = goals.partition { goal(it).completedOn == null }
-        val byCompletion = Comparator<T> { a, b ->
+        val byCompletedOn = compareByDescending<T> { goal(it).completedOn }
+            .thenBy { goal(it).createdAt }
+        return active.sortedWith(byCompletion(goal, progress)) + completed.sortedWith(byCompletedOn)
+    }
+
+    /** Highest exact completion (saved ÷ target) first, the earlier created on a tie. */
+    private fun <T> byCompletion(goal: (T) -> Goal, progress: (T) -> GoalProgress): Comparator<T> =
+        Comparator<T> { a, b ->
             val aProgress = progress(a)
             val bProgress = progress(b)
             (units(bProgress.saved) * units(aProgress.target))
                 .compareTo(units(aProgress.saved) * units(bProgress.target))
         }.thenBy { goal(it).createdAt }
-        val byCompletedOn = compareByDescending<T> { goal(it).completedOn }
-            .thenBy { goal(it).createdAt }
-        return active.sortedWith(byCompletion) + completed.sortedWith(byCompletedOn)
-    }
 
     /**
      * Metas' band for [month]: active goals only, exact; a total that does not fit an
@@ -338,17 +347,17 @@ object GoalPolicy {
     fun acceptsDate(date: LocalDate, today: LocalDate): Boolean = !date.isAfter(today)
 
     /**
-     * Recibo's goal (rule 12): the [chosen] one while it is active; otherwise the active
-     * goal with the highest exact completion, the earlier created on a tie.
+     * Recibo's goals (rule 12): the [starred] active goals first, then the other active
+     * goals, up to [RECIBO_GOALS] in all; inside each group the highest exact completion
+     * first, the earlier created on a tie. A completed goal is never in it, starred or not.
      */
-    fun featured(goals: List<Pair<Goal, GoalProgress>>, chosen: GoalId?): GoalId? {
+    fun reciboGoals(goals: List<Pair<Goal, GoalProgress>>, starred: Set<GoalId>): List<GoalId> {
         val active = goals.filter { (goal, _) -> goal.completedOn == null }
-        active.firstOrNull { (goal, _) -> goal.id == chosen }?.let { return it.first.id }
-        return active.sortedWith { (a, aProgress), (b, bProgress) ->
-            val byCompletion = (units(bProgress.saved) * units(aProgress.target))
-                .compareTo(units(aProgress.saved) * units(bProgress.target))
-            if (byCompletion != 0) byCompletion else a.createdAt.compareTo(b.createdAt)
-        }.firstOrNull()?.first?.id
+        val (chosen, others) = active.partition { (goal, _) -> goal.id in starred }
+        val order = byCompletion<Pair<Goal, GoalProgress>>({ it.first }, { it.second })
+        return (chosen.sortedWith(order) + others.sortedWith(order))
+            .take(RECIBO_GOALS)
+            .map { (goal, _) -> goal.id }
     }
 
     /**

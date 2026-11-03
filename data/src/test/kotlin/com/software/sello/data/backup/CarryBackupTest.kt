@@ -102,7 +102,8 @@ class CarryBackupTest {
         )) {
             val written = String(defaultCodec.encode(sc01(chains)).value())
 
-            assertEquals(file, written)
+            // Written now as version 7, with no star where version 6 chose no goal.
+            assertEquals(version6AsVersion7(file), written)
             assertFalse(written.contains("carryIn"))
             assertFalse(written.contains("capacity"))
             assertFalse(written.contains("remaining"))
@@ -184,8 +185,8 @@ class CarryBackupTest {
     @Test
     fun `a version this app cannot read is refused by number, not by shape`() {
         assertEquals(
-            BackupRejection.UnsupportedVersion(7),
-            rejection(variant("\"version\": 6,", "\"version\": 7,"))
+            BackupRejection.UnsupportedVersion(8),
+            rejection(variant("\"version\": 6,", "\"version\": 8,"))
         )
     }
 
@@ -208,7 +209,7 @@ class CarryBackupTest {
         )
         assertEquals(
             Outcome.Failure(RestoreRejection.NewerVersion),
-            BackupCodec().check(variant("\"version\": 6,", "\"version\": 7,").toByteArray())
+            BackupCodec().check(variant("\"version\": 6,", "\"version\": 8,").toByteArray())
         )
     }
 

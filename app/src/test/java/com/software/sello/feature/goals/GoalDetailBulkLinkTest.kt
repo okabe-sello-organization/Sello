@@ -85,7 +85,7 @@ class GoalDetailBulkLinkTest {
     }
 
     private fun show(summary: GoalSummary, onBulk: () -> Unit, look: Look = Look()) {
-        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(summary), null))
+        val ready = ReadState.Ready(GoalBoard(1, 1, listOf(summary), emptySet(), emptyList()))
         val detail = GoalsRenderModel(testMoney()).detail(ready, id, today)
         rule.showSello(look) {
             GoalDetailScreen(

@@ -187,7 +187,7 @@ class JvmSandbox(val scenario: Scenario) {
             "SELECT g.name, e.sequence, e.kind, e.amount_minor, e.effective_date " +
                 "FROM goal_event e JOIN goal g ON g.id = e.goal_id ORDER BY g.name, e.sequence"
         ) +
-        rows("SELECT g.name FROM featured_goal f JOIN goal g ON g.id = f.goal_id") +
+        rows("SELECT g.name FROM starred_goal s JOIN goal g ON g.id = s.goal_id ORDER BY g.name") +
         rows("SELECT name, icon_key, currency FROM investment ORDER BY name") +
         rows(
             "SELECT i.name, m.sequence, m.kind, m.amount_minor, m.currency, m.effective_date " +
@@ -229,7 +229,7 @@ class JvmSandbox(val scenario: Scenario) {
             "SELECT g.name, e.sequence, e.kind, e.amount_minor, e.effective_date " +
                 "FROM goal_event e JOIN goal g ON g.id = e.goal_id ORDER BY g.name, e.sequence"
         ) +
-        rows("SELECT g.name FROM featured_goal f JOIN goal g ON g.id = f.goal_id") +
+        rows("SELECT g.name FROM starred_goal s JOIN goal g ON g.id = s.goal_id ORDER BY g.name") +
         rows("SELECT name, currency, next_sequence, version FROM investment ORDER BY name") +
         rows(
             "SELECT i.name, m.sequence, m.kind, m.amount_minor, m.effective_date " +

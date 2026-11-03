@@ -158,7 +158,7 @@ fun g01() = BackupContents(
         ),
         incomes = listOf(income(201, "2026-10-01", 1, 200_000)),
         goals = emptyList(),
-        featuredGoal = null,
+        starredGoals = emptySet(),
         schedules = emptyList(),
         investments = emptyList(),
         usdRates = emptyList(),
@@ -168,14 +168,14 @@ fun g01() = BackupContents(
 )
 
 /**
- * A version 3 file as Sello now writes the same data: version 6, with no investments and
- * no rates after the schedules, the default investment settings, no carry chains, and
- * nothing else changed.
+ * A version 3 file as Sello now writes the same data: version 7, with no investments and
+ * no rates after the schedules, the default investment settings, no carry chains, its
+ * chosen goal starred, and nothing else changed.
  */
-fun writtenAsVersion6(version3: String): String {
+fun writtenAsVersion7(version3: String): String {
     val closing = "\n  },\n  \"preferences\""
     check(version3.split(closing).size == 2 && version3.contains("\"version\": 3,"))
-    return version4AsVersion6(
+    return version4AsVersion7(
         version3.replace("\"version\": 3,", "\"version\": 4,").replace(
             closing,
             ",\n    \"investments\": [],\n    \"usdRates\": []$closing"
@@ -184,18 +184,18 @@ fun writtenAsVersion6(version3: String): String {
 }
 
 /**
- * A version 4 file as Sello now writes the same data: version 6, its investments starting
- * in pesos, largest value first, when it has preferences at all, no carry chains, and
- * nothing else changed.
+ * A version 4 file as Sello now writes the same data: version 7, its investments starting
+ * in pesos, largest value first, when it has preferences at all, no carry chains, its
+ * chosen goal starred, and nothing else changed.
  */
-fun version4AsVersion6(version4: String): String {
+fun version4AsVersion7(version4: String): String {
     check(version4.contains("\"version\": 4,"))
     val newer = version4.replace("\"version\": 4,", "\"version\": 5,")
     // A file made without preferences has none to add to.
-    if (newer.endsWith("\"preferences\": null\n}\n")) return version5AsVersion6(newer)
+    if (newer.endsWith("\"preferences\": null\n}\n")) return version5AsVersion7(newer)
     val last = Regex("(\"categoryDirection\": \"[a-z]+\")\n  }\n}")
     check(last.findAll(newer).count() == 1)
-    return version5AsVersion6(
+    return version5AsVersion7(
         newer.replace(last) {
             "${it.groupValues[1]},\n    \"investmentCurrency\": \"COP\"," +
                 "\n    \"investmentOrder\": \"largest_value\"\n  }\n}"
@@ -203,17 +203,35 @@ fun version4AsVersion6(version4: String): String {
     )
 }
 
-/** A version 5 file as Sello now writes the same data: version 6 with no carry chains. */
-fun version5AsVersion6(version5: String): String {
+/**
+ * A version 5 file as Sello now writes the same data: version 7 with no carry chains and
+ * its chosen goal starred.
+ */
+fun version5AsVersion7(version5: String): String {
     val closing = "\n  },\n  \"preferences\""
     check(version5.split(closing).size == 2 && version5.contains("\"version\": 5,"))
     // An older file says no financial month: it reads as the month of its export in its zone.
     val exported = Regex("\"exportedAt\": \"([^\"]+)\"").find(version5)!!.groupValues[1]
     val zone = Regex("    \"zone\": \"([^\"]+)\",\n").find(version5)!!
     val month = YearMonth.from(Instant.parse(exported).atZone(ZoneId.of(zone.groupValues[1])))
-    return version5.replace("\"version\": 5,", "\"version\": 6,")
-        .replace(zone.value, "${zone.value}    \"financialMonth\": \"$month\",\n")
-        .replace(closing, ",\n    \"carryChains\": []$closing")
+    return version6AsVersion7(
+        version5.replace("\"version\": 5,", "\"version\": 6,")
+            .replace(zone.value, "${zone.value}    \"financialMonth\": \"$month\",\n")
+            .replace(closing, ",\n    \"carryChains\": []$closing")
+    )
+}
+
+/**
+ * A version 6 file as Sello now writes the same data: version 7, its one chosen goal as
+ * the only starred goal. The chosen goal must be active: a completed one is dropped.
+ */
+fun version6AsVersion7(version6: String): String {
+    check(version6.contains("\"version\": 6,"))
+    val featured = Regex("\n    \"featuredGoal\": (null|\"[0-9a-f-]+\"),\n")
+    val chosen = featured.findAll(version6).single().groupValues[1]
+    val starred = if (chosen == "null") "[]" else "[\n      $chosen\n    ]"
+    return version6.replace("\"version\": 6,", "\"version\": 7,")
+        .replace(featured, "\n    \"starredGoals\": $starred,\n")
 }
 
 fun resource(name: String): ByteArray =

@@ -4,6 +4,29 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
+ * Version 8 lets up to five goals be starred for Recibo (SELLO-143): `featured_goal`'s one
+ * chosen goal moves to `starred_goal` and `featured_goal` goes. A chosen goal that is
+ * completed is not carried over, since a star never sits on a completed goal; it showed
+ * nowhere already. Nothing else that existed in version 7 is read, changed or removed.
+ */
+internal val Migration7To8 = object : Migration(7, 8) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `starred_goal` (`goal_id` TEXT NOT NULL, " +
+                "PRIMARY KEY(`goal_id`), FOREIGN KEY(`goal_id`) REFERENCES `goal`(`id`) " +
+                "ON UPDATE RESTRICT ON DELETE RESTRICT )"
+        )
+        db.execSQL(
+            "INSERT INTO `starred_goal` (`goal_id`) SELECT DISTINCT f.`goal_id` " +
+                "FROM `featured_goal` f JOIN `goal` g ON g.`id` = f.`goal_id` " +
+                "WHERE g.`completed_on` IS NULL"
+        )
+        db.execSQL("DROP INDEX IF EXISTS `index_featured_goal_goal_id`")
+        db.execSQL("DROP TABLE `featured_goal`")
+    }
+}
+
+/**
  * Version 7 adds the carry chains of signed budget carryover (ADR 0020), empty: every
  * category of an existing history stays off (CP1). Nothing that existed in version 6 is
  * read, changed or removed.

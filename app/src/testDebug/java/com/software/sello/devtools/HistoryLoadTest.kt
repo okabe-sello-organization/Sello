@@ -174,7 +174,8 @@ class HistoryLoadTest {
         assertEquals(pesos(2_500_000), emergency.progress.saved)
         assertEquals(50L, emergency.progress.percentage)
         assertEquals(listOf("ganado", "ganado", "vacío", "vacío"), stamps("Fondo de emergencia"))
-        assertEquals(emergency.history.goal.id, board.featured)
+        assertEquals(setOf(emergency.history.goal.id), board.starred)
+        assertEquals(emergency.history.goal.id, board.reciboGoals.first())
         // MT06: the aportes leave the budget alone. 900.000 − 300.000 − 80.000.
         val october = saver.month(2026, 10)
         assertEquals(pesos(380_000), october.spent)
@@ -410,7 +411,8 @@ class HistoryLoadTest {
         fun goal(name: String) = goals.goals.single { it.history.goal.name.value == name }
         assertEquals(pesos(1_400_000), goal("Viaje a Cartagena").progress.saved)
         assertEquals(pesos(3_500_000), goal("Fondo de emergencia").progress.saved)
-        assertEquals(goal("Fondo de emergencia").history.goal.id, goals.featured)
+        assertEquals(setOf(goal("Fondo de emergencia").history.goal.id), goals.starred)
+        assertEquals(goal("Fondo de emergencia").history.goal.id, goals.reciboGoals.first())
         assertEquals(pesos(600_000), goal("Regalo de Navidad").progress.saved)
         assertTrue(goal("Regalo de Navidad").progress.completed)
 

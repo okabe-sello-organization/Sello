@@ -96,7 +96,7 @@ class GoalPolicyTest {
         completedOn: LocalDate? = null,
         createdAt: Instant = Instant.EPOCH
     ) = Goal(
-        GoalId.of("00000000-0000-4000-9000-%012d".format(id)).valueOrFail(),
+        goalIdOf(id),
         GoalName.of("Viaje a la costa").valueOrFail(),
         IconKey.of("flight").valueOrFail(),
         null,
@@ -105,6 +105,9 @@ class GoalPolicyTest {
         createdAt,
         createdAt
     )
+
+    private fun goalIdOf(id: Int) =
+        GoalId.of("00000000-0000-4000-9000-%012d".format(id)).valueOrFail()
 
     private fun Recorder.progress(completedOn: LocalDate? = null): GoalProgress =
         GoalPolicy.progress(GoalHistory(goal(completedOn = completedOn), events.toList()))
@@ -457,46 +460,102 @@ class GoalPolicyTest {
     private val a = standing(1, 1_710_000, 3_000_000)
     private val b = standing(2, 450_000, 1_200_000)
 
+    private fun recibo(vararg goals: Pair<Goal, GoalProgress>, starred: Set<Int> = emptySet()) =
+        GoalPolicy.reciboGoals(goals.toList(), starred.map(::goalIdOf).toSet())
+
+    private fun ids(vararg ids: Int) = ids.map(::goalIdOf)
+
     @Test
-    fun mt28WithoutAChoiceTheHighestCompletionIsShown() {
-        assertEquals(a.first.id, GoalPolicy.featured(listOf(b, a), null))
+    fun mt28WithNothingStarredTheHighestCompletionComesFirst() {
+        // A 1.710.000 / 3.000.000 = 57 %, B 450.000 / 1.200.000 = 37,5 %.
+        assertEquals(ids(1, 2), recibo(b, a))
     }
 
     @Test
-    fun mt29ThePersonsChoiceWins() {
-        assertEquals(b.first.id, GoalPolicy.featured(listOf(a, b), b.first.id))
+    fun mt29AStarredGoalComesFirstWhateverItsCompletion() {
+        assertEquals(ids(2, 1), recibo(a, b, starred = setOf(2)))
     }
 
     @Test
-    fun mt30AChosenGoalThatIsCompletedFallsBack() {
+    fun mt30AStarOnACompletedOrMissingGoalNeitherShowsItNorKeepsAPlace() {
         val done = standing(2, 1_200_000, 1_200_000, done = true)
 
-        assertEquals(a.first.id, GoalPolicy.featured(listOf(a, done), done.first.id))
-        assertEquals(a.first.id, GoalPolicy.featured(listOf(a), b.first.id))
+        assertEquals(ids(1), recibo(a, done, starred = setOf(2)))
+        assertEquals(ids(1), recibo(a, starred = setOf(2)))
     }
 
     @Test
-    fun mt31ATieGoesToTheGoalCreatedFirst() {
+    fun mt31EqualCompletionGoesToTheGoalCreatedFirstInEitherGroup() {
+        // 500.000 / 1.000.000 and 1.000.000 / 2.000.000 are both exactly 50 %.
         val older = standing(3, 500_000, 1_000_000, created = 10)
         val newer = standing(4, 1_000_000, 2_000_000, created = 20)
+        val olderStarred = standing(5, 250_000, 500_000, created = 30)
+        val newerStarred = standing(6, 2_000_000, 4_000_000, created = 40)
 
-        assertEquals(older.first.id, GoalPolicy.featured(listOf(newer, older), null))
+        assertEquals(ids(3, 4), recibo(newer, older))
+        assertEquals(
+            ids(5, 6, 3, 4),
+            recibo(newer, newerStarred, older, olderStarred, starred = setOf(5, 6))
+        )
     }
 
     @Test
     fun mt32CompletionIsComparedExactlyNotByTheRoundedPercentage() {
-        val lower = standing(5, 574, 1_000)
-        val higher = standing(6, 579, 1_000, created = 99)
+        val lower = standing(5, 571, 1_000)
+        val higher = standing(6, 574, 1_000, created = 99)
 
         assertEquals(57L, lower.second.percentage)
         assertEquals(57L, higher.second.percentage)
-        assertEquals(higher.first.id, GoalPolicy.featured(listOf(lower, higher), null))
+        // 57,4 % before 57,1 %, though the later created, alone and inside the starred group.
+        assertEquals(ids(6, 5), recibo(lower, higher))
+        assertEquals(ids(6, 5, 1), recibo(lower, a, higher, starred = setOf(5, 6)))
+    }
+
+    @Test
+    fun fewerThanFiveStarredAreToppedUpWithTheBestOfTheRestToFiveInAll() {
+        val starredTen = standing(11, 100, 1_000)
+        val starredTwenty = standing(12, 200, 1_000)
+        val ninety = standing(13, 900, 1_000)
+        val eighty = standing(14, 800, 1_000)
+        val seventy = standing(15, 700, 1_000)
+        val sixty = standing(16, 600, 1_000)
+        val completed = standing(17, 1_000, 1_000, done = true)
+
+        assertEquals(
+            ids(12, 11, 13, 14, 15),
+            recibo(
+                sixty,
+                completed,
+                starredTen,
+                seventy,
+                ninety,
+                starredTwenty,
+                eighty,
+                starred = setOf(11, 12)
+            )
+        )
+    }
+
+    @Test
+    fun theListNeverHoldsMoreThanFiveEvenGivenMoreThanFiveStars() {
+        // Storage never holds six stars; given them, the list still stops at five.
+        val starred = (1..6).map { standing(20 + it, it * 100L, 1_000) }
+        val unstarred = standing(30, 900, 1_000)
+
+        assertEquals(5, GoalPolicy.MAX_STARRED)
+        assertEquals(
+            ids(26, 25, 24, 23, 22),
+            recibo(unstarred, *starred.toTypedArray(), starred = (21..26).toSet())
+        )
     }
 
     @Test
     fun mt33NoActiveGoalShowsNone() {
-        assertNull(GoalPolicy.featured(listOf(standing(7, 1, 1, done = true)), null))
-        assertNull(GoalPolicy.featured(emptyList(), null))
+        assertEquals(
+            emptyList<GoalId>(),
+            recibo(standing(7, 1, 1, done = true), starred = setOf(7))
+        )
+        assertEquals(emptyList<GoalId>(), recibo())
     }
 
     // --- Creating and editing ---

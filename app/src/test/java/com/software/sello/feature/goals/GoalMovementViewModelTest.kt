@@ -131,7 +131,8 @@ class GoalMovementViewModelTest {
                         )
                     )
                 ),
-                null
+                emptySet(),
+                emptyList()
             )
         )
     }

@@ -206,7 +206,7 @@ class LegacyTranslator(
                     expenses = expenses,
                     incomes = incomes,
                     goals = goals,
-                    featuredGoal = null,
+                    starredGoals = emptySet(),
                     schedules = schedules.map { it.stored },
                     investments = investments,
                     usdRates = usdRates,

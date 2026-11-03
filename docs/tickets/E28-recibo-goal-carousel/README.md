@@ -1,6 +1,6 @@
 # SELLO-E28 — Several goals on Recibo
 
-- **Status:** Backlog
+- **Status:** In Progress
 - **Increment:** Post-MVP
 - **Goal:** The person glances at up to five goals on Recibo, swiping through them in the goal pill's place, and adds to any of them without opening Metas.
 - **Exit:** Up to five goals can be starred, Recibo's goal pill is a looping carousel of up to five goals ranked by the rule below, and a sixth star asks which starred goal it replaces.

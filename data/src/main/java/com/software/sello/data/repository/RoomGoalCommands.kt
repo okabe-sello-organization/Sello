@@ -2,9 +2,9 @@ package com.software.sello.data.repository
 
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.entity.DeletedGoalEventEntity
-import com.software.sello.data.local.entity.FeaturedGoalEntity
 import com.software.sello.data.local.entity.GoalEntity
 import com.software.sello.data.local.entity.GoalEventEntity
+import com.software.sello.data.local.entity.StarredGoalEntity
 import com.software.sello.data.mapper.SUBJECT_SEPARATOR
 import com.software.sello.data.mapper.StoredReceipt
 import com.software.sello.data.mapper.toEntity
@@ -41,7 +41,6 @@ import com.software.sello.domain.port.DeleteGoal
 import com.software.sello.domain.port.DeleteGoalMovement
 import com.software.sello.domain.port.EditGoal
 import com.software.sello.domain.port.EditGoalMovement
-import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommandOutcome
@@ -54,8 +53,11 @@ import com.software.sello.domain.port.ReceiptGoal
 import com.software.sello.domain.port.RecordGoalMovement
 import com.software.sello.domain.port.RecordGoalMovements
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.domain.port.ReplaceStar
 import com.software.sello.domain.port.RestoreGoalMovement
+import com.software.sello.domain.port.StarGoal
 import com.software.sello.domain.port.UndoGoalCompletion
+import com.software.sello.domain.port.UnstarGoal
 import java.time.Instant
 import java.time.LocalDate
 import java.util.UUID
@@ -79,12 +81,17 @@ class RoomGoalCommands internal constructor(
     private val undo: UndoWindow,
     private val monotonic: MonotonicClock
 ) : GoalCommands {
+    /** [starred]: the goal lost its star in the completion, which Deshacer gives back. */
     private class CompletionOffer(
         val completionId: OperationId,
         val goalId: GoalId,
         val version: Long,
+        val starred: Boolean,
         val until: Duration
     )
+
+    /** What a completion committed: the goal's new version, and whether it lost a star. */
+    private class Completed(val version: Long, val starred: Boolean)
 
     @Volatile
     private var completion: CompletionOffer? = null
@@ -116,15 +123,17 @@ class RoomGoalCommands internal constructor(
         }
 
         is CompleteGoal -> {
-            var completedVersion: Long? = null
+            var completed: Completed? = null
             val outcome = database.runOutcome(command.operationId) {
-                decide(command) { completedVersion = it }
+                decide(command) { completed = it }
             }
             if (outcome is Committed && !outcome.replayed) {
+                val done = checkNotNull(completed)
                 completion = CompletionOffer(
                     command.operationId,
                     command.goalId,
-                    checkNotNull(completedVersion),
+                    done.version,
+                    done.starred,
                     monotonic.elapsed() + command.undoFor
                 )
             }
@@ -151,7 +160,11 @@ class RoomGoalCommands internal constructor(
 
         is DeleteGoal -> database.runOutcome(command.operationId) { decide(command) }
 
-        is FeatureGoal -> database.runOutcome(command.operationId) { decide(command) }
+        is StarGoal -> database.runOutcome(command.operationId) { decide(command) }
+
+        is UnstarGoal -> database.runOutcome(command.operationId) { decide(command) }
+
+        is ReplaceStar -> database.runOutcome(command.operationId) { decide(command) }
     }
 
     private fun StoredReceipt.committed(
@@ -738,9 +751,10 @@ class RoomGoalCommands internal constructor(
             Committed(commit(profile, command, row.id, now).committed(null), replayed = false)
         }
 
+    /** Completing takes the goal's star away in the same write (SELLO-143). */
     private suspend fun decide(
         command: CompleteGoal,
-        completedAt: (Long) -> Unit
+        completedAt: (Completed) -> Unit
     ): GoalCommandOutcome = starting(command) { profile ->
         val goal = when (val load = load(command)) {
             is Load.Found -> load.goal
@@ -754,12 +768,17 @@ class RoomGoalCommands internal constructor(
         }
         val now = audit.now()
         write(goal.row, now, goal.row.copy(completedOn = EffectiveDates.storedText(today)))
-        completedAt(goal.row.version + 1)
+        val unstarred = database.goalDao().unstar(goal.row.id) == 1
+        completedAt(Completed(goal.row.version + 1, unstarred))
         val receipt = commit(profile, command, goal.row.id, now)
         Committed(receipt.committed(GoalPolicy.change(goal.progress, after)), replayed = false)
     }
 
-    /** Only the completion on offer, in time, and only while nothing changed the goal since. */
+    /**
+     * Only the completion on offer, in time, and only while nothing changed the goal since.
+     * A star the completion took comes back while fewer than [GoalPolicy.MAX_STARRED] goals
+     * are starred; otherwise the goal comes back unstarred.
+     */
     private suspend fun decide(command: UndoGoalCompletion): GoalCommandOutcome =
         starting(command) { profile ->
             val offer = completion?.takeIf {
@@ -772,10 +791,13 @@ class RoomGoalCommands internal constructor(
             }
             val now = audit.now()
             write(row, now, row.copy(completedOn = null))
+            if (offer.starred && database.goalDao().starredCount() < GoalPolicy.MAX_STARRED) {
+                database.goalDao().star(StarredGoalEntity(row.id))
+            }
             Committed(commit(profile, command, row.id, now).committed(null), replayed = false)
         }
 
-    /** The goal, every movement and the choice for Recibo go; no undo. Completed goals too. */
+    /** The goal, every movement and its star go; no undo. Completed goals too. */
     private suspend fun decide(command: DeleteGoal): GoalCommandOutcome =
         starting(command) { profile ->
             val goal = when (val load = load(command, completedAllowed = true)) {
@@ -783,25 +805,63 @@ class RoomGoalCommands internal constructor(
                 is Load.Refused -> return load.outcome
             }
             val now = audit.now()
-            database.goalDao().unfeature(goal.row.id)
+            database.goalDao().unstar(goal.row.id)
             database.goalDao().deleteEvents(goal.row.id)
             val removed = database.goalDao().delete(goal.row.id, goal.row.version)
             check(removed == 1) { "The goal changed inside the transaction that read it" }
             Committed(commit(profile, command, goal.row.id, now).committed(null), replayed = false)
         }
 
-    private suspend fun decide(command: FeatureGoal): GoalCommandOutcome =
+    /** An active goal not starred yet, while fewer than [GoalPolicy.MAX_STARRED] are. */
+    private suspend fun decide(command: StarGoal): GoalCommandOutcome =
         starting(command) { profile ->
             val row = database.goalDao().byId(command.goalId.value)
                 ?: return Rejected(Specific(GoalRejection.GoalMissing))
             if (row.completedOn != null) return Rejected(Specific(GoalRejection.Completed))
-            if (database.goalDao().featured()?.goalId ==
-                row.id
-            ) {
+            if (database.goalDao().isStarred(row.id)) {
+                return Rejected(Specific(GoalRejection.Unchanged))
+            }
+            if (database.goalDao().starredCount() >= GoalPolicy.MAX_STARRED) {
+                return Rejected(Specific(GoalRejection.StarLimit(GoalPolicy.MAX_STARRED)))
+            }
+            val now = audit.now()
+            database.goalDao().star(StarredGoalEntity(row.id))
+            Committed(commit(profile, command, row.id, now).committed(null), replayed = false)
+        }
+
+    /** Any starred goal; a goal deleted since has no star left to remove. */
+    private suspend fun decide(command: UnstarGoal): GoalCommandOutcome =
+        starting(command) { profile ->
+            val row = database.goalDao().byId(command.goalId.value)
+                ?: return Rejected(Specific(GoalRejection.GoalMissing))
+            if (!database.goalDao().isStarred(row.id)) {
                 return Rejected(Specific(GoalRejection.Unchanged))
             }
             val now = audit.now()
-            database.goalDao().feature(FeaturedGoalEntity(FeaturedGoalEntity.SINGLE_ID, row.id))
+            check(database.goalDao().unstar(row.id) == 1) { "The star went inside the transaction" }
+            Committed(commit(profile, command, row.id, now).committed(null), replayed = false)
+        }
+
+    /**
+     * Both stars change or neither: every check runs before the first write. The goal to
+     * star must be active and not starred; the goal to unstar must still be starred.
+     */
+    private suspend fun decide(command: ReplaceStar): GoalCommandOutcome =
+        starting(command) { profile ->
+            val row = database.goalDao().byId(command.star.value)
+                ?: return Rejected(Specific(GoalRejection.GoalMissing))
+            if (row.completedOn != null) return Rejected(Specific(GoalRejection.Completed))
+            if (!database.goalDao().isStarred(command.unstar.value)) {
+                return Rejected(Specific(GoalRejection.NotStarred))
+            }
+            if (database.goalDao().isStarred(row.id)) {
+                return Rejected(Specific(GoalRejection.Unchanged))
+            }
+            val now = audit.now()
+            check(database.goalDao().unstar(command.unstar.value) == 1) {
+                "The star went inside the transaction"
+            }
+            database.goalDao().star(StarredGoalEntity(row.id))
             Committed(commit(profile, command, row.id, now).committed(null), replayed = false)
         }
 

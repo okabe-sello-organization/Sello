@@ -4,8 +4,8 @@ import com.software.sello.domain.model.GoalId
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.CommandOutcome
-import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommandOutcome
+import com.software.sello.domain.port.StarGoal
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -27,7 +27,7 @@ class GoalSandboxPortsTest {
     private val fence = WriteFence()
     private var saved = 0
 
-    private fun feature(n: Int) = FeatureGoal(
+    private fun feature(n: Int) = StarGoal(
         OperationId.of("00000000-0000-4000-8000-00000000000$n").value(),
         1,
         GoalId.of("00000000-0000-4000-9000-000000000001").value()

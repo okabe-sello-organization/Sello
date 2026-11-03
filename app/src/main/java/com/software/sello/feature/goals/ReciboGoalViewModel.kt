@@ -27,8 +27,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
 /**
- * Recibo's goal from the goal board as it changes (rule 12). Which goal is storage's
- * answer, [GoalBoard.featured]: the person's choice, else the fallback. Shown only on
+ * Recibo's goal from the goal board as it changes (rule 12). Which goal is the first of
+ * storage's answer, [GoalBoard.reciboGoals]: starred goals first, else the fallback. Shown only on
  * the current month; goals are read apart from it and never change its figures.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -102,7 +102,8 @@ class ReciboGoalViewModel(
     }
 
     private fun pill(board: GoalBoard): ReciboGoalPill? {
-        val shown = board.goals.firstOrNull { it.history.goal.id == board.featured } ?: return null
+        val first = board.reciboGoals.firstOrNull() ?: return null
+        val shown = board.goals.firstOrNull { it.history.goal.id == first } ?: return null
         val goal = shown.history.goal
         return ReciboGoalPill(
             goal.id.value,

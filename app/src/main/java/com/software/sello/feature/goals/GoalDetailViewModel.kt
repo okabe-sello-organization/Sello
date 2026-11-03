@@ -8,13 +8,14 @@ import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.DeleteGoal
-import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommands
 import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.RecordIdSource
+import com.software.sello.domain.port.ReplaceStar
+import com.software.sello.domain.port.StarGoal
 import com.software.sello.platform.ScreenReader
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
@@ -135,7 +136,14 @@ class GoalDetailViewModel(
         val goal = ready()?.goal ?: return
         if (!free() || goal.featured || goal.completedOn != null) return
         val id = (GoalId.of(goal.id) as? Outcome.Success)?.value ?: return
-        send(STEP_FEATURE) { FeatureGoal(it, goal.generation, id) }
+        val instead = goal.replacesStar?.let { (GoalId.of(it) as? Outcome.Success)?.value }
+        send(STEP_FEATURE) {
+            if (instead == null) {
+                StarGoal(it, goal.generation, id)
+            } else {
+                ReplaceStar(it, goal.generation, instead, id)
+            }
+        }
     }
 
     private fun delete() {

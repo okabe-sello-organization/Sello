@@ -34,12 +34,12 @@ object BackupFormat {
     const val FORMAT = "sello-backup"
 
     /** What this app writes. */
-    const val VERSION = 6L
+    const val VERSION = 7L
 
     /**
      * What it reads: version 1 (no goals), version 2 (no schedules), version 3 (no
-     * investments), version 4 (no investment settings), version 5 (no carry chains) and
-     * its own.
+     * investments), version 4 (no investment settings), version 5 (no carry chains),
+     * version 6 (one chosen goal, not up to five starred) and its own.
      */
     val READABLE = 1L..VERSION
     const val MIME_TYPE = "application/json"
@@ -52,7 +52,7 @@ object BackupFormat {
 }
 
 /**
- * Writes version 6 backups and reads versions 1 to 6. Reading never touches storage:
+ * Writes version 7 backups and reads versions 1 to 7. Reading never touches storage:
  * a file either becomes a [BackupPlan] or is rejected whole with the first problem found.
  */
 class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
@@ -61,7 +61,7 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
      * out a backup it would itself refuse to restore.
      */
     fun encode(contents: BackupContents): Outcome<ByteArray, BackupRejection> {
-        val text = writer.encodeToString(BackupFileV6.serializer(), contents.toWire())
+        val text = writer.encodeToString(BackupFileV7.serializer(), contents.toWire())
         val bytes = "$text\n".toByteArray(Charsets.UTF_8)
         return when (val check = read(bytes)) {
             is Outcome.Success -> Outcome.Success(bytes)
@@ -97,20 +97,23 @@ class BackupCodec(private val bounds: BackupBounds = BackupBounds()) {
         val file = try {
             when (version) {
                 1L -> reader.decodeFromString(BackupFileV1.serializer(), text)
-                    .asVersion2().asVersion3().asVersion4().asVersion5().asVersion6()
+                    .asVersion2().asVersion3().asVersion4().asVersion5().asVersion6().asVersion7()
 
                 2L -> reader.decodeFromString(BackupFileV2.serializer(), text)
-                    .asVersion3().asVersion4().asVersion5().asVersion6()
+                    .asVersion3().asVersion4().asVersion5().asVersion6().asVersion7()
 
                 3L -> reader.decodeFromString(BackupFileV3.serializer(), text)
-                    .asVersion4().asVersion5().asVersion6()
+                    .asVersion4().asVersion5().asVersion6().asVersion7()
 
                 4L -> reader.decodeFromString(BackupFileV4.serializer(), text)
-                    .asVersion5().asVersion6()
+                    .asVersion5().asVersion6().asVersion7()
 
-                5L -> reader.decodeFromString(BackupFileV5.serializer(), text).asVersion6()
+                5L -> reader.decodeFromString(BackupFileV5.serializer(), text)
+                    .asVersion6().asVersion7()
 
-                else -> reader.decodeFromString(BackupFileV6.serializer(), text)
+                6L -> reader.decodeFromString(BackupFileV6.serializer(), text).asVersion7()
+
+                else -> reader.decodeFromString(BackupFileV7.serializer(), text)
             }
         } catch (failure: SerializationException) {
             return Outcome.Failure(BackupRejection.Malformed(pathOf(failure)))
@@ -187,13 +190,14 @@ private fun BudgetLimit.kind() = when (this) {
  * date then sequence, goals by creation then identifier, each goal's history by
  * recording position, schedules by creation order, each schedule's pauses by first day,
  * investments by creation then identifier, each one's movements by recording position,
- * rates by the order they were entered, and carry chains by category then start month.
+ * rates by the order they were entered, carry chains by category then start month, and
+ * starred goals by identifier.
  */
-internal fun BackupContents.toWire(): BackupFileV6 = BackupFileV6(
+internal fun BackupContents.toWire(): BackupFileV7 = BackupFileV7(
     format = BackupFormat.FORMAT,
     version = JsonPrimitive(BackupFormat.VERSION),
     exportedAt = exportedAt.toString(),
-    financial = FinancialV6(
+    financial = FinancialV7(
         sourceRevision = JsonPrimitive(financial.revision),
         zone = financial.zone.id,
         financialMonth = EffectiveDates.storedText(
@@ -277,7 +281,7 @@ internal fun BackupContents.toWire(): BackupFileV6 = BackupFileV6(
         goals = financial.goals
             .sortedWith(compareBy({ it.goal.createdAt }, { it.goal.id.value }))
             .map { history -> history.toWire() },
-        featuredGoal = financial.featuredGoal?.value,
+        starredGoals = financial.starredGoals.map { it.value }.sorted(),
         schedules = financial.schedules.sortedBy { it.sequence }.map { it.toWire() },
         investments = financial.investments
             .sortedWith(compareBy({ it.investment.createdAt }, { it.investment.id.value }))

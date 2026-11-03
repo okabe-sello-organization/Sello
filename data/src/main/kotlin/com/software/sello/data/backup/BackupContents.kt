@@ -33,8 +33,11 @@ data class FinancialSnapshot(
     val incomes: List<Income>,
     /** Each goal with its whole history, the earliest created first. */
     val goals: List<GoalHistory>,
-    /** Recibo's chosen goal, one of [goals], or null. */
-    val featuredGoal: GoalId?,
+    /**
+     * The goals starred for Recibo: at most
+     * [com.software.sello.domain.policy.GoalPolicy.MAX_STARRED], each an active one of [goals].
+     */
+    val starredGoals: Set<GoalId>,
     /** Recurring payments and incomes in creation order, with their pauses and checkpoints. */
     val schedules: List<StoredSchedule>,
     /**

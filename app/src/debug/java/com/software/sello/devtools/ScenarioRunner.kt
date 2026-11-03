@@ -69,7 +69,6 @@ import com.software.sello.domain.port.EnableCarry as EnableCarryCommand
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseRejection
-import com.software.sello.domain.port.FeatureGoal
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommandOutcome
 import com.software.sello.domain.port.GoalCommands
@@ -88,6 +87,7 @@ import com.software.sello.domain.port.ScheduleCommands
 import com.software.sello.domain.port.SetDefaultLimit as SetDefaultLimitCommand
 import com.software.sello.domain.port.SetMonthLimit as SetMonthLimitCommand
 import com.software.sello.domain.port.SetUsdRate
+import com.software.sello.domain.port.StarGoal
 import com.software.sello.domain.usecase.CatchUpNow
 import com.software.sello.domain.usecase.CatchUpStop
 import java.time.LocalDate
@@ -409,7 +409,7 @@ class ScenarioRunner(
             }
 
             is ChooseForRecibo -> goalCommand(loaded, step.goal) { id ->
-                FeatureGoal(operation, generation, id)
+                StarGoal(operation, generation, id)
             }
 
             is Schedule -> {
