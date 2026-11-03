@@ -965,6 +965,34 @@ class CategoryManagementViewModelTest {
         assertEquals(EditorResult.Archived, form.now.result)
     }
 
+    @Test
+    fun aFinishedMonthsFormAsksAboutTheMonthInProgressAndStaysOnItsMonth() {
+        clock.goTo("2026-10-31")
+        val form = form(opening(month = september))
+        clock.goTo("2026-11-01")
+        publishNovember()
+
+        form.onAction(CategoryEditorAction.Archive)
+
+        assertEquals(november, form.now.archiveQuestion?.currentMonth)
+        assertEquals(september to true, form.now.targetMonth to form.now.historical)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
+    @Test
+    fun whenTheMonthInProgressCannotBeReadArchivingAsksNothingAndSaysSo() {
+        clock.goTo("2026-10-31")
+        val form = form()
+        clock.goTo("2026-11-01")
+        reads.failure = StorageFailure.Unavailable("x")
+
+        form.onAction(CategoryEditorAction.Archive)
+
+        assertNull(form.now.archiveQuestion)
+        assertTrue(form.now.loadFailed)
+        assertEquals(emptyList<CategoryCommand>(), commands.submitted)
+    }
+
     /**
      * Rule 9 with a payment due and not recorded yet: Sello records what is due, then
      * archives under a new operation, since the refused one wrote nothing (owner,
