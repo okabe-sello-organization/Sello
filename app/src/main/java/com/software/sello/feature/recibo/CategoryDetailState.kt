@@ -27,6 +27,8 @@ sealed interface CategoryDetailState {
         val expenses: ExpenseListState,
         /** Why the last deletion asked for from this list did not happen, until the next one. */
         val deleteProblem: DeleteProblem? = null,
+        /** An unresolved deletion is being asked about again. */
+        val checkingDelete: Boolean = false,
         val insights: DetailInsightsState = DetailInsightsState.Loading,
         /** Why the latest read failed, when a carry figure cannot be calculated (CP8). */
         val carryProblem: CarryProblem? = null,
@@ -103,7 +105,13 @@ enum class DeleteProblem {
     Failed,
 
     /** Whether it was deleted could not be found out. */
-    Unknown
+    Unknown,
+
+    /**
+     * Asked about with its own operation after an unknown outcome: that deletion did not
+     * happen. Nothing more is claimed: the expense may have changed since.
+     */
+    NotDone
 }
 
 /** The expenses listed. An empty list and a list that could not be read are different. */
@@ -150,4 +158,7 @@ sealed interface CategoryDetailAction {
 
     /** Delete one of the listed expenses, as it is listed. */
     data class Delete(val expenseId: String) : CategoryDetailAction
+
+    /** Ask again, with its own operation, how an unresolved deletion ended. */
+    data object CheckDelete : CategoryDetailAction
 }

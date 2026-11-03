@@ -180,14 +180,14 @@ class ShellViewModel(
 
     /**
      * An entry needs a category that can take it. With one, the entry form opens;
-     * without, the person is sent to create one first. A failed read sends nobody
-     * anywhere: the screen underneath already shows that the data could not be read.
+     * without, the person is sent to create one first. When the categories cannot be
+     * read the form opens too: it says so itself and offers to read again, so Anotar
+     * never does nothing.
      */
     private fun routeEntry() {
         viewModelScope.launch {
             val read = categories.monthBudget(session.currentMonthNow) as? Outcome.Success
-                ?: return@launch
-            val canRecord = read.value.categories.any { !it.category.archived }
+            val canRecord = read?.value?.categories?.any { !it.category.archived } ?: true
             saved[if (canRecord) KEY_ENTRY_READY else KEY_NEEDS_CATEGORY] = true
             changes.update { it + 1 }
         }

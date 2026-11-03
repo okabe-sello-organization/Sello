@@ -107,6 +107,10 @@ class HandExpenseCommands : ExpenseCommands {
     val created = mutableListOf<CreateExpense>()
     val edited = mutableListOf<EditExpense>()
     val deleted = mutableListOf<DeleteExpense>()
+
+    /** With [clock] set, when each deletion was sent, by that clock: what storage times. */
+    var clock: (() -> kotlin.time.Duration)? = null
+    val deletedAt = mutableMapOf<OperationId, kotlin.time.Duration>()
     val restored = mutableListOf<RestoreExpense>()
     val looked = mutableListOf<OperationId>()
     var answer: (CreateExpense) -> ExpenseCommandOutcome =
@@ -166,6 +170,7 @@ class HandExpenseCommands : ExpenseCommands {
 
     override suspend fun delete(command: DeleteExpense): ExpenseCommandOutcome {
         deleted += command
+        clock?.let { deletedAt[command.operationId] = it() }
         hold?.await()
         return deleteAnswer(command)
     }

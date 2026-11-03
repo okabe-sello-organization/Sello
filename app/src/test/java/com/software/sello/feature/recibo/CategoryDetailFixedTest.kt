@@ -191,7 +191,10 @@ class CategoryDetailFixedTest {
             corrections,
             HandCategoryInsights(),
             schedules,
-            { testScheduler.currentTime.milliseconds }
+            { testScheduler.currentTime.milliseconds },
+            HandExpenseCommands(),
+            { uuid(901) },
+            androidx.lifecycle.SavedStateHandle()
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}

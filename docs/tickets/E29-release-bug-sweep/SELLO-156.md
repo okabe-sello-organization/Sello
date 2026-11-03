@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P2
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-155
 - **Gate:** G1
 
@@ -17,6 +17,10 @@ offers no Anotar, and the dock never silently does nothing.
   "Archivada", as its detail does.
 - When the categories can't be read, the dock and `sello://anotar` open the entry form,
   which shows its own load error and retry.
+- Swipe-deletes from category detail and the full expense list, and a delete confirmed
+  from the later-months list, keep their operation ID and offer "Comprobar si se borró"
+  with that same ID after an unknown outcome (across a restart for the two lists); found
+  committed, the six-second Deshacer while its time lasts (orchestrator ruling, #331).
 - JVM tests for each.
 
 ### Notes

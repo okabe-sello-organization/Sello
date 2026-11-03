@@ -61,9 +61,14 @@ class ShellDetail(
 /**
  * The dock of a category's own screen: it starts an expense in that category, or, for an
  * archived one, stays in place disabled and reads "Archivada" beside a prohibited sign.
+ * Until it is [known] whether the category is archived, Anotar is shown disabled.
  */
 @Composable
-internal fun categoryDock(archived: Boolean, onClick: () -> Unit): SelloDock = if (archived) {
+internal fun categoryDock(
+    archived: Boolean,
+    known: Boolean = true,
+    onClick: () -> Unit
+): SelloDock = if (archived) {
     SelloDock(
         label = stringResource(R.string.dock_entry_archived_label),
         actionLabel = stringResource(R.string.recibo_category_archived),
@@ -75,7 +80,8 @@ internal fun categoryDock(archived: Boolean, onClick: () -> Unit): SelloDock = i
     SelloDock(
         label = stringResource(R.string.dock_entry_label),
         actionLabel = stringResource(R.string.dock_entry_action),
-        onClick = onClick
+        onClick = onClick,
+        enabled = known
     )
 }
 

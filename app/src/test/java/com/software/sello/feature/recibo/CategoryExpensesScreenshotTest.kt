@@ -63,6 +63,14 @@ class CategoryExpensesScreenshotTest {
     @Test
     fun olderClaro() = capture(Look(), "category-expenses-stale-claro", ready.copy(stale = true))
 
+    /** A deletion whose outcome is not known, asked about again with its own operation (#331). */
+    @Test
+    fun deleteUnknownClaro() = capture(
+        Look(),
+        "category-expenses-delete-unknown-claro",
+        ready.copy(problem = DeleteProblem.Unknown)
+    )
+
     /** Nothing was ever read: the only case that shows the error. */
     @Test
     fun failedClaro() =

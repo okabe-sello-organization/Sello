@@ -1,7 +1,9 @@
 package com.software.sello.feature.recibo
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryId
+import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
@@ -12,6 +14,7 @@ import com.software.sello.domain.port.ExpenseSearchPage
 import com.software.sello.domain.port.ReadState
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.categoryIn
+import com.software.sello.feature.expense.expenseId
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
@@ -22,6 +25,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
+import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
@@ -32,6 +36,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -58,6 +63,7 @@ class CategoryExpensesViewModelTest {
     private var hold: CompletableDeferred<Unit>? = null
     private var nextOperation = 900
     private var watching: Job? = null
+    private lateinit var corrections: Corrections
     private val search = object : CategoryExpenseSearch {
         override suspend fun read(
             categoryId: CategoryId,
@@ -95,12 +101,19 @@ class CategoryExpensesViewModelTest {
 
     private fun TestScope.started(
         saved: SavedStateHandle = SavedStateHandle(),
-        ready: Boolean = true
+        ready: Boolean = true,
+        archived: Boolean = false
     ): CategoryExpensesViewModel {
         if (ready) {
-            snapshots.ready(monthOf("2026-10-22", listOf(categoryIn(1, "Comida", 200_000)), rows))
+            snapshots.ready(
+                monthOf(
+                    "2026-10-22",
+                    listOf(categoryIn(1, "Comida", 200_000, archived = archived)),
+                    rows
+                )
+            )
         }
-        val corrections =
+        corrections =
             Corrections(
                 commands,
                 HandIncomeCommands(),
@@ -121,7 +134,9 @@ class CategoryExpensesViewModelTest {
                 snapshots,
                 search,
                 testMoney(),
-                corrections
+                corrections,
+                commands,
+                { uuid(nextOperation++) }
             )
         watching =
             backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -346,5 +361,149 @@ class CategoryExpensesViewModelTest {
             DeleteProblem.Unknown,
             (model.state.value as CategoryExpensesState.Ready).problem
         )
+    }
+
+    @Test
+    fun anArchivedCategorysListSaysItIsArchivedSoItsDockTakesNoNewExpense() = runTest {
+        val open = dockOf(started())()
+        val archived = dockOf(started(archived = true))()
+
+        assertEquals(ListDock.Anotar, open)
+        assertEquals(ListDock.Archived, archived)
+    }
+
+    /** The dock as the screen sees it: watched for as long as the test runs. */
+    private fun TestScope.dockOf(model: CategoryExpensesViewModel): () -> ListDock {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.dock.collect {} }
+        return { model.dock.value }
+    }
+
+    @Test
+    fun whileTheRowsAreReadOrCannotBeTheCategoryIsAlreadyKnownToBeArchived() = runTest {
+        snapshots.ready(
+            monthOf("2026-10-22", listOf(categoryIn(1, "Comida", 200_000, archived = true)), rows)
+        )
+        hold = CompletableDeferred()
+        val reading = started(ready = false)
+        val dock = dockOf(reading)
+        val whileReading = reading.state.value to dock()
+        failure = true
+        hold!!.complete(Unit)
+        runCurrent()
+
+        assertEquals(CategoryExpensesState.Loading to ListDock.Archived, whileReading)
+        assertEquals(CategoryExpensesState.Failed, reading.state.value)
+        assertEquals(ListDock.Archived, dock())
+    }
+
+    @Test
+    fun anotarWaitsWhileTheFirstMonthIsReadAndStaysWhenItCannotBe() = runTest {
+        val model = started(ready = false)
+        val dock = dockOf(model)
+        val loading = dock()
+
+        snapshots.of(month).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        runCurrent()
+
+        assertEquals(ListDock.Waiting, loading)
+        assertEquals(CategoryExpensesState.Failed, model.state.value)
+        assertEquals(ListDock.Anotar, dock())
+    }
+
+    // --- An unknown deletion keeps its operation (#331) ---
+
+    private fun CategoryExpensesViewModel.deleteWithUnknownOutcome() {
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        onAction(CategoryExpensesAction.Delete(uuid(100)))
+    }
+
+    private fun SavedStateHandle.afterProcessDeath() =
+        SavedStateHandle(keys().associateWith { get<Any?>(it) })
+
+    @Test
+    fun checkingAnUnknownDeletionAsksTheSameOperationAndNeverSendsItAgain() = runTest {
+        val model = started()
+        model.deleteWithUnknownOutcome()
+        runCurrent()
+        val operation = commands.deleted.single().operationId
+        model.onAction(CategoryExpensesAction.Delete(uuid(101)))
+        runCurrent()
+        val whileUnknown = commands.deleted.size
+        commands.found = {
+            Outcome.Success(commands.committed(it, expenseId(100), OperationKind.DeleteExpense))
+        }
+
+        model.onAction(CategoryExpensesAction.CheckDelete)
+        runCurrent()
+
+        assertEquals(1, whileUnknown)
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(null, model.ready.problem)
+        assertEquals(CorrectionNotice.Deleted(canUndo = false), corrections.notice.value)
+    }
+
+    @Test
+    fun anUnknownDeletionIsAskedAboutAgainAfterTheProcessIsKilledAndAnotherSearchKeepsIt() =
+        runTest {
+            val saved = SavedStateHandle()
+            val first = started(saved)
+            first.deleteWithUnknownOutcome()
+            runCurrent()
+            val operation = commands.deleted.single().operationId
+            first.onAction(CategoryExpensesAction.Search("Compra 1"))
+            runCurrent()
+            val afterSearch = first.ready.problem
+            watching?.cancel()
+
+            val restored = started(saved.afterProcessDeath())
+
+            assertEquals(DeleteProblem.Unknown, afterSearch)
+            assertEquals(DeleteProblem.Unknown, restored.ready.problem)
+            assertEquals(listOf(operation, operation, operation), commands.looked)
+            commands.found = { Outcome.Success(null) }
+            restored.onAction(CategoryExpensesAction.CheckDelete)
+            runCurrent()
+            assertEquals(DeleteProblem.NotDone, restored.ready.problem)
+            assertEquals(1, commands.deleted.size)
+        }
+
+    @Test
+    fun aSecondSwipeWhileADeletionIsBeingSentSaysNothingFalseAndSendsNothing() = runTest {
+        val model = started()
+        commands.hold = CompletableDeferred()
+
+        model.onAction(CategoryExpensesAction.Delete(uuid(100)))
+        model.onAction(CategoryExpensesAction.Delete(uuid(100)))
+        model.onAction(CategoryExpensesAction.Delete(uuid(101)))
+        model.onAction(CategoryExpensesAction.Search("Compra"))
+        runCurrent()
+        val whileSending = model.ready.problem to model.ready.checking
+        commands.hold!!.complete(Unit)
+        runCurrent()
+
+        assertEquals(null to false, whileSending)
+        assertEquals(listOf(uuid(100)), commands.deleted.map { it.expenseId.value })
+        assertEquals(emptyList<Any>(), commands.looked)
+        assertEquals(null, model.ready.problem)
+    }
+
+    @Test
+    fun aDeletionCancelledWithItsScreenIsAskedAboutWithItsOperationWhenReopened() = runTest {
+        val saved = SavedStateHandle()
+        val first = started(saved)
+        commands.hold = CompletableDeferred()
+        first.onAction(CategoryExpensesAction.Delete(uuid(100)))
+        runCurrent()
+        val operation = commands.deleted.single().operationId
+
+        first.viewModelScope.cancel()
+        watching?.cancel()
+        commands.hold = null
+        commands.found = { Outcome.Success(null) }
+        val reopened = started(saved.afterProcessDeath())
+
+        assertEquals(listOf(operation), commands.looked)
+        assertEquals(DeleteProblem.NotDone, reopened.ready.problem)
     }
 }
