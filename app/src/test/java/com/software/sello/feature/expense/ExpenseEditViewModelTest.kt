@@ -1115,4 +1115,22 @@ class ExpenseEditViewModelTest {
         // A new process cannot undo a deletion it did not make: it is only said.
         assertEquals(CorrectionNotice.Deleted(canUndo = false), corrections.notice.value)
     }
+
+    @Test
+    fun aDeletionConfirmedAfterItsListAndUnknownIsNeverSentAgainFromTheForm() {
+        commands.deleteAnswer = { refusedForList() }
+        val form = opened()
+        form.onAction(ExpenseEntryAction.Delete)
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        corrections.confirmQuestion()
+        val sent = commands.deleted.size
+
+        form.onAction(ExpenseEntryAction.Delete)
+
+        assertEquals(2, sent)
+        assertEquals(2, commands.deleted.size)
+        assertEquals(CorrectionNotice.DeleteUnknown(), corrections.notice.value)
+        assertFalse(form.now.busy)
+    }
 }

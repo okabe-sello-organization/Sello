@@ -109,11 +109,12 @@ class CategoryDetailScreenshotTest {
     private fun capture(
         look: Look,
         file: String = "category-detail-${look.label}",
-        several: Boolean = false
+        several: Boolean = false,
+        state: CategoryDetailState.Ready = ready
     ) {
         rule.showSello(look) {
             CategoryDetailScreen(
-                state = ready,
+                state = state,
                 months = monthNames(),
                 dates = dateLabels(),
                 showName = false,
@@ -132,6 +133,14 @@ class CategoryDetailScreenshotTest {
 
     @Test
     fun variosOscuro() = capture(Look(dark = true), "category-detail-varios-oscuro", several = true)
+
+    /** A deletion whose outcome is not known, asked about again with its own operation (#331). */
+    @Test
+    fun deleteUnknownClaro() = capture(
+        Look(),
+        "category-detail-delete-unknown-claro",
+        state = ready.copy(deleteProblem = DeleteProblem.Unknown)
+    )
 
     @Test
     fun cobaltoLight() = capture(Look())

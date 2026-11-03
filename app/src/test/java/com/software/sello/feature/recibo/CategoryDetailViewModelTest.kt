@@ -1,11 +1,15 @@
 package com.software.sello.feature.recibo
 
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.domain.model.CategoryInsights
 import com.software.sello.domain.model.Expense
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.MonthlySnapshot
+import com.software.sello.domain.model.OperationId
+import com.software.sello.domain.model.OperationKind
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
@@ -17,9 +21,11 @@ import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpenseRejection
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.UndoOffer
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.HandExpenseReads
 import com.software.sello.feature.expense.categoryIn
+import com.software.sello.feature.expense.expenseId
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.feature.expense.uuid
@@ -31,6 +37,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
+import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.testing.HandSnapshots
 import com.software.sello.testing.NewObservationSnapshots
@@ -38,10 +45,12 @@ import com.software.sello.testing.testMoney
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -65,6 +74,7 @@ class CategoryDetailViewModelTest {
     private val insights = HandCategoryInsights()
     private val commands = HandExpenseCommands()
     private var nextOperation = 700
+    private lateinit var corrections: Corrections
     private val food = categoryIn(1, "Alimentación", 900_000)
     private val coffee = categoryIn(2, "Café", null)
 
@@ -78,9 +88,10 @@ class CategoryDetailViewModelTest {
 
     private fun TestScope.started(
         source: MonthlySnapshots = snapshots,
-        figures: HandCategoryInsights = insights
+        figures: HandCategoryInsights = insights,
+        saved: SavedStateHandle = SavedStateHandle()
     ): CategoryDetailViewModel {
-        val corrections = Corrections(
+        corrections = Corrections(
             commands,
             HandIncomeCommands(),
             HandGoalCommands(),
@@ -102,7 +113,10 @@ class CategoryDetailViewModelTest {
                 figures,
                 HandScheduleReads(),
                 // Moves with the test's own time, as the wait for detail figures does.
-                { testScheduler.currentTime.milliseconds }
+                { testScheduler.currentTime.milliseconds },
+                commands,
+                { uuid(nextOperation++) },
+                saved
             )
         // Something has to be watching for the state to be kept up to date.
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -589,7 +603,10 @@ class CategoryDetailViewModelTest {
             ),
             figures,
             HandScheduleReads(),
-            { testScheduler.currentTime.milliseconds }
+            { testScheduler.currentTime.milliseconds },
+            commands,
+            { uuid(nextOperation++) },
+            SavedStateHandle()
         )
         val first = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.state.collect {}
@@ -944,5 +961,231 @@ class CategoryDetailViewModelTest {
         viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
 
         assertEquals(DeleteProblem.Unknown, viewModel.ready.deleteProblem)
+    }
+
+    @Test
+    fun aDeletionProblemStaysWithTheCategoryAndMonthItHappenedIn() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        snapshots.ready(monthOf("2026-09-30", listOf(food, coffee), emptyList(), september))
+        show(viewModel, 1)
+        commands.deleteAnswer = { Rejected(CommandRejection.VersionConflict(current = 2)) }
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+        val inA = viewModel.ready.deleteProblem
+
+        show(viewModel, 2)
+        val inB = viewModel.ready.deleteProblem
+        show(viewModel, 1)
+        session.select(september)
+        val anotherMonth = viewModel.ready.deleteProblem
+
+        assertEquals(DeleteProblem.Changed, inA)
+        assertEquals(null, inB)
+        assertEquals(null, anotherMonth)
+    }
+
+    @Test
+    fun aDeletionThatEndsAfterAnotherCategoryOpensSaysNothingThere() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        val held = CompletableDeferred<Unit>()
+        commands.hold = held
+        commands.deleteAnswer = { Rejected(Specific(ExpenseRejection.ExpenseMissing)) }
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+
+        show(viewModel, 2)
+        held.complete(Unit)
+        runCurrent()
+
+        assertEquals(null, viewModel.ready.deleteProblem)
+    }
+
+    // --- An unknown deletion keeps its operation (#331) ---
+
+    /** A deletion of [expense] was sent and asking how it ended failed too. */
+    private fun CategoryDetailViewModel.deleteWithUnknownOutcome(expense: Int = 100) {
+        commands.deleteAnswer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
+        onAction(CategoryDetailAction.Delete(uuid(expense)))
+    }
+
+    private fun deletionFound(operation: OperationId) = Outcome.Success(
+        commands.committed(operation, expenseId(100), OperationKind.DeleteExpense)
+    )
+
+    private fun SavedStateHandle.afterProcessDeath() =
+        SavedStateHandle(keys().associateWith { get<Any?>(it) })
+
+    @Test
+    fun checkingAnUnknownDeletionAsksTheSameOperationAndOffersDeshacerWhenFound() = runTest {
+        commands.offer = {
+            commands.deleted.lastOrNull()?.let {
+                UndoOffer(it.operationId, it.expenseId, 6.seconds)
+            }
+        }
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        viewModel.deleteWithUnknownOutcome()
+        val operation = commands.deleted.single().operationId
+        val unknown = viewModel.ready.deleteProblem
+        commands.found = { deletionFound(it) }
+
+        viewModel.onAction(CategoryDetailAction.CheckDelete)
+
+        assertEquals(DeleteProblem.Unknown, unknown)
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(1, commands.deleted.size)
+        assertEquals(null, viewModel.ready.deleteProblem)
+        assertEquals(CorrectionNotice.Deleted(canUndo = true), corrections.notice.value)
+    }
+
+    @Test
+    fun anUnknownDeletionIsNeverReplacedByANewOneUntilItIsFoundNotDeleted() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        viewModel.deleteWithUnknownOutcome()
+
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(101)))
+        val whileUnknown = commands.deleted.size
+        commands.found = { Outcome.Success(null) }
+        viewModel.onAction(CategoryDetailAction.CheckDelete)
+        val notDeleted = viewModel.ready.deleteProblem
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
+                replayed = false
+            )
+        }
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+
+        assertEquals(1, whileUnknown)
+        assertEquals(DeleteProblem.NotDone, notDeleted)
+        assertEquals(2, commands.deleted.size)
+        assertEquals(true, commands.deleted[0].operationId != commands.deleted[1].operationId)
+        assertEquals(null, viewModel.ready.deleteProblem)
+    }
+
+    @Test
+    fun anUnknownDeletionInOneCategoryNeverHoldsUpAnother() = runTest {
+        val viewModel = started()
+        commit(many(2) + storedExpense(200, 2, "2026-10-05", 4_000))
+        show(viewModel, 1)
+        viewModel.deleteWithUnknownOutcome()
+        show(viewModel, 2)
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
+                replayed = false
+            )
+        }
+
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(200)))
+
+        assertEquals(listOf(uuid(100), uuid(200)), commands.deleted.map { it.expenseId.value })
+        assertEquals(null, viewModel.ready.deleteProblem)
+    }
+
+    @Test
+    fun anUnknownDeletionIsAskedAboutWithTheSameOperationAfterTheProcessIsKilled() = runTest {
+        val saved = SavedStateHandle()
+        val first = started(saved = saved)
+        commit(many(2))
+        show(first, 1)
+        first.deleteWithUnknownOutcome()
+        val operation = commands.deleted.single().operationId
+        commands.found = { deletionFound(it) }
+
+        val restored = started(saved = saved.afterProcessDeath())
+        show(restored, 1)
+
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(1, commands.deleted.size)
+        assertEquals(null, restored.ready.deleteProblem)
+        // A new process cannot undo a deletion it did not make: it is only said.
+        assertEquals(CorrectionNotice.Deleted(canUndo = false), corrections.notice.value)
+    }
+
+    @Test
+    fun anUnknownDeletionStillUnknownWhenAskedAgainStaysUnknownWithItsOperation() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        viewModel.deleteWithUnknownOutcome()
+        val operation = commands.deleted.single().operationId
+
+        viewModel.onAction(CategoryDetailAction.CheckDelete)
+        viewModel.onAction(CategoryDetailAction.CheckDelete)
+
+        assertEquals(listOf(operation, operation, operation), commands.looked)
+        assertEquals(DeleteProblem.Unknown, viewModel.ready.deleteProblem)
+        assertEquals(false, viewModel.ready.checkingDelete)
+    }
+
+    @Test
+    fun aSecondSwipeWhileADeletionIsBeingSentSaysNothingFalseAndSendsNothing() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        val held = CompletableDeferred<Unit>()
+        commands.hold = held
+
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(101)))
+        val whileSending = viewModel.ready.deleteProblem to viewModel.ready.checkingDelete
+        // Reading again while it is sent asks nothing about it: it is not unknown yet.
+        viewModel.onAction(CategoryDetailAction.Retry)
+        held.complete(Unit)
+        runCurrent()
+
+        assertEquals(null to false, whileSending)
+        assertEquals(listOf(uuid(100)), commands.deleted.map { it.expenseId.value })
+        assertEquals(emptyList<OperationId>(), commands.looked)
+        assertEquals(null to false, viewModel.ready.run { deleteProblem to checkingDelete })
+    }
+
+    @Test
+    fun aDeletionThatSucceedsClearsWhatWasSaidAboutTheOneBefore() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        commands.deleteAnswer = { Rejected(Specific(ExpenseRejection.ExpenseMissing)) }
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+        val refused = viewModel.ready.deleteProblem
+        commands.deleteAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.DeleteExpense),
+                replayed = false
+            )
+        }
+
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(101)))
+
+        assertEquals(DeleteProblem.Gone, refused)
+        assertEquals(null, viewModel.ready.deleteProblem)
+    }
+
+    @Test
+    fun aDeletionCancelledWithItsScreenIsAskedAboutWithItsOperationWhenReopened() = runTest {
+        val saved = SavedStateHandle()
+        val first = started(saved = saved)
+        commit(many(2))
+        show(first, 1)
+        commands.hold = CompletableDeferred()
+        first.onAction(CategoryDetailAction.Delete(uuid(100)))
+        val operation = commands.deleted.single().operationId
+
+        first.viewModelScope.cancel()
+        commands.hold = null
+        commands.found = { deletionFound(it) }
+        val reopened = started(saved = saved.afterProcessDeath())
+        show(reopened, 1)
+
+        assertEquals(listOf(operation), commands.looked)
+        assertEquals(1, commands.deleted.size)
+        assertEquals(null, reopened.ready.deleteProblem)
     }
 }

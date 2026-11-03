@@ -72,8 +72,12 @@ sealed interface CorrectionNotice {
     /** The deleted expense is back. */
     data object Restored : CorrectionNotice
 
-    /** A deletion confirmed after its list: whether it was saved could not be found out. */
-    data object DeleteUnknown : CorrectionNotice
+    /**
+     * A deletion confirmed after its list: whether it was saved could not be found out. It
+     * stays until it is asked about again with its own operation ([Corrections.checkDeletion]),
+     * [checking] meanwhile, or until a later correction takes its place.
+     */
+    data class DeleteUnknown(val checking: Boolean = false) : CorrectionNotice
 
     /** A deletion confirmed after its list was not made: the data changed, or storage failed. */
     data object NotDeleted : CorrectionNotice
@@ -358,6 +362,20 @@ class Corrections(
     )
 
     private var asked: Asked? = null
+
+    /**
+     * A deletion confirmed after its list whose outcome is not known: asked about, never
+     * resent. Kept apart from what the bar shows, so a later notice never loses it: once that
+     * notice is over, the bar asks about it again. In memory only (#331 ruling).
+     */
+    private class Unresolved(val command: DeleteExpense, val months: Int) {
+        var checking = false
+    }
+
+    private var unresolved: Unresolved? = null
+
+    /** What a check answered while another notice held the bar: said once the bar is free. */
+    private var owed: CorrectionNotice? = null
     private var askedUndo: CorrectionConfirmation? = null
     private val asking = MutableStateFlow<CorrectionQuestion?>(null)
 
@@ -478,10 +496,40 @@ class Corrections(
         sendDelete(command, months = null)
     }.await()
 
-    /** A deletion the caller found committed by asking about its operation. */
+    /**
+     * A deletion the caller found committed by asking about its operation. With no time left
+     * to undo it, it is only said, and never takes the place of another deletion on offer.
+     */
     fun expenseDeleted(receipt: OperationReceipt) {
-        val until = commands.undoOffer()?.takeIf { it.deletionId == receipt.operationId }?.until
-        deleted(Kind.Expense, receipt.operationId, receipt.generation, until)
+        val until = foundOffer(receipt.operationId) ?: return
+        deleted(Kind.Expense, receipt.operationId, receipt.generation, until.value)
+    }
+
+    /**
+     * How long a deletion found after the fact can still be undone, wrapped so that null
+     * inside means it is only said; null itself when another deletion's offer is to stay.
+     */
+    private fun foundOffer(operation: OperationId): Found? {
+        val until = commands.undoOffer()?.takeIf { it.deletionId == operation }?.until
+            ?.takeIf { it > monotonic.elapsed() }
+        if (until == null && pending.let { it != null && it.deletionId != operation }) return null
+        return Found(until)
+    }
+
+    private class Found(val value: Duration?)
+
+    /**
+     * Whether a deletion of [expense] confirmed after its list is still unresolved. Then
+     * nothing new may be sent for it: the bar asks about that one again instead, unless
+     * another deletion's Deshacer is on it (it does once that is over).
+     */
+    fun holdsDeletionOf(expense: ExpenseId): Boolean {
+        val held = unresolved?.takeIf { it.command.expenseId == expense } ?: return false
+        if (pending == null) {
+            ending?.cancel()
+            shown.value = CorrectionNotice.DeleteUnknown(held.checking)
+        }
+        return true
     }
 
     /**
@@ -552,14 +600,26 @@ class Corrections(
         return outcome
     }
 
-    /** The deletion [command] committed: it is offered to undo while that can be done. */
-    private fun expenseGone(command: DeleteExpense, months: Int?): DeleteResult {
+    /**
+     * The deletion [command] committed: it is offered to undo while that can be done. One
+     * [found] after the fact never takes the place of another deletion still on offer.
+     */
+    private fun expenseGone(
+        command: DeleteExpense,
+        months: Int?,
+        found: Boolean = false
+    ): DeleteResult {
         asked = null
         asking.value = null
         if (command.confirmation != null) {
             confirmedDeleted.value = ConfirmedDeletion(command.expenseId, ++confirmedCount)
         }
-        val until = commands.undoOffer()?.takeIf { it.deletionId == command.operationId }?.until
+        val until = if (found) {
+            // Another deletion's Deshacer stays; this one is not said over it.
+            (foundOffer(command.operationId) ?: return DeleteResult.Deleted).value
+        } else {
+            commands.undoOffer()?.takeIf { it.deletionId == command.operationId }?.until
+        }
         return deleted(
             Kind.Expense,
             command.operationId,
@@ -588,6 +648,17 @@ class Corrections(
         when (shown.kind) {
             CorrectionKind.Delete -> {
                 val wanted = asked ?: return run { asking.value = null }
+                // One confirmed before is still unresolved: it is asked about first, never
+                // replaced, and this one is not sent.
+                val held = unresolved
+                if (held != null) {
+                    asking.value = null
+                    asked = null
+                    ending?.cancel()
+                    pending = null
+                    this.shown.value = CorrectionNotice.DeleteUnknown(held.checking)
+                    return
+                }
                 scope.launch {
                     val command = DeleteExpense(
                         operation(),
@@ -603,13 +674,11 @@ class Corrections(
                         // The list's screen may be gone; what happened is said here.
                         asking.value = null
                         asked = null
-                        said(
-                            if (result == DeleteResult.Unknown) {
-                                CorrectionNotice.DeleteUnknown
-                            } else {
-                                CorrectionNotice.NotDeleted
-                            }
-                        )
+                        if (result == DeleteResult.Unknown) {
+                            unknown(Unresolved(command, wanted.months))
+                        } else {
+                            said(CorrectionNotice.NotDeleted)
+                        }
                     }
                 }
             }
@@ -627,6 +696,50 @@ class Corrections(
                     carryMonths = offered.carryMonths
                 )
                 scope.launch { settle(offered, restore(offered, askedUndo)) }
+            }
+        }
+    }
+
+    /** Says [deletion] may or may not have happened, with no end: it waits to be checked. */
+    private fun unknown(deletion: Unresolved) {
+        ending?.cancel()
+        pending = null
+        unresolved = deletion
+        shown.value = CorrectionNotice.DeleteUnknown()
+    }
+
+    /**
+     * Asks how the confirmed deletion said to be unknown ended, with its own operation, never
+     * by sending it again. Found committed, it is offered to undo while its time lasts; found
+     * not, it is said that nothing was deleted; still not known, it waits to be asked again.
+     */
+    fun checkDeletion() {
+        val wanted = unresolved ?: return
+        if (wanted.checking || shown.value !is CorrectionNotice.DeleteUnknown) return
+        wanted.checking = true
+        shown.value = CorrectionNotice.DeleteUnknown(checking = true)
+        scope.launch {
+            val found = try {
+                commands.find(wanted.command.operationId)
+            } finally {
+                wanted.checking = false
+            }
+            // A later notice may be on the bar meanwhile: it is not said over.
+            val onBar = shown.value is CorrectionNotice.DeleteUnknown
+            when (found) {
+                is Outcome.Failure -> if (onBar) shown.value = CorrectionNotice.DeleteUnknown()
+
+                is Outcome.Success -> {
+                    unresolved = null
+                    when {
+                        found.value != null -> expenseGone(wanted.command, wanted.months, true)
+
+                        onBar -> said(CorrectionNotice.NotDeleted)
+
+                        // Kept for when the notice holding the bar is over.
+                        else -> owed = CorrectionNotice.NotDeleted
+                    }
+                }
             }
         }
     }
@@ -700,7 +813,8 @@ class Corrections(
         goalName: String = "",
         carryMonths: Int? = null
     ): DeleteResult {
-        if (until == null) {
+        // An offer whose time is already over, as for one found late, is only said.
+        if (until == null || until <= monotonic.elapsed()) {
             pending = null
             show(
                 offer(kind, canUndo = false, goalName = goalName, carryMonths = carryMonths),
@@ -1099,7 +1213,8 @@ class Corrections(
         if (offerShown()?.second == true) return
         ending?.cancel()
         pending = null
-        shown.value = null
+        // An unresolved deletion is not dismissed: it is still to be asked about.
+        freed()
     }
 
     /**
@@ -1145,7 +1260,26 @@ class Corrections(
             return said(receipt.copy(turn = receipt.turn + 1))
         }
         pending = null
-        shown.value = null
+        freed()
+    }
+
+    /**
+     * The bar is free: an unresolved deletion comes back, still to be asked about, or what a
+     * check answered meanwhile is said; otherwise nothing is shown.
+     */
+    private fun freed() {
+        val held = unresolved
+        val answer = owed
+        when {
+            held != null -> shown.value = CorrectionNotice.DeleteUnknown(held.checking)
+
+            answer != null -> {
+                owed = null
+                said(answer)
+            }
+
+            else -> shown.value = null
+        }
     }
 
     private fun operation(): OperationId = when (val id = OperationId.of(ids.next())) {

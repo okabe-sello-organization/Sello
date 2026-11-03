@@ -570,6 +570,8 @@ class ExpenseEntryViewModel(
         val id = editedExpense ?: return
         val original = progress.value.original ?: return
         val snapshot = good(month.value) ?: return
+        // One confirmed after its list is still unresolved: the bar asks about it instead.
+        if (corrections.holdsDeletionOf(id)) return
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
             settleDelete(

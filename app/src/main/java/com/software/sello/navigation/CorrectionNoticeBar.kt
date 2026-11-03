@@ -95,8 +95,14 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
         CorrectionNotice.NotDeleted ->
             SelloNotice(stringResource(R.string.correction_not_deleted), tagged)
 
-        CorrectionNotice.DeleteUnknown ->
-            SelloNotice(stringResource(R.string.correction_delete_unknown), tagged)
+        // Its one action asks again how the deletion ended (onUndo is the bar's one action).
+        is CorrectionNotice.DeleteUnknown -> SelloNotice(
+            message = stringResource(R.string.correction_delete_unknown),
+            modifier = tagged,
+            actionLabel = stringResource(R.string.expense_edit_check_deleted),
+            onAction = onUndo,
+            busy = notice.checking
+        )
 
         CorrectionNotice.Restored ->
             SelloNotice(stringResource(R.string.correction_restored), tagged)
