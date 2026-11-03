@@ -334,15 +334,31 @@ private const val TIME_STEPS = 5
 @Composable
 fun CatchUpRecordedRoot(
     viewModels: ViewModelProvider.Factory,
-    padding: PaddingValues,
     onEdit: (id: String, income: Boolean) -> Unit,
-    onClosed: () -> Unit
+    onClosed: () -> Unit,
+    frame: @Composable (onDone: () -> Unit, list: @Composable (PaddingValues) -> Unit) -> Unit
 ) {
     val model: CatchUpNoticeViewModel = viewModel(factory = viewModels)
-    val state by model.state.collectAsStateWithLifecycle()
+    CatchUpRecordedRoot(model, onEdit, onClosed, frame)
+}
+
+/**
+ * The list and its Listo ([frame] places them) from one read of [model]'s state, so
+ * Listo marks seen exactly the list drawn, never a newer one not drawn yet.
+ */
+@Composable
+fun CatchUpRecordedRoot(
+    model: CatchUpNoticeViewModel,
+    onEdit: (id: String, income: Boolean) -> Unit,
+    onClosed: () -> Unit,
+    frame: @Composable (onDone: () -> Unit, list: @Composable (PaddingValues) -> Unit) -> Unit
+) {
+    val shown = model.state.collectAsStateWithLifecycle().value
     val closed by model.closed.collectAsStateWithLifecycle()
     LaunchedEffect(closed) { if (closed) onClosed() }
-    CatchUpRecordedScreen(state, padding, model::retry, onEdit)
+    frame({ model.done(shown) }) { padding ->
+        CatchUpRecordedScreen(shown, padding, model::retry, onEdit)
+    }
 }
 
 /** Lo que Sello anotó: each entry with its date and amount, opening its edit. */

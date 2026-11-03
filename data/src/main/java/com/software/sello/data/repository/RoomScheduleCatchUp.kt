@@ -47,12 +47,19 @@ class RoomScheduleCatchUp internal constructor(
             is Outcome.Failure -> return CatchUpBatch.Failed(anything.error)
             is Outcome.Success -> anything.value?.let { return it }
         }
-        return when (val run = database.runCommand { record(generation, today, limit) }) {
+        return recordBatch(generation, today, limit)
+    }
+
+    /**
+     * The batch's own transaction, which checks [generation] again: a restore or an erase
+     * can commit between the read above and it.
+     */
+    internal suspend fun recordBatch(generation: Long, today: LocalDate, limit: Int): CatchUpBatch =
+        when (val run = database.runCommand { record(generation, today, limit) }) {
             is CommandRun.Finished -> run.value
             is CommandRun.RolledBack -> CatchUpBatch.Failed(run.failure)
             CommandRun.Unknown -> CatchUpBatch.Unknown
         }
-    }
 
     /**
      * Read without writing: [CatchUpBatch.Stale] for a replaced history, nothing recorded

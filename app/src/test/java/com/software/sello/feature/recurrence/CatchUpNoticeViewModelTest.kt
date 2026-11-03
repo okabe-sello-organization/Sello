@@ -56,7 +56,7 @@ import org.junit.Before
 import org.junit.Test
 
 /** When it was last dismissed, as the preference store keeps it. */
-private class HandCatchUpPreferences : CatchUpNoticePreferences {
+internal class HandCatchUpPreferences : CatchUpNoticePreferences {
     val seen = MutableStateFlow<PreferenceRead<Instant?>>(PreferenceRead.Ready(null))
     val marked = mutableListOf<Instant>()
     var answer: PreferenceWrite = PreferenceWrite.Saved
@@ -71,7 +71,7 @@ private class HandCatchUpPreferences : CatchUpNoticePreferences {
 }
 
 /** Entries with an origin, as storage keeps them; [failure] makes the read fail. */
-private class HandRecords : ScheduleRecordReads {
+internal class HandRecords : ScheduleRecordReads {
     val entries = MutableStateFlow<List<ScheduleRecord>>(emptyList())
     var failure: StorageFailure? = null
 
@@ -100,7 +100,7 @@ private class HandRecords : ScheduleRecordReads {
 }
 
 /** What recording the listed payments did to carry chains (ADR 0020 CP18). */
-private class HandCarry : CarryoverReads {
+internal class HandCarry : CarryoverReads {
     var notice: Outcome<CarryCatchUpNotice, CarryReadFailure> = Outcome.Success(
         CarryCatchUpNotice(1, 1, LocalDate.parse("2026-10-22"), emptyList())
     )

@@ -383,6 +383,31 @@ class ScheduleCatchUpContractTest {
     }
 
     /**
+     * SELLO-146: the read finds rent due on generation 1, then a restore commits
+     * generation 2 before the batch's transaction starts. The transaction checks again
+     * and writes nothing.
+     */
+    @Test
+    fun aHistoryReplacedBetweenTheReadAndTheTransactionIsNotWrittenTo() = runBlocking {
+        categories()
+        schedule("2026-10-01", RepeatRule.Monthly.of(5).valueOrFail(), payment(100, 950_000))
+        // As a restore leaves it: the same file, a new generation.
+        ledger.database.openHelper.writableDatabase.execSQL("UPDATE profile SET generation = 2")
+        val revision = ledger.revision()
+        val receipts = ledger.long("SELECT COUNT(*) FROM operation_receipt")
+
+        assertEquals(CatchUpBatch.Stale, store().recordBatch(1, d("2026-10-05"), 50))
+
+        assertEquals(0L, ledger.long("SELECT COUNT(*) FROM expense"))
+        assertEquals(listOf("0|null|null"), checkpoints())
+        assertEquals(revision, ledger.revision())
+        assertEquals(receipts, ledger.long("SELECT COUNT(*) FROM operation_receipt"))
+        // A process started on generation 2 records it.
+        val recorded = store().recordBatch(2, d("2026-10-05"), 50) as CatchUpBatch.Recorded
+        assertEquals(1, recorded.occurrences.size)
+    }
+
+    /**
      * SELLO-146: café on the 2nd in Transporte, then rent on the 5th in Hogar, archived
      * behind the commands' back. The batch writes nothing, not even the café, and leaves
      * both checkpoints; once Hogar is back, the next run records each exactly once.

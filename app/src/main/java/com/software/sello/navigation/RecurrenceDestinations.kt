@@ -5,7 +5,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
@@ -14,7 +13,6 @@ import androidx.navigation.compose.composable
 import com.software.sello.R
 import com.software.sello.designsystem.component.SelloDock
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.feature.recurrence.CatchUpNoticeViewModel
 import com.software.sello.feature.recurrence.CatchUpRecordedRoot
 import com.software.sello.feature.recurrence.ScheduleEditorRoot
 import com.software.sello.feature.recurrence.ScheduleTab
@@ -65,39 +63,34 @@ internal fun NavGraphBuilder.recurrenceDestinations(
     composable<CatchUpRoute> {
         val state by shellState
         val notice by noticeState
-        val model: CatchUpNoticeViewModel = viewModel(factory = viewModels)
-        // Read here, so Listo marks the list as drawn, never a newer one not shown yet.
-        val shown = model.state.collectAsStateWithLifecycle().value
-        ShellScreen(
-            state,
-            monthNames(),
-            onShell,
-            navigation = null,
-            onBack = { navigation.popBackStack() },
-            screenTitle = stringResource(R.string.catch_up_title),
-            pastMonthRibbon = false,
-            // Listo dismisses what the list shows; Back keeps it.
-            dock = SelloDock(
-                label = stringResource(R.string.catch_up_done_description),
-                actionLabel = stringResource(R.string.catch_up_done),
-                onClick = { model.done(shown) },
-                icon = SelloIcon.Check
-            ),
-            notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
-        ) { padding ->
-            CatchUpRecordedRoot(
-                viewModels,
-                padding,
-                onEdit = { id, income ->
-                    navigation.navigate(
-                        if (income) IncomeEditRoute(id) else ExpenseEditRoute(id)
-                    )
-                },
-                onClosed = {
-                    val onList =
-                        navigation.currentBackStackEntry?.destination?.hasRoute<CatchUpRoute>()
-                    if (onList == true) navigation.popBackStack()
-                }
+        CatchUpRecordedRoot(
+            viewModels,
+            onEdit = { id, income ->
+                navigation.navigate(if (income) IncomeEditRoute(id) else ExpenseEditRoute(id))
+            },
+            onClosed = {
+                val onList =
+                    navigation.currentBackStackEntry?.destination?.hasRoute<CatchUpRoute>()
+                if (onList == true) navigation.popBackStack()
+            }
+        ) { onDone, list ->
+            ShellScreen(
+                state,
+                monthNames(),
+                onShell,
+                navigation = null,
+                onBack = { navigation.popBackStack() },
+                screenTitle = stringResource(R.string.catch_up_title),
+                pastMonthRibbon = false,
+                // Listo dismisses what the list shows; Back keeps it.
+                dock = SelloDock(
+                    label = stringResource(R.string.catch_up_done_description),
+                    actionLabel = stringResource(R.string.catch_up_done),
+                    onClick = onDone,
+                    icon = SelloIcon.Check
+                ),
+                notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } },
+                content = list
             )
         }
     }
