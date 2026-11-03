@@ -1,5 +1,6 @@
 package com.software.sello.feature.recibo
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryId
@@ -14,12 +15,14 @@ import com.software.sello.domain.policy.ScheduleListPolicy
 import com.software.sello.domain.policy.ScheduleStatus
 import com.software.sello.domain.port.CategoryInsightsSnapshots
 import com.software.sello.domain.port.CategoryInsightsState
+import com.software.sello.domain.port.ExpenseCommands
 import com.software.sello.domain.port.ExpenseCursor
 import com.software.sello.domain.port.ExpensePage
 import com.software.sello.domain.port.ExpenseReads
 import com.software.sello.domain.port.MonotonicClock
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.ScheduleBook
 import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
@@ -27,7 +30,6 @@ import com.software.sello.domain.port.SnapshotState
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.carry.carryProblem
 import com.software.sello.presentation.corrections.Corrections
-import com.software.sello.presentation.corrections.DeleteResult
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.read.LastGoodRead
 import java.time.LocalDate
@@ -69,7 +71,10 @@ class CategoryDetailViewModel(
     private val corrections: Corrections,
     private val insightsSnapshots: CategoryInsightsSnapshots,
     schedules: ScheduleReads,
-    private val clock: MonotonicClock
+    private val clock: MonotonicClock,
+    commands: ExpenseCommands,
+    ids: RecordIdSource,
+    saved: SavedStateHandle
 ) : ViewModel() {
     private val render = ReciboRenderModel(money)
     private val category = MutableStateFlow<String?>(null)
@@ -111,7 +116,18 @@ class CategoryDetailViewModel(
      * kept with the month it was deleted from, so only a read of a later one lets it go.
      */
     private val deleted = mutableMapOf<String, Pair<Long, Long>>()
-    private val deleteProblem = MutableStateFlow<DeleteProblem?>(null)
+    private val deletions = ExpenseRowDeletions(saved, KEY_DELETE, commands, ids, corrections)
+
+    /**
+     * Why the last deletion asked from a list did not happen, kept with that list: another
+     * category or month never shows it.
+     */
+    private data class Said(val shown: Shown, val problem: DeleteProblem, val checking: Boolean)
+
+    private val said = MutableStateFlow<Said?>(null)
+
+    /** The month and category being shown, the only list whose deletions are said. */
+    private var current: Shown? = null
 
     /** What was last shown whole: its figures and its detail figures, of one revision. */
     private var shownWhole: Shown? = null
@@ -124,6 +140,7 @@ class CategoryDetailViewModel(
             .flatMapLatest { shown ->
                 // Another month or category starts from its first page.
                 if (kept?.shown != shown) pagesWanted.value = 1
+                showing(shown)
                 val id = shown.categoryId?.let { CategoryId.of(it) as? Outcome.Success }?.value
                 when {
                     shown.categoryId == null -> flowOf(CategoryDetailState.Closed)
@@ -157,10 +174,15 @@ class CategoryDetailViewModel(
                         }
                 }
             }
-            .combine(deleteProblem) { state, problem ->
+            .combine(said) { state, said ->
+                val own = said?.takeIf {
+                    state is CategoryDetailState.Ready &&
+                        it.shown == Shown(state.month, state.category.id)
+                }
                 if (state is CategoryDetailState.Ready) {
                     state.copy(
-                        deleteProblem = problem
+                        deleteProblem = own?.problem,
+                        checkingDelete = own?.checking == true
                     )
                 } else {
                     state
@@ -204,44 +226,74 @@ class CategoryDetailViewModel(
             }
 
             is CategoryDetailAction.Delete -> delete(action.expenseId)
+
+            CategoryDetailAction.CheckDelete -> current?.let(::check)
         }
+    }
+
+    /**
+     * [shown] is opened: what was said about another list goes, and a deletion of this one
+     * still unresolved, from before a restart too, is asked about again with its own ID.
+     */
+    private fun showing(shown: Shown) {
+        current = shown
+        if (said.value?.shown != shown) said.value = null
+        if (shown.categoryId != null && deletions.unresolved(shown.place)) check(shown)
+    }
+
+    /** Says [problem] about [shown]'s deletion, only while that list is the one shown. */
+    private fun say(shown: Shown, problem: DeleteProblem?, checking: Boolean = false) {
+        if (current == shown) said.value = problem?.let { Said(shown, it, checking) }
     }
 
     private fun delete(expenseId: String) {
         val from = listed
         val version = from.versions[expenseId] ?: return
         val id = (ExpenseId.of(expenseId) as? Outcome.Success)?.value ?: return
+        val ready = state.value as? CategoryDetailState.Ready ?: return
+        val shown = Shown(ready.month, ready.category.id)
+        // An unresolved deletion is asked about first, never replaced by a new one.
+        if (deletions.unresolved(shown.place)) {
+            if (said.value?.shown != shown) say(shown, DeleteProblem.Unknown)
+            return
+        }
         if (expenseId in deleted || !deleting.add(expenseId)) return
-        val shownMonth = (state.value as? CategoryDetailState.Ready)
-            ?.let { it.generation to it.revision }
-        deleteProblem.value = null
+        val shownMonth = ready.generation to ready.revision
+        say(shown, null)
         viewModelScope.launch {
             try {
-                deleteProblem.value = when (corrections.delete(id, version, from.generation)) {
+                when (val ended = deletions.delete(shown.place, id, version, from.generation)) {
                     // The row leaves with the next read of the month, like any change.
-                    DeleteResult.Deleted -> {
-                        shownMonth?.let { deleted[expenseId] = it }
-                        null
-                    }
+                    RowDeletion.Deleted -> deleted[expenseId] = shownMonth
 
-                    DeleteResult.Gone -> DeleteProblem.Gone
+                    is RowDeletion.NotDeleted -> say(shown, ended.problem)
 
-                    DeleteResult.Changed -> DeleteProblem.Changed
-
-                    DeleteResult.DataChanged -> DeleteProblem.DataChanged
-
-                    DeleteResult.Failed -> DeleteProblem.Failed
-
-                    DeleteResult.Unknown -> DeleteProblem.Unknown
-
-                    // The list of later months is shown above every screen (CP20).
-                    DeleteResult.AwaitsConfirmation -> null
+                    // Another is in flight; or the list of later months is asked first.
+                    null, RowDeletion.Asked -> Unit
                 }
             } finally {
                 deleting -= expenseId
             }
         }
     }
+
+    /** Asks how the unresolved deletion of [shown] ended, with its own operation. */
+    private fun check(shown: Shown) {
+        if (!deletions.unresolved(shown.place)) return
+        say(shown, DeleteProblem.Unknown, checking = true)
+        viewModelScope.launch {
+            when (val ended = deletions.check(shown.place)) {
+                RowDeletion.Deleted -> say(shown, null)
+
+                is RowDeletion.NotDeleted -> say(shown, ended.problem)
+
+                // Already being asked: that answer is the one said.
+                null, RowDeletion.Asked -> Unit
+            }
+        }
+    }
+
+    private val Shown.place get() = "$month.$categoryId"
 
     /** Whether [insights] are still of an earlier revision than a newly read month. */
     private fun behind(state: SnapshotState, insights: CategoryInsightsState, id: CategoryId) =
@@ -512,6 +564,7 @@ class CategoryDetailViewModel(
         /** Long enough to outlast a rotation without reading again. */
         const val STOP_AFTER_MILLIS = 5_000L
         const val PAGE_SIZE = 20
+        const val KEY_DELETE = "categoryDetail.delete"
     }
 }
 

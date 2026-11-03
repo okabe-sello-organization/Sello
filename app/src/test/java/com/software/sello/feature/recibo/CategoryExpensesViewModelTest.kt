@@ -95,10 +95,17 @@ class CategoryExpensesViewModelTest {
 
     private fun TestScope.started(
         saved: SavedStateHandle = SavedStateHandle(),
-        ready: Boolean = true
+        ready: Boolean = true,
+        archived: Boolean = false
     ): CategoryExpensesViewModel {
         if (ready) {
-            snapshots.ready(monthOf("2026-10-22", listOf(categoryIn(1, "Comida", 200_000)), rows))
+            snapshots.ready(
+                monthOf(
+                    "2026-10-22",
+                    listOf(categoryIn(1, "Comida", 200_000, archived = archived)),
+                    rows
+                )
+            )
         }
         val corrections =
             Corrections(
@@ -346,5 +353,14 @@ class CategoryExpensesViewModelTest {
             DeleteProblem.Unknown,
             (model.state.value as CategoryExpensesState.Ready).problem
         )
+    }
+
+    @Test
+    fun anArchivedCategorysListSaysItIsArchivedSoItsDockTakesNoNewExpense() = runTest {
+        val open = started().ready.archived
+        val archived = started(archived = true).ready.archived
+
+        assertEquals(false, open)
+        assertEquals(true, archived)
     }
 }

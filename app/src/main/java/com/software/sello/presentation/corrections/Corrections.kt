@@ -72,8 +72,12 @@ sealed interface CorrectionNotice {
     /** The deleted expense is back. */
     data object Restored : CorrectionNotice
 
-    /** A deletion confirmed after its list: whether it was saved could not be found out. */
-    data object DeleteUnknown : CorrectionNotice
+    /**
+     * A deletion confirmed after its list: whether it was saved could not be found out. It
+     * stays until it is asked about again with its own operation ([Corrections.checkDeletion]),
+     * [checking] meanwhile, or until a later correction takes its place.
+     */
+    data class DeleteUnknown(val checking: Boolean = false) : CorrectionNotice
 
     /** A deletion confirmed after its list was not made: the data changed, or storage failed. */
     data object NotDeleted : CorrectionNotice
@@ -358,6 +362,11 @@ class Corrections(
     )
 
     private var asked: Asked? = null
+
+    /** A deletion confirmed after its list whose outcome is not known: asked about, never resent. */
+    private class Unresolved(val command: DeleteExpense, val months: Int)
+
+    private var unresolved: Unresolved? = null
     private var askedUndo: CorrectionConfirmation? = null
     private val asking = MutableStateFlow<CorrectionQuestion?>(null)
 
@@ -600,13 +609,11 @@ class Corrections(
                         // The list's screen may be gone; what happened is said here.
                         asking.value = null
                         asked = null
-                        said(
-                            if (result == DeleteResult.Unknown) {
-                                CorrectionNotice.DeleteUnknown
-                            } else {
-                                CorrectionNotice.NotDeleted
-                            }
-                        )
+                        if (result == DeleteResult.Unknown) {
+                            unknown(Unresolved(command, wanted.months))
+                        } else {
+                            said(CorrectionNotice.NotDeleted)
+                        }
                     }
                 }
             }
@@ -624,6 +631,43 @@ class Corrections(
                     carryMonths = offered.carryMonths
                 )
                 scope.launch { settle(offered, restore(offered, askedUndo)) }
+            }
+        }
+    }
+
+    /** Says [deletion] may or may not have happened, with no end: it waits to be checked. */
+    private fun unknown(deletion: Unresolved) {
+        ending?.cancel()
+        pending = null
+        shown.value = CorrectionNotice.DeleteUnknown()
+        unresolved = deletion
+    }
+
+    /**
+     * Asks how the confirmed deletion said to be unknown ended, with its own operation, never
+     * by sending it again. Found committed, it is offered to undo while its time lasts; found
+     * not, it is said that nothing was deleted; still not known, it waits to be asked again.
+     */
+    fun checkDeletion() {
+        val wanted = unresolved ?: return
+        val now = shown.value as? CorrectionNotice.DeleteUnknown ?: return
+        if (now.checking) return
+        shown.value = now.copy(checking = true)
+        scope.launch {
+            val found = commands.find(wanted.command.operationId)
+            // A later correction took its place meanwhile: that is what is shown now.
+            if (unresolved !== wanted) return@launch
+            when (found) {
+                is Outcome.Failure -> shown.value = CorrectionNotice.DeleteUnknown()
+
+                is Outcome.Success -> {
+                    unresolved = null
+                    if (found.value == null) {
+                        said(CorrectionNotice.NotDeleted)
+                    } else {
+                        expenseGone(wanted.command, wanted.months)
+                    }
+                }
             }
         }
     }
@@ -1048,8 +1092,10 @@ class Corrections(
 
     fun dismiss() {
         if (offerShown()?.second == true) return
+        if ((shown.value as? CorrectionNotice.DeleteUnknown)?.checking == true) return
         ending?.cancel()
         pending = null
+        unresolved = null
         shown.value = null
     }
 
@@ -1072,6 +1118,8 @@ class Corrections(
     /** Shows [notice] until the clock reads [until]. */
     private fun show(notice: CorrectionNotice, until: Duration) {
         ending?.cancel()
+        // A later correction takes the place of an unknown deletion, as of an offer to undo.
+        unresolved = null
         if (monotonic.elapsed() >= until) return over()
         shown.value = notice
         ending = scope.launch {

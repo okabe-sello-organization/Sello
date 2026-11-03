@@ -945,4 +945,42 @@ class CategoryDetailViewModelTest {
 
         assertEquals(DeleteProblem.Unknown, viewModel.ready.deleteProblem)
     }
+
+    @Test
+    fun aDeletionProblemStaysWithTheCategoryAndMonthItHappenedIn() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        snapshots.ready(monthOf("2026-09-30", listOf(food, coffee), emptyList(), september))
+        show(viewModel, 1)
+        commands.deleteAnswer = { Rejected(CommandRejection.VersionConflict(current = 2)) }
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+        val inA = viewModel.ready.deleteProblem
+
+        show(viewModel, 2)
+        val inB = viewModel.ready.deleteProblem
+        show(viewModel, 1)
+        session.select(september)
+        val anotherMonth = viewModel.ready.deleteProblem
+
+        assertEquals(DeleteProblem.Changed, inA)
+        assertEquals(null, inB)
+        assertEquals(null, anotherMonth)
+    }
+
+    @Test
+    fun aDeletionThatEndsAfterAnotherCategoryOpensSaysNothingThere() = runTest {
+        val viewModel = started()
+        commit(many(2))
+        show(viewModel, 1)
+        val held = CompletableDeferred<Unit>()
+        commands.hold = held
+        commands.deleteAnswer = { Rejected(Specific(ExpenseRejection.ExpenseMissing)) }
+        viewModel.onAction(CategoryDetailAction.Delete(uuid(100)))
+
+        show(viewModel, 2)
+        held.complete(Unit)
+        runCurrent()
+
+        assertEquals(null, viewModel.ready.deleteProblem)
+    }
 }

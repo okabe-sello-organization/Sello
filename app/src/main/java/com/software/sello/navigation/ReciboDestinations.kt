@@ -22,7 +22,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.software.sello.R
-import com.software.sello.designsystem.component.SelloDock
 import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -152,11 +151,10 @@ internal fun NavGraphBuilder.reciboDestinations(
             screenTitle = (expenses as? CategoryExpensesState.Ready)?.categoryName
                 ?: stringResource(R.string.category_expenses_title),
             showMonthAsSubtitle = true,
-            dock = SelloDock(
-                label = stringResource(R.string.dock_entry_label),
-                actionLabel = stringResource(R.string.dock_entry_action),
-                onClick = { navigation.navigate(ExpenseEntryRoute(id)) }
-            ),
+            // An archived category takes no new expense here either, as on its detail.
+            dock = categoryDock((expenses as? CategoryExpensesState.Ready)?.archived == true) {
+                navigation.navigate(ExpenseEntryRoute(id))
+            },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         ) { padding ->
             CategoryExpensesScreen(

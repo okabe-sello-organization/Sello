@@ -321,16 +321,28 @@ class NavigationStateTest {
     }
 
     @Test
-    fun aFailedReadOrAForeignLinkSendsNobodyToTheEditor() {
+    fun aForeignLinkSendsNobodyToTheEditor() {
         val shell = shell()
+
         shell.onAction(ShellAction.OpenLink("https://example.com/anotar"))
-        val foreign = shell.state.value.entryNeedsCategory
+
+        assertEquals(false to false, shell.state.value.run { entryNeedsCategory to entryReady })
+        assertEquals(null, shell.state.value.pendingEntry)
+    }
+
+    @Test
+    fun whenTheCategoriesCannotBeReadAnotarAndItsLinkOpenTheEntryFormToSayItThere() {
         categories.failure = StorageFailure.Unavailable("SQLiteException")
+        val fromDock = shell()
+        val fromLink = shell()
 
-        shell.onAction(ShellAction.OpenLink("sello://anotar"))
+        fromDock.onAction(ShellAction.StartEntry)
+        fromLink.onAction(ShellAction.OpenLink("sello://anotar?monto=48700"))
 
-        assertEquals(false, foreign)
-        assertEquals(false, shell.state.value.entryNeedsCategory)
+        // Never silently nothing: the form shows its own load error and Reintentar.
+        assertEquals(false to true, fromDock.state.value.run { entryNeedsCategory to entryReady })
+        assertEquals(false to true, fromLink.state.value.run { entryNeedsCategory to entryReady })
+        assertEquals(48_700L, fromLink.state.value.pendingEntry?.amount?.money?.minorUnits)
     }
 
     @Test

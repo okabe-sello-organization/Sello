@@ -12,7 +12,15 @@ import kotlinx.coroutines.flow.StateFlow
 class CorrectionsViewModel(private val corrections: Corrections) : ViewModel() {
     val notice: StateFlow<CorrectionNotice?> = corrections.notice
 
-    fun undo() = corrections.undo()
+    /**
+     * The bar's one action: Deshacer, or, for a confirmed deletion whose outcome is not
+     * known, asking again how it ended.
+     */
+    fun undo() = if (notice.value is CorrectionNotice.DeleteUnknown) {
+        corrections.checkDeletion()
+    } else {
+        corrections.undo()
+    }
 
     /** A list of later months waiting to be confirmed before a deletion, or its undoing. */
     val question: StateFlow<CorrectionQuestion?> = corrections.question

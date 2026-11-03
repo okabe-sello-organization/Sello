@@ -120,9 +120,20 @@ fun CategoryExpensesScreen(
                 }
                 state.problem?.let { problem ->
                     item {
-                        ErrorSlip(stringResource(problem.text()), {
-                            onAction(CategoryExpensesAction.Retry)
-                        })
+                        val message = stringResource(problem.text())
+                        val tag = Modifier.testTag(CATEGORY_EXPENSES_PROBLEM_TAG)
+                        if (problem == DeleteProblem.Unknown) {
+                            // Asked again with the same operation, never sent again.
+                            ErrorSlip(
+                                message,
+                                { onAction(CategoryExpensesAction.CheckDelete) },
+                                tag,
+                                retryLabel = stringResource(R.string.expense_edit_check_deleted),
+                                loading = state.checking
+                            )
+                        } else {
+                            ErrorSlip(message, { onAction(CategoryExpensesAction.Retry) }, tag)
+                        }
                     }
                 }
                 items(state.rows, key = { it.id }) { row ->
@@ -184,3 +195,5 @@ fun CategoryExpensesScreen(
         }
     }
 }
+
+const val CATEGORY_EXPENSES_PROBLEM_TAG = "category.expenses.problem"
