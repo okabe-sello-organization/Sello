@@ -56,7 +56,10 @@ class JvmSandbox(val scenario: Scenario) {
 
     fun open(): JvmSandbox {
         close()
-        val composition = DebugComposition(store, {}, { Scenarios.find(it) }) {
+        val composition = DebugComposition(store, {}, { key ->
+            // A history written only for one test is found as well as the shipped ones.
+            if (key == scenario.key) scenario else Scenarios.find(key)
+        }) {
             runner = it.scenarios ?: runner
         }
         runner = null

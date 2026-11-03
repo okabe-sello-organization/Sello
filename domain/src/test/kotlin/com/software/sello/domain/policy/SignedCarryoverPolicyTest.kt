@@ -8,6 +8,7 @@ import com.software.sello.domain.model.CarryEnableRefusal
 import com.software.sello.domain.model.CarryVerdict
 import com.software.sello.domain.model.CarryoverFailure
 import com.software.sello.domain.model.CategoryCarryInput
+import com.software.sello.domain.model.Currency
 import com.software.sello.domain.model.DefaultLimit
 import com.software.sello.domain.model.DropDecision
 import com.software.sello.domain.model.DropPreview
@@ -571,6 +572,53 @@ class SignedCarryoverPolicyTest {
                 LocalDate.parse("2027-02-10"),
                 emptyList()
             ).errorOrFail()
+        )
+    }
+
+    @Test
+    fun takingOutMoreThanAMonthHoldsIsRefusedNeverANegativeSpending() {
+        // ene holds 80.000: taking out 80.000 leaves exactly 0; 80.001 is not held.
+        val history = Carry.history(
+            comida,
+            ene,
+            feb,
+            "2027-02-10",
+            expense(comida, "2027-01-10", 80_000)
+        )
+
+        assertEquals(
+            0L,
+            history.minus(LocalDate.parse("2027-01-20"), cop(80_000)).valueOrFail()
+                .spent(ene).valueOrFail().minorUnits
+        )
+        assertEquals(
+            CarryoverFailure.SpendingNotHeld(ene),
+            history.minus(LocalDate.parse("2027-01-20"), cop(80_001)).errorOrFail()
+        )
+        // feb has nothing recorded: any amount is more than it holds.
+        assertEquals(
+            CarryoverFailure.SpendingNotHeld(feb),
+            history.minus(LocalDate.parse("2027-02-05"), cop(1)).errorOrFail()
+        )
+        assertEquals(
+            CarryoverFailure.MissingHistory(abr),
+            history.minus(LocalDate.parse("2027-04-11"), cop(1)).errorOrFail()
+        )
+    }
+
+    @Test
+    fun takingOutAnAmountInAnotherCurrencyIsATypedMismatch() {
+        val history = Carry.history(
+            comida,
+            ene,
+            feb,
+            "2027-02-10",
+            expense(comida, "2027-01-10", 80_000)
+        )
+
+        assertEquals(
+            CarryoverFailure.CurrencyMismatch(Currency.COP, Currency.USD),
+            history.minus(LocalDate.parse("2027-01-20"), Money(1_000, Currency.USD)).errorOrFail()
         )
     }
 
