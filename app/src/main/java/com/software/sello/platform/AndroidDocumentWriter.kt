@@ -13,6 +13,7 @@ import com.software.sello.domain.port.DocumentWrite
 import com.software.sello.domain.port.DocumentWriter
 import java.io.IOException
 import java.io.OutputStream
+import java.io.SyncFailedException
 import kotlinx.coroutines.withContext
 
 /**
@@ -32,7 +33,7 @@ class AndroidDocumentWriter(
                 // "wt" truncates, so an existing document chosen again is replaced, not mixed.
                 val descriptor = resolver.openFileDescriptor(uri, "wt")
                     ?: return@withContext DocumentWrite.Failed
-                DescriptorDocument(descriptor).writeAll(bytes)
+                DescriptorDocument(descriptor).writeAll(bytes, cannotSync)
                 DocumentWrite.Completed(displayName(uri), bytes.size.toLong())
             } catch (_: IOException) {
                 DocumentWrite.Failed
@@ -59,37 +60,42 @@ internal interface OpenDocument {
     /** Takes the bytes; closing it closes the document. */
     val stream: OutputStream
 
-    /** Whether the document is a real file, not a pipe or socket to its provider. */
-    val isRealFile: Boolean
+    /** Asks the storage to keep what was written: null when it did, else the error number. */
+    fun sync(): Int?
 
-    /** Asks the storage to keep what was written; throws when it can't. */
-    fun sync()
-
-    /** Throws when the provider reported a failure on its side of the document. */
+    /** Throws when the provider reported a failure before the close. */
     fun checkError()
 }
 
 /**
  * Writes every byte of [bytes], flushes, syncs and closes the document, then asks
  * whether the provider reported a failure; throws [IOException] at the first failure.
- * The document is closed whatever happens.
+ * A sync that fails with one of [cannotSync] is excused: those numbers mean the
+ * document cannot be synced at all, not that it lost what was written. The document is
+ * closed whatever happens.
  */
-internal fun OpenDocument.writeAll(bytes: ByteArray) {
+internal fun OpenDocument.writeAll(bytes: ByteArray, cannotSync: Set<Int>) {
     stream.use {
         it.write(bytes)
         it.flush()
-        try {
-            sync()
-        } catch (failure: IOException) {
-            // A pipe or socket to a provider cannot sync, and that is no failure. A real
-            // file that cannot sync may not keep what was written.
-            if (isRealFile) throw failure
+        val error = sync()
+        if (error != null && error !in cannotSync) {
+            throw SyncFailedException("The storage could not keep the document: error $error")
         }
     }
-    // A provider reports its own failure, such as an upload it could not finish, on its
-    // side of the document. The close reads that report, so it is checked only now.
+    // A failure the provider reported before the close, such as an upload it refused
+    // partway, waits on its side of the document. The close reads that report without
+    // waiting, so it is checked only now; a failure reported after the close is not seen.
     checkError()
 }
+
+/**
+ * The error numbers a sync gives when the document cannot be synced at all: a pipe or
+ * socket to its provider, or a provider's proxy file that does not sync. Any other
+ * number, such as a failed disk or a full one, means what was written may be lost.
+ */
+private val cannotSync: Set<Int>
+    get() = setOf(OsConstants.EINVAL, OsConstants.EROFS)
 
 private class DescriptorDocument(private val descriptor: ParcelFileDescriptor) : OpenDocument {
     private val file = ParcelFileDescriptor.AutoCloseOutputStream(descriptor)
@@ -99,15 +105,12 @@ private class DescriptorDocument(private val descriptor: ParcelFileDescriptor) :
 
     override val stream: OutputStream get() = file
 
-    override val isRealFile: Boolean
-        get() = try {
-            OsConstants.S_ISREG(Os.fstat(descriptor.fileDescriptor).st_mode)
-        } catch (_: ErrnoException) {
-            // Nothing is known about it, so a failed sync is not excused.
-            true
-        }
-
-    override fun sync() = file.fd.sync()
+    override fun sync(): Int? = try {
+        Os.fsync(descriptor.fileDescriptor)
+        null
+    } catch (failure: ErrnoException) {
+        failure.errno
+    }
 
     override fun checkError() {
         if (canReport) descriptor.checkError()
