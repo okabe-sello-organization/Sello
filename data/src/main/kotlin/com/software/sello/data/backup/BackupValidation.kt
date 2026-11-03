@@ -200,7 +200,7 @@ private fun contentsOf(file: BackupFileV7): BackupContents {
     val goals = goals(financial.goals)
     val starred = starredGoals(financial.starredGoals, goals, version < STARS_VERSION)
     val schedules = schedules(financial.schedules, categories)
-    val handled = schedules.associate { it.schedule.id to it.handled }
+    val handled = schedules.associateBy { it.schedule.id }
     val exportedAt = instant(file.exportedAt, "exportedAt")
     val financialMonth = when (val said = financial.financialMonth) {
         // Only a file read from an older version leaves it out, and it has no chains.
@@ -418,7 +418,7 @@ private fun note(text: String?, path: String): Note? {
 private fun expenses(
     wire: List<ExpenseV3>,
     known: Set<CategoryId>,
-    handled: Map<ScheduleId, Occurrence?>
+    handled: Map<ScheduleId, StoredSchedule>
 ): List<Expense> {
     val ids = HashSet<String>()
     val sequences = HashSet<Long>()
@@ -444,7 +444,7 @@ private fun expenses(
     }
 }
 
-private fun incomes(wire: List<IncomeV3>, handled: Map<ScheduleId, Occurrence?>): List<Income> {
+private fun incomes(wire: List<IncomeV3>, handled: Map<ScheduleId, StoredSchedule>): List<Income> {
     val ids = HashSet<String>()
     val sequences = HashSet<Long>()
     val origins = HashSet<EntryOrigin>()
@@ -492,17 +492,20 @@ private fun origin(
     wire: OriginV3,
     path: String,
     seen: MutableSet<EntryOrigin>,
-    handled: Map<ScheduleId, Occurrence?>
+    handled: Map<ScheduleId, StoredSchedule>
 ): EntryOrigin {
     val schedule = ScheduleId.of(wire.schedule).or("$path.schedule")
     val date = EffectiveDates.parseDate(wire.date).or("$path.date")
     val origin =
         EntryOrigin(schedule, Occurrence(date, slot(wire.slot, twice = true, "$path.slot")))
     if (!seen.add(origin)) reject(BackupRejection.DuplicateEntry(path))
-    if (schedule in handled) {
-        val checkpoint = handled[schedule] ?: invalid(path)
+    handled[schedule]?.let { stored ->
+        val checkpoint = stored.handled ?: invalid(path)
+        // A rule with one occurrence a day never records a second slot, so its checkpoint
+        // covers the whole day, a slot 2 recorded under an earlier twice-monthly rule too.
+        val twice = stored.schedule.recurrence.rule is RepeatRule.TwiceMonthly
         val after = date.isAfter(checkpoint.date) ||
-            (date == checkpoint.date && origin.occurrence.slot > checkpoint.slot)
+            (date == checkpoint.date && twice && origin.occurrence.slot > checkpoint.slot)
         if (after) invalid(path)
     }
     return origin

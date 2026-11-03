@@ -17,7 +17,8 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * What the dollar rate looks like, kept as committed images (ADR 0022): Cobalto light, Cobalto
- * dark at twice the font size, and Violeta light. See ExpenseEntryScreenshotTest.
+ * dark at twice the font size, and Violeta light; and Cambiar la tasa locked after an unknown
+ * save. See ExpenseEntryScreenshotTest.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -49,4 +50,27 @@ class UsdRateScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    /** Cambiar la tasa after an unknown save: the pad is locked, only asking again is offered. */
+    @Test
+    fun entryUnknownLocksThePad() {
+        val look = Look()
+        val today = LocalDate.of(2026, 10, 25)
+        rule.showSello(look) {
+            UsdRateEntryScreen(
+                UsdRateEntryState(
+                    loading = false,
+                    loadFailed = false,
+                    rate = "4.000",
+                    problem = null,
+                    current = RateModel("4.150,25", LocalDate.of(2026, 10, 20)),
+                    date = today,
+                    today = today,
+                    error = RateEntryError.Unknown
+                ),
+                {}
+            )
+        }
+        rule.captureStill("src/test/screenshots/usd-rate-entry-unknown-${look.label}.png")
+    }
 }

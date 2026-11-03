@@ -45,6 +45,22 @@ object SchedulePolicy {
             .take(limit.coerceAtLeast(0))
     }
 
+    /**
+     * Catch-up's checkpoint after a change made on [today] that gives a schedule [rule]
+     * (rule 7): the end of [today], or [handled] when that is later, so nothing dated today
+     * or earlier is recorded under the new terms. A rule with one occurrence a day has only
+     * slot 1, which covers its whole day.
+     */
+    fun handledAfterChange(rule: RepeatRule, handled: Occurrence?, today: LocalDate): Occurrence {
+        val slots = if (rule is RepeatRule.TwiceMonthly) 2 else 1
+        val endOfToday = Occurrence(today, slots)
+        return if (handled == null || !handled.isAfter(endOfToday)) {
+            endOfToday
+        } else {
+            Occurrence(handled.date, minOf(handled.slot, slots))
+        }
+    }
+
     private fun Occurrence.isAfter(other: Occurrence) =
         date.isAfter(other.date) || (date == other.date && slot > other.slot)
 

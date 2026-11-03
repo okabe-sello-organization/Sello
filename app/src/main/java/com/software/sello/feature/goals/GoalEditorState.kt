@@ -79,6 +79,8 @@ data class GoalEditorState(
     val movementCount: Int = 0,
     val busy: Boolean = false,
     val saveError: GoalSaveError? = null,
+    /** A save was sent and its outcome is not settled: only Comprobar is offered. */
+    val unresolved: Boolean = false,
     val confirmDelete: Boolean = false,
     val confirmDiscard: Boolean = false,
     /** Editing: something differs from what is stored. */

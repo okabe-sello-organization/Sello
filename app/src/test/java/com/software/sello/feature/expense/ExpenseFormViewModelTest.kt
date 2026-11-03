@@ -660,6 +660,49 @@ class ExpenseFormViewModelTest {
         assertEquals(uuid(900) to true, form.now.recorded to form.now.closed)
     }
 
+    @Test
+    fun anUnknownSaveCannotBeDiscardedAndLoseTheOperationNeededForRecovery() {
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("SQLiteException")) }
+        val form = ready(food).chosen()
+        form.type("10000")
+        form.submit()
+
+        form.onAction(ExpenseEntryAction.Back)
+        assertFalse(form.now.confirmDiscard)
+        form.onAction(ExpenseEntryAction.DiscardConfirmed)
+        assertFalse(form.now.closed)
+        assertNull(said)
+        commands.found = { Outcome.Success(commands.committed(it)) }
+        form.onAction(ExpenseEntryAction.Retry)
+
+        assertEquals(1, commands.created.size)
+        assertEquals(listOf(uuid(500), uuid(500)), commands.looked.map { it.value })
+        assertEquals(uuid(900) to true, form.now.recorded to form.now.closed)
+    }
+
+    @Test
+    fun anUnknownSaveStillCannotBeDiscardedAfterTheProcessIsKilled() {
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("SQLiteException")) }
+        val saved = SavedStateHandle()
+        val first = ready(food, saved = saved).chosen()
+        first.type("10000")
+        first.submit()
+
+        val restored = form(saved.afterProcessDeath())
+        restored.onAction(ExpenseEntryAction.Back)
+        restored.onAction(ExpenseEntryAction.DiscardConfirmed)
+
+        assertEquals(EntryError.Unknown, restored.now.error)
+        assertFalse(restored.now.confirmDiscard || restored.now.closed)
+        commands.found = { Outcome.Success(commands.committed(it)) }
+        restored.onAction(ExpenseEntryAction.Retry)
+        assertEquals(1, commands.created.size)
+        assertEquals(listOf(uuid(500), uuid(500), uuid(500)), commands.looked.map { it.value })
+        assertEquals(uuid(900) to true, restored.now.recorded to restored.now.closed)
+    }
+
     // --- Rotation and the process being killed ---
 
     @Test

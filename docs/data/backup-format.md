@@ -160,8 +160,10 @@ Every key is required, even when its value is `null`, and no other key is allowe
   dates, `end` on or after `start` or `null`; `pauses` begin on or after `start`, are in
   order and do not overlap, and only the last may be open. `sequence` is the creation
   order, unique. `handled` is the last occurrence catch-up dealt with: a date and a slot,
-  `2` only twice a month. A payment into an archived category must be paused, as
-  archiving leaves it.
+  `2` only twice a month. A change of rule or start, or a later end that would bring back
+  past dates, sets it to the end of that day (slot `2` twice a month, else `1`), so
+  nothing dated then or earlier is recorded. A payment into an archived category must be
+  paused, as archiving leaves it.
 - **Investments** ([investment rules](../testing/investment-examples.md)): a name is
   1–40 code points and a description up to 40 or `null`, in stored form, never empty;
   `currency` is `COP` or `USD`. `movements` is the investment's whole history in
@@ -181,7 +183,9 @@ Every key is required, even when its value is `null`, and no other key is allowe
 - **Origins:** `slot` is `1` or `2`; one origin appears at most once among expenses and
   once among incomes. When its schedule is in the file, it is at or before that
   schedule's `handled`, so a restore never records it again; one whose schedule was
-  deleted since stays as it is.
+  deleted since stays as it is. For a rule with one occurrence a day, `handled` covers
+  its whole date: a slot `2` origin recorded on that date under an earlier twice-a-month
+  rule is at or before it.
 - **Carry chains** ([carryover rules](../testing/signed-carryover-examples.md), CP4, CP25,
   CP26): a chain is the run of months in which a category carries its balance, from
   `start` up to, not including, `end`, or every month from `start` while `end` is `null`.

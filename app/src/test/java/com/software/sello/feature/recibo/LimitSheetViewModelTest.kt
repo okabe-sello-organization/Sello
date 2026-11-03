@@ -40,7 +40,7 @@ import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
-import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -72,7 +72,7 @@ class LimitSheetViewModelTest {
     private val cafe = uuid(1)
     private val clock = HandFinancialClock("2026-10-22")
     private val session = MonthSession(clock, HandMonotonicClock())
-    private val snapshots = HandSnapshots()
+    private val snapshots = NewObservationSnapshots()
     private val reads = HandCategoryReads().apply { generation = 7 }
     private var nextId = 500
     private val money = testMoney()
@@ -448,16 +448,39 @@ class LimitSheetViewModelTest {
     }
 
     @Test
-    fun aFailedSnapshotHidesChipsAndFactButKeepsTheDraft() {
+    fun aFailedSnapshotKeepsChipsAndFactAsOlderWithTheDraft() {
         val sheet = opened()
         sheet.type(150_000)
+        val before = sheet.state.value
 
         snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
 
         val state = sheet.state.value
-        assertEquals(emptyList<LimitChip>(), state.chips)
-        assertNull(state.fact)
+        assertTrue(state.stale)
+        assertEquals(
+            listOf(ChipKind.Spent to 90_000L, ChipKind.CoverMonth to 130_000L),
+            state.chips.map { it.kind to it.pesos }
+        )
+        assertEquals(before.fact, state.fact)
+        assertEquals("90.000 pesos", state.spent?.spoken)
         assertEquals("150.000 pesos", state.amount?.spoken)
         assertTrue(state.canSave)
+    }
+
+    @Test
+    fun retryOnOlderFactsObservesAgainAndKeepsThemUntilARead() {
+        val sheet = opened()
+        sheet.type(150_000)
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        val older = sheet.state.value
+
+        sheet.onAction(LimitSheetAction.Retry)
+        val retried = sheet.state.value
+        snapshots.ready(excedido)
+
+        assertEquals(listOf(october, october), snapshots.observed)
+        assertEquals(older, retried)
+        assertFalse(sheet.state.value.stale)
+        assertEquals(older.chips, sheet.state.value.chips)
     }
 }
