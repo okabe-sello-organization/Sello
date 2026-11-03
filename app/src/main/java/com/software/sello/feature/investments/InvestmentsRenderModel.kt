@@ -198,8 +198,8 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
      * Gridlines a round step apart (1, 2, 2,5 or 5 times a power of ten, in whole pesos or
      * dollars): the smallest step whose marks, from the one at or below [low] to the one
      * at or above [high], are at most three steps apart, so at most four marks. Equal
-     * heights get a step a third of their size and one mark either side. Exact: no figure
-     * is wrapped or rounded.
+     * heights get a step a third of their size and marks a step below and above them.
+     * Exact: no figure is wrapped or rounded.
      */
     private fun grid(low: Long, high: Long, currency: Currency): Grid {
         val unit = BigInteger.TEN.pow(currency.scale)
@@ -217,12 +217,9 @@ class InvestmentsRenderModel(private val money: MoneyFormatter) {
                 ceil(highest, step).subtract(floor(lowest, step)) <= step.multiply(MAX_STEPS)
             }
         }
-        var bottom = floor(lowest, step)
-        var top = ceil(highest, step)
-        if (bottom == top) {
-            bottom -= step
-            top += step
-        }
+        // Equal heights sit between a mark below and a mark above, never on an edge.
+        val bottom = floor(if (equal) lowest - step else lowest, step)
+        val top = ceil(if (equal) highest + step else highest, step)
         val grid = Grid(bottom, top, emptyList())
         val marks = generateSequence(bottom) { it + step }.takeWhile { it <= top }
             .map { units -> axisMark(units, step, currency).copy(y = grid.y(units)) }

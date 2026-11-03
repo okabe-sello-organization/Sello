@@ -379,7 +379,7 @@ class InvestmentsRenderModelTest {
     @Test
     fun aDollarChartsMarksAreWholeDollarsBelowTenThousand() {
         val chart = detailOf(acciones()).chart!!
-        // USD 1.000,00..1.050,50 is 50,50; a third is 16,83, so the step is USD 20.
+        // USD 1.000,00..1.050,50: a step of USD 10 spans 1.000..1.060, six steps; USD 20, three.
         assertEquals(
             listOf("1.000", "1.020", "1.040", "1.060"),
             chart.grid.map { it.figure }
@@ -401,7 +401,7 @@ class InvestmentsRenderModelTest {
                 )
             )
         ).chart!!
-        // A third of 1.000.000 is 333.333, so the step is 500.000, one either side.
+        // A third of 1.000.000 is 333.333, so the step is 500.000, a mark either side.
         assertEquals(
             listOf("500", "1", "1,5"),
             chart.grid.map { it.figure }
@@ -452,6 +452,24 @@ class InvestmentsRenderModelTest {
         )
         // (−1.500.000 + 2.000.000) ÷ 6.000.000.
         assertEquals(0.0833f, chart.putIn.last().y, 0.0001f)
+    }
+
+    @Test
+    fun anEqualHeightJustPastAMarkStaysOffTheEdge() {
+        val chart = detailOf(
+            investment(
+                "CDT",
+                null,
+                listOf(
+                    Triple(aporte, 1_000_050, "2026-10-01"),
+                    Triple(valor, 1_000_050, "2026-10-01")
+                )
+            )
+        ).chart!!
+        // Step 500.000; 500.050 floors to 500.000 and 1.500.050 rounds up to 2.000.000.
+        assertEquals(listOf("500", "1", "1,5", "2"), chart.grid.map { it.figure })
+        // (1.000.050 − 500.000) ÷ 1.500.000.
+        assertEquals(0.33337f, chart.values.single().y, 0.0001f)
     }
 
     @Test
