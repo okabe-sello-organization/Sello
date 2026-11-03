@@ -163,14 +163,14 @@ internal suspend fun SelloDatabase.carryRows(
         is Outcome.Success -> read.value
         is Outcome.Failure -> return read
     }
-    val start = from.atDay(1).toString()
-    val until = through.plusMonths(1).atDay(1).toString()
+    val start = from.firstDayText
+    val last = through.lastDayText
     val expenses = when (
         val read = pages<ExpenseEntity> { after ->
             expenseDao().pageInCategory(
                 categoryId.value,
                 start,
-                until,
+                last,
                 after?.effectiveDate.orEmpty(),
                 after?.sequence ?: 0,
                 PAGE

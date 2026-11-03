@@ -25,9 +25,8 @@ two functions that write and read. In practice that is years 0000 to 9999: four 
 digits, no sign. It is what the format can hold, not a product rule about which years
 make sense. A command refuses anything else before writing
 (`ExpenseRejection.InvalidDate`, `CategoryRejection.InvalidMonth`), because a stored `-0001-01-01` commits with a
-receipt and then fails every read that meets it. Known and left alone: reading the
-month of December 9999 computes its upper bound as January 10000, which the text
-order does not handle; it needs the financial clock to be in year 9999.
+receipt and then fails every read that meets it. A month read is bounded by the
+stored text of its first and last day (`MonthBounds.kt`), so December 9999 reads too.
 
 ## For consumers
 

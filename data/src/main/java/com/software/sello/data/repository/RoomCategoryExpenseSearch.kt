@@ -36,8 +36,8 @@ class RoomCategoryExpenseSearch(private val database: SelloDatabase) : CategoryE
             }
             val rows = database.expenseDao().searchInCategory(
                 categoryId.value,
-                month.atDay(1).toString(),
-                month.plusMonths(1).atDay(1).toString(),
+                month.firstDayText,
+                month.lastDayText,
                 sort,
                 query,
                 offset,
@@ -45,8 +45,8 @@ class RoomCategoryExpenseSearch(private val database: SelloDatabase) : CategoryE
             )
             val totalCount = database.expenseDao().countSearchInCategory(
                 categoryId.value,
-                month.atDay(1).toString(),
-                month.plusMonths(1).atDay(1).toString(),
+                month.firstDayText,
+                month.lastDayText,
                 query
             )
             when (val read = rows.take(limit).decodeAll { it.toDomain() }) {
