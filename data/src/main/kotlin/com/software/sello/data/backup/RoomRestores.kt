@@ -553,8 +553,6 @@ class RoomRestores(
             manifestOperation()?.let { Named.Operation(it) } ?: Named.Damaged
         } catch (_: IOException) {
             Named.Unreadable
-        } catch (_: IllegalArgumentException) {
-            Named.Damaged
         }
     }
 
@@ -853,7 +851,7 @@ class RoomRestores(
         // Left unmarked when it cannot be read or written; see above.
         io(failed = Unit) {
             if (!manifest.exists()) return@io
-            val properties = Properties().apply { manifest.inputStream().use(::load) }
+            val properties = manifestProperties() ?: return@io
             if (properties.getProperty(OPERATION) != operation.value) return@io
             if ((properties.getProperty(ATTEMPTED) == true.toString()) == attempted) {
                 return@io
@@ -867,16 +865,26 @@ class RoomRestores(
         }
     }
 
+    /**
+     * The manifest as it reads; null when it is damaged for good, as a malformed `\u`
+     * escape makes [Properties.load] fail. One that cannot be read now throws [IOException].
+     */
+    private fun manifestProperties(): Properties? = try {
+        Properties().apply { manifest.inputStream().use(::load) }
+    } catch (_: IllegalArgumentException) {
+        null
+    }
+
     /** The operation the manifest names, if it names a well-formed one. */
     private fun manifestOperation(): OperationId? {
-        val properties = Properties().apply { manifest.inputStream().use(::load) }
+        val properties = manifestProperties() ?: return null
         return (OperationId.of(properties.getProperty(OPERATION).orEmpty()) as? Outcome.Success)
             ?.value
     }
 
     private suspend fun readManifest(): Manifest? = io(failed = null) {
         if (!manifest.exists() || !staged.exists()) return@io null
-        val properties = Properties().apply { manifest.inputStream().use(::load) }
+        val properties = manifestProperties() ?: return@io null
         val operation = when (
             val id = OperationId.of(
                 properties.getProperty(OPERATION).orEmpty()
