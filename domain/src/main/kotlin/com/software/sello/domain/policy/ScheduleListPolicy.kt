@@ -13,10 +13,11 @@ enum class ScheduleStatus { Active, Paused, Ended }
 
 /**
  * One schedule as Pagos e ingresos fijos lists it on a day: its [status], the first day of
- * the pause running then ([pausedFrom]), the [next] occurrence not yet recorded, which may
- * be due already while catch-up has not reached it, its first occurrence in the month
- * ([monthFirst]), whether one is still to come that month ([toComeThisMonth]) and the date
- * of the month's last occurrence already recorded ([recordedThisMonth]).
+ * the pause running then or still open ([pausedFrom]), the [next] occurrence not yet
+ * recorded, which may be due already while catch-up has not reached it, its first
+ * occurrence in the month ([monthFirst]), whether one is still to come that month
+ * ([toComeThisMonth]) and the date of the month's last occurrence already recorded
+ * ([recordedThisMonth]).
  */
 data class ScheduleLine(
     val stored: StoredSchedule,
@@ -59,8 +60,10 @@ object ScheduleListPolicy {
         val lines = schedules.map { stored ->
             val recurrence = stored.schedule.recurrence
             val end = recurrence.end
+            // The pause running today, or one still open: paused before its start, a
+            // schedule's pause begins on that start (rule 8).
             val pause = recurrence.pauses.lastOrNull {
-                !it.from.isAfter(today) && (it.until == null || it.until.isAfter(today))
+                it.until == null || (!it.from.isAfter(today) && it.until.isAfter(today))
             }
             val inMonth = occurrencesIn(stored, month)
             ScheduleLine(
