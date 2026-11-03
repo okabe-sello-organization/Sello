@@ -362,7 +362,8 @@ private val RecordGoalMovements.oneGoal: Map.Entry<GoalId, Long>?
     }
 
 /**
- * [CompleteGoal.undoFor] is how long Deshacer is offered, not what was asked: it is left out.
+ * [CompleteGoal.undoFor] is how long storage keeps the completion possible to undo, not what
+ * was asked: it is left out.
  * A [RecordGoalMovements] of several goals is format 2 (SELLO-139): each line's goal and
  * each goal's version, written by goal identifier so the map's order never changes it.
  */

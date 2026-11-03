@@ -123,8 +123,9 @@ data class RestoreGoalMovement(
 ) : GoalCommand
 
 /**
- * Marcar como lograda (rule 8). [undoFor] is how long Deshacer is offered: about ten
- * seconds, longer while a screen reader is on. It is not part of the input's identity.
+ * Marcar como lograda (rule 8). [undoFor] is how long, from the save, storage keeps the
+ * completion possible to undo; how long Deshacer is shown is the app's choice, within that
+ * time. It is not part of the input's identity.
  */
 data class CompleteGoal(
     override val operationId: OperationId,
