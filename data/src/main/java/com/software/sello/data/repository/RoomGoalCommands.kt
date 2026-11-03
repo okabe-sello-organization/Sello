@@ -416,11 +416,13 @@ class RoomGoalCommands internal constructor(
                 is Outcome.Success -> worked.value
                 is Outcome.Failure -> return Rejected(worked.error)
             }
+            val next =
+                nextCounter(goal.row.nextSequence, GoalEntity.TABLE, goal.row.id, "next_sequence")
             val now = audit.now()
             database.goalDao().insertEvent(
                 change.toEntity(newId(), goal.history.goal.id, now)
             )
-            write(goal.row, now, goal.row.copy(nextSequence = goal.row.nextSequence + 1))
+            write(goal.row, now, goal.row.copy(nextSequence = next))
             val receipt = commit(profile, command, goal.row.id, now)
             Committed(receipt.committed(GoalPolicy.change(goal.progress, after)), replayed = false)
         }
@@ -452,8 +454,10 @@ class RoomGoalCommands internal constructor(
                 is Outcome.Success -> worked.value
                 is Outcome.Failure -> return Rejected(worked.error)
             }
+            val next =
+                nextCounter(goal.row.nextSequence, GoalEntity.TABLE, goal.row.id, "next_sequence")
             database.goalDao().insertEvent(movement.toEntity(goal.history.goal.id))
-            write(goal.row, now, goal.row.copy(nextSequence = goal.row.nextSequence + 1))
+            write(goal.row, now, goal.row.copy(nextSequence = next))
             val receipt = commit(profile, command, goal.row.id, now)
             Committed(receipt.committed(GoalPolicy.change(goal.progress, after)), replayed = false)
         }
