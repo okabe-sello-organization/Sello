@@ -2,13 +2,10 @@ package com.software.sello.feature.recibo
 
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -31,12 +28,14 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
@@ -62,6 +61,8 @@ import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 /**
  * A circle with the category's name and one amount beside it: what is left, or what was
@@ -280,20 +281,26 @@ internal fun LineActionMenu(actions: List<LineAction>, open: Boolean, onClose: (
 /**
  * Dragging [line] towards the start uncovers what letting go will do, in the colour of
  * a loss. Let go past [SWIPE_THRESHOLD] of the width and it is done, once; either way
- * the line goes back to its place. What is uncovered is not read aloud: the same
+ * the line goes back to its place. A drag the system takes away, rather than one the
+ * finger ends, only goes back. What is uncovered is not read aloud: the same
  * action is already offered by name.
  */
 @Composable
 private fun SwipeAway(action: LineAction, line: @Composable () -> Unit) {
     val run by rememberUpdatedState(action.onClick)
-    val reduced = SelloTheme.reducedMotion
+    val reduced by rememberUpdatedState(SelloTheme.reducedMotion)
     val towardsStart = if (LocalLayoutDirection.current == LayoutDirection.Rtl) -1 else 1
     // How far the line has been dragged towards the start: zero or negative. Each move
     // lands at once, so letting go always reads where the line really is.
     var dragged by remember { mutableFloatStateOf(0f) }
     var width by remember { mutableIntStateOf(0) }
-    val drag = rememberDraggableState { delta ->
-        dragged = (dragged + delta).coerceIn(-width.toFloat(), 0f)
+    val scope = rememberCoroutineScope()
+    // The way back, stopped by the next touch so the two never fight over the line.
+    val back = remember { arrayOfNulls<Job>(1) }
+    val goBack = {
+        back[0] = scope.launch {
+            if (reduced) dragged = 0f else animate(dragged, 0f) { value, _ -> dragged = value }
+        }
     }
     Box(Modifier.onSizeChanged { width = it.width }) {
         if (dragged < 0f) {
@@ -315,23 +322,19 @@ private fun SwipeAway(action: LineAction, line: @Composable () -> Unit) {
         Box(
             Modifier
                 .offset { IntOffset((dragged * towardsStart).roundToInt(), 0) }
-                .draggable(
-                    orientation = Orientation.Horizontal,
-                    reverseDirection = towardsStart < 0,
-                    state = drag,
-                    onDragStopped = {
-                        if (width > 0 && dragged <= -width * SWIPE_THRESHOLD) run()
-                        // Back as a drag of its own, below a finger's: a new touch takes
-                        // the line from it instead of fighting it.
-                        drag.drag(MutatePriority.Default) {
-                            if (reduced) {
-                                dragBy(-dragged)
-                            } else {
-                                animate(dragged, 0f) { value, _ -> dragBy(value - dragged) }
-                            }
-                        }
+                .pointerInput(towardsStart) {
+                    detectHorizontalDragGestures(
+                        onDragStart = { back[0]?.cancel() },
+                        onDragEnd = {
+                            if (width > 0 && dragged <= -width * SWIPE_THRESHOLD) run()
+                            goBack()
+                        },
+                        onDragCancel = { goBack() }
+                    ) { change, amount ->
+                        change.consume()
+                        dragged = (dragged + amount * towardsStart).coerceIn(-width.toFloat(), 0f)
                     }
-                )
+                }
         ) { line() }
     }
 }
