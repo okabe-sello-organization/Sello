@@ -146,13 +146,20 @@ private fun whole(element: JsonElement, path: String): Long =
     element.wholeNumberOrNull() ?: invalid(path)
 
 /**
- * A recording or creation position: [whole], and below [Long.MAX_VALUE]. The app puts the
- * next goal event, movement, expense, income, schedule or rate after the highest position
- * and cannot go past the largest, so a file holding it would leave a goal it cannot read
- * back or a list it can never add to.
+ * A recording or creation position: [whole], and at most [last], so the app can still add
+ * one more after it. An expense, income, schedule or rate takes the position after the
+ * highest, so the highest may be one below [Long.MAX_VALUE]. A goal event or investment
+ * movement takes its goal's or investment's stored next position, which a restore sets one
+ * past the last and each add raises again, so the last one may be two below.
  */
-private fun sequenceNumber(element: JsonElement, path: String): Long =
-    whole(element, path).also { if (it == Long.MAX_VALUE) invalid(path) }
+private fun sequenceNumber(
+    element: JsonElement,
+    path: String,
+    last: Long = Long.MAX_VALUE - 1
+): Long = whole(element, path).also { if (it > last) invalid(path) }
+
+/** The last position a goal event or investment movement may hold; see [sequenceNumber]. */
+private const val LAST_HISTORY_POSITION = Long.MAX_VALUE - 2
 
 /** [whole], or an explicit `null`. */
 private fun optionalWhole(element: JsonElement, path: String): Long? =
@@ -667,7 +674,7 @@ private fun goals(wire: List<GoalV2>): List<GoalHistory> {
         var previous = -1L
         val events = row.history.mapIndexed { position, event ->
             val at = "$path.history[$position]"
-            val sequence = sequenceNumber(event.sequence, "$at.sequence")
+            val sequence = sequenceNumber(event.sequence, "$at.sequence", LAST_HISTORY_POSITION)
             if (sequence <= previous) reject(BackupRejection.DuplicateEntry("$at.sequence"))
             previous = sequence
             val amount = amount(event.amount, event.currency, at)
@@ -819,7 +826,7 @@ private fun investments(wire: List<InvestmentV4>): List<InvestmentHistory> {
             val at = "$path.movements[$position]"
             val movementId = InvestmentMovementId.of(movement.id).or("$at.id")
             if (!movementIds.add(movementId)) reject(BackupRejection.DuplicateId("$at.id"))
-            val sequence = sequenceNumber(movement.sequence, "$at.sequence")
+            val sequence = sequenceNumber(movement.sequence, "$at.sequence", LAST_HISTORY_POSITION)
             if (sequence <= previous) reject(BackupRejection.DuplicateEntry("$at.sequence"))
             previous = sequence
             val kind = movementKind(movement.kind, "$at.kind")

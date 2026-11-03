@@ -23,3 +23,5 @@ FinanceTracker translator counts an unreadable rate as skipped instead of crashi
 Audit findings: `BackupValidation.kt:634` (goals; investments refuse it at `:789`),
 `RoomRestores.kt:480`, `LegacyTranslator.kt:910-911` (`setScale` on a huge scale).
 ADR 0019. Review: adversarial (backup).
+Also closes #275 (moved here from SELLO-160 in review): goal commands raise
+`next_sequence` through `nextCounter`.

@@ -5,11 +5,13 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * A recording or creation position the app could not go past (SELLO-162). The app puts
- * the next goal event, movement, expense, income, schedule or rate after the highest
- * one, so a file holding the largest whole number would leave a goal it cannot read or
- * a list it can never add to. Such a file is refused; one below it is restored as
- * written. Each case breaks one position of a valid file; paths are written by hand.
+ * A recording or creation position the app could not add after (SELLO-162). An expense,
+ * income, schedule or rate takes the position after the highest, so the highest may be
+ * one below the largest whole number. A goal event or investment movement takes its
+ * goal's or investment's stored next position, set one past the last on restore and
+ * raised by each add, so the last may be two below. A file past that is refused; one at
+ * it is accepted as written. Each case breaks one position of a valid file; paths and
+ * numbers are written by hand.
  */
 class SequenceBoundBackupTest {
     private val codec = BackupCodec()
@@ -69,41 +71,59 @@ class SequenceBoundBackupTest {
         )
     )
 
-    @Test
-    fun `the largest whole number as a position is refused in every list`() {
+    private val expense get() = places[0]
+    private val income get() = places[1]
+    private val goal get() = places[2]
+    private val schedule get() = places[3]
+    private val movement get() = places[4]
+    private val rate get() = places[5]
+
+    private fun assertRefused(places: List<Place>, sequence: String) {
         for (place in places) {
             assertEquals(
                 place.path,
                 BackupRejection.InvalidValue(place.path),
-                rejection(variant(place.file, place.from, "9223372036854775807", place.nth))
+                rejection(variant(place.file, place.from, sequence, place.nth))
             )
         }
     }
 
+    private fun accepted(place: Place, sequence: String) =
+        accepted(variant(place.file, place.from, sequence, place.nth)).financial
+
     @Test
-    fun `one below the largest is restored as written in every list`() {
-        val largest = 9_223_372_036_854_775_806L
-        fun at(place: Place) =
-            accepted(variant(place.file, place.from, "9223372036854775806", place.nth)).financial
-        val (expense, income, goal, schedule, movement, rate) = places
-        assertEquals(largest, at(expense).expenses[0].sequence)
-        assertEquals(largest, at(income).incomes[0].sequence)
-        assertEquals(largest, at(goal).goals[0].events[2].sequence)
-        assertEquals(largest, at(schedule).schedules[2].sequence)
-        assertEquals(largest, at(movement).investments[0].movements[4].sequence)
-        assertEquals(largest, at(rate).usdRates[1].sequence)
+    fun `the largest whole number as a position is refused in every list`() {
+        assertRefused(places, "9223372036854775807")
+    }
+
+    @Test
+    fun `one below the largest is refused for a goal event or an investment movement`() {
+        assertRefused(listOf(goal, movement), "9223372036854775806")
+    }
+
+    @Test
+    fun `the last position each list allows is accepted as written`() {
+        val oneBelow = 9_223_372_036_854_775_806L
+        val twoBelow = 9_223_372_036_854_775_805L
+        assertEquals(oneBelow, accepted(expense, "9223372036854775806").expenses[0].sequence)
+        assertEquals(oneBelow, accepted(income, "9223372036854775806").incomes[0].sequence)
+        assertEquals(
+            oneBelow,
+            accepted(schedule, "9223372036854775806").schedules[2].sequence
+        )
+        assertEquals(oneBelow, accepted(rate, "9223372036854775806").usdRates[1].sequence)
+        assertEquals(
+            twoBelow,
+            accepted(goal, "9223372036854775805").goals[0].events[2].sequence
+        )
+        assertEquals(
+            twoBelow,
+            accepted(movement, "9223372036854775805").investments[0].movements[4].sequence
+        )
     }
 
     @Test
     fun `a position beyond any whole number is refused, not wrapped`() {
-        for (place in places) {
-            assertEquals(
-                place.path,
-                BackupRejection.InvalidValue(place.path),
-                rejection(variant(place.file, place.from, "9223372036854775808", place.nth))
-            )
-        }
+        assertRefused(places, "9223372036854775808")
     }
-
-    private operator fun <T> List<T>.component6(): T = this[5]
 }

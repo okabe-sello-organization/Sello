@@ -880,6 +880,29 @@ class LegacyTranslatorTest {
         assertEquals(listOf(100L), result.contents.financial.usdRates.map { it.rate.hundredths })
     }
 
+    /** A rate's text is read as a number only up to 64 characters (SELLO-162). */
+    @Test(timeout = 10_000)
+    fun `a rate written with very many digits is skipped as out of range, not read`() {
+        val text = legacy(
+            rates(
+                rate("USD", "4000." + "0".repeat(59)),
+                rate("USD", "4000." + "0".repeat(60)),
+                rate("USD", "4000." + "0".repeat(5_000_000))
+            )
+        )
+
+        val result = translated(text)
+
+        assertEquals(
+            listOf(LegacyImportLine(LegacyRecord.ExchangeRate, LegacyReason.AmountOutOfRange, 2)),
+            result.report.lines
+        )
+        assertEquals(
+            listOf(400_000L),
+            result.contents.financial.usdRates.map { it.rate.hundredths }
+        )
+    }
+
     @Test
     fun `merchant rules are still reported as not imported`() {
         val text = legacy(
