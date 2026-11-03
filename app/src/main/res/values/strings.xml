@@ -339,7 +339,9 @@
     <string name="category_edit_limit_locked">Está archivada: no tiene límite de aquí en adelante. Desarchívala para ponerle uno.</string>
     <string name="category_edit_archived">No acepta gastos nuevos; su historia sigue aquí.</string>
     <string name="category_edit_archived_label">Archivada</string>
-    <string name="category_edit_month_ended">%1$s terminó y este cambio no se guardó. Ahora ves %2$s: lo que guardes vale desde ese mes.</string>
+    <string name="category_edit_month_ended">%1$s terminó y el límite no se guardó. Ahora ves %2$s: el límite que guardes vale desde ese mes.</string>
+    <string name="category_edit_month_ended_saved_parts">Se guardó: %1$s. %2$s terminó y el límite no se guardó. Ahora ves %3$s: el límite que guardes vale desde ese mes.</string>
+    <string name="category_edit_month_ended_carry">%1$s terminó y no se empezó a pasar lo que sobra. Ahora ves %2$s: si lo activas, empieza en ese mes.</string>
     <string name="category_edit_saved_parts">Se guardó: %1$s. Lo demás no se guardó; inténtalo de nuevo.</string>
     <string name="category_edit_part_name">nombre</string>
     <string name="category_edit_part_icon">ícono</string>

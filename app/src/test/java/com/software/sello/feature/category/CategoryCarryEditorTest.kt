@@ -284,7 +284,7 @@ class CategoryCarryEditorTest {
         assertTrue(commands.submitted.isEmpty())
         assertNull(form.now.carryQuestion)
         assertEquals(SaveError.MonthEnded, form.now.saveError)
-        assertEquals(feb, form.now.endedMonth)
+        assertEquals(MonthEnded(feb, carry = true), form.now.monthEnded)
         assertEquals(YearMonth.of(2027, 3), form.now.targetMonth)
         // March was never published: its card is not guessed.
         assertEquals(CarryCard.Unreadable, form.now.carry)

@@ -37,10 +37,13 @@ enum class SaveError {
 
     /**
      * The month the form showed ended before the save: nothing was written, and the form
-     * now shows the month in progress ([CategoryEditorState.endedMonth] says which ended).
+     * now shows the month in progress ([CategoryEditorState.monthEnded] says which ended).
      */
     MonthEnded
 }
+
+/** The month the form showed ended before [carry] was turned on, or else the limit saved. */
+data class MonthEnded(val month: YearMonth, val carry: Boolean)
 
 /** One part of a category, saved by its own command. */
 enum class EditPart { Name, Icon, Limit }
@@ -123,8 +126,8 @@ data class CategoryEditorState(
     val targetMonth: YearMonth? = null,
     /** [targetMonth] is over: only that month's limit changes, no other and no default. */
     val historical: Boolean = false,
-    /** With [SaveError.MonthEnded]: the month the form showed until it ended. */
-    val endedMonth: YearMonth? = null,
+    /** With [SaveError.MonthEnded]: which month ended, and what it stopped. */
+    val monthEnded: MonthEnded? = null,
     /** The limit cannot be changed here: an archived category has no limit going forward. */
     val limitLocked: Boolean = false,
     /** Editing: something differs from what is stored. */

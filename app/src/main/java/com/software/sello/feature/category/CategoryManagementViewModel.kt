@@ -388,7 +388,7 @@ class CategoryManagementViewModel(
         val generation = generation ?: return
         val id = categoryId ?: return
         // Turning on is for the month the card shows, and Sello turns it on in today's.
-        if (enable && monthEnded()) return
+        if (enable && monthEnded(carry = true)) return
         mutable.update {
             it.copy(busy = true, saveError = null, carryProblem = null, carryDone = null)
         }
@@ -726,7 +726,7 @@ class CategoryManagementViewModel(
             null
         }
         val icon = (IconKey.of(state.iconKey) as? Outcome.Success)?.value ?: return
-        if (EditPart.Limit in pending && monthEnded()) return
+        if (EditPart.Limit in pending && monthEnded(carry = false)) return
         // Making the limit unlimited while carrying drops the balance (CP11): asked first.
         dropReason = DropReason.Unlimited.takeIf { limit == BudgetLimit.Unlimited }
         mutable.update {
@@ -741,7 +741,7 @@ class CategoryManagementViewModel(
         viewModelScope.launch {
             for (part in pending) {
                 // The month can end while the parts before the limit are sent.
-                if (part == EditPart.Limit && monthEnded()) return@launch
+                if (part == EditPart.Limit && monthEnded(carry = false)) return@launch
                 val version = original?.version ?: return@launch
                 val settled = submission.send(commands::find, STEP_EDIT) { operation ->
                     val command: CategoryCommand = when (part) {
@@ -801,7 +801,7 @@ class CategoryManagementViewModel(
      * form says so and reads the month now in progress, keeping what was typed. A
      * finished month's own limit names its month and is not affected.
      */
-    private fun monthEnded(): Boolean {
+    private fun monthEnded(carry: Boolean): Boolean {
         val ended = currentMonth
         val now = session.currentMonthNow
         if (targetMonth != ended || now == ended) return false
@@ -817,7 +817,7 @@ class CategoryManagementViewModel(
             it.copy(
                 busy = false,
                 saveError = SaveError.MonthEnded,
-                endedMonth = ended,
+                monthEnded = MonthEnded(ended, carry),
                 targetMonth = now,
                 historical = false,
                 carry = null,

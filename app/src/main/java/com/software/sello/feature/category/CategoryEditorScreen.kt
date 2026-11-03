@@ -75,6 +75,7 @@ import com.software.sello.domain.model.CategoryName
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.month.monthNames
+import java.time.YearMonth
 
 /**
  * Owns the view model and what happens when the editor ends: [onFinished] is called
@@ -533,18 +534,11 @@ private fun Limit(state: CategoryEditorState, onAction: (CategoryEditorAction) -
 /** What went wrong, or that nothing changed yet, between the limit and the button. */
 @Composable
 private fun Said(state: CategoryEditorState) {
-    val ended = state.endedMonth
+    val ended = state.monthEnded
     val shown = state.targetMonth
     if (state.saveError == SaveError.MonthEnded && ended != null && shown != null) {
-        val months = monthNames()
         FieldMessageText(
-            FieldMessage(
-                stringResource(
-                    R.string.category_edit_month_ended,
-                    months.title(ended),
-                    months.title(shown)
-                )
-            ),
+            FieldMessage(monthEndedText(ended, shown, state.savedParts)),
             Modifier.testTag(EDITOR_SAVE_ERROR_TAG)
         )
     } else if (state.savedParts.isNotEmpty() && state.saveError != null) {
@@ -620,6 +614,29 @@ private fun Action(state: CategoryEditorState, onAction: (CategoryEditorAction) 
                 loading = state.busy
             )
         }
+    }
+}
+
+/**
+ * The month the form showed ended before the limit or carry was sent: what was not
+ * saved, what was (the parts sent before it), and which month the form shows now.
+ */
+@Composable
+private fun monthEndedText(ended: MonthEnded, shown: YearMonth, saved: List<EditPart>): String {
+    val months = monthNames()
+    val was = months.title(ended.month)
+    val now = months.title(shown)
+    return when {
+        ended.carry -> stringResource(R.string.category_edit_month_ended_carry, was, now)
+
+        saved.isNotEmpty() -> stringResource(
+            R.string.category_edit_month_ended_saved_parts,
+            saved.map { stringResource(it.text()) }.joinToString(", "),
+            was,
+            now
+        )
+
+        else -> stringResource(R.string.category_edit_month_ended, was, now)
     }
 }
 

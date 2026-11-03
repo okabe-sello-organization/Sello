@@ -379,7 +379,7 @@ class CategoryManagementViewModelTest {
         // Nothing is written: no limit lands on November.
         assertEquals(emptyList<CategoryCommand>(), commands.submitted)
         assertEquals(SaveError.MonthEnded, form.now.saveError)
-        assertEquals(october, form.now.endedMonth)
+        assertEquals(MonthEnded(october, carry = false), form.now.monthEnded)
         assertEquals(november to false, form.now.targetMonth to form.now.historical)
         // What was typed stays; it differs from November's own 200.000.
         assertEquals("150000", form.now.limitText)
@@ -435,8 +435,10 @@ class CategoryManagementViewModelTest {
         commands.hold!!.complete(Unit)
 
         assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
+        // The screen names the rename as saved and only the limit as not.
         assertEquals(listOf(EditPart.Name), form.now.savedParts)
         assertEquals(SaveError.MonthEnded, form.now.saveError)
+        assertEquals(MonthEnded(october, carry = false), form.now.monthEnded)
         assertEquals(november, form.now.targetMonth)
         assertFalse(form.now.busy)
     }
