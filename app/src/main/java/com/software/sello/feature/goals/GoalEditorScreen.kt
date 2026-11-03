@@ -115,7 +115,8 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
             }
         },
         actions = {
-            if (state.editing && !state.loading && !state.loadFailed) {
+            // With a save unresolved, only Comprobar is offered: never Borrar meta.
+            if (state.editing && !state.loading && !state.loadFailed && !state.unresolved) {
                 MoreMenu(
                     listOf(
                         MoreMenuItem(

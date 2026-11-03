@@ -10,8 +10,9 @@ import kotlinx.coroutines.flow.Flow
 /**
  * A stored schedule. [sequence] is its creation order, which catch-up follows among
  * schedules due on the same day (docs/testing/recurrence-examples.md, rule 6).
- * [handled] is the last occurrence catch-up has dealt with: it and every earlier one
- * are never recorded again, even when the entry they made was deleted (rule 4).
+ * [handled] is the last occurrence catch-up has dealt with, or the end of the day a change
+ * was made (rule 7): it and every earlier one are never recorded, even when the entry
+ * they made was deleted (rule 4).
  */
 data class StoredSchedule(
     val schedule: Schedule,

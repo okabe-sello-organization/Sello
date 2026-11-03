@@ -723,6 +723,28 @@ class BulkEntryViewModelTest {
     }
 
     @Test
+    fun anUnknownSaveCannotBeDiscardedAndLoseTheOperationNeededForRecovery() {
+        val bulk = ready()
+        bulk.threeLines()
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("still unknown")) }
+        bulk.submit()
+
+        bulk.onAction(BulkEntryAction.Back)
+        assertFalse(bulk.now.confirmDiscard)
+        bulk.onAction(BulkEntryAction.DiscardConfirmed)
+        assertFalse(bulk.now.closed)
+        assertNull(said)
+        commands.found = { Outcome.Success(commands.committed(it, 3)) }
+        bulk.onAction(BulkEntryAction.Retry)
+
+        val operation = commands.created.single().operationId
+        assertEquals(listOf(operation, operation), commands.looked)
+        assertEquals(3, (said as CorrectionNotice.ExpensesRecorded).count)
+        assertTrue(bulk.now.closed)
+    }
+
+    @Test
     fun anUnknownOutcomeFoundNotSavedLetsTheReceiptBeSentAgainAsANewOperation() {
         val bulk = ready()
         bulk.threeLines()
@@ -902,6 +924,28 @@ class BulkEntryViewModelTest {
         assertEquals(1, commands.created.size)
         restored.submit()
         assertEquals(1, commands.created.size)
+    }
+
+    @Test
+    fun aSaveStillUnknownAfterARestartCannotBeDiscarded() {
+        val saved = SavedStateHandle()
+        commands.answer = { CommandOutcome.OutcomeUnknown(it.operationId) }
+        commands.found = { Outcome.Failure(StorageFailure.Unavailable("still unknown")) }
+        val bulk = ready(saved)
+        bulk.threeLines()
+        bulk.submit()
+
+        val restored = ready(saved.afterProcessDeath())
+        restored.onAction(BulkEntryAction.Back)
+        restored.onAction(BulkEntryAction.DiscardConfirmed)
+
+        assertEquals(BulkError.Unknown, restored.now.error)
+        assertFalse(restored.now.confirmDiscard || restored.now.closed)
+        commands.found = { Outcome.Success(commands.committed(it, 3)) }
+        restored.onAction(BulkEntryAction.Retry)
+        val operation = commands.created.single().operationId
+        assertEquals(listOf(operation, operation, operation), commands.looked)
+        assertTrue(restored.now.closed)
     }
 
     @Test

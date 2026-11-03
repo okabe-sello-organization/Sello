@@ -22,6 +22,7 @@ import com.software.sello.domain.model.ThemePreference
 import com.software.sello.domain.port.AppearancePreferences
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CategoryOrderingPreferences
+import com.software.sello.domain.port.ChangeSchedule
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.FinancialClock
@@ -298,6 +299,78 @@ class ScheduleBackupRestoreTest {
         other.reopen()
         assertEquals(listOf("2026-10-30", "2026-11-05"), other.catchUp("2026-11-14"))
     }
+
+    /**
+     * SELLO-145: rent twice a month on 15 and 30, recorded through [recordedOn] (its second
+     * slot), becomes monthly on 15 from the day after [changedOn]. The backup restores, and
+     * the restored schedule records nothing again, then [next] up to 15 December.
+     */
+    private fun aRuleChangedFromTwiceAMonthRestores(
+        recordedOn: String,
+        changedOn: String,
+        next: List<String>
+    ) = runBlocking {
+        ledger.goTo("2026-10-01")
+        ledger.categories.submit(ledger.createCategory("Hogar"))
+        val rent = ScheduledEntry.Payment(
+            ledger.categoryId(100),
+            transactionPesos(300_000),
+            null
+        )
+        val id = ledger.schedule(
+            "2026-10-01",
+            RepeatRule.TwiceMonthly.of(15, 30).valueOrFail(),
+            rent
+        )
+        ledger.goTo(recordedOn)
+        ledger.catchUp(recordedOn)
+        ledger.goTo(changedOn)
+        val changed = ledger.schedules.submit(
+            ChangeSchedule(
+                ledger.operation(),
+                1,
+                id,
+                1,
+                rent,
+                RepeatRule.Monthly.of(15).valueOrFail(),
+                d(changedOn).plusDays(1),
+                null
+            )
+        )
+        assertTrue("$changed", changed is CommandOutcome.Committed)
+        val before = ledger.scheduleReads.book().valueOrFail().schedules
+        val entries = ledger.entries()
+
+        val bytes = backup()
+        other.goTo(changedOn)
+        val restores = restoresInto(other, fresh)
+        val outcome = restores.replace(restores.stage(bytes).valueOrFail())
+
+        assertTrue("$outcome", outcome is RestoreOutcome.Restored)
+        assertEquals(
+            before.map { it.terms() },
+            other.scheduleReads.book().valueOrFail().schedules.map { it.terms() }
+        )
+        assertEquals(entries, other.entries())
+        assertEquals(emptyList<String>(), other.catchUp(changedOn))
+        other.goTo("2026-12-15")
+        assertEquals(next, other.catchUp("2026-12-15"))
+    }
+
+    @Test
+    fun aRuleChangedAfterTheSecondSlotOfTwiceAMonthRestores() = aRuleChangedFromTwiceAMonthRestores(
+        recordedOn = "2026-10-30",
+        changedOn = "2026-11-02",
+        next = listOf("2026-11-15", "2026-12-15")
+    )
+
+    @Test
+    fun aRuleChangedOnTheDayOfTheSecondSlotOfTwiceAMonthRestores() =
+        aRuleChangedFromTwiceAMonthRestores(
+            recordedOn = "2026-11-30",
+            changedOn = "2026-11-30",
+            next = listOf("2026-12-15")
+        )
 
     @Test
     fun aRestoreReplacesTheSchedulesThereNeverMerges() = runBlocking {

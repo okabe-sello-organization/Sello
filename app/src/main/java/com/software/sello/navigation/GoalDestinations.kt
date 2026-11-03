@@ -17,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -304,18 +305,7 @@ internal fun NavGraphBuilder.goalDestinations(
         )
     }
     composable<GoalEditorRoute> {
-        GoalEditorRoot(viewModels) { result ->
-            val onEditor =
-                navigation.currentBackStackEntry?.destination?.hasRoute<GoalEditorRoute>()
-            if (onEditor == true) {
-                // A deleted goal has no page to go back to: Metas shows the rest.
-                if (result == GoalEditorResult.Deleted) {
-                    navigation.popBackStack<MetasRoute>(inclusive = false)
-                } else {
-                    navigation.popBackStack()
-                }
-            }
-        }
+        GoalEditorRoot(viewModels) { result -> navigation.leaveGoalEditor(result) }
     }
     composable<GoalBulkRoute> {
         GoalBulkRoot(viewModels) {
@@ -338,6 +328,16 @@ internal fun NavGraphBuilder.goalDestinations(
             if (onForm == true) navigation.popBackStack()
         }
     }
+}
+
+/**
+ * Closes the goal editor on its [result]. A deleted goal has no page to go back to, so its
+ * page closes too and whatever opened it shows: Metas, or Recibo from its goal pill.
+ */
+internal fun NavController.leaveGoalEditor(result: GoalEditorResult) {
+    if (currentBackStackEntry?.destination?.hasRoute<GoalEditorRoute>() != true) return
+    if (result == GoalEditorResult.Deleted && popBackStack<GoalRoute>(inclusive = true)) return
+    popBackStack()
 }
 
 /** Aportar varios with what was typed in Aportar or Retirar as its first line. */

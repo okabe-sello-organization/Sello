@@ -460,71 +460,110 @@ class Corrections(
     ): DeleteResult = scope.async {
         asked = null
         asking.value = null
-        sendDelete(expenseId, expectedVersion, generation, confirmation = null, months = null)
+        val command = DeleteExpense(operation(), generation, expenseId, expectedVersion)
+        deleteResult(command, months = null)
     }.await()
 
     /**
-     * Sends the deletion, with the [confirmation] that came with its list when one was
-     * shown. A list that is needed, or needed again, is asked and nothing is deleted.
+     * Sends [command] as the caller made it, so a caller that keeps its operation can ask
+     * about it after an unknown outcome or a restart (then [expenseDeleted]). A deletion
+     * that commits is offered to undo; one that needs its list shows it ([question]).
      */
-    private suspend fun sendDelete(
-        expenseId: ExpenseId,
-        expectedVersion: Long,
-        generation: Long,
-        confirmation: CorrectionConfirmation?,
-        months: Int?
-    ): DeleteResult {
-        val operation = operation()
-        val command = DeleteExpense(operation, generation, expenseId, expectedVersion, confirmation)
-        val committed = when (val outcome = commands.delete(command)) {
-            is CommandOutcome.Committed -> true
+    suspend fun deleteExpense(command: DeleteExpense): ExpenseCommandOutcome = scope.async {
+        asked = null
+        asking.value = null
+        sendDelete(command, months = null)
+    }.await()
 
-            // Asked, never sent again: only a receipt says it was deleted, and a question
-            // that cannot be answered says nothing either way.
-            is CommandOutcome.OutcomeUnknown -> when (val found = commands.find(operation)) {
-                is Outcome.Success -> found.value != null
-                is Outcome.Failure -> return DeleteResult.Unknown
-            }
+    /** A deletion the caller found committed by asking about its operation. */
+    fun expenseDeleted(receipt: OperationReceipt) {
+        val until = commands.undoOffer()?.takeIf { it.deletionId == receipt.operationId }?.until
+        deleted(Kind.Expense, receipt.operationId, receipt.generation, until)
+    }
 
-            is CommandOutcome.Rejected -> return when (val reason = outcome.reason) {
+    /**
+     * Sends the deletion and says what it means: only a receipt says it was deleted, and
+     * an unknown outcome is asked about, never sent again.
+     */
+    private suspend fun deleteResult(command: DeleteExpense, months: Int?): DeleteResult =
+        when (val outcome = sendDelete(command, months)) {
+            is CommandOutcome.Committed -> DeleteResult.Deleted
+
+            // A question that cannot be answered says nothing either way.
+            is CommandOutcome.OutcomeUnknown ->
+                when (val found = commands.find(command.operationId)) {
+                    is Outcome.Success -> when (found.value) {
+                        null -> DeleteResult.Failed
+                        else -> expenseGone(command, months)
+                    }
+
+                    is Outcome.Failure -> DeleteResult.Unknown
+                }
+
+            is CommandOutcome.Rejected -> when (val reason = outcome.reason) {
                 Specific(ExpenseRejection.ExpenseMissing) -> DeleteResult.Gone
 
                 is CommandRejection.VersionConflict -> DeleteResult.Changed
 
                 is CommandRejection.StaleGeneration -> DeleteResult.DataChanged
 
-                is Specific -> when (val asks = reason.reason) {
-                    is ExpenseRejection.CorrectionUnconfirmed -> {
-                        val list = list(asks.correction)
-                        asked = Asked(
-                            expenseId,
-                            expectedVersion,
-                            generation,
-                            asks.confirmation,
-                            asks.correction.months.size
-                        )
-                        asking.value = CorrectionQuestion(
-                            CorrectionKind.Delete,
-                            list,
-                            changed = confirmation != null
-                        )
-                        DeleteResult.AwaitsConfirmation
-                    }
-
+                is Specific -> when (reason.reason) {
+                    is ExpenseRejection.CorrectionUnconfirmed -> DeleteResult.AwaitsConfirmation
                     else -> DeleteResult.Failed
                 }
 
                 else -> DeleteResult.Failed
             }
         }
-        if (!committed) return DeleteResult.Failed
+
+    /**
+     * Sends the deletion, with the confirmation that came with its list when one was
+     * shown. A list that is needed, or needed again, is asked and nothing is deleted.
+     */
+    private suspend fun sendDelete(command: DeleteExpense, months: Int?): ExpenseCommandOutcome {
+        val outcome = commands.delete(command)
+        when (outcome) {
+            is CommandOutcome.Committed -> expenseGone(command, months)
+
+            is CommandOutcome.Rejected -> {
+                val asks = (outcome.reason as? Specific)?.reason
+                if (asks is ExpenseRejection.CorrectionUnconfirmed) {
+                    val list = list(asks.correction)
+                    asked = Asked(
+                        command.expenseId,
+                        command.expectedVersion,
+                        command.generation,
+                        asks.confirmation,
+                        asks.correction.months.size
+                    )
+                    asking.value = CorrectionQuestion(
+                        CorrectionKind.Delete,
+                        list,
+                        changed = command.confirmation != null
+                    )
+                }
+            }
+
+            is CommandOutcome.OutcomeUnknown -> Unit
+        }
+        return outcome
+    }
+
+    /** The deletion [command] committed: it is offered to undo while that can be done. */
+    private fun expenseGone(command: DeleteExpense, months: Int?): DeleteResult {
         asked = null
         asking.value = null
-        if (confirmation != null) {
-            confirmedDeleted.value = ConfirmedDeletion(expenseId, ++confirmedCount)
+        if (command.confirmation != null) {
+            confirmedDeleted.value = ConfirmedDeletion(command.expenseId, ++confirmedCount)
         }
-        val until = commands.undoOffer()?.takeIf { it.deletionId == operation }?.until
-        return deleted(Kind.Expense, operation, generation, until, carryMonths = months)
+        val until = commands.undoOffer()?.takeIf { it.deletionId == command.operationId }?.until
+        return deleted(
+            Kind.Expense,
+            command.operationId,
+            command.generation,
+            until,
+            carryMonths = months
+        )
     }
 
     /** The list of later months for [correction], with the categories' names. */
@@ -547,13 +586,14 @@ class Corrections(
             CorrectionKind.Delete -> {
                 val wanted = asked ?: return run { asking.value = null }
                 scope.launch {
-                    val result = sendDelete(
+                    val command = DeleteExpense(
+                        operation(),
+                        wanted.generation,
                         wanted.expenseId,
                         wanted.expectedVersion,
-                        wanted.generation,
-                        wanted.confirmation,
-                        wanted.months
+                        wanted.confirmation
                     )
+                    val result = deleteResult(command, wanted.months)
                     if (result != DeleteResult.AwaitsConfirmation &&
                         result != DeleteResult.Deleted
                     ) {

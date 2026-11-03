@@ -193,6 +193,87 @@ class UsdRateViewModelTest {
     }
 
     @Test
+    fun afterAnUnknownSaveThePadIsLockedAndOnlyAskingAgainIsOffered() = runTest {
+        commands.answers += CommandOutcome.OutcomeUnknown(
+            (OperationId.of("00000000-0000-4000-a000-000000000001") as Outcome.Success).value
+        )
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        val model = entry()
+        model.type("4000")
+        model.onAction(UsdRateEntryAction.Submit)
+        runCurrent()
+        assertEquals(RateEntryError.Unknown, model.state.value.error)
+        assertFalse(model.state.value.editable)
+
+        model.type("5,")
+        model.onAction(UsdRateEntryAction.Backspace)
+        model.onAction(UsdRateEntryAction.Clear)
+        model.onAction(UsdRateEntryAction.OpenDatePicker)
+        model.onAction(UsdRateEntryAction.DatePicked(LocalDate.of(2026, 10, 20)))
+        model.onAction(UsdRateEntryAction.Submit)
+        model.onAction(UsdRateEntryAction.Back)
+        runCurrent()
+
+        val locked = model.state.value
+        assertEquals("4.000", locked.rate)
+        assertEquals(LocalDate.of(2026, 10, 25), locked.date)
+        assertEquals(RateEntryError.Unknown, locked.error)
+        assertFalse(locked.busy)
+        assertFalse(locked.closed)
+        assertFalse(locked.datePickerOpen)
+        assertEquals(1, commands.sent.size)
+
+        // Comprobar de nuevo asks with the same identifier; still unknown, still locked.
+        model.onAction(UsdRateEntryAction.Retry)
+        runCurrent()
+        assertEquals(
+            listOf(
+                "00000000-0000-4000-a000-000000000001",
+                "00000000-0000-4000-a000-000000000001"
+            ),
+            commands.asked.map { it.value }
+        )
+        assertEquals(RateEntryError.Unknown, model.state.value.error)
+        assertFalse(model.state.value.busy)
+        model.onAction(UsdRateEntryAction.Back)
+        assertFalse(model.state.value.closed)
+
+        // Once known not saved, the pad opens again with the draft kept.
+        commands.found = Outcome.Success(null)
+        model.onAction(UsdRateEntryAction.Retry)
+        runCurrent()
+        assertEquals(RateEntryError.NotSaved, model.state.value.error)
+        assertTrue(model.state.value.editable)
+        model.type("5")
+        assertEquals("40.005", model.state.value.rate)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
+    fun typingAndSavingAfterAnUnknownSaveNeverLeavesTheFormSaving() = runTest {
+        commands.answers += CommandOutcome.OutcomeUnknown(
+            (OperationId.of("00000000-0000-4000-a000-000000000001") as Outcome.Success).value
+        )
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        val model = entry()
+        model.type("4000")
+        model.onAction(UsdRateEntryAction.Submit)
+        runCurrent()
+
+        model.type("5")
+        model.onAction(UsdRateEntryAction.Submit)
+        runCurrent()
+
+        assertFalse(model.state.value.busy)
+        assertEquals(RateEntryError.Unknown, model.state.value.error)
+        assertEquals(1, commands.sent.size)
+        commands.found = Outcome.Success(committed().value.copy(movementIds = null))
+        model.onAction(UsdRateEntryAction.Retry)
+        runCurrent()
+        assertTrue(model.state.value.closed)
+    }
+
+    @Test
     fun aRestoredScreenKeepsTheDraftAndAsksAboutTheSaveInFlight() = runTest {
         val saved = SavedStateHandle()
         commands.answers += CommandOutcome.OutcomeUnknown(

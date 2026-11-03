@@ -431,6 +431,48 @@ class CategoryEditorScreenTest {
         ).assertExists()
     }
 
+    /** SELLO-154: October ended before the save; the form now shows November. */
+    private fun monthEnded(carry: Boolean, saved: List<EditPart> = emptyList()) = editing.copy(
+        changed = true,
+        targetMonth = october.plusMonths(1),
+        saveError = SaveError.MonthEnded,
+        monthEnded = MonthEnded(october, carry),
+        savedParts = saved
+    )
+
+    @Test
+    fun aLimitRefusedBecauseItsMonthEndedSaysSoAndWhichMonthIsShownNow() {
+        show(monthEnded(carry = false))
+
+        rule.onNodeWithTag(EDITOR_SAVE_ERROR_TAG).revealed().assertIsDisplayed()
+        rule.onNodeWithText(
+            "Octubre 2026 terminó y el límite no se guardó. Ahora ves Noviembre 2026: " +
+                "el límite que guardes vale desde ese mes."
+        ).assertExists()
+        rule.onNodeWithTag(EDITOR_SUBMIT_TAG).revealed().assertIsEnabled()
+    }
+
+    @Test
+    fun aMonthEndingAfterTheRenameSavedNamesTheRenameAndOnlyTheLimitAsNotSaved() {
+        show(monthEnded(carry = false, saved = listOf(EditPart.Name)))
+
+        rule.onNodeWithText(
+            "Se guardó: nombre. Octubre 2026 terminó y el límite no se guardó. " +
+                "Ahora ves Noviembre 2026: el límite que guardes vale desde ese mes."
+        ).revealed().assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_SAVED_PARTS_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun carryRefusedBecauseItsMonthEndedIsSaidAboutCarry() {
+        show(monthEnded(carry = true))
+
+        rule.onNodeWithText(
+            "Octubre 2026 terminó y no se empezó a pasar lo que sobra. " +
+                "Ahora ves Noviembre 2026: si lo activas, empieza en ese mes."
+        ).revealed().assertIsDisplayed()
+    }
+
     @Test
     fun whenOnlyPartWasSavedItSaysWhichPartAndThatTheRestWasNot() {
         show(

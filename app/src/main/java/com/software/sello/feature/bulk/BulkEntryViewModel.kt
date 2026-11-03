@@ -402,15 +402,18 @@ class BulkEntryViewModel(
                 else -> progress.update { it.copy(attempt = it.attempt + 1) }
             }
 
+            // An unresolved save is only checked again: leaving would lose the operation
+            // that tells whether it happened.
             BulkEntryAction.Back -> when {
-                now.busy -> Unit
+                now.busy || submission.pending -> Unit
                 now.recorded -> progress.update { it.copy(closed = true) }
                 now.typedLines > 0 -> progress.update { it.copy(confirmDiscard = true) }
                 else -> progress.update { it.copy(closed = true) }
             }
 
-            BulkEntryAction.DiscardConfirmed ->
+            BulkEntryAction.DiscardConfirmed -> if (!now.busy && !submission.pending) {
                 progress.update { it.copy(confirmDiscard = false, closed = true) }
+            }
 
             BulkEntryAction.KeepEditing -> progress.update { it.copy(confirmDiscard = false) }
 

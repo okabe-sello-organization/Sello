@@ -221,8 +221,14 @@ class UsdRateEntryViewModel(
 
     private fun settle(settled: Settled<CommittedInvestment, InvestmentRejection>?) {
         when (settled) {
-            // Something is still in flight and will settle; or nothing was left to ask about.
-            null -> if (!submission.pending) progress.update { it.copy(busy = false) }
+            // Nothing was sent or asked. An operation still unresolved is offered to ask
+            // about again; the form never stays saving with nothing on its way.
+            null -> progress.update {
+                it.copy(
+                    busy = false,
+                    error = if (submission.pending) RateEntryError.Unknown else it.error
+                )
+            }
 
             is Settled.Committed ->
                 progress.update { it.copy(busy = false, error = null, closed = true) }

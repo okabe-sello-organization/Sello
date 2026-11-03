@@ -61,4 +61,20 @@ class GoalEditorScreenshotTest {
 
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
+
+    /** Editar meta with a save whose outcome is unknown: Comprobar only, no ⋮ to delete. */
+    @Test
+    fun unresolvedSave() {
+        rule.showSello(Look()) {
+            GoalEditorScreen(
+                planned.copy(
+                    editing = true,
+                    changed = true,
+                    saveError = GoalSaveError.Unknown,
+                    unresolved = true
+                )
+            ) {}
+        }
+        rule.captureStill("src/test/screenshots/goal-editor-unresolved.png")
+    }
 }

@@ -427,4 +427,41 @@ class SchedulePolicyTest {
         val rent = recurrence(monthly(5), "2026-10-01")
         assertTrue(dates(rent, "2026-12-01", "2026-11-01").isEmpty())
     }
+
+    /**
+     * SELLO-145, rule 7: after a change on 2 Nov nothing dated 2 Nov or earlier is due. Twice
+     * a month the checkpoint is the day's second slot; any other rule has only slot 1.
+     */
+    @Test
+    fun aChangeLeavesTheCheckpointAtTheEndOfItsDay() {
+        val today = d("2026-11-02")
+        val secondSlot = Occurrence(d("2026-10-30"), 2)
+
+        assertEquals(
+            Occurrence(today, 1),
+            SchedulePolicy.handledAfterChange(monthly(15), secondSlot, today)
+        )
+        assertEquals(
+            Occurrence(today, 2),
+            SchedulePolicy.handledAfterChange(twice(1, 20), secondSlot, today)
+        )
+        assertEquals(
+            Occurrence(today, 1),
+            SchedulePolicy.handledAfterChange(monthly(15), null, today)
+        )
+        // Recorded on the day itself, its second slot: one slot a day covers it.
+        assertEquals(
+            Occurrence(d("2026-11-30"), 1),
+            SchedulePolicy.handledAfterChange(
+                monthly(15),
+                Occurrence(d("2026-11-30"), 2),
+                d("2026-11-30")
+            )
+        )
+        // A checkpoint already past the day stays where it is.
+        assertEquals(
+            Occurrence(d("2026-11-03"), 1),
+            SchedulePolicy.handledAfterChange(monthly(3), Occurrence(d("2026-11-03"), 1), today)
+        )
+    }
 }
