@@ -1,7 +1,6 @@
 package com.software.sello.data.repository
 
 import android.database.SQLException
-import android.database.sqlite.SQLiteException
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.entity.OperationReceiptEntity
@@ -87,7 +86,8 @@ internal suspend fun <T> SelloDatabase.runCommand(decide: suspend () -> T): Comm
         // Raised before anything is committed, so this is certain, never Unknown. Only
         // this is caught: any other arithmetic fault is a bug and stays one.
         CommandRun.RolledBack(exhausted.failure)
-    } catch (failure: SQLiteException) {
+    } catch (failure: SQLException) {
+        // Any database error, SQLite's own or one raised above it.
         if (everyStatementRan) unknown() else rolledBack(failure)
     } catch (failure: IllegalStateException) {
         if (everyStatementRan) unknown() else rolledBack(failure)
