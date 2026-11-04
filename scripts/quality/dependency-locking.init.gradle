@@ -1,0 +1,55 @@
+// Run against the real module configurations, offline, with and without
+// -Didea.sync.active=true. See docs/development/setup.md.
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.dsl.LockMode
+import org.gradle.api.artifacts.result.UnresolvedDependencyResult
+
+gradle.beforeProject { project ->
+    if (project.path != ':') {
+        project.tasks.register('verifyDependencyLocking') {
+            doLast {
+                def syncing = System.getProperty('idea.sync.active') == 'true'
+                def expectedMode = syncing ? LockMode.DEFAULT : LockMode.STRICT
+                def original = project.configurations.findByName('debugRuntimeClasspath') ?:
+                    project.configurations.getByName('runtimeClasspath')
+                def modules = { configuration ->
+                    def result = configuration.incoming.resolutionResult
+                    result.allDependencies.each { dependency ->
+                        if (dependency instanceof UnresolvedDependencyResult) {
+                            throw dependency.failure
+                        }
+                    }
+                    result.allComponents.findAll { it.id instanceof ModuleComponentIdentifier }
+                        .collect { it.id.displayName }.toSet()
+                }
+                def lockedModules = modules(original)
+                def copy = original.copyRecursive()
+                if (syncing) {
+                    assert modules(copy) == lockedModules :
+                        "${project.path}: IDE copy changed resolved dependency versions"
+                } else {
+                    def rejected = false
+                    try {
+                        modules(copy)
+                    } catch (Exception failure) {
+                        def causes = []
+                        for (def cause = failure; cause != null; cause = cause.cause) {
+                            causes.add(cause.message ?: '')
+                        }
+                        rejected = causes.any {
+                            it.contains(copy.name) && it.contains('does not have lock state')
+                        }
+                        if (!rejected) {
+                            throw failure
+                        }
+                    }
+                    assert rejected : "${project.path}: strict locking accepted an untracked copy"
+                }
+                assert project.dependencyLocking.lockMode.get() == expectedMode :
+                    "${project.path}: expected ${expectedMode} locking"
+                println "${project.path}: ${expectedMode}; ${lockedModules.size()} locked modules; " +
+                    (syncing ? 'IDE copy matches' : 'untracked copy rejected')
+            }
+        }
+    }
+}
