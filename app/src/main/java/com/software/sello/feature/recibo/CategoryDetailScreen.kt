@@ -61,6 +61,7 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
+import com.software.sello.presentation.read.StaleSlip
 import java.time.YearMonth
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -136,6 +137,7 @@ fun CategoryDetailScreen(
                 }
                 if (state.stale) {
                     StaleSlip(
+                        stringResource(R.string.recibo_stale),
                         { onAction(CategoryDetailAction.Retry) },
                         Modifier.testTag(CATEGORY_DETAIL_STALE_TAG)
                     )

@@ -8,6 +8,7 @@ import com.software.sello.domain.model.IncomePlan
 import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ResumenSnapshot
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.policy.IncomePlanPolicy
 import com.software.sello.domain.policy.SuggestedLimit
 import com.software.sello.domain.port.FinancialClock
@@ -24,6 +25,7 @@ import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,7 +59,9 @@ data class IncomeSplit(
     val over: Boolean,
     val allocatedShare: Float,
     /** A category carries this month: Sin asignar still counts base limits only (CP17). */
-    val carrying: Boolean = false
+    val carrying: Boolean = false,
+    /** The summary's last refresh failed: these are its figures as last read. */
+    val stale: Boolean = false
 )
 
 /**
@@ -153,10 +157,26 @@ class IncomeHistoryViewModel(
         it.date
     }.stateIn(viewModelScope, SharingStarted.Eagerly, clock.today.value.date)
 
-    /** Null while it is read, or when it could not be: never shown as zero. */
-    val split: StateFlow<IncomeSplit?> = session.selectedMonth
-        .flatMapLatest(snapshots::observe)
-        .map { read -> (read as? ReadState.Ready)?.value?.let(::split) }
+    private val attempts = MutableStateFlow(0)
+
+    /** The month's summary as last read, so a failed refresh or a Retry never blanks the split. */
+    private val lastSummary = LastGoodRead<ResumenSnapshot, SnapshotFailure>()
+
+    /**
+     * Null while it is read, or when it never could be: never shown as zero. A refresh that
+     * fails keeps the split as last read, [IncomeSplit.stale].
+     */
+    val split: StateFlow<IncomeSplit?> = combine(session.selectedMonth, attempts) { month, _ ->
+        month
+    }
+        .flatMapLatest { month -> lastSummary.keep(month, snapshots.observe(month)) }
+        .map { read ->
+            when (read) {
+                ReadState.Loading -> null
+                is ReadState.Ready -> split(read.value)
+                is ReadState.Failed -> read.lastGood?.let(::split)?.copy(stale = true)
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private fun split(summary: ResumenSnapshot): IncomeSplit {
@@ -179,7 +199,6 @@ class IncomeHistoryViewModel(
 
     private val shown = MutableStateFlow<IncomeHistoryState>(IncomeHistoryState.Loading)
     val state: StateFlow<IncomeHistoryState> = shown.asStateFlow()
-    private val attempts = MutableStateFlow(0)
     private var cursor: IncomeCursor? = null
     private var snapshot: IncomeMonth? = null
     private var epoch = 0

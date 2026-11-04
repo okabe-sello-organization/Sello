@@ -47,6 +47,7 @@ import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
 import com.software.sello.presentation.month.monthNames
 import java.time.LocalDate
+import java.time.YearMonth
 
 /**
  * The month's income: what came in and where it went, from the same summary Resumen
@@ -91,7 +92,7 @@ fun IncomeHistoryScreen(
             }
 
             is IncomeHistoryState.Ready -> if (state.lines.isEmpty() && !state.more) {
-                staleItem(state, onAction)
+                staleItem(state, split, onAction)
                 item {
                     EmptySlip(
                         title = stringResource(
@@ -107,8 +108,8 @@ fun IncomeHistoryScreen(
                 }
                 planItem(plan, today, onAction)
             } else {
-                staleItem(state, onAction)
-                item { CameIn(state, split, months.inSentence(state.month)) }
+                staleItem(state, split, onAction)
+                item { CameIn(state, split, today, months.inSentence(state.month)) }
                 planItem(plan, today, onAction)
                 assign?.let { item { AssignNote(it, onAssign, onAction) } }
                 item {
@@ -173,9 +174,10 @@ fun IncomeHistoryScreen(
 /** The last refresh failed: these are the figures as last read, and Reintentar reads again. */
 private fun LazyListScope.staleItem(
     state: IncomeHistoryState.Ready,
+    split: IncomeSplit?,
     onAction: (IncomeHistoryAction) -> Unit
 ) {
-    if (!state.stale) return
+    if (!state.stale && split?.stale != true) return
     item {
         ErrorSlip(
             stringResource(R.string.income_stale),
@@ -293,16 +295,29 @@ private fun MonthPlan(plan: IncomePlanView, today: LocalDate) {
 }
 
 /**
- * "Entró en octubre" and the recorded total; under the tear line, the split between
- * category budgets and what is unassigned. A negative unassigned amount is signed and
- * red, with the two facts behind it, and draws no segment of its own. Without the
- * summary, only the total is shown: no figure stands in for one that was not read.
+ * "Entró en octubre" and the summary's income, dated up to today as Resumen counts it;
+ * under the tear line, the split between category budgets and what is unassigned. A
+ * negative unassigned amount is signed and red, with the two facts behind it, and draws
+ * no segment of its own. Without the summary, a month before today's shows only its
+ * recorded total, which holds nothing dated after today; today's month or a later one
+ * keeps a skeleton, since its total can count income still to come. No figure stands in
+ * for one that was not read.
  */
 @Composable
-private fun CameIn(state: IncomeHistoryState.Ready, split: IncomeSplit?, month: String) {
+private fun CameIn(
+    state: IncomeHistoryState.Ready,
+    split: IncomeSplit?,
+    today: LocalDate,
+    month: String
+) {
+    // What came in up to today, as Resumen counts it; the list's total has every income.
+    val amount = split?.income ?: state.total.takeIf { state.month < YearMonth.from(today) }
+    if (amount == null) {
+        return SlipSkeleton(Modifier.testTag("income.hero.pending"), lines = 1)
+    }
     AnswerSlip(
         label = stringResource(R.string.income_came_in, month),
-        amount = state.total,
+        amount = amount,
         stamp = null,
         ink = StampInk.Neutral,
         modifier = Modifier.testTag("income.hero")

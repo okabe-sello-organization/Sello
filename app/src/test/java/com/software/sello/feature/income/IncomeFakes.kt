@@ -26,6 +26,7 @@ import com.software.sello.domain.port.IncomeUndoOffer
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RestoreIncome
 import com.software.sello.feature.expense.uuid
+import com.software.sello.testing.asNewObservation
 import com.software.sello.testing.pesos
 import java.time.Instant
 import java.time.LocalDate
@@ -114,7 +115,7 @@ class HandIncomeCommands : IncomeCommands {
 }
 
 /** What "storage" holds of income, set by the test. A month's total is published by hand. */
-class HandIncomeReads : IncomeReads {
+open class HandIncomeReads : IncomeReads {
     val stored = mutableMapOf<IncomeId, Income>()
     var failure: StorageFailure? = null
     val pages = mutableListOf<Pair<IncomeCursor?, Int>>()
@@ -167,4 +168,10 @@ class HandIncomeReads : IncomeReads {
 
     override fun observeMonth(month: YearMonth): Flow<IncomeMonthState> =
         of(month).onStart { observed += month }
+}
+
+/** [HandIncomeReads] whose every observation is new, as `ObservedReads` makes the real ones. */
+class NewObservationIncomeReads : HandIncomeReads() {
+    override fun observeMonth(month: YearMonth): Flow<IncomeMonthState> =
+        super.observeMonth(month).asNewObservation()
 }

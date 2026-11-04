@@ -261,6 +261,18 @@ class ScheduleScreensTest {
     }
 
     @Test
+    fun aFailedRefreshKeepsTheMonthAsLastReadUnderTheOlderNotice() {
+        list(ready.copy(stale = true))
+
+        rule.onNodeWithTag("schedules.stale").assertIsDisplayed()
+        rule.onNodeWithText("No pudimos leer tus pagos fijos").assertDoesNotExist()
+        rule.onNodeWithTag("schedules.add").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(listOf<SchedulesAction>(SchedulesAction.Retry), listActions)
+    }
+
+    @Test
     fun aFailedReadSaysSoAndCanBeReadAgain() {
         list(SchedulesState.Failed)
         rule.onNodeWithTag("schedules.add").assertDoesNotExist()

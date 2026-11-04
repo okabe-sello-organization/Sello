@@ -22,6 +22,7 @@ import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -34,6 +35,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -140,16 +142,17 @@ class SchedulesViewModelTest {
     private fun SchedulesViewModel.row(number: Int) =
         (ready.rows + ready.ended).single { it.id == scheduleId(number).value }
 
-    private fun categories(today: String = "2026-10-22") = snapshots.ready(
-        monthOf(
-            today,
-            listOf(
-                categoryIn(1, "Hogar", 400_000, icon = "home"),
-                categoryIn(2, "Transporte", 100_000, icon = "directions_bus"),
-                categoryIn(3, "Educación", null, archived = true, icon = "school")
+    private fun categories(today: String = "2026-10-22", into: HandSnapshots = snapshots) =
+        into.ready(
+            monthOf(
+                today,
+                listOf(
+                    categoryIn(1, "Hogar", 400_000, icon = "home"),
+                    categoryIn(2, "Transporte", 100_000, icon = "directions_bus"),
+                    categoryIn(3, "Educación", null, archived = true, icon = "school")
+                )
             )
         )
-    )
 
     private fun list(saved: SavedStateHandle = SavedStateHandle()) =
         SchedulesViewModel(saved, reads, snapshots, clock, money)
@@ -247,14 +250,49 @@ class SchedulesViewModelTest {
         reads.state.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
         val schedulesFailed = model.state.value
         publish(rent)
-        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
-        val categoriesFailed = model.state.value
-        categories()
         model.onAction(SchedulesAction.Retry)
+        val retried = model.ready
+
+        snapshots.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        val categoriesFailed = list().state.value
 
         assertEquals(SchedulesState.Failed, schedulesFailed)
+        assertEquals(1 to false, retried.rows.size to retried.stale)
         assertEquals(SchedulesState.Failed, categoriesFailed)
-        assertEquals(1, model.ready.rows.size)
+    }
+
+    /** SELLO-151: what was read stays, marked older, through failed refreshes and retries. */
+    @Test
+    fun aRefreshThatFailsKeepsTheLastGoodMonthMarkedOlderAndRetryReadsAgain() {
+        val observed = NewObservationSnapshots()
+        val model = SchedulesViewModel(SavedStateHandle(), reads, observed, clock, money)
+        categories(into = observed)
+        publish(rent, bills, bus, course, salary)
+        recordedSoFar()
+        val read = model.ready
+
+        reads.state.value = ReadState.Failed(StorageFailure.Unavailable("x"), null)
+        val bookFailed = model.state.value
+        // Reintentar starts new observations, which know nothing of the last good read.
+        model.onAction(SchedulesAction.Retry)
+        val retried = model.state.value
+        observed.of(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        val bothFailed = model.state.value
+        model.onAction(SchedulesAction.TabPicked(ScheduleTab.Incomes))
+        val otherTab = model.ready
+        publish(rent, bills, bus, course, salary)
+        categories(into = observed)
+        model.onAction(SchedulesAction.TabPicked(ScheduleTab.Payments))
+
+        assertFalse(read.stale)
+        assertEquals(read.copy(stale = true), bookFailed)
+        assertEquals(read.copy(stale = true), retried)
+        assertEquals(read.copy(stale = true), bothFailed)
+        // 990.000 through and 200.000 to come, as last read.
+        assertEquals("990.000 pesos", (bothFailed as SchedulesState.Ready).plan!!.done.spoken)
+        assertTrue(otherTab.stale)
+        assertEquals(listOf(scheduleId(5).value), otherTab.rows.map { it.id })
+        assertEquals(read, model.ready)
     }
 
     /**

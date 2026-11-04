@@ -68,6 +68,14 @@ class ExpenseEntryScreenshotTest {
     @Test
     fun violetaLight() = capture(Look(ink = SelloInk.Violeta))
 
+    /** A refresh failed after the categories were read: the draft stays under the notice. */
+    @Test
+    fun stale() {
+        val look = Look()
+        rule.showSello(look) { ExpenseEntryScreen(ready.copy(stale = true), dateLabels(), {}) }
+        rule.captureStill("src/test/screenshots/expense-entry-stale-${look.label}.png")
+    }
+
     /** Correcting, after a deletion whose outcome is unknown: only checking again is offered. */
     @Test
     fun deleteUnknown() {

@@ -11,6 +11,7 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
 import com.software.sello.domain.model.SourceName
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.policy.AmountDraft
@@ -26,6 +27,7 @@ import com.software.sello.domain.port.DeleteIncome
 import com.software.sello.domain.port.EditIncome
 import com.software.sello.domain.port.FinancialClock
 import com.software.sello.domain.port.IncomeCommands
+import com.software.sello.domain.port.IncomeMonth
 import com.software.sello.domain.port.IncomeMonthState
 import com.software.sello.domain.port.IncomeReads
 import com.software.sello.domain.port.IncomeRejection
@@ -39,6 +41,7 @@ import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import com.software.sello.presentation.recurrence.FollowingSchedule
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatDraft
@@ -132,10 +135,17 @@ class IncomeFormViewModel(
         drafts.read() ?: Draft(AmountDraft.Empty, "salary", "", clock.today.value.date, "")
     )
     private val progress = MutableStateFlow(Progress(original = originals.read()))
+
+    /**
+     * What the form last read, kept for the whole form rather than per month: it needs the
+     * history generation, not a month's figures. A refresh that fails, or a Reintentar,
+     * keeps the draft, marked older; storage refuses a command for a generation gone since.
+     */
+    private val lastGood = LastGoodRead<IncomeMonth, StorageFailure>()
     private val month = combine(
         draft.map { YearMonth.from(it.date) }.distinctUntilChanged(),
         progress.map { it.attempt }.distinctUntilChanged()
-    ) { month, _ -> month }.flatMapLatest(reads::observeMonth)
+    ) { month, _ -> month }.flatMapLatest { lastGood.keep(Unit, reads.observeMonth(it)) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     /** What the composer is writing and its text; kept in [saved] so a restart reopens it. */
@@ -807,9 +817,12 @@ class IncomeFormViewModel(
             loading =
                 progress.recorded == null && !progress.loadFailed &&
                     (month is ReadState.Loading || waiting),
+            // An error only when nothing was ever read; after a read the draft stays.
             loadFailed =
                 progress.recorded == null &&
-                    (month is ReadState.Failed || progress.loadFailed),
+                    ((month is ReadState.Failed && month.lastGood == null) || progress.loadFailed),
+            stale = progress.recorded == null && month is ReadState.Failed &&
+                month.lastGood != null,
             amount = amount?.let { money.format(it.money) },
             amountText = (draft.amount as? AmountDraft.Rejected)?.original,
             amountProblem = if (draft.amount is AmountDraft.Rejected) {

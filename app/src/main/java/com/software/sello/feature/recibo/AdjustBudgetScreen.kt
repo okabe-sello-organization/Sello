@@ -58,6 +58,7 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.read.StaleSlip
 import java.util.Locale
 
 /** The screen and its sheet, each from its own view model; Back closes the sheet first. */
@@ -133,7 +134,11 @@ fun AdjustBudgetScreen(
                 )
 
                 is AdjustBudgetState.Ready -> {
-                    if (state.stale) StaleSlip({ onAction(AdjustBudgetAction.Retry) })
+                    if (state.stale) {
+                        StaleSlip(stringResource(R.string.recibo_stale), {
+                            onAction(AdjustBudgetAction.Retry)
+                        })
+                    }
                     MonthSlip(state, onReserved = { onAction(AdjustBudgetAction.OpenReserved) })
                     CategoriesSlip(state) { row ->
                         if (row.archived) {

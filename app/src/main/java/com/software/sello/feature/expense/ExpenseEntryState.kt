@@ -91,6 +91,8 @@ data class ExpenseSeveral(
 data class ExpenseEntryState(
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
+    /** The month's last refresh failed: the categories are those last read; the draft stays. */
+    val stale: Boolean = false,
     val amount: MoneyTextValue? = null,
     val amountText: String? = null,
     val amountProblem: AmountProblem? = null,

@@ -5,8 +5,10 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -222,11 +224,67 @@ class IncomeHistoryScreenTest {
         )
     }
 
+    /** 150.000 today and 100.000 dated tomorrow: what came in is Resumen's 150.000. */
+    @Test
+    fun theHeroLeavesOutIncomeDatedAfterTodayAsResumenDoes() {
+        val tomorrow = IncomeLine("i2", pesos("100.000"), "salary", null, today.plusDays(1), null)
+        show(
+            IncomeHistoryState.Ready(october, pesos("250.000"), listOf(tomorrow, salary), false),
+            split
+        )
+
+        rule.onAllNodes(hasAnyAncestor(hasTestTag("income.hero")) and hasText("150.000"))
+            .assertCountEquals(1)
+        rule.onAllNodes(hasAnyAncestor(hasTestTag("income.hero")) and hasText("250.000"))
+            .assertCountEquals(0)
+        rule.onNodeWithText("250.000").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun aSplitAsLastReadIsMarkedOlderAndRetryReadsAgain() {
+        show(ready(), split.copy(stale = true))
+
+        rule.onNodeWithTag("income.stale").assertIsDisplayed()
+        rule.onNodeWithTag("income.split").assertIsDisplayed()
+        rule.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(listOf<IncomeHistoryAction>(IncomeHistoryAction.Retry), actions)
+    }
+
+    /** 150.000 today and 100.000 dated tomorrow, before the summary is read. */
+    @Test
+    fun withoutTheSummaryTodaysMonthNeverShowsATotalWithIncomeStillToCome() {
+        val tomorrow = IncomeLine("i2", pesos("100.000"), "salary", null, today.plusDays(1), null)
+        show(
+            IncomeHistoryState.Ready(october, pesos("250.000"), listOf(tomorrow, salary), false),
+            split = null
+        )
+
+        rule.onNodeWithTag("income.hero.pending").assertIsDisplayed()
+        rule.onNodeWithTag("income.hero").assertDoesNotExist()
+        rule.onAllNodes(hasAnyAncestor(hasTestTag("income.hero.pending")) and hasText("250.000"))
+            .assertCountEquals(0)
+        rule.onNodeWithTag("income.line.i2").performScrollTo().assertIsDisplayed()
+    }
+
+    /** A month before today's holds nothing dated after today: its total is what came in. */
     @Test
     fun withoutTheMonthsSummaryOnlyTheTotalIsShownNeverAZeroSplit() {
-        show(ready(), split = null)
+        val september =
+            IncomeLine("i1", pesos("150.000"), "salary", null, today.minusMonths(1), null)
+        show(
+            IncomeHistoryState.Ready(
+                october.minusMonths(1),
+                pesos("150.000"),
+                listOf(september),
+                false
+            ),
+            split = null
+        )
 
-        rule.onNodeWithText("Entró en octubre").assertIsDisplayed()
+        rule.onNodeWithText("Entró en septiembre").assertIsDisplayed()
+        rule.onAllNodes(hasAnyAncestor(hasTestTag("income.hero")) and hasText("150.000"))
+            .assertCountEquals(1)
         rule.onNodeWithTag("income.split").assertDoesNotExist()
         rule.onNodeWithText("Sin asignar").assertDoesNotExist()
         rule.onNodeWithTag("income.line.i1").performScrollTo().assertIsDisplayed()

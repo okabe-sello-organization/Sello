@@ -42,6 +42,7 @@ import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.month.monthNames
 import com.software.sello.presentation.read.LastGoodRead
+import com.software.sello.presentation.read.StaleSlip
 import java.time.LocalDate
 import java.time.YearMonth
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -184,7 +185,15 @@ fun UpcomingPaymentsScreen(
             }
 
             is UpcomingState.Empty -> {
-                if (state.stale) item { StaleSlip(onRetry, Modifier.testTag(UPCOMING_STALE_TAG)) }
+                if (state.stale) {
+                    item {
+                        StaleSlip(
+                            stringResource(R.string.recibo_stale),
+                            onRetry,
+                            Modifier.testTag(UPCOMING_STALE_TAG)
+                        )
+                    }
+                }
                 item {
                     EmptySlip(
                         title = stringResource(
@@ -200,7 +209,15 @@ fun UpcomingPaymentsScreen(
             }
 
             is UpcomingState.Ready -> {
-                if (state.stale) item { StaleSlip(onRetry, Modifier.testTag(UPCOMING_STALE_TAG)) }
+                if (state.stale) {
+                    item {
+                        StaleSlip(
+                            stringResource(R.string.recibo_stale),
+                            onRetry,
+                            Modifier.testTag(UPCOMING_STALE_TAG)
+                        )
+                    }
+                }
                 item {
                     val count = pluralStringResource(
                         R.plurals.recibo_reserved_payments,
