@@ -324,6 +324,21 @@ class ExpenseEntryScreenTest {
     }
 
     @Test
+    fun aFailedRefreshKeepsTheDraftEditableUnderTheOlderNoticeAndRetryReadsAgain() {
+        show(complete.copy(stale = true))
+
+        rule.onNodeWithTag(ENTRY_STALE_TAG).assertIsDisplayed()
+        rule.onNodeWithText(
+            "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día."
+        ).assertIsDisplayed()
+        rule.onNodeWithTag(ENTRY_LOAD_FAILED_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(ENTRY_SUBMIT_TAG).assertIsEnabled()
+        rule.onNodeWithText("Reintentar").performClick()
+
+        assertEquals(listOf<ExpenseEntryAction>(ExpenseEntryAction.Retry), actions)
+    }
+
+    @Test
     fun whenCategoriesCannotBeReadThereIsNoFormAndRetryIsOffered() {
         show(empty.copy(loadFailed = true))
 

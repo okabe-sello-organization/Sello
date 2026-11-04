@@ -79,6 +79,8 @@ data class IncomeSeveral(
 data class IncomeFormState(
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
+    /** The month's last refresh failed: the form keeps what it read and the draft stays. */
+    val stale: Boolean = false,
     val amount: MoneyTextValue? = null,
     val amountText: String? = null,
     val amountProblem: IncomeAmountProblem? = null,

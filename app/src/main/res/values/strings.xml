@@ -308,6 +308,8 @@
     <string name="category_detail_delete_changed">Ese gasto cambió mientras tanto. No se borró; revísalo.</string>
     <string name="category_detail_delete_data_changed">Tus datos cambiaron mientras tanto. No se borró nada.</string>
     <string name="category_detail_delete_failed">No se pudo borrar. El gasto sigue anotado.</string>
+    <string name="category_detail_delete_not_done">Ese gasto no se borró.</string>
+    <string name="category_expenses_delete_unknown_title">Falta comprobar el borrado</string>
     <string name="correction_deleted">Gasto borrado</string>
     <string name="correction_deleted_spoken">Gasto borrado. Puedes deshacerlo durante 6 segundos.</string>
     <string name="correction_undo">Deshacer</string>
@@ -1018,6 +1020,7 @@
     <string name="restore_apply_ordering">Aplicar orden</string>
     <string name="restore_apply_investments">Aplicar inversiones</string>
     <string name="restore_apply_all">Aplicar preferencias</string>
+    <string name="restore_preferences_unreadable">Tus gastos, ingresos, categorías y presupuestos ya se restauraron. No pudimos leer las preferencias del respaldo; puedes elegirlas en Configuración.</string>
     <string name="restore_pending_note">Solo se aplicarán las preferencias indicadas. Tu historial no se reemplazará otra vez.</string>
     <plurals name="restore_categories">
         <item quantity="one">%s categoría</item>
@@ -1811,7 +1814,7 @@
         <item quantity="one">cambió el límite de %d mes</item>
         <item quantity="other">cambió el límite de %d meses</item>
     </plurals>
-    <string name="correction_delete_unknown">No sabemos si el gasto se borró. Revisa la lista antes de volver a intentarlo.</string>
+    <string name="correction_delete_unknown">No sabemos si el gasto se borró. Compruébalo antes de volver a intentarlo.</string>
     <string name="correction_not_deleted">No se borró el gasto. Tus datos cambiaron o no se pudo guardar; vuelve a intentarlo.</string>
     <string name="carry_with_change">%1$s · %2$s</string>
     <string name="catch_up_carry_title">Al registrar tus pagos pendientes cambió lo que sobra o falta</string>

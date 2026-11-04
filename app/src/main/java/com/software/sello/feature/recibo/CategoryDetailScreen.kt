@@ -61,6 +61,7 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
+import com.software.sello.presentation.read.StaleSlip
 import java.time.YearMonth
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -136,6 +137,7 @@ fun CategoryDetailScreen(
                 }
                 if (state.stale) {
                     StaleSlip(
+                        stringResource(R.string.recibo_stale),
                         { onAction(CategoryDetailAction.Retry) },
                         Modifier.testTag(CATEGORY_DETAIL_STALE_TAG)
                     )
@@ -528,6 +530,17 @@ private fun ExpenseList(
                     .testTag(CATEGORY_DETAIL_DELETE_PROBLEM_TAG)
                     .semantics { liveRegion = LiveRegionMode.Polite }
             )
+            // Whether it was deleted is asked again with the same operation, never resent.
+            if (problem == DeleteProblem.Unknown) {
+                SelloButton(
+                    text = stringResource(R.string.expense_edit_check_deleted),
+                    onClick = { onAction(CategoryDetailAction.CheckDelete) },
+                    kind = ButtonKind.Text,
+                    loading = state.checkingDelete,
+                    contentPadding = PaddingValues(end = SelloTheme.spacing.md),
+                    modifier = Modifier.testTag(CATEGORY_DETAIL_CHECK_DELETE_TAG)
+                )
+            }
         }
         list.rows.take(4).forEachIndexed { index, row ->
             // Each row is its expense, not its place in the list: a new expense at the
@@ -563,6 +576,7 @@ internal fun DeleteProblem.text() = when (this) {
     DeleteProblem.DataChanged -> R.string.category_detail_delete_data_changed
     DeleteProblem.Failed -> R.string.category_detail_delete_failed
     DeleteProblem.Unknown -> R.string.correction_delete_unknown
+    DeleteProblem.NotDone -> R.string.category_detail_delete_not_done
 }
 
 @Composable
@@ -598,3 +612,4 @@ const val CATEGORY_DETAIL_PAST_HELP_TAG = "detail:past-help"
 const val CATEGORY_DETAIL_PAST_LIMIT_ANNOUNCEMENT_TAG = "detail:past-limit-announcement"
 const val CATEGORY_DETAIL_HINT_TAG = "detail:hint"
 const val CATEGORY_DETAIL_DELETE_PROBLEM_TAG = "detail:delete-problem"
+const val CATEGORY_DETAIL_CHECK_DELETE_TAG = "detail:check-delete"

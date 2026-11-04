@@ -56,6 +56,15 @@ The restored rows equal the originals for all five.
 | Crash between the commit and the file rename | Replayed by receipt, not replaced twice | `askingAgainAfterACrashBeforeTheFileMovedReplaysTheSameReplacement` |
 | Preferences fail after the commit | "Historial financiero restaurado" with only those preferences; retried without a second replacement, also after a restart | `preferencesThatFailAreNamedAndRetriedWithoutASecondReplacement` |
 | Another file while preferences are pending | Refused until they are finished | `aPendingReplacementBlocksStagingAnotherFile` |
+| The file cannot move after the commit | Every preference it brings is named pending and none applied; the next look moves it, then applies them | `aFileThatCannotMoveAfterTheCommitIsNeverReportedComplete` |
+| A restore file cannot be read | Before the commit: refused, nothing written. Its `applied` list: every group stays pending, none applied twice. Never a crash | `aStagedFileThatCannotBeReadFailsTheReplacementInsteadOfCrashing`, `anAppliedListThatCannotBeReadAppliesNothingAgainAndStaysPending` |
+| `restored.json` cannot be read (I/O error) | Unknown, never nothing: nothing applied, files kept, until it reads | `aRestoredFileThatCannotBeReadIsUnknownNeverNothing` |
+| `restored.json` reads but is damaged | Cleared with its `applied` list and manifest; said once that its preferences could not be applied; backups and restores go on | `aDamagedRestoredFileIsClearedSaidOnceAndBackupsGoOn`, `RestoreViewModelTest.preferencesThatCouldNotBeReadAreSaidOnceAndThenBackupsAreBack` |
+| The manifest after the move cannot be read | Not needed: the receipt at the history's generation says whose `restored.json` is | `aManifestThatCannotBeReadAfterTheMoveDoesNotHoldTheRestoreUp` |
+| A later restore committed with the clock set back | Still the owner: found by generation, not by time | `aLaterRestoreCommittedWhileTheClockWasBackStillAppliesItsPreferences` |
+| `restored.json` damaged beside a staged file | Cleared and said once; the staged file and its manifest stay | `aDamagedRestoredFileBesideAStagedOneIsStillClearedAndSaidOnce` |
+| A staged manifest cut short or naming no operation | Its replacement committed (by operation, or by the file's digest against the receipt with nothing written since): moved and finished. Never committed, or the same bytes staged again after changes: cleared. The file damaged too beside a current restore: said once | `aManifestCutShortWhoseReplacementCommittedIsFinishedNotLeftUnknown`, `aManifestNamingNoOperationBesideAReplacedFileIsFinishedByItsReceipt`, `aManifestNamingNoOperationBesideAFileNeverReplacedIsCleared`, `theSameFileStagedAgainAfterLaterChangesIsNeverTakenForTheEarlierRestore`, `aCommittedRestoresStagedFileDamagedWithItsManifestIsSaidOnceNotForgotten` |
+| Confirmed, staged in this process, after a restart or from the start-up screen | The file is parsed once, on the computation dispatcher, never on the caller | `aRestoreConfirmedAfterItsStageParsesTheFileNoMore`, `aRestoreAfterARestartParsesItsFileOnceAndNotOnTheCaller`, `aFileTheStartUpCheckReadIsStagedAndRestoredWithoutParsingAgain`, `StartupTest` |
 | Leaving after a restore, by Back or the top bar's arrow | The app starts again on the restored history | `RestoreJourneyTest`, including `theTopBarsBackArrowAfterARestoreStartsTheAppAgain` |
 
 ## Reset
@@ -68,6 +77,16 @@ The restored rows equal the originals for all five.
 | Process ends before the commit | The pending file is forgotten; nothing erased | `anEraseThatNeverCommittedIsForgottenAndChangesNothing` |
 | Caller cancelled around the commit | Found by receipt; asking again never erases twice | `aCallerCancelledAroundTheCommitStillFindsTheEraseDoneAndNeverErasesTwice` |
 | Preferences fail after the commit | Named; finished later, once, without a second erase | `preferencesThatFailStayPendingAndAreFinishedLaterWithoutASecondErase` |
+| Preferences fail after the commit, then a restore | Refused until the erase's preferences reset; then the backup's land on first-run values and stay at every start; a new erase is accepted | `EraseThenRestoreTest.anEraseWhosePreferencesFailedNeverUndoesTheRestoreMadeAfterIt` |
+| The same, with a backup that holds no preferences | First-run values, nothing of the erased history's | `aBackupWithoutPreferencesStillLeavesNoneOfTheErasedHistorysBehind` |
+| The same, with the restore's preferences pending or its move cut short | `restored.json` or the staged file is kept and applied at the next start | `aRestoresPendingFileOutlivesAnEraseThatCouldNotFinishBeforeIt`, `aRestoreCutShortAfterItsCommitIsFinishedAfterAnEraseThatCouldNotFinish` |
+| The kept copy could not go, then a restore | Deleted at the next start all the same | `theCopyKeptAsideGoesEvenAfterARestoreReplacedTheErasedHistory` |
+| An older restore's preferences pending, and the erase cannot empty its folder | Forgotten, never applied over the erase | `anOlderRestoresPendingPreferencesAreNeverAppliedAfterAnErase` |
+| The same, with the manifest gone and `restored.json` left | Forgotten: no restore made the history now | `aRestoredFileLeftByAnErasedHistoryWithoutItsManifestIsNeverApplied` |
+| A restore committed without resetting the erase's preferences first (an older build) | The erase only marks them done; the restored ones stay | `aReplacedEraseOnlyMarksItsPreferencesDoneAndNeverWipesTheRestoredOnes` |
+| The erase's marker is not a file, or has a malformed escape | No erase owed: removed or read as damaged; restores and erases go on | `somethingThatIsNotAFileInTheMarkersPlaceNeverHoldsARestoreUp`, `aMarkerWithAMalformedEscapeIsReadAsDamagedNeverACrash` |
+| `compact.pending` cannot be written | Compacted all the same; the erase's file stays to look at again | `anEraseIsCompactedEvenWhenWhatItOwesCannotBeWrittenDown` |
+| Compaction's checkpoint kept busy | Not compacted: `compact.pending` stays and it is retried at the next start; restores and new erases go on | `aCompactionKeptBusyStaysOwedAndIsDoneLaterWithoutBlockingAnything` |
 | What survives | Profile and one `history.reset` receipt; no erased name or note in the file's bytes | `nothingLeftInTheFilesHoldsAnOldNameOrNote` |
 | After the erase | A new category and expense from empty; a backup restores across it | `theNewHistoryCanBeUsedFromEmpty`; `RecoveryRetentionTest` |
 

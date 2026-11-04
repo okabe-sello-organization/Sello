@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CheckedBackup
+import com.software.sello.domain.port.CheckedBackupFile
 import com.software.sello.domain.port.DocumentSource
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
@@ -34,8 +35,13 @@ sealed interface StartupState {
 /** A graph built on storage that opened: its view models, and restores into that storage. */
 class Started(val viewModels: ViewModelProvider.Factory, val restores: Restores)
 
-/** A chosen file that passed the whole-file check, held until it is restored or forgotten. */
-class ChosenBackup(val bytes: ByteArray, val checked: CheckedBackup)
+/**
+ * A chosen file that passed the whole-file check, held until it is restored or forgotten.
+ * The restore stages [file] itself, so what the check read is not read again.
+ */
+class ChosenBackup(val file: CheckedBackupFile) {
+    val checked: CheckedBackup get() = file.checked
+}
 
 /**
  * Opens the data once for the process and keeps the result. [start] opens storage and
@@ -141,7 +147,7 @@ class Startup(
         }
         restoring = started
         chosen = null
-        val staged = when (val stage = started.restores.stage(backup.bytes)) {
+        val staged = when (val stage = started.restores.stage(backup.file)) {
             is Outcome.Success -> stage.value
             is Outcome.Failure -> return@inTurn StartupRestore.Interrupted
         }

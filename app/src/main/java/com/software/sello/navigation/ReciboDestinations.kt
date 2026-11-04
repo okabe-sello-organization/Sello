@@ -22,7 +22,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.software.sello.R
-import com.software.sello.designsystem.component.SelloDock
 import com.software.sello.designsystem.component.SelloNavigation
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -42,6 +41,7 @@ import com.software.sello.feature.recibo.CategoryExpensesAction
 import com.software.sello.feature.recibo.CategoryExpensesScreen
 import com.software.sello.feature.recibo.CategoryExpensesState
 import com.software.sello.feature.recibo.CategoryExpensesViewModel
+import com.software.sello.feature.recibo.ListDock
 import com.software.sello.feature.recibo.ReciboAction
 import com.software.sello.feature.recibo.ReciboScreen
 import com.software.sello.feature.recibo.ReciboState
@@ -143,6 +143,7 @@ internal fun NavGraphBuilder.reciboDestinations(
         val expenses by model.state.collectAsStateWithLifecycle()
         val query by model.query.collectAsStateWithLifecycle()
         val order by model.order.collectAsStateWithLifecycle()
+        val listDock by model.dock.collectAsStateWithLifecycle()
         LaunchedEffect(id) { model.onAction(CategoryExpensesAction.Show(id)) }
         ShellScreen(
             state,
@@ -152,11 +153,14 @@ internal fun NavGraphBuilder.reciboDestinations(
             screenTitle = (expenses as? CategoryExpensesState.Ready)?.categoryName
                 ?: stringResource(R.string.category_expenses_title),
             showMonthAsSubtitle = true,
-            dock = SelloDock(
-                label = stringResource(R.string.dock_entry_label),
-                actionLabel = stringResource(R.string.dock_entry_action),
-                onClick = { navigation.navigate(ExpenseEntryRoute(id)) }
-            ),
+            // An archived category takes no new expense here either, as on its detail; while
+            // the list is first read the dock waits, disabled, instead of offering Anotar.
+            dock = categoryDock(
+                archived = listDock == ListDock.Archived,
+                known = listDock != ListDock.Waiting
+            ) {
+                navigation.navigate(ExpenseEntryRoute(id))
+            },
             notice = notice?.let { { CorrectionNoticeBar(it, onUndo) } }
         ) { padding ->
             CategoryExpensesScreen(

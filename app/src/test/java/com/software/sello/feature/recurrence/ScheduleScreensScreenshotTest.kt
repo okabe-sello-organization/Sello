@@ -117,6 +117,18 @@ class ScheduleScreensScreenshotTest {
         rule.captureStill("src/test/screenshots/schedules-${look.label}.png")
     }
 
+    /** A refresh failed: the month as last read, under the notice. */
+    @Test
+    fun listStale() {
+        val look = Look()
+        rule.showSello(look) {
+            Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk)) {
+                SchedulesScreen(ready.copy(stale = true), today, {}, {}, PaddingValues(12.dp), {})
+            }
+        }
+        rule.captureStill("src/test/screenshots/schedules-stale-${look.label}.png")
+    }
+
     private fun editor(look: Look) {
         rule.showSello(look) { ScheduleEditorScreen(editing, dateLabels()) {} }
         rule.captureStill("src/test/screenshots/schedule-editor-${look.label}.png")

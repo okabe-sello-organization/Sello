@@ -18,6 +18,12 @@ interface OperationReceiptDao {
     @Query("SELECT MAX(committed_at) FROM operation_receipt WHERE kind = :kind")
     suspend fun lastCommittedAt(kind: String): Long?
 
+    /** The operation of [kind] that moved the history to [generation]; null if none did. */
+    @Query(
+        "SELECT * FROM operation_receipt WHERE kind = :kind AND generation = :generation LIMIT 1"
+    )
+    suspend fun atGeneration(kind: String, generation: Long): OperationReceiptEntity?
+
     /** Every receipt goes; only a reset does this, and it then stores its own. */
     @Query("DELETE FROM operation_receipt")
     suspend fun deleteAll(): Int

@@ -30,6 +30,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.read.StaleSlip
 
 @Composable
 fun CategoryExpensesScreen(
@@ -104,6 +105,7 @@ fun CategoryExpensesScreen(
                 if (state.stale) {
                     item(key = "stale") {
                         StaleSlip(
+                            stringResource(R.string.recibo_stale),
                             { onAction(CategoryExpensesAction.Retry) },
                             Modifier.testTag("category.expenses.stale")
                         )
@@ -120,9 +122,23 @@ fun CategoryExpensesScreen(
                 }
                 state.problem?.let { problem ->
                     item {
-                        ErrorSlip(stringResource(problem.text()), {
-                            onAction(CategoryExpensesAction.Retry)
-                        })
+                        val message = stringResource(problem.text())
+                        val tag = Modifier.testTag(CATEGORY_EXPENSES_PROBLEM_TAG)
+                        if (problem == DeleteProblem.Unknown) {
+                            // Asked again with the same operation, never sent again.
+                            ErrorSlip(
+                                message,
+                                { onAction(CategoryExpensesAction.CheckDelete) },
+                                tag,
+                                title = stringResource(
+                                    R.string.category_expenses_delete_unknown_title
+                                ),
+                                retryLabel = stringResource(R.string.expense_edit_check_deleted),
+                                loading = state.checking
+                            )
+                        } else {
+                            ErrorSlip(message, { onAction(CategoryExpensesAction.Retry) }, tag)
+                        }
                     }
                 }
                 items(state.rows, key = { it.id }) { row ->
@@ -184,3 +200,5 @@ fun CategoryExpensesScreen(
         }
     }
 }
+
+const val CATEGORY_EXPENSES_PROBLEM_TAG = "category.expenses.problem"

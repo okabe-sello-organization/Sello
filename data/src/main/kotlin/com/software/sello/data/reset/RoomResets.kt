@@ -23,13 +23,11 @@ import com.software.sello.domain.port.PreferenceWrite
 import com.software.sello.domain.port.ResetOutcome
 import com.software.sello.domain.port.ResetPreview
 import com.software.sello.domain.port.Resets
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
 import java.security.MessageDigest
 import java.time.ZoneId
-import java.util.Properties
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 /**
@@ -39,9 +37,18 @@ import kotlinx.coroutines.withContext
  *
  * The receipt decides what happened. A file whose operation has no receipt is an erase
  * that never committed and is forgotten; one whose receipt exists is finished: the
- * restore folder and [setAside] copy are deleted, the database file is compacted so
- * no erased row survives in its free pages, the preferences are reset once, then the
- * file goes. Nothing about the erased history is written to it.
+ * restore folder and [setAside] copy are deleted, the preferences are reset once, then
+ * the file goes. Once a restore has replaced the history the erase made, the restore
+ * folder is the restore's and stays; the copy set aside still goes, and the preferences
+ * are not reset again: the restore put them back to first-run before it committed
+ * ([EraseMarker.preferencesFirst]) and may have applied its own since. Either way the database file is compacted so no
+ * erased row survives in its free pages; `compact.pending` keeps that owed, apart from
+ * the erase, until a compaction is seen through. Nothing about the erased history is
+ * written to either file.
+ *
+ * [recovery] is shared with the restores of the same storage: finishing an erase and
+ * committing a restore take turns, so an erase never acts on a history a restore is
+ * replacing at that moment.
  */
 class RoomResets(
     private val database: SelloDatabase,
@@ -51,9 +58,10 @@ class RoomResets(
     private val preferences: PreferenceReset,
     private val deviceZone: () -> ZoneId,
     private val audit: AuditClock,
-    private val dispatchers: DispatcherProvider
+    private val dispatchers: DispatcherProvider,
+    private val recovery: Mutex
 ) : Resets {
-    private val marker = File(folder, "pending.properties")
+    private val files = EraseMarker(database, folder, dispatchers)
 
     override suspend fun preview(): Outcome<ResetPreview, StorageFailure> = reading {
         database.withTransaction {
@@ -82,11 +90,13 @@ class RoomResets(
     override suspend fun reset(preview: ResetPreview, operationId: OperationId): ResetOutcome {
         // An erase still finishing is finished first; a second one is never started over it.
         if (pending()) finishPending()
-        val existing = readMarker()
+        val existing = files.read()
         if (existing != null && existing.operation != operationId) {
             return ResetOutcome.Failed
         }
-        if (existing == null && !writeMarker(Marker(operationId, preferencesDone = false))) {
+        if (existing == null &&
+            !files.write(EraseMarker.Marker(operationId, preferencesDone = false))
+        ) {
             return ResetOutcome.Failed
         }
         val digest = digest(preview)
@@ -96,18 +106,18 @@ class RoomResets(
                     finishPending() ?: ResetOutcome.Erased(preferencesPending = true)
 
                 Erase.Moved -> {
-                    forget()
+                    files.forget()
                     ResetOutcome.Stale
                 }
 
                 Erase.Conflict -> {
-                    forget()
+                    files.forget()
                     ResetOutcome.Failed
                 }
             }
 
             is CommandRun.RolledBack -> {
-                forget()
+                files.forget()
                 ResetOutcome.Failed
             }
 
@@ -116,34 +126,55 @@ class RoomResets(
     }
 
     override suspend fun pending(): Boolean {
-        val marker = readMarker() ?: return false
-        return when (committed(marker.operation)) {
-            true -> true
+        val marker = files.read() ?: return files.compactionOwed()
+        return when (files.place(marker.operation)) {
+            EraseMarker.Place.Current, EraseMarker.Place.Replaced -> true
 
             // Never committed: the erase did not happen and is forgotten.
-            false -> {
-                forget()
-                false
+            EraseMarker.Place.NeverCommitted -> {
+                files.forget()
+                files.compactionOwed()
             }
 
             // Unknown: neither finish it nor forget it.
-            null -> false
+            EraseMarker.Place.Unknown -> false
         }
     }
 
     override suspend fun finishPending(): ResetOutcome.Erased? {
-        val marker = readMarker() ?: return null
-        if (committed(marker.operation) != true) return null
+        val finished = recovery.withLock { finishMarker() }
+        // Outside the turn: a compaction can take a while and changes no row. An erase
+        // handled just now is compacted even if what it owes could not be written down.
+        if ((finished != null || files.compactionOwed()) && compact()) files.compacted()
+        return finished
+    }
+
+    /**
+     * The steps after a committed erase, in turn with restores. Compaction is recorded as
+     * owed first, so the erase's own file can go before it is done. A restore that has
+     * replaced the erased history since owns the restore folder; the copy set aside and
+     * the erased history's preferences still go.
+     */
+    private suspend fun finishMarker(): ResetOutcome.Erased? {
+        val marker = files.read() ?: return null
+        val place = files.place(marker.operation)
+        if (place != EraseMarker.Place.Current && place != EraseMarker.Place.Replaced) return null
+        val owed = files.oweCompaction()
         val filesGone = io {
-            restoreFolder.deleteRecursively()
+            if (place == EraseMarker.Place.Current) restoreFolder.deleteRecursively()
             setAside.forEach { it.delete() }
-            !restoreFolder.exists() && setAside.none { it.exists() }
-        } && compact()
-        var preferencesDone = marker.preferencesDone
-        if (!preferencesDone && preferences.resetAll() == PreferenceWrite.Saved) {
-            preferencesDone = writeMarker(marker.copy(preferencesDone = true))
+            (place == EraseMarker.Place.Replaced || !restoreFolder.exists()) &&
+                setAside.none { it.exists() }
         }
-        if (filesGone && preferencesDone) io { this.marker.delete() }
+        // A restore resets them before it commits, so after one they are first-run already
+        // and the restore's own may be applied over them: they are only marked done.
+        var preferencesDone = marker.preferencesDone
+        if (!preferencesDone) {
+            val reset = place == EraseMarker.Place.Replaced ||
+                preferences.resetAll() == PreferenceWrite.Saved
+            if (reset) preferencesDone = files.write(marker.copy(preferencesDone = true))
+        }
+        if (owed && filesGone && preferencesDone) files.forget()
         return ResetOutcome.Erased(preferencesPending = !preferencesDone)
     }
 
@@ -224,74 +255,25 @@ class RoomResets(
 
     /**
      * SQLite keeps deleted rows in free pages and in its write-ahead log; rebuilding the
-     * file and truncating the log leaves no erased bytes behind. False if it could not.
+     * file and truncating the log leaves no erased bytes behind. False if it could not,
+     * including a checkpoint that reports it was kept busy: the log may still hold them.
      */
     private suspend fun compact(): Boolean = io {
         try {
             val sqlite = database.openHelper.writableDatabase
             sqlite.execSQL("VACUUM")
-            sqlite.query("PRAGMA wal_checkpoint(TRUNCATE)").use { it.moveToFirst() }
-            true
+            sqlite.query("PRAGMA wal_checkpoint(TRUNCATE)").use { result ->
+                result.moveToFirst() && result.getInt(0) == 0
+            }
         } catch (_: SQLiteException) {
             false
         }
-    }
-
-    /** Whether [operation] committed: true, false, or null when that cannot be read. */
-    private suspend fun committed(operation: OperationId): Boolean? = when (
-        val read = reading {
-            Outcome.Success(database.operationReceiptDao().find(operation.value) != null)
-        }
-    ) {
-        is Outcome.Success -> read.value
-        is Outcome.Failure -> null
-    }
-
-    private data class Marker(val operation: OperationId, val preferencesDone: Boolean)
-
-    private suspend fun readMarker(): Marker? = io {
-        if (!marker.exists()) return@io null
-        val properties = try {
-            Properties().apply { marker.inputStream().use(::load) }
-        } catch (_: IOException) {
-            return@io null
-        }
-        val operation = OperationId.of(properties.getProperty(OPERATION).orEmpty())
-            as? Outcome.Success ?: return@io null
-        Marker(operation.value, properties.getProperty(PREFERENCES) == DONE)
-    }
-
-    private suspend fun writeMarker(value: Marker): Boolean = io {
-        folder.mkdirs()
-        val properties = Properties().apply {
-            setProperty(OPERATION, value.operation.value)
-            if (value.preferencesDone) setProperty(PREFERENCES, DONE)
-        }
-        val bytes = ByteArrayOutputStream().also { properties.store(it, null) }.toByteArray()
-        try {
-            val temporary = File(folder, "${marker.name}.tmp")
-            FileOutputStream(temporary).use { stream ->
-                stream.write(bytes)
-                stream.fd.sync()
-            }
-            temporary.renameTo(marker)
-        } catch (_: IOException) {
-            false
-        }
-    }
-
-    private suspend fun forget() {
-        io { marker.delete() }
     }
 
     /** File work off the main thread. */
     private suspend fun <T> io(block: () -> T): T = withContext(dispatchers.io) { block() }
 
     private companion object {
-        const val OPERATION = "operation"
-        const val PREFERENCES = "preferences"
-        const val DONE = "done"
-
         /** What the erase is: the history position it was counted at, nothing else. */
         fun digest(preview: ResetPreview): String {
             val sha256 = MessageDigest.getInstance("SHA-256")

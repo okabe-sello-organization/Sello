@@ -44,6 +44,14 @@ class IncomeFormScreenshotTest {
         rule.captureStill("src/test/screenshots/income-form-${look.label}.png")
     }
 
+    /** A refresh failed after the month was read: the draft stays under the notice. */
+    @Test
+    fun stale() {
+        val look = Look()
+        rule.showSello(look) { IncomeFormScreen(ready.copy(stale = true), {}) }
+        rule.captureStill("src/test/screenshots/income-form-stale-${look.label}.png")
+    }
+
     @Test
     fun cobaltoLight() = capture(Look())
 

@@ -37,6 +37,7 @@ import com.software.sello.data.repository.RoomScheduleRecordReads
 import com.software.sello.data.repository.UndoWindow
 import com.software.sello.data.repository.discardKeptCopies
 import com.software.sello.data.repository.reading
+import com.software.sello.data.reset.EraseMarker
 import com.software.sello.data.reset.RoomResets
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.StorageFailure
@@ -80,6 +81,7 @@ import com.software.sello.domain.port.ScheduleRecordReads
 import java.io.File
 import java.time.ZoneId
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.sync.Mutex
 
 /**
  * What the composition root gets from storage: domain ports backed by the one real
@@ -203,7 +205,13 @@ class FinancialStorage internal constructor(
     fun carryoverReads(clock: FinancialClock, computation: CoroutineContext): CarryoverReads =
         RoomCarryoverReads(database, clock, computation)
 
-    /** Restores into this storage, staged in its own private folder. */
+    /** Finishing an erase and committing a restore of this storage take turns on it. */
+    private val recovery = Mutex()
+
+    /**
+     * Restores into this storage, staged in its own private folder. [preferences] resets
+     * them for an erase still finishing, before a restore replaces the history.
+     */
     fun restores(
         appearance: AppearancePreferences,
         ordering: CategoryOrderingPreferences,
@@ -212,6 +220,7 @@ class FinancialStorage internal constructor(
         ids: RecordIdSource,
         audit: AuditClock,
         dispatchers: DispatcherProvider,
+        preferences: PreferenceReset,
         codec: BackupCodec = BackupCodec()
     ): Restores = RoomRestores(
         database,
@@ -223,6 +232,8 @@ class FinancialStorage internal constructor(
         ids,
         audit,
         dispatchers,
+        recovery,
+        { EraseMarker(database, resetFolder, dispatchers).preferencesFirst(preferences) },
         codec
     )
 
@@ -244,7 +255,8 @@ class FinancialStorage internal constructor(
         preferences,
         deviceZone,
         audit,
-        dispatchers
+        dispatchers,
+        recovery
     )
 
     /**

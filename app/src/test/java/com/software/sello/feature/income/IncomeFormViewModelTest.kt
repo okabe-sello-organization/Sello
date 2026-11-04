@@ -111,10 +111,12 @@ class IncomeFormViewModelTest {
 
     private fun shown(digits: String) = MoneyTextValue(MoneySign.None, "", digits, "$digits pesos")
 
-    private fun form(saved: SavedStateHandle = SavedStateHandle()) =
-        IncomeFormViewModel(saved, commands, reads, clock, {
-            uuid(nextId++)
-        }, money, corrections, schedules, scheduleBook)
+    private fun form(
+        saved: SavedStateHandle = SavedStateHandle(),
+        reads: HandIncomeReads = this.reads
+    ) = IncomeFormViewModel(saved, commands, reads, clock, {
+        uuid(nextId++)
+    }, money, corrections, schedules, scheduleBook)
 
     /** A new-income form with the month already read. */
     private fun ready(saved: SavedStateHandle = SavedStateHandle()): IncomeFormViewModel {
@@ -301,6 +303,46 @@ class IncomeFormViewModelTest {
         assertEquals("salary" to LocalDate.of(2026, 10, 22), form.now.sourceKey to form.now.date)
         assertEquals(IncomeMissing.Amount, form.now.missing)
         assertFalse(form.now.editing || form.now.canDelete || form.now.loading)
+    }
+
+    @Test
+    fun aRefreshThatFailsKeepsTheDraftMarkedOlderAndItStillSaves() {
+        val observed = NewObservationIncomeReads()
+        observed.publish(october, generation = 7)
+        val form = form(reads = observed)
+        form.type("2500000")
+
+        observed.of(october).value =
+            ReadState.Failed(StorageFailure.Unavailable("x"), lastGood = null)
+        val failed = form.now
+        // Reintentar starts a new observation, which knows nothing of the last good read.
+        form.onAction(IncomeFormAction.Retry)
+        val retried = form.now
+        form.onAction(IncomeFormAction.Submit)
+
+        for (shown in listOf(failed, retried)) {
+            assertTrue(shown.stale && !shown.loading && !shown.loadFailed && shown.editable)
+            assertEquals(shown("2.500.000"), shown.amount)
+            assertTrue(shown.canSubmit)
+        }
+        val sent = commands.created.single()
+        assertEquals(7L to pesos(2_500_000), sent.generation to sent.amount)
+    }
+
+    @Test
+    fun aReadThatSucceedsAgainClearsTheOlderMarker() {
+        val observed = NewObservationIncomeReads()
+        observed.publish(october, generation = 7)
+        val form = form(reads = observed)
+        observed.of(october).value =
+            ReadState.Failed(StorageFailure.Unavailable("x"), lastGood = null)
+        val failed = form.now
+
+        form.onAction(IncomeFormAction.Retry)
+        observed.publish(october, generation = 7)
+
+        assertTrue(failed.stale)
+        assertFalse(form.now.stale || form.now.loadFailed)
     }
 
     @Test

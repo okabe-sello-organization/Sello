@@ -39,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -158,6 +159,8 @@ class CarryBackupRestoreTest {
         { uuid(nextId++) },
         { target.audit },
         dispatchers,
+        Mutex(),
+        { true },
         codec
     )
 
@@ -313,7 +316,8 @@ class CarryBackupRestoreTest {
             PreferenceReset { PreferenceWrite.Saved },
             { other.zone },
             { other.audit },
-            dispatchers
+            dispatchers,
+            Mutex()
         )
         val counted = resets.preview().valueOrFail().current
 
@@ -387,7 +391,8 @@ class CarryBackupRestoreTest {
             PreferenceReset { PreferenceWrite.Saved },
             { other.zone },
             { other.audit },
-            dispatchers
+            dispatchers,
+            Mutex()
         )
 
         val preview = resets.preview().valueOrFail()
@@ -413,7 +418,8 @@ class CarryBackupRestoreTest {
             notice,
             { uuid(nextId++) },
             { other.audit },
-            dispatchers
+            dispatchers,
+            PreferenceReset { PreferenceWrite.Saved }
         )
         val outcome = restores.replace(restores.stage(bytes).valueOrFail())
 

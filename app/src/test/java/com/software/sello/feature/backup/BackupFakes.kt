@@ -7,6 +7,7 @@ import com.software.sello.domain.port.BackupPreparationFailure
 import com.software.sello.domain.port.BackupRecord
 import com.software.sello.domain.port.BackupRecords
 import com.software.sello.domain.port.BackupSummary
+import com.software.sello.domain.port.CheckedBackupFile
 import com.software.sello.domain.port.DocumentDestination
 import com.software.sello.domain.port.DocumentWrite
 import com.software.sello.domain.port.DocumentWriter
@@ -112,6 +113,15 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
     override suspend fun stage(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
         events?.add("stage ${bytes.toList()}")
         staged += bytes.size
+        return stageAnswers.removeFirstOrNull() ?: stageAnswer
+    }
+
+    /** Each checked file staged as it was, never read again. */
+    val stagedFiles = mutableListOf<CheckedBackupFile>()
+
+    override suspend fun stage(file: CheckedBackupFile): Outcome<StagedRestore, StageFailure> {
+        events?.add("stage checked ${file.bytes.toList()}")
+        stagedFiles += file
         return stageAnswers.removeFirstOrNull() ?: stageAnswer
     }
 

@@ -432,16 +432,45 @@ class IncomeHistoryViewModelTest {
     }
 
     @Test
-    fun withNothingInNothingIsSharedAndAFailedSummaryShowsNoFigures() {
+    fun withNothingInNothingIsSharedAndASummaryNeverReadShowsNoFigures() {
         val model = history()
         summary(october).value = ReadState.Ready(resumenSnapshot(income = 0))
         val nothing = model.split.value!!.allocatedShare
+        val september = YearMonth.of(2026, 9)
 
-        summary(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        session.select(september)
+        summary(september).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
 
         assertEquals(0f, nothing)
         // Never zero for a read that failed: there is simply no split to show.
         assertNull(model.split.value)
+    }
+
+    /** SELLO-151: the split as last read stays, marked older, and Reintentar reads again. */
+    @Test
+    fun aSummaryRefreshThatFailsKeepsTheSplitMarkedOlderAndRetryReadsAgain() {
+        val model = history()
+        summary(october).value = ReadState.Ready(resumenSnapshot(income = 150_000))
+        val read = model.split.value!!
+
+        // As a new observation sees it: the failure carries nothing it read itself.
+        summary(october).value = ReadState.Failed(SnapshotFailure.Unrepresentable, null)
+        val failed = model.split.value
+        model.onAction(IncomeHistoryAction.Retry)
+        val retried = model.split.value
+        summary(october).value = ReadState.Ready(resumenSnapshot(income = 160_000))
+
+        assertFalse(read.stale)
+        assertEquals(read.copy(stale = true), failed)
+        assertEquals(read.copy(stale = true), retried)
+        assertEquals("50.000 pesos", failed!!.unallocated.spoken)
+        assertEquals(
+            "60.000 pesos" to false,
+            model.split.value!!.let {
+                it.unallocated.spoken to
+                    it.stale
+            }
+        )
     }
 
     @Test

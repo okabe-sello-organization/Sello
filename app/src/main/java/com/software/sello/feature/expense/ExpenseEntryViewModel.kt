@@ -10,6 +10,7 @@ import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmountError
 import com.software.sello.domain.policy.AmountDraft
@@ -40,6 +41,7 @@ import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import com.software.sello.presentation.recurrence.FollowingSchedule
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatDraft
@@ -205,14 +207,29 @@ class ExpenseEntryViewModel(
         }
     }
 
+    /**
+     * What the form last read, kept for the whole form rather than per month: it offers the
+     * categories and the history generation, not a month's figures. A refresh that fails, or
+     * a Reintentar, keeps the draft over the categories last read, marked older; storage
+     * refuses a command prepared against a generation or category that is no longer there.
+     */
+    private val lastGood = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
+
     /** The month the expense would be dated in, so the preview is about the right month. */
     private val month: StateFlow<SnapshotState> =
         combine(
             draft.map { YearMonth.from(it.date) }.distinctUntilChanged(),
             progress.map { it.attempt }.distinctUntilChanged()
         ) { month, _ -> month }
-            .flatMapLatest(snapshots::observe)
+            .flatMapLatest { lastGood.keep(Unit, snapshots.observe(it)) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
+
+    /** The month as last read, also after a failed refresh; null before any read. */
+    private fun good(state: SnapshotState): MonthlySnapshot? = when (state) {
+        ReadState.Loading -> null
+        is ReadState.Ready -> state.value
+        is ReadState.Failed -> state.lastGood
+    }
 
     /** The note being written in its composer; kept in [saved] so a restart reopens it. */
     private val noteDraft: StateFlow<String?> = saved.getStateFlow(KEY_NOTE_DRAFT, null)
@@ -552,7 +569,9 @@ class ExpenseEntryViewModel(
     private fun delete() {
         val id = editedExpense ?: return
         val original = progress.value.original ?: return
-        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
+        val snapshot = good(month.value) ?: return
+        // One confirmed after its list is still unresolved: the bar asks about it instead.
+        if (corrections.holdsDeletionOf(id)) return
         progress.update { it.copy(busy = true, error = null) }
         viewModelScope.launch {
             settleDelete(
@@ -639,7 +658,7 @@ class ExpenseEntryViewModel(
         }
         if (editing && answer() == true && !followingHasThese()) return submitFollowing()
         val draft = draft.value
-        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
+        val snapshot = good(month.value) ?: return
         val amount = (draft.amount.toTransactionAmount() as? Outcome.Success)?.value ?: return
         // The category as the form shows it chosen: one that is offered, or none.
         val chosen = state.value.categoryId
@@ -749,7 +768,7 @@ class ExpenseEntryViewModel(
                         is ExpenseRejection.CorrectionUnconfirmed -> {
                             val changed = confirmation != null
                             confirmation = specific.confirmation
-                            val names = (month.value as? ReadState.Ready)?.value?.categories
+                            val names = good(month.value)?.categories
                                 .orEmpty().associate { it.category.id to it.category }
                             return progress.update {
                                 it.copy(
@@ -779,7 +798,7 @@ class ExpenseEntryViewModel(
      * and storage refuses it if it is stale.
      */
     private fun submitFollowing() {
-        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
+        val snapshot = good(month.value) ?: return
         val draft = draft.value
         val amount = (draft.amount.toTransactionAmount() as? Outcome.Success)?.value ?: return
         val category = (state.value.categoryId?.let(CategoryId::of) as? Outcome.Success)?.value
@@ -891,7 +910,7 @@ class ExpenseEntryViewModel(
         val read = month.first { it !is ReadState.Loading }
         val payment = stored?.entry as? ScheduledEntry.Payment
         val category = payment?.let {
-            (read as? ReadState.Ready)?.value?.categories
+            good(read)?.categories
                 ?.firstOrNull { line -> line.category.id == it.categoryId }?.category
         }
         corrections.scheduleSaved(
@@ -944,7 +963,7 @@ class ExpenseEntryViewModel(
         // The category's name comes from the same read the form uses; wait for it once.
         val read = month.first { it !is ReadState.Loading }
         val category = expense?.let {
-            (read as? ReadState.Ready)?.value?.categories
+            good(read)?.categories
                 ?.firstOrNull { line -> line.category.id == it.categoryId }?.category
         }
         corrections.recorded(
@@ -963,7 +982,7 @@ class ExpenseEntryViewModel(
         today: LocalDate,
         writing: String?
     ): ExpenseEntryState {
-        val snapshot = (month as? ReadState.Ready)?.value
+        val snapshot = good(month)
         val original = progress.original
         val categories = snapshot?.let { eligible(it, original?.categoryId) }.orEmpty()
             .map { EntryCategory(it.id.value, it.name.value, it.icon.value) }
@@ -977,8 +996,14 @@ class ExpenseEntryViewModel(
         return ExpenseEntryState(
             loading = progress.recorded == null && !progress.originalUnreadable &&
                 (month is ReadState.Loading || waitingForOriginal),
+            // An error only when nothing was ever read; after a read the draft stays.
             loadFailed = progress.recorded == null &&
-                (month is ReadState.Failed || progress.originalUnreadable),
+                (
+                    (month is ReadState.Failed && month.lastGood == null) ||
+                        progress.originalUnreadable
+                    ),
+            stale = progress.recorded == null && month is ReadState.Failed &&
+                month.lastGood != null,
             amount = amount?.let { money.format(it.money) },
             amountText = (draft.amount as? AmountDraft.Rejected)?.original,
             amountProblem = (draft.amount as? AmountDraft.Rejected)?.let { problem(it.error) },

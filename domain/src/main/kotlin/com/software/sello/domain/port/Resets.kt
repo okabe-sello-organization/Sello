@@ -34,7 +34,9 @@ sealed interface ResetOutcome {
  * no amount, name or note, and a new generation in the device's zone. Private files
  * that would keep old data (a staged restore, the copy set aside at start-up) go
  * afterwards, then the preferences return to first-run values; until all of that is
- * done the erase stays pending and is finished at start-up, never repeated.
+ * done the erase stays pending and is finished at start-up, never repeated. A restore
+ * that replaced the erased history before then takes those files and preferences over:
+ * the erase leaves them alone and only the database's compaction is still owed.
  */
 interface Resets {
     /** Counts what would be erased. */
