@@ -27,5 +27,11 @@ ktlint {
 
 dependencyLocking {
     lockAllConfigurations()
-    lockMode = LockMode.STRICT
+    // IDE sync creates temporary configuration copies without lock state.
+    // Keep strict locking for command-line builds and CI.
+    lockMode = if (providers.systemProperty("idea.sync.active").orNull == "true") {
+        LockMode.DEFAULT
+    } else {
+        LockMode.STRICT
+    }
 }

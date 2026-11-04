@@ -138,6 +138,31 @@ use `git clean/reset` to manufacture a clean checkout. A separate source export
 via `git archive HEAD` is safe but excludes uncommitted changes; test those
 explicitly before claiming the latest snapshot was verified.
 
+## Android Studio sync and dependency locking
+
+Android Studio's temporary configurations, such as `debugRuntimeClasspathCopy`,
+have no committed lock state. When the IDE sets the `idea.sync.active` system
+property to `true`, the modules use `LockMode.DEFAULT`: existing locks still apply,
+and temporary configurations can resolve without their own lock state. Normal
+builds and CI keep `LockMode.STRICT`, including when the property is absent or
+`false`. This is the approved exception in [ADR 0006](../decisions/0006-quality-tooling.md).
+
+For the error `debugRuntimeClasspathCopy ... does not have lock state`, sync the
+project after taking the build-script fix. Updating dependency locks alone does
+not address temporary IDE copies.
+
+The regression check resolves the real runtime graph in each module. In IDE mode,
+the copy must resolve to the same external module versions; in normal mode, strict
+locking must reject the untracked copy. Run both offline after provisioning the
+normal build dependencies (these commands do not rewrite locks):
+
+```bash
+./gradlew verifyDependencyLocking -I scripts/quality/dependency-locking.init.gradle \
+  --offline --no-configuration-cache
+./gradlew verifyDependencyLocking -I scripts/quality/dependency-locking.init.gradle \
+  --offline --no-configuration-cache -Didea.sync.active=true
+```
+
 ## Gradle caching in CI
 
 The Quality workflow uses commit-pinned `gradle/actions/setup-gradle` v5.0.2
