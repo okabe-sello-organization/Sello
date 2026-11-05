@@ -4,9 +4,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -22,6 +22,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.software.sello.MainActivity
 import com.software.sello.TestCommands
 import com.software.sello.TestData
+import com.software.sello.await
 import com.software.sello.awaitTag
 import com.software.sello.domain.model.AppearancePreference
 import com.software.sello.domain.model.BudgetLimit
@@ -154,11 +155,15 @@ class ResetReuseJourneyTest {
         assertEquals(listOf(listOf("Mercado"), listOf("7000", "8000"), listOf("1")), history())
 
         word.performTextReplacement("BORRAR")
-        word.assert(
-            SemanticsMatcher.expectValue(
-                SemanticsProperties.EditableText,
-                AnnotatedString("BORRAR")
-            )
+        // The word reaches the field through the view model's state, which the screen
+        // collects on its own dispatcher; the framework doesn't wait for that hop, so the
+        // field (and the button it enables) can still show the old word for a moment.
+        rule.await(
+            hasContentDescription("Escribe BORRAR para confirmar") and
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.EditableText,
+                    AnnotatedString("BORRAR")
+                )
         )
         // Pressed, not clicked by position: the keyboard may still be on its way and move
         // the screen, so a click may land where the control no longer is.
