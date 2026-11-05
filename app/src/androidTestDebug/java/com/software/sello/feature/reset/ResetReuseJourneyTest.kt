@@ -2,6 +2,9 @@ package com.software.sello.feature.reset
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -12,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.text.AnnotatedString
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -49,6 +53,7 @@ import com.software.sello.feature.recibo.RECIBO_SUMMARY_TAG
 import com.software.sello.feature.settings.SETTINGS_TAG
 import com.software.sello.navigation.SETTINGS_ACTION_TAG
 import com.software.sello.platform.ProcessAppRestart
+import com.software.sello.press
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.first
@@ -149,7 +154,15 @@ class ResetReuseJourneyTest {
         assertEquals(listOf(listOf("Mercado"), listOf("7000", "8000"), listOf("1")), history())
 
         word.performTextReplacement("BORRAR")
-        rule.onNodeWithTag(RESET_CONFIRM_TAG).performScrollTo().assertIsEnabled().performClick()
+        word.assert(
+            SemanticsMatcher.expectValue(
+                SemanticsProperties.EditableText,
+                AnnotatedString("BORRAR")
+            )
+        )
+        // Pressed, not clicked by position: the keyboard may still be on its way and move
+        // the screen, so a click may land where the control no longer is.
+        rule.onNodeWithTag(RESET_CONFIRM_TAG).performScrollTo().assertIsEnabled().press()
         rule.awaitTag(RESET_DONE_TAG)
 
         assertEquals(listOf(emptyList(), emptyList(), listOf("2")), history())
@@ -163,7 +176,8 @@ class ResetReuseJourneyTest {
                 koin.get<AppearancePreferences>().observeAppearance().first()
             )
         }
-        rule.onNodeWithTag(RESET_LEAVE_TAG).performScrollTo().performClick()
+        // The keyboard used for the word may still be closing and moving the screen.
+        rule.onNodeWithTag(RESET_LEAVE_TAG).performScrollTo().press()
         rule.waitForIdle()
         assertEquals(1, restarts)
 

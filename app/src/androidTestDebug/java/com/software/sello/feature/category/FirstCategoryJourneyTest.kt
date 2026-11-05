@@ -95,7 +95,8 @@ class FirstCategoryJourneyTest {
             rule.typeLimit(limit)
         } else {
             // No limit is a choice the person makes; it is not where the form starts.
-            rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).revealed().performClick()
+            // Pressed: the keyboard used for the name may still be moving the form.
+            rule.onNodeWithTag(EDITOR_UNLIMITED_TAG).revealed().press()
         }
         submit()
         rule.waitUntilExactlyOneExists(hasTestTag(RECIBO_CATEGORIES_TAG), 10_000)
@@ -113,7 +114,8 @@ class FirstCategoryJourneyTest {
         rule.nameField().performTextInput(" Mercado de plaza ")
         rule.onNodeWithTag(EDITOR_ICON_TAG).press()
         rule.awaitTag(EDITOR_ICONS_TAG)
-        rule.onNodeWithContentDescription("Mercado").performClick()
+        // Pressed: the keyboard used for the name may still be moving the screen.
+        rule.onNodeWithContentDescription("Mercado").press()
         rule.typeLimit("300.000")
         submit()
 

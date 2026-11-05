@@ -64,7 +64,10 @@ class ResumenJourneyTest {
         rule.typeLimit("100000")
         rule.onNodeWithTag(EDITOR_SUBMIT_TAG).press()
         rule.awaitText("Resumen")
-        rule.onNodeWithContentDescription("Anotar un gasto").performClick()
+        // The dock is not drawn while the system keyboard is up, and the keyboard used for
+        // the name may still be closing: wait for the dock, then press rather than click.
+        rule.awaitDescription("Anotar un gasto")
+        rule.onNodeWithContentDescription("Anotar un gasto").press()
         rule.awaitTag(ENTRY_KEYPAD_TAG)
         rule.onNode(hasText("Comida") and hasAnyAncestor(hasTestTag(ENTRY_CATEGORIES_TAG)))
             .performClick()
