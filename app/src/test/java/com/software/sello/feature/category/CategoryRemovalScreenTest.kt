@@ -21,12 +21,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.GraphicsMode
 
 /**
  * Each step of deleting Café, given by hand (borrar-categoria.html): what it says, in the
- * design's words, and what each control reports. On the JVM (ADR 0022).
+ * design's words, and what each control reports. On the JVM (ADR 0022), with the real
+ * text engine: under Robolectric's stand-in one, the word field in the Borrar todo slip
+ * never settled on a window wider than 320 dp.
  */
 @RunWith(AndroidJUnit4::class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CategoryRemovalScreenTest {
     @get:Rule
     val rule = createComposeRule()

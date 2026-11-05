@@ -33,17 +33,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
  * Varios movimientos as the approved Anotar varios page draws it (SELLO-126), in Claro and
- * Oscuro at the CI phone's 412x914 dp, kept as committed images (ADR 0022). Synthetic
+ * Oscuro at the reference phone's 412x891 dp, kept as committed images (ADR 0022). Synthetic
  * figures, every total worked by hand; today is Thursday 22 October 2026.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w412dp-h914dp-mdpi")
 class InvestmentMovementsScreenshotTest {
     @get:Rule
     val rule = createComposeRule()

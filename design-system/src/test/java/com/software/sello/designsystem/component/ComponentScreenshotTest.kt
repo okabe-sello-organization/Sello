@@ -35,18 +35,18 @@ import org.robolectric.annotation.GraphicsMode
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 // A screen taller than every group, so each is drawn whole.
-@Config(qualifiers = "w320dp-h1200dp-mdpi")
+@Config(qualifiers = "w412dp-h1200dp-mdpi")
 class ComponentScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
 
-    /** [content] on the desk, 320 dp wide and as tall as it needs, captured as [name]. */
+    /** [content] on the desk, 412 dp wide and as tall as it needs, captured as [name]. */
     private fun capture(name: String, content: @Composable () -> Unit) {
         rule.setContent {
             SelloTheme(reducedMotion = true) {
                 Box(
                     Modifier.requiredWidth(
-                        320.dp
+                        412.dp
                     ).background(SelloTheme.colors.desk).testTag("stage")
                 ) {
                     Column(
@@ -173,8 +173,9 @@ class ComponentScreenshotTest {
         ColumnsChart(points, "Gasto por mes. El más alto es agosto.")
     }
 
+    /** The whole frame, on the reference phone's screen rather than the class's tall desk. */
     @Test
-    @Config(qualifiers = "w320dp-h640dp-mdpi")
+    @Config(qualifiers = "w412dp-h891dp-mdpi")
     fun frame() {
         rule.setContent {
             SelloTheme(reducedMotion = true) {

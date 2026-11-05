@@ -33,7 +33,6 @@ import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
@@ -112,9 +111,8 @@ class MetasScreenshotTest {
         rule.captureStill("src/test/screenshots/$name-${look.label}.png")
     }
 
-    /** Anotar varios at the foot of the active goals, before the completed one, on the CI phone. */
+    /** Anotar varios at the foot of the active goals, before the completed one. */
     @Test
-    @Config(qualifiers = "w412dp-h914dp-mdpi")
     fun anotarVariosLight() = capture(Look(), "metas-bulk", onBulk = {})
 
     @Test

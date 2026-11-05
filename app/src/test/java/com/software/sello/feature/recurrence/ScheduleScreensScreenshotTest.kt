@@ -24,7 +24,6 @@ import java.time.YearMonth
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
@@ -135,9 +134,8 @@ class ScheduleScreensScreenshotTest {
         rule.captureStill("src/test/screenshots/schedule-editor-${look.label}.png")
     }
 
-    /** A refresh failed: the form on what was last read, under the notice, on CI's phone. */
+    /** A refresh failed: the form on what was last read, under the notice. */
     @Test
-    @Config(qualifiers = "w412dp-h914dp-mdpi")
     fun editorStale() {
         val look = Look()
         rule.showSello(look) { ScheduleEditorScreen(editing.copy(stale = true), dateLabels()) {} }

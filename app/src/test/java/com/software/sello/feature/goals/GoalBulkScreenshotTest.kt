@@ -8,16 +8,14 @@ import com.software.sello.showSello
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * What Aportar varios looks like on the CI phone (412×914 dp), in Claro and Oscuro, kept as
+ * What Aportar varios looks like on the reference phone (412×891 dp), in Claro and Oscuro, kept as
  * committed images (ADR 0022): the approved mock's goal states.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w412dp-h914dp-mdpi")
 class GoalBulkScreenshotTest {
     @get:Rule
     val rule = createComposeRule()

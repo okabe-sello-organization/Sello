@@ -26,7 +26,7 @@ at all beyond a person looking.
   which Sello enables. Kotlin 2.4.20, Gradle 9.5.0 and Compose BOM 2026.02.01 are
   checked by this build, not claimed by either project.
 - Robolectric runs **API 37**, the target SDK, on a 320x640 dp mdpi screen like the
-  hosted emulator, with a plain `Application` so a screen test starts no storage or
+  hosted emulator (412x891 dp since 2026-11-05, see *Update* below), with a plain `Application` so a screen test starts no storage or
   Koin (`app/src/test/resources/robolectric.properties`).
 - **No network at test time.** The framework jar
   (`org.robolectric:android-all-instrumented:17-robolectric-15733970-i7`, Apache-2.0,
@@ -59,3 +59,12 @@ at all beyond a person looking.
   `app/src/test/screenshots/`, unchanged.
 - Rendering may differ between operating systems; baselines are recorded on Linux,
   as CI runs.
+
+## Update 2026-11-05: the Galaxy S25 Ultra screen
+
+Owner decision of 2026-11-05 (SELLO-176, epic E31): JVM screen and component tests run
+on a **412x891 dp screen drawn at mdpi**, the size of a Samsung Galaxy S25 Ultra, so the
+screenshots show what the owner's phone shows. Both modules' `robolectric.properties`
+set `w412dp-h891dp-mdpi`; screenshot tests pin no whole-screen size of their own, and
+desk-width component captures are 412 dp wide. Tests that sweep several window sizes on
+purpose keep their sizes. Every baseline was re-recorded at the new size.
