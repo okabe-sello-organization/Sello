@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.theme.StatusBarInk
 
 /** How far the band colour reaches below the status bar: 0, 100dp or 132dp. */
 enum class Blotter(val height: Dp) { None(0.dp), Short(100.dp), Tall(132.dp) }
@@ -110,6 +111,8 @@ fun SelloScaffold(
         // The status bar, the bar and any ribbon, as last measured.
         var topArea by remember { mutableStateOf(statusBar + TopBarHeight) }
         val measured = topBar != null || ribbon != null || band != null
+        // The status bar is on the band whenever the band is drawn, and on the desk otherwise.
+        StatusBarInk(if (measured || onBand) colors.onBand else colors.ink)
         if (measured) {
             // A v2 bar, a ribbon or a band colour always sits on the band; the band then
             // reaches as far under the content as it does under the title row alone.

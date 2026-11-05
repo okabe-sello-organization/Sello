@@ -53,8 +53,7 @@ class MainActivity : ComponentActivity() {
             val state by startup.state.collectAsStateWithLifecycle()
             when (val now = state) {
                 // Without a graph there is no stored appearance yet: the default paper.
-                StartupState.Opening -> {
-                    SystemBarsFollowTheme(isSystemInDarkTheme())
+                StartupState.Opening -> SystemBarsFollowTheme(isSystemInDarkTheme()) {
                     SelloTheme { StartupLoading() }
                 }
 
@@ -64,15 +63,15 @@ class MainActivity : ComponentActivity() {
                     val appearance: AppearanceViewModel = viewModel(factory = now.viewModels)
                     val preference by appearance.state.collectAsStateWithLifecycle()
                     val theme = preference.appearance.asSelloTheme(isSystemInDarkTheme())
-                    SystemBarsFollowTheme(theme.dark)
-                    SelloTheme(ink = theme.ink, darkTheme = theme.dark) {
-                        if (!startingOver) SelloAppRoot(now.viewModels)
+                    SystemBarsFollowTheme(theme.dark) {
+                        SelloTheme(ink = theme.ink, darkTheme = theme.dark) {
+                            if (!startingOver) SelloAppRoot(now.viewModels)
+                        }
                     }
                 }
 
                 // The graph cannot be opened here, so its persisted preference is unavailable.
-                is StartupState.Failed -> {
-                    SystemBarsFollowTheme(isSystemInDarkTheme())
+                is StartupState.Failed -> SystemBarsFollowTheme(isSystemInDarkTheme()) {
                     SelloTheme {
                         StartupFailureRoot(
                             viewModels = remember {

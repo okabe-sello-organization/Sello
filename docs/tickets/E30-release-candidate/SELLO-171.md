@@ -11,10 +11,13 @@ The status-bar and navigation-bar icons stay readable whatever Claro, Oscuro or 
 is chosen in Sello. A dark phone no longer flashes a light window at start.
 
 ### Acceptance criteria
-- Phone light with Sello Oscuro: light bar icons. Phone dark with Sello Claro: dark bar
-  icons. Sistema follows the phone. Changing the choice in Configuración updates the
-  bars at once, without a restart.
-- Both 3-button and gesture navigation are readable in each combination.
+- The status-bar icons follow what v2 draws under them, in Claro, Oscuro and Sistema:
+  white over the band (the tabs and band sub-pages such as Configuración); Sello's theme
+  over the desk on entry forms and editors (dark in Claro, light in Oscuro); and over the
+  celebration, white in Claro and dark in Oscuro. Changing the choice in Configuración
+  updates them at once, without a restart.
+- The navigation-bar icons follow Sello's theme on every screen, in 3-button and gesture
+  navigation.
 - On a dark phone, the window before the first frame is the dark desk colour, not light
   paper. A light phone is unchanged.
 - Before and after screenshots of the bars from a new emulator, in the pull request.
@@ -26,3 +29,6 @@ Audit findings U1 and U11 (2026-11-04): `MainActivity.kt:43, 62-63` calls
 theme.dark }` from an effect keyed on the resolved theme, and a
 `values-night/themes.xml` with the desk window background. Review: lighter, with
 screenshots.
+
+Criteria corrected on 2026-11-05 by the orchestrator to follow v2: the status bar sits on
+the band (`sello.css:40`), not on paper.

@@ -27,6 +27,8 @@
   as the expense form does since SELLO-151. Storage still refuses a stale version.
 - SELLO-171: before Compose draws its first frame, the window follows the phone's
   theme, because the in-app choice can't be read yet.
+- SELLO-171: the status bar follows v2: white over the band in both themes, Sello's theme
+  over the desk on entry screens; the ticket's first criteria assumed paper under it.
 - SELLO-172: the start-up failure screen does not import FinanceTracker files, since
   that would be a new capability. It says what the file is and where to import it.
 - SELLO-173: sorting by name folds Ñ to N, as search does since SELLO-165, instead of

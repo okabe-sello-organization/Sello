@@ -226,11 +226,11 @@ internal fun CelebrationOverlay(
             decorFitsSystemWindows = false
         )
     ) {
-        // The system bars' ink follows the reference: dark on the pale desk, white once the
-        // green has flooded in. A dark desk keeps white ink throughout.
+        // The system bars' ink follows the reference: the theme's ink on the desk, then
+        // --ongain once the green has flooded in (white in Claro, dark in Oscuro).
         val view = LocalView.current
         val window = (view.parent as? DialogWindowProvider)?.window
-        val darkBarIcons = !colors.isDark && t < INK_AT + INK_MS / 2
+        val darkBarIcons = if (t < INK_AT + INK_MS / 2) !colors.isDark else colors.isDark
         DisposableEffect(window, darkBarIcons) {
             val apply = { window?.let { setDarkBarIcons(it, darkBarIcons) } }
             // Android 11 drops an appearance set before the dialog's window is attached.
