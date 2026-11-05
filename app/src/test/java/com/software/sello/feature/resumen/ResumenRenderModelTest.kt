@@ -23,6 +23,7 @@ import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.feature.expense.categoryIn
 import com.software.sello.feature.expense.monthOf
 import com.software.sello.feature.expense.storedExpense
+import com.software.sello.testing.testDateLabels
 import com.software.sello.testing.testMoney
 import java.math.BigInteger
 import java.time.DayOfWeek
@@ -57,7 +58,7 @@ internal fun resumenSnapshot(spent: Long = 30_000, income: Long = 150_000): Resu
 }
 
 class ResumenRenderModelTest {
-    private val render = ResumenRenderModel(resumenMoney())
+    private val render = ResumenRenderModel(resumenMoney(), testDateLabels())
 
     /** Rendered in October 2026, the fixture's month. */
     private fun ResumenRenderModel.render(state: ResumenSnapshotState) =
@@ -166,6 +167,23 @@ class ResumenRenderModelTest {
 
     private val october = YearMonth.of(2026, 10)
     private val september = YearMonth.of(2026, 9)
+
+    /** Months are written as everywhere else in the app, from its own names (SELLO-173). */
+    @Test
+    fun monthByMonthUsesTheAppsMonthNames() {
+        val snapshot = resumenSnapshot().copy(
+            history = listOf(
+                SpendingMonth(september, Money.cop(120_000), null, null, 4),
+                SpendingMonth(october, Money.cop(130_000), null, null, 3)
+            )
+        )
+
+        val state = render.render(ReadState.Ready(snapshot)) as ResumenState.Ready
+
+        assertEquals(listOf("sep", "oct"), state.history.map { it.chart.axisLabel })
+        assertEquals(listOf("sep 2026", "oct 2026"), state.history.map { it.label })
+        assertEquals("sep 2026, 120.000 pesos", state.history.first().chart.spoken)
+    }
 
     @Test
     fun theMonthInProgressIsAlwaysMarkedCurrentEvenOverItsLimitAndCarriesTheLimitLine() {

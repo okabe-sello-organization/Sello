@@ -60,6 +60,7 @@ import com.software.sello.navigation.ShellViewModel
 import com.software.sello.presentation.corrections.CorrectionAnnouncementsViewModel
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.CorrectionsViewModel
+import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.ResourceMoneyLabels
 import kotlin.reflect.KClass
@@ -77,6 +78,7 @@ import org.koin.dsl.module
 fun presentationModule(generation: Long): Module = module {
     single { MonthSession(get(), get()) }
     single { MoneyFormatter(ResourceMoneyLabels(get<Context>().resources)) }
+    single { dateLabels(get<Context>().resources) }
     // On the main thread, like the screens that call it, and for as long as the process.
     single {
         val scope = CoroutineScope(

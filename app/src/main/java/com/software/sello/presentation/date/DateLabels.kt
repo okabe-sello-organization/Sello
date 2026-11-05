@@ -1,5 +1,6 @@
 package com.software.sello.presentation.date
 
+import android.content.res.Resources
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.res.stringArrayResource
@@ -46,6 +47,9 @@ class DateLabels(
     fun dayMonthYear(date: LocalDate): String =
         "${date.dayOfMonth} ${months[date.monthValue - 1]} ${date.year}"
 
+    /** "sep", as under a chart's column. */
+    fun month(month: YearMonth): String = months[month.monthValue - 1]
+
     /** "dic 2026", as a goal's target month. */
     fun monthYear(month: YearMonth): String = "${months[month.monthValue - 1]} ${month.year}"
 
@@ -71,4 +75,11 @@ fun dateLabels() = DateLabels(
     weekdays = stringArrayResource(R.array.weekday_names_short).toList(),
     months = stringArrayResource(R.array.month_names_abbreviated).toList(),
     todayFormat = stringResource(R.string.date_today)
+)
+
+/** The same labels outside composition, for a render model a ViewModel owns. */
+fun dateLabels(resources: Resources) = DateLabels(
+    weekdays = resources.getStringArray(R.array.weekday_names_short).toList(),
+    months = resources.getStringArray(R.array.month_names_abbreviated).toList(),
+    todayFormat = resources.getString(R.string.date_today)
 )

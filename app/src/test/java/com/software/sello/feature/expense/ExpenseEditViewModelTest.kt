@@ -895,6 +895,52 @@ class ExpenseEditViewModelTest {
         assertTrue(form.now.closed)
     }
 
+    /**
+     * A schedule-made expense in a closed month of a carry chain: Solo este, then the list
+     * of later months. Confirming the list saves; the question is not asked a second time
+     * (audit P4).
+     */
+    @Test
+    fun soloEsteIsAskedOnceThroughTheListOfLaterMonths() {
+        commands.editAnswer = { refusedForList() }
+        val form = fromSchedule()
+        form.retype("52000")
+        form.onAction(ExpenseEntryAction.Submit)
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = false))
+        assertEquals(1, form.now.correction!!.list.months)
+        commands.editAnswer = {
+            CommandOutcome.Committed(
+                commands.committed(it.operationId, it.expenseId, OperationKind.EditExpense),
+                replayed = false
+            )
+        }
+
+        form.onAction(ExpenseEntryAction.CorrectionConfirmed)
+
+        assertFalse(form.now.askFollowing)
+        assertEquals(2, commands.edited.size)
+        assertEquals(carryConfirmation, commands.edited.last().confirmation)
+        assertEquals(pesos(52_000), commands.edited.last().amount)
+        assertTrue(schedules.submitted.isEmpty())
+        assertTrue(form.now.closed)
+    }
+
+    /** Leaving the list ends the attempt: saving again asks Solo este once more. */
+    @Test
+    fun leavingTheListOfLaterMonthsAsksSoloEsteAgain() {
+        commands.editAnswer = { refusedForList() }
+        val form = fromSchedule()
+        form.retype("52000")
+        form.onAction(ExpenseEntryAction.Submit)
+        form.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = false))
+
+        form.onAction(ExpenseEntryAction.CorrectionDismissed)
+        form.onAction(ExpenseEntryAction.Submit)
+
+        assertTrue(form.now.askFollowing)
+        assertEquals(1, commands.edited.size)
+    }
+
     @Test
     fun sc34AListThatMovedIsShownAgainAsChanged() {
         commands.editAnswer = { refusedForList() }

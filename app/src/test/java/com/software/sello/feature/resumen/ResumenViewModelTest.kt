@@ -34,6 +34,7 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.testing.asNewObservation
+import com.software.sello.testing.testDateLabels
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -72,8 +73,16 @@ class ResumenViewModelTest {
     @After
     fun reset() = Dispatchers.resetMain()
 
-    private fun model(saved: SavedStateHandle = SavedStateHandle()) =
-        ResumenViewModel(saved, reads, session, resumenMoney(), suggestions, schedules, clock)
+    private fun model(saved: SavedStateHandle = SavedStateHandle()) = ResumenViewModel(
+        saved,
+        reads,
+        session,
+        resumenMoney(),
+        testDateLabels(),
+        suggestions,
+        schedules,
+        clock
+    )
 
     private fun TestScope.watch(model: ResumenViewModel) =
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { model.state.collect {} }

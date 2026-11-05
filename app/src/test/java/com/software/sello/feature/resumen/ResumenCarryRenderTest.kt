@@ -20,6 +20,7 @@ import com.software.sello.presentation.carry.carryInput
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.pesos
+import com.software.sello.testing.testDateLabels
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
@@ -36,7 +37,7 @@ import org.junit.Test
  * docs/testing/signed-carryover-examples.md.
  */
 class ResumenCarryRenderTest {
-    private val render = ResumenRenderModel(testMoney())
+    private val render = ResumenRenderModel(testMoney(), testDateLabels())
     private val ene = YearMonth.of(2027, 1)
     private val feb = YearMonth.of(2027, 2)
     private val today = "2027-02-22"

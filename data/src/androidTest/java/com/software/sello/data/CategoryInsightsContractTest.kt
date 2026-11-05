@@ -221,6 +221,32 @@ class CategoryInsightsContractTest {
         assertEquals(listOf("Panader\u00eda"), search("panaderia"))
     }
 
+    /**
+     * "Nombre" folds case and accents as search does (SELLO-173): "\u00c1lbum" sits between
+     * "Agua" and "Bus", and "\u00d1ame" and "\u00f1ame" read as "name", between "Mesa"
+     * and "Nube", never after "Zapato". SQLite's NOCASE folds only ASCII letters.
+     */
+    @Test
+    fun nameOrderFoldsCaseAndAccentsAsSearchDoes() = runBlocking {
+        category()
+        listOf("Zapato", "\u00f1ame", "Nube", "Bus", "\u00c1lbum", "Mesa", "\u00d1ame", "Agua")
+            .forEachIndexed { index, note -> spend(1_000L + index, note = note) }
+
+        val byName = ledger.categoryExpenseSearch.read(
+            id,
+            october,
+            ExpenseOrder.Name,
+            "",
+            0,
+            20
+        ).valueOrFail().expenses.map { it.note!!.value }
+
+        assertEquals(
+            listOf("Agua", "\u00c1lbum", "Bus", "Mesa", "\u00d1ame", "\u00f1ame", "Nube", "Zapato"),
+            byName
+        )
+    }
+
     @Test
     fun searchAndOrderingApplyBeforePagingAcrossTheWholeMonth() = runBlocking {
         category()

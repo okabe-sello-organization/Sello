@@ -36,7 +36,6 @@ import com.software.sello.presentation.carry.carryLabel
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.month.MonthNames
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -64,7 +63,9 @@ internal fun CategoryInsightSections(
                 CategoryNumbers(state, figures, months, dates)
                 CategoryWeeks(state.category.id, figures)
             }
-            if (figures.historicalAverage != null) CategoryHistory(state.category.id, figures)
+            if (figures.historicalAverage != null) {
+                CategoryHistory(state.category.id, figures, dates)
+            }
         }
     }
 }
@@ -218,8 +219,9 @@ private fun CategoryWeeks(categoryId: String, figures: DetailInsights) {
     }
 }
 
+/** [dates] writes months as the rest of the app does: "sep 2026", never the device's "sept.". */
 @Composable
-private fun CategoryHistory(categoryId: String, figures: DetailInsights) {
+private fun CategoryHistory(categoryId: String, figures: DetailInsights, dates: DateLabels) {
     var selected by rememberSaveable(categoryId, figures.history.lastOrNull()?.month) {
         mutableStateOf<String?>(null)
     }
@@ -241,10 +243,10 @@ private fun CategoryHistory(categoryId: String, figures: DetailInsights) {
             val period = if (entry.current) {
                 stringResource(
                     R.string.category_detail_history_current,
-                    entry.month.format(HistoryMonth)
+                    dates.monthYear(entry.month)
                 )
             } else {
-                entry.month.format(HistoryMonth)
+                dates.monthYear(entry.month)
             }
             val spentSpoken =
                 stringResource(R.string.category_detail_history_spoken, period, entry.spent.spoken)
@@ -268,7 +270,7 @@ private fun CategoryHistory(categoryId: String, figures: DetailInsights) {
             }
             ChartPoint(
                 entry.month.toString(),
-                entry.month.format(AxisMonth),
+                dates.month(entry.month),
                 entry.value,
                 spoken,
                 if (entry.limitValue != null &&
@@ -314,7 +316,7 @@ private fun CategoryHistory(categoryId: String, figures: DetailInsights) {
             )
         }
         figures.history.firstOrNull { it.month.toString() == selected }?.let { entry ->
-            LeaderLine(entry.month.format(HistoryMonth)) { MoneyText(entry.spent) }
+            LeaderLine(dates.monthYear(entry.month)) { MoneyText(entry.spent) }
             val carry = entry.carry
             if (entry.limit != null && carry != null) {
                 // Never the capacity alone: base and carry beside it (CP27).
@@ -358,5 +360,3 @@ private fun DetailHeading(text: String) = Text(
 )
 
 private val DetailLocale = Locale.forLanguageTag("es-CO")
-private val HistoryMonth = DateTimeFormatter.ofPattern("MMM uuuu", DetailLocale)
-private val AxisMonth = DateTimeFormatter.ofPattern("MMM", DetailLocale)

@@ -282,6 +282,21 @@ class CategoryDetailScreenTest {
         rule.onNodeWithText("Un mes normal aquí").assertIsDisplayed()
     }
 
+    /** "Mes a mes" writes months as everywhere else in the app (SELLO-173). */
+    @Test
+    fun monthByMonthUsesTheAppsMonthNames() {
+        show(
+            ready(ExpenseListState.Rows(rows, more = false))
+                .copy(insights = DetailInsightsState.Ready(insightFigures()))
+        )
+
+        rule.onNodeWithTag("detail:history").performScrollTo()
+        rule.onNodeWithContentDescription(
+            "sep 2026: 0 pesos. L\u00edmite: 200.000 pesos."
+        ).assertExists().performClick()
+        rule.onNodeWithText("sep 2026").assertExists()
+    }
+
     private fun insightFigures() = DetailInsights(
         allowance = ReciboPerDay(plain("10.000"), 10), comparisonMonth = null, comparison = null,
         elapsedDays = 22,

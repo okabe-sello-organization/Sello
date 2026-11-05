@@ -20,12 +20,18 @@ interface ExpenseDao {
         key: String
     ): Long
 
+    /**
+     * "name" orders by the folded [com.software.sello.data.local.SearchKey], as search
+     * compares, so accents and case (Ñ as N) never move a note out of place; the note
+     * itself breaks ties. SQLite's NOCASE folds only ASCII letters.
+     */
     @Query(
         "SELECT * FROM expense WHERE category_id = :categoryId " +
             "AND effective_date >= :from AND effective_date <= :through " +
             "AND instr(search_key, :key) > 0 " +
             "ORDER BY CASE WHEN :sort = 'amount' THEN amount_minor END DESC, " +
-            "CASE WHEN :sort = 'name' THEN COALESCE(note, '') END COLLATE NOCASE ASC, " +
+            "CASE WHEN :sort = 'name' THEN search_key END ASC, " +
+            "CASE WHEN :sort = 'name' THEN COALESCE(note, '') END ASC, " +
             "effective_date DESC, sequence DESC LIMIT :limit OFFSET :offset"
     )
     suspend fun searchInCategory(
