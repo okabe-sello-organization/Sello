@@ -270,7 +270,7 @@ private fun Action(state: InvestmentEditorState, onAction: (InvestmentEditorActi
             state.rateNeeded && state.rate == null -> R.string.investment_editor_missing_rate
             else -> null
         }
-        state.saveError?.let { SaveProblem(it) }
+        state.saveError?.let { SaveProblem(it, state.deleting) }
         if (missing != null) {
             FieldMessageText(
                 FieldMessage(stringResource(missing), tone = FieldTone.Hint),
@@ -280,6 +280,7 @@ private fun Action(state: InvestmentEditorState, onAction: (InvestmentEditorActi
         SelloButton(
             text = stringResource(
                 when {
+                    unknown && state.deleting -> R.string.expense_edit_check_deleted
                     unknown -> R.string.expense_entry_check_again
                     state.editing -> R.string.investment_editor_save
                     else -> R.string.investment_editor_create
@@ -318,17 +319,28 @@ private fun deleteConsequences(count: Int): AnnotatedString {
  * the warning tone, a certain failure as an error. Never titled as a failed read.
  */
 @Composable
-private fun SaveProblem(error: InvestmentSaveError) {
+private fun SaveProblem(error: InvestmentSaveError, deleting: Boolean) {
     FieldMessageText(
         FieldMessage(
             stringResource(
                 when (error) {
                     InvestmentSaveError.NotSaved -> R.string.investment_editor_not_saved
-                    InvestmentSaveError.Unknown -> R.string.investment_editor_unknown
+
+                    InvestmentSaveError.Unknown ->
+                        if (deleting) {
+                            R.string.expense_edit_delete_unknown
+                        } else {
+                            R.string.investment_editor_unknown
+                        }
+
                     InvestmentSaveError.Changed -> R.string.investment_editor_changed
+
                     InvestmentSaveError.FutureDate -> R.string.investment_editor_future_date
+
                     InvestmentSaveError.Invalid -> R.string.investment_editor_invalid
+
                     InvestmentSaveError.RateRequired -> R.string.investment_editor_rate_required
+
                     InvestmentSaveError.Unchanged -> R.string.investment_editor_unchanged
                 }
             ),

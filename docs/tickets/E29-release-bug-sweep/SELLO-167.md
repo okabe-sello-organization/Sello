@@ -23,6 +23,10 @@ red, and the goal movement's past-date refusal has its own wording.
 - Entry and movement forms' section headings follow the approved v2 design (uppercase,
   `--soft` ink, as `docs/design/v2/sello.css` `.entry-mid h3` draws them) on every entry
   and movement form, in all four themes (orchestrator ruling, #349).
+- One rule app-wide: every unknown-outcome message ("Aún no sabemos / No sabemos si se
+  guardó/borró…") uses the warning tone wherever it is drawn in an error tone, and an
+  unknown delete on Editar meta or Editar inversión says so in delete words (orchestrator
+  ruling on the review of #358).
 - Closes #289, #332 and #349.
 
 ### Notes

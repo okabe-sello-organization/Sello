@@ -456,9 +456,14 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             )
         }
         sheet.error?.let { error ->
+            // An unknown outcome is a doubt to clear, in the warning ink; the rest are errors.
             Text(
                 errorText(error, sheet),
-                color = colors.semantic.loss,
+                color = if (error == LimitSheetError.Unknown) {
+                    colors.semantic.warn
+                } else {
+                    colors.semantic.loss
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(vertical = SelloTheme.spacing.xs)
             )

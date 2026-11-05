@@ -349,8 +349,12 @@ private fun Choices(
 private fun Action(state: ScheduleEditorState, onAction: (ScheduleEditorAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
         state.error?.let {
+            val unknown = it == ScheduleEditorError.Unknown
             FieldMessageText(
-                FieldMessage(stringResource(it.text())),
+                FieldMessage(
+                    stringResource(it.text()),
+                    if (unknown) FieldTone.Warning else FieldTone.Error
+                ),
                 Modifier.testTag("schedule-editor:error")
             )
         }

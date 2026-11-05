@@ -228,7 +228,14 @@ private fun SaveProblem(state: GoalEditorState) {
             stringResource(
                 when (error) {
                     GoalSaveError.NotSaved -> R.string.goal_editor_not_saved
-                    GoalSaveError.Unknown -> R.string.goal_editor_unknown
+
+                    GoalSaveError.Unknown ->
+                        if (state.deleting) {
+                            R.string.expense_edit_delete_unknown
+                        } else {
+                            R.string.goal_editor_unknown
+                        }
+
                     GoalSaveError.Changed -> R.string.goal_editor_changed
                 }
             ),
@@ -242,7 +249,13 @@ private fun SaveProblem(state: GoalEditorState) {
 @Composable
 private fun CheckAgain(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit) {
     SelloButton(
-        text = stringResource(R.string.expense_entry_check_again),
+        text = stringResource(
+            if (state.deleting) {
+                R.string.expense_edit_check_deleted
+            } else {
+                R.string.expense_entry_check_again
+            }
+        ),
         onClick = { onAction(GoalEditorAction.Retry) },
         modifier = Modifier.fillMaxWidth().testTag(GOAL_EDITOR_SUBMIT_TAG),
         loading = state.busy
@@ -300,19 +313,16 @@ private fun DoneAsk(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit
             style = MaterialTheme.typography.bodyMedium,
             color = SelloTheme.colors.inkSoft
         )
-        if (state.completion is CompletionState.Failed) {
+        (state.completion as? CompletionState.Failed)?.let { failed ->
+            val unknown = failed.error == GoalDetailError.Unknown
             FieldMessageText(
                 FieldMessage(
                     stringResource(
-                        if ((state.completion as CompletionState.Failed).error ==
-                            GoalDetailError.Unknown
-                        ) {
-                            R.string.goal_error_unknown
-                        } else {
-                            R.string.goal_error_not_saved
-                        }
-                    )
-                )
+                        if (unknown) R.string.goal_error_unknown else R.string.goal_error_not_saved
+                    ),
+                    if (unknown) FieldTone.Warning else FieldTone.Error
+                ),
+                Modifier.testTag(GOAL_EDITOR_DONE_ERROR_TAG)
             )
         }
         SelloButton(
@@ -609,6 +619,8 @@ const val GOAL_EDITOR_SUBMIT_TAG = "goal.editor.submit"
 const val GOAL_EDITOR_MISSING_TAG = "goal.editor.missing"
 
 const val GOAL_EDITOR_ERROR_TAG = "goal.editor.error"
+
+const val GOAL_EDITOR_DONE_ERROR_TAG = "goal.editor.doneAsk.error"
 const val GOAL_EDITOR_DELETE_TAG = "goal.editor.delete"
 const val GOAL_EDITOR_MONTHS_TAG = "goal.editor.months"
 const val GOAL_EDITOR_MARK_COMPLETE_TAG = "goal.editor.markComplete"

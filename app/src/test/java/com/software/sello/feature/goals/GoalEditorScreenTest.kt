@@ -292,6 +292,27 @@ class GoalEditorScreenTest {
     }
 
     @Test
+    fun anUnknownDeleteIsSaidInDeleteWords() {
+        show(
+            planned.copy(
+                editing = true,
+                saveError = GoalSaveError.Unknown,
+                deleting = true,
+                unresolved = true
+            )
+        )
+
+        rule.onNodeWithTag(GOAL_EDITOR_ERROR_TAG)
+            .assertTextEquals(
+                "Aún no sabemos si se borró. Compruébalo antes de volver a intentarlo."
+            )
+        rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG)
+            .assertTextEquals("Comprobar si se borró")
+            .performClick()
+        assertEquals(listOf(GoalEditorAction.Retry), actions)
+    }
+
+    @Test
     fun aSaveThatFailedSaysSoAboveTheButtonNotAsAFailedRead() {
         show(planned.copy(editing = true, changed = true, saveError = GoalSaveError.NotSaved))
 

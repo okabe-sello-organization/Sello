@@ -450,6 +450,21 @@ class InvestmentEditorViewModelTest {
     }
 
     @Test
+    fun anUnknownDeleteIsMarkedAsADeletion() = runTest {
+        reads.board.value = ReadState.Ready(investmentsBoard(listOf(ecopetrol())))
+        commands.answers += CommandOutcome.OutcomeUnknown(operation(1))
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        val model = editing()
+
+        model.onAction(InvestmentEditorAction.AskToDelete)
+        model.onAction(InvestmentEditorAction.Delete)
+
+        assertEquals(InvestmentSaveError.Unknown, model.state.value.saveError)
+        assertTrue(model.state.value.deleting)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
     fun anUnknownOutcomeIsAskedAboutWithTheSameIdBeforeAnythingElse() = runTest {
         val unknown = operation(1)
         commands.answers += CommandOutcome.OutcomeUnknown(unknown)
@@ -462,6 +477,7 @@ class InvestmentEditorViewModelTest {
 
         assertEquals(listOf(unknown), commands.asked)
         assertEquals(InvestmentSaveError.Unknown, model.state.value.saveError)
+        assertFalse(model.state.value.deleting)
         assertFalse(model.state.value.canSubmit)
         // Crear cannot send a second attempt while the first is unknown.
         model.onAction(InvestmentEditorAction.Submit)

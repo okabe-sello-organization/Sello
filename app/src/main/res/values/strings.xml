@@ -1160,6 +1160,8 @@
     <string name="goal_missing_title">Esta meta ya no está</string>
     <string name="goal_missing_body">Tus otras metas siguen en Metas.</string>
     <string name="goal_error_not_saved">No se guardó el cambio. Puedes intentarlo de nuevo.</string>
+    <string name="goal_save_failed_title">No se guardó</string>
+    <string name="goal_save_unknown_title">Falta comprobar si se guardó</string>
     <string name="goal_error_unknown">No sabemos si se guardó el cambio. Compruébalo antes de seguir.</string>
     <string name="goal_error_check">Comprobar</string>
     <string name="goal_error_retry">Reintentar</string>

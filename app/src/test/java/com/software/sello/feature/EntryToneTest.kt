@@ -19,43 +19,69 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.domain.model.InvestmentMovementKind
 import com.software.sello.feature.bulk.BULK_ERROR_TAG
 import com.software.sello.feature.bulk.BulkCategory
 import com.software.sello.feature.bulk.BulkEntryScreen
 import com.software.sello.feature.bulk.BulkEntryState
 import com.software.sello.feature.bulk.BulkError
 import com.software.sello.feature.bulk.BulkLineUi
+import com.software.sello.feature.category.CategoryEditorScreen
+import com.software.sello.feature.category.CategoryEditorState
+import com.software.sello.feature.category.EDITOR_SAVE_ERROR_TAG
+import com.software.sello.feature.category.SaveError
 import com.software.sello.feature.expense.ENTRY_ERROR_TAG
 import com.software.sello.feature.expense.EntryCategory
 import com.software.sello.feature.expense.EntryError
 import com.software.sello.feature.expense.ExpenseEntryScreen
 import com.software.sello.feature.expense.ExpenseEntryState
 import com.software.sello.feature.expense.Missing
+import com.software.sello.feature.goals.CompletionState
+import com.software.sello.feature.goals.GOAL_EDITOR_DONE_ERROR_TAG
 import com.software.sello.feature.goals.GOAL_EDITOR_ERROR_TAG
 import com.software.sello.feature.goals.GoalBulkSamples
 import com.software.sello.feature.goals.GoalBulkScreen
 import com.software.sello.feature.goals.GoalChoice
+import com.software.sello.feature.goals.GoalDetailError
 import com.software.sello.feature.goals.GoalEditorScreen
 import com.software.sello.feature.goals.GoalEditorState
 import com.software.sello.feature.goals.GoalMovementError
 import com.software.sello.feature.goals.GoalMovementScreen
 import com.software.sello.feature.goals.GoalMovementState
 import com.software.sello.feature.goals.GoalSaveError
+import com.software.sello.feature.goals.RECIBO_GOAL_ERROR_TAG
+import com.software.sello.feature.goals.ReciboGoal
+import com.software.sello.feature.goals.ReciboGoalPill
+import com.software.sello.feature.goals.ReciboGoalState
+import com.software.sello.feature.goals.ReciboReachedGoal
 import com.software.sello.feature.income.IncomeFormError
 import com.software.sello.feature.income.IncomeFormScreen
 import com.software.sello.feature.income.IncomeFormState
+import com.software.sello.feature.investments.ContributedTotal
 import com.software.sello.feature.investments.INVESTMENT_EDITOR_ERROR_TAG
+import com.software.sello.feature.investments.INVESTMENT_MOVEMENTS_ERROR_TAG
 import com.software.sello.feature.investments.INVESTMENT_MOVEMENT_ERROR_TAG
+import com.software.sello.feature.investments.InvestmentChoice
 import com.software.sello.feature.investments.InvestmentEditorScreen
 import com.software.sello.feature.investments.InvestmentEditorState
 import com.software.sello.feature.investments.InvestmentMovementError
 import com.software.sello.feature.investments.InvestmentMovementScreen
 import com.software.sello.feature.investments.InvestmentMovementState
+import com.software.sello.feature.investments.InvestmentMovementsError
+import com.software.sello.feature.investments.InvestmentMovementsScreen
+import com.software.sello.feature.investments.InvestmentMovementsState
 import com.software.sello.feature.investments.InvestmentSaveError
+import com.software.sello.feature.investments.MovementLineModel
 import com.software.sello.feature.investments.RateEntryError
 import com.software.sello.feature.investments.UsdRateEntryScreen
 import com.software.sello.feature.investments.UsdRateEntryState
+import com.software.sello.feature.recurrence.ScheduleCategory
+import com.software.sello.feature.recurrence.ScheduleEditorError
+import com.software.sello.feature.recurrence.ScheduleEditorScreen
+import com.software.sello.feature.recurrence.ScheduleEditorState
+import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.revealed
 import java.time.LocalDate
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
@@ -114,7 +140,7 @@ class EntryToneTest {
 
     private fun warns(tag: String, content: @Composable () -> Unit) = inEveryLook(
         content,
-        { listOf(rule.onNodeWithTag(tag, useUnmergedTree = true)) }
+        { listOf(rule.onNodeWithTag(tag, useUnmergedTree = true).revealed()) }
     ) { look, pixels, inks ->
         assertTrue("$tag in $look draws no warning ink", pixels.count(inks.warn) > 20)
         assertEquals("$tag in $look draws error red", 0, pixels.count(inks.loss))
@@ -305,5 +331,92 @@ class EntryToneTest {
         InvestmentMovementScreen(
             InvestmentMovementState(date = today, today = today, loading = false)
         ) {}
+    }
+
+    private val receipt = InvestmentMovementsState(
+        loading = false,
+        investments = listOf(InvestmentChoice("e", "Ecopetrol", "trending_up", usd = false)),
+        lines = listOf(
+            MovementLineModel(
+                "1",
+                InvestmentMovementKind.Contribution,
+                plain("500.000"),
+                valid = true,
+                date = today,
+                note = "",
+                investmentId = "e",
+                investmentName = "Ecopetrol"
+            )
+        ),
+        contributed = ContributedTotal.One(plain("500.000")),
+        today = today
+    )
+
+    @Test
+    fun anUnknownVariosMovimientosIsAmber() = warns(INVESTMENT_MOVEMENTS_ERROR_TAG) {
+        InvestmentMovementsScreen(receipt.copy(error = InvestmentMovementsError.Unknown)) {}
+    }
+
+    @Test
+    fun variosMovimientosHeadingIsInTheSofterInk() = softHeadings("Inversión") {
+        InvestmentMovementsScreen(receipt) {}
+    }
+
+    @Test
+    fun anUnknownFixedPaymentSaveIsAmber() = warns("schedule-editor:error") {
+        ScheduleEditorScreen(
+            ScheduleEditorState(
+                loading = false,
+                amount = plain("950.000"),
+                categories = listOf(ScheduleCategory("h", "Hogar", "home")),
+                categoryId = "h",
+                today = today,
+                error = ScheduleEditorError.Unknown
+            ),
+            dateLabels(),
+            {}
+        )
+    }
+
+    @Test
+    fun anUnknownCategorySaveIsAmber() = warns(EDITOR_SAVE_ERROR_TAG) {
+        CategoryEditorScreen(
+            CategoryEditorState(
+                loading = false,
+                iconKeys = CategoryIcons.keys,
+                iconKey = "home",
+                saveError = SaveError.Unknown
+            ),
+            {}
+        )
+    }
+
+    @Test
+    fun anUnknownMarcarComoLogradaInEditarMetaIsAmber() = warns(GOAL_EDITOR_DONE_ERROR_TAG) {
+        GoalEditorScreen(
+            GoalEditorState(
+                loading = false,
+                editing = true,
+                name = "Viaje a la costa",
+                nameLength = 16,
+                iconKey = "flight",
+                amount = plain("6.000.000"),
+                completion = CompletionState.Failed(GoalDetailError.Unknown)
+            )
+        ) {}
+    }
+
+    @Test
+    fun anUnknownMarcarComoLogradaOnReciboIsAmber() = warns(RECIBO_GOAL_ERROR_TAG) {
+        ReciboGoal(
+            ReciboGoalState.Shown(
+                listOf(ReciboGoalPill("viaje", "Viaje a la costa", "flight", 57)),
+                ReciboReachedGoal("curso", "Curso de inglés", "school"),
+                CompletionState.Failed(GoalDetailError.Unknown)
+            ),
+            {},
+            {},
+            {}
+        )
     }
 }

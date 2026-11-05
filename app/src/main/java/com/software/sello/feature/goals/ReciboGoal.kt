@@ -96,20 +96,10 @@ fun ReciboGoal(
                 }
             }
             (state.completion as? CompletionState.Failed)?.let { failed ->
-                ErrorSlip(
-                    message = stringResource(
-                        when (failed.error) {
-                            GoalDetailError.NotSaved -> R.string.goal_error_not_saved
-                            GoalDetailError.Unknown -> R.string.goal_error_unknown
-                        }
-                    ),
-                    onRetry = { onAction(ReciboGoalAction.Retry) },
-                    modifier = Modifier.testTag(RECIBO_GOAL_ERROR_TAG),
-                    retryLabel = if (failed.error == GoalDetailError.Unknown) {
-                        stringResource(R.string.goal_error_check)
-                    } else {
-                        stringResource(R.string.goal_error_retry)
-                    }
+                GoalSaveProblem(
+                    failed.error,
+                    { onAction(ReciboGoalAction.Retry) },
+                    Modifier.testTag(RECIBO_GOAL_ERROR_TAG)
                 )
             }
             state.reached?.let { reached ->

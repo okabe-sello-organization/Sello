@@ -551,7 +551,10 @@ private fun Said(state: CategoryEditorState) {
     } else {
         state.saveError?.let { error ->
             FieldMessageText(
-                FieldMessage(stringResource(error.text(state.editing))),
+                FieldMessage(
+                    stringResource(error.text(state.editing)),
+                    if (error == SaveError.Unknown) FieldTone.Warning else FieldTone.Error
+                ),
                 Modifier.testTag(EDITOR_SAVE_ERROR_TAG)
             )
         }

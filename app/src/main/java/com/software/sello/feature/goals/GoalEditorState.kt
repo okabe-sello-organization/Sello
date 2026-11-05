@@ -79,6 +79,8 @@ data class GoalEditorState(
     val movementCount: Int = 0,
     val busy: Boolean = false,
     val saveError: GoalSaveError? = null,
+    /** The operation whose outcome is [GoalSaveError.Unknown] was a deletion. */
+    val deleting: Boolean = false,
     /** A save was sent and its outcome is not settled: only Comprobar is offered. */
     val unresolved: Boolean = false,
     val confirmDelete: Boolean = false,
