@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Components · Sello design system</title>
+  <link rel="stylesheet" href="assets/system.css">
+  <script src="assets/system.js" defer></script>
+</head>
+<body data-page="components">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Sello design system</p>
+      <h1>Components</h1>
+      <p class="lede">Every public <code>@Composable</code> in
+        <code>design-system/src/main/java/com/software/sello/designsystem/</code> (72 names; overloads
+        share an entry), grouped by what they are for.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section>
+      <h2>How to read this page</h2>
+      <ul>
+        <li><strong>Source</strong> is <code>file:line</code> under
+          <code>design-system/src/main/java/com/software/sello/designsystem/</code>.</li>
+        <li><strong>Purpose</strong> is the component's KDoc, as written. Where there is none, the entry says
+          so and describes the code.</li>
+        <li><strong>Used by</strong> counts calls in <code>app/src/main/java</code> per feature (the shell is
+          <code>navigation/</code>; "shared app code" is <code>presentation/</code>), and names the design-system
+          files that call it.</li>
+        <li><strong>Screenshots</strong> are the dedicated component captures in
+          <code>design-system/src/test/screenshots/components-*.png</code>,
+          <code>bulk-receipt-*</code> and the app's <code>components-*.png</code>. These are Cobalto light only,
+          320 dp wide; the bulk receipt has light and dark. Where a part has no capture of its own, a screen
+          baseline in which it is plainly visible is shown instead, if one was found.</li>
+        <li>Link to a component from a feature page with <code>../components.html#c-Name</code>.</li>
+      </ul>
+      <h3>Groups</h3>
+      <ul class="toc">
+        <li><a href="#g-surfaces">Paper and surfaces</a> <span class="muted">(9)</span></li>
+<li><a href="#g-money">Money, lines and verdicts</a> <span class="muted">(5)</span></li>
+<li><a href="#g-frame">Frame and navigation</a> <span class="muted">(7)</span></li>
+<li><a href="#g-entry">Entry forms</a> <span class="muted">(11)</span></li>
+<li><a href="#g-choices">Buttons and choices</a> <span class="muted">(10)</span></li>
+<li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(10)</span></li>
+<li><a href="#g-categories">Categories and carry</a> <span class="muted">(4)</span></li>
+<li><a href="#g-charts">Charts</a> <span class="muted">(2)</span></li>
+<li><a href="#g-goals">Goals and movements</a> <span class="muted">(5)</span></li>
+<li><a href="#g-rows">List rows</a> <span class="muted">(2)</span></li>
+<li><a href="#g-bulk">Bulk receipt</a> <span class="muted">(1)</span></li>
+<li><a href="#g-theme">Theme and helpers</a> <span class="muted">(6)</span></li>
+      </ul>
+      <div class="gaps">
+        <p>42 components have no component capture of their own: <a href="#c-Slip"><code>Slip</code></a>, <a href="#c-SlipStub"><code>SlipStub</code></a>, <a href="#c-StubButton"><code>StubButton</code></a>, <a href="#c-TearLine"><code>TearLine</code></a>, <a href="#c-AnswerSlip"><code>AnswerSlip</code></a>, <a href="#c-PlanSlip"><code>PlanSlip</code></a>, <a href="#c-ExpectedChip"><code>ExpectedChip</code></a>, <a href="#c-FactLine"><code>FactLine</code></a>, <a href="#c-Footnote"><code>Footnote</code></a>, <a href="#c-FittedMoneyText"><code>FittedMoneyText</code></a>, <a href="#c-LeaderLine"><code>LeaderLine</code></a>, <a href="#c-TotalLine"><code>TotalLine</code></a>, <a href="#c-SelloNavigationRail"><code>SelloNavigationRail</code></a>, <a href="#c-BandChip"><code>BandChip</code></a>, <a href="#c-MonthGrid"><code>MonthGrid</code></a>, <a href="#c-MoreMenu"><code>MoreMenu</code></a>, <a href="#c-EntryLayout"><code>EntryLayout</code></a>, <a href="#c-EntryHeading"><code>EntryHeading</code></a>, <a href="#c-EntryLine"><code>EntryLine</code></a>, <a href="#c-NoteComposer"><code>NoteComposer</code></a>, <a href="#c-FormField"><code>FormField</code></a>, <a href="#c-FieldMessageText"><code>FieldMessageText</code></a>, <a href="#c-SegmentedSwitch"><code>SegmentedSwitch</code></a>, <a href="#c-ButtonPair"><code>ButtonPair</code></a>, <a href="#c-ChipRows"><code>ChipRows</code></a>, <a href="#c-IconChoiceGrid"><code>IconChoiceGrid</code></a>, <a href="#c-IconPickerCircle"><code>IconPickerCircle</code></a>, <a href="#c-IconChoiceSheetContent"><code>IconChoiceSheetContent</code></a>, <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-ConfirmSlip"><code>ConfirmSlip</code></a>, <a href="#c-ChoiceSlip"><code>ChoiceSlip</code></a>, <a href="#c-OptionSlip"><code>OptionSlip</code></a>, <a href="#c-SuggestionNote"><code>SuggestionNote</code></a>, <a href="#c-BulletList"><code>BulletList</code></a>, <a href="#c-RepeatSheet"><code>RepeatSheet</code></a>, <a href="#c-SplitBar"><code>SplitBar</code></a>, <a href="#c-MovementRow"><code>MovementRow</code></a>, <a href="#c-MovementMonthLine"><code>MovementMonthLine</code></a>, <a href="#c-MilestoneRow"><code>MilestoneRow</code></a>, <a href="#c-StampTicket"><code>StampTicket</code></a>, <a href="#c-ScheduleRow"><code>ScheduleRow</code></a>, <a href="#c-SettingRow"><code>SettingRow</code></a>. No component capture
+          has a dark version except the bulk receipt.</p>
+      </div>
+    </section>
+<section id="g-surfaces">
+<h2>Paper and surfaces</h2>
+<article class="component" id="c-Slip">
+<h3><code>Slip</code> <span class="src"><code>component/Slip.kt:47</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The basic surface: a piece of paper on the desk. Everything that carries a figure sits on one. With <code>onClick</code> the whole slip is a single button for accessibility. An <code>outline</code> edges it, as the figure the Sello pad is typing into.</dd>
+<dt>Variants</dt><dd><code>pinked</code> bottom edge (default) or plain, <code>outline</code>, whole-slip <code>onClick</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 5</a> <a class="tag" href="features/category.html">category · 4</a> <a class="tag" href="features/goals.html">goals · 12</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/shell.html">shell · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 4</span> <a class="tag" href="features/recibo.html">recibo · 10</a> <a class="tag" href="features/recurrence.html">recurrence · 5</a> <a class="tag" href="features/reset.html">reset · 4</a> <a class="tag" href="features/resumen.html">resumen · 4</a> <a class="tag" href="features/settings.html">settings · 4</a> <a class="tag" href="features/startup.html">startup · 3</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Feedback.kt</code>, <code>Paper.kt</code>, <code>Settings.kt</code>.</span></dd>
+</dl>
+<pre><code>fun Slip(
+    modifier: Modifier = Modifier,
+    pinked: Boolean = true,
+    contentPadding: PaddingValues = SlipDefaults.Padding,
+    onClick: (() -&gt; Unit)? = null,
+    outline: Color? = null,
+    content: @Composable ColumnScope.() -&gt; Unit
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-SlipStub">
+<h3><code>SlipStub</code> <span class="src"><code>component/SlipStub.kt:44</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The tear-off stub under a slip's <code>TearLine</code>: two halves side by side, split by a dashed rule, each a <code>StubButton</code> to where the slip's figures come from. Both halves get the same width and the taller one sets the height.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/resumen.html">resumen · 1</a></dd>
+</dl>
+<pre><code>fun SlipStub(
+    start: @Composable () -&gt; Unit,
+    end: @Composable () -&gt; Unit,
+    modifier: Modifier = Modifier
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-StubButton">
+<h3><code>StubButton</code> <span class="src"><code>component/SlipStub.kt:75</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One half of a <code>SlipStub</code>: an icon, a short <code>title</code> in the brand ink and, when known, one <code>fact</code> under it, centred in the half. One button, said as <code>label</code> then the fact; <code>label</code> should contain the <code>title</code> so a spoken command finds it. <code>minHeight</code> may be lowered for a compact stub, never below a 48dp target.</dd>
+<dt>Variants</dt><dd><code>fact</code> under the title, <code>minHeight</code> (56 dp, never under 48 dp).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 2</a></dd>
+</dl>
+<pre><code>fun StubButton(
+    icon: SelloIcon,
+    title: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    fact: String? = null,
+    label: String = title,
+    minHeight: Dp = 56.dp
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-TearLine">
+<h3><code>TearLine</code> <span class="src"><code>component/TearLine.kt:22</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A dashed rule with a punched notch at each end. It separates the total of a slip from what explains it. <code>bleed</code> must equal the slip's side padding so the notches bite the paper's edge. Purely decorative: it has no semantics.</dd>
+<dt>Variants</dt><dd><code>bleed</code> (must match the slip's side padding), <code>verticalMargin</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <a class="tag" href="features/recibo.html">recibo · 5</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 2</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Feedback.kt</code>.</span></dd>
+</dl>
+<pre><code>fun TearLine(modifier: Modifier = Modifier, bleed: Dp = 16.dp, verticalMargin: Dp = 14.dp)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>recibo</code>, <code>resumen</code>.</p>
+<figure data-shot="recibo" data-module="app" data-caption="Seen in the recibo screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-AnswerSlip">
+<h3><code>AnswerSlip</code> <span class="src"><code>component/Paper.kt:534</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A screen's answer: a label with its stamp, if it has one, then one large amount, in loss ink when <code>lossAmount</code> (by default when <code>ink</code> is <code>StampInk.Over</code>). Inversiones' Pierde keeps the value in ink: a value is not an overrun. With <code>description</code>, the label, stamp and amount are read as that one sentence; <code>detail</code> is read on its own.</dd>
+<dt>Variants</dt><dd><code>ink</code> (<code>StampInk</code>), optional <code>stamp</code>, <code>lossAmount</code>, <code>detail</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recibo.html">recibo · 3</a> <a class="tag" href="features/resumen.html">resumen · 1</a></dd>
+</dl>
+<pre><code>fun AnswerSlip(
+    label: String,
+    amount: MoneyTextValue,
+    stamp: String?,
+    ink: StampInk,
+    modifier: Modifier = Modifier,
+    description: String? = null,
+    lossAmount: Boolean = ink == StampInk.Over,
+    detail: @Composable () -&gt; Unit = {}
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>recibo</code>, <code>income-history-suggestion</code>.</p>
+<figure data-shot="recibo" data-module="app" data-caption="Seen in the recibo screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-PlanSlip">
+<h3><code>PlanSlip</code> <span class="src"><code>component/Plan.kt:66</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A plan beside the records, not on the desk's paper: a dashed outline on the background, <code>tag</code> in the brand's small capitals as its heading and <code>caption</code> at the other end, then <code>content</code>, usually receipt lines and <code>ExpectedChip</code>s.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a></dd>
+</dl>
+<pre><code>fun PlanSlip(
+    tag: String,
+    caption: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -&gt; Unit
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-ExpectedChip">
+<h3><code>ExpectedChip</code> <span class="src"><code>component/Plan.kt:116</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One amount still expected, such as "Salario · vie 30 oct · 1.000.000": a dashed pill with a calendar, <code>text</code> soft and the <code>amount</code> in ink. It is information, not a choice: it cannot be tapped. <code>spoken</code> is the whole sentence a screen reader says, with the amount spoken exactly.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a></dd>
+</dl>
+<pre><code>fun ExpectedChip(
+    text: String,
+    amount: MoneyTextValue,
+    spoken: String,
+    modifier: Modifier = Modifier
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-FactLine">
+<h3><code>FactLine</code> <span class="src"><code>component/Paper.kt:573</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>No KDoc. From the code: one paragraph of <code>bodyLarge</code> text in <code>inkSoft</code>, taking an <code>AnnotatedString</code> so facts can be bold.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 7</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
+</dl>
+<pre><code>fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-Footnote">
+<h3><code>Footnote</code> <span class="src"><code>component/Paper.kt:583</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>No KDoc. From the code: a full-width button at least 48 dp tall, a leading 18 dp brand icon (default <code>Event</code>), <code>bodySmall</code> soft text and a trailing chevron in <code>outline</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
+</dl>
+<pre><code>fun Footnote(
+    text: AnnotatedString,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    icon: SelloIcon = SelloIcon.Event
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+</section>
+<section id="g-money">
+<h2>Money, lines and verdicts</h2>
+<article class="component" id="c-MoneyText">
+<h3><code>MoneyText</code> <span class="src"><code>component/MoneyText.kt:56</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The only way an amount is drawn: tabular figures, a raised currency code, tightened thousands points and a true minus. A figure too wide for its place wraps between groups, never clips; Hero first steps down to Total.</dd>
+<dt>Variants</dt><dd><code>style</code>: <code>MoneyStyle.Hero</code> 60 sp, <code>Total</code> 44, <code>Card</code> 32, <code>Title</code> 19, <code>Line</code> 14 (drops the currency code). <code>MoneyTextValue.sign</code>: <code>None</code>, <code>Plus</code>, <code>Minus</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 8</a> <a class="tag" href="features/investments.html">investments · 12</a> <a class="tag" href="features/recibo.html">recibo · 25</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/resumen.html">resumen · 10</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Carry.kt</code>, <code>Goals.kt</code>, <code>Paper.kt</code>, <code>Plan.kt</code>, <code>Recurrence.kt</code>.</span></dd>
+</dl>
+<pre><code>fun MoneyText(
+    value: MoneyTextValue,
+    modifier: Modifier = Modifier,
+    style: MoneyStyle = MoneyStyle.Line,
+    color: Color = Color.Unspecified,
+    fontWeight: FontWeight? = null,
+    textStyle: TextStyle? = null,
+    singleLine: Boolean = false,
+    onTextLayout: (TextLayoutResult) -&gt; Unit = {}
+)</code></pre>
+<figure data-module="design-system" data-files="components-money-and-stamps.png" data-caption="Component capture: components-money-and-stamps.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-FittedMoneyText">
+<h3><code>FittedMoneyText</code> <span class="src"><code>component/Paper.kt:83</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Display-only fitting. Exact grouped digits and their spoken equivalent come from the caller. <code>startSize</code> in sp overrides the largest size tried, as on a goal card.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <span class="muted">Inside the design system: <code>Paper.kt</code>.</span></dd>
+</dl>
+<pre><code>fun FittedMoneyText(
+    value: MoneyTextValue,
+    modifier: Modifier = Modifier,
+    color: Color = SelloTheme.colors.ink,
+    entry: Boolean = false,
+    startSize: Int? = null,
+    onTextLayout: (androidx.compose.ui.text.TextLayoutResult) -&gt; Unit = {}
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-LeaderLine">
+<h3><code>LeaderLine</code> <span class="src"><code>component/Lines.kt:47</code>, <code>component/Lines.kt:115</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A receipt line: label, dotted leader, value. For two to six facts. Read as one node, "label, value". Put a <code>MoneyText</code> in <code>value</code> for amounts. A <code>LineEmphasis.Soft</code> line draws its label and, by default, its value in the soft ink; a <code>LineEmphasis.Strong</code> one sets its label in black weight, and the value should match.<br>A <code>LeaderLine</code> whose value is plain text, such as a date or a count.</dd>
+<dt>Variants</dt><dd>Two overloads: a composable <code>value</code> (put a <code>MoneyText</code> there) or a plain <code>String</code> value. <code>emphasis</code>: <code>LineEmphasis.Normal</code>, <code>Soft</code>, <code>Strong</code>; optional <code>icon</code>, <code>caption</code>, <code>onClick</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 8</a> <a class="tag" href="features/goals.html">goals · 3</a> <a class="tag" href="features/income.html">income · 6</a> <a class="tag" href="features/investments.html">investments · 10</a> <a class="tag" href="features/recibo.html">recibo · 12</a> <a class="tag" href="features/resumen.html">resumen · 3</a> <span class="muted">Inside the design system: <code>Carry.kt</code>, <code>Lines.kt</code>.</span></dd>
+</dl>
+<pre><code>fun LeaderLine(
+    label: String,
+    modifier: Modifier = Modifier,
+    icon: SelloIcon? = null,
+    caption: String? = null,
+    onClick: (() -&gt; Unit)? = null,
+    emphasis: LineEmphasis = LineEmphasis.Normal,
+    value: @Composable () -&gt; Unit
+)
+
+fun LeaderLine(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    icon: SelloIcon? = null,
+    caption: String? = null,
+    valueColor: Color = Color.Unspecified,
+    onClick: (() -&gt; Unit)? = null
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>resumen</code>, <code>income-history-suggestion</code>.</p>
+<figure data-shot="resumen" data-module="app" data-caption="Seen in the resumen screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-TotalLine">
+<h3><code>TotalLine</code> <span class="src"><code>component/Lines.kt:147</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The closing line of a receipt: a double rule, a bold label and the total.</dd>
+<dt>Variants</dt><dd><code>rule</code>: <code>TotalRule.Double</code> (a receipt total, bold label) or <code>Single</code> (a plan's sum).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 2</a> <a class="tag" href="features/resumen.html">resumen · 2</a></dd>
+</dl>
+<pre><code>fun TotalLine(
+    label: String,
+    modifier: Modifier = Modifier,
+    rule: TotalRule = TotalRule.Double,
+    value: @Composable () -&gt; Unit
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>resumen</code>.</p>
+<figure data-shot="resumen" data-module="app" data-caption="Seen in the resumen screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-Stamp">
+<h3><code>Stamp</code> <span class="src"><code>component/Stamp.kt:46</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One word in an outlined, rotated box: the verdict of a screen. It is decoration for a result that already exists; it has no click and cannot cause a write. <code>text</code> is sentence case and is what a screen reader says; it is drawn in capitals. With <code>land</code> the stamp comes down once when it first appears. Pass it only when the verdict has just been confirmed, or with <code>haptic</code> false for a verdict revisited. Reduced motion shows the stamp at rest.</dd>
+<dt>Variants</dt><dd><code>ink</code>: <code>StampInk.Good</code>, <code>Done</code>, <code>Over</code>, <code>Neutral</code>, <code>Warn</code> (review status only). <code>size</code>: <code>StampSize.Small</code> 15 sp, <code>Large</code> 34 sp, <code>Hero</code> 52 sp; angle −6° (Hero −9°). <code>land</code>, <code>inkRing</code>, <code>haptic</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/reset.html">reset · 1</a> <span class="muted">Inside the design system: <code>Paper.kt</code>, <code>Recurrence.kt</code>.</span></dd>
+</dl>
+<pre><code>fun Stamp(
+    text: String,
+    ink: StampInk,
+    modifier: Modifier = Modifier,
+    size: StampSize = StampSize.Small,
+    angle: Float = StampDefaults.angle(size),
+    land: Boolean = false,
+    inkRing: Boolean = false,
+    haptic: Boolean = true
+)</code></pre>
+<figure data-module="design-system" data-files="components-money-and-stamps.png" data-caption="Component capture: components-money-and-stamps.png (design-system)"></figure>
+<p class="muted">Also visible in screen baselines: <code>recibo</code>.</p>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+</section>
+<section id="g-frame">
+<h2>Frame and navigation</h2>
+<article class="component" id="c-SelloScaffold">
+<h3><code>SelloScaffold</code> <span class="src"><code>component/SelloScaffold.kt:77</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The frame of a screen: top bar, content on the desk, and the app's navigation and entry action arranged for the window it is given. In an upright phone or a medium window the <code>dock</code> and tab bar sit under the content, never over it. In a short or expanded window a rail at the leading edge carries the <code>navigation</code> and the dock's "+", and <code>secondaryPane</code>, if given, sits beside <code>content</code>; each pane scrolls on its own. Both bottom controls step aside for the system keyboard. A <code>notice</code> is drawn over the bottom of the content, above the dock, and moves nothing. A <code>topBar</code> takes the place of the title row (<code>title</code>, <code>subtitle</code>, <code>titleContent</code>, <code>navigationIcon</code> and <code>actions</code> then go unused). A <code>ribbon</code>, if given, sits on the band under the top bar or the title row; the band grows with it, so the content still starts on the band. A <code>band</code> colour puts the title row on a band of that colour: an entry form passes its kind's, so it is told apart before anything is typed. The scaffold holds no state: selection, the month and what a pane shows are the app's. @param blotterScroll how far, in pixels, the content has scrolled. The band shrinks by that much; the top bar keeps the band colour until the blotter is gone. @param windowInsets the system areas to keep clear. The paddings passed to <code>content</code> and <code>secondaryPane</code> already include what they must avoid.</dd>
+<dt>Variants</dt><dd><code>blotter</code>: <code>Blotter.None</code> 0 dp, <code>Short</code> 100 dp, <code>Tall</code> 132 dp of band under the status bar. Optional <code>band</code> colour (entry forms), <code>ribbon</code>, <code>topBar</code>, <code>notice</code>, <code>secondaryPane</code>, <code>navigation</code>, <code>dock</code>. Layout follows <a href="foundations.html#layout">the window</a>: tab bar and dock, or rail and two panes.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 3</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <a class="tag" href="features/shell.html">shell · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/startup.html">startup · 1</a></dd>
+</dl>
+<pre><code>fun SelloScaffold(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    titleContent: (@Composable () -&gt; Unit)? = null,
+    blotter: Blotter = Blotter.None,
+    blotterScroll: () -&gt; Int = { 0 },
+    navigationIcon: (@Composable () -&gt; Unit)? = null,
+    actions: @Composable RowScope.() -&gt; Unit = {},
+    navigation: SelloNavigation? = null,
+    dock: SelloDock? = null,
+    windowInsets: WindowInsets = WindowInsets.safeDrawing,
+    notice: (@Composable () -&gt; Unit)? = null,
+    secondaryPane: (@Composable (PaddingValues) -&gt; Unit)? = null,
+    topBar: (@Composable () -&gt; Unit)? = null,
+    ribbon: (@Composable () -&gt; Unit)? = null,
+    band: Color? = null,
+    content: @Composable (PaddingValues) -&gt; Unit
+)</code></pre>
+<figure data-module="design-system" data-files="components-frame.png" data-caption="Component capture: components-frame.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-SelloNavigationBar">
+<h3><code>SelloNavigationBar</code> <span class="src"><code>component/Controls.kt:131</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>No KDoc. From the code: the tab bar, for two to four destinations (it requires that). The selected tab shows its filled icon in a <code>brandSoft</code> pill and its label in <code>ink</code>; the others show the outlined icon and label in <code>inkSoft</code>. Each tab is at least 64 dp tall. Drawn by <code>SelloScaffold</code>, not by the app.</dd>
+<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>SelloScaffold.kt</code>.</span></dd>
+</dl>
+<pre><code>fun SelloNavigationBar(navigation: SelloNavigation, modifier: Modifier = Modifier)</code></pre>
+<figure data-module="design-system" data-files="components-frame.png" data-caption="Component capture: components-frame.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-SelloNavigationRail">
+<h3><code>SelloNavigationRail</code> <span class="src"><code>component/Navigation.kt:82</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The rail that replaces the tab bar in short and expanded windows. With a <code>dock</code> its button, in the dock's tone and with its icon, replaces the dock.</dd>
+<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>SelloScaffold.kt</code>.</span></dd>
+</dl>
+<pre><code>fun SelloNavigationRail(
+    navigation: SelloNavigation,
+    modifier: Modifier = Modifier,
+    dock: SelloDock? = null
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-EntryDock">
+<h3><code>EntryDock</code> <span class="src"><code>component/Controls.kt:78</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A full-width tab action. Its purpose, enabled state and busy state belong to the caller. A disabled dock is not faded: it is outlined in the soft ink at full strength, so its <code>label</code> stays readable as the reason it cannot be used.</dd>
+<dt>Variants</dt><dd><code>tone</code> (<code>ButtonTone</code>), <code>icon</code>, <code>enabled</code> (outlined, not faded), <code>busy</code>.</dd>
+<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>SelloScaffold.kt</code>.</span></dd>
+</dl>
+<pre><code>fun EntryDock(
+    label: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    tone: ButtonTone = ButtonTone.Brand,
+    icon: SelloIcon = SelloIcon.Add,
+    enabled: Boolean = true,
+    busy: Boolean = false
+)</code></pre>
+<figure data-module="design-system" data-files="components-frame.png" data-caption="Component capture: components-frame.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-BandChip">
+<h3><code>BandChip</code> <span class="src"><code>component/Controls.kt:181</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A secondary action on the band, as Metas' **+ Nueva meta** beside its title: a paper pill with a plus, the same paper on band as <code>PastMonthRibbon</code>'s return, so it stands out without competing with the dock. Its touch target is 48dp; the pill itself is 36dp. With <code>onPaper</code> the same pill sits on a slip, as Recibo's **+ Nueva categoría**: the soft brand fill instead of paper, which would not show on paper. <code>compact</code> is the round + alone, for a <code>TitleBar</code> whose title would not fit beside the label.</dd>
+<dt>Variants</dt><dd>On a band (default: paper pill, white in light), <code>onPaper</code> (<code>brandSoft</code> fill), <code>compact</code> (the round + alone).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/shell.html">shell · 2</a> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
+</dl>
+<pre><code>fun BandChip(
+    label: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    onPaper: Boolean = false,
+    compact: Boolean = false
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>recibo</code>.</p>
+<figure data-shot="recibo" data-module="app" data-caption="Seen in the recibo screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-MonthGrid">
+<h3><code>MonthGrid</code> <span class="src"><code>component/Navigation.kt:193</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The twelve months of one year. It shows what it is given and reports a pick; which months exist, which is current and which year comes next are the app's to decide. A null year callback disables that arrow.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/shell.html">shell · 1</a></dd>
+</dl>
+<pre><code>fun MonthGrid(
+    yearLabel: String,
+    months: List&lt;MonthCell&gt;,
+    selectedId: String?,
+    onPick: (String) -&gt; Unit,
+    previousYearLabel: String,
+    nextYearLabel: String,
+    modifier: Modifier = Modifier,
+    onPreviousYear: (() -&gt; Unit)? = null,
+    onNextYear: (() -&gt; Unit)? = null
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>shell-picker</code>.</p>
+<figure data-shot="shell-picker" data-module="app" data-caption="Seen in the shell-picker screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-MoreMenu">
+<h3><code>MoreMenu</code> <span class="src"><code>component/MoreMenu.kt:41</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The top bar's ⋮: what a screen rarely needs, such as deleting it, kept out of the way of what it is for. Choosing an item closes the menu and then runs it.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/shell.html">shell · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+</dl>
+<pre><code>fun MoreMenu(items: List&lt;MoreMenuItem&gt;, modifier: Modifier = Modifier)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>category-editor-menu</code>.</p>
+<figure data-shot="category-editor-menu" data-module="app" data-caption="Seen in the category-editor-menu screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+</section>
+<section id="g-entry">
+<h2>Entry forms</h2>
+<article class="component" id="c-EntryLayout">
+<h3><code>EntryLayout</code> <span class="src"><code>component/Paper.kt:359</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Keeps the amount, action and pad stable; choices scroll independently in either layout. A portrait window too short for that scrolls the amount with the choices instead. The entry's only text input is the docked <code>NoteComposer</code>, whose keyboard covers this screen. A host that pads for that keyboard would otherwise squeeze the entry or flip it into two columns behind the sheet, so while the keyboard is open the entry keeps the height it had without it. With a <code>band</code> colour, the band under the form's title row carries on behind the header and down to the middle of the amount slip, as a tab's band holds its answer slip: from edge to edge of the window, or in two panes only as far as the amount's pane, so the action beside it never sits on a band of its own colour. <code>more</code>, usually a <code>MoreSlip</code>, sits right under the amount and moves with it; the band still ends at the amount slip's middle.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 3</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+</dl>
+<pre><code>fun EntryLayout(
+    modifier: Modifier = Modifier,
+    header: @Composable () -&gt; Unit,
+    amount: @Composable () -&gt; Unit,
+    choices: @Composable () -&gt; Unit,
+    action: @Composable () -&gt; Unit,
+    keypad: @Composable () -&gt; Unit,
+    band: Color? = null,
+    more: (@Composable () -&gt; Unit)? = null
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-EntryAmountSlip">
+<h3><code>EntryAmountSlip</code> <span class="src"><code>component/Paper.kt:145</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The amount being entered: <code>label</code> (or <code>error</code> in its place, so nothing moves), the <code>date</code> pill, an <code>icon</code> circle and the fitted amount. Text pasted that cannot be an amount is shown as it was in <code>rejectedText</code>; with <code>onPaste</code> a paste button hands the clipboard text to the caller untouched. <code>content</code> follows the amount inside the slip. On a form with several figures, <code>onClick</code> makes the slip choose itself for the pad and <code>active</code> edges it in ink while the pad types into it.</dd>
+<dt>Variants</dt><dd><code>tone</code>, <code>error</code> in place of the label, <code>rejectedText</code>, paste button (<code>onPaste</code>), <code>active</code> outline for forms with several figures, <code>limitPulse</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 3</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+</dl>
+<pre><code>fun EntryAmountSlip(
+    label: String,
+    amount: MoneyTextValue?,
+    modifier: Modifier = Modifier,
+    error: String? = null,
+    date: @Composable () -&gt; Unit = {},
+    icon: SelloIcon? = null,
+    tone: ButtonTone = ButtonTone.Brand,
+    limitPulse: Int = 0,
+    rejectedText: String? = null,
+    onPaste: ((String) -&gt; Unit)? = null,
+    pasteLabel: String = stringResource(R.string.sello_paste),
+    amountAlpha: Float = 1f,
+    onClick: (() -&gt; Unit)? = null,
+    active: Boolean = false,
+    content: @Composable ColumnScope.() -&gt; Unit = {}
+)</code></pre>
+<figure data-module="design-system" data-files="components-more-slip.png" data-caption="Component capture: components-more-slip.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-MoreSlip">
+<h3><code>MoreSlip</code> <span class="src"><code>component/Paper.kt:285</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A second slip tucked behind the entry's amount slip: its visible strip, <code>text</code> after a plus (**Otro gasto**, **Otro movimiento**), opens the bulk receipt with what is typed. <code>EntryLayout</code>'s `more` slot puts it right under the amount, <code>MoreSlipTuck</code> of it hidden behind the amount slip. While not <code>enabled</code> it dims and waits.</dd>
+<dt>Variants</dt><dd><code>enabled</code> or dimmed.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
+</dl>
+<pre><code>fun MoreSlip(
+    text: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+)</code></pre>
+<figure data-module="design-system" data-files="components-more-slip.png" data-caption="Component capture: components-more-slip.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-AmountKeypad">
+<h3><code>AmountKeypad</code> <span class="src"><code>component/AmountKeypad.kt:57</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The in-app keypad for amounts: 1 to 9, then 000, 0 and backspace. It only reports presses; the draft, its 12-digit limit and every validation belong to the caller. With <code>onComma</code> (dollars and the USD rate) the 000 key is the decimal comma instead, and a hardware comma or period types it. A hardware keyboard works while focus is inside the keypad: digits, Backspace, and Enter for <code>onSubmit</code> when one is given. A long press on backspace, or its "Borrar todo" accessibility action, calls <code>onClearAll</code>.</dd>
+<dt>Variants</dt><dd>Pesos (000 key) or with <code>onComma</code> (decimal comma key, for dollars and the USD rate); <code>compact</code>; <code>enabled</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 3</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+</dl>
+<pre><code>fun AmountKeypad(
+    onDigit: (Int) -&gt; Unit,
+    onTripleZero: () -&gt; Unit,
+    onBackspace: () -&gt; Unit,
+    onClearAll: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onSubmit: (() -&gt; Unit)? = null,
+    compact: Boolean = false,
+    onComma: (() -&gt; Unit)? = null
+)</code></pre>
+<figure data-module="app" data-files="components-bars-and-keypad.png" data-caption="Component capture: components-bars-and-keypad.png (app)"></figure>
+<p class="muted">Also visible in screen baselines: <code>category-editor-menu</code>.</p>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-EntryHeading">
+<h3><code>EntryHeading</code> <span class="src"><code>component/EntryHeading.kt:18</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A section heading of an entry or movement form, such as Tipo, Meta or Inversión: uppercase, heavy and spaced, in the softer ink, as the v2 entry design draws it.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 3</a></dd>
+</dl>
+<pre><code>fun EntryHeading(text: String, modifier: Modifier = Modifier)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-EntryLine">
+<h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:301</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A full-width line under the chips that opens an editor, such as the note or an income source's name. Empty, it reads as a quiet <code>text</code> prompt; filled, it shows the value and the brand <code>action</code> (Editar, Cambiar) on the trailing edge.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 2</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 3</span> <a class="tag" href="features/recurrence.html">recurrence · 3</a></dd>
+</dl>
+<pre><code>fun EntryLine(
+    text: String,
+    icon: SelloIcon,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    action: String? = null,
+    placeholder: Boolean = false,
+    enabled: Boolean = true
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-FieldPill">
+<h3><code>FieldPill</code> <span class="src"><code>component/Chips.kt:192</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A tappable value on an entry sheet, such as the date or the note.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 5</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+</dl>
+<pre><code>fun FieldPill(
+    text: String,
+    icon: SelloIcon,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    placeholder: Boolean = false,
+    enabled: Boolean = true
+)</code></pre>
+<figure data-module="design-system" data-files="components-buttons-and-chips.png" data-caption="Component capture: components-buttons-and-chips.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-NoteComposer">
+<h3><code>NoteComposer</code> <span class="src"><code>component/Controls.kt:355</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Native text input docked above the IME. <code>context</code> says what the text belongs to, with its facts in bold spans, and <code>contextIcon</code> leads it; <code>contextDescription</code> is what a screen reader hears for the box, with amounts spoken in full. Under the box, <code>hint</code> (such as "Opcional") gives way to <code>error</code>. Validation and draft retention are caller-owned. The paper reaches the screen's edges; its content keeps clear of <code>windowInsets</code> at the sides, such as a navigation bar on the right of a phone held sideways.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+</dl>
+<pre><code>fun NoteComposer(
+    context: AnnotatedString,
+    value: String,
+    onValueChange: (String) -&gt; Unit,
+    counter: String,
+    hint: String?,
+    error: String?,
+    doneLabel: String,
+    cancelLabel: String,
+    onDone: () -&gt; Unit,
+    onCancel: () -&gt; Unit,
+    contextIcon: SelloIcon? = null,
+    contextDescription: String = context.text,
+    doneEnabled: Boolean = error == null,
+    windowInsets: WindowInsets = WindowInsets.safeDrawing
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-FormField">
+<h3><code>FormField</code> <span class="src"><code>component/FormField.kt:45</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A labelled text input. It shows exactly what was typed: it does not trim, cut at a limit or remove characters. The caller validates and passes back a <code>message</code>; an error message also marks the field invalid for screen readers. <code>counter</code> is a ready-made count such as `25/24`. <code>visualTransformation</code> changes only how the value is drawn, never the value: see <code>DigitGrouping</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <a class="tag" href="features/reset.html">reset · 1</a> <a class="tag" href="features/startup.html">startup · 1</a></dd>
+</dl>
+<pre><code>fun FormField(
+    label: String,
+    value: String,
+    onValueChange: (String) -&gt; Unit,
+    modifier: Modifier = Modifier,
+    message: FieldMessage? = null,
+    counter: String? = null,
+    enabled: Boolean = true,
+    singleLine: Boolean = true,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailing: (@Composable () -&gt; Unit)? = null
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-FieldMessageText">
+<h3><code>FieldMessageText</code> <span class="src"><code>component/FieldMessage.kt:46</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The shared look of a <code>FieldMessage</code>, as the v2 entry's save message. Announced when it appears.</dd>
+<dt>Variants</dt><dd><code>FieldMessage.tone</code>: <code>FieldTone.Error</code> (loss ink, error icon, marks the field invalid), <code>Warning</code>, <code>Hint</code> (soft ink, no icon).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 3</a> <a class="tag" href="features/category.html">category · 7</a> <a class="tag" href="features/expense.html">expense · 5</a> <a class="tag" href="features/goals.html">goals · 9</a> <a class="tag" href="features/income.html">income · 5</a> <a class="tag" href="features/investments.html">investments · 9</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <a class="tag" href="features/startup.html">startup · 2</a> <span class="muted">Inside the design system: <code>FormField.kt</code>.</span></dd>
+</dl>
+<pre><code>fun FieldMessageText(message: FieldMessage, modifier: Modifier = Modifier)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-SegmentedSwitch">
+<h3><code>SegmentedSwitch</code> <span class="src"><code>component/Switches.kt:42</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A choice among a few short options, shown as one trough with a sliding marker. On a coloured <code>band</code> the trough is a tint of the band and the marker is the band's ink.</dd>
+<dt>Variants</dt><dd>On paper, or on a coloured <code>band</code> (trough tinted from the band).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/settings.html">settings · 1</a></dd>
+</dl>
+<pre><code>fun SegmentedSwitch(
+    options: List&lt;String&gt;,
+    selectedIndex: Int,
+    onSelect: (Int) -&gt; Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    band: Color? = null
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>schedules</code>.</p>
+<figure data-shot="schedules" data-module="app" data-caption="Seen in the schedules screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+</section>
+<section id="g-choices">
+<h2>Buttons and choices</h2>
+<article class="component" id="c-SelloButton">
+<h3><code>SelloButton</code> <span class="src"><code>component/SelloButton.kt:42</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Sello's button. While <code>loading</code> it keeps its label and colours, shows a spinner in place of the icon and ignores presses, so a save cannot be submitted twice. <code>contentPadding</code> lets a text button end flush with the content beside it.</dd>
+<dt>Variants</dt><dd><code>kind</code>: <code>ButtonKind.Filled</code> (one per screen), <code>Outlined</code>, <code>Text</code>. <code>tone</code>: <code>ButtonTone.Brand</code>, <code>Gain</code>, <code>Ink</code>, <code>Loss</code> (only inside a confirmation), <code>OnBand</code> (a text action on a band). States: <code>enabled</code>, <code>loading</code> (spinner replaces the icon, presses ignored).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 8</a> <a class="tag" href="features/bulk.html">bulk · 4</a> <a class="tag" href="features/category.html">category · 8</a> <a class="tag" href="features/expense.html">expense · 4</a> <a class="tag" href="features/goals.html">goals · 16</a> <a class="tag" href="features/income.html">income · 5</a> <a class="tag" href="features/investments.html">investments · 14</a> <a class="tag" href="features/shell.html">shell · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 7</span> <a class="tag" href="features/recibo.html">recibo · 11</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/reset.html">reset · 6</a> <a class="tag" href="features/startup.html">startup · 7</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Controls.kt</code>, <code>Feedback.kt</code>, <code>Settings.kt</code>, <code>Suggestion.kt</code>.</span></dd>
+</dl>
+<pre><code>fun SelloButton(
+    text: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    kind: ButtonKind = ButtonKind.Filled,
+    icon: SelloIcon? = null,
+    enabled: Boolean = true,
+    loading: Boolean = false,
+    tone: ButtonTone = ButtonTone.Brand,
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding
+)</code></pre>
+<figure data-module="design-system" data-files="components-buttons-and-chips.png" data-caption="Component capture: components-buttons-and-chips.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-ButtonPair">
+<h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:238</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Two buttons side by side, sharing the width by <code>firstWeight</code> and <code>secondWeight</code>, or one above the other at full width when a word of either label would not fit its share.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <span class="muted">Inside the design system: <code>Feedback.kt</code>.</span></dd>
+</dl>
+<pre><code>fun ButtonPair(
+    firstWeight: Float,
+    secondWeight: Float,
+    modifier: Modifier = Modifier,
+    gap: Dp = 10.dp,
+    first: @Composable () -&gt; Unit,
+    second: @Composable () -&gt; Unit
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-SelloChip">
+<h3><code>SelloChip</code> <span class="src"><code>component/Chips.kt:49</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One choice in a set: a category, an income source, a goal with its percentage as <code>trailing</code>. It looks 36dp tall, grows with the font size and always takes a 48dp touch target. Put the set in a <code>ChipFlow</code> so it is announced as one group.</dd>
+<dt>Variants</dt><dd><code>selected</code>, <code>enabled</code>, optional <code>icon</code> and <code>trailing</code> text.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 5</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 3</span> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a></dd>
+</dl>
+<pre><code>fun SelloChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    icon: SelloIcon? = null,
+    enabled: Boolean = true,
+    trailing: String? = null
+)</code></pre>
+<figure data-module="design-system" data-files="components-buttons-and-chips.png" data-caption="Component capture: components-buttons-and-chips.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-AddChip">
+<h3><code>AddChip</code> <span class="src"><code>component/Chips.kt:116</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The chip that ends a set of choices to create a new one, such as Nueva after the expense categories. It looks like a <code>SelloChip</code> with a dashed brand outline and a plus, and it is a button, never one of the choices.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/expense.html">expense · 1</a></dd>
+</dl>
+<pre><code>fun AddChip(
+    label: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+)</code></pre>
+<figure data-module="design-system" data-files="components-buttons-and-chips.png" data-caption="Component capture: components-buttons-and-chips.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-ChipFlow">
+<h3><code>ChipFlow</code> <span class="src"><code>component/Chips.kt:156</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Lays out a set of chips. By default they wrap onto more lines; with <code>singleLine</code> they scroll sideways and fade at the trailing edge to show there are more.</dd>
+<dt>Variants</dt><dd>Wrapping (default) or <code>singleLine</code> (scrolls sideways with a trailing fade).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a></dd>
+</dl>
+<pre><code>fun ChipFlow(
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = false,
+    content: @Composable () -&gt; Unit
+)</code></pre>
+<figure data-module="design-system" data-files="components-buttons-and-chips.png" data-caption="Component capture: components-buttons-and-chips.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-ChipRows">
+<h3><code>ChipRows</code> <span class="src"><code>component/Controls.kt:245</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>At most two rows that scroll sideways together; the trailing fade is shown only when more choices can be reached. Choices fill down each column first, and every choice in a column takes the widest one's width so the columns line up. Each row is at least a 48dp touch target tall; a shorter chip sits centred in it, leaving a visible gap.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a></dd>
+</dl>
+<pre><code>fun ChipRows(
+    count: Int,
+    modifier: Modifier = Modifier,
+    rows: Int = 2,
+    item: @Composable (Int) -&gt; Unit
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-IconChoiceGrid">
+<h3><code>IconChoiceGrid</code> <span class="src"><code>component/IconChoiceGrid.kt:52</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A grid of icons where exactly one can be chosen, as for a category. It shows what it is given and reports a pick; which icons exist and which is chosen are the app's. Up to <code>maxColumns</code> per row, fewer when the width or a large font leaves less room, and every cell stays at least the minimum touch size. The chosen one is filled in <code>tone</code>; <code>round</code> cells are circles. Icons in <code>inUse</code> are outlined dashed and remain choosable; <code>inUseLabel</code> is added to what a screen reader says for them.</dd>
+<dt>Variants</dt><dd><code>tone</code>, <code>round</code> cells, <code>inUse</code> icons dashed, up to <code>maxColumns</code> (7).</dd>
+<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>IconPicker.kt</code>.</span></dd>
+</dl>
+<pre><code>fun IconChoiceGrid(
+    choices: List&lt;IconChoice&gt;,
+    selectedId: String?,
+    onPick: (String) -&gt; Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    maxColumns: Int = 7,
+    tone: ButtonTone = ButtonTone.Brand,
+    round: Boolean = false,
+    inUse: Set&lt;String&gt; = emptySet(),
+    inUseLabel: String? = null
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-IconPickerCircle">
+<h3><code>IconPickerCircle</code> <span class="src"><code>component/IconPicker.kt:42</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>What is being created, as a large circle beside its name (v2 create): tapping it opens the icons to choose from. With no <code>icon</code> yet it is a dashed ring in <code>tone</code> around a centred +, inviting the choice; with one it is filled in <code>tone</code>, with a small pencil. <code>caption</code> sits under it ("Elegir ícono", "Cambiar") and <code>description</code> is what a screen reader says, which should name the chosen icon.</dd>
+<dt>Variants</dt><dd>No icon yet: dashed ring with +; chosen: filled in <code>tone</code> with a pencil.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
+</dl>
+<pre><code>fun IconPickerCircle(
+    icon: SelloIcon?,
+    caption: String,
+    description: String,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    tone: ButtonTone = ButtonTone.Brand,
+    enabled: Boolean = true
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>category-editor-menu</code>.</p>
+<figure data-shot="category-editor-menu" data-module="app" data-caption="Seen in the category-editor-menu screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-IconChoiceSheetContent">
+<h3><code>IconChoiceSheetContent</code> <span class="src"><code>component/IconPicker.kt:126</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The icons to choose from, under a <code>RepeatSheet</code>-style heading, as round cells. Icons in <code>inUse</code> are drawn dashed and can still be chosen; <code>inUseNote</code> says so under the grid and is added to what a screen reader says for each of them.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
+</dl>
+<pre><code>fun IconChoiceSheetContent(
+    choices: List&lt;IconChoice&gt;,
+    selectedId: String?,
+    onPick: (String) -&gt; Unit,
+    modifier: Modifier = Modifier,
+    note: String? = null,
+    tone: ButtonTone = ButtonTone.Brand,
+    inUse: Set&lt;String&gt; = emptySet(),
+    inUseNote: String? = null
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-rememberSelectedFirst">
+<h3><code>rememberSelectedFirst()</code> <span class="src"><code>component/SelectedFirst.kt:24</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd><code>items</code> with the one whose <code>key</code> is <code>selectedKey</code> moved to the front; see <code>SelectedFirstOrder</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a></dd>
+</dl>
+<pre><code>fun &lt;T&gt; rememberSelectedFirst(
+    items: List&lt;T&gt;,
+    selectedKey: Any?,
+    key: (T) -&gt; Any
+): SelectedFirstOrder&lt;T&gt;</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+</section>
+<section id="g-feedback">
+<h2>Feedback, dialogs and sheets</h2>
+<article class="component" id="c-SelloNotice">
+<h3><code>SelloNotice</code> <span class="src"><code>component/Corrections.kt:50</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A short statement about something that just happened, with at most one thing to do about it, such as "Gasto borrado" and "Deshacer". It is announced when it appears. <code>spoken</code> is what is read aloud, when that should say more than fits on the line. While <code>busy</code> the action stays in view and cannot be pressed. An <code>icon</code> leads the message in place of the confirmation check, such as the repeat icon on what Sello recorded by itself. It holds no time: whoever shows it decides how long, and takes it away. With <code>remaining</code> (1 to 0) it shows that time as a lighter band over the bar that shrinks from the end, and a thin line along its foot.</dd>
+<dt>Variants</dt><dd>Plain or <code>confirmation</code> (a check), with an <code>icon</code>, an action, <code>busy</code>, a <code>remaining</code> time band.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/shell.html">shell · 38</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+</dl>
+<pre><code>fun SelloNotice(
+    message: String,
+    modifier: Modifier = Modifier,
+    actionLabel: String? = null,
+    onAction: (() -&gt; Unit)? = null,
+    busy: Boolean = false,
+    spoken: String = message,
+    confirmation: Boolean = false,
+    icon: SelloIcon? = null,
+    remaining: Float? = null
+)</code></pre>
+<figure data-module="design-system" data-files="components-feedback.png" data-caption="Component capture: components-feedback.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-ConfirmSlip">
+<h3><code>ConfirmSlip</code> <span class="src"><code>component/Feedback.kt:68</code>, <code>component/Feedback.kt:124</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A confirmation for something that cannot be undone. <code>message</code> says what is affected and how much, with the consequence in bold. Back and a tap outside cancel. While <code>busy</code> the action shows a spinner and nothing can be pressed or dismissed, so the action is requested once. A slip whose labels are long can narrow <code>buttonPadding</code> so each stays on one line.<br><code>ConfirmSlip</code> with any <code>content</code> under the title, such as points to read before saving a file. The content scrolls when the slip would not fit; the buttons stay in view and go one above the other when a label would not fit. The action stays off until <code>confirmEnabled</code>, such as until a word that confirms it is typed.</dd>
+<dt>Variants</dt><dd>Two overloads: a <code>message</code> (<code>AnnotatedString</code>) or any <code>content</code> with <code>confirmEnabled</code>. <code>destructive</code> (default true), <code>busy</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 10</a> <a class="tag" href="features/expense.html">expense · 2</a> <a class="tag" href="features/goals.html">goals · 4</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/shell.html">shell · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recurrence.html">recurrence · 2</a></dd>
+</dl>
+<pre><code>fun ConfirmSlip(
+    title: String,
+    message: AnnotatedString,
+    confirmLabel: String,
+    onConfirm: () -&gt; Unit,
+    onDismiss: () -&gt; Unit,
+    destructive: Boolean = true,
+    busy: Boolean = false,
+    dismissLabel: String = stringResource(R.string.sello_cancel),
+    buttonPadding: PaddingValues = ButtonDefaults.ContentPadding
+)
+
+fun ConfirmSlip(
+    title: String,
+    confirmLabel: String,
+    onConfirm: () -&gt; Unit,
+    onDismiss: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    destructive: Boolean = true,
+    busy: Boolean = false,
+    dismissLabel: String = stringResource(R.string.sello_cancel),
+    confirmEnabled: Boolean = true,
+    content: @Composable ColumnScope.() -&gt; Unit
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-ChoiceSlip">
+<h3><code>ChoiceSlip</code> <span class="src"><code>component/Feedback.kt:194</code>, <code>component/Feedback.kt:272</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A question with two answers, neither of them destructive, such as whether a change applies to the next ones too: <code>firstLabel</code> outlined, <code>secondLabel</code> filled, and <code>backLabel</code> under them to go back without answering. The slip is <code>ConfirmSlip</code>'s. Back and a tap outside are <code>onBack</code>. The answers stand one above the other when they do not fit side by side. While <code>busy</code> the answer given shows a spinner and nothing can be pressed or dismissed, so it is requested once.<br><code>ChoiceSlip</code> with any <code>content</code> under the title, such as a choice of format and the points to read before acting. The content scrolls when the slip would not fit; the answers stay in view.</dd>
+<dt>Variants</dt><dd>Two overloads: a <code>message</code> or any scrolling <code>content</code>. First answer outlined, second filled, back as text. <code>busy</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span></dd>
+</dl>
+<pre><code>fun ChoiceSlip(
+    title: String,
+    message: AnnotatedString,
+    firstLabel: String,
+    onFirst: () -&gt; Unit,
+    secondLabel: String,
+    onSecond: () -&gt; Unit,
+    backLabel: String,
+    onBack: () -&gt; Unit,
+    busy: Boolean = false
+)
+
+fun ChoiceSlip(
+    title: String,
+    firstLabel: String,
+    onFirst: () -&gt; Unit,
+    secondLabel: String,
+    onSecond: () -&gt; Unit,
+    backLabel: String,
+    onBack: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    busy: Boolean = false,
+    content: @Composable ColumnScope.() -&gt; Unit
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-OptionSlip">
+<h3><code>OptionSlip</code> <span class="src"><code>component/Settings.kt:142</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Choosing one of a few <code>options</code>, such as the order of the categories: a dialog slip with <code>title</code>, one radio row per option with <code>selectedIndex</code> marked, and Cancelar. A choice is reported with <code>onSelect</code>; Back, a tap outside and Cancelar are <code>onDismiss</code>. The rows scroll when they do not fit.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/settings.html">settings · 4</a></dd>
+</dl>
+<pre><code>fun OptionSlip(
+    title: String,
+    options: List&lt;String&gt;,
+    selectedIndex: Int,
+    onSelect: (Int) -&gt; Unit,
+    onDismiss: () -&gt; Unit,
+    modifier: Modifier = Modifier
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-EmptySlip">
+<h3><code>EmptySlip</code> <span class="src"><code>component/Feedback.kt:352</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A slip with nothing to show yet: a title, one sentence and at most one action, centred under a large decorative <code>icon</code> that fits what is missing.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/recibo.html">recibo · 5</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a></dd>
+</dl>
+<pre><code>fun EmptySlip(
+    title: String,
+    body: String,
+    icon: SelloIcon,
+    modifier: Modifier = Modifier,
+    actionLabel: String? = null,
+    onAction: (() -&gt; Unit)? = null
+)</code></pre>
+<figure data-module="design-system" data-files="components-feedback.png" data-caption="Component capture: components-feedback.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-ErrorSlip">
+<h3><code>ErrorSlip</code> <span class="src"><code>component/Feedback.kt:377</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A slip whose content could not be read. <code>message</code> says what failed in plain words. It never shows a figure: a failed read has no amount, not a zero. It is centred under a large decorative <code>icon</code>. While <code>loading</code>, the retry runs and cannot be pressed again.</dd>
+<dt>Variants</dt><dd><code>loading</code> while retrying; title and retry label default to "No se pudo cargar" and "Reintentar".</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 6</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 9</a> <a class="tag" href="features/income.html">income · 5</a> <a class="tag" href="features/investments.html">investments · 10</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 3</span> <a class="tag" href="features/recibo.html">recibo · 11</a> <a class="tag" href="features/recurrence.html">recurrence · 4</a> <a class="tag" href="features/reset.html">reset · 3</a> <a class="tag" href="features/resumen.html">resumen · 2</a> <a class="tag" href="features/settings.html">settings · 1</a> <a class="tag" href="features/startup.html">startup · 2</a></dd>
+</dl>
+<pre><code>fun ErrorSlip(
+    message: String,
+    onRetry: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    title: String = stringResource(R.string.sello_error_title),
+    retryLabel: String = stringResource(R.string.sello_retry),
+    icon: SelloIcon = SelloIcon.Error,
+    loading: Boolean = false
+)</code></pre>
+<figure data-module="design-system" data-files="components-feedback.png" data-caption="Component capture: components-feedback.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-SlipSkeleton">
+<h3><code>SlipSkeleton</code> <span class="src"><code>component/Feedback.kt:446</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The loading state of a slip: bars where figures will be. Callers show it only when loading lasts long enough to notice. With reduced motion the bars do not pulse.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 6</a> <a class="tag" href="features/income.html">income · 4</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/recibo.html">recibo · 10</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/reset.html">reset · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <a class="tag" href="features/settings.html">settings · 1</a></dd>
+</dl>
+<pre><code>fun SlipSkeleton(modifier: Modifier = Modifier, lines: Int = 3)</code></pre>
+<figure data-module="design-system" data-files="components-feedback.png" data-caption="Component capture: components-feedback.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-SuggestionNote">
+<h3><code>SuggestionNote</code> <span class="src"><code>component/Suggestion.kt:30</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A tinted note where Sello suggests something: the <code>evidence</code> it rests on, the <code>advice</code> and one <code>actionLabel</code> that opens the place to act. Nothing is changed by showing it. <code>evidenceSpoken</code> is how the evidence is read aloud when it holds an amount, which is said in pesos. It can be sent away only when <code>onDismiss</code> is given, with <code>dismissLabel</code> as its spoken name.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a></dd>
+</dl>
+<pre><code>fun SuggestionNote(
+    title: String,
+    evidence: String,
+    advice: String,
+    actionLabel: String,
+    onAction: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    evidenceSpoken: String? = null,
+    dismissLabel: String? = null,
+    onDismiss: (() -&gt; Unit)? = null
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>income-history-suggestion</code>.</p>
+<figure data-shot="income-history-suggestion" data-module="app" data-caption="Seen in the income-history-suggestion screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-BulletList">
+<h3><code>BulletList</code> <span class="src"><code>component/BulletList.kt:28</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Points a person should read before acting, such as what a backup file exposes or what a replacement will remove. Each reads aloud as one sentence, without the dot.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 3</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 2</span> <a class="tag" href="features/reset.html">reset · 1</a></dd>
+</dl>
+<pre><code>fun BulletList(bullets: List&lt;Bullet&gt;, modifier: Modifier = Modifier)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-RepeatSheet">
+<h3><code>RepeatSheet</code> <span class="src"><code>component/Recurrence.kt:60</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The sheet that says how something repeats, over the screen it belongs to: a scrim that closes it when tapped, and paper docked at the bottom with <code>title</code> as its heading and <code>content</code> under it, scrolling when it is taller than the screen. It keeps clear of the system bars. Back is the screen's to handle, as is what lies behind.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
+</dl>
+<pre><code>fun RepeatSheet(
+    title: String,
+    onDismiss: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -&gt; Unit
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+</section>
+<section id="g-categories">
+<h2>Categories and carry</h2>
+<article class="component" id="c-CategoryCircle">
+<h3><code>CategoryCircle</code> <span class="src"><code>component/Category.kt:56</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A circle that fills with ink from the bottom to the share of the limit spent. The category is known by its icon and name, never by a colour of its own. @param fraction spent over limit; drawn clamped to 0..1. Null means no limit: outline and icon only. @param over spent more than the limit: full, in loss ink. @param unlimited no limit on purpose ("Sin límite"): an open, dashed ring and a small ∞ badge at its lower edge, so it never looks like a limit with nothing spent yet. @param carrying the category passes what is left or missing on to the next month (ADR 0020): a ↻ badge at the same place, never together with <code>unlimited</code>. @param archived drawn in the soft outline ink instead of the brand or loss ink; the fill and the badge keep their meaning. @param staggerIndex position in a group, so the circles of a screen fill in turn.</dd>
+<dt>Variants</dt><dd>Fill by <code>fraction</code>; <code>over</code> (full, loss ink); no limit (<code>fraction</code> null: outline only); <code>unlimited</code> (dashed ring, ∞ badge); <code>carrying</code> (↻ badge); <code>archived</code> (outline ink).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/recibo.html">recibo · 4</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>.</span></dd>
+</dl>
+<pre><code>fun CategoryCircle(
+    icon: SelloIcon,
+    fraction: Float?,
+    modifier: Modifier = Modifier,
+    size: Dp = 46.dp,
+    over: Boolean = false,
+    animate: Boolean = true,
+    staggerIndex: Int = 0,
+    unlimited: Boolean = false,
+    archived: Boolean = false,
+    carrying: Boolean = false
+)</code></pre>
+<figure data-module="design-system" data-files="components-carry.png" data-caption="Component capture: components-carry.png (design-system)"></figure>
+<figure data-module="app" data-files="components-categories.png" data-caption="Component capture: components-categories.png (app)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-CarryBadge">
+<h3><code>CarryBadge</code> <span class="src"><code>component/Category.kt:178</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The ↻ a carrying category's circle wears, on its own: beside a carried amount, so the amount and the circle read as the same thing. Decorative; the words say it.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/recibo.html">recibo · 1</a></dd>
+</dl>
+<pre><code>fun CarryBadge(size: Dp, modifier: Modifier = Modifier, ink: Color = SelloTheme.colors.brand)</code></pre>
+<figure data-module="design-system" data-files="components-carry.png" data-caption="Component capture: components-carry.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-CarryBreakdown">
+<h3><code>CarryBreakdown</code> <span class="src"><code>component/Carry.kt:41</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Base, signed carry, capacity and what was spent, as receipt lines (ADR 0020 CP27): the capacity is never shown without the base and the carry beside it. <code>footnote</code> says where the carry comes from and when it was read. Every line is read on its own, "label, amount, caption"; amounts are exact and drawn whole, wrapping under their label at large text.</dd>
+<dt>Used by</dt><dd><span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span></dd>
+</dl>
+<pre><code>fun CarryBreakdown(
+    lines: List&lt;CarryLine&gt;,
+    modifier: Modifier = Modifier,
+    footnote: String? = null
+)</code></pre>
+<figure data-module="design-system" data-files="components-carry.png" data-caption="Component capture: components-carry.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-ChangeRow">
+<h3><code>ChangeRow</code> <span class="src"><code>component/Carry.kt:83</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One change in a list shown before saving, such as a later month whose limit with carry moves: <code>label</code> (the month), <code>value</code> ("180.000 → 200.000 (+20.000)") and an optional <code>caption</code> under it ("Restante 110.000 → 130.000"), stronger when <code>emphasized</code>, as for a verdict that flips. Text is already formatted by the application; <code>spoken</code> is the whole row as a screen reader says it, without arrows.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 8</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span></dd>
+</dl>
+<pre><code>fun ChangeRow(
+    label: String,
+    value: String,
+    spoken: String,
+    modifier: Modifier = Modifier,
+    caption: String? = null,
+    emphasized: Boolean = false
+)</code></pre>
+<figure data-module="design-system" data-files="components-carry.png" data-caption="Component capture: components-carry.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+</section>
+<section id="g-charts">
+<h2>Charts</h2>
+<article class="component" id="c-ColumnsChart">
+<h3><code>ColumnsChart</code> <span class="src"><code>component/Charts.kt:96</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Columns for a handful of periods. Each column is a selectable item that says its <code>ChartPoint.spoken</code> text, so the chart works with a screen reader, a keyboard or Switch Access; <code>summary</code> describes it as a whole. With no <code>points</code> it shows <code>emptyText</code> at the same size.</dd>
+<dt>Variants</dt><dd><code>ChartPoint.period</code>: <code>ChartPeriod.Past</code>, <code>Current</code>, <code>Over</code>, <code>Upcoming</code>. Optional <code>reference</code> line, <code>stripedCurrent</code>, per-point <code>stripedFromValue</code> and <code>referenceValue</code>, <code>emptyText</code>, selection.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/resumen.html">resumen · 2</a></dd>
+</dl>
+<pre><code>fun ColumnsChart(
+    points: List&lt;ChartPoint&gt;,
+    summary: String,
+    modifier: Modifier = Modifier,
+    selectedId: String? = null,
+    onSelect: ((String) -&gt; Unit)? = null,
+    reference: ChartReference? = null,
+    height: Dp = 150.dp,
+    emptyText: String? = null,
+    stripedCurrent: Boolean = false
+)</code></pre>
+<figure data-module="design-system" data-files="components-charts.png" data-caption="Component capture: components-charts.png (design-system)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-SplitBar">
+<h3><code>SplitBar</code> <span class="src"><code>component/SummaryCharts.kt:43</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One bar split by <code>segments</code>, <code>height</code> tall with <code>gap</code> of paper between them (Inversiones uses 22dp and 3dp). A segment's <code>SplitSegment.label</code> is written in its middle only where it fits whole, in its <code>SplitSegment.labelColor</code> or paper; the exact values belong in the lines or rows next to it.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a></dd>
+</dl>
+<pre><code>fun SplitBar(
+    segments: List&lt;SplitSegment&gt;,
+    modifier: Modifier = Modifier,
+    gap: Dp = 0.dp,
+    height: Dp = 14.dp
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>resumen</code>, <code>income-history-suggestion</code>.</p>
+<figure data-shot="resumen" data-module="app" data-caption="Seen in the resumen screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+</section>
+<section id="g-goals">
+<h2>Goals and movements</h2>
+<article class="component" id="c-MovementRow">
+<h3><code>MovementRow</code> <span class="src"><code>component/Goals.kt:77</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One movement (v2 *mov-row*): its mark, <code>title</code> over <code>detail</code>, and the amount at the end with <code>balance</code> under it. A movement that earned a stamp shows the stamp as its mark. <code>rule</code> draws the line under the row; the last row of a group leaves it out.</dd>
+<dt>Variants</dt><dd><code>tone</code>: <code>MovementTone.In</code>, <code>Out</code>, <code>Value</code>. Optional <code>milestone</code> (a 34 dp stamp as the mark), <code>balance</code>, <code>annotation</code>, <code>rule</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
+</dl>
+<pre><code>fun MovementRow(
+    title: String,
+    detail: String,
+    amount: MoneyTextValue,
+    modifier: Modifier = Modifier,
+    milestone: MilestoneSpec? = null,
+    icon: SelloIcon = SelloIcon.Add,
+    annotation: String? = null,
+    tone: MovementTone = MovementTone.In,
+    amountColor: Color = Color.Unspecified,
+    balance: MovementBalance? = null,
+    rule: Boolean = true
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-MovementMonthLine">
+<h3><code>MovementMonthLine</code> <span class="src"><code>component/Goals.kt:164</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A month of a full movement list, over a rule: its name and, for a goal, its <code>net</code> change. Goal and investment details share it.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
+</dl>
+<pre><code>fun MovementMonthLine(name: String, net: MoneyTextValue?, modifier: Modifier = Modifier)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-MilestonePlace">
+<h3><code>MilestonePlace</code> <span class="src"><code>component/Goals.kt:205</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One stamp place. <code>diameter</code> is 60dp on cards, 66dp in the celebration and 34dp, with a smaller <code>labelSize</code> and no <code>innerRing</code>, in a movement row; <code>ink</code> replaces the state's colour where the place sits on green. <code>land</code> brings an earned stamp down once, after <code>landDelayMillis</code> so stamps earned together come down in turn; <code>relight</code> lights a stamp earned again from its kept ink instead. Reduced motion shows it at once.</dd>
+<dt>Variants</dt><dd><code>MilestoneSpec.state</code>: <code>MilestoneState.Empty</code>, <code>Earned</code>, <code>Kept</code>, <code>Ready</code>. <code>diameter</code> 60 dp on cards, 66 dp in the celebration, 34 dp in a movement row. <code>land</code>, <code>relight</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 2</a> <span class="muted">Inside the design system: <code>Goals.kt</code>.</span></dd>
+</dl>
+<pre><code>fun MilestonePlace(
+    spec: MilestoneSpec,
+    modifier: Modifier = Modifier,
+    land: Boolean = false,
+    diameter: Dp = 60.dp,
+    ink: Color? = null,
+    relight: Boolean = false,
+    landDelayMillis: Long = 0,
+    labelSize: TextUnit = 14.sp,
+    innerRing: Boolean = true
+)</code></pre>
+<figure data-module="app" data-files="components-goals-and-investments.png" data-caption="Component capture: components-goals-and-investments.png (app)"></figure>
+<div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-MilestoneRow">
+<h3><code>MilestoneRow</code> <span class="src"><code>component/Goals.kt:341</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The stamps in a row. By default they sit side by side and scroll when they do not fit; <code>evenly</code> centres each in an equal share of the width instead, as on Nueva meta.</dd>
+<dt>Variants</dt><dd>Side by side and scrolling, or <code>evenly</code> spread (Nueva meta). <code>landing</code> and <code>relighting</code> sets.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 3</a></dd>
+</dl>
+<pre><code>fun MilestoneRow(
+    places: List&lt;MilestoneSpec&gt;,
+    modifier: Modifier = Modifier,
+    landingIndex: Int? = null,
+    landing: Set&lt;Int&gt; = setOfNotNull(landingIndex),
+    relighting: Set&lt;Int&gt; = emptySet(),
+    evenly: Boolean = false
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+<article class="component" id="c-StampTicket">
+<h3><code>StampTicket</code> <span class="src"><code>component/Goals.kt:409</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The paper ticket a save notice becomes when a stamp is earned where the goal's own stamps are not in view: the stamps on the left, a dashed tear, then <code>title</code> and <code>detail</code>. Two stamps sit smaller, side by side; with <code>land</code> they come down in turn.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a></dd>
+</dl>
+<pre><code>fun StampTicket(
+    places: List&lt;MilestoneSpec&gt;,
+    title: String,
+    detail: String,
+    modifier: Modifier = Modifier,
+    land: Boolean = false
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+</section>
+<section id="g-rows">
+<h2>List rows</h2>
+<article class="component" id="c-ScheduleRow">
+<h3><code>ScheduleRow</code> <span class="src"><code>component/Recurrence.kt:122</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One payment or income that repeats: its <code>icon</code> in a circle, <code>name</code> over <code>caption</code> (the category, the rule, the next date), an optional <code>pausedLabel</code> stamp and the <code>amount</code>, with an optional date <code>pill</code> under it. One still <code>soon</code> to come is in soft ink; an <code>income</code> is in gain ink. <code>recorded</code>, for one whose month already went through, shows a check instead of its icon and softens a payment's amount. <code>dimmed</code>, for one paused or ended, softens it while every text keeps its contrast. The whole row is one button read as <code>spoken</code>. A rule separates it from the next row unless it is the <code>last</code>.</dd>
+<dt>Variants</dt><dd><code>soon</code>, <code>income</code> (gain ink), <code>recorded</code> (a check), <code>dimmed</code> (paused or ended), <code>pausedLabel</code> stamp, date <code>pill</code>, <code>last</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/recibo.html">recibo · 3</a> <a class="tag" href="features/recurrence.html">recurrence · 4</a></dd>
+</dl>
+<pre><code>fun ScheduleRow(
+    name: String,
+    caption: String,
+    amount: MoneyTextValue,
+    icon: SelloIcon,
+    onClick: () -&gt; Unit,
+    spoken: String,
+    modifier: Modifier = Modifier,
+    soon: Boolean = false,
+    income: Boolean = false,
+    pausedLabel: String? = null,
+    dimmed: Boolean = false,
+    last: Boolean = false,
+    pill: String? = null,
+    recorded: Boolean = false
+)</code></pre>
+<p class="muted">Also visible in screen baselines: <code>schedules</code>.</p>
+<figure data-shot="schedules" data-module="app" data-caption="Seen in the schedules screen"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-SettingRow">
+<h3><code>SettingRow</code> <span class="src"><code>component/Settings.kt:62</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>One line of Configuración: <code>icon</code>, <code>title</code> with an optional <code>caption</code> under it, and <code>value</code> at the end. With <code>onClick</code> the whole row is one button and a chevron says it leads somewhere, unless it is the <code>SettingTone.Loss</code> row, which is red instead. A dashed rule above separates it from the row before; the first row under a heading has none. When they don't fit on one line, the title and value share the width and each wraps.</dd>
+<dt>Variants</dt><dd><code>tone</code>: <code>SettingTone.Normal</code> or <code>Loss</code> (red, no chevron). With or without <code>onClick</code>, <code>caption</code>, <code>value</code>, <code>divider</code>.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/settings.html">settings · 8</a></dd>
+</dl>
+<pre><code>fun SettingRow(
+    title: String,
+    icon: SelloIcon,
+    modifier: Modifier = Modifier,
+    caption: String? = null,
+    value: String? = null,
+    onClick: (() -&gt; Unit)? = null,
+    tone: SettingTone = SettingTone.Normal,
+    divider: Boolean = true,
+    enabled: Boolean = true
+)</code></pre>
+
+<div class="gaps"><p>No component capture and not checked in a screen baseline.</p></div>
+</article>
+</section>
+<section id="g-bulk">
+<h2>Bulk receipt</h2>
+<article class="component" id="c-BulkReceipt">
+<h3><code>BulkReceipt</code> <span class="src"><code>component/BulkReceipt.kt:165</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The bulk receipt of Anotar varios: a pinked slip with the <code>caption</code> and <code>headerEnd</code> (the receipt's date) on top, the <code>lines</code>, a tear line and a foot with **Otro renglón** and the <code>total</code>. It takes the height its <code>modifier</code> gives it: the lines scroll inside, fading at the edge that hides more, while the header and the foot stay. Tapping a line calls <code>onSelect</code>; the <code>highlighted</code> one is edged in ink, shows a caret and carries <code>highlightedFoot</code> (a goal's or investment's date pill). <code>onRemove</code> runs from a swipe towards the start past 40 % of the line, from its long-press menu or from the action a screen reader offers; the last line offers none of them. Each line is read as one item: its place, title, detail, amount and reason; the date pill is reached on its own. While not <code>enabled</code> nothing responds and no line is highlighted.</dd>
+<dt>Variants</dt><dd><code>BulkLine.markTone</code>: <code>BulkMarkTone.Category</code>, <code>Gain</code>, <code>Neutral</code>, <code>Value</code>. <code>BulkAmountTone.Ink</code> or <code>Gain</code>. <code>BulkCaption.Count</code> or <code>Problem</code>. A line with a <code>reason</code> is outlined in loss. At most <code>BULK_RECEIPT_MAX_LINES</code> = 30 lines.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 1</a></dd>
+</dl>
+<pre><code>fun BulkReceipt(
+    lines: List&lt;BulkLine&gt;,
+    highlighted: Int,
+    caption: BulkCaption,
+    total: BulkTotal,
+    onSelect: (Int) -&gt; Unit,
+    onRemove: (Int) -&gt; Unit,
+    onAdd: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    addEnabled: Boolean = true,
+    enabled: Boolean = true,
+    headerEnd: @Composable () -&gt; Unit = {},
+    highlightedFoot: (@Composable () -&gt; Unit)? = null
+)</code></pre>
+<figure data-shot="bulk-receipt-three-lines" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-three-lines"></figure>
+<figure data-shot="bulk-receipt-thirty-lines" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-thirty-lines"></figure>
+<figure data-shot="bulk-receipt-missing-category" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-missing-category"></figure>
+<figure data-shot="bulk-receipt-missing-type" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-missing-type"></figure>
+<figure data-shot="bulk-receipt-removing" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-removing"></figure>
+<figure data-shot="bulk-receipt-saving" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-saving"></figure>
+<figure data-shot="bulk-receipt-goal" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-goal"></figure>
+<figure data-shot="bulk-receipt-investment" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-investment"></figure>
+<figure data-shot="bulk-receipt-usd" data-module="design-system" data-variants="claro,oscuro" data-caption="bulk-receipt-usd"></figure>
+<p class="muted">Also visible in screen baselines: <code>bulk-expenses-three-lines</code>.</p>
+</article>
+</section>
+<section id="g-theme">
+<h2>Theme and helpers</h2>
+<article class="component" id="c-SelloTheme">
+<h3><code>SelloTheme</code> <span class="src"><code>theme/Theme.kt:16</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Sello's theme. The ink is the user's choice; light/dark and reduced motion follow the system unless the caller says otherwise. Wallpaper-derived Material colours are never applied.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/shell.html">shell · 1</a></dd>
+</dl>
+<pre><code>fun SelloTheme(
+    ink: SelloInk = SelloInk.Cobalto,
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    reducedMotion: Boolean = systemReducedMotion(),
+    content: @Composable () -&gt; Unit
+)</code></pre>
+
+</article>
+<article class="component" id="c-systemReducedMotion">
+<h3><code>systemReducedMotion()</code> <span class="src"><code>theme/ReducedMotion.kt:26</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>True when the system asks for no animations (animator duration scale 0, which is what "Remove animations" sets). Components then show their end state at once. It follows the setting while whatever calls it is on screen: turning animations off or on takes effect at once, without the app being started again. It listens for the change; it does not poll and needs no permission.</dd>
+<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>Theme.kt</code>.</span></dd>
+</dl>
+<pre><code>fun systemReducedMotion(): Boolean</code></pre>
+
+</article>
+<article class="component" id="c-StatusBarInk">
+<h3><code>StatusBarInk</code> <span class="src"><code>theme/StatusBarInk.kt:64</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Says that <code>ink</code> reads on what this screen draws under the status bar, while it is shown.</dd>
+<dt>Used by</dt><dd><span class="tag internal">not called from :app</span> <span class="muted">Inside the design system: <code>SelloScaffold.kt</code>.</span></dd>
+</dl>
+<pre><code>fun StatusBarInk(ink: Color)</code></pre>
+
+</article>
+<article class="component" id="c-statusBarLightIconsUnder">
+<h3><code>statusBarLightIconsUnder()</code> <span class="src"><code>theme/StatusBarInk.kt:85</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Whether a window opened over the shown screen, such as a sheet or a full-screen dialog, should draw light status icons: its scrim only dims what the screen says is under the status bar. Without a word from a screen, the theme decides.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/shell.html">shell · 1</a> <span class="muted">Inside the design system: <code>Controls.kt</code>.</span></dd>
+</dl>
+<pre><code>fun statusBarLightIconsUnder(): Boolean</code></pre>
+
+</article>
+<article class="component" id="c-DialogBarIcons">
+<h3><code>DialogBarIcons</code> <span class="src"><code>theme/StatusBarInk.kt:95</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Asks this dialog's own window for dark (or light) status- and navigation-bar icons. Call it inside a full-screen `Dialog`'s content; a floating dialog leaves the bars to the window under it. Android 11 drops an appearance set before the window is attached and also needs the older light-bar flags on the decor view.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 1</a> <span class="muted">Inside the design system: <code>Controls.kt</code>.</span></dd>
+</dl>
+<pre><code>fun DialogBarIcons(darkStatusIcons: Boolean, darkNavigationIcons: Boolean)</code></pre>
+
+</article>
+<article class="component" id="c-painter">
+<h3><code>painter()</code> <span class="src"><code>icon/SelloIcon.kt:92</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>No KDoc. Resolves a <code>SelloIcon</code> to its filled drawing, or its outlined one when <code>filled</code> is false and one exists.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 5</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 16</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 7</a> <a class="tag" href="features/shell.html">shell · 9</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 3</span> <a class="tag" href="features/recibo.html">recibo · 8</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a></dd>
+</dl>
+<pre><code>fun SelloIcon.painter(filled: Boolean = true): Painter</code></pre>
+
+</article>
+</section>
+  </main>
+</body>
+</html>

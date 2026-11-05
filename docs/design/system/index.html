@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sello design system</title>
+  <link rel="stylesheet" href="assets/system.css">
+  <script src="assets/system.js" defer></script>
+</head>
+<body data-page="index">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Sello design system</p>
+      <h1>The design system, as built</h1>
+      <p class="lede">What Sello looks like today, read from the code and its committed screenshots:
+        tokens, shared components, and every feature's screens and states.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section>
+      <h2>What this is</h2>
+      <p>This is a description of the <strong>built app</strong>. The source for every statement is the
+        Kotlin code in <code>:design-system</code> and <code>:app</code>, and every picture is a
+        screenshot baseline the tests draw and CI compares. When a page and the code disagree, the code
+        is right and the page is out of date.</p>
+      <p>Prose is in English. Interface text is quoted in Spanish exactly as it is in the
+        <code>strings.xml</code> files.</p>
+      <div class="note">
+        <p>Screenshots are linked from where the tests write them, never copied:
+          <code>app/src/test/screenshots/</code> and <code>design-system/src/test/screenshots/</code>.
+          Re-recording a baseline updates these pages. A link to an image that does not exist shows a red
+          <strong>missing screenshot</strong> box, so a renamed or deleted baseline is easy to spot.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>How to open it</h2>
+      <p>Serve the repository root and open this page; no internet connection is needed (the fonts are the
+        ones bundled in <code>design-system/src/main/res/font/</code>).</p>
+      <pre><code>python3 -m http.server 8765 --bind 127.0.0.1
+# then open http://127.0.0.1:8765/docs/design/system/index.html</code></pre>
+      <p class="muted">Opening the files straight from disk does not work: the icons on
+        <a href="foundations.html#icons">Foundations</a> are read from the drawable XML files, which a
+        browser only allows over HTTP.</p>
+    </section>
+
+    <section>
+      <h2>How the pages are organised</h2>
+      <ul>
+        <li><a href="foundations.html">Foundations</a>: the colours of both inks (Cobalto, Violeta) in light
+          and dark, the type scale, shapes, spacing, motion and icons, from <code>design-system/…/theme</code>
+          and <code>design-system/src/main/res</code>.</li>
+        <li><a href="components.html">Components</a>: every public <code>@Composable</code> in
+          <code>:design-system</code>, with its source line, purpose, parameters, the features that use it
+          and its screenshot (or a gap where none exists). Each has an anchor
+          <code>components.html#c-Name</code>.</li>
+        <li><a href="findings.html">Findings</a>: places where the app does one thing in more than one way,
+          with a choice to record per finding.</li>
+        <li>One page per feature under <code>features/</code> (the nav lists them all): purpose, entry
+          points, each screen with every state the code has, the components it uses and why, and its
+          gaps.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>How the screenshots are produced</h2>
+      <p>The JVM screenshot tests (Robolectric, drawn at one pixel per dp) write the baselines; CI's host
+        gate compares every capture with its committed image (see
+        <a href="../../development/quality-gates.md">quality gates</a>). To record them again, on Linux as
+        CI does:</p>
+      <pre><code>./gradlew :app:recordRoborazziDebug --no-build-cache --rerun-tasks
+./gradlew :design-system:recordRoborazziDebug --no-build-cache --rerun-tasks</code></pre>
+      <p>Two naming schemes exist, and the pages handle both:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Scheme</th><th>Example</th><th>Written by</th></tr></thead>
+          <tbody>
+            <tr><td>Ink, theme and font scale</td><td><code>recibo-cobalto-light-font1.0.png</code>,
+              <code>recibo-cobalto-dark-font1.0.png</code>, <code>recibo-violeta-light-font1.0.png</code></td>
+              <td>App screen tests through <code>JvmScreen</code> (<code>app/src/test/…/JvmScreen.kt</code>)</td></tr>
+            <tr><td>Light and dark in Spanish</td><td><code>bulk-expenses-three-lines-claro.png</code>,
+              <code>bulk-expenses-three-lines-oscuro.png</code></td>
+              <td>Newer app screen tests and <code>BulkReceiptScreenshotTest</code></td></tr>
+            <tr><td>Single image</td><td><code>components-frame.png</code>,
+              <code>goal-editor-unresolved.png</code></td>
+              <td>Component captures (Cobalto light only) and a few one-off states</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2>Pages</h2>
+      <ul class="toc">
+        <li><a href="foundations.html">Foundations</a></li>
+        <li><a href="components.html">Components</a></li>
+        <li><a href="findings.html">Findings</a></li>
+        <li><a href="features/recibo.html">Recibo</a></li>
+        <li><a href="features/resumen.html">Resumen</a></li>
+        <li><a href="features/startup.html">Start-up</a></li>
+        <li><a href="features/shell.html">Shell: navigation, tabs, composition</a></li>
+        <li><a href="features/expense.html">Expense entry</a></li>
+        <li><a href="features/income.html">Income</a></li>
+        <li><a href="features/bulk.html">Bulk entry (Anotar varios)</a></li>
+        <li><a href="features/goals.html">Goals (Metas)</a></li>
+        <li><a href="features/investments.html">Investments (Inversiones)</a></li>
+        <li><a href="features/category.html">Category</a></li>
+        <li><a href="features/recurrence.html">Recurrence</a></li>
+        <li><a href="features/settings.html">Settings (Configuración)</a></li>
+        <li><a href="features/backup.html">Backup and restore</a></li>
+        <li><a href="features/reset.html">Reset</a></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
