@@ -79,4 +79,24 @@ class InvestmentEditorScreenshotTest {
         rule.onNodeWithTag(MORE_MENU_TAG).performClick()
         rule.captureStill("src/test/screenshots/investment-editor-editing-menu.png")
     }
+
+    /** Editar inversión with a save whose outcome is unknown: only checking again is offered. */
+    @Test
+    fun unresolvedSave() {
+        rule.showSello {
+            InvestmentEditorScreen(
+                creating.copy(
+                    editing = true,
+                    name = "Ecopetrol",
+                    nameLength = 9,
+                    description = "Acciones",
+                    descriptionLength = 8,
+                    iconKey = "trending_up",
+                    movementCount = 9,
+                    saveError = InvestmentSaveError.Unknown
+                )
+            ) {}
+        }
+        rule.captureStill("src/test/screenshots/investment-editor-unresolved.png")
+    }
 }
