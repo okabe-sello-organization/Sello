@@ -120,6 +120,9 @@ class WalkingSliceJourneyTest {
             // its arrival lifts the composer, so a click may land where Listo no longer is.
             rule.onNodeWithContentDescription("Listo").press()
             rule.onNode(hasSetTextAction()).assertDoesNotExist()
+            // The form holds the note before the save: a missed Listo fails here, at its cause.
+            val noteOnForm = hasText(note) and hasAnyAncestor(hasTestTag(ENTRY_NOTE_TAG))
+            rule.onNode(noteOnForm, useUnmergedTree = true).assertExists()
         }
         rule.onNodeWithTag(ENTRY_SUBMIT_TAG).press()
         // A confirmed save closes the form and says so over the screen it was opened from.

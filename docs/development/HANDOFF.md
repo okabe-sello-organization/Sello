@@ -4,8 +4,8 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-11-03 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Every epic is Done: E01–E10, E12, E13 and E15–E28. The owner dropped E14 and the
+**Snapshot:** 2026-11-04 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
+Every epic is Done: E01–E10, E12, E13 and E15–E29. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -78,15 +78,29 @@ This summary is refreshed when an epic closes and adds no verification claims.
   confirms dropping it; past corrections preview and replay later months. Rules:
   [ADR 0020](../decisions/0020-signed-carryover-policy.md).
 - Shared month and restored drafts/navigation.
-- Room schema 8 for finances (goals since 4, recurring schedules since 5, investments
-  since 6, carryover since 7, up to five starred goals since 8); DataStore for
-  nonfinancial preferences; backup format version 7
-  ([format](../data/backup-format.md)).
+- Room schema 9 for finances (goals since 4, recurring schedules since 5, investments
+  since 6, carryover since 7, up to five starred goals since 8, indexes for long
+  histories and an accent-blind expense search key since 9); DataStore for
+  nonfinancial preferences; backup format version 7, unchanged by schema 9, which only
+  adds derived data ([format](../data/backup-format.md)).
 - Backups save and restore through the system file picker, also from the start-up
   failure screen; retry and confirmed start-over preserve an unreadable database privately.
   Restaurar also imports a FinanceTracker backup, investments included, showing what it
   changed and left out first (ADR 0019).
 - Configuración → Borrar todos los datos erases the history after counts and BORRAR.
+- Release bug sweep ([E29](../tickets/E29-release-bug-sweep/README.md)): every finding of
+  the 2026-11-03 code audit and six open bug issues fixed. For the person: a failed read
+  keeps the last good figures on every tab and form instead of an empty or zero screen;
+  a save whose outcome is unknown stays open in the amber warning until it is checked,
+  and is never sent twice; catch-up saves whole batches in the right zone and its notice
+  lists everything it recorded, even after the clock moves back
+  ([ADR 0025](../decisions/0025-catch-up-stamps-after-the-notice-mark.md)); Pagos fijos
+  counts what was really recorded, and a schedule change never records the past; reset
+  and restore finish off the main thread and never undo each other; a damaged backup or
+  FinanceTracker file is refused; names with invisible characters can't pass for
+  another; expense search ignores accents and case. The walk of the R8 release build
+  through every journey since the MVP is in the
+  [performance profile](../testing/performance-profile.md#release-walk-since-the-mvp-sello-169).
 - No network permission or OS backup; every build checks its manifests, release
   libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md). The
   only provider that grants access is the export one, limited to `cache/exports/`.

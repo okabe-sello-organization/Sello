@@ -1,6 +1,6 @@
 # SELLO-E29 — Release bug sweep
 
-- **Status:** Backlog
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person uses a release build in which no known bug can break their data, write a payment twice, lock a screen or show a wrong figure.
 - **Exit:** Every finding of the 2026-11-03 code audit and the six bug issues open that day (#275, #278, #285, #286, #289, #319) is fixed with a red-first test, and the shrunk release build has walked every journey added since the MVP.

@@ -125,6 +125,53 @@ screen against the expected figures:
 No crash was logged. Not walked: the start-up failure screen, which needs an unreadable
 database that a non-debuggable build gives no way to plant.
 
+### Release walk since the MVP (SELLO-169)
+
+Walked on 2026-11-04 on a new emulator from `scripts/emulator start`: API 30 Google APIs
+x86_64, 2 cores, CI's 412 × 914 dp at mdpi. Build: `:app:assembleRelease` at `2a82e265`
+(`main` with every other E29 fix), shrunk and optimized by R8 as above with no keep rule
+of Sello's, signed with a throwaway key made outside the repository; 6.8 MB. The screens
+were driven with `adb input` and `uiautomator` from a new install. The emulator's clock
+(root on the Google APIs image) moved from 20 September to 15 October, 4 November and
+5 November 2026 in America/Bogota, so catch-up and the carry ran as over months.
+Synthetic data only; every figure was worked out by hand before it was read.
+
+| Journey | Shown, as expected |
+| --- | --- |
+| Categories, carry on | Mercado 500.000 passing what is left from September, Servicios 300.000 |
+| Expense with a note | 320.000 "Pan" in Mercado, the note on the form after Listo; 180.000 left |
+| Fixed payments: create | Internet 90.000 on the 5th, Celular 40.000 on the 10th, Salario 3.000.000 on the 1st, each "Más adelante" |
+| Goal aportes and stamps | Viaje 2.000.000: 500.000 earns 25 %, 600.000 more 50 % ("faltan 900.000"); a 100.000 retiro leaves 1.000.000 |
+| Lograda and Deshacer | Bici at 100 %: the big moment, then Deshacer: "al 100 %, lista para marcar"; marked again later, it leaves Guardado en metas |
+| Recibo carousel | "Meta 1 de 2" swipes to the second goal; starred, Viaje comes first |
+| Dollar rate | A dollar investment asks for the rate first; 4.000,00 saved |
+| Investments, COP and USD | CDT 1.000.000 worth 1.050.000 (+5,0 %), ETF 100,00 USD worth 110,00 (+10,0 %): 1.490.000, +6,4 %, 70 / 30 % |
+| A movement | A 20.000 dividend: +110.000, +7,9 % |
+| Varios movimientos | CDT +200.000 and ETF −10,00 USD on one receipt ("Aportado 160.000"): 1.650.000, aportes 1.600.000, retiros 40.000, +6,9 % |
+| Anotar varios, categories | Mercado 50.000 and Servicios 30.000: 400.000 left of 800.000 |
+| Anotar varios, goals | Viaje +200.000 (60 %) and Fondo +250.000, its 25 % stamp celebrated ("faltan 750.000") |
+| Catch-up, 15 October | "Sello anotó 3 pagos e ingresos fijos": 130.000 paid, 3.000.000 in |
+| Carry, surplus | October's Mercado 630.000 (130.000 left in September); the month 930.000, 800.000 left |
+| Carry, deficit | 700.000 in Mercado, over by 70.000; November "800.000 menos un faltante de 70.000" = 730.000, Mercado 430.000 |
+| Catch-up, 4 November | One income recorded; 130.000 set aside for 2 payments, Restante 600.000 |
+| Pause, resume | Celular paused: 90.000 set aside; resumed: due on 10 November again, 40.000 of 135.000 to come |
+| Change from tomorrow | Internet at 95.000: Restante 635.000; on 5 November catch-up records 95.000, Servicios 205.000 |
+| Resumen | September 400.000, October 830.000 of 930.000, November's limit 730.000; Un mes normal 615.000 |
+| Backup | "Guardado", 15 kB, format 7: 2 categories, 6 expenses, 2 incomes, 3 goals, 3 schedules, 2 investments, 1 carry |
+| Erase | The counts, BORRAR, "Borrado", the first-run screen; the backup file untouched |
+| FinanceTracker import | A synthetic file: the preview names 2 values added, the rate rounded to 4.100,26, an expense after the export and one without a category left out; Recibo 370.000, Moto 25 %, investments 3.460.156 (+410.026, +13,4 %) |
+| Restore over it | Every figure above is back: Restante 635.000, Guardado en metas 1.450.000 with Bici lograda, 1.650.000 invested, Celular paused |
+| Start-up failure | The database's first 100 bytes overwritten: "No pudimos abrir tus datos"; Intentar de nuevo still fails; Restaurar un respaldo keeps the damaged file aside and Recibo reads 635.000 |
+
+No crash or ANR of Sello is in the system's crash records, and the log shows no missing
+class, method or field and no serialization error: the only error from Sello's process is
+the planted unreadable database. Two warnings, "A resource failed to call release", came
+from the process, one right after the backup save; a read of the backup and restore code
+found every stream, descriptor and cursor it opens closed, so they likely come from the
+framework. No keep rule was needed. The emulator itself stopped once, after the erase;
+its log was lost from 15 October until then, so Resumen, a goal page, pausing and
+resuming, a backup and an erase were walked again with the log on.
+
 ### Before shrinking (part 1)
 
 Built from the part 1 commit on top of `main` with #88.
