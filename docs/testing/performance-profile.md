@@ -219,10 +219,17 @@ when it was stopped to move the clock. No keep rule was needed.
 Not walked: Reintentar after a failed first read (SELLO-170) and the start-up failure
 screen's FinanceTracker message (SELLO-172). Both need a failed or unreadable database,
 which a non-debuggable build on an image without root gives no way to cause. Their JVM
-tests cover them. Nor were the celebration's own window (SELLO-171's second criterion),
-the in-app Sistema choice and the navigation-bar icons: `SystemBarsTest`,
-`CelebrationTest` and `MonthPickerBarsTest` on the JVM and the emulator screenshots in
-#368 cover them. The shared files were not opened in a receiving app, since every app
+tests cover them. Nor were these SELLO-171 items, covered as follows:
+
+- The in-app Sistema choice: no test reads it. The bars tests take a theme already
+  resolved to dark or light, and the `MainActivity` wiring is untested (#368's Not
+  covered); #368's emulator screenshots show it.
+- The celebration's own window: `CelebrationTest` covers its status bar; its navigation
+  bar rests only on #368's emulator screenshot.
+- The navigation-bar icons elsewhere: `SystemBarsTest`, `MonthPickerBarsTest` and
+  `NoteComposerBarsTest` on the JVM, and #368's screenshots.
+
+The shared files were not opened in a receiving app, since every app
 offered needed an account; their contents were read from the same export through Guardar.
 
 ### Before shrinking (part 1)
