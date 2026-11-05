@@ -24,6 +24,7 @@ import com.software.sello.domain.port.ExpenseBatchCommands
 import com.software.sello.domain.port.ExpenseBatchOutcome
 import com.software.sello.domain.port.ExpenseBatchRejection
 import com.software.sello.domain.port.LineRefusal
+import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RefusedLine
 import com.software.sello.feature.expense.HandExpenseCommands
@@ -39,6 +40,7 @@ import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
@@ -127,11 +129,14 @@ class BulkEntryViewModelTest {
 
     private val said get() = corrections.notice.value
 
-    private fun sheet(saved: SavedStateHandle = SavedStateHandle()) = BulkEntryViewModel(
+    private fun sheet(
+        saved: SavedStateHandle = SavedStateHandle(),
+        reads: MonthlySnapshots = snapshots
+    ) = BulkEntryViewModel(
         saved,
         commands,
         HandIncomeBatchCommands(),
-        snapshots,
+        reads,
         clock,
         { uuid(nextId++) },
         testMoney(),
@@ -849,6 +854,64 @@ class BulkEntryViewModelTest {
 
         assertFalse(bulk.now.readFailed)
         assertTrue(bulk.now.canSubmit)
+    }
+
+    @Test
+    fun aFailedRefreshKeepsTheCategoriesAndTheLinesMarkedOlderAndStillSaves() {
+        // Every observation is new and a failure carries what it read, as ObservedReads does.
+        val reads = NewObservationSnapshots()
+        reads.ready(monthOf("2026-10-22", listOf(transport, health, food), generation = 7))
+        val bulk = sheet(reads = reads)
+        bulk.type("18400")
+        bulk.pick(1)
+
+        reads.of(october).value = ReadState.Failed(
+            SnapshotFailure.Storage(StorageFailure.Unavailable("disk")),
+            lastGood = null
+        )
+
+        assertTrue(bulk.now.stale)
+        assertFalse(bulk.now.readFailed)
+        assertEquals(listOf("Transporte", "Salud", "Comida"), bulk.now.categories.map { it.name })
+        assertEquals(listOf("18.400"), bulk.digits)
+        assertTrue(bulk.now.canSubmit)
+
+        // Reintentar that fails again keeps the same, still older.
+        bulk.onAction(BulkEntryAction.Retry)
+        assertTrue(bulk.now.stale)
+        assertEquals(3, bulk.now.categories.size)
+
+        bulk.submit()
+
+        val sent = commands.created.single()
+        assertEquals(7L, sent.generation)
+        assertEquals(listOf(18_400L), sent.lines.map { it.amount.money.minorUnits })
+    }
+
+    @Test
+    fun aMonthNeverReadShowsItsOwnLoadErrorAndAReadMonthComesBack() {
+        val reads = NewObservationSnapshots()
+        reads.ready(monthOf("2026-10-22", listOf(transport, health, food), generation = 7))
+        reads.of(YearMonth.of(2026, 9)).value = ReadState.Failed(
+            SnapshotFailure.Storage(StorageFailure.Unavailable("disk")),
+            lastGood = null
+        )
+        val bulk = sheet(reads = reads)
+        bulk.type("18400")
+
+        bulk.onAction(BulkEntryAction.DatePicked(LocalDate.parse("2026-09-30")))
+
+        assertTrue(bulk.now.readFailed)
+        assertFalse(bulk.now.stale)
+        assertTrue(bulk.now.categories.isEmpty())
+        assertFalse(bulk.now.canSubmit)
+        assertEquals(listOf("18.400"), bulk.digits)
+
+        bulk.onAction(BulkEntryAction.DatePicked(LocalDate.parse("2026-10-20")))
+
+        assertFalse(bulk.now.readFailed)
+        assertFalse(bulk.now.stale)
+        assertEquals(3, bulk.now.categories.size)
     }
 
     @Test

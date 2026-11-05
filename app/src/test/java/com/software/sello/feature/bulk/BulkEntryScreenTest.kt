@@ -214,4 +214,8 @@ class BulkEntryScreenTest {
 
     @Test
     fun failedReadOscuro() = capture("failed-read", three.copy(readFailed = true), oscuro)
+
+    /** A refresh failed: the categories as last read, under the notice; Guardar stays. */
+    @Test
+    fun staleClaro() = capture("stale", three.copy(stale = true), claro)
 }

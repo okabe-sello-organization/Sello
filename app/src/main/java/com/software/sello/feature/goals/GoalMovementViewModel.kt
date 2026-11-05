@@ -40,10 +40,12 @@ import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import java.time.Instant
 import java.time.LocalDate
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -57,6 +59,7 @@ import kotlinx.serialization.Serializable
  * short, waits with the reason. A save whose outcome is not known is asked about with its
  * own identifier before anything else is sent. Recording never touches a budget.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class GoalMovementViewModel(
     private val saved: SavedStateHandle,
     reads: GoalReads,
@@ -104,7 +107,8 @@ class GoalMovementViewModel(
         )
     )
     private val progress = MutableStateFlow(Progress())
-    private val board = reads.observeBoard()
+    private val attempts = MutableStateFlow(0)
+    private val board = attempts.flatMapLatest { reads.observeBoard() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
     private val composer = SavedNoteComposer(saved, PREFIX, viewModelScope)
 
@@ -204,6 +208,9 @@ class GoalMovementViewModel(
             GoalMovementAction.Retry -> if (!now.busy) {
                 if (submission.pending) {
                     viewModelScope.launch { recover() }
+                } else if (now.loadFailed) {
+                    // Reintentar after a failed first read reads the board again.
+                    attempts.update { it + 1 }
                 } else {
                     progress.update { it.copy(error = null) }
                 }

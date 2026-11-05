@@ -68,6 +68,7 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
+import com.software.sello.presentation.read.StaleSlip
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -309,6 +310,14 @@ private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) 
                     stringResource(R.string.bulk_categories_heading_line, state.highlighted + 1)
             }
         )
+        // A refresh failed: the choices are those last read and the lines stay.
+        if (state.stale) {
+            StaleSlip(
+                stringResource(R.string.recibo_stale),
+                { onAction(BulkEntryAction.Retry) },
+                Modifier.testTag(BULK_STALE_TAG)
+            )
+        }
         when {
             state.readFailed -> {
                 FieldMessageText(
@@ -617,6 +626,7 @@ const val BULK_CATEGORIES_TAG = "bulk:categories"
 const val BULK_SOURCES_TAG = "bulk:sources"
 const val BULK_SOURCE_NAME_TAG = "bulk:source-name"
 const val BULK_LOADING_TAG = "bulk:loading"
+const val BULK_STALE_TAG = "bulk:stale"
 const val BULK_READ_FAILED_TAG = "bulk:read-failed"
 const val BULK_NOTE_TAG = "bulk:note"
 const val BULK_ERROR_TAG = "bulk:error"

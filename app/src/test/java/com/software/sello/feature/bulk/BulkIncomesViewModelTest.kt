@@ -589,7 +589,7 @@ class BulkIncomesViewModelTest {
     }
 
     @Test
-    fun aFailedReadKeepsTheLinesAndCannotSaveUntilItIsReadAgain() {
+    fun aFailedRefreshKeepsTheLinesMarkedOlderAndOnlyAMonthNeverReadCannotSave() {
         readMonth()
         val bulk = sheet(SavedStateHandle(mapOf("income" to true)))
         bulk.threeIncomes()
@@ -598,15 +598,31 @@ class BulkIncomesViewModelTest {
             lastGood = null
         )
 
-        assertTrue(bulk.now.readFailed)
+        // Read before: the lines stay over what was last read, marked older, and can be saved.
+        assertTrue(bulk.now.stale)
+        assertFalse(bulk.now.readFailed)
         assertEquals(listOf("450.000", "120.000", "850.000"), bulk.digits)
-        assertFalse(bulk.now.canSubmit)
+        assertTrue(bulk.now.canSubmit)
         bulk.submit()
-        assertTrue(incomes.created.isEmpty())
+        val sent = incomes.created.single()
+        assertEquals(7L, sent.generation)
+        assertEquals(
+            listOf(450_000L, 120_000L, 850_000L),
+            sent.lines.map { it.amount.money.minorUnits }
+        )
+
+        // Never read: the lines stay and nothing can be sent until it is read.
+        val never = sheet(SavedStateHandle(mapOf("income" to true)))
+        never.threeIncomes()
+        assertTrue(never.now.readFailed)
+        assertFalse(never.now.stale)
+        assertFalse(never.now.canSubmit)
+        never.submit()
+        assertEquals(1, incomes.created.size)
 
         readMonth()
-        assertFalse(bulk.now.readFailed)
-        assertTrue(bulk.now.canSubmit)
+        assertFalse(never.now.readFailed)
+        assertTrue(never.now.canSubmit)
     }
 
     // Restoring

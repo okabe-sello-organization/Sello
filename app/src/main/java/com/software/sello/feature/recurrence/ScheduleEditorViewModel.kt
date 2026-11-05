@@ -5,11 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.IncomeSource
+import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationId
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.ScheduleId
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmountError
@@ -38,6 +40,7 @@ import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatDraft
 import com.software.sello.presentation.submission.SavedDraft
@@ -122,10 +125,17 @@ class ScheduleEditorViewModel(
         repeat.changes
     ) { _, _, _, _ -> Unit }
 
+    /**
+     * What the form last read, kept for the whole form: it offers the categories and the
+     * history generation. A refresh that fails, or a Reintentar, keeps the draft over what
+     * was last read, marked older; storage refuses a stale generation or version.
+     */
+    private val lastGood = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
+
     private val month = combine(
         clock.today.map { YearMonth.from(it.date) }.distinctUntilChanged(),
         progress.map { it.attempt }.distinctUntilChanged()
-    ) { month, _ -> month }.flatMapLatest(snapshots::observe)
+    ) { month, _ -> month }.flatMapLatest { lastGood.keep(Unit, snapshots.observe(it)) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     val state: StateFlow<ScheduleEditorState> =
@@ -418,7 +428,7 @@ class ScheduleEditorViewModel(
 
     private fun change(now: ScheduleEditorState) {
         val stored = progress.value.stored ?: return
-        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
+        val snapshot = snapshotOf(month.value) ?: return
         val entry = entry(stored) ?: return
         val rule = repeat.choice?.rule() ?: return
         val start = start(stored, now.today)
@@ -439,7 +449,7 @@ class ScheduleEditorViewModel(
 
     private fun send(change: ScheduleChange) {
         val stored = progress.value.stored ?: return
-        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
+        val snapshot = snapshotOf(month.value) ?: return
         val id = stored.schedule.id
         val generation = snapshot.generation
         submit(change) { operation ->
@@ -531,13 +541,20 @@ class ScheduleEditorViewModel(
         progress.update { it.copy(busy = false, closed = true) }
     }
 
+    /** The month as last read, also after a failed refresh; null before any read. */
+    private fun snapshotOf(read: SnapshotState): MonthlySnapshot? = when (read) {
+        is ReadState.Ready -> read.value
+        is ReadState.Failed -> read.lastGood
+        ReadState.Loading -> null
+    }
+
     private fun render(
         progress: Progress,
         month: SnapshotState,
         today: LocalDate
     ): ScheduleEditorState {
         val stored = progress.stored
-        val snapshot = (month as? ReadState.Ready)?.value
+        val snapshot = snapshotOf(month)
         val payment = stored?.schedule?.entry as? ScheduledEntry.Payment
         val categories = snapshot?.categories.orEmpty()
             .map { it.category }
@@ -564,10 +581,16 @@ class ScheduleEditorViewModel(
                 start != stored.schedule.recurrence.start
             )
         val repeatUi = repeat.ui(maxOf(start ?: today, today))
+        // The error screen only when nothing was ever read; a later failure keeps the form.
+        val neverRead = (progress.loadFailed && stored == null) ||
+            (month is ReadState.Failed && snapshot == null)
+        val loading = !neverRead && progress.error == null &&
+            (stored == null || month is ReadState.Loading)
         return ScheduleEditorState(
-            loading = !progress.loadFailed && progress.error == null &&
-                (stored == null || month is ReadState.Loading),
-            loadFailed = progress.loadFailed || month is ReadState.Failed,
+            loading = loading,
+            loadFailed = neverRead,
+            stale = !neverRead && !loading &&
+                (progress.loadFailed || month is ReadState.Failed),
             income = stored?.schedule?.entry is ScheduledEntry.Income,
             amount = valid?.let { money.format(it.money) },
             amountText = (amount as? AmountDraft.Rejected)?.original,
