@@ -202,6 +202,46 @@ class HostedWorkflowTests(unittest.TestCase):
         for setting in ('force-avd-creation: true', '-no-snapshot', 'api-level: 30', 'target: google_apis', 'arch: x86_64', 'cores: 2'):
             self.assertIn(setting, device)
 
+    def test_the_runner_has_room_for_the_emulator_before_it_boots_or_says_so(self):
+        # #354: with less than 7373 MB free the emulator exits at once and the action
+        # waits out its boot timeout, reported as "Timeout waiting for emulator to boot."
+        names = list(self.device)
+        self.assertLess(names.index('Make room for the emulator'), names.index('Run device tests on API 30'))
+        block = script(self.device['Make room for the emulator'])
+        with tempfile.TemporaryDirectory() as directory:
+            fake = Path(directory) / 'bin'
+            fake.mkdir()
+            removed = Path(directory) / 'removed'
+            (fake / 'sudo').write_text('#!/bin/sh\necho "$@" >> "$REMOVED"\n', encoding='utf-8')
+            (fake / 'df').write_text('#!/bin/sh\necho "Avail"\necho " $FREE_MB"\n', encoding='utf-8')
+            for tool in ('sudo', 'df'):
+                (fake / tool).chmod(0o755)
+
+            def run(free_mb):
+                removed.write_text('', encoding='utf-8')
+                environment = dict(os.environ, PATH=f"{fake}{os.pathsep}{os.environ['PATH']}",
+                                   REMOVED=str(removed), FREE_MB=str(free_mb), HOME=directory)
+                return subprocess.run(['bash', '-e', '-c', block], env=environment, capture_output=True, text=True)
+
+            enough = run(9421)
+            self.assertEqual(0, enough.returncode, enough.stdout + enough.stderr)
+            deleted = removed.read_text(encoding='utf-8').split()
+            self.assertEqual(['rm', '-rf', '/usr/share/dotnet', '/usr/local/.ghcup', '/opt/ghc', '/usr/share/swift',
+                              '/opt/hostedtoolcache/CodeQL'], deleted)
+            for kept in ('/usr/local/lib/android', '/opt/hostedtoolcache/Java', '/usr/bin', '/home/runner'):
+                self.assertFalse([path for path in deleted if path.startswith(kept) or kept.startswith(path + '/')], kept)
+            short = run(9420)
+            self.assertEqual(1, short.returncode)
+            self.assertIn('::error::Not a test failure: 9420 MB free in', short.stdout)
+            self.assertIn('the emulator needs 9421 MB', short.stdout)
+            # A df answer that is no number fails closed rather than passing the comparison.
+            for unreadable in ('', '-', '12G', '9421 MB'):
+                with self.subTest(free=unreadable):
+                    odd = run(unreadable)
+                    self.assertEqual(1, odd.returncode, odd.stdout + odd.stderr)
+                    self.assertIn('::error::Not a test failure: df gave no free space for', odd.stdout)
+                    self.assertIn('the emulator needs 9421 MB', odd.stdout)
+
     def test_the_emulator_cannot_hold_a_finished_device_job(self):
         run = self.device['Run device tests on API 30']
         self.assertIn('killall -INT crashpad_handler || true; exit $status', run)
