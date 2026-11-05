@@ -165,9 +165,15 @@ class FinancialStorage internal constructor(
         ids: RecordIdSource
     ): ScheduleCommands = RoomScheduleCommands(database, audit, clock, ids)
 
-    /** Records what schedules have due, one batch per transaction. */
-    fun scheduleCatchUp(audit: AuditClock, ids: RecordIdSource): ScheduleCatchUpStore =
-        RoomScheduleCatchUp(database, audit, ids)
+    /**
+     * Records what schedules have due, one batch per transaction, each after [notice]'s
+     * mark so the notice lists it.
+     */
+    fun scheduleCatchUp(
+        audit: AuditClock,
+        ids: RecordIdSource,
+        notice: CatchUpNoticePreferences
+    ): ScheduleCatchUpStore = RoomScheduleCatchUp(database, audit, ids, notice)
 
     /** Recurring payments and incomes with their pauses and catch-up checkpoints. */
     val scheduleReads: ScheduleReads = RoomScheduleReads(database)

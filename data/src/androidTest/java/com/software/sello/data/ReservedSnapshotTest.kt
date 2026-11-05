@@ -84,7 +84,7 @@ class ReservedSnapshotTest {
         // Catch-up records it: E 600.000, nothing reserved, the same 400.000 and 100.000.
         val batch = RoomScheduleCatchUp(ledger.database, {
             ledger.audit
-        }, { uuid(ledger.nextRecord++) })
+        }, { uuid(ledger.nextRecord++) }, NoticeSeen())
             .recordDue(1, LocalDate.parse("2026-10-28"), 50)
         assertTrue(batch is CatchUpBatch.Recorded)
         val recorded = limited()
@@ -138,7 +138,7 @@ class ReservedSnapshotTest {
         ledger.goTo("2026-10-28")
         val batch = RoomScheduleCatchUp(ledger.database, {
             ledger.audit
-        }, { uuid(ledger.nextRecord++) })
+        }, { uuid(ledger.nextRecord++) }, NoticeSeen())
             .recordDue(1, LocalDate.parse("2026-10-28"), 50)
         assertTrue(batch is CatchUpBatch.Recorded)
         val after = ledger.categoryInsights.read(ledger.categoryId(100), october).valueOrFail()

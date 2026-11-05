@@ -192,7 +192,7 @@ class DebugComposition(
                 }
                 single<ScheduleCatchUpStore> {
                     FencedScheduleCatchUp(
-                        get<FinancialStorage>().scheduleCatchUp(get(), get()),
+                        get<FinancialStorage>().scheduleCatchUp(get(), get(), get()),
                         fence,
                         saved
                     )

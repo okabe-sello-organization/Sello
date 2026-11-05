@@ -136,7 +136,7 @@ fun storageModule(storage: FinancialStorage): Module = module {
     single<ScheduleCommands> { storage.scheduleCommands(get(), get(), get()) }
     single<ScheduleReads> { storage.scheduleReads }
     single<ScheduleRecordReads> { storage.scheduleRecordReads }
-    single<ScheduleCatchUpStore> { storage.scheduleCatchUp(get(), get()) }
+    single<ScheduleCatchUpStore> { storage.scheduleCatchUp(get(), get(), get()) }
     single<BackupExports> { storage.backupExports(get(), get(), get(), get(), get(), get()) }
     single<DataExports> { storage.dataExports(get(), get()) }
     single<Restores> { storage.restores(get(), get(), get(), get(), get(), get(), get(), get()) }

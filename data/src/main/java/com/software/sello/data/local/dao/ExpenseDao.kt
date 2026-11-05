@@ -81,6 +81,10 @@ interface ExpenseDao {
     )
     suspend fun recordedAfter(since: Long, limit: Int): List<ExpenseEntity>
 
+    /** When the newest expense a schedule recorded was created; null when there is none. */
+    @Query("SELECT MAX(created_at) FROM expense WHERE origin_schedule_id IS NOT NULL")
+    suspend fun newestRecordedAt(): Long?
+
     /** Every expense a schedule recorded that was created at [at]. */
     @Query(
         "SELECT * FROM expense WHERE created_at = :at AND origin_schedule_id IS NOT NULL " +

@@ -114,7 +114,7 @@ class ScheduleBackupRestoreTest {
 
     /** Everything due up to [today], in as many batches as it takes, by a process started now. */
     private suspend fun TestLedger.catchUp(today: String): List<String> {
-        val store = RoomScheduleCatchUp(database, { audit }, { uuid(nextRecord++) })
+        val store = RoomScheduleCatchUp(database, { audit }, { uuid(nextRecord++) }, notice)
         val generation = long("SELECT generation FROM profile")
         val recorded = mutableListOf<String>()
         while (true) {
@@ -269,6 +269,35 @@ class ScheduleBackupRestoreTest {
     }
 
     /**
+     * #340: restored at 20:00 on 24 October, which marks what the backup brought seen;
+     * the clock is then set back to 08:00. What catch-up records after is still listed.
+     */
+    @Test
+    fun aClockSetBackAfterARestoreStillListsWhatIsRecordedAfter() = runBlocking {
+        history()
+        val bytes = backup()
+        other.goTo("2026-10-24")
+        other.audit = Instant.parse("2026-10-24T20:00:00Z")
+        val restores = restoresInto(other, fresh)
+        restores.replace(restores.stage(bytes).valueOrFail())
+        val reads = RoomScheduleRecordReads(other.database)
+
+        other.goTo("2026-11-05")
+        other.audit = Instant.parse("2026-10-24T08:00:00Z")
+        other.catchUp("2026-11-05")
+
+        assertEquals(
+            listOf("2026-10-30", "2026-11-05"),
+            (reads.recordedAfter(notice.seen) as Outcome.Success).value.map {
+                when (it) {
+                    is ScheduleRecord.Payment -> it.expense.date.toString()
+                    is ScheduleRecord.Earning -> it.income.date.toString()
+                }
+            }
+        )
+    }
+
+    /**
      * SELLO-146: this process started in Madrid; at 01:00 on 15 November there (still
      * the 14th in Bogotá) a backup made in Bogotá is restored. Catch-up records nothing,
      * least of all the salary of the 15th, until a new process reads the restored zone;
@@ -288,7 +317,9 @@ class ScheduleBackupRestoreTest {
         }
         val started = other.long("SELECT generation FROM profile")
         val store =
-            RoomScheduleCatchUp(other.database, { other.audit }, { uuid(other.nextRecord++) })
+            RoomScheduleCatchUp(other.database, {
+                other.audit
+            }, { uuid(other.nextRecord++) }, notice)
         val restores = restoresInto(other, fresh)
 
         restores.replace(restores.stage(bytes).valueOrFail())
@@ -435,7 +466,9 @@ class ScheduleBackupRestoreTest {
         )
         assertTrue("$created", created is CommandOutcome.Committed)
         val store =
-            RoomScheduleCatchUp(ledger.database, { ledger.audit }, { uuid(ledger.nextRecord++) })
+            RoomScheduleCatchUp(ledger.database, {
+                ledger.audit
+            }, { uuid(ledger.nextRecord++) }, notice)
 
         assertEquals(CatchUpBatch.Stale, store.recordDue(started, d("2026-10-24"), 50))
         assertEquals(0L, ledger.long("SELECT COUNT(*) FROM expense"))

@@ -152,14 +152,23 @@ fun income(number: Int, date: String, sequence: Long, pesos: Long, source: Incom
 
 fun finite(pesos: Long): BudgetLimit = BudgetLimit.finite(Money.cop(pesos)).valueOrFail()
 
-/** When the catch-up notice was last dismissed, as a test sets it; [fail] refuses writes. */
+/**
+ * When the catch-up notice was last dismissed, as a test sets it; [fail] refuses writes,
+ * [unreadable] fails reads with [seen] as the last good value.
+ */
 class NoticeSeen : CatchUpNoticePreferences {
     var seen: Instant? = null
     var fail = false
+    var unreadable = false
     val marks = mutableListOf<Instant>()
 
-    override fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>> =
-        flowOf(PreferenceRead.Ready(seen))
+    override fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>> = flowOf(
+        if (unreadable) {
+            PreferenceRead.Failed(PreferenceFailure.Unavailable, seen)
+        } else {
+            PreferenceRead.Ready(seen)
+        }
+    )
 
     override suspend fun markCatchUpNoticeSeen(at: Instant): PreferenceWrite {
         if (fail) return PreferenceWrite.Failed(PreferenceFailure.Unavailable)
