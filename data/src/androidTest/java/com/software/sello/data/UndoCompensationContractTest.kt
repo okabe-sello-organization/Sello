@@ -276,7 +276,7 @@ class UndoCompensationContractTest {
         deleted()
         raw(
             "INSERT INTO expense VALUES ('$pan', '${uuid(100)}', '2026-10-08', 9, 700, 'COP', " +
-                "NULL, 1, 0, 0, NULL, NULL, NULL)"
+                "NULL, 1, 0, 0, NULL, NULL, NULL, '')"
         )
         ledger.elapsed = deletedAt + 1.seconds
         val before = expenses()
@@ -293,7 +293,7 @@ class UndoCompensationContractTest {
         deleted()
         raw(
             "INSERT INTO expense VALUES ('${uuid(555)}', '${uuid(100)}', '2026-10-08', 1, 700, " +
-                "'COP', NULL, 1, 0, 0, NULL, NULL, NULL)"
+                "'COP', NULL, 1, 0, 0, NULL, NULL, NULL, '')"
         )
         ledger.elapsed = deletedAt + 1.seconds
         val before = expenses()

@@ -13,7 +13,10 @@ import androidx.room.PrimaryKey
  * note: it must outlive that record, including a replacement of the whole history.
  * [inputDigest] identifies the submitted input without storing it.
  */
-@Entity(tableName = "operation_receipt", indices = [Index("generation")])
+@Entity(
+    tableName = "operation_receipt",
+    indices = [Index("generation"), Index("kind", "committed_at")]
+)
 data class OperationReceiptEntity(
     @PrimaryKey
     @ColumnInfo(name = "operation_id")

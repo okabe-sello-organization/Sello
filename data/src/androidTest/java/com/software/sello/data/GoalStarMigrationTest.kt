@@ -170,7 +170,7 @@ class GoalStarMigrationTest {
         )
         database.close()
 
-        assertEquals(8, version)
+        assertEquals(9, version)
         assertEquals(setOf(GoalId.of(viaje).valueOrFail()), board.starred)
         assertEquals(listOf(GoalId.of(viaje).valueOrFail()), board.reciboGoals)
         // The receipt version 7 stored for choosing Viaje answers the star command unchanged.

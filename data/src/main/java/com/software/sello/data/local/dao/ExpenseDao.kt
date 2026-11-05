@@ -7,22 +7,23 @@ import com.software.sello.data.local.entity.ExpenseEntity
 
 @Dao
 interface ExpenseDao {
+    /** [key] is the query as [com.software.sello.data.local.SearchKey] folds it. */
     @Query(
         "SELECT COUNT(*) FROM expense WHERE category_id = :categoryId " +
             "AND effective_date >= :from AND effective_date <= :through " +
-            "AND instr(lower(COALESCE(note, '')), lower(:query)) > 0"
+            "AND instr(search_key, :key) > 0"
     )
     suspend fun countSearchInCategory(
         categoryId: String,
         from: String,
         through: String,
-        query: String
+        key: String
     ): Long
 
     @Query(
         "SELECT * FROM expense WHERE category_id = :categoryId " +
             "AND effective_date >= :from AND effective_date <= :through " +
-            "AND instr(lower(COALESCE(note, '')), lower(:query)) > 0 " +
+            "AND instr(search_key, :key) > 0 " +
             "ORDER BY CASE WHEN :sort = 'amount' THEN amount_minor END DESC, " +
             "CASE WHEN :sort = 'name' THEN COALESCE(note, '') END COLLATE NOCASE ASC, " +
             "effective_date DESC, sequence DESC LIMIT :limit OFFSET :offset"
@@ -32,7 +33,7 @@ interface ExpenseDao {
         from: String,
         through: String,
         sort: String,
-        query: String,
+        key: String,
         offset: Int,
         limit: Int
     ): List<ExpenseEntity>
@@ -70,12 +71,22 @@ interface ExpenseDao {
     @Query("SELECT category_id FROM expense ORDER BY sequence DESC LIMIT 1")
     suspend fun lastAddedCategory(): String?
 
-    /** Every expense a schedule recorded that was created after [since], by date. */
+    /**
+     * The first [limit] expenses a schedule recorded that were created after [since], in
+     * the order they were created.
+     */
     @Query(
-        "SELECT * FROM expense WHERE origin_schedule_id IS NOT NULL AND created_at > :since " +
-            "ORDER BY effective_date, sequence"
+        "SELECT * FROM expense WHERE created_at > :since AND origin_schedule_id IS NOT NULL " +
+            "ORDER BY created_at, sequence LIMIT :limit"
     )
-    suspend fun recordedAfter(since: Long): List<ExpenseEntity>
+    suspend fun recordedAfter(since: Long, limit: Int): List<ExpenseEntity>
+
+    /** Every expense a schedule recorded that was created at [at]. */
+    @Query(
+        "SELECT * FROM expense WHERE created_at = :at AND origin_schedule_id IS NOT NULL " +
+            "ORDER BY sequence"
+    )
+    suspend fun recordedAt(at: Long): List<ExpenseEntity>
 
     /** Every expense a schedule recorded that is dated from [from] to [until], both included. */
     @Query(
@@ -102,11 +113,12 @@ interface ExpenseDao {
      * Changes the expense only while it is still at [expectedVersion]. Returns how many
      * rows changed: one, or none when the expense is gone or was changed meanwhile.
      * When it was first added and its sequence are not among what can change.
+     * [searchKey] is [note] as [com.software.sello.data.local.SearchKey] folds it.
      */
     @Query(
         "UPDATE expense SET category_id = :categoryId, effective_date = :effectiveDate, " +
             "amount_minor = :amountMinor, currency = :currency, note = :note, " +
-            "version = :newVersion, updated_at = :updatedAt " +
+            "search_key = :searchKey, version = :newVersion, updated_at = :updatedAt " +
             "WHERE id = :id AND version = :expectedVersion"
     )
     suspend fun update(
@@ -117,6 +129,7 @@ interface ExpenseDao {
         amountMinor: Long,
         currency: String,
         note: String?,
+        searchKey: String,
         newVersion: Long,
         updatedAt: Long
     ): Int

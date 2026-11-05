@@ -126,7 +126,8 @@ sealed interface CatchUpCarry {
  * every entry catch-up recorded since the person last pressed Listo, across runs, each
  * opening its edit. It is derived from the entries themselves, so one deleted meanwhile
  * leaves it, and only how far Listo reached is kept: the latest stamp it showed, on the
- * audit clock that stamps them.
+ * audit clock that stamps them. A long catch-up is listed in bounded parts, earliest
+ * recorded first (SELLO-165): the rest shows after Listo, and none is marked seen unseen.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CatchUpNoticeViewModel(
