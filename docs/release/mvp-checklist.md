@@ -1,4 +1,9 @@
-# MVP release checklist
+# MVP release checklist (October 2026 record)
+
+> **Historical record.** This is the October 2026 MVP candidate's go/no-go, kept as
+> SELLO-036 recorded it. It does not describe the current app or a new candidate: the
+> app has grown since (Metas, Inversiones in USD, fixed payments, carryover, FinanceTracker
+> import). The current candidate's checks are in the [candidate checklist](candidate-checklist.md).
 
 The go/no-go record for Sello's MVP, SELLO-036. The decision is the owner's
 ([D10](../decisions/0001-mvp-contract.md#d10--release-acceptance-and-review)); this

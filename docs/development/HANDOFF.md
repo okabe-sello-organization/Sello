@@ -4,8 +4,8 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-11-04 · **Product baseline:** the MVP candidate `0.1.0` ([checklist](../release/mvp-checklist.md)).
-Every epic is Done: E01–E10, E12, E13 and E15–E29. The owner dropped E14 and the
+**Snapshot:** 2026-11-04 · **Product baseline:** `main`; the next candidate stays `0.1.0` and its checks are pending in the [candidate checklist](../release/candidate-checklist.md) (the [MVP checklist](../release/mvp-checklist.md) is the October record).
+Every epic before E30 is Done: E01–E10, E12, E13 and E15–E29. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -13,8 +13,8 @@ This summary is refreshed when an epic closes and adds no verification claims.
 
 ## Current app
 
-- Offline, local-only COP expenses/income, with Recibo, Resumen, Metas and Inversiones
-  as working tabs.
+- Offline, local-only expenses/income in COP (investments also in USD), with Recibo,
+  Resumen, Metas and Inversiones as working tabs.
 - Category creation/editing, archive/unarchive, monthly limits and past corrections.
   Editar categoría's ⋮ holds Archivar and Borrar categoría
   ([E26](../tickets/E26-delete-category/README.md), ADR 0024): a category is deleted after
@@ -119,9 +119,9 @@ What each ticket changed is in its pull request, linked from the ticket file
 
 ## Remaining work
 
-- Distributing the `0.1.0` APK is a separate, owner-authorized action; nothing was
-  published or tagged.
-- No ticket is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
+- [E30](../tickets/E30-release-candidate/README.md) readies the next candidate; distributing
+  it is a separate, owner-authorized action. Nothing was published or tagged.
+- No ticket outside E30 is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
   (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
   keyboard walks). The automated accessibility checks from SELLO-033 stay.
 - Open GitHub issues are not tickets.
