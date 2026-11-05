@@ -1,6 +1,7 @@
 package com.software.sello.data
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.reset.RoomResets
 import com.software.sello.domain.model.ExpenseId
 import com.software.sello.domain.model.IncomeSource
@@ -80,8 +81,8 @@ class ResetGenerationContractTest {
         setAside.forEach { it.delete() }
     }
 
-    private fun resets() = RoomResets(
-        ledger.database,
+    private fun resets(database: SelloDatabase = ledger.database) = RoomResets(
+        database,
         files.resetFolder,
         files.restoreFolder,
         setAside,
@@ -241,6 +242,26 @@ class ResetGenerationContractTest {
         val private = listOf(files.resetFolder, files.restoreFolder)
             .flatMap { it.walk().filter(File::isFile).toList() }
         assertEquals(emptyList<File>(), private)
+    }
+
+    /** A database error that is not SQLite's own leaves the file uncompacted, never a crash. */
+    @Test
+    fun aCompactionRefusedAboveSQLiteStaysOwedAndIsDoneLater() = runBlocking {
+        currentHistory()
+        val statements = RefusedStatements(refused = "VACUUM")
+        val resets = resets(files.open(statements))
+
+        val outcome = resets.reset(resets.preview().valueOrFail(), ledger.operation())
+
+        assertEquals(ResetOutcome.Erased(preferencesPending = false), outcome)
+        assertTrue(File(files.resetFolder, "compact.pending").exists())
+        assertFalse(markerExists())
+        assertTrue(resets.pending())
+
+        statements.refused = null
+        assertEquals(null, resets.finishPending())
+        assertFalse(File(files.resetFolder, "compact.pending").exists())
+        assertFalse(resets.pending())
     }
 
     @Test

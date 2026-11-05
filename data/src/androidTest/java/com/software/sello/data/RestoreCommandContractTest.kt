@@ -1479,6 +1479,57 @@ class RestoreCommandContractTest {
         assertEquals(kept, stagingFiles())
     }
 
+    /** A `\u` escape that is not one: the manifest does not load at all. */
+    private fun manifestWithAMalformedEscape() =
+        File(files.restoreFolder, "staged.properties").writeText("operation=\\uZZZZ\n")
+
+    @Test
+    fun aManifestWithAMalformedEscapeBesideAReplacedFileIsFinishedByItsReceipt() = runBlocking {
+        currentHistory()
+        val staged = committedBeforeTheRename()
+        manifestWithAMalformedEscape()
+
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertEquals(
+            PendingPreferences(null, null),
+            restores().applyPending()?.preferences
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+    }
+
+    @Test
+    fun aManifestWithAMalformedEscapeBesideAFileNeverReplacedIsCleared() = runBlocking {
+        currentHistory()
+        stage()
+        manifestWithAMalformedEscape()
+
+        assertEquals(StagedLookup.None, restores().staged())
+        assertEquals(emptyList<String>(), stagingFiles())
+        assertTrue(restores().stage(g01(other)) is Outcome.Success)
+    }
+
+    @Test
+    fun aFileChosenBesideAManifestWithAMalformedEscapeIsRefused() = runBlocking {
+        currentHistory()
+        stage()
+        manifestWithAMalformedEscape()
+        val kept = stagingFiles()
+
+        assertEquals(Outcome.Failure(StageFailure.Storage), restores().stage(g01(other)))
+        assertEquals(kept, stagingFiles())
+    }
+
+    /** The confirmation cannot be recorded in it; the replacement still goes ahead. */
+    @Test
+    fun aConfirmationBesideAManifestWithAMalformedEscapeStillReplaces() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        manifestWithAMalformedEscape()
+
+        assertTrue(restores().replace(staged) is RestoreOutcome.Restored)
+        assertEquals(listOf("${staged.operationId.value}|history.restore"), restoreReceipts())
+    }
+
     @Test
     fun aFileChosenBesideAManifestCutShortThatDidNotCommitTakesItsPlace() = runBlocking {
         currentHistory()
