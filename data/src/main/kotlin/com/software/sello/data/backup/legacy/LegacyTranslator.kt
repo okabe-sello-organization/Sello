@@ -125,23 +125,12 @@ class LegacyTranslator(
         }
         val text = utf8(bytes) ?: return LegacyTranslation.NotLegacy
         scanStructure(text, bounds)?.let { return LegacyTranslation.Rejected(it.reason()) }
-        val root = try {
-            Json.parseToJsonElement(text)
-        } catch (_: SerializationException) {
-            return LegacyTranslation.NotLegacy
-        } catch (_: IllegalArgumentException) {
-            return LegacyTranslation.NotLegacy
-        } as? JsonObject ?: return LegacyTranslation.NotLegacy
-        if (!recognised(root)) return LegacyTranslation.NotLegacy
-        val version = when (val raw = root["version"]) {
-            null -> 1L
-            else -> raw.whole() ?: return LegacyTranslation.NotLegacy
-        }
-        if (version < 1) return LegacyTranslation.NotLegacy
+        val root = objectIn(text) ?: return LegacyTranslation.NotLegacy
+        val version = legacyVersion(root) ?: return LegacyTranslation.NotLegacy
         if (version >
             NEWEST_VERSION
         ) {
-            return LegacyTranslation.Rejected(RestoreRejection.NewerVersion)
+            return LegacyTranslation.Rejected(RestoreRejection.FinanceTrackerNewer)
         }
         val exported = try {
             LocalDateTime.parse(
@@ -152,14 +141,6 @@ class LegacyTranslator(
             return LegacyTranslation.Rejected(RestoreRejection.InvalidContent)
         }
         return Translation(root, zone, exported).run()
-    }
-
-    private fun recognised(root: JsonObject): Boolean {
-        val exportedAt = root["exportedAt"] as? JsonPrimitive
-        return "format" !in root &&
-            exportedAt?.isString == true &&
-            root["preferences"] is JsonObject &&
-            listOf("categories", "expenses", "income").all { root[it] is JsonArray }
     }
 
     /** One file's translation; the tally and the identifier maps live as long as it does. */
@@ -1121,8 +1102,57 @@ class LegacyTranslator(
         }
     }
 
+    /** Telling a FinanceTracker file without translating it. */
+    internal object Recognition {
+        /**
+         * Why a FinanceTracker backup cannot be restored where nothing is translated, as at
+         * start-up, so the person is still told what the file is: one Respaldo imports, or
+         * a newer one, refused as Respaldo refuses it and never promised an import. Null
+         * when [bytes] are not one.
+         */
+        fun untranslated(
+            bytes: ByteArray,
+            bounds: BackupBounds = BackupBounds()
+        ): RestoreRejection? {
+            if (bytes.size > bounds.maxBytes) return null
+            val text = utf8(bytes) ?: return null
+            if (scanStructure(text, bounds) != null) return null
+            val version = objectIn(text)?.let(::legacyVersion) ?: return null
+            return if (version > NEWEST_VERSION) {
+                RestoreRejection.FinanceTrackerNewer
+            } else {
+                RestoreRejection.FinanceTrackerFile
+            }
+        }
+    }
+
     private companion object {
         const val NEWEST_VERSION = 2L
+
+        /** The JSON object [text] holds, or null when it holds something else or no JSON. */
+        fun objectIn(text: String): JsonObject? = try {
+            Json.parseToJsonElement(text) as? JsonObject
+        } catch (_: SerializationException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+
+        /** The FinanceTracker version of [root] (1 when unsaid); null when it is not one. */
+        fun legacyVersion(root: JsonObject): Long? {
+            val exportedAt = root["exportedAt"] as? JsonPrimitive
+            val shaped = "format" !in root &&
+                exportedAt?.isString == true &&
+                root["preferences"] is JsonObject &&
+                listOf("categories", "expenses", "income").all { root[it] is JsonArray }
+            if (!shaped) return null
+            val version = when (val raw = root["version"]) {
+                null -> 1L
+                else -> raw.whole()
+            }
+            return version?.takeIf { it >= 1 }
+        }
+
         const val CUSTOM = "CUSTOM:"
 
         /** How many digits a rate worth working out has before its decimal point. */

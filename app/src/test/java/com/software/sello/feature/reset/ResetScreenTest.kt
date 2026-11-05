@@ -56,6 +56,11 @@ class ResetScreenTest {
             substring = true
         ).assertIsDisplayed()
         rule.onNodeWithText(
+            "Vuelven a los de inicio la apariencia, el orden de categorías y, en Inversiones, " +
+                "la moneda y el orden.",
+            substring = true
+        ).assertIsDisplayed()
+        rule.onNodeWithText(
             "Los respaldos que guardaste fuera de Sello no se borran",
             substring = true
         )
@@ -210,7 +215,10 @@ class ResetScreenTest {
         rule.onNodeWithText("Tus datos se borraron").assertIsDisplayed()
         rule.onNodeWithText("Apariencia: Sistema, Cobalto").assertIsDisplayed()
         rule.onNodeWithText("Orden de categorías: Más usadas, de mayor a menor").assertIsDisplayed()
-        rule.onNodeWithText("No se borrará nada más", substring = true).assertExists()
+        rule.onNodeWithText("Inversiones: Pesos (COP), Mayor valor").assertIsDisplayed()
+        rule.onNodeWithText("Restablecer preferencias").assertExists()
+        rule.onNodeWithText("Solo se cambian preferencias; tus datos ya se borraron.")
+            .assertExists()
         rule.onNodeWithTag(RESET_APPLY_TAG).performScrollTo().performClick()
 
         assertEquals(listOf<ResetAction>(ResetAction.ApplyPreferences), actions)

@@ -249,7 +249,7 @@ private fun Erased(onAction: (ResetAction) -> Unit) {
 
 /**
  * The history is gone; the preferences are not back to first-run. They are reset in
- * one write, so both are named, with what they will be, and retrying erases nothing.
+ * one write, so every setting is named, with what it will be, and retrying erases nothing.
  */
 @Composable
 private fun Pending(applying: Boolean, onAction: (ResetAction) -> Unit) {
@@ -259,7 +259,8 @@ private fun Pending(applying: Boolean, onAction: (ResetAction) -> Unit) {
         BulletList(
             listOf(
                 Bullet(null, stringResource(R.string.reset_pending_appearance)),
-                Bullet(null, stringResource(R.string.reset_pending_ordering))
+                Bullet(null, stringResource(R.string.reset_pending_ordering)),
+                Bullet(null, stringResource(R.string.reset_pending_investments))
             ),
             Modifier.padding(top = SelloTheme.spacing.sm)
         )

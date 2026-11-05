@@ -296,7 +296,10 @@ class LegacyImportRestoreTest {
         val newer = restores().stage(("{\"version\": 3, " + legacy.drop(1)).toByteArray())
         val neither = restores().stage("{\"exportedAt\": \"2026-10-25 14:01\"}".toByteArray())
 
-        assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.NewerVersion)), newer)
+        assertEquals(
+            Outcome.Failure(StageFailure.Rejected(RestoreRejection.FinanceTrackerNewer)),
+            newer
+        )
         assertEquals(Outcome.Failure(StageFailure.Rejected(RestoreRejection.NotABackup)), neither)
         assertEquals(before, everyRow())
         assertEquals(emptyList<String>(), stagingFiles())

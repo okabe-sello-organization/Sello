@@ -141,6 +141,15 @@ enum class RestoreRejection {
     /** JSON, but not a Sello backup; or not JSON at all. */
     NotABackup,
 
+    /**
+     * A FinanceTracker backup, checked where it cannot be imported, as at start-up:
+     * Respaldo imports it once Sello starts from zero.
+     */
+    FinanceTrackerFile,
+
+    /** A FinanceTracker backup of a newer version than this app can read. */
+    FinanceTrackerNewer,
+
     /** A Sello backup of a version this app cannot read. */
     NewerVersion,
 
@@ -247,6 +256,15 @@ interface Restores {
 
     /** Forgets an unconfirmed staged file. A replaced history keeps its pending file. */
     suspend fun discard()
+
+    /**
+     * At start: forgets a staged file a day old whose replacement surely did not commit,
+     * without reading the file, so it never outlives its day even if Respaldo is not
+     * opened again. What it forgot, or null. A file whose manifest cannot be read, or
+     * whose replacement committed, may have, or has preferences pending, is left for
+     * [staged] to settle.
+     */
+    suspend fun expireStaged(): StagedLookup.NotReplaced?
 
     /** Replaces the history with [staged], then tries its preferences once. */
     suspend fun replace(staged: StagedRestore): RestoreOutcome

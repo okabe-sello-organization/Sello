@@ -1146,4 +1146,82 @@ class RestoreViewModelTest {
         assertEquals(RestoreStep.Idle, next.state.value.step)
         assertFalse(next.state.value.replaced)
     }
+
+    @Test
+    fun aPreviewADayOldIsForgottenAtStartEvenIfRespaldoIsNeverOpened() = runTest {
+        restores.expireAnswer = StagedLookup.NotReplaced(operation)
+
+        val session = RestoreSession(restores, reader, backgroundScope, 10 * 1024 * 1024)
+        runCurrent()
+
+        assertEquals(1, restores.expired)
+        assertEquals(0, restores.looked)
+        // Only previewed: nothing to say about it.
+        assertEquals(RestoreStep.Idle, session.step.value)
+    }
+
+    @Test
+    fun aConfirmedFileForgottenAtStartIsSaidNotRestored() = runTest {
+        restores.expireAnswer = StagedLookup.NotReplaced(operation, attempted = true)
+
+        val (model) = model()
+
+        assertEquals(1, restores.expired)
+        assertEquals(RestoreStep.Failed, model.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun theStartUpExpiryRunsAfterTheStartUpApply() = runTest {
+        val pending = done.copy(preferences = PendingPreferences(AppearancePreference(), null))
+        restores.applyAnswer = pending
+        restores.pendingAnswer = pending
+        restores.expireAnswer = StagedLookup.NotReplaced(operation, attempted = true)
+
+        val (model) = model()
+
+        assertEquals(1, restores.applied)
+        assertEquals(1, restores.expired)
+        assertEquals(RestoreStep.Restored(pending), model.state.value.step)
+    }
+
+    @Test
+    fun aFileChosenBeforeTheProcessDiedIsCheckedEvenWhenAConfirmedOneExpiredAtStart() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        readGate = CompletableDeferred()
+        val (model) = model(handle, process)
+        choose(model)
+        assertEquals(RestoreStep.Checking, model.state.value.step)
+
+        readGate = null
+        restores.expireAnswer = StagedLookup.NotReplaced(operation, attempted = true)
+        restores.stageAnswer = Outcome.Success(staged)
+        val restored = afterProcessDeath(handle, process)
+
+        assertEquals(RestoreStep.Previewing(staged), restored.state.value.step)
+        assertEquals(List(2) { "content://provider/document/7" }, read)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun aFileChosenWhileTheStartUpExpiryRunsLeavesNoNotRestoredForALaterLook() = runTest {
+        restores.expireAnswer = StagedLookup.NotReplaced(operation, attempted = true)
+        restores.expireGate = CompletableDeferred()
+        restores.stageAnswer = Outcome.Success(staged)
+        val (model, session) = model()
+        // Respaldo's look and the choice both wait for the start-up to finish.
+        choose(model)
+        assertEquals(RestoreStep.Checking, model.state.value.step)
+
+        restores.expireGate!!.complete(Unit)
+        runCurrent()
+        assertEquals(RestoreStep.Previewing(staged), model.state.value.step)
+        model.onAction(RestoreAction.Cancel)
+        runCurrent()
+        val (again) = model(session = session)
+
+        assertEquals(RestoreStep.Idle, again.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
 }

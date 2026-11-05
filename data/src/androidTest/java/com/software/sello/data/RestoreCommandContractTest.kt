@@ -1215,6 +1215,153 @@ class RestoreCommandContractTest {
     }
 
     @Test
+    fun aPreviewADayOldIsForgottenAtStartWithoutBeingLookedAt() = runBlocking {
+        currentHistory()
+        val staged = stage()
+
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+
+        assertEquals(StagedLookup.NotReplaced(staged.operationId), restores().expireStaged())
+        assertEquals(emptyList<String>(), stagingFiles())
+        assertEquals(StagedLookup.None, restores().staged())
+    }
+
+    @Test
+    fun aPreviewNotADayOldIsKeptAtStart() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val kept = stagingFiles()
+
+        now = now.plusSeconds(24 * 60 * 60)
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+        assertEquals(StagedLookup.Waiting(staged), restores().staged())
+    }
+
+    @Test
+    fun aConfirmedFileADayOldIsForgottenAtStartAndSaidConfirmed() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val before = everyRow()
+        diedWhileReplacing(staged)
+
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+
+        assertEquals(
+            StagedLookup.NotReplaced(staged.operationId, attempted = true),
+            restores().expireStaged()
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+        assertEquals(before, everyRow())
+    }
+
+    @Test
+    fun aConfirmedFileADayOldIsKeptAtStartWhileItsReceiptCannotBeRead() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        diedWhileReplacing(staged)
+        val kept = stagingFiles()
+        ledger.database.openHelper.writableDatabase
+            .execSQL("ALTER TABLE operation_receipt RENAME TO operation_receipt_away")
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+        ledger.reopen()
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+    }
+
+    @Test
+    fun aMovedReplacementWithPreferencesPendingIsLeftAloneAtStart() = runBlocking {
+        currentHistory()
+        preferences.failAppearance = true
+        restores().replace(stage())
+        val kept = stagingFiles()
+
+        now = now.plusSeconds(2 * 24 * 60 * 60)
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+        assertFalse(restores().pending()!!.preferences.done)
+    }
+
+    @Test
+    fun aFileNeverReplacedBesideAReplacementWithPreferencesPendingIsKeptAtStart() = runBlocking {
+        currentHistory()
+        preferences.failAppearance = true
+        restores().replace(stage())
+        val folder = files.restoreFolder
+        File(folder, "restored.json").copyTo(File(folder, "staged.json"))
+        File(folder, "staged.properties").writeText(
+            "operation=00000000-0000-4000-8000-00000000f172\n" +
+                "generation=1\nstagedAt=${now.toEpochMilli()}\n"
+        )
+        val kept = stagingFiles()
+        val bytes = File(folder, "staged.json").readBytes().toList()
+
+        now = now.plusSeconds(2 * 24 * 60 * 60)
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+        assertEquals(bytes, File(folder, "staged.json").readBytes().toList())
+        assertFalse(restores().pending()!!.preferences.done)
+    }
+
+    @Test
+    fun aCommittedFileADayOldIsNotExpiredAtStartButFinishedByTheLook() = runBlocking {
+        currentHistory()
+        val staged = committedBeforeTheRename()
+        val kept = stagingFiles()
+
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertTrue(restores().applyPending() is RestoreOutcome.Restored)
+        assertEquals(1, restoreReceipts().size)
+    }
+
+    /** A manifest that names no operation, beside a staged file last written two days ago. */
+    private fun unreadableManifestBesideATwoDayOldFile() {
+        File(files.restoreFolder, "staged.properties").writeText("operation=unreadable\n")
+        assertTrue(
+            File(files.restoreFolder, "staged.json")
+                .setLastModified(now.minusSeconds(2 * 24 * 60 * 60).toEpochMilli())
+        )
+    }
+
+    @Test
+    fun aFileBesideAnUnreadableManifestIsKeptAtStartWhateverItsAge() = runBlocking {
+        currentHistory()
+        stage()
+        unreadableManifestBesideATwoDayOldFile()
+        val kept = stagingFiles()
+
+        now = now.plusSeconds(2 * 24 * 60 * 60)
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+    }
+
+    @Test
+    fun aCommittedFileBesideAnUnreadableManifestIsKeptAtStartAndFinishedAfter() = runBlocking {
+        currentHistory()
+        val staged = committedBeforeTheRename()
+        unreadableManifestBesideATwoDayOldFile()
+        val kept = stagingFiles()
+
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+        // Respaldo's look settles it by its receipt; its preferences are then applied.
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertTrue(restores().applyPending() is RestoreOutcome.Restored)
+        assertEquals(1, restoreReceipts().size)
+    }
+
+    @Test
     fun aPendingReplacementBlocksStagingAnotherFile() = runBlocking {
         currentHistory()
         preferences.failAppearance = true

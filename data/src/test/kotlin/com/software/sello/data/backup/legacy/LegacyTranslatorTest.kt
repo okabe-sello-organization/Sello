@@ -4,6 +4,7 @@ import com.software.sello.data.backup.BackupBounds
 import com.software.sello.data.backup.BackupCodec
 import com.software.sello.data.backup.BackupContents
 import com.software.sello.data.backup.PortablePreferences
+import com.software.sello.data.backup.translatedFile
 import com.software.sello.data.backup.uuid
 import com.software.sello.data.backup.value
 import com.software.sello.domain.model.AppearancePreference
@@ -20,6 +21,7 @@ import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Occurrence
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
@@ -34,6 +36,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -346,7 +349,7 @@ class LegacyTranslatorTest {
         assertTrue(translate(legacy(version = "1")) is LegacyTranslation.Translated)
         assertTrue(translate(legacy(version = "2")) is LegacyTranslation.Translated)
         assertEquals(
-            LegacyTranslation.Rejected(RestoreRejection.NewerVersion),
+            LegacyTranslation.Rejected(RestoreRejection.FinanceTrackerNewer),
             translate(legacy(version = "3"))
         )
     }
@@ -370,6 +373,48 @@ class LegacyTranslatorTest {
             LegacyTranslation.Rejected(RestoreRejection.TooLarge),
             translate(text, bounds)
         )
+    }
+
+    @Test
+    fun `a translation that outgrows a backup once written as one is refused as too large`() {
+        val contents = translated(mixed).contents
+        assertTrue(BackupCodec().translatedFile(contents) is Outcome.Success)
+
+        assertEquals(
+            Outcome.Failure(RestoreRejection.TooLarge),
+            BackupCodec(BackupBounds(maxBytes = 1024)).translatedFile(contents)
+        )
+        assertEquals(
+            Outcome.Failure(RestoreRejection.TooLarge),
+            BackupCodec(BackupBounds(maxRecords = 3)).translatedFile(contents)
+        )
+    }
+
+    @Test
+    fun `any other refusal of a translation is Sello's own content problem, not damage`() {
+        val contents = translated(mixed).contents
+
+        assertEquals(
+            Outcome.Failure(RestoreRejection.InvalidContent),
+            BackupCodec(BackupBounds(maxFieldCharacters = 3)).translatedFile(contents)
+        )
+        assertEquals(
+            Outcome.Failure(RestoreRejection.InvalidContent),
+            BackupCodec(BackupBounds(maxDepth = 2)).translatedFile(contents)
+        )
+    }
+
+    @Test
+    fun `a FinanceTracker file is told without being translated, a newer one as newer`() {
+        fun told(text: String) = LegacyTranslator.Recognition.untranslated(text.toByteArray())
+
+        assertEquals(RestoreRejection.FinanceTrackerFile, told(mixed))
+        assertEquals(RestoreRejection.FinanceTrackerFile, told(legacy(version = "2")))
+        assertEquals(RestoreRejection.FinanceTrackerNewer, told(legacy(version = "3")))
+        for (text in listOf("not json", "[]", "{\"exportedAt\": \"2026-10-25 14:01\"}")) {
+            assertNull(text, told(text))
+        }
+        assertNull(told(legacy(version = "0")))
     }
 
     @Test
