@@ -1,5 +1,6 @@
 package com.software.sello.feature
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,6 +13,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.captureToImage
@@ -39,6 +41,7 @@ import com.software.sello.feature.expense.Missing
 import com.software.sello.feature.goals.CompletionState
 import com.software.sello.feature.goals.GOAL_EDITOR_DONE_ERROR_TAG
 import com.software.sello.feature.goals.GOAL_EDITOR_ERROR_TAG
+import com.software.sello.feature.goals.GOAL_REPLACE_ERROR_TAG
 import com.software.sello.feature.goals.GoalBulkSamples
 import com.software.sello.feature.goals.GoalBulkScreen
 import com.software.sello.feature.goals.GoalChoice
@@ -54,6 +57,9 @@ import com.software.sello.feature.goals.ReciboGoal
 import com.software.sello.feature.goals.ReciboGoalPill
 import com.software.sello.feature.goals.ReciboGoalState
 import com.software.sello.feature.goals.ReciboReachedGoal
+import com.software.sello.feature.goals.ReplaceSheet
+import com.software.sello.feature.goals.ReplaceStarSheet
+import com.software.sello.feature.goals.StarChoice
 import com.software.sello.feature.income.IncomeFormError
 import com.software.sello.feature.income.IncomeFormScreen
 import com.software.sello.feature.income.IncomeFormState
@@ -75,6 +81,14 @@ import com.software.sello.feature.investments.MovementLineModel
 import com.software.sello.feature.investments.RateEntryError
 import com.software.sello.feature.investments.UsdRateEntryScreen
 import com.software.sello.feature.investments.UsdRateEntryState
+import com.software.sello.feature.recibo.AdjustBudgetScreen
+import com.software.sello.feature.recibo.AdjustBudgetState
+import com.software.sello.feature.recibo.LIMIT_SHEET_ERROR_TAG
+import com.software.sello.feature.recibo.LimitSheetError
+import com.software.sello.feature.recibo.LimitSheetState
+import com.software.sello.feature.recibo.ReciboAnswerLabel
+import com.software.sello.feature.recibo.ReciboStamp
+import com.software.sello.feature.recibo.ReciboSummary
 import com.software.sello.feature.recurrence.ScheduleCategory
 import com.software.sello.feature.recurrence.ScheduleEditorError
 import com.software.sello.feature.recurrence.ScheduleEditorScreen
@@ -83,6 +97,7 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.revealed
 import java.time.LocalDate
+import java.time.YearMonth
 import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -417,6 +432,57 @@ class EntryToneTest {
             {},
             {},
             {}
+        )
+    }
+
+    @Test
+    fun anUnknownLimitOnAjustarPresupuestoIsAmber() = warns(LIMIT_SHEET_ERROR_TAG) {
+        val october = YearMonth.of(2026, 10)
+        AdjustBudgetScreen(
+            state = AdjustBudgetState.Ready(
+                month = october,
+                summary = ReciboSummary(
+                    label = ReciboAnswerLabel.Remaining,
+                    amount = plain("920.000"),
+                    stamp = ReciboStamp.OnTrack,
+                    adjustable = true
+                ),
+                limit = plain("1.000.000"),
+                spent = plain("80.000"),
+                limited = emptyList(),
+                open = emptyList(),
+                stale = false,
+                archived = emptyList()
+            ),
+            sheet = LimitSheetState(
+                month = october,
+                categoryId = "cafe",
+                name = "Café",
+                iconKey = "local_cafe",
+                amount = plain("150.000"),
+                error = LimitSheetError.Unknown
+            ),
+            onAction = {},
+            onSheet = {},
+            onEditCategory = {},
+            contentPadding = PaddingValues(12.dp)
+        )
+    }
+
+    @Test
+    fun anUnknownStarReplaceIsAmber() = warns(GOAL_REPLACE_ERROR_TAG) {
+        ReplaceStarSheet(
+            "Viaje a la costa",
+            ReplaceSheet(
+                listOf(
+                    StarChoice("fondo", "Fondo de emergencia", "home", 42),
+                    StarChoice("bici", "Bicicleta", "fitness_center", 18)
+                ),
+                "bici"
+            ),
+            busy = false,
+            error = GoalDetailError.Unknown,
+            onAction = {}
         )
     }
 }
