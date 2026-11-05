@@ -18,7 +18,7 @@ and [ADR 0008](../decisions/0008-unreadable-storage-start-over.md) define the ru
 | Schema 7 → 8 | — | Rows kept; Recibo's chosen goal becomes its one star, unless completed | `GoalStarMigrationTest` |
 | Schema 8 → 9 | — | Rows kept; each expense gains its note's search key, indexes added | `SearchIndexMigrationTest` |
 | Database schema 9 | 9 | Opens and keeps its rows | `ExportedSchemaOnDeviceTest.aDatabaseBuiltFromTheExportedCurrentSchemaOpensAndKeepsItsRows` |
-| A newer schema than 9 | — | Meant to be refused with the start-up failure screen, the file kept whole. **No current proof:** the test stamps version 2, newer only when schema 1 was current ([#364](https://github.com/okabe-sello-organization/Sello/issues/364)) | `UnreadableFileSetAsideTest.aFileFromANewerVersionIsStillWholeAndReadableWhereItWasKept` (stale) |
+| A newer schema than 9 | — | Refused: the open fails, the file is neither migrated nor deleted, and it keeps its version and rows, readable where it was set aside | `ProfileInitializationTest.aFileFromANewerSchemaIsRefusedAndLeftExactlyAsItWas`, `UnreadableFileSetAsideTest.aFileFromANewerVersionIsStillWholeAndReadableWhereItWasKept` (both stamp the current schema plus one) |
 | Backup format 1 | schema 9 | Read with no goals, schedules, investments or chains | `GoalBackupTest`, `ScheduleBackupTest`, `InvestmentBackupTest`, `CarryBackupTest` (JVM) |
 | Backup format 2 | schema 9 | Read with its goals; the chosen goal is its one star | `GoalBackupTest`, `StarredGoalBackupTest` (JVM) |
 | Backup format 3 | schema 9 | Read with its schedules and origins; no investments. A FinanceTracker file is translated to it | `ScheduleBackupTest`, `InvestmentBackupTest` (JVM); `LegacyImportRestoreTest` (restored on device) |

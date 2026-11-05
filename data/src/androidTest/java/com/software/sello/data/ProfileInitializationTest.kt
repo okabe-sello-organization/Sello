@@ -1,7 +1,9 @@
 package com.software.sello.data
 
+import android.database.DatabaseUtils
 import android.database.sqlite.SQLiteDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.repository.RoomFinancialProfileStore
 import com.software.sello.domain.model.FinancialProfile
 import com.software.sello.domain.model.Outcome
@@ -91,18 +93,20 @@ class ProfileInitializationTest {
         SQLiteDatabase.openOrCreateDatabase(files.file, null).use { newer ->
             newer.execSQL("CREATE TABLE future_ledger (amount INTEGER NOT NULL)")
             newer.execSQL("INSERT INTO future_ledger VALUES (10000)")
-            newer.version = 2
+            newer.version = SelloDatabase.VERSION + 1
         }
 
         val profile = RoomFinancialProfileStore(files.open()) { recordedAt }.establish(bogota)
 
-        assertTrue("$profile", (profile as Outcome.Failure).error is StorageFailure.Unavailable)
+        assertEquals(Outcome.Failure(StorageFailure.Unavailable("IllegalStateException")), profile)
         SQLiteDatabase.openDatabase(files.file.path, null, SQLiteDatabase.OPEN_READONLY).use {
-            assertEquals(2, it.version)
+            assertEquals(SelloDatabase.VERSION + 1, it.version)
             it.rawQuery("SELECT amount FROM future_ledger", null).use { row ->
                 assertTrue(row.moveToFirst())
                 assertEquals(10_000L, row.getLong(0))
             }
+            val profileTable = "SELECT COUNT(*) FROM sqlite_master WHERE name = 'profile'"
+            assertEquals("never migrated", 0L, DatabaseUtils.longForQuery(it, profileTable, null))
         }
     }
 
