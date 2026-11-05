@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P2
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-151, SELLO-152, SELLO-153, SELLO-159
 - **Gate:** G1
 
@@ -16,7 +16,14 @@ red, and the goal movement's past-date refusal has its own wording.
   screen uses it for the unknown outcome. Screenshot baselines updated; before and
   after in the pull request.
 - A goal movement's `LineInvalidDate` refusal no longer uses the future-date wording.
-- Closes #289.
+- No save or delete outcome is titled with the load failure's "No se pudo cargar": Editar
+  meta's save errors follow the v2 entry pattern (the message, and **Comprobar si se
+  guardó** in the button's place for an unknown outcome), and the full expense list's
+  delete-problem slips get a delete-specific title (orchestrator ruling, #332).
+- Entry and movement forms' section headings follow the approved v2 design (uppercase,
+  `--soft` ink, as `docs/design/v2/sello.css` `.entry-mid h3` draws them) on every entry
+  and movement form, in all four themes (orchestrator ruling, #349).
+- Closes #289, #332 and #349.
 
 ### Notes
 Review: lighter, with screenshots.
