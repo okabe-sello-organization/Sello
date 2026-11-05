@@ -17,6 +17,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.text.AnnotatedString
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.software.sello.NightlyOnly
@@ -50,6 +51,7 @@ import com.software.sello.navigation.MonthSession
 import com.software.sello.platform.ProcessFinancialZone
 import com.software.sello.platform.SystemAuditClock
 import com.software.sello.platform.SystemDispatcherProvider
+import com.software.sello.press
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -200,7 +202,16 @@ class TimeControlsJourneyTest {
         rule.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(TOOLS_JUMP_FIELD_TAG)))
             .performScrollTo()
             .performTextInput("2026-10-01")
-        rule.onNodeWithTag(TOOLS_JUMP_TAG).performScrollTo().performClick()
+        rule.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(TOOLS_JUMP_FIELD_TAG)))
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.EditableText,
+                    AnnotatedString("2026-10-01")
+                )
+            )
+        // Pressed, not clicked by position: the keyboard may still be on its way and move
+        // the screen, so a click may land where the control no longer is.
+        rule.onNodeWithTag(TOOLS_JUMP_TAG).performScrollTo().press()
         rule.onNodeWithText(
             "Ya hay movimientos guardados después de esa fecha. Para volver atrás, reinicia el sandbox."
         ).performScrollTo().assertIsDisplayed()

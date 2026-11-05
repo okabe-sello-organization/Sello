@@ -7,6 +7,7 @@ import android.view.WindowInsets
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -52,10 +53,11 @@ fun ComposeTestRule.awaitDescription(description: String) =
 /**
  * Presses a control through its accessibility action instead of by screen position.
  * After typing, the system keyboard may still be sliding in and moving things; a
- * press aimed at where the control was a moment ago can miss.
+ * press aimed at where the control was a moment ago can miss. It refuses a disabled
+ * control, as a real tap would: the click action alone would still run it.
  */
 fun SemanticsNodeInteraction.press(): SemanticsNodeInteraction =
-    performSemanticsAction(SemanticsActions.OnClick)
+    assertIsEnabled().performSemanticsAction(SemanticsActions.OnClick)
 
 /**
  * Scrolls to this node when a scrolling container holds it, and leaves it be otherwise:
