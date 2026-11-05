@@ -12,6 +12,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -35,6 +36,7 @@ import com.software.sello.designsystem.component.selloWindowLayout
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.theme.statusBarLightIconsUnder
 import com.software.sello.presentation.month.MonthNames
 
 /**
@@ -284,7 +286,12 @@ fun ShellScreen(
                 // Opened whole: a half-open sheet would hide the later months.
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                 containerColor = SelloTheme.colors.paper,
-                contentColor = SelloTheme.colors.ink
+                contentColor = SelloTheme.colors.ink,
+                // Its scrim only dims the band, so the status icons stay as the band has them.
+                properties = ModalBottomSheetProperties(
+                    isAppearanceLightStatusBars = !statusBarLightIconsUnder(),
+                    isAppearanceLightNavigationBars = !SelloTheme.colors.isDark
+                )
             ) {
                 // Scrolls, so a large font or a short window cannot cut months off.
                 Column(Modifier.verticalScroll(rememberScrollState())) {

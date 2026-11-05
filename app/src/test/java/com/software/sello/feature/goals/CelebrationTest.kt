@@ -112,7 +112,18 @@ class CelebrationTest {
     }
 
     @Test
-    fun aDarkDeskKeepsWhiteStatusIconsThroughout() {
+    fun inOscuroTheStatusIconsTurnDarkAsTheLightGreenFloodsIn() {
+        rule.mainClock.autoAdvance = false
+        show(reduced = false, dark = true)
+        // v2 writes the status bar in --ongain over the flood: dark ink on Oscuro's green.
+        rule.mainClock.advanceTimeBy(1_000)
+        assertFalse(darkStatusIcons())
+        rule.mainClock.advanceTimeBy(1_600)
+        assertTrue(darkStatusIcons())
+    }
+
+    @Test
+    fun inOscuroTheDarkDeskHasWhiteStatusIconsBeforeTheFlood() {
         rule.mainClock.autoAdvance = false
         show(reduced = false, dark = true)
         rule.mainClock.advanceTimeBy(1_000)

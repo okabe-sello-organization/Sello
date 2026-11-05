@@ -26,6 +26,7 @@ import com.software.sello.navigation.SelloAppRoot
 import com.software.sello.navigation.ShellAction
 import com.software.sello.navigation.ShellViewModel
 import com.software.sello.platform.ProcessAppRestart
+import com.software.sello.platform.SystemBarsFollowTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -52,7 +53,9 @@ class MainActivity : ComponentActivity() {
             val state by startup.state.collectAsStateWithLifecycle()
             when (val now = state) {
                 // Without a graph there is no stored appearance yet: the default paper.
-                StartupState.Opening -> SelloTheme { StartupLoading() }
+                StartupState.Opening -> SystemBarsFollowTheme(isSystemInDarkTheme()) {
+                    SelloTheme { StartupLoading() }
+                }
 
                 // The app is shown only on data that opened. Recomposition changes its
                 // tokens without replacing any saved route, draft or financial view model.
@@ -60,19 +63,26 @@ class MainActivity : ComponentActivity() {
                     val appearance: AppearanceViewModel = viewModel(factory = now.viewModels)
                     val preference by appearance.state.collectAsStateWithLifecycle()
                     val theme = preference.appearance.asSelloTheme(isSystemInDarkTheme())
-                    SelloTheme(ink = theme.ink, darkTheme = theme.dark) {
-                        if (!startingOver) SelloAppRoot(now.viewModels)
+                    SystemBarsFollowTheme(theme.dark) {
+                        SelloTheme(ink = theme.ink, darkTheme = theme.dark) {
+                            if (!startingOver) SelloAppRoot(now.viewModels)
+                        }
                     }
                 }
 
                 // The graph cannot be opened here, so its persisted preference is unavailable.
-                is StartupState.Failed -> SelloTheme {
-                    StartupFailureRoot(
-                        viewModels = remember {
-                            startupFailureViewModels(startup, ProcessAppRestart(applicationContext))
-                        },
-                        onStartedOver = ::startOver
-                    )
+                is StartupState.Failed -> SystemBarsFollowTheme(isSystemInDarkTheme()) {
+                    SelloTheme {
+                        StartupFailureRoot(
+                            viewModels = remember {
+                                startupFailureViewModels(
+                                    startup,
+                                    ProcessAppRestart(applicationContext)
+                                )
+                            },
+                            onStartedOver = ::startOver
+                        )
+                    }
                 }
             }
         }

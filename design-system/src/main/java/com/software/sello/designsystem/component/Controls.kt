@@ -65,7 +65,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
+import com.software.sello.designsystem.theme.DialogBarIcons
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.theme.statusBarLightIconsUnder
 
 /**
  * A full-width tab action. Its purpose, enabled state and busy state belong to the caller.
@@ -378,6 +380,12 @@ fun NoteComposer(
             decorFitsSystemWindows = false
         )
     ) {
+        // Its window covers the bars: the status bar over the dimmed screen, the
+        // navigation bar under the paper.
+        DialogBarIcons(
+            darkStatusIcons = !statusBarLightIconsUnder(),
+            darkNavigationIcons = !colors.isDark
+        )
         Box(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.BottomCenter) {
             Surface(color = colors.paper, shape = SelloTheme.shapes.sheet) {
                 Column(
