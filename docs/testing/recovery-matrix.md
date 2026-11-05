@@ -12,15 +12,25 @@ and [ADR 0008](../decisions/0008-unreadable-storage-start-over.md) define the ru
 
 | From | To | Outcome | Proof |
 | --- | --- | --- | --- |
-| Database schema 1 | 4 (current) | Upgraded through 2 and 3 on open; every row and identity kept | `ExportedSchemaOnDeviceTest`; `RecoveryRetentionTest` (a full v1 history) |
-| Database schema 2 | 4 | Upgraded on open; rows kept, empty `deleted_income` and goal tables added | `ExportedSchemaOnDeviceTest` |
-| Database schema 3 | 4 | Upgraded on open; rows kept, empty goal tables added | `ExportedSchemaOnDeviceTest` |
-| Database schema 4 | 4 | Opens and keeps its rows | `ExportedSchemaOnDeviceTest` |
-| A newer schema than 4 | — | Not opened: the start-up failure screen; the file is kept whole | `UnreadableFileSetAsideTest.aFileFromANewerVersionIsStillWholeAndReadableWhereItWasKept` |
-| Backup format 1 | schema 4 | Restored, every record at version 1 (versions are not in a backup); no goals | `RecoveryRetentionTest`, `RestoreCommandContractTest`, `GoalBackupTest` |
-| Backup format 2 | schema 4 | Restored with its goals and Recibo's choice, replacing the goals there; same figures on a fresh installation | `GoalBackupRestoreTest`, `GoalBackupTest` |
-| Erase all with goals | schema 4 | Every goal, its history, the undo copy and the choice removed | `GoalBackupRestoreTest` |
-| A newer backup format | — | Refused as "Lo hizo una versión más nueva de Sello"; nothing changes | `RestoreCommandContractTest.aFileThatCannotBeRestoredChangesNothingAndIsNotKept` |
+| Database schema 1 | 9 (current) | Upgraded through every version on open; every row and identity kept | `ExportedSchemaOnDeviceTest.aVersionOneDatabaseOpenedByThisBuildIsUpgradedThroughEveryVersionAndReadsTheSameData`; `RecoveryRetentionTest` (a full v1 history) |
+| Schema 1 → 2 → 3 → 4 → 5 → 6 | — | Each step keeps every row and adds only its empty tables or columns | `ExportedSchemaOnDeviceTest`, one case per step |
+| Schema 6 → 7 | — | Rows kept; empty carry chains, every category off | `CarryoverMigrationTest` |
+| Schema 7 → 8 | — | Rows kept; Recibo's chosen goal becomes its one star, unless completed | `GoalStarMigrationTest` |
+| Schema 8 → 9 | — | Rows kept; each expense gains its note's search key, indexes added | `SearchIndexMigrationTest` |
+| Database schema 9 | 9 | Opens and keeps its rows | `ExportedSchemaOnDeviceTest.aDatabaseBuiltFromTheExportedCurrentSchemaOpensAndKeepsItsRows` |
+| A newer schema than 9 | — | Meant to be refused with the start-up failure screen, the file kept whole. **No current proof:** the test stamps version 2, newer only when schema 1 was current ([#364](https://github.com/okabe-sello-organization/Sello/issues/364)) | `UnreadableFileSetAsideTest.aFileFromANewerVersionIsStillWholeAndReadableWhereItWasKept` (stale) |
+| Backup format 1 | schema 9 | Read with no goals, schedules, investments or chains | `GoalBackupTest`, `ScheduleBackupTest`, `InvestmentBackupTest`, `CarryBackupTest` (JVM) |
+| Backup format 2 | schema 9 | Read with its goals; the chosen goal is its one star | `GoalBackupTest`, `StarredGoalBackupTest` (JVM) |
+| Backup format 3 | schema 9 | Read with its schedules and origins; no investments. A FinanceTracker file is translated to it | `ScheduleBackupTest`, `InvestmentBackupTest` (JVM); `LegacyImportRestoreTest` (restored on device) |
+| Backup format 4 | schema 9 | Read with its investments and rates, in pesos, largest value first | `BackupRoundTripTest`, `InvestmentBackupTest` (JVM) |
+| Backup format 5 | schema 9 | Read with its investment settings; every category off, no starting deficit | `BackupRoundTripTest`, `CarryBackupTest` (JVM); `CarryBackupRestoreTest.sc42AVersionFiveFileRestoresWithEveryCategoryOffOverAnEnabledOne` (device) |
+| Backup format 6 | schema 9 | Read with its carry chains and financial month; the chosen goal is its one star | `BackupRoundTripTest`, `CarryBackupTest`, `StarredGoalBackupTest` (JVM); `GoalBackupRestoreTest.everyStarComesBackAndReplacesTheStarsThereNeverMerges` (device) |
+| Backup format 7 (current) | schema 9 | Written and read byte for byte; restored with the same figures on a fresh installation | `BackupRoundTripTest` (JVM); `RecoveryRetentionTest`, `GoalBackupRestoreTest`, `InvestmentBackupRestoreTest`, `CarryBackupRestoreTest` (device) |
+| Erase all with goals | schema 9 | Every goal, its history, the undo copy and the stars removed | `GoalBackupRestoreTest.erasingEverythingRemovesEveryGoalItsHistoryAndTheStars` |
+| A newer backup format | — | Refused as "Lo hizo una versión más nueva de Sello"; nothing changes | `RestoreCommandContractTest.aFileThatCannotBeRestoredChangesNothingAndIsNotKept` (version 8) |
+
+Every format is read into the same plan before anything is written, so one restore path
+serves them all ([backup format](../data/backup-format.md#reading-a-file)).
 
 There is no schema before 1 and no migration from it. The earlier FinanceTracker
 app's database is not supported and no compatibility with it is claimed.

@@ -5,6 +5,9 @@ through a store. Decisions: [D10](../decisions/0001-mvp-contract.md#d10--release
 [ADR 0016](../decisions/0016-release-gate-signing-split.md). Performance:
 [performance profile](../testing/performance-profile.md).
 
+The next candidate's checks are in the [candidate checklist](candidate-checklist.md); the
+[MVP checklist](mvp-checklist.md) is the October 2026 record and not the current baseline.
+
 ## Signing
 
 The owner keeps the key (`~/.android/sello-release.jks`) and its passwords; neither is

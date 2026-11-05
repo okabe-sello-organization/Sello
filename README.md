@@ -39,12 +39,13 @@ a deliberately smaller, tested MVP and the Sello visual language.
   what CI runs.
 - [Design references](docs/design/README.md): Sello v2, the v1.1 snapshot and provenance.
 
-The app currently implements Recibo and Resumen tabs, expense and income
-entry/history, category and limit management, corrections with guarded undo,
-persisted appearance/order settings, adaptive navigation and unreadable-storage
-startup recovery. Backup/restore/reset and the
-live-testing sandbox (debug only) are not customer-facing capabilities; see the current app
-baseline and tickets for the exact boundary.
+The app has four tabs: Recibo, Resumen, Metas and Inversiones. It records expenses and
+incomes in COP (investments also in USD), with categories and monthly limits, fixed
+payments and signed carryover. Configuración → Tus datos makes and restores backups
+through the system file picker (restore also from the start-up failure screen), imports
+a FinanceTracker backup, exports to CSV or JSON, and erases all data after typing
+BORRAR. The live-testing sandbox is debug only. [HANDOFF](docs/development/HANDOFF.md)
+has the full current app.
 
 ## Local checks
 
