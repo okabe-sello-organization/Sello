@@ -108,8 +108,12 @@ This summary is refreshed when an epic closes and adds no verification claims.
   the dark desk; restore and erase name every setting they reset, a FinanceTracker file
   on the start-up failure screen is named as one, and a previewed backup's plain copy is
   deleted at the next start after a day; name order folds accents and Ñ as search does,
-  Solo este is asked once, and every chart writes months alike. The shrunk build passed
-  the release check up to the owner's key, the advisory check and a walk on a new API 37
+  Solo este is asked once, and every chart writes months alike. The candidate's records
+  were refreshed (SELLO-174), and two device tests fixed (#371 the flaky reset journey,
+  #372 the newer-schema tests). The release check passed up to the owner's key, in
+  parts: the gate run up to `release-production`, which failed on a missing `java` on
+  PATH; that step alone, refusing only the throwaway certificate; and the launch alone
+  on the same new API 30 emulator. Then the advisory check and a walk on a new API 37
   emulator ([walk](../testing/performance-profile.md#release-candidate-walk-on-api-37-sello-175)).
 - No network permission or OS backup; every build checks its manifests, release
   libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md). The

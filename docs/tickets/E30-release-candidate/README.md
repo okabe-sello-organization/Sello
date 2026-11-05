@@ -35,3 +35,8 @@
   placing Ñ after N as a dictionary does. It needs no new stored key.
 - File and line references in the tickets are from the audit commit `c87b351d`; later
   commits may have moved them.
+- SELLO-175 (2026-11-05): the release gate's production step accepts only the owner's
+  pinned certificate (`release.py:139-142`), so with a throwaway key `scripts/check
+  --release` passes up to that step, not whole, as the ticket's first criterion assumed.
+  The owner's G3 run with the real key joins the phone walk as the owner's step; the
+  Exit's "only the owner's phone walk" now reads "the owner's G3 run and phone walk".
