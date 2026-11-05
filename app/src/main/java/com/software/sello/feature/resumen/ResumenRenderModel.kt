@@ -8,6 +8,7 @@ import com.software.sello.domain.model.WeekdayPattern
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.presentation.carry.carryFigures
+import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import java.math.BigDecimal
 import java.math.BigInteger
@@ -17,7 +18,8 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class ResumenRenderModel(private val money: MoneyFormatter) {
+/** [labels] writes months as the rest of the app does: "sep 2026", never "sept.". */
+class ResumenRenderModel(private val money: MoneyFormatter, private val labels: DateLabels) {
     /** [current] is the financial month in progress; a date from another year shows its year. */
     fun render(state: ResumenSnapshotState, current: YearMonth): ResumenState = when (state) {
         ReadState.Loading -> ResumenState.Loading
@@ -52,7 +54,7 @@ class ResumenRenderModel(private val money: MoneyFormatter) {
             netFlow = money.format(snapshot.netFlow),
             incomeSlip = income(snapshot),
             history = history.map { entry ->
-                val label = entry.month.format(monthFormat)
+                val label = labels.monthYear(entry.month)
                 val amount = money.format(entry.spent)
                 val limit = entry.limit
                 // The month in progress is always drawn as such, over its limit or not:
@@ -61,7 +63,7 @@ class ResumenRenderModel(private val money: MoneyFormatter) {
                 ResumenPoint(
                     ChartPoint(
                         entry.month.toString(),
-                        entry.month.format(axisMonthFormat),
+                        labels.month(entry.month),
                         entry.spent.minorUnits,
                         "$label, ${amount.spoken}",
                         when {
@@ -206,7 +208,6 @@ class ResumenRenderModel(private val money: MoneyFormatter) {
 
     private companion object {
         val locale: Locale = Locale.forLanguageTag("es-CO")
-        val monthFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM uuuu", locale)
         val monthNameFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("LLLL", locale)
         val sentenceDate: DateTimeFormatter = DateTimeFormatter.ofPattern("d 'de' MMMM", locale)
         val sentenceDateWithYear: DateTimeFormatter =
@@ -229,7 +230,6 @@ class ResumenRenderModel(private val money: MoneyFormatter) {
             DayOfWeek.SATURDAY to "sábados",
             DayOfWeek.SUNDAY to "domingos"
         )
-        val axisMonthFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("MMM", locale)
     }
 }
 

@@ -17,6 +17,7 @@ import com.software.sello.domain.port.ScheduleBookState
 import com.software.sello.domain.port.ScheduleReads
 import com.software.sello.domain.port.SuggestionPreferences
 import com.software.sello.navigation.MonthSession
+import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.read.LastGoodRead
 import java.time.YearMonth
@@ -38,12 +39,13 @@ class ResumenViewModel(
     reads: ResumenSnapshots,
     session: MonthSession,
     money: MoneyFormatter,
+    labels: DateLabels,
     private val suggestions: SuggestionPreferences,
     schedules: ScheduleReads,
     clock: FinancialClock
 ) : ViewModel() {
     private val attempts = MutableStateFlow(0)
-    private val render = ResumenRenderModel(money)
+    private val render = ResumenRenderModel(money, labels)
     private var weekdayExpiry: Job? = null
     private var historyExpiry: Job? = null
 

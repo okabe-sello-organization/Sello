@@ -516,6 +516,10 @@ class ExpenseEntryViewModel(
 
             ExpenseEntryAction.CorrectionDismissed -> if (!now.busy) {
                 confirmation = null
+                // Leaving the list ends the attempt: Solo este is asked again. After a
+                // restart the list is gone but the answer is kept for these terms, so
+                // Guardar shows the list again without asking.
+                saved[KEY_FOLLOWING] = null
                 progress.update { it.copy(correction = null) }
             }
 
@@ -741,8 +745,11 @@ class ExpenseEntryViewModel(
             is Settled.Rejected -> {
                 // Certain: nothing was written, so this attempt is over. The draft stays,
                 // and Solo este or Este y los siguientes is asked again unless the
-                // following payments already took these terms.
-                saved[KEY_FOLLOWING] = null
+                // following payments already took these terms. The list of later months
+                // is part of this attempt, so its answer stays until the list is left.
+                val unconfirmed = (settled.reason as? CommandRejection.Specific)?.reason is
+                    ExpenseRejection.CorrectionUnconfirmed
+                if (!unconfirmed) saved[KEY_FOLLOWING] = null
                 val error = when (val reason = settled.reason) {
                     is CommandRejection.StaleGeneration -> EntryError.DataChanged
 
