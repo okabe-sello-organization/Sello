@@ -8,6 +8,7 @@ import com.software.sello.data.local.setAside
 import com.software.sello.data.repository.RoomFinancialProfileStore
 import com.software.sello.domain.model.FinancialProfile
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.StorageFailure
 import java.io.File
 import java.time.ZoneId
 import kotlinx.coroutines.runBlocking
@@ -73,7 +74,8 @@ class UnreadableFileSetAsideTest {
             newer.execSQL("INSERT INTO future_ledger VALUES (10000)")
             newer.version = SelloDatabase.VERSION + 1
         }
-        assertTrue(establish() is Outcome.Failure)
+        val refused = Outcome.Failure(StorageFailure.Unavailable("IllegalStateException"))
+        assertEquals(refused, establish())
 
         val moved = setAside(files.file, kept)
 

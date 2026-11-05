@@ -98,7 +98,7 @@ class ProfileInitializationTest {
 
         val profile = RoomFinancialProfileStore(files.open()) { recordedAt }.establish(bogota)
 
-        assertTrue("$profile", (profile as Outcome.Failure).error is StorageFailure.Unavailable)
+        assertEquals(Outcome.Failure(StorageFailure.Unavailable("IllegalStateException")), profile)
         SQLiteDatabase.openDatabase(files.file.path, null, SQLiteDatabase.OPEN_READONLY).use {
             assertEquals(SelloDatabase.VERSION + 1, it.version)
             it.rawQuery("SELECT amount FROM future_ledger", null).use { row ->
