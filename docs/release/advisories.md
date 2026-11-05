@@ -1,6 +1,6 @@
 # Release library advisories and published licences
 
-Checked on 2026-10-23 with `python3 scripts/quality/advisories.py`, once, with
+Checked on 2026-11-05 with `python3 scripts/quality/advisories.py`, once, with
 the owner's permission for network access: [osv.dev](https://osv.dev) for advisories (Maven
 ecosystem, exact versions) and each library's published POM for its licence. Not a gate:
 a later dependency change needs this review again.

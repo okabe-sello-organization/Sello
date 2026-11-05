@@ -1,6 +1,6 @@
 # SELLO-E30 — Release candidate
 
-- **Status:** Backlog
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person gets a release candidate where every form recovers from a failed read, the screens match the chosen theme, restore and erase say what they really do, and the build has been walked on the newest Android.
 - **Exit:** SELLO-170 to SELLO-175 are Done: every before-release finding of the 2026-11-04 audit is fixed with a red-first test, the candidate's records are current, and the shrunk release build has been walked on a new API 37 emulator, leaving only the owner's phone walk.
@@ -35,3 +35,8 @@
   placing Ñ after N as a dictionary does. It needs no new stored key.
 - File and line references in the tickets are from the audit commit `c87b351d`; later
   commits may have moved them.
+- SELLO-175 (2026-11-05): the release gate's production step accepts only the owner's
+  pinned certificate (`scripts/quality/release.py:140-142`), so with a throwaway key `scripts/check
+  --release` passes up to that step, not whole, as the ticket's first criterion assumed.
+  The owner's G3 run with the real key joins the phone walk as the owner's step; the
+  Exit's "only the owner's phone walk" is read as "the owner's G3 run and phone walk".

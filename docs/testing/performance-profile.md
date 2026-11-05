@@ -172,6 +172,66 @@ framework. No keep rule was needed. The emulator itself stopped once, after the 
 its log was lost from 15 October until then, so Resumen, a goal page, pausing and
 resuming, a backup and an erase were walked again with the log on.
 
+### Release candidate walk on API 37 (SELLO-175)
+
+Walked on 2026-11-05 on a new AVD: Android 17 (API 37) Google Play x86_64 with 16 KB
+pages, 4 cores, 3 GB, CI's 412 × 914 dp at mdpi, no root. Build: `:app:assembleRelease`
+at `a20ae90f` (`main` with every other E30 fix), made by the release check below, shrunk
+by R8 as above, signed with a throwaway key made outside the repository; 6.8 MB. The
+screens were driven with `adb input` and `uiautomator` from a new install, accented notes
+typed with the keyboard's long press. With no root, the clock moved through Settings ›
+Date & time › Date from 20 October to 26 October, 5 November, 26 November and
+2 December 2026 in America/Bogota. Synthetic data only; every figure was worked out by
+hand before it was read.
+
+| Journey | Shown, as expected |
+| --- | --- |
+| Categories, carry | Mercado 600.000 and Transporte 200.000 passing what is left from October, Ocio 100.000 without |
+| Expenses with accented notes | Zapato 10.000, Ñame 20.000, Álbum 40.000, Mesa 30.000, Agua 50.000 and ñame 5.000 in Mercado: 445.000 left |
+| Fixed payment | Internet 90.000 on the 25th in Transporte: Restante 655.000, 90.000 set aside |
+| Catch-up, 26 October | "Sello anotó 1 pago fijo": Transporte 110.000 left |
+| Carry, 5 November | Mercado 1.045.000, Transporte 310.000, Ocio 100.000: limit 1.455.000, Restante 1.365.000 |
+| Solo este, asked once | October's Internet at 100.000: Solo este, then the later months (October 110.000 → 100.000, November 310.000 → 300.000), and Guardar saves at once |
+| Income | Salario 2.500.000: Resumen "Entró en noviembre 2.500.000"; the budget unchanged |
+| Name order | Agua, Álbum, Mesa, Ñame, ñame, Zapato |
+| Accent-blind search | "name" finds Ñame and ñame; "album" finds Álbum |
+| `sello://anotar` | Opens the form; `?monto=7000` over Recibo fills in 7.000 |
+| The link over a typed draft | 12.345 in Ocio with the note "Borrador" stays as typed, with Sello in front and in the background; saved: Ocio 87.655 left, Restante 1.342.655 |
+| Dollar rate | A dollar investment asks the rate first: ETF 100,00 USD at 4.000,00 is 400.000; the rate at 4.250,00 makes it 425.000 |
+| Export, Compartir | The share sheet gets one file: `sello-datos-2026-11-05.csv`, then `.json` |
+| Export, Guardar | The CSV: 11 rows, every expense, the income and the ETF's aporte and value; the JSON: 11 movements, 3 categories, 1 investment, 2 rates, 1 fixed payment |
+| Theme and ink | Oscuro, then Violeta, change Configuración and Anotar at once; back to Claro and Cobalto |
+| Status-bar icons | White over the band in Claro and Oscuro; over the desk (Nueva categoría) dark in Claro, light in Oscuro |
+| Start on a dark phone | The system's splash, then the dark desk, never light paper |
+| Backup | "Guardado", 7.9 kB: 3 categories, 8 expenses, 1 income, 1 fixed payment, 1 investment |
+| Delete a category | Ocio's 12.345 moved to Mercado: limit 1.345.000, Mercado 1.032.655 left, Restante 1.242.655 |
+| Restore | The preview says the zone, appearance and order come back too; then Ocio 87.655 and Restante 1.342.655 again |
+| Erase | The slip names the appearance, the category order and the Inversiones currency and order; BORRAR, "Borrado", the first-run screen, the backup file untouched; restored again: investments 425.000 at 4.250,00 |
+| Catch-up, 26 November | "Sello anotó 1 pago fijo": Internet 90.000, as Solo este left the schedule; Transporte 210.000 left |
+| Carry, 2 December | Mercado 1.645.000, Transporte 410.000, Ocio 100.000: Restante 2.065.000 |
+| Month labels | Resumen's Mes a mes "oct", "nov*"; Transporte's history "oct", "nov", "dic", Un mes normal 95.000 |
+
+No crash or ANR of Sello is in the system's crash records, and the log shows no missing
+class, method or field, no serialization error and no error line from Sello's processes.
+Its process ended only when the app restarted itself after a restore or an erase, and
+when it was stopped to move the clock. No keep rule was needed.
+
+Not walked: Reintentar after a failed first read (SELLO-170) and the start-up failure
+screen's FinanceTracker message (SELLO-172). Both need a failed or unreadable database,
+which a non-debuggable build on an image without root gives no way to cause. Their JVM
+tests cover them. Nor were these SELLO-171 items, covered as follows:
+
+- The in-app Sistema choice: no test reads it. The bars tests take a theme already
+  resolved to dark or light, and the `MainActivity` wiring is untested (#368's Not
+  covered); #368's emulator screenshots show it.
+- The celebration's own window: `CelebrationTest` covers its status bar; its navigation
+  bar rests only on #368's emulator screenshot.
+- The navigation-bar icons elsewhere: `SystemBarsTest`, `MonthPickerBarsTest` and
+  `NoteComposerBarsTest` on the JVM, and #368's screenshots.
+
+The shared files were not opened in a receiving app, since every app
+offered needed an account; their contents were read from the same export through Guardar.
+
 ### Before shrinking (part 1)
 
 Built from the part 1 commit on top of `main` with #88.

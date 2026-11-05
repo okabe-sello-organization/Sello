@@ -4,8 +4,8 @@
 > Project permissions and working rules live in [AGENTS.md](../../AGENTS.md),
 > subject to the user's current instructions.
 
-**Snapshot:** 2026-11-04 · **Product baseline:** `main`; the next candidate stays `0.1.0` and its checks are pending in the [candidate checklist](../release/candidate-checklist.md) (the [MVP checklist](../release/mvp-checklist.md) is the October record).
-Every epic before E30 is Done: E01–E10, E12, E13 and E15–E29. The owner dropped E14 and the
+**Snapshot:** 2026-11-05 · **Product baseline:** `main`; the release candidate is `0.1.0` from `a20ae90f`, and the [candidate checklist](../release/candidate-checklist.md) leaves only the owner's steps (the [MVP checklist](../release/mvp-checklist.md) is the October record).
+Every epic is Done: E01–E10, E12, E13 and E15–E30. The owner dropped E14 and the
 release tickets SELLO-043 and SELLO-113 on 2026-10-29. Each ticket's
 file under [docs/tickets](../tickets/README.md) and the pull request that closed it carry
 the details, and `python3 scripts/quality/tickets.py status` prints the current board.
@@ -101,6 +101,20 @@ This summary is refreshed when an epic closes and adds no verification claims.
   another; expense search ignores accents and case. The walk of the R8 release build
   through every journey since the MVP is in the
   [performance profile](../testing/performance-profile.md#release-walk-since-the-mvp-sello-169).
+- Release candidate ([E30](../tickets/E30-release-candidate/README.md)): the 2026-11-04
+  audit's before-release findings fixed. Reintentar reads again on every form, and Anotar
+  varios and the schedule editor keep working on the last good figures; the status-bar
+  icons follow what v2 draws under them in Claro and Oscuro, and a dark phone starts on
+  the dark desk; restore and erase name every setting they reset, a FinanceTracker file
+  on the start-up failure screen is named as one, and a previewed backup's plain copy is
+  deleted at the next start after a day; name order folds accents and Ñ as search does,
+  Solo este is asked once, and every chart writes months alike. The candidate's records
+  were refreshed (SELLO-174), and two device tests fixed (#371 the flaky reset journey,
+  #372 the newer-schema tests). The release check passed up to the owner's key, in
+  parts: the gate run up to `release-production`, which failed on a missing `java` on
+  PATH; that step alone, refusing only the throwaway certificate; and the launch alone
+  on the same new API 30 emulator. Then the advisory check and a walk on a new API 37
+  emulator ([walk](../testing/performance-profile.md#release-candidate-walk-on-api-37-sello-175)).
 - No network permission or OS backup; every build checks its manifests, release
   libraries and APK against [MVP data handling](../privacy/mvp-data-handling.md). The
   only provider that grants access is the export one, limited to `cache/exports/`.
@@ -119,9 +133,11 @@ What each ticket changed is in its pull request, linked from the ticket file
 
 ## Remaining work
 
-- [E30](../tickets/E30-release-candidate/README.md) readies the next candidate; distributing
-  it is a separate, owner-authorized action. Nothing was published or tagged.
-- No ticket outside E30 is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
+- The candidate waits on the owner, as the [candidate checklist](../release/candidate-checklist.md)
+  lists: `scripts/check --release` with the owner's key (the signed APK and its facts),
+  the walk on the owner's phone, and the go/no-go. Distributing it is a separate,
+  owner-authorized action. Nothing was published, signed with the owner's key or tagged.
+- No ticket is open. Dropped on 2026-10-29: SELLO-043 (carryover release), SELLO-113
   (the `0.2.0` release) and E14 with SELLO-074 (manual TalkBack, Switch Access and
   keyboard walks). The automated accessibility checks from SELLO-033 stay.
 - Open GitHub issues are not tickets.
