@@ -10,12 +10,22 @@ interface IncomeDao {
     @Insert
     suspend fun insert(income: IncomeEntity)
 
-    /** Every income a schedule recorded that was created after [since], by date. */
+    /**
+     * The first [limit] incomes a schedule recorded that were created after [since], in
+     * the order they were created.
+     */
     @Query(
-        "SELECT * FROM income WHERE origin_schedule_id IS NOT NULL AND created_at > :since " +
-            "ORDER BY effective_date, sequence"
+        "SELECT * FROM income WHERE created_at > :since AND origin_schedule_id IS NOT NULL " +
+            "ORDER BY created_at, sequence LIMIT :limit"
     )
-    suspend fun recordedAfter(since: Long): List<IncomeEntity>
+    suspend fun recordedAfter(since: Long, limit: Int): List<IncomeEntity>
+
+    /** Every income a schedule recorded that was created at [at]. */
+    @Query(
+        "SELECT * FROM income WHERE created_at = :at AND origin_schedule_id IS NOT NULL " +
+            "ORDER BY sequence"
+    )
+    suspend fun recordedAt(at: Long): List<IncomeEntity>
 
     /** Every income a schedule recorded that is dated from [from] to [until], both included. */
     @Query(

@@ -1,6 +1,6 @@
 package com.software.sello.data.reset
 
-import android.database.sqlite.SQLiteException
+import android.database.SQLException
 import androidx.room.withTransaction
 import com.software.sello.data.local.SelloDatabase
 import com.software.sello.data.local.entity.OperationReceiptEntity
@@ -265,7 +265,8 @@ class RoomResets(
             sqlite.query("PRAGMA wal_checkpoint(TRUNCATE)").use { result ->
                 result.moveToFirst() && result.getInt(0) == 0
             }
-        } catch (_: SQLiteException) {
+        } catch (_: SQLException) {
+            // Any database error, SQLite's own or one raised above it: still owed.
             false
         }
     }

@@ -23,7 +23,11 @@ typealias ScheduleRecordsState = ReadState<List<ScheduleRecord>, StorageFailure>
  * creation order. One deleted since is simply not there.
  */
 interface ScheduleRecordReads {
-    /** Every such entry created after [since]; all of them while [since] is null. */
+    /**
+     * Such entries created after [since], or since the start while it is null: the
+     * earliest created, a bounded number and never part of one moment. What is left out
+     * was created after every entry returned.
+     */
     suspend fun recordedAfter(since: Instant?): Outcome<List<ScheduleRecord>, StorageFailure>
 
     /** [recordedAfter], read again after every committed change: Loading first. */

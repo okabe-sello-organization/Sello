@@ -9,9 +9,12 @@ import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CategoryInsightsState
 import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.DeleteExpense
+import com.software.sello.domain.port.EditExpense
 import com.software.sello.domain.port.ExpenseCommandOutcome
 import com.software.sello.domain.port.ExpenseOrder
 import com.software.sello.domain.port.ReadState
+import com.software.sello.domain.port.RestoreExpense
 import com.software.sello.domain.port.SetDefaultLimit
 import java.time.YearMonth
 import kotlinx.coroutines.Dispatchers
@@ -149,6 +152,73 @@ class CategoryInsightsContractTest {
             collector.join()
         }
         assertTrue(collector.isCancelled)
+    }
+
+    private suspend fun search(query: String) = ledger.categoryExpenseSearch.read(
+        id,
+        october,
+        ExpenseOrder.Date,
+        query,
+        0,
+        20
+    ).valueOrFail().expenses.map { it.note!!.value }
+
+    /**
+     * Search ignores case and accents for every letter (SELLO-165): "\u00d1AME \u00c1REA"
+     * is found as "\u00f1ame", "\u00e1rea", "name" and "area", and accents typed as
+     * combining marks are ignored the same way.
+     */
+    @Test
+    fun searchIgnoresCaseAndAccentsForEveryLetter() = runBlocking {
+        category()
+        spend(1_000, note = "\u00d1AME \u00c1REA")
+        spend(2_000, note = "Cafe\u0301 con pan")
+        spend(3_000, note = "Mercado")
+
+        assertEquals(listOf("\u00d1AME \u00c1REA"), search("\u00f1ame"))
+        assertEquals(listOf("\u00d1AME \u00c1REA"), search("\u00e1rea"))
+        assertEquals(listOf("\u00d1AME \u00c1REA"), search("name"))
+        assertEquals(listOf("\u00d1AME \u00c1REA"), search("AREA"))
+        // Kept composed, as every note is.
+        assertEquals(listOf("Caf\u00e9 con pan"), search("cafe\u0301"))
+        assertEquals(listOf("Caf\u00e9 con pan"), search("CAFE"))
+    }
+
+    /** An edit or an undone delete finds the note as it is now, accents ignored. */
+    @Test
+    fun anEditedOrRestoredNoteIsFoundByWhatItSaysNow() = runBlocking {
+        category()
+        spend(1_000, note = "Mercado")
+        val expense = ledger.categoryExpenseSearch.read(
+            id,
+            october,
+            ExpenseOrder.Date,
+            "",
+            0,
+            20
+        ).valueOrFail().expenses.single()
+
+        val edited = ledger.expenses.edit(
+            EditExpense(
+                ledger.operation(),
+                1,
+                expense.id,
+                expense.version,
+                id,
+                expense.amount,
+                expense.date,
+                Note.of("Panader\u00eda").valueOrFail()
+            )
+        )
+        assertTrue(edited is CommandOutcome.Committed)
+        assertEquals(listOf("Panader\u00eda"), search("PANADERIA"))
+        assertEquals(emptyList<String>(), search("mercado"))
+
+        val deletion = ledger.operation()
+        ledger.expenses.delete(DeleteExpense(deletion, 1, expense.id, expense.version + 1))
+        assertEquals(emptyList<String>(), search("panaderia"))
+        ledger.expenses.restore(RestoreExpense(ledger.operation(), 1, deletion))
+        assertEquals(listOf("Panader\u00eda"), search("panaderia"))
     }
 
     @Test

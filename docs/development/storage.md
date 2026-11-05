@@ -3,7 +3,7 @@
 Rules: [architecture](../../ARCHITECTURE.md) §§4, 5, 7.
 
 One Room database, `sello.db`, in the app's private storage, is the only place
-financial facts live. Its schema is version 8; every version is exported to
+financial facts live. Its schema is version 9; every version is exported to
 `data/schemas/com.software.sello.data.local.SelloDatabase/`.
 
 ## What is stored
@@ -14,9 +14,9 @@ financial facts live. Its schema is version 8; every version is exported to
 | `category` | Name, name key, icon key, archived flag, version, audit times | `id`; unique `name_key` |
 | `default_limit` | A category's default limit from a month onwards | (`category_id`, `effective_month`) |
 | `month_limit` | The limit set for one category in one month | (`category_id`, `month`) |
-| `expense` | Category, effective date, sequence, amount, note, version, audit times, and the origin of one a schedule recorded | `id`; unique `sequence`; unique origin; read by (`effective_date`, `sequence`) |
-| `income` | Effective date, sequence, amount, source key and name, note, version, audit times, origin | `id`; unique `sequence`; unique origin; read by (`effective_date`, `sequence`) |
-| `operation_receipt` | Proof that an operation committed: kind, input digest, generation, revision, subject | `operation_id` |
+| `expense` | Category, effective date, sequence, amount, note, version, audit times, the origin of one a schedule recorded, and `search_key`: the note without case or accents, derived and never backed up (version 9) | `id`; unique `sequence`; unique origin; read by (`effective_date`, `sequence`) and, for the catch-up notice, (`created_at`, `origin_schedule_id`) |
+| `income` | Effective date, sequence, amount, source key and name, note, version, audit times, origin | `id`; unique `sequence`; unique origin; read by (`effective_date`, `sequence`) and (`created_at`, `origin_schedule_id`) |
+| `operation_receipt` | Proof that an operation committed: kind, input digest, generation, revision, subject | `operation_id`; read by (`kind`, `committed_at`) |
 | `deleted_expense` | What the last deleted expense was, column for column, with the generation and time of the deletion | `deletion_id`, the deletion's operation identifier |
 | `deleted_income` | The same for the last deleted income | `deletion_id` |
 | `goal` | Name, icon key, optional target month, completion day, the next recording position, version, audit times | `id` |

@@ -4,6 +4,58 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
+ * Version 9 (SELLO-165) adds what long histories need, all derived: `expense.search_key`,
+ * each note folded by [SearchKey] so search ignores case and accents, filled here for
+ * every expense already kept; and indexes for the catch-up notice's "recorded since"
+ * read and for the latest receipt of a kind. Nothing that existed in version 8 is
+ * changed or removed.
+ */
+internal val Migration8To9 = object : Migration(8, 9) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `expense` ADD COLUMN `search_key` TEXT NOT NULL DEFAULT ''")
+        fillSearchKeys(db)
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_expense_created_at_origin_schedule_id` " +
+                "ON `expense` (`created_at`, `origin_schedule_id`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_income_created_at_origin_schedule_id` " +
+                "ON `income` (`created_at`, `origin_schedule_id`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_operation_receipt_kind_committed_at` " +
+                "ON `operation_receipt` (`kind`, `committed_at`)"
+        )
+    }
+
+    /** In pages by id, so a long history never sits in memory at once. */
+    private fun fillSearchKeys(db: SupportSQLiteDatabase) {
+        var after = ""
+        while (true) {
+            val page = db.query(
+                "SELECT `id`, `note` FROM `expense` WHERE `note` IS NOT NULL AND `id` > ? " +
+                    "ORDER BY `id` LIMIT $FILL_PAGE",
+                arrayOf<Any?>(after)
+            ).use { cursor ->
+                buildList {
+                    while (cursor.moveToNext()) add(cursor.getString(0) to cursor.getString(1))
+                }
+            }
+            for ((id, note) in page) {
+                db.execSQL(
+                    "UPDATE `expense` SET `search_key` = ? WHERE `id` = ?",
+                    arrayOf<Any?>(SearchKey.of(note), id)
+                )
+            }
+            if (page.size < FILL_PAGE) return
+            after = page.last().first
+        }
+    }
+}
+
+private const val FILL_PAGE = 500
+
+/**
  * Version 8 lets up to five goals be starred for Recibo (SELLO-143): `featured_goal`'s one
  * chosen goal moves to `starred_goal` and `featured_goal` goes. A chosen goal that is
  * completed is not carried over, since a star never sits on a completed goal; it showed

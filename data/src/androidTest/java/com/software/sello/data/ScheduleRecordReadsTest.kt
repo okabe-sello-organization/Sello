@@ -151,4 +151,38 @@ class ScheduleRecordReadsTest {
             summary(after.value)
         )
     }
+
+    /**
+     * Bounded however long nothing was seen (SELLO-165). A daily payment caught up over
+     * 2025 is 365 entries in 8 batches of 50, the 5th and 6th in the same millisecond. The
+     * first read stops at the 250th with all of its moment: batches 1 to 6, 300 entries,
+     * 1 January to 27 October. Listo there leaves the last 65, 28 October to 31 December,
+     * for the next read.
+     */
+    @Test
+    fun aLongCatchUpIsReadInBoundedPartsThatNeverSplitAMoment() = runBlocking {
+        ledger.categories.submit(ledger.createCategory("Hogar"))
+        schedule(
+            "2025-01-01",
+            RepeatRule.EveryDays.of(1).valueOrFail(),
+            ScheduledEntry.Payment(ledger.categoryId(100), transactionPesos(10_000), null)
+        )
+        ledger.goTo("2025-12-31")
+        val stamps = listOf(1L, 2, 3, 4, 5, 5, 7, 8)
+            .map { Instant.parse("2026-01-01T00:00:00Z").plusSeconds(it) }
+        for (stamp in stamps) {
+            ledger.audit = stamp
+            catchUp("2025-12-31")
+        }
+
+        val first = (reads.recordedAfter(null) as Outcome.Success).value
+            .map { (it as ScheduleRecord.Payment).expense.date }
+        assertEquals(300, first.size)
+        assertEquals(d("2025-01-01") to d("2025-10-27"), first.first() to first.last())
+
+        val rest = (reads.recordedAfter(stamps[5]) as Outcome.Success).value
+            .map { (it as ScheduleRecord.Payment).expense.date }
+        assertEquals(65, rest.size)
+        assertEquals(d("2025-10-28") to d("2025-12-31"), rest.first() to rest.last())
+    }
 }

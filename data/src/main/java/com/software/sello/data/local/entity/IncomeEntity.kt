@@ -14,7 +14,8 @@ import androidx.room.PrimaryKey
     indices = [
         Index("effective_date", "sequence"),
         Index(value = ["sequence"], unique = true),
-        Index(value = ["origin_schedule_id", "origin_date", "origin_slot"], unique = true)
+        Index(value = ["origin_schedule_id", "origin_date", "origin_slot"], unique = true),
+        Index("created_at", "origin_schedule_id")
     ]
 )
 data class IncomeEntity(
