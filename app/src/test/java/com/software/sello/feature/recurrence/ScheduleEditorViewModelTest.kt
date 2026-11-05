@@ -11,6 +11,7 @@ import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.Schedule
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.ChangeSchedule
@@ -19,6 +20,7 @@ import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.DeleteSchedule
 import com.software.sello.domain.port.PauseSchedule
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.ResumeSchedule
 import com.software.sello.domain.port.ScheduleCommandOutcome
 import com.software.sello.domain.port.ScheduleRejection
@@ -38,11 +40,13 @@ import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.ScheduleChange
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.testing.HandSnapshots
+import com.software.sello.testing.NewObservationSnapshots
 import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import kotlin.time.Duration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -362,6 +366,58 @@ class ScheduleEditorViewModelTest {
         assertTrue(failed)
         assertFalse(editor.now.loadFailed)
         assertEquals("950.000 pesos", editor.now.amount?.spoken)
+    }
+
+    @Test
+    fun aFailedRefreshKeepsTheFormOnWhatWasLastReadMarkedOlderAndStillSaves() {
+        // Every observation is new and a failure carries what it read, as ObservedReads does.
+        val months = NewObservationSnapshots()
+        months.ready(
+            monthOf(
+                "2026-10-22",
+                listOf(
+                    categoryIn(1, "Hogar", 400_000),
+                    categoryIn(2, "Comida", 200_000, icon = "restaurant")
+                ),
+                generation = 4
+            )
+        )
+        reads.schedules += rent()
+        val editor = ScheduleEditorViewModel(
+            SavedStateHandle(mapOf(ScheduleEditorViewModel.KEY_SCHEDULE to scheduleId(1).value)),
+            commands,
+            reads,
+            months,
+            clock,
+            { uuid(nextId++) },
+            money,
+            corrections
+        )
+        editor.type("1000000")
+
+        months.of(YearMonth.of(2026, 10)).value = ReadState.Failed(
+            SnapshotFailure.Storage(StorageFailure.Unavailable("disk")),
+            lastGood = null
+        )
+
+        assertTrue(editor.now.stale)
+        assertFalse(editor.now.loadFailed)
+        assertEquals(listOf("Hogar", "Comida"), editor.now.categories.map { it.name })
+        assertEquals(uuid(1), editor.now.categoryId)
+        assertTrue(editor.now.canSave)
+
+        // Reintentar whose reads fail again keeps the form, still older: never the error screen.
+        reads.failing = true
+        editor.onAction(ScheduleEditorAction.Retry)
+        assertTrue(editor.now.stale)
+        assertFalse(editor.now.loadFailed)
+        assertEquals("1.000.000 pesos", editor.now.amount?.spoken)
+
+        editor.onAction(ScheduleEditorAction.Save)
+
+        val sent = commands.submitted.single() as ChangeSchedule
+        assertEquals(4L to 3L, sent.generation to sent.expectedVersion)
+        assertEquals(pesos(1_000_000), (sent.entry as ScheduledEntry.Payment).amount)
     }
 
     @Test

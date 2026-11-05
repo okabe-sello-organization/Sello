@@ -29,6 +29,7 @@ import com.software.sello.domain.port.GoalBoard
 import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommand
 import com.software.sello.domain.port.GoalCommandOutcome
+import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.GoalUndoOffer
@@ -44,6 +45,7 @@ import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.movement.MovementNoteProblem
+import com.software.sello.testing.AnswersInTurn
 import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
@@ -54,6 +56,7 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -589,5 +592,34 @@ class GoalMovementViewModelTest {
         assertFalse(correcting.state.value.canOpenSeveral)
         correcting.onAction(GoalMovementAction.Several)
         assertNull(correcting.state.value.several)
+    }
+
+    @Test
+    fun reintentarAfterAFailedFirstReadReadsTheBoardAgainAndTheFormLoads() {
+        val ready = reads.board.value
+        val answers = AnswersInTurn<GoalBoard, StorageFailure>(
+            ReadState.Failed(StorageFailure.Unavailable("hand"), null),
+            ready
+        )
+        val once = object : GoalReads by reads {
+            override fun observeBoard(): Flow<GoalBoardState> = answers.observe()
+        }
+        val model = GoalMovementViewModel(
+            SavedStateHandle(mapOf("goalId" to viaje, "withdrawal" to false)),
+            once,
+            commands,
+            clock,
+            ids,
+            money,
+            corrections
+        )
+        assertTrue(model.state.value.loadFailed)
+
+        model.onAction(GoalMovementAction.Retry)
+
+        assertEquals(2, answers.subscriptions)
+        assertFalse(model.state.value.loadFailed)
+        assertFalse(model.state.value.loading)
+        assertEquals(viaje, model.state.value.goal?.id)
     }
 }

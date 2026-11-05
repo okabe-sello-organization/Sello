@@ -23,10 +23,12 @@ import com.software.sello.presentation.submission.SavedDraft
 import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import java.time.LocalDate
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -37,6 +39,7 @@ import kotlinx.serialization.Serializable
  * draft, the date and the operation in flight live in [saved]. A save whose outcome is
  * not known is asked about with its own identifier before anything else is sent.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class UsdRateEntryViewModel(
     private val saved: SavedStateHandle,
     reads: InvestmentReads,
@@ -71,7 +74,8 @@ class UsdRateEntryViewModel(
         drafts.read()?.date?.let(LocalDate::parse) ?: clock.today.value.date
     )
     private val progress = MutableStateFlow(Progress())
-    private val board = reads.observeBoard()
+    private val attempts = MutableStateFlow(0)
+    private val board = attempts.flatMapLatest { reads.observeBoard() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     val state: StateFlow<UsdRateEntryState> =
@@ -135,6 +139,9 @@ class UsdRateEntryViewModel(
             UsdRateEntryAction.Retry -> if (!now.busy) {
                 if (submission.pending) {
                     viewModelScope.launch { recover() }
+                } else if (now.loadFailed) {
+                    // Reintentar after a failed first read reads the board again.
+                    attempts.update { it + 1 }
                 } else {
                     progress.update { it.copy(error = null) }
                 }

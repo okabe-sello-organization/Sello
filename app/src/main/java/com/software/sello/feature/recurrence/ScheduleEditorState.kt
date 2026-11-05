@@ -53,7 +53,10 @@ enum class ScheduleEditorError {
  */
 data class ScheduleEditorState(
     val loading: Boolean = true,
+    /** Nothing was ever read: the error screen. */
     val loadFailed: Boolean = false,
+    /** A refresh failed: the form stays on what was last read, marked older. */
+    val stale: Boolean = false,
     val income: Boolean = false,
     val amount: MoneyTextValue? = null,
     val amountText: String? = null,

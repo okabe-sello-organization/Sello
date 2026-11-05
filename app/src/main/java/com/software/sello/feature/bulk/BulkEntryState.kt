@@ -100,8 +100,10 @@ data class BulkEntryState(
     val today: LocalDate,
     /** The categories have not been read yet and none were read before. */
     val loading: Boolean = true,
-    /** Reading the categories failed; the lines stay. */
+    /** Reading the categories failed and none were read for this month; the lines stay. */
     val readFailed: Boolean = false,
+    /** A refresh failed: the categories are those last read for this month, marked older. */
+    val stale: Boolean = false,
     val categories: List<BulkCategory> = emptyList(),
     /** The income sources a line can take, in the approved order; empty for expenses. */
     val sources: List<String> = emptyList(),

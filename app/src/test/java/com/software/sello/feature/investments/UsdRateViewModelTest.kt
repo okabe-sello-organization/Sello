@@ -10,18 +10,22 @@ import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedInvestment
+import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
 import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.SetUsdRate
 import com.software.sello.navigation.HandFinancialClock
+import com.software.sello.testing.AnswersInTurn
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -356,5 +360,25 @@ class UsdRateViewModelTest {
             RateModel("4.150,25", LocalDate.of(2026, 10, 20)),
             (model.state.value as UsdRateState.Ready).current
         )
+    }
+
+    @Test
+    fun reintentarAfterAFailedFirstReadReadsTheBoardAgainAndTheFormLoads() {
+        val answers = AnswersInTurn<InvestmentBoard, StorageFailure>(
+            ReadState.Failed(StorageFailure.Unavailable("hand"), null),
+            ReadState.Ready(ratesBoard(rateEntry(415_025, "2026-10-20")))
+        )
+        val once = object : InvestmentReads by reads {
+            override fun observeBoard(): Flow<InvestmentBoardState> = answers.observe()
+        }
+        val model =
+            UsdRateEntryViewModel(SavedStateHandle(), once, commands, clock, ids, testMoney())
+        assertTrue(model.state.value.loadFailed)
+
+        model.onAction(UsdRateEntryAction.Retry)
+
+        assertEquals(2, answers.subscriptions)
+        assertFalse(model.state.value.loadFailed)
+        assertFalse(model.state.value.loading)
     }
 }

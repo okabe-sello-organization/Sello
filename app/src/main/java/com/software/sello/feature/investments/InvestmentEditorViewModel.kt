@@ -40,10 +40,12 @@ import com.software.sello.presentation.submission.SavedDraft
 import com.software.sello.presentation.submission.Settled
 import com.software.sello.presentation.submission.Submission
 import java.time.LocalDate
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -59,6 +61,7 @@ import kotlinx.serialization.Serializable
  * created while no rate exists carries the typed rate in the same command, one
  * transaction (IN33). Editing sends name, description and icon only, at the version read.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class InvestmentEditorViewModel(
     private val saved: SavedStateHandle,
     reads: InvestmentReads,
@@ -109,7 +112,8 @@ class InvestmentEditorViewModel(
     private val progress = MutableStateFlow(
         Progress(result = saved.get<String>(KEY_RESULT)?.let(::result))
     )
-    private val board = reads.observeBoard()
+    private val attempts = MutableStateFlow(0)
+    private val board = attempts.flatMapLatest { reads.observeBoard() }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     /**
@@ -226,6 +230,7 @@ class InvestmentEditorViewModel(
             InvestmentEditorAction.Retry -> when {
                 now.busy -> Unit
                 submission.pending -> viewModelScope.launch { recover() }
+                now.loadFailed -> attempts.update { it + 1 }
                 else -> progress.update { it.copy(saveError = null) }
             }
 

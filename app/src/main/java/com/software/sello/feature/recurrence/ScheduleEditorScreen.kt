@@ -58,6 +58,7 @@ import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
+import com.software.sello.presentation.read.StaleSlip
 import com.software.sello.presentation.recurrence.RepeatAction
 import com.software.sello.presentation.recurrence.RepeatChoiceSheet
 import com.software.sello.presentation.recurrence.RepeatRow
@@ -70,6 +71,7 @@ const val SCHEDULE_SAVE_TAG = "schedule-editor:save"
 const val SCHEDULE_PAUSE_TAG = "schedule-editor:pause"
 const val SCHEDULE_RESUME_TAG = "schedule-editor:resume"
 const val SCHEDULE_DELETE_TAG = "schedule-editor:delete"
+const val SCHEDULE_STALE_TAG = "schedule-editor:stale"
 
 @Composable
 fun ScheduleEditorRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit) {
@@ -235,6 +237,14 @@ private fun Choices(
     dates: DateLabels,
     onAction: (ScheduleEditorAction) -> Unit
 ) {
+    // A refresh failed: the choices are those last read and the draft stays.
+    if (state.stale) {
+        StaleSlip(
+            stringResource(R.string.recibo_stale),
+            { onAction(ScheduleEditorAction.Retry) },
+            Modifier.testTag(SCHEDULE_STALE_TAG)
+        )
+    }
     if (state.income) {
         val order = rememberSelectedFirst(state.sourceKeys, state.sourceKey) { it }
         ChipRows(order.items.size) { index ->

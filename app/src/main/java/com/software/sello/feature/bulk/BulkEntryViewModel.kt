@@ -10,6 +10,7 @@ import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.MonthlySnapshot
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.SnapshotFailure
 import com.software.sello.domain.model.SourceName
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.model.TransactionAmount
@@ -36,6 +37,7 @@ import com.software.sello.presentation.carry.CarryCorrectionText
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.read.LastGoodRead
 import com.software.sello.presentation.submission.AmountDraftSerializer
 import com.software.sello.presentation.submission.LocalDateSerializer
 import com.software.sello.presentation.submission.SavedDraft
@@ -144,13 +146,20 @@ class BulkEntryViewModel(
     /** Whether the composer writes the note or Otro's name; kept with it. */
     private val composing: StateFlow<Boolean> = saved.getStateFlow(KEY_COMPOSING_NAME, false)
 
+    /**
+     * What the receipt's month last read, kept per month: a refresh that fails, or a
+     * Reintentar, keeps the lines over the categories last read for that month, marked
+     * older. A month never read has none to show; storage refuses a stale generation.
+     */
+    private val lastGood = LastGoodRead<MonthlySnapshot, SnapshotFailure>()
+
     /** The month of the receipt's date: its categories and the generation to send. */
     private val month: StateFlow<SnapshotState> =
         combine(
             draft.map { YearMonth.from(it.date) }.distinctUntilChanged(),
             progress.map { it.attempt }.distinctUntilChanged()
         ) { month, _ -> month }
-            .flatMapLatest(snapshots::observe)
+            .flatMapLatest { lastGood.keep(it, snapshots.observe(it)) }
             .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
 
     val state: StateFlow<BulkEntryState> =
@@ -486,7 +495,7 @@ class BulkEntryViewModel(
     }
 
     private fun submit() {
-        val snapshot = (month.value as? ReadState.Ready)?.value ?: return
+        val snapshot = snapshotOf(month.value) ?: return
         when (draft.value.kind) {
             BulkKind.Expense -> submitExpenses(snapshot)
             BulkKind.Income -> submitIncomes(snapshot)
@@ -755,7 +764,8 @@ class BulkEntryViewModel(
             date = draft.date,
             today = today,
             loading = !progress.recorded && !known && month is ReadState.Loading,
-            readFailed = !progress.recorded && month is ReadState.Failed,
+            readFailed = !progress.recorded && month is ReadState.Failed && !known,
+            stale = !progress.recorded && month is ReadState.Failed && known,
             categories = categories,
             sources = if (income) IncomeSource.keys else emptyList(),
             total = money.format(total(amounts)),
