@@ -226,13 +226,21 @@ class HostedWorkflowTests(unittest.TestCase):
             enough = run(9421)
             self.assertEqual(0, enough.returncode, enough.stdout + enough.stderr)
             deleted = removed.read_text(encoding='utf-8').split()
-            self.assertEqual('rm', deleted[0])
+            self.assertEqual(['rm', '-rf', '/usr/share/dotnet', '/usr/local/.ghcup', '/opt/ghc', '/usr/share/swift',
+                              '/opt/hostedtoolcache/CodeQL'], deleted)
             for kept in ('/usr/local/lib/android', '/opt/hostedtoolcache/Java', '/usr/bin', '/home/runner'):
                 self.assertFalse([path for path in deleted if path.startswith(kept) or kept.startswith(path + '/')], kept)
             short = run(9420)
             self.assertEqual(1, short.returncode)
             self.assertIn('::error::Not a test failure: 9420 MB free in', short.stdout)
             self.assertIn('the emulator needs 9421 MB', short.stdout)
+            # A df answer that is no number fails closed rather than passing the comparison.
+            for unreadable in ('', '-', '12G', '9421 MB'):
+                with self.subTest(free=unreadable):
+                    odd = run(unreadable)
+                    self.assertEqual(1, odd.returncode, odd.stdout + odd.stderr)
+                    self.assertIn('::error::Not a test failure: df gave no free space for', odd.stdout)
+                    self.assertIn('the emulator needs 9421 MB', odd.stdout)
 
     def test_the_emulator_cannot_hold_a_finished_device_job(self):
         run = self.device['Run device tests on API 30']
