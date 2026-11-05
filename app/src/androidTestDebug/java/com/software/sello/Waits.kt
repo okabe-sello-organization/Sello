@@ -8,7 +8,6 @@ import android.view.WindowInsets
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -16,6 +15,7 @@ import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.printToString
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
@@ -61,10 +61,15 @@ fun ComposeTestRule.awaitDescription(description: String) =
  */
 fun SemanticsNodeInteraction.press(): SemanticsNodeInteraction {
     val deadline = SystemClock.uptimeMillis() + PATIENCE_MILLIS
-    while (!isEnabled().matches(fetchSemanticsNode()) && SystemClock.uptimeMillis() < deadline) {
-        awaitFrame()
+    while (!isEnabled().matches(fetchSemanticsNode())) {
+        val left = deadline - SystemClock.uptimeMillis()
+        if (left <= 0 || !awaitFrame(left)) {
+            throw AssertionError(
+                "Not enabled within $PATIENCE_MILLIS ms, so not pressed:\n${printToString()}"
+            )
+        }
     }
-    return assertIsEnabled().performSemanticsAction(SemanticsActions.OnClick)
+    return performSemanticsAction(SemanticsActions.OnClick)
 }
 
 /**
@@ -124,7 +129,7 @@ private fun keyboardShown(): Boolean {
  * A field left puts the keyboard away two frames on, so this lets the app draw three first.
  */
 fun systemKeyboardRequested(): Boolean {
-    repeat(3) { awaitFrame() }
+    repeat(3) { check(awaitFrame()) { "No frame was drawn" } }
     val dump = InstrumentationRegistry.getInstrumentation().uiAutomation
         .executeShellCommand("dumpsys input_method")
         .let { ParcelFileDescriptor.AutoCloseInputStream(it) }
@@ -134,13 +139,13 @@ fun systemKeyboardRequested(): Boolean {
     return "mShowRequested=true" in dump || "mInputShown=true" in dump
 }
 
-/** Waits until the app draws its next frame. */
-private fun awaitFrame() {
+/** Waits up to [millis] for the app to draw its next frame; whether it did. */
+private fun awaitFrame(millis: Long = PATIENCE_MILLIS): Boolean {
     val drawn = CountDownLatch(1)
     InstrumentationRegistry.getInstrumentation().runOnMainSync {
         Choreographer.getInstance().postFrameCallback { drawn.countDown() }
     }
-    check(drawn.await(PATIENCE_MILLIS, TimeUnit.MILLISECONDS)) { "No frame was drawn" }
+    return drawn.await(millis, TimeUnit.MILLISECONDS)
 }
 
 /** Waits until the installed app's data has opened or failed; see [SelloTestRunner]. */

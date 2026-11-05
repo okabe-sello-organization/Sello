@@ -203,8 +203,8 @@ class TimeControlsJourneyTest {
         rule.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(TOOLS_JUMP_FIELD_TAG)))
             .performScrollTo()
             .performTextInput("2026-10-01")
-        // Waited for, not checked at once: CI has seen a typed value settle only after
-        // such a check.
+        // The same pattern as the reset journey's word, waited for as a precaution; this
+        // check has not failed on CI.
         rule.await(
             hasSetTextAction() and hasAnyAncestor(hasTestTag(TOOLS_JUMP_FIELD_TAG)) and
                 SemanticsMatcher.expectValue(

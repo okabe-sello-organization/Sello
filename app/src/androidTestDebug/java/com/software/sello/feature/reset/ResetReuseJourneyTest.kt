@@ -156,9 +156,9 @@ class ResetReuseJourneyTest {
         assertEquals(listOf(listOf("Mercado"), listOf("7000", "8000"), listOf("1")), history())
 
         word.performTextReplacement("BORRAR")
-        // CI saw the field's value settle only after a check made at once; what delays it
-        // isn't proven (the keyboard rewriting the text after a replacement is one
-        // candidate). So wait for the word, then for the button it enables.
+        // On CI the check failed while the dump of the same node printed BORRAR; the cause
+        // isn't proven (the keyboard rewriting the text is one candidate). Wait for the
+        // word, then for the button it enables.
         rule.await(
             hasContentDescription("Escribe BORRAR para confirmar") and
                 SemanticsMatcher.expectValue(
