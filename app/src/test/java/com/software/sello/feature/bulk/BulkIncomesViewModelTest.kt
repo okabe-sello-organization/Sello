@@ -603,6 +603,13 @@ class BulkIncomesViewModelTest {
         assertFalse(bulk.now.readFailed)
         assertEquals(listOf("450.000", "120.000", "850.000"), bulk.digits)
         assertTrue(bulk.now.canSubmit)
+        bulk.submit()
+        val sent = incomes.created.single()
+        assertEquals(7L, sent.generation)
+        assertEquals(
+            listOf(450_000L, 120_000L, 850_000L),
+            sent.lines.map { it.amount.money.minorUnits }
+        )
 
         // Never read: the lines stay and nothing can be sent until it is read.
         val never = sheet(SavedStateHandle(mapOf("income" to true)))
@@ -611,7 +618,7 @@ class BulkIncomesViewModelTest {
         assertFalse(never.now.stale)
         assertFalse(never.now.canSubmit)
         never.submit()
-        assertTrue(incomes.created.isEmpty())
+        assertEquals(1, incomes.created.size)
 
         readMonth()
         assertFalse(never.now.readFailed)
