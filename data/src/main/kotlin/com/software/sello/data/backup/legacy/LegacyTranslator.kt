@@ -125,19 +125,8 @@ class LegacyTranslator(
         }
         val text = utf8(bytes) ?: return LegacyTranslation.NotLegacy
         scanStructure(text, bounds)?.let { return LegacyTranslation.Rejected(it.reason()) }
-        val root = try {
-            Json.parseToJsonElement(text)
-        } catch (_: SerializationException) {
-            return LegacyTranslation.NotLegacy
-        } catch (_: IllegalArgumentException) {
-            return LegacyTranslation.NotLegacy
-        } as? JsonObject ?: return LegacyTranslation.NotLegacy
-        if (!recognised(root)) return LegacyTranslation.NotLegacy
-        val version = when (val raw = root["version"]) {
-            null -> 1L
-            else -> raw.whole() ?: return LegacyTranslation.NotLegacy
-        }
-        if (version < 1) return LegacyTranslation.NotLegacy
+        val root = objectIn(text) ?: return LegacyTranslation.NotLegacy
+        val version = legacyVersion(root) ?: return LegacyTranslation.NotLegacy
         if (version >
             NEWEST_VERSION
         ) {
@@ -152,14 +141,6 @@ class LegacyTranslator(
             return LegacyTranslation.Rejected(RestoreRejection.InvalidContent)
         }
         return Translation(root, zone, exported).run()
-    }
-
-    private fun recognised(root: JsonObject): Boolean {
-        val exportedAt = root["exportedAt"] as? JsonPrimitive
-        return "format" !in root &&
-            exportedAt?.isString == true &&
-            root["preferences"] is JsonObject &&
-            listOf("categories", "expenses", "income").all { root[it] is JsonArray }
     }
 
     /** One file's translation; the tally and the identifier maps live as long as it does. */
@@ -1121,8 +1102,47 @@ class LegacyTranslator(
         }
     }
 
+    /** Telling a FinanceTracker file without translating it. */
+    internal object Recognition {
+        /**
+         * Whether [bytes] are a FinanceTracker backup, one this app reads or a newer one:
+         * where it cannot be imported, the person can still be told what the file is.
+         */
+        fun recognises(bytes: ByteArray, bounds: BackupBounds = BackupBounds()): Boolean {
+            if (bytes.size > bounds.maxBytes) return false
+            val text = utf8(bytes) ?: return false
+            if (scanStructure(text, bounds) != null) return false
+            return objectIn(text)?.let(::legacyVersion) != null
+        }
+    }
+
     private companion object {
         const val NEWEST_VERSION = 2L
+
+        /** The JSON object [text] holds, or null when it holds something else or no JSON. */
+        fun objectIn(text: String): JsonObject? = try {
+            Json.parseToJsonElement(text) as? JsonObject
+        } catch (_: SerializationException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+
+        /** The FinanceTracker version of [root] (1 when unsaid); null when it is not one. */
+        fun legacyVersion(root: JsonObject): Long? {
+            val exportedAt = root["exportedAt"] as? JsonPrimitive
+            val shaped = "format" !in root &&
+                exportedAt?.isString == true &&
+                root["preferences"] is JsonObject &&
+                listOf("categories", "expenses", "income").all { root[it] is JsonArray }
+            if (!shaped) return null
+            val version = when (val raw = root["version"]) {
+                null -> 1L
+                else -> raw.whole()
+            }
+            return version?.takeIf { it >= 1 }
+        }
+
         const val CUSTOM = "CUSTOM:"
 
         /** How many digits a rate worth working out has before its decimal point. */

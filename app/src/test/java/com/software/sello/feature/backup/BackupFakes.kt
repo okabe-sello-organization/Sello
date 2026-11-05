@@ -135,6 +135,15 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
         discarded++
     }
 
+    /** What a start-up expiry finds; how many times it ran in [expired]. */
+    var expireAnswer: StagedLookup.NotReplaced? = null
+    var expired = 0
+
+    override suspend fun expireStaged(): StagedLookup.NotReplaced? {
+        expired++
+        return expireAnswer
+    }
+
     override suspend fun replace(staged: StagedRestore): RestoreOutcome {
         events?.add("replace ${staged.operationId.value}")
         replaceGate?.await()
@@ -188,6 +197,9 @@ class CommittedBeforeRename(
     }
 
     override suspend fun discard() = Unit
+
+    /** Committed, so never expired: a look finishes it. */
+    override suspend fun expireStaged(): StagedLookup.NotReplaced? = null
 
     override suspend fun replace(staged: StagedRestore): RestoreOutcome = RestoreOutcome.Failed
 

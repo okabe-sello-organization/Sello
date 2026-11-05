@@ -1146,4 +1146,42 @@ class RestoreViewModelTest {
         assertEquals(RestoreStep.Idle, next.state.value.step)
         assertFalse(next.state.value.replaced)
     }
+
+    @Test
+    fun aPreviewADayOldIsForgottenAtStartEvenIfRespaldoIsNeverOpened() = runTest {
+        restores.expireAnswer = StagedLookup.NotReplaced(operation)
+
+        val session = RestoreSession(restores, reader, backgroundScope, 10 * 1024 * 1024)
+        runCurrent()
+
+        assertEquals(1, restores.expired)
+        assertEquals(0, restores.looked)
+        // Only previewed: nothing to say about it.
+        assertEquals(RestoreStep.Idle, session.step.value)
+    }
+
+    @Test
+    fun aConfirmedFileForgottenAtStartIsSaidNotRestored() = runTest {
+        restores.expireAnswer = StagedLookup.NotReplaced(operation, attempted = true)
+
+        val (model) = model()
+
+        assertEquals(1, restores.expired)
+        assertEquals(RestoreStep.Failed, model.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
+
+    @Test
+    fun theStartUpExpiryRunsAfterTheStartUpApply() = runTest {
+        val pending = done.copy(preferences = PendingPreferences(AppearancePreference(), null))
+        restores.applyAnswer = pending
+        restores.pendingAnswer = pending
+        restores.expireAnswer = StagedLookup.NotReplaced(operation, attempted = true)
+
+        val (model) = model()
+
+        assertEquals(1, restores.applied)
+        assertEquals(1, restores.expired)
+        assertEquals(RestoreStep.Restored(pending), model.state.value.step)
+    }
 }

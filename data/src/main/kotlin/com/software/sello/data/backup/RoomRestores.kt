@@ -166,16 +166,17 @@ class RoomRestores(
             is LegacyTranslation.Rejected -> return rejected(translation.reason)
             is LegacyTranslation.Translated -> translation
         }
-        // Encoding reads the file back, so only what the released reader accepts is kept.
-        val file = withContext(dispatchers.default) {
-            (codec.encode(translated.contents) as? Outcome.Success)?.value?.let {
-                it to
-                    sha256Hex(it)
+        val file = when (
+            val encoded = withContext(dispatchers.default) {
+                codec.translatedFile(translated.contents)
             }
-        } ?: return rejected(RestoreRejection.InvalidContent)
+        ) {
+            is Outcome.Success -> encoded.value
+            is Outcome.Failure -> return rejected(encoded.error)
+        }
         return keep(
-            file.first,
-            Parsed(translated.contents, file.second),
+            file,
+            Parsed(translated.contents, withContext(dispatchers.default) { sha256Hex(file) }),
             position,
             translated.report
         )
@@ -272,6 +273,19 @@ class RoomRestores(
             position.preview(manifest.operation, parsed.contents, manifest.report),
             attempted = manifest.attempted
         )
+    }
+
+    override suspend fun expireStaged(): StagedLookup.NotReplaced? {
+        val found = readManifest() ?: return null
+        if (!audit.now().isAfter(found.stagedAt.plus(STAGING_LIFETIME))) return null
+        // A replacement that committed, or may have, and one with preferences still
+        // pending are left for a look, which finishes or reports them.
+        if (committed(found.operation) != false) return null
+        if (io(failed = true) { restored.exists() }) return null
+        discard()
+        // Not deleted: the next start tries again.
+        if (io(failed = true) { staged.exists() || manifest.exists() }) return null
+        return found.notReplaced()
     }
 
     /**
@@ -1044,7 +1058,8 @@ internal class ParsedBackupFile(
 
 /**
  * Checks [bytes] as a whole backup without any storage, keeping what it read, so that
- * staging the file later reads nothing again.
+ * staging the file later reads nothing again. A FinanceTracker file is not translated
+ * here, only named for what it is: translating needs the history's zone.
  */
 fun BackupCodec.checkFile(bytes: ByteArray): Outcome<CheckedBackupFile, RestoreRejection> =
     when (val plan = read(bytes)) {
@@ -1058,8 +1073,28 @@ fun BackupCodec.checkFile(bytes: ByteArray): Outcome<CheckedBackupFile, RestoreR
             )
         }
 
-        is Outcome.Failure -> Outcome.Failure(plan.error.reason())
+        is Outcome.Failure -> Outcome.Failure(
+            if (plan.error == BackupRejection.NotSelloBackup &&
+                LegacyTranslator.Recognition.recognises(bytes)
+            ) {
+                RestoreRejection.FinanceTrackerFile
+            } else {
+                plan.error.reason()
+            }
+        )
     }
+
+/**
+ * A FinanceTracker translation written out as a Sello backup. Encoding reads the file
+ * back, so only what the released reader accepts is kept; one that outgrows a backup's
+ * bounds once written out is refused as too large, not as damaged.
+ */
+internal fun BackupCodec.translatedFile(
+    contents: BackupContents
+): Outcome<ByteArray, RestoreRejection> = when (val encoded = encode(contents)) {
+    is Outcome.Success -> encoded
+    is Outcome.Failure -> Outcome.Failure(encoded.error.reason())
+}
 
 internal fun FinancialSnapshot.summary() = BackupSummary(
     categories = categories.size,

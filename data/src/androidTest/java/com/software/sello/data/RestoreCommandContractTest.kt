@@ -1215,6 +1215,77 @@ class RestoreCommandContractTest {
     }
 
     @Test
+    fun aPreviewADayOldIsForgottenAtStartWithoutBeingLookedAt() = runBlocking {
+        currentHistory()
+        val staged = stage()
+
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+
+        assertEquals(StagedLookup.NotReplaced(staged.operationId), restores().expireStaged())
+        assertEquals(emptyList<String>(), stagingFiles())
+        assertEquals(StagedLookup.None, restores().staged())
+    }
+
+    @Test
+    fun aPreviewNotADayOldIsKeptAtStart() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val kept = stagingFiles()
+
+        now = now.plusSeconds(24 * 60 * 60)
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+        assertEquals(StagedLookup.Waiting(staged), restores().staged())
+    }
+
+    @Test
+    fun aConfirmedFileADayOldIsForgottenAtStartAndSaidConfirmed() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        val before = everyRow()
+        diedWhileReplacing(staged)
+
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+
+        assertEquals(
+            StagedLookup.NotReplaced(staged.operationId, attempted = true),
+            restores().expireStaged()
+        )
+        assertEquals(emptyList<String>(), stagingFiles())
+        assertEquals(before, everyRow())
+    }
+
+    @Test
+    fun aConfirmedFileADayOldIsKeptAtStartWhileItsReceiptCannotBeRead() = runBlocking {
+        currentHistory()
+        val staged = stage()
+        diedWhileReplacing(staged)
+        val kept = stagingFiles()
+        ledger.database.openHelper.writableDatabase
+            .execSQL("ALTER TABLE operation_receipt RENAME TO operation_receipt_away")
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+        ledger.reopen()
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+    }
+
+    @Test
+    fun aReplacementWithPreferencesPendingIsNotExpiredAtStart() = runBlocking {
+        currentHistory()
+        preferences.failAppearance = true
+        restores().replace(stage())
+        val kept = stagingFiles()
+
+        now = now.plusSeconds(2 * 24 * 60 * 60)
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+        assertFalse(restores().pending()!!.preferences.done)
+    }
+
+    @Test
     fun aPendingReplacementBlocksStagingAnotherFile() = runBlocking {
         currentHistory()
         preferences.failAppearance = true

@@ -4,6 +4,7 @@ import com.software.sello.data.backup.BackupBounds
 import com.software.sello.data.backup.BackupCodec
 import com.software.sello.data.backup.BackupContents
 import com.software.sello.data.backup.PortablePreferences
+import com.software.sello.data.backup.translatedFile
 import com.software.sello.data.backup.uuid
 import com.software.sello.data.backup.value
 import com.software.sello.domain.model.AppearancePreference
@@ -20,6 +21,7 @@ import com.software.sello.domain.model.IncomeSource
 import com.software.sello.domain.model.InkPreference
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Occurrence
+import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.SchedulePause
 import com.software.sello.domain.model.ScheduledEntry
@@ -34,6 +36,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -370,6 +373,31 @@ class LegacyTranslatorTest {
             LegacyTranslation.Rejected(RestoreRejection.TooLarge),
             translate(text, bounds)
         )
+    }
+
+    @Test
+    fun `a translation that outgrows a backup once written as one is refused as too large`() {
+        val contents = translated(mixed).contents
+        assertTrue(BackupCodec().translatedFile(contents) is Outcome.Success)
+
+        assertEquals(
+            Outcome.Failure(RestoreRejection.TooLarge),
+            BackupCodec(BackupBounds(maxBytes = 1024)).translatedFile(contents)
+        )
+        assertEquals(
+            Outcome.Failure(RestoreRejection.TooLarge),
+            BackupCodec(BackupBounds(maxRecords = 3)).translatedFile(contents)
+        )
+    }
+
+    @Test
+    fun `a FinanceTracker file is recognised without being translated, a newer one too`() {
+        assertTrue(LegacyTranslator.Recognition.recognises(mixed.toByteArray()))
+        assertTrue(LegacyTranslator.Recognition.recognises(legacy(version = "3").toByteArray()))
+        for (text in listOf("not json", "[]", "{\"exportedAt\": \"2026-10-25 14:01\"}")) {
+            assertFalse(text, LegacyTranslator.Recognition.recognises(text.toByteArray()))
+        }
+        assertFalse(LegacyTranslator.Recognition.recognises(legacy(version = "0").toByteArray()))
     }
 
     @Test

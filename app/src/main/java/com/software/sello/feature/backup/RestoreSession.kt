@@ -73,7 +73,8 @@ sealed interface RestoreStep {
 /**
  * One restore at a time, for as long as the process lives, so leaving the screen
  * never cuts a replacement or a preference write short. Created with the graph: a
- * replacement left with preferences pending by an earlier process is resumed then.
+ * replacement left with preferences pending by an earlier process is resumed then, and
+ * a staged file a day old is forgotten.
  * Nothing else here reads or writes the restore until that is over, and screens
  * opening together look in turn, so a look never finds another one's work half done.
  */
@@ -93,6 +94,11 @@ class RestoreSession(
             it.preferences.done && !it.preferencesUnreadable
         }?.let {
             state.compareAndSet(RestoreStep.Idle, RestoreStep.Restored(it))
+        }
+        // A file previewed a day ago goes now, even if Respaldo is never opened again;
+        // one that had been confirmed is said not restored, as a look would say.
+        restores.expireStaged()?.takeIf { it.attempted }?.let {
+            state.compareAndSet(RestoreStep.Idle, RestoreStep.Failed)
         }
     }
 

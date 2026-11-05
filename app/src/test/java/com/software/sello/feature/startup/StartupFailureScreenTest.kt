@@ -199,6 +199,23 @@ class StartupFailureScreenTest {
     }
 
     @Test
+    fun aFinanceTrackerFileSaysWhereItIsImported() {
+        show(
+            StartupFailureState(
+                restore = StartupRestoreStep.Rejected(RestoreRejection.FinanceTrackerFile)
+            )
+        )
+
+        rule.onNodeWithTag(STARTUP_RESTORE_REJECTED_TAG).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText(
+            "Es un respaldo de FinanceTracker. Se importa desde Respaldo, después de empezar " +
+                "de cero.",
+            substring = true
+        ).assertIsDisplayed()
+        rule.onNodeWithText("No es un respaldo", substring = true).assertDoesNotExist()
+    }
+
+    @Test
     fun anInterruptedRestoreSaysSoAndContinuingIsTheWayOn() {
         show(StartupFailureState(restore = StartupRestoreStep.Interrupted))
 

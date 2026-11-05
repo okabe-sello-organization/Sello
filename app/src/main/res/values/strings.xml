@@ -886,7 +886,7 @@
     <string name="reset_retry">Intentar de nuevo</string>
     <string name="reset_refreshed">Tus datos cambiaron mientras confirmabas. Estas son las cifras de ahora.</string>
     <string name="reset_counts_title">¿Borrar todos tus datos?</string>
-    <string name="reset_counts_body">Se borran %1$s, con sus límites y notas. La apariencia y el orden vuelven a los de inicio.</string>
+    <string name="reset_counts_body">Se borran %1$s, con sus límites y notas. Vuelven a los de inicio la apariencia, el orden de categorías y, en Inversiones, la moneda y el orden.</string>
     <string name="reset_backups_stay">Los respaldos que guardaste fuera de Sello no se borran: siguen donde los guardaste.</string>
     <string name="reset_continue">Continuar</string>
     <string name="reset_cancel">Cancelar</string>
@@ -909,7 +909,8 @@
     <string name="reset_pending_body">No pudimos devolver estas preferencias a su valor de inicio:</string>
     <string name="reset_pending_appearance">Apariencia: Sistema, Cobalto</string>
     <string name="reset_pending_ordering">Orden de categorías: Más usadas, de mayor a menor</string>
-    <string name="reset_pending_action">Restablecer apariencia y orden</string>
+    <string name="reset_pending_investments">Inversiones: Pesos (COP), Mayor valor</string>
+    <string name="reset_pending_action">Restablecer preferencias</string>
     <string name="reset_pending_note">Solo se cambiarán estas preferencias. No se borrará nada más.</string>
     <string name="backup_title">Respaldo</string>
     <string name="backup_last">Último respaldo</string>
@@ -955,6 +956,7 @@
     <string name="restore_rejected_unreadable">No pudimos abrir ese archivo. Tus datos no cambiaron.</string>
     <string name="restore_rejected_too_large">Es más grande de lo que puede tener un respaldo. Tus datos no cambiaron.</string>
     <string name="restore_rejected_not_backup">No es un respaldo de Sello ni de FinanceTracker. Tus datos no cambiaron.</string>
+    <string name="restore_rejected_finance_tracker">Es un respaldo de FinanceTracker. Se importa desde Respaldo, después de empezar de cero. Tus datos no cambiaron.</string>
     <string name="restore_rejected_newer">Lo hizo una versión más nueva de Sello. Actualiza Sello e inténtalo de nuevo. Tus datos no cambiaron.</string>
     <string name="restore_rejected_damaged">El archivo está incompleto o dañado. Tus datos no cambiaron.</string>
     <string name="restore_rejected_content">Tiene datos que Sello no acepta, como un monto fuera de rango. Tus datos no cambiaron.</string>

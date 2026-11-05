@@ -237,7 +237,10 @@ state, one-time notice dismissals, permissions, URIs, paths and credentials.
 
 A file that is not a Sello backup may be a FinanceTracker one; restore then translates
 it first and keeps the translation as a version 3 file read by these same rules
-([legacy export format](legacy-export-format.md)).
+([legacy export format](legacy-export-format.md)). A translation that outgrows the
+bounds below once written out is refused as too large. The start-up failure screen
+translates nothing: it names a FinanceTracker file and says Respaldo imports it after
+Empezar de cero.
 
 `BackupCodec.read` writes nothing. It checks in this order and stops at the first
 problem, rejecting the whole file with a `BackupRejection` that names where it is
@@ -280,7 +283,8 @@ In the app (Respaldo → Restaurar), the system's open dialog returns a document
 most 10 MiB plus one byte is read. `RoomRestores.stage` checks it with
 `BackupCodec.read` and keeps it privately with a new operation identifier, the
 history position (generation, revision) it was previewed at, and the time. A staged
-file survives a restart, but is forgotten after a day or once the generation changes.
+file survives a restart, but is forgotten after a day or once the generation changes;
+one a day old goes at the next start, even if Respaldo is not opened again.
 
 The replacement refuses a history that moved since the preview; the person previews
 again. Goals and their stars are replaced with the rest, never merged: each goal's

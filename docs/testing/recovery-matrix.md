@@ -50,6 +50,7 @@ The restored rows equal the originals for all five.
 | Preview cancelled | Nothing changes; the staged file is forgotten | `aCanceledPreviewChangesNothingAndForgetsTheFile` |
 | Process ends after staging | The staged file is offered again under its own operation | `aStagedFileSurvivesARestartWithItsOwnOperation` |
 | Staged file a day old, or the generation moved | Forgotten, never reinterpreted | `anUnconfirmedFileExpiresAfterADay` |
+| Staged file a day old at the next start, Respaldo never opened | Deleted without being read; one confirmed is said not restored. Newer, unknown or committed: kept for a look | `aPreviewADayOldIsForgottenAtStartWithoutBeingLookedAt`, `aPreviewNotADayOldIsKeptAtStart`, `aConfirmedFileADayOldIsForgottenAtStartAndSaidConfirmed`, `aConfirmedFileADayOldIsKeptAtStartWhileItsReceiptCannotBeRead`, `aReplacementWithPreferencesPendingIsNotExpiredAtStart`; `RestoreViewModelTest` |
 | History changed after the preview | Refused as stale; counted again | `aChangeAfterThePreviewRefusesTheReplacementUntilPreviewedAgain` |
 | Failure inside the transaction | Everything rolled back | `aFailureInsideTheReplacementRollsEverythingBack` |
 | Caller cancelled around the commit | The receipt shows it committed; asking again replays it | `aCallerCancelledAroundTheCommitStillFindsTheReplacementDone` |
@@ -110,6 +111,7 @@ is refused, even when restored record identifiers match earlier ones.
 | The database cannot be opened (damaged, newer, unreadable) | The start-up failure screen; it is never shown as an empty ledger. Intentar de nuevo, Restaurar un respaldo or Empezar de cero | `StartupTest`; `StartupFailureScreenTest` (the screen, on the JVM) |
 | Empezar de cero | The file is kept whole as `sello-unreadable.db`; the next open is empty | `UnreadableFileSetAsideTest.aDamagedFileIsKeptByteForByteAndTheNextOpenIsANewEmptyHistory` |
 | Restore at start-up | Checked before anything moves; set aside, new store filled from the backup | `RestoreAfterSetAsideTest`; `StartupTest` |
+| A FinanceTracker file chosen at start-up | Not imported; named, and pointed to Respaldo after Empezar de cero | `StartupCheckTest`; `StartupFailureScreenTest` |
 | Restore at start-up cannot finish after the set-aside | "La restauración no terminó", then a restart; Respaldo can restore again | `StartupTest.aReplacementThatFailedOrMayHaveFailedIsInterruptedNotRestored` |
 | A read fails while the app runs | A failure slip with retry; never zero or empty data | the owning feature tests (`ReciboViewModelTest` and others) |
 | Preferences cannot be read | The last good value or the default; financial data untouched; a backup then has no preferences | [storage](../development/storage.md); `BackupSnapshotConsistencyTest` |
