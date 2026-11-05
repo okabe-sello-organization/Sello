@@ -139,8 +139,12 @@ class HandRestores(private val events: MutableList<String>? = null) : Restores {
     var expireAnswer: StagedLookup.NotReplaced? = null
     var expired = 0
 
+    /** Awaited before the start-up expiry answers, when set. */
+    var expireGate: CompletableDeferred<Unit>? = null
+
     override suspend fun expireStaged(): StagedLookup.NotReplaced? {
         expired++
+        expireGate?.await()
         return expireAnswer
     }
 

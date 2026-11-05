@@ -130,7 +130,7 @@ class LegacyTranslator(
         if (version >
             NEWEST_VERSION
         ) {
-            return LegacyTranslation.Rejected(RestoreRejection.NewerVersion)
+            return LegacyTranslation.Rejected(RestoreRejection.FinanceTrackerNewer)
         }
         val exported = try {
             LocalDateTime.parse(
@@ -1119,7 +1119,7 @@ class LegacyTranslator(
             if (scanStructure(text, bounds) != null) return null
             val version = objectIn(text)?.let(::legacyVersion) ?: return null
             return if (version > NEWEST_VERSION) {
-                RestoreRejection.NewerVersion
+                RestoreRejection.FinanceTrackerNewer
             } else {
                 RestoreRejection.FinanceTrackerFile
             }

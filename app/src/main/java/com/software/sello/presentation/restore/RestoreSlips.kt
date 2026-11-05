@@ -217,6 +217,7 @@ internal fun RestoreRejection.message() = when (this) {
     RestoreRejection.TooLarge -> R.string.restore_rejected_too_large
     RestoreRejection.NotABackup -> R.string.restore_rejected_not_backup
     RestoreRejection.FinanceTrackerFile -> R.string.restore_rejected_finance_tracker
+    RestoreRejection.FinanceTrackerNewer -> R.string.restore_rejected_finance_tracker_newer
     RestoreRejection.NewerVersion -> R.string.restore_rejected_newer
     RestoreRejection.Damaged -> R.string.restore_rejected_damaged
     RestoreRejection.InvalidContent -> R.string.restore_rejected_content

@@ -89,8 +89,9 @@ class RestoreSession(
 
     /**
      * The start-up expiry forgot a file that had been confirmed. The first look says it
-     * was not restored, as a look finding it would, unless a file chosen since is still
-     * to be checked; either way it is said at most once. Declared before [startUp],
+     * was not restored, as a look finding it would, unless it finds something else or a
+     * file was chosen since; the first look or choice clears it, so it is said at most
+     * once and never after a later choice. Declared before [startUp],
      * which sets it.
      */
     @Volatile
@@ -124,10 +125,11 @@ class RestoreSession(
         scope.launch {
             startUp.join()
             resuming.withLock {
+                // Taken by the first look whatever it finds, so it is never said later.
+                val forgotten = expiredConfirmed.also { expiredConfirmed = false }
                 // Another screen's look may have found it first.
                 if (state.value != RestoreStep.Idle) return@withLock
                 val next = look(chosen)
-                val forgotten = expiredConfirmed.also { expiredConfirmed = false }
                 when {
                     next != null -> state.compareAndSet(RestoreStep.Idle, next)
                     chosen != null -> choose(chosen)
@@ -168,6 +170,8 @@ class RestoreSession(
     fun choose(source: DocumentSource) = begin(RestoreStep.Checking, from = ::choosable) { before ->
         val read = reader.read(source, maxBytes)
         resuming.withLock {
+            // A file chosen since: the one forgotten at start is no longer news.
+            expiredConfirmed = false
             when (read) {
                 DocumentRead.Failed ->
                     RestoreStep.Rejected(RestoreRejection.Unreadable).also { forget(before) }

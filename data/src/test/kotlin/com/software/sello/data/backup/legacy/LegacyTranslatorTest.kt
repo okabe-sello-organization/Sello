@@ -349,7 +349,7 @@ class LegacyTranslatorTest {
         assertTrue(translate(legacy(version = "1")) is LegacyTranslation.Translated)
         assertTrue(translate(legacy(version = "2")) is LegacyTranslation.Translated)
         assertEquals(
-            LegacyTranslation.Rejected(RestoreRejection.NewerVersion),
+            LegacyTranslation.Rejected(RestoreRejection.FinanceTrackerNewer),
             translate(legacy(version = "3"))
         )
     }
@@ -410,7 +410,7 @@ class LegacyTranslatorTest {
 
         assertEquals(RestoreRejection.FinanceTrackerFile, told(mixed))
         assertEquals(RestoreRejection.FinanceTrackerFile, told(legacy(version = "2")))
-        assertEquals(RestoreRejection.NewerVersion, told(legacy(version = "3")))
+        assertEquals(RestoreRejection.FinanceTrackerNewer, told(legacy(version = "3")))
         for (text in listOf("not json", "[]", "{\"exportedAt\": \"2026-10-25 14:01\"}")) {
             assertNull(text, told(text))
         }

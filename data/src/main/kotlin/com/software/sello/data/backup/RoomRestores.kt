@@ -79,8 +79,9 @@ import kotlinx.coroutines.withContext
  *
  * A file is parsed once: the contents a check, stage or look read are kept in memory for
  * the replacement under that operation, which reads the file again only in a later
- * process. Committing a replacement and applying its preferences take turns with
- * finishing an erase of the same storage through [recovery]; [beforeReplacing] runs in
+ * process. Staging, committing a replacement, applying its preferences and the expiry
+ * at start take turns with finishing an erase of the same storage through [recovery],
+ * always the last lock taken; [beforeReplacing] runs in
  * that turn just before a replacement commits, and the replacement fails if it says no.
  *
  * `restored.json` belongs to the replacement that made the history as it is now, found by
@@ -137,15 +138,16 @@ class RoomRestores(
     override suspend fun stage(file: CheckedBackupFile): Outcome<StagedRestore, StageFailure> =
         if (file is ParsedBackupFile) stageParsed(file.bytes, file.parsed) else stage(file.bytes)
 
+    /** Staged in turn with a replacement, its preferences, an erase and the expiry at start. */
     private suspend fun stageParsed(
         bytes: ByteArray,
         parsed: Parsed
-    ): Outcome<StagedRestore, StageFailure> {
+    ): Outcome<StagedRestore, StageFailure> = recovery.withLock {
         val position = when (val read = stagingPosition()) {
             is Outcome.Success -> read.value
-            is Outcome.Failure -> return read
+            is Outcome.Failure -> return@withLock read
         }
-        return keep(bytes, parsed, position, report = null)
+        keep(bytes, parsed, position, report = null)
     }
 
     /**
@@ -153,34 +155,35 @@ class RoomRestores(
      * in the current financial zone, and the translation, written out as a Sello backup
      * and read back by the same reader as any other, is what is kept and restored.
      */
-    private suspend fun stageLegacy(bytes: ByteArray): Outcome<StagedRestore, StageFailure> {
-        val position = when (val read = stagingPosition()) {
-            is Outcome.Success -> read.value
-            is Outcome.Failure -> return read
-        }
-        val translation = withContext(dispatchers.default) {
-            legacy.translate(bytes, position.zone)
-        }
-        val translated = when (translation) {
-            LegacyTranslation.NotLegacy -> return rejected(RestoreRejection.NotABackup)
-            is LegacyTranslation.Rejected -> return rejected(translation.reason)
-            is LegacyTranslation.Translated -> translation
-        }
-        val file = when (
-            val encoded = withContext(dispatchers.default) {
-                codec.translatedFile(translated.contents)
+    private suspend fun stageLegacy(bytes: ByteArray): Outcome<StagedRestore, StageFailure> =
+        recovery.withLock {
+            val position = when (val read = stagingPosition()) {
+                is Outcome.Success -> read.value
+                is Outcome.Failure -> return@withLock read
             }
-        ) {
-            is Outcome.Success -> encoded.value
-            is Outcome.Failure -> return rejected(encoded.error)
+            val translation = withContext(dispatchers.default) {
+                legacy.translate(bytes, position.zone)
+            }
+            val translated = when (translation) {
+                LegacyTranslation.NotLegacy -> return@withLock rejected(RestoreRejection.NotABackup)
+                is LegacyTranslation.Rejected -> return@withLock rejected(translation.reason)
+                is LegacyTranslation.Translated -> translation
+            }
+            val file = when (
+                val encoded = withContext(dispatchers.default) {
+                    codec.translatedFile(translated.contents)
+                }
+            ) {
+                is Outcome.Success -> encoded.value
+                is Outcome.Failure -> return@withLock rejected(encoded.error)
+            }
+            keep(
+                file,
+                Parsed(translated.contents, withContext(dispatchers.default) { sha256Hex(file) }),
+                position,
+                translated.report
+            )
         }
-        return keep(
-            file,
-            Parsed(translated.contents, withContext(dispatchers.default) { sha256Hex(file) }),
-            position,
-            translated.report
-        )
-    }
 
     private fun rejected(reason: RestoreRejection) = Outcome.Failure(StageFailure.Rejected(reason))
 
@@ -276,11 +279,8 @@ class RoomRestores(
     }
 
     override suspend fun expireStaged(): StagedLookup.NotReplaced? = recovery.withLock {
-        val found = readManifest()
-        if (found == null) {
-            expireUnnamed()
-            return@withLock null
-        }
+        // A file whose manifest cannot be read is left for a look to settle.
+        val found = readManifest() ?: return@withLock null
         if (!audit.now().isAfter(found.stagedAt.plus(STAGING_LIFETIME))) return@withLock null
         // A replacement that committed, or may have, and one with preferences still
         // pending are left for a look, which finishes or reports them.
@@ -290,21 +290,6 @@ class RoomRestores(
         // Not deleted: the next start tries again.
         if (io(failed = true) { staged.exists() || manifest.exists() }) return@withLock null
         found.notReplaced()
-    }
-
-    /**
-     * A staged file beside a manifest that cannot be read, a day old by the file's own
-     * time, is settled as a look settles it: forgotten only when its receipts show it was
-     * not replaced and no replacement has preferences pending, else kept or finished.
-     */
-    private suspend fun expireUnnamed() {
-        val old = io(failed = false) {
-            manifest.exists() && staged.exists() &&
-                audit.now().isAfter(
-                    Instant.ofEpochMilli(staged.lastModified()).plus(STAGING_LIFETIME)
-                )
-        }
-        if (old) withoutStaging()
     }
 
     /**

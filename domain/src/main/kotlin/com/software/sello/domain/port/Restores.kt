@@ -147,6 +147,9 @@ enum class RestoreRejection {
      */
     FinanceTrackerFile,
 
+    /** A FinanceTracker backup of a newer version than this app can read. */
+    FinanceTrackerNewer,
+
     /** A Sello backup of a version this app cannot read. */
     NewerVersion,
 
@@ -256,11 +259,10 @@ interface Restores {
 
     /**
      * At start: forgets a staged file a day old whose replacement surely did not commit,
-     * so it never outlives its day even if Respaldo is not opened again. One whose
-     * manifest names it is forgotten without reading the file; one whose manifest cannot
-     * be read, by the file's own age, as [staged] would settle it. What it forgot when
-     * the manifest named it, else null. A file whose replacement committed, may have,
-     * or has preferences pending is left for [staged] to find.
+     * without reading the file, so it never outlives its day even if Respaldo is not
+     * opened again. What it forgot, or null. A file whose manifest cannot be read, or
+     * whose replacement committed, may have, or has preferences pending, is left for
+     * [staged] to settle.
      */
     suspend fun expireStaged(): StagedLookup.NotReplaced?
 

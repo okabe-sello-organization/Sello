@@ -1203,4 +1203,25 @@ class RestoreViewModelTest {
         assertEquals(List(2) { "content://provider/document/7" }, read)
         assertEquals(0, restores.replaced)
     }
+
+    @Test
+    fun aFileChosenWhileTheStartUpExpiryRunsLeavesNoNotRestoredForALaterLook() = runTest {
+        restores.expireAnswer = StagedLookup.NotReplaced(operation, attempted = true)
+        restores.expireGate = CompletableDeferred()
+        restores.stageAnswer = Outcome.Success(staged)
+        val (model, session) = model()
+        // Respaldo's look and the choice both wait for the start-up to finish.
+        choose(model)
+        assertEquals(RestoreStep.Checking, model.state.value.step)
+
+        restores.expireGate!!.complete(Unit)
+        runCurrent()
+        assertEquals(RestoreStep.Previewing(staged), model.state.value.step)
+        model.onAction(RestoreAction.Cancel)
+        runCurrent()
+        val (again) = model(session = session)
+
+        assertEquals(RestoreStep.Idle, again.state.value.step)
+        assertEquals(0, restores.replaced)
+    }
 }

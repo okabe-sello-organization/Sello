@@ -286,9 +286,8 @@ history position (generation, revision) it was previewed at, and the time. A sta
 file survives a restart, but is forgotten after a day or once the generation changes.
 One a day old goes at the next start, even if Respaldo is not opened again, except
 when its replacement committed (it is finished, and its preferences are kept until
-applied) or its receipts cannot be read (it is kept until they can). Beside a manifest
-that cannot be read, the file's own age counts, and it goes only once the receipts
-show it was never replaced.
+applied), its receipts cannot be read (it is kept until they can), or its manifest
+cannot be read (it is kept until Respaldo settles it).
 
 The replacement refuses a history that moved since the preview; the person previews
 again. Goals and their stars are replaced with the rest, never merged: each goal's

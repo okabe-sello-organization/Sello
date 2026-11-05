@@ -1322,45 +1322,18 @@ class RestoreCommandContractTest {
         assertEquals(1, restoreReceipts().size)
     }
 
-    /** A manifest that names no operation, beside a staged file last written at [at]. */
-    private fun unnamedManifestBesideAFileWrittenAt(at: Instant) {
-        val folder = files.restoreFolder
-        File(folder, "staged.properties").writeText("operation=unreadable\n")
-        assertTrue(File(folder, "staged.json").setLastModified(at.toEpochMilli()))
-    }
-
     @Test
-    fun aFileADayOldBesideAnUnreadableManifestIsForgottenAtStartWhenNeverReplaced() = runBlocking {
+    fun aFileBesideAnUnreadableManifestIsKeptAtStartWhateverItsAge() = runBlocking {
         currentHistory()
         stage()
-        unnamedManifestBesideAFileWrittenAt(now.minusSeconds(24 * 60 * 60 + 1))
-
-        assertNull(restores().expireStaged())
-        assertEquals(emptyList<String>(), stagingFiles())
-    }
-
-    @Test
-    fun aFileNotADayOldBesideAnUnreadableManifestIsKeptAtStart() = runBlocking {
-        currentHistory()
-        stage()
-        unnamedManifestBesideAFileWrittenAt(now.minusSeconds(23 * 60 * 60))
+        File(files.restoreFolder, "staged.properties").writeText("operation=unreadable\n")
         val kept = stagingFiles()
+
+        now = now.plusSeconds(2 * 24 * 60 * 60)
 
         assertNull(restores().expireStaged())
         assertEquals(kept, stagingFiles())
     }
-
-    @Test
-    fun aReplacedFileADayOldBesideAnUnreadableManifestIsFinishedNotForgottenAtStart() =
-        runBlocking {
-            currentHistory()
-            committedBeforeTheRename()
-            unnamedManifestBesideAFileWrittenAt(now.minusSeconds(24 * 60 * 60 + 1))
-
-            assertNull(restores().expireStaged())
-            assertTrue(restores().applyPending() is RestoreOutcome.Restored)
-            assertEquals(1, restoreReceipts().size)
-        }
 
     @Test
     fun aPendingReplacementBlocksStagingAnotherFile() = runBlocking {
