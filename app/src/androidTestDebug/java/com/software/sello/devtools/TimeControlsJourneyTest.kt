@@ -21,6 +21,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.software.sello.NightlyOnly
+import com.software.sello.await
 import com.software.sello.composition.DebugComposition
 import com.software.sello.composition.SandboxNames
 import com.software.sello.composition.eraseFinancialStorage
@@ -202,13 +203,15 @@ class TimeControlsJourneyTest {
         rule.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(TOOLS_JUMP_FIELD_TAG)))
             .performScrollTo()
             .performTextInput("2026-10-01")
-        rule.onNode(hasSetTextAction() and hasAnyAncestor(hasTestTag(TOOLS_JUMP_FIELD_TAG)))
-            .assert(
+        // Waited for, not checked at once: CI has seen a typed value settle only after
+        // such a check.
+        rule.await(
+            hasSetTextAction() and hasAnyAncestor(hasTestTag(TOOLS_JUMP_FIELD_TAG)) and
                 SemanticsMatcher.expectValue(
                     SemanticsProperties.EditableText,
                     AnnotatedString("2026-10-01")
                 )
-            )
+        )
         // Pressed, not clicked by position: the keyboard may still be on its way and move
         // the screen, so a click may land where the control no longer is.
         rule.onNodeWithTag(TOOLS_JUMP_TAG).performScrollTo().press()

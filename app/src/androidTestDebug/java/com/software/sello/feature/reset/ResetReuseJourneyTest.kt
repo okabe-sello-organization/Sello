@@ -4,9 +4,10 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -155,9 +156,9 @@ class ResetReuseJourneyTest {
         assertEquals(listOf(listOf("Mercado"), listOf("7000", "8000"), listOf("1")), history())
 
         word.performTextReplacement("BORRAR")
-        // The word reaches the field through the view model's state, which the screen
-        // collects on its own dispatcher; the framework doesn't wait for that hop, so the
-        // field (and the button it enables) can still show the old word for a moment.
+        // CI saw the field's value settle only after a check made at once; what delays it
+        // isn't proven (the keyboard rewriting the text after a replacement is one
+        // candidate). So wait for the word, then for the button it enables.
         rule.await(
             hasContentDescription("Escribe BORRAR para confirmar") and
                 SemanticsMatcher.expectValue(
@@ -165,9 +166,10 @@ class ResetReuseJourneyTest {
                     AnnotatedString("BORRAR")
                 )
         )
+        rule.await(hasTestTag(RESET_CONFIRM_TAG) and isEnabled())
         // Pressed, not clicked by position: the keyboard may still be on its way and move
         // the screen, so a click may land where the control no longer is.
-        rule.onNodeWithTag(RESET_CONFIRM_TAG).performScrollTo().assertIsEnabled().press()
+        rule.onNodeWithTag(RESET_CONFIRM_TAG).performScrollTo().press()
         rule.awaitTag(RESET_DONE_TAG)
 
         assertEquals(listOf(emptyList(), emptyList(), listOf("2")), history())
