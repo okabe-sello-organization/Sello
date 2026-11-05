@@ -33,9 +33,10 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.date.DateLabels
 
 /**
- * Dólar (docs/design/system/features/investments.html): "1 dólar vale" with the current rate and
- * its date on a pinked slip, what it is for, **Cambiar la tasa**, then the earlier rates, newest
- * date first. Rates are never deleted (rule 11). Loading and a failed read are never "no rate".
+ * Dólar (docs/design/system/features/investments.html#screen-usd-rate): "1 dólar vale" with the
+ * current rate and its date on a pinked slip, what it is for, **Cambiar la tasa**, then the earlier
+ * rates, newest date first. Rates are never deleted (rule 11). Loading and a failed read are never
+ * "no rate".
  */
 @Composable
 fun UsdRateScreen(

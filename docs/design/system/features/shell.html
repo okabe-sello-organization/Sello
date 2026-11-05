@@ -104,7 +104,7 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Not yet read</td><td>Title only, no chip, no dock.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:101</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:94</code></td><td>no screenshot</td></tr>
+            <tr><td>Not yet read</td><td>Title only, no chip, no dock.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:101</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:95</code></td><td>no screenshot</td></tr>
             <tr><td>Empty</td><td>No chip; the dock creates the first one.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:104</code></td><td>no screenshot</td></tr>
             <tr><td>With items</td><td>Chip beside the title; dock records a movement.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:90</code></td><td>no screenshot of the bar with its chip</td></tr>
             <tr><td>Compact chip</td><td>The chip is the round "+" alone when the title would not fit beside it.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:149</code></td><td>no screenshot</td></tr>
@@ -116,7 +116,7 @@
       <ul>
         <li>"Nueva meta" / "Nueva inversión" → the goal or investment editor.</li>
         <li>The dock → the goal or investment movement form, or the editor when empty.</li>
-        <li>System Back → Recibo, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:133</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:119</code>.</li>
+        <li>System Back → Recibo, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:133</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:120</code>.</li>
       </ul>
 
       <h3>Key copy</h3>
@@ -159,7 +159,7 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Title not yet known</td><td>A fallback title: "Todos los gastos", "Categoría", the tab name for an investment, "Meta" for a goal.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:153</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:171</code></td><td>no screenshot</td></tr>
-            <tr><td>Item gone</td><td>A deleted goal or investment leaves its page by itself.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:160</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:143</code></td><td>—</td></tr>
+            <tr><td>Item gone</td><td>A deleted goal or investment leaves its page by itself.</td><td><code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:160</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:144</code></td><td>—</td></tr>
             <tr><td>Archived category</td><td>The dock stays in place, disabled, "Archivada" beside a prohibited sign.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:73</code></td><td>no screenshot</td></tr>
             <tr><td>Archived not yet known</td><td>"+ Anotar", disabled.</td><td><code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:86</code></td><td>no screenshot</td></tr>
           </tbody>
@@ -378,7 +378,7 @@
           <tbody>
             <tr><td>Month picker open (any screen)</td><td>Closes the picker. Declared after the navigation host, so it is asked first.</td><td><code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:184</code></td></tr>
             <tr><td>Recibo with a category open (one pane)</td><td>Closes the detail.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:385</code></td></tr>
-            <tr><td>Resumen, Metas, Inversiones</td><td>Goes to Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:61</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:133</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:119</code></td></tr>
+            <tr><td>Resumen, Metas, Inversiones</td><td>Goes to Recibo.</td><td><code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:61</code>, <code>app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:133</code>, <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:120</code></td></tr>
             <tr><td>Pushed screens</td><td>Pops; some declare it (Configuración, Respaldo, an investment, Dólar), the rest use the host's default.</td><td><code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:53</code>, <code>app/src/main/java/com/software/sello/navigation/BackupDestinations.kt:49</code></td></tr>
             <tr><td>Respaldo after a replacing restore</td><td>The screen's own handler restarts, as the arrow does.</td><td><code>app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:55</code></td></tr>
             <tr><td>Forms</td><td>Each form routes Back through its ViewModel (discard question, unknown outcome), as its Close button does.</td><td>e.g. <code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:148</code></td></tr>
@@ -422,7 +422,7 @@
           <tbody>
             <tr><td><a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a></td><td><code>:design-system</code> <code>SelloScaffold.kt</code></td><td><code>blotter = Short</code>; <code>topBar</code> for tabs, its own title row for pushed screens; <code>ribbon</code>, <code>notice</code>, <code>dock</code>, <code>navigation</code>, <code>secondaryPane</code> for the picker panel or the detail beside</td><td>One frame that arranges bar, rail, dock and panes for the window; holds no state</td></tr>
             <tr><td><a href="../components.html#c-SelloNavigationBar"><code>SelloNavigationBar</code></a> / <a href="../components.html#c-SelloNavigationRail"><code>SelloNavigationRail</code></a></td><td><code>:design-system</code> <code>Controls.kt</code>, <code>Navigation.kt</code></td><td>Four <code>SelloDestination</code>s with receipt, insights, flag and bank icons</td><td>Only tabs whose screens work; no placeholder tab (<code>Routes.kt:218</code>)</td></tr>
-            <tr><td><a href="../components.html#c-EntryDock"><code>EntryDock</code></a> (via <code>SelloDock</code>)</td><td><code>:design-system</code> <code>Controls.kt</code></td><td>Brand "+ Anotar"; disabled with the prohibited sign for an archived category; Gain + flag for Metas; Ink + "+" for Inversiones; check for "Listo"</td><td>Tones keep each tab's action from being taken for Anotar (<code>GoalDestinations.kt:225</code>, <code>InvestmentDestinations.kt:184</code>)</td></tr>
+            <tr><td><a href="../components.html#c-EntryDock"><code>EntryDock</code></a> (via <code>SelloDock</code>)</td><td><code>:design-system</code> <code>Controls.kt</code></td><td>Brand "+ Anotar"; disabled with the prohibited sign for an archived category; Gain + flag for Metas; Ink + "+" for Inversiones; check for "Listo"</td><td>Tones keep each tab's action from being taken for Anotar (<code>GoalDestinations.kt:225</code>, <code>InvestmentDestinations.kt:185</code>)</td></tr>
             <tr><td><a href="../components.html#c-BandChip"><code>BandChip</code></a></td><td><code>:design-system</code> <code>Controls.kt</code></td><td>"Nueva meta" / "Nueva inversión" in <code>TitleBar</code>, <code>compact</code> when the title would not fit</td><td>The add action beside the title once the list is not empty</td></tr>
             <tr><td><a href="../components.html#c-MonthGrid"><code>MonthGrid</code></a></td><td><code>:design-system</code> <code>Navigation.kt</code></td><td>Cells from <code>monthCells</code>; arrows off at 2000 and at this year</td><td>Later months cannot be picked</td></tr>
             <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td><td><code>kind = Text</code> for "Mes actual"</td><td>A secondary action beside the picker's title</td></tr>
@@ -430,7 +430,7 @@
             <tr><td><a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a></td><td><code>:design-system</code> <code>Corrections.kt</code></td><td>Every correction; <code>busy</code> while undoing or checking; <code>confirmation</code> for recorded writes; <code>spoken</code> with the currency</td><td>One bar for what just happened, over the content so nothing moves</td></tr>
             <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Content form for the correction question; <code>destructive</code> only for Borrar; <code>busy</code></td><td>Asked before a change to later months is sent</td></tr>
             <tr><td><a href="../components.html#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="../components.html#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a></td><td><code>:design-system</code> <code>StatusBarInk.kt</code></td><td>Read by <code>SystemBarsFollowTheme</code>; the picker sheet keeps the band's icons</td><td>Status icons readable on band and desk</td></tr>
-            <tr><td><code>MonthBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:63</code></td><td>Recibo and Resumen top bar</td><td>"The v2 month bar" for a tab (<code>ShellScreen.kt:201</code>)</td></tr>
+            <tr><td><code>MonthBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:63</code></td><td>Recibo and Resumen top bar</td><td>"A tab gets the month bar" (<code>ShellScreen.kt:201</code>)</td></tr>
             <tr><td><code>TitleBar</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:122</code></td><td>Metas and Inversiones top bar, with the chip</td><td>A tab not tied to a month</td></tr>
             <tr><td><code>PastMonthRibbon</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:168</code></td><td>Under the month bar over a past month, polite live region</td><td>"Every screen that shows it says so and offers the way back" (<code>ShellScreen.kt:160</code>)</td></tr>
             <tr><td><code>MonthSwitcher</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/navigation/ShellBars.kt:214</code></td><td>The title of pushed screens that show a month</td><td>The month as a title that opens the picker</td></tr>
@@ -527,7 +527,7 @@
       <h3>Self-dismissing notices</h3>
       <ul>
         <li>Correction statements: 4 seconds fixed, <code>app/src/main/java/com/software/sello/presentation/corrections/Corrections.kt:1292</code>.</li>
-        <li>Catch-up notice: 5 seconds stretched for a screen reader, with a draining band, <code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:283</code>.</li>
+        <li>Catch-up notice: 5 seconds stretched for a screen reader, with a draining band, <code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:284</code>.</li>
       </ul>
       <p class="muted">Findings: <a href="../findings.html#F11">F11</a>.</p>
     </section>

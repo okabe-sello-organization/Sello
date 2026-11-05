@@ -97,12 +97,12 @@ enum class InvestmentMovementError {
 }
 
 /**
- * Anotar movimiento (docs/design/system/features/investments.html): an Aporte, Valor de hoy, Retiro
- * or Dividendo o renta, or the correction of one already recorded. [amount] is present only for a
- * valid amount; [amountText] is what was pasted when it could not be used. [overValue] is what the
- * investment is worth on the retiro's date when the retiro asks for more; [noValue] when a retiro
- * has no value to come from; [blockedBy] the later retiro the movement would leave short;
- * [firstContribution] the earliest aporte a movement is dated before (rule 3).
+ * Anotar movimiento (docs/design/system/features/investments.html#screen-movement): an Aporte,
+ * Valor de hoy, Retiro or Dividendo o renta, or the correction of one already recorded. [amount] is
+ * present only for a valid amount; [amountText] is what was pasted when it could not be used.
+ * [overValue] is what the investment is worth on the retiro's date when the retiro asks for more;
+ * [noValue] when a retiro has no value to come from; [blockedBy] the later retiro the movement
+ * would leave short; [firstContribution] the earliest aporte a movement is dated before (rule 3).
  */
 @Immutable
 data class InvestmentMovementState(

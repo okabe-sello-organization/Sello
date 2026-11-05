@@ -8,8 +8,8 @@ import java.time.LocalDate
 data class RateModel(val rate: String, val date: LocalDate)
 
 /**
- * Dólar (investment rule 11; docs/design/system/features/investments.html): the current rate and
- * the earlier ones.
+ * Dólar (investment rule 11; docs/design/system/features/investments.html#screen-usd-rate): the
+ * current rate and the earlier ones.
  */
 sealed interface UsdRateState {
     data object Loading : UsdRateState

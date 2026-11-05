@@ -245,7 +245,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/feature/goals/GoalEditorScreen.kt:226",
      "app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:303",
      "app/src/main/java/com/software/sello/feature/goals/GoalBulkScreen.kt:361",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:401"
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:402"
     ],
     "shots": [
      {
@@ -326,8 +326,8 @@ window.SELLO_FINDINGS = [
     "files": [
      "app/src/main/java/com/software/sello/feature/goals/GoalBulkScreen.kt:368",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsScreen.kt:494",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:455",
-     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:198",
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:456",
+     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:199",
      "app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:481"
     ],
     "shots": [
@@ -569,7 +569,7 @@ window.SELLO_FINDINGS = [
     "note": "Investment detail: the loading skeleton, then the screen closes by itself with nothing said.",
     "files": [
      "app/src/main/java/com/software/sello/feature/investments/InvestmentDetailScreen.kt:73",
-     "app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:143"
+     "app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:144"
     ],
     "shots": []
    }
@@ -680,8 +680,8 @@ window.SELLO_FINDINGS = [
     "label": "D",
     "note": "Catch-up notice (\"Sello anotó …\"): 5 s stretched by the screen reader's recommended timeout, with a band that shows the time left.",
     "files": [
-     "app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:283",
-     "app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:325"
+     "app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:284",
+     "app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:326"
     ],
     "shots": [
      {
@@ -718,7 +718,7 @@ window.SELLO_FINDINGS = [
     "label": "B",
     "note": "EmptyMetas: its own column with a 44 dp Flag tinted gain, the same title and body styles, then a row of four empty stamps.",
     "files": [
-     "app/src/main/java/com/software/sello/feature/goals/MetasScreen.kt:192"
+     "app/src/main/java/com/software/sello/feature/goals/MetasScreen.kt:193"
     ],
     "shots": []
    }
@@ -741,7 +741,7 @@ window.SELLO_FINDINGS = [
     "label": "A",
     "note": "FactLine (bodyLarge, inkSoft).",
     "files": [
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:266",
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:267",
      "app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:240"
     ],
     "shots": []
@@ -995,7 +995,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:200",
      "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:149",
      "app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:100",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:120"
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:121"
     ],
     "shots": []
    },
@@ -1356,7 +1356,7 @@ window.SELLO_FINDINGS = [
     "note": "MovementDatePicker, shared by the goal and investment movement forms (days up to today).",
     "files": [
      "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:144",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:192",
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:193",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsScreen.kt:185"
     ],
     "shots": []
@@ -1369,7 +1369,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:498",
      "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:566",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:738",
-     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:219",
+     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:220",
      "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:450",
      "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:267"
     ],
@@ -1402,7 +1402,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:45",
      "app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:92",
      "app/src/main/java/com/software/sello/feature/goals/GoalBulkScreen.kt:82",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:112",
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:113",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsScreen.kt:122"
     ],
     "shots": [
@@ -1420,7 +1420,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:142",
      "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:116",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:143",
-     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:71",
+     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:72",
      "app/src/main/java/com/software/sello/feature/goals/GoalEditorScreen.kt:111",
      "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:105",
      "app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:348"
@@ -1458,7 +1458,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:53",
      "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250",
      "app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:111",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:131"
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:132"
     ],
     "shots": []
    },
@@ -1474,7 +1474,7 @@ window.SELLO_FINDINGS = [
     "label": "C",
     "note": "Tasa del dólar: a column with spacing.lg padding, no scroll.",
     "files": [
-     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:80"
+     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:81"
     ],
     "shots": []
    },
@@ -1536,9 +1536,9 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:387",
      "app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:339",
      "app/src/main/java/com/software/sello/feature/goals/GoalBulkScreen.kt:371",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:460",
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:461",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsScreen.kt:498",
-     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:202"
+     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:203"
     ],
     "shots": [
      {
@@ -1823,7 +1823,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:215",
      "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:395",
      "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:273",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:228",
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:229",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:574",
      "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:214"
     ],
@@ -1866,7 +1866,7 @@ window.SELLO_FINDINGS = [
     "label": "A",
     "note": "Anotar movimiento: \"Tipo\" and the type chips, then \"Inversión\" and the investment chips.",
     "files": [
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:253"
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:254"
     ],
     "shots": [
      {
@@ -2117,7 +2117,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:117",
      "app/src/main/java/com/software/sello/feature/goals/GoalEditorScreen.kt:115",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:147",
-     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:75",
+     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:76",
      "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:106",
      "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:47"
     ],
@@ -2170,7 +2170,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:188",
      "app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:140",
      "app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:90",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:110"
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:111"
     ],
     "shots": [
      {
@@ -2277,7 +2277,7 @@ window.SELLO_FINDINGS = [
     "note": "The plain title, no month and no picker (\"the title has no month to pick\").",
     "files": [
      "app/src/main/java/com/software/sello/navigation/RecurrenceDestinations.kt:42",
-     "app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:212"
+     "app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:213"
     ],
     "shots": []
    }
@@ -2522,7 +2522,7 @@ window.SELLO_FINDINGS = [
     "label": "A",
     "note": "titleSmall in inkSoft, sentence case (\"Archivadas\", \"Sin límite\").",
     "files": [
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:493",
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:495",
      "app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:216"
     ],
     "shots": [
@@ -2911,7 +2911,7 @@ window.SELLO_FINDINGS = [
     "note": "MilestoneRow as it is: start-aligned, 8 dp apart, scrolls (goal detail, empty Metas).",
     "files": [
      "app/src/main/java/com/software/sello/feature/goals/GoalDetailScreen.kt:259",
-     "app/src/main/java/com/software/sello/feature/goals/MetasScreen.kt:225"
+     "app/src/main/java/com/software/sello/feature/goals/MetasScreen.kt:226"
     ],
     "shots": [
      {
@@ -2966,8 +2966,8 @@ window.SELLO_FINDINGS = [
     "label": "B",
     "note": "20 dp, brand ink on the Ajustar link, outline ink on the invitation.",
     "files": [
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:291",
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:343"
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:293",
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:345"
     ],
     "shots": [
      {
@@ -3077,9 +3077,9 @@ window.SELLO_FINDINGS = [
     "note": "\"Aún no sabemos si se guardó. Compruébalo antes de volver a anotar.\" (expense_entry_unknown, on most forms); the limit sheet's \"Aún no sabemos si se guardó.\"; the expense form's \"Aún no sabemos si se borró…\".",
     "files": [
      "app/src/main/res/values/strings.xml:567",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:405",
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:406",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsScreen.kt:473",
-     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:186",
+     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:187",
      "app/src/main/java/com/software/sello/feature/goals/GoalMovementScreen.kt:307",
      "app/src/main/java/com/software/sello/feature/goals/GoalBulkScreen.kt:348",
      "app/src/main/res/values/strings.xml:215"
@@ -3141,7 +3141,7 @@ window.SELLO_FINDINGS = [
     "label": "A",
     "note": "\"Anotar varios\" (metas_record_several, inversiones_record_several, category_detail_record_several, income_record_several).",
     "files": [
-     "app/src/main/java/com/software/sello/feature/goals/MetasScreen.kt:158",
+     "app/src/main/java/com/software/sello/feature/goals/MetasScreen.kt:159",
      "app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:314"
     ],
     "shots": [
@@ -3306,7 +3306,7 @@ window.SELLO_FINDINGS = [
     "label": "A",
     "note": "Title chip \"Nueva inversión\" / \"Nueva meta\" once there are items.",
     "files": [
-     "app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:85",
+     "app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:86",
      "app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:92"
     ],
     "shots": []
@@ -3315,7 +3315,7 @@ window.SELLO_FINDINGS = [
     "label": "B",
     "note": "Empty-state dock \"Agregar inversión\" / \"Crear una meta\".",
     "files": [
-     "app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:98",
+     "app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:99",
      "app/src/main/java/com/software/sello/navigation/GoalDestinations.kt:105"
     ],
     "shots": []
@@ -3428,7 +3428,7 @@ window.SELLO_FINDINGS = [
     "label": "A",
     "note": "Minus only: ReciboScreen's MoneyTextValue.text() and category removal's shown().",
     "files": [
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:608",
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:610",
      "app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:858"
     ],
     "shots": []
@@ -3468,7 +3468,7 @@ window.SELLO_FINDINGS = [
     "note": "SpanStyle(fontWeight = W800) only, each screen with its own helper.",
     "files": [
      "app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:387",
-     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:343",
+     "app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:344",
      "app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:312"
     ],
     "shots": [
@@ -3482,7 +3482,7 @@ window.SELLO_FINDINGS = [
     "label": "B",
     "note": "Tasa del dólar: W800 and colors.ink.",
     "files": [
-     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:160"
+     "app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:161"
     ],
     "shots": [
      {
@@ -3521,7 +3521,7 @@ window.SELLO_FINDINGS = [
     "note": "SelloTheme.spacing (xs 4, sm 8, md 12, lg 16 dp) and minTouchTarget (48 dp), as most of :app uses (265 uses).",
     "files": [
      "design-system/src/main/java/com/software/sello/designsystem/theme/SelloShapes.kt:24",
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:272",
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:274",
      "app/src/main/java/com/software/sello/navigation/ShellBars.kt:179",
      "app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:315"
     ],
@@ -3531,7 +3531,7 @@ window.SELLO_FINDINGS = [
     "label": "B",
     "note": "Literal dp: 398 in :design-system components (36 token uses there), 319 in :app. Values equal to a token (8.dp, 4.dp, 48.dp for touch targets) and off-grid ones with no token (6, 10, 14, 2, 9 dp).",
     "files": [
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:639",
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:641",
      "app/src/main/java/com/software/sello/feature/recibo/MonthCarrySum.kt:46",
      "app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:346",
      "app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:373",
@@ -3585,7 +3585,7 @@ window.SELLO_FINDINGS = [
     "label": "A",
     "note": "MaterialTheme.typography tokens used as they are.",
     "files": [
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:442",
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:444",
      "app/src/main/java/com/software/sello/navigation/MonthPicker.kt:68"
     ],
     "shots": [
@@ -3678,7 +3678,7 @@ window.SELLO_FINDINGS = [
      "app/src/main/java/com/software/sello/feature/recibo/ExpenseStubLine.kt:126",
      "app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:153",
      "app/src/main/java/com/software/sello/feature/goals/CelebrationOverlay.kt:364",
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:476"
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:478"
     ],
     "shots": []
    }
@@ -3915,7 +3915,7 @@ window.SELLO_FINDINGS = [
     "label": "A",
     "note": "AdjustBudgetLink: a row with bodyLarge W800 brand text and a 20 dp chevron, minTouchTarget height, its own semantics.",
     "files": [
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:265"
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:267"
     ],
     "shots": [
      {
@@ -4029,7 +4029,7 @@ window.SELLO_FINDINGS = [
     "label": "A",
     "note": "ClosedMonthInvitation: a dashed outline, the Insights icon, bodyLarge W700 text, a 20 dp chevron and a Material IconButton × .",
     "files": [
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:300"
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:302"
     ],
     "shots": [
      {
@@ -4360,7 +4360,7 @@ window.SELLO_FINDINGS = [
     "note": "Modifier.dashedOutline: 5 dp dashes, 4 dp gaps, any corner (Recibo's invitation, AddChip, the plan parts); IconPicker's ring uses the same pattern by hand.",
     "files": [
      "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:44",
-     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:315",
+     "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:317",
      "design-system/src/main/java/com/software/sello/designsystem/component/Chips.kt:132",
      "design-system/src/main/java/com/software/sello/designsystem/component/IconPicker.kt:79"
     ],

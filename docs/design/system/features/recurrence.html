@@ -220,15 +220,15 @@
               data-caption="The catch-up notice above Anotar, its time draining across it"></figure>
 
       <h3>Layout</h3>
-      <p>A <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> with the Autorenew icon, "Sello anotó N pagos fijos" (or incomes, or both; "… y cambió lo que sobra o falta" when carry moved), the action "Ver" and the time left drawn across it (<code>remaining</code>) (<code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:276</code>). It shows on Recibo only when no correction notice is showing (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:290</code>).</p>
+      <p>A <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> with the Autorenew icon, "Sello anotó N pagos fijos" (or incomes, or both; "… y cambió lo que sobra o falta" when carry moved), the action "Ver" and the time left drawn across it (<code>remaining</code>) (<code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:277</code>). It shows on Recibo only when no correction notice is showing (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:290</code>).</p>
       <h3>States</h3>
       <div class="table-wrap">
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Nothing recorded, loading, failed</td><td>No bar.</td><td><code>…/CatchUpNotice.kt:281</code></td><td>—</td></tr>
-            <tr><td>Shown</td><td>The bar for 5 seconds (longer when a screen reader asks), then it counts as seen.</td><td><code>…/CatchUpNotice.kt:296</code></td><td>catch-up-bar</td></tr>
-            <tr><td>Reduced motion</td><td>The time drains in five steps instead of continuously.</td><td><code>…/CatchUpNotice.kt:297</code></td><td>no screenshot</td></tr>
+            <tr><td>Nothing recorded, loading, failed</td><td>No bar.</td><td><code>…/CatchUpNotice.kt:282</code></td><td>—</td></tr>
+            <tr><td>Shown</td><td>The bar for 5 seconds (longer when a screen reader asks), then it counts as seen.</td><td><code>…/CatchUpNotice.kt:297</code></td><td>catch-up-bar</td></tr>
+            <tr><td>Reduced motion</td><td>The time drains in five steps instead of continuously.</td><td><code>…/CatchUpNotice.kt:298</code></td><td>no screenshot</td></tr>
           </tbody>
         </table>
       </div>
@@ -248,22 +248,22 @@
               data-caption="With what recording them did to carry"></figure>
 
       <h3>Layout</h3>
-      <p>A <code>ShellScreen</code> titled "Lo que Sello anotó" with a dock "Listo" (Check icon) that dismisses what the list shows; Back keeps it (<code>app/src/main/java/com/software/sello/navigation/RecurrenceDestinations.kt:76</code>). A lazy list (<code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:367</code>):</p>
+      <p>A <code>ShellScreen</code> titled "Lo que Sello anotó" with a dock "Listo" (Check icon) that dismisses what the list shows; Back keeps it (<code>app/src/main/java/com/software/sello/navigation/RecurrenceDestinations.kt:76</code>). A lazy list (<code>app/src/main/java/com/software/sello/feature/recurrence/CatchUpNotice.kt:368</code>):</p>
       <ol>
         <li>A plain <a href="../components.html#c-Slip"><code>Slip</code></a>: "Sello anotó estos N" (<code>titleMedium</code>), the intro in <code>bodySmall</code> inkSoft, then one <a href="../components.html#c-ScheduleRow"><code>ScheduleRow</code></a> per entry: category icon (AccountBalance for incomes), name, "Categoría · día" (or "Ingreso · día") as caption, amount.</li>
-        <li>When carry moved: a plain slip "Al registrar tus pagos pendientes cambió lo que sobra o falta" with the months that changed (<code>CarryCorrectionContent</code>), or an ErrorSlip when that could not be read (<code>:454</code>).</li>
+        <li>When carry moved: a plain slip "Al registrar tus pagos pendientes cambió lo que sobra o falta" with the months that changed (<code>CarryCorrectionContent</code>), or an ErrorSlip when that could not be read (<code>:455</code>).</li>
       </ol>
       <h3>States</h3>
       <div class="table-wrap">
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>SlipSkeleton.</td><td><code>…/CatchUpNotice.kt:380</code></td><td>no screenshot</td></tr>
-            <tr><td>Error</td><td>ErrorSlip "No pudimos leer lo que Sello anotó" / "Lo anotado sigue guardado en tu mes. Vuelve a intentarlo."</td><td><code>…/CatchUpNotice.kt:382</code></td><td>no screenshot</td></tr>
-            <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Ya no queda nada por revisar" / "Lo que Sello anotó ya no está o ya lo revisaste.", Check icon.</td><td><code>…/CatchUpNotice.kt:391</code></td><td>no screenshot</td></tr>
-            <tr><td>Loaded</td><td>The list.</td><td><code>…/CatchUpNotice.kt:399</code></td><td>catch-up-recorded</td></tr>
-            <tr><td>Carry changed / failed</td><td>The carry slip, or ErrorSlip "No pudimos calcular lo que sobra o falta" / "No pudimos leer cómo cambió lo que sobra o falta. Tus pagos sí se anotaron."</td><td><code>…/CatchUpNotice.kt:454</code></td><td>carry-catch-up (light only); failed no screenshot</td></tr>
-            <tr><td>Busy, unknown, stale</td><td>Do not exist. "Listo" that cannot be kept leaves the list open (<code>done</code>).</td><td><code>…/CatchUpNotice.kt:173</code></td><td>—</td></tr>
+            <tr><td>Loading</td><td>SlipSkeleton.</td><td><code>…/CatchUpNotice.kt:381</code></td><td>no screenshot</td></tr>
+            <tr><td>Error</td><td>ErrorSlip "No pudimos leer lo que Sello anotó" / "Lo anotado sigue guardado en tu mes. Vuelve a intentarlo."</td><td><code>…/CatchUpNotice.kt:383</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Ya no queda nada por revisar" / "Lo que Sello anotó ya no está o ya lo revisaste.", Check icon.</td><td><code>…/CatchUpNotice.kt:392</code></td><td>no screenshot</td></tr>
+            <tr><td>Loaded</td><td>The list.</td><td><code>…/CatchUpNotice.kt:400</code></td><td>catch-up-recorded</td></tr>
+            <tr><td>Carry changed / failed</td><td>The carry slip, or ErrorSlip "No pudimos calcular lo que sobra o falta" / "No pudimos leer cómo cambió lo que sobra o falta. Tus pagos sí se anotaron."</td><td><code>…/CatchUpNotice.kt:455</code></td><td>carry-catch-up (light only); failed no screenshot</td></tr>
+            <tr><td>Busy, unknown, stale</td><td>Do not exist. "Listo" that cannot be kept leaves the list open (<code>done</code>).</td><td><code>…/CatchUpNotice.kt:174</code></td><td>—</td></tr>
           </tbody>
         </table>
       </div>
