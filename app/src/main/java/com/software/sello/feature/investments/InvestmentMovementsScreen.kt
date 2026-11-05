@@ -37,6 +37,7 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SelloButton
@@ -461,7 +462,7 @@ private fun Action(state: InvestmentMovementsState, onAction: (InvestmentMovemen
     Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
         if (state.stale) {
             FieldMessageText(
-                FieldMessage(stringResource(R.string.investment_stale), isError = false),
+                FieldMessage(stringResource(R.string.investment_stale), tone = FieldTone.Hint),
                 Modifier.testTag(INVESTMENT_MOVEMENTS_STALE_TAG)
             )
         }

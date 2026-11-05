@@ -117,6 +117,8 @@ class GoalBulkViewModel(
         data class AboveSaved(val available: Money) : Refusal
 
         data object FutureDate : Refusal
+
+        data object InvalidDate : Refusal
     }
 
     private data class Removed(val line: LineDraft, val index: Int)
@@ -466,7 +468,8 @@ class GoalBulkViewModel(
                 date = line.date,
                 note = line.note,
                 available = (refusal as? Refusal.AboveSaved)?.let { money.format(it.available) },
-                futureDate = refusal == Refusal.FutureDate
+                futureDate = refusal == Refusal.FutureDate,
+                invalidDate = refusal == Refusal.InvalidDate
             )
         }
         val named = lines.mapNotNull { it.goalName }.distinct()
@@ -573,7 +576,7 @@ class GoalBulkViewModel(
 
             is GoalRejection.LineFutureDate -> specific.line to Refusal.FutureDate
 
-            is GoalRejection.LineInvalidDate -> specific.line to Refusal.FutureDate
+            is GoalRejection.LineInvalidDate -> specific.line to Refusal.InvalidDate
 
             else -> null
         }

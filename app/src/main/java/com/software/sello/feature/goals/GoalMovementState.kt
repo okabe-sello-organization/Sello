@@ -37,6 +37,9 @@ enum class GoalMovementError {
     NotSaved,
     FutureDate,
 
+    /** The date is one storage cannot keep; not the same as a date after today. */
+    InvalidDate,
+
     /** The data was replaced meanwhile (restore or reset). */
     DataChanged,
 

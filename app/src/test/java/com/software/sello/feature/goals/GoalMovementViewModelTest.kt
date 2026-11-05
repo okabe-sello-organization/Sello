@@ -367,6 +367,18 @@ class GoalMovementViewModelTest {
     }
 
     @Test
+    fun aDateStorageCannotKeepIsRefusedAsInvalidNotAsAfterToday() = runTest {
+        val model = model(goal = viaje)
+        model.keys("3", "5", "0", "000")
+        commands.queue += CommandOutcome.Rejected(Specific(GoalRejection.InvalidDate))
+
+        model.onAction(GoalMovementAction.Submit)
+
+        assertEquals(GoalMovementError.InvalidDate, model.state.value.error)
+        assertFalse(model.state.value.closed)
+    }
+
+    @Test
     fun deletingAMovementClosesTheFormAndOffersUndoInTheMovementsWords() = runTest {
         val model = model(goal = viaje, movement = movementId(12).value)
         commands.undoOffer = {

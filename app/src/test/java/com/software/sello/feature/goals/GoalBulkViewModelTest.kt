@@ -456,6 +456,23 @@ class GoalBulkViewModelTest {
     }
 
     @Test
+    fun aLineDateStorageCannotKeepIsMarkedInvalidNotAfterToday() = runTest {
+        val model = model()
+        model.threeLines()
+        commands.next = CommandOutcome.Rejected(
+            CommandRejection.Specific(GoalRejection.LineInvalidDate(1))
+        )
+
+        model.onAction(GoalBulkAction.Submit)
+
+        val lines = model.state.value.lines
+        assertEquals(listOf(false, true, false), lines.map { it.invalidDate })
+        assertEquals(listOf(false, false, false), lines.map { it.futureDate })
+        assertEquals(GoalBulkError.Refused, model.state.value.error)
+        assertEquals(1, model.state.value.refused)
+    }
+
+    @Test
     fun aGoalThatChangedMeanwhileAsksToReviewAndSavesAgainAtTheNewVersion() = runTest {
         val model = model()
         model.threeLines()

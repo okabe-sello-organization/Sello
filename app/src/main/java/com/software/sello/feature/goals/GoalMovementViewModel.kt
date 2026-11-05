@@ -506,8 +506,9 @@ class GoalMovementViewModel(
                     CommandRejection.OperationConflict, is CommandRejection.StorageFailed -> null
 
                     is CommandRejection.Specific -> when (reason.reason) {
-                        is GoalRejection.FutureDate, GoalRejection.InvalidDate ->
-                            GoalMovementError.FutureDate
+                        is GoalRejection.FutureDate -> GoalMovementError.FutureDate
+
+                        GoalRejection.InvalidDate -> GoalMovementError.InvalidDate
 
                         GoalRejection.GoalMissing, GoalRejection.MovementMissing ->
                             GoalMovementError.Gone

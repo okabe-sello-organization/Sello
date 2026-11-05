@@ -36,6 +36,7 @@ import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SelloButton
@@ -187,7 +188,8 @@ private fun Action(state: UsdRateEntryState, onAction: (UsdRateEntryAction) -> U
                             RateEntryError.DataChanged -> R.string.usd_rate_data_changed
                             RateEntryError.NotSaved -> R.string.usd_rate_not_saved
                         }
-                    )
+                    ),
+                    if (error == RateEntryError.Unknown) FieldTone.Warning else FieldTone.Error
                 ),
                 Modifier.testTag("usd.rate.entry.error")
             )

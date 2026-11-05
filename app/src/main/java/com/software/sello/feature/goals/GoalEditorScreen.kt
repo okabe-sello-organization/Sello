@@ -53,6 +53,7 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.IconChoice
 import com.software.sello.designsystem.component.IconChoiceSheetContent
@@ -148,8 +149,9 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
                     )
 
                     else -> {
-                        SaveError(state, onAction)
                         FactLine(AnnotatedString(stringResource(R.string.goal_editor_completed)))
+                        SaveProblem(state)
+                        if (state.saveError == GoalSaveError.Unknown) CheckAgain(state, onAction)
                     }
                 }
             }
@@ -159,7 +161,6 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
             else -> EntryLayout(
                 modifier = Modifier.padding(padding).testTag(GOAL_EDITOR_TAG),
                 header = {
-                    SaveError(state, onAction)
                     Identity(state, onAction, focusName = !nameFocused, { nameFocused = true }) {
                         choosingIcon = true
                     }
@@ -215,26 +216,36 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
     }
 }
 
+/**
+ * Why the save did not finish, said above the button as on Anotar: an unknown outcome in
+ * the warning tone, a certain failure as an error. Never titled as a failed read.
+ */
 @Composable
-private fun SaveError(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit) {
+private fun SaveProblem(state: GoalEditorState) {
     val error = state.saveError ?: return
-    ErrorSlip(
-        message = stringResource(
-            when (error) {
-                GoalSaveError.NotSaved -> R.string.goal_editor_not_saved
-                GoalSaveError.Unknown -> R.string.goal_editor_unknown
-                GoalSaveError.Changed -> R.string.goal_editor_changed
-            }
+    FieldMessageText(
+        FieldMessage(
+            stringResource(
+                when (error) {
+                    GoalSaveError.NotSaved -> R.string.goal_editor_not_saved
+                    GoalSaveError.Unknown -> R.string.goal_editor_unknown
+                    GoalSaveError.Changed -> R.string.goal_editor_changed
+                }
+            ),
+            if (error == GoalSaveError.Unknown) FieldTone.Warning else FieldTone.Error
         ),
-        onRetry = { onAction(GoalEditorAction.Retry) },
-        modifier = Modifier.testTag("goal.editor.error"),
-        retryLabel = stringResource(
-            if (error == GoalSaveError.Unknown) {
-                R.string.goal_error_check
-            } else {
-                R.string.goal_error_retry
-            }
-        )
+        Modifier.testTag(GOAL_EDITOR_ERROR_TAG)
+    )
+}
+
+/** In the button's place while a save's outcome is unknown: asks again, never sends twice. */
+@Composable
+private fun CheckAgain(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit) {
+    SelloButton(
+        text = stringResource(R.string.expense_entry_check_again),
+        onClick = { onAction(GoalEditorAction.Retry) },
+        modifier = Modifier.fillMaxWidth().testTag(GOAL_EDITOR_SUBMIT_TAG),
+        loading = state.busy
     )
 }
 
@@ -249,23 +260,28 @@ private fun Action(state: GoalEditorState, onAction: (GoalEditorAction) -> Unit)
             state.amount == null -> R.string.goal_editor_missing_amount
             else -> null
         }
+        SaveProblem(state)
         if (missing != null) {
             FieldMessageText(
-                FieldMessage(stringResource(missing), isError = false),
+                FieldMessage(stringResource(missing), tone = FieldTone.Hint),
                 Modifier.testTag(GOAL_EDITOR_MISSING_TAG)
             )
         }
-        SelloButton(
-            text = stringResource(
-                if (state.editing) R.string.goal_editor_save else R.string.goal_editor_create
-            ),
-            onClick = { onAction(GoalEditorAction.Submit) },
-            modifier = Modifier.fillMaxWidth().testTag(GOAL_EDITOR_SUBMIT_TAG),
-            icon = SelloIcon.Flag,
-            enabled = state.canSubmit,
-            loading = state.busy,
-            tone = ButtonTone.Gain
-        )
+        if (state.saveError == GoalSaveError.Unknown) {
+            CheckAgain(state, onAction)
+        } else {
+            SelloButton(
+                text = stringResource(
+                    if (state.editing) R.string.goal_editor_save else R.string.goal_editor_create
+                ),
+                onClick = { onAction(GoalEditorAction.Submit) },
+                modifier = Modifier.fillMaxWidth().testTag(GOAL_EDITOR_SUBMIT_TAG),
+                icon = SelloIcon.Flag,
+                enabled = state.canSubmit,
+                loading = state.busy,
+                tone = ButtonTone.Gain
+            )
+        }
     }
 }
 
@@ -370,7 +386,7 @@ private fun Identity(
                     null -> if (state.name.isEmpty()) {
                         FieldMessage(
                             stringResource(R.string.goal_editor_name_hint),
-                            isError = false
+                            tone = FieldTone.Hint
                         )
                     } else {
                         null
@@ -591,6 +607,8 @@ const val GOAL_EDITOR_AMOUNT_TAG = "goal.editor.amount"
 const val GOAL_EDITOR_PAD_TAG = "goal.editor.pad"
 const val GOAL_EDITOR_SUBMIT_TAG = "goal.editor.submit"
 const val GOAL_EDITOR_MISSING_TAG = "goal.editor.missing"
+
+const val GOAL_EDITOR_ERROR_TAG = "goal.editor.error"
 const val GOAL_EDITOR_DELETE_TAG = "goal.editor.delete"
 const val GOAL_EDITOR_MONTHS_TAG = "goal.editor.months"
 const val GOAL_EDITOR_MARK_COMPLETE_TAG = "goal.editor.markComplete"

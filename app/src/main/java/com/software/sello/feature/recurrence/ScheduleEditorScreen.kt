@@ -38,6 +38,7 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoreMenu
 import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.component.NoteComposer
@@ -362,7 +363,7 @@ private fun Action(state: ScheduleEditorState, onAction: (ScheduleEditorAction) 
             else -> null
         }
         if (missing != null && !state.busy && state.error != ScheduleEditorError.Unknown) {
-            FieldMessageText(FieldMessage(stringResource(missing), isError = false))
+            FieldMessageText(FieldMessage(stringResource(missing), tone = FieldTone.Hint))
         }
         val unknown = state.error == ScheduleEditorError.Unknown
         SelloButton(

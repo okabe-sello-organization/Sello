@@ -1,6 +1,9 @@
 package com.software.sello.feature.recibo
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
@@ -113,5 +116,45 @@ class CategoryExpensesScreenTest {
         rule.onNodeWithText("Reintentar").performClick()
 
         assertEquals(listOf<CategoryExpensesAction>(CategoryExpensesAction.Retry), actions)
+    }
+
+    /** A deletion that did not happen says so; nothing calls it a failed read (#332). */
+    @Test
+    fun aDeleteProblemIsTitledAsADeleteNeverAsAFailedRead() {
+        val titles = mapOf(
+            DeleteProblem.Gone to "Nada que borrar",
+            DeleteProblem.Changed to "No se borró",
+            DeleteProblem.DataChanged to "No se borró",
+            DeleteProblem.Failed to "No se borró",
+            DeleteProblem.NotDone to "No se borró",
+            DeleteProblem.Unknown to "Falta comprobar el borrado"
+        )
+        var problem by mutableStateOf(DeleteProblem.Gone)
+        rule.showSello {
+            CategoryExpensesScreen(
+                state = CategoryExpensesState.Ready(
+                    categoryName = "Alimentación",
+                    month = YearMonth.of(2026, 10),
+                    today = LocalDate.of(2026, 10, 21),
+                    rows = emptyList(),
+                    more = false,
+                    totalCount = 0,
+                    problem = problem
+                ),
+                query = "",
+                order = "Date",
+                onAction = {},
+                onEdit = {},
+                padding = PaddingValues(12.dp)
+            )
+        }
+        assertEquals(DeleteProblem.entries.toSet(), titles.keys)
+        titles.forEach { (shown, title) ->
+            problem = shown
+            rule.waitForIdle()
+            val slip = hasAnyAncestor(hasTestTag(CATEGORY_EXPENSES_PROBLEM_TAG))
+            rule.onNode(hasText(title) and slip, useUnmergedTree = true).assertExists()
+            rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
+        }
     }
 }

@@ -62,6 +62,7 @@ import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.IconChoice
 import com.software.sello.designsystem.component.IconChoiceSheetContent
@@ -130,7 +131,6 @@ fun InvestmentEditorScreen(
     // Kept here, not in the form: reading the form again must not take focus again.
     var nameFocused by rememberSaveable { mutableStateOf(false) }
     val identity: @Composable () -> Unit = {
-        state.saveError?.let { error -> SaveError(error, onAction) }
         Identity(state, onAction, focusName = !nameFocused, { nameFocused = true }) {
             choosingIcon = true
         }
@@ -270,16 +270,17 @@ private fun Action(state: InvestmentEditorState, onAction: (InvestmentEditorActi
             state.rateNeeded && state.rate == null -> R.string.investment_editor_missing_rate
             else -> null
         }
+        state.saveError?.let { SaveProblem(it) }
         if (missing != null) {
             FieldMessageText(
-                FieldMessage(stringResource(missing), isError = false),
+                FieldMessage(stringResource(missing), tone = FieldTone.Hint),
                 Modifier.testTag(INVESTMENT_EDITOR_MISSING_TAG)
             )
         }
         SelloButton(
             text = stringResource(
                 when {
-                    unknown -> R.string.investment_editor_check
+                    unknown -> R.string.expense_entry_check_again
                     state.editing -> R.string.investment_editor_save
                     else -> R.string.investment_editor_create
                 }
@@ -312,29 +313,28 @@ private fun deleteConsequences(count: Int): AnnotatedString {
     }
 }
 
+/**
+ * Why the save did not finish, said above the button as on Anotar: an unknown outcome in
+ * the warning tone, a certain failure as an error. Never titled as a failed read.
+ */
 @Composable
-private fun SaveError(error: InvestmentSaveError, onAction: (InvestmentEditorAction) -> Unit) {
-    ErrorSlip(
-        message = stringResource(
-            when (error) {
-                InvestmentSaveError.NotSaved -> R.string.investment_editor_not_saved
-                InvestmentSaveError.Unknown -> R.string.investment_editor_unknown
-                InvestmentSaveError.Changed -> R.string.investment_editor_changed
-                InvestmentSaveError.FutureDate -> R.string.investment_editor_future_date
-                InvestmentSaveError.Invalid -> R.string.investment_editor_invalid
-                InvestmentSaveError.RateRequired -> R.string.investment_editor_rate_required
-                InvestmentSaveError.Unchanged -> R.string.investment_editor_unchanged
-            }
+private fun SaveProblem(error: InvestmentSaveError) {
+    FieldMessageText(
+        FieldMessage(
+            stringResource(
+                when (error) {
+                    InvestmentSaveError.NotSaved -> R.string.investment_editor_not_saved
+                    InvestmentSaveError.Unknown -> R.string.investment_editor_unknown
+                    InvestmentSaveError.Changed -> R.string.investment_editor_changed
+                    InvestmentSaveError.FutureDate -> R.string.investment_editor_future_date
+                    InvestmentSaveError.Invalid -> R.string.investment_editor_invalid
+                    InvestmentSaveError.RateRequired -> R.string.investment_editor_rate_required
+                    InvestmentSaveError.Unchanged -> R.string.investment_editor_unchanged
+                }
+            ),
+            if (error == InvestmentSaveError.Unknown) FieldTone.Warning else FieldTone.Error
         ),
-        onRetry = { onAction(InvestmentEditorAction.Retry) },
-        modifier = Modifier.testTag(INVESTMENT_EDITOR_ERROR_TAG),
-        retryLabel = stringResource(
-            if (error == InvestmentSaveError.Unknown) {
-                R.string.investment_editor_check
-            } else {
-                R.string.investment_editor_retry
-            }
-        )
+        Modifier.testTag(INVESTMENT_EDITOR_ERROR_TAG)
     )
 }
 
@@ -348,7 +348,7 @@ private fun textMessage(error: InvestmentTextError?, hint: String, empty: Boolea
         InvestmentTextError.NotAllowed ->
             FieldMessage(stringResource(R.string.investment_editor_not_allowed))
 
-        null -> if (empty) FieldMessage(hint, isError = false) else null
+        null -> if (empty) FieldMessage(hint, tone = FieldTone.Hint) else null
     }
 
 /**

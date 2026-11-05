@@ -53,6 +53,7 @@ import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.IconChoice
 import com.software.sello.designsystem.component.IconChoiceSheetContent
@@ -381,7 +382,7 @@ private fun Identity(
         FieldMessageText(
             FieldMessage(
                 stringResource(R.string.category_editor_needed_for_entry),
-                isError = false
+                tone = FieldTone.Hint
             ),
             Modifier.testTag(EDITOR_PREREQUISITE_TAG)
         )
@@ -557,7 +558,7 @@ private fun Said(state: CategoryEditorState) {
     }
     if (state.editing && !state.changed && state.saveError == null && !state.busy) {
         FieldMessageText(
-            FieldMessage(stringResource(R.string.category_edit_no_changes), isError = false),
+            FieldMessage(stringResource(R.string.category_edit_no_changes), tone = FieldTone.Hint),
             Modifier.testTag(EDITOR_NO_CHANGES_TAG)
         )
     }
@@ -571,7 +572,7 @@ private fun Action(state: CategoryEditorState, onAction: (CategoryEditorAction) 
             FieldMessageText(
                 FieldMessage(
                     stringResource(R.string.category_editor_missing_name),
-                    isError = false
+                    tone = FieldTone.Hint
                 ),
                 Modifier.testTag(EDITOR_MISSING_TAG)
             )

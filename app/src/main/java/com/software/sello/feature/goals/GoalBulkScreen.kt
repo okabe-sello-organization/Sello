@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -19,8 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
@@ -37,10 +33,12 @@ import com.software.sello.designsystem.component.BulkTotal
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.ConfirmSlip
+import com.software.sello.designsystem.component.EntryHeading
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SelloButton
@@ -264,6 +262,8 @@ private fun bulkLine(
 
             line.futureDate -> stringResource(R.string.goal_bulk_future_date)
 
+            line.invalidDate -> stringResource(R.string.goal_bulk_invalid_date)
+
             line.missingGoal -> stringResource(R.string.goal_bulk_choose_goal)
 
             line.missingType -> stringResource(R.string.goal_bulk_choose_kind)
@@ -280,15 +280,12 @@ private fun bulkLine(
 @Composable
 private fun Choices(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
+        EntryHeading(
             if (state.lines.size > 1) {
                 stringResource(R.string.goal_bulk_choices_line, state.highlighted + 1)
             } else {
                 stringResource(R.string.goal_bulk_choices)
-            },
-            Modifier.semantics { heading() },
-            color = SelloTheme.colors.inkSoft,
-            style = MaterialTheme.typography.titleSmall
+            }
         )
         if (state.noActiveGoal) {
             FieldMessageText(
@@ -359,7 +356,12 @@ private fun Action(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
             else -> null
         }
         message?.let {
-            FieldMessageText(FieldMessage(stringResource(it)), Modifier.testTag("goal.bulk.error"))
+            val unknown = state.error == GoalBulkError.Unknown
+            val tone = if (unknown) FieldTone.Warning else FieldTone.Error
+            FieldMessageText(
+                FieldMessage(stringResource(it), tone),
+                Modifier.testTag("goal.bulk.error")
+            )
         }
         val unknown = state.error == GoalBulkError.Unknown
         val count = state.counted.coerceAtLeast(1)

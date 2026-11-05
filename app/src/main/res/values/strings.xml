@@ -310,6 +310,8 @@
     <string name="category_detail_delete_failed">No se pudo borrar. El gasto sigue anotado.</string>
     <string name="category_detail_delete_not_done">Ese gasto no se borró.</string>
     <string name="category_expenses_delete_unknown_title">Falta comprobar el borrado</string>
+    <string name="category_expenses_delete_not_done_title">No se borró</string>
+    <string name="category_expenses_delete_gone_title">Nada que borrar</string>
     <string name="correction_deleted">Gasto borrado</string>
     <string name="correction_deleted_spoken">Gasto borrado. Puedes deshacerlo durante 6 segundos.</string>
     <string name="correction_undo">Deshacer</string>
@@ -1183,6 +1185,7 @@
     <string name="goal_movement_over_saved">Más de lo guardado (%s)</string>
     <string name="goal_movement_amount_invalid">Escribe un monto entero entre 1 y 999.999.999.999.</string>
     <string name="goal_movement_goal">Meta</string>
+    <string name="goal_movement_invalid_date">Esa fecha no es válida. No se guardó nada.</string>
     <string name="goal_movement_saved_fact">Llevas %s guardados en esta meta.</string>
     <string name="goal_movement_choose_goal">Elige a qué meta va.</string>
     <string name="goal_movement_no_goals">No tienes metas activas. Crea una en Metas.</string>
@@ -1213,6 +1216,7 @@
     <string name="goal_bulk_limit">Máximo 30 por recibo</string>
     <string name="goal_bulk_available">Solo hay %s disponibles</string>
     <string name="goal_bulk_future_date">La fecha no puede ser posterior a hoy</string>
+    <string name="goal_bulk_invalid_date">Esa fecha no es válida</string>
     <string name="goal_bulk_total">Total</string>
     <plurals name="goal_bulk_submit"><item quantity="one">Anotar movimiento</item><item quantity="other">Anotar %d movimientos</item></plurals>
     <string name="goal_bulk_not_saved">No se guardó. Tu borrador sigue aquí.</string>
@@ -1695,8 +1699,6 @@
     <string name="investment_editor_invalid">Un monto o una fecha no se pueden guardar. No se guardó nada.</string>
     <string name="investment_editor_rate_required">Falta la tasa del dólar. Anótala y vuelve a crear la inversión.</string>
     <string name="investment_editor_unchanged">No cambiaste nada: ya está guardada así.</string>
-    <string name="investment_editor_check">Comprobar</string>
-    <string name="investment_editor_retry">Reintentar</string>
     <string name="investment_editor_discard_title">¿Descartar los cambios?</string>
     <string name="investment_editor_discard_message">Lo que escribiste en esta inversión no se guardará.</string>
     <string name="investment_editor_discard_confirm">Descartar</string>
