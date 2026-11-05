@@ -516,7 +516,9 @@ class ExpenseEntryViewModel(
 
             ExpenseEntryAction.CorrectionDismissed -> if (!now.busy) {
                 confirmation = null
-                // Leaving the list ends the attempt: Solo este is asked again.
+                // Leaving the list ends the attempt: Solo este is asked again. After a
+                // restart the list is gone but the answer is kept for these terms, so
+                // Guardar shows the list again without asking.
                 saved[KEY_FOLLOWING] = null
                 progress.update { it.copy(correction = null) }
             }

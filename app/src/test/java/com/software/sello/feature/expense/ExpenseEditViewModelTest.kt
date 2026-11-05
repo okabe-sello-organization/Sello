@@ -925,6 +925,33 @@ class ExpenseEditViewModelTest {
         assertTrue(form.now.closed)
     }
 
+    /**
+     * The process dies while the list is open: the list is gone, Solo este is kept for
+     * these terms, and Guardar shows the list again without asking.
+     */
+    @Test
+    fun afterARestartWithTheListOpenGuardarShowsTheListWithoutAskingAgain() {
+        commands.editAnswer = { refusedForList() }
+        scheduleBook.schedules += weekly
+        val saved = editing(recorded)
+        val first = opened(recorded, saved)
+        first.retype("52000")
+        first.onAction(ExpenseEntryAction.Submit)
+        first.onAction(ExpenseEntryAction.FollowingChosen(alsoFollowing = false))
+        assertEquals(1, first.now.correction!!.list.months)
+
+        val form = form(saved.afterProcessDeath())
+        assertNull(form.now.correction)
+        form.onAction(ExpenseEntryAction.Submit)
+
+        assertFalse(form.now.askFollowing)
+        assertEquals(1, form.now.correction!!.list.months)
+        assertEquals(2, commands.edited.size)
+        assertEquals(pesos(52_000), commands.edited.last().amount)
+        assertNull(commands.edited.last().confirmation)
+        assertTrue(schedules.submitted.isEmpty())
+    }
+
     /** Leaving the list ends the attempt: saving again asks Solo este once more. */
     @Test
     fun leavingTheListOfLaterMonthsAsksSoloEsteAgain() {

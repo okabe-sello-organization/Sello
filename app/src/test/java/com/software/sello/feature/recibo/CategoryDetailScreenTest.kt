@@ -291,6 +291,7 @@ class CategoryDetailScreenTest {
         )
 
         rule.onNodeWithTag("detail:history").performScrollTo()
+        rule.onNodeWithText("sep", useUnmergedTree = true).assertExists()
         rule.onNodeWithContentDescription(
             "sep 2026: 0 pesos. L\u00edmite: 200.000 pesos."
         ).assertExists().performClick()
