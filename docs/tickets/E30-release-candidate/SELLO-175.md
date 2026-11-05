@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-170, SELLO-171, SELLO-172, SELLO-173, SELLO-174
 - **Gate:** G3
 

@@ -13,18 +13,19 @@ The version stays `0.1.0`, code 1 (owner, 2026-11-04), so the file is named
 
 | | |
 | --- | --- |
-| Source commit | Pending |
-| APK SHA-256 and size | Pending, from the G3 facts file |
-| R8 mapping SHA-256 | Pending, from the G3 facts file |
-| Signing | Pending |
+| Source commit | `a20ae90f` (`main` on 2026-11-05) |
+| APK SHA-256 and size | Pending, from the facts file of the owner's G3 run |
+| R8 mapping SHA-256 | Pending, from the facts file of the owner's G3 run |
+| Signing | Pending, the owner's key in the owner's G3 run |
 
 ## Checks
 
 | Check | Who | Status |
 | --- | --- | --- |
-| Release check: `scripts/check --release` on the final `main` ([release](README.md#release-gate-g3)) | SELLO-175 | Pending |
-| Advisory check, run again with the network ([advisories](advisories.md)) | SELLO-175 | Pending |
-| Walk of the shrunk build on a new API 37 emulator, against hand-worked figures | SELLO-175 | Pending |
+| Release check: `scripts/check --release` on the final `main` ([release](README.md#release-gate-g3)) | SELLO-175 | Passed up to the owner's key on 2026-11-05: fast checks, host gate (3,245 tests), every device suite on a new API 30 emulator (data 668, design-system 3, app 114; none failed or skipped), the licence list (143 libraries). The production check then refused the throwaway key's certificate, as it must; the APK it signed installed and opened in the launch check |
+| Release check with the owner's key: the production signature and the launch | Owner | Pending |
+| Advisory check, run again with the network ([advisories](advisories.md)) | SELLO-175 | Passed on 2026-11-05: 143 libraries, no advisory, no licence difference |
+| Walk of the shrunk build on a new API 37 emulator, against hand-worked figures | SELLO-175 | Passed on 2026-11-05, nothing broke ([walk](../testing/performance-profile.md#release-candidate-walk-on-api-37-sello-175)) |
 | Walk of the signed candidate on the owner's phone | Owner | Pending |
 
 ## Decision

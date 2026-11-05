@@ -1,6 +1,6 @@
 # SELLO-E30 — Release candidate
 
-- **Status:** Backlog
+- **Status:** Done
 - **Increment:** Post-MVP
 - **Goal:** The person gets a release candidate where every form recovers from a failed read, the screens match the chosen theme, restore and erase say what they really do, and the build has been walked on the newest Android.
 - **Exit:** SELLO-170 to SELLO-175 are Done: every before-release finding of the 2026-11-04 audit is fixed with a red-first test, the candidate's records are current, and the shrunk release build has been walked on a new API 37 emulator, leaving only the owner's phone walk.
