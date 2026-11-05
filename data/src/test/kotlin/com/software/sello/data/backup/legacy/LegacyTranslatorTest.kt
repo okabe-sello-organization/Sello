@@ -391,13 +391,30 @@ class LegacyTranslatorTest {
     }
 
     @Test
-    fun `a FinanceTracker file is recognised without being translated, a newer one too`() {
-        assertTrue(LegacyTranslator.Recognition.recognises(mixed.toByteArray()))
-        assertTrue(LegacyTranslator.Recognition.recognises(legacy(version = "3").toByteArray()))
+    fun `any other refusal of a translation is Sello's own content problem, not damage`() {
+        val contents = translated(mixed).contents
+
+        assertEquals(
+            Outcome.Failure(RestoreRejection.InvalidContent),
+            BackupCodec(BackupBounds(maxFieldCharacters = 3)).translatedFile(contents)
+        )
+        assertEquals(
+            Outcome.Failure(RestoreRejection.InvalidContent),
+            BackupCodec(BackupBounds(maxDepth = 2)).translatedFile(contents)
+        )
+    }
+
+    @Test
+    fun `a FinanceTracker file is told without being translated, a newer one as newer`() {
+        fun told(text: String) = LegacyTranslator.Recognition.untranslated(text.toByteArray())
+
+        assertEquals(RestoreRejection.FinanceTrackerFile, told(mixed))
+        assertEquals(RestoreRejection.FinanceTrackerFile, told(legacy(version = "2")))
+        assertEquals(RestoreRejection.NewerVersion, told(legacy(version = "3")))
         for (text in listOf("not json", "[]", "{\"exportedAt\": \"2026-10-25 14:01\"}")) {
-            assertFalse(text, LegacyTranslator.Recognition.recognises(text.toByteArray()))
+            assertNull(text, told(text))
         }
-        assertFalse(LegacyTranslator.Recognition.recognises(legacy(version = "0").toByteArray()))
+        assertNull(told(legacy(version = "0")))
     }
 
     @Test

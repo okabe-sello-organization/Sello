@@ -1184,4 +1184,23 @@ class RestoreViewModelTest {
         assertEquals(1, restores.expired)
         assertEquals(RestoreStep.Restored(pending), model.state.value.step)
     }
+
+    @Test
+    fun aFileChosenBeforeTheProcessDiedIsCheckedEvenWhenAConfirmedOneExpiredAtStart() = runTest {
+        val handle = SavedStateHandle()
+        val process = CoroutineScope(backgroundScope.coroutineContext + Job())
+        readGate = CompletableDeferred()
+        val (model) = model(handle, process)
+        choose(model)
+        assertEquals(RestoreStep.Checking, model.state.value.step)
+
+        readGate = null
+        restores.expireAnswer = StagedLookup.NotReplaced(operation, attempted = true)
+        restores.stageAnswer = Outcome.Success(staged)
+        val restored = afterProcessDeath(handle, process)
+
+        assertEquals(RestoreStep.Previewing(staged), restored.state.value.step)
+        assertEquals(List(2) { "content://provider/document/7" }, read)
+        assertEquals(0, restores.replaced)
+    }
 }

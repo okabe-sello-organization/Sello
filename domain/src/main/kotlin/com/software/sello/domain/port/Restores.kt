@@ -256,9 +256,11 @@ interface Restores {
 
     /**
      * At start: forgets a staged file a day old whose replacement surely did not commit,
-     * without reading the file, so it never outlives its day even if Respaldo is not
-     * opened again. What it forgot, or null when nothing was that old or it could not be
-     * told; a file whose replacement may have committed is left for [staged] to find.
+     * so it never outlives its day even if Respaldo is not opened again. One whose
+     * manifest names it is forgotten without reading the file; one whose manifest cannot
+     * be read, by the file's own age, as [staged] would settle it. What it forgot when
+     * the manifest named it, else null. A file whose replacement committed, may have,
+     * or has preferences pending is left for [staged] to find.
      */
     suspend fun expireStaged(): StagedLookup.NotReplaced?
 

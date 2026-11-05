@@ -1105,14 +1105,24 @@ class LegacyTranslator(
     /** Telling a FinanceTracker file without translating it. */
     internal object Recognition {
         /**
-         * Whether [bytes] are a FinanceTracker backup, one this app reads or a newer one:
-         * where it cannot be imported, the person can still be told what the file is.
+         * Why a FinanceTracker backup cannot be restored where nothing is translated, as at
+         * start-up, so the person is still told what the file is: one Respaldo imports, or
+         * a newer one, refused as Respaldo refuses it and never promised an import. Null
+         * when [bytes] are not one.
          */
-        fun recognises(bytes: ByteArray, bounds: BackupBounds = BackupBounds()): Boolean {
-            if (bytes.size > bounds.maxBytes) return false
-            val text = utf8(bytes) ?: return false
-            if (scanStructure(text, bounds) != null) return false
-            return objectIn(text)?.let(::legacyVersion) != null
+        fun untranslated(
+            bytes: ByteArray,
+            bounds: BackupBounds = BackupBounds()
+        ): RestoreRejection? {
+            if (bytes.size > bounds.maxBytes) return null
+            val text = utf8(bytes) ?: return null
+            if (scanStructure(text, bounds) != null) return null
+            val version = objectIn(text)?.let(::legacyVersion) ?: return null
+            return if (version > NEWEST_VERSION) {
+                RestoreRejection.NewerVersion
+            } else {
+                RestoreRejection.FinanceTrackerFile
+            }
         }
     }
 

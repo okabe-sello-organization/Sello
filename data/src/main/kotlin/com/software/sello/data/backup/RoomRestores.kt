@@ -275,17 +275,36 @@ class RoomRestores(
         )
     }
 
-    override suspend fun expireStaged(): StagedLookup.NotReplaced? {
-        val found = readManifest() ?: return null
-        if (!audit.now().isAfter(found.stagedAt.plus(STAGING_LIFETIME))) return null
+    override suspend fun expireStaged(): StagedLookup.NotReplaced? = recovery.withLock {
+        val found = readManifest()
+        if (found == null) {
+            expireUnnamed()
+            return@withLock null
+        }
+        if (!audit.now().isAfter(found.stagedAt.plus(STAGING_LIFETIME))) return@withLock null
         // A replacement that committed, or may have, and one with preferences still
         // pending are left for a look, which finishes or reports them.
-        if (committed(found.operation) != false) return null
-        if (io(failed = true) { restored.exists() }) return null
+        if (committed(found.operation) != false) return@withLock null
+        if (io(failed = true) { restored.exists() }) return@withLock null
         discard()
         // Not deleted: the next start tries again.
-        if (io(failed = true) { staged.exists() || manifest.exists() }) return null
-        return found.notReplaced()
+        if (io(failed = true) { staged.exists() || manifest.exists() }) return@withLock null
+        found.notReplaced()
+    }
+
+    /**
+     * A staged file beside a manifest that cannot be read, a day old by the file's own
+     * time, is settled as a look settles it: forgotten only when its receipts show it was
+     * not replaced and no replacement has preferences pending, else kept or finished.
+     */
+    private suspend fun expireUnnamed() {
+        val old = io(failed = false) {
+            manifest.exists() && staged.exists() &&
+                audit.now().isAfter(
+                    Instant.ofEpochMilli(staged.lastModified()).plus(STAGING_LIFETIME)
+                )
+        }
+        if (old) withoutStaging()
     }
 
     /**
@@ -1074,26 +1093,31 @@ fun BackupCodec.checkFile(bytes: ByteArray): Outcome<CheckedBackupFile, RestoreR
         }
 
         is Outcome.Failure -> Outcome.Failure(
-            if (plan.error == BackupRejection.NotSelloBackup &&
-                LegacyTranslator.Recognition.recognises(bytes)
-            ) {
-                RestoreRejection.FinanceTrackerFile
-            } else {
-                plan.error.reason()
-            }
+            plan.error.takeIf { it == BackupRejection.NotSelloBackup }
+                ?.let { LegacyTranslator.Recognition.untranslated(bytes) }
+                ?: plan.error.reason()
         )
     }
 
 /**
  * A FinanceTracker translation written out as a Sello backup. Encoding reads the file
- * back, so only what the released reader accepts is kept; one that outgrows a backup's
- * bounds once written out is refused as too large, not as damaged.
+ * back, so only what the released reader accepts is kept. One that outgrows a backup's
+ * size or record bounds once written out is refused as too large; any other refusal is
+ * of Sello's own writing, never blamed on the person's file as damage.
  */
 internal fun BackupCodec.translatedFile(
     contents: BackupContents
 ): Outcome<ByteArray, RestoreRejection> = when (val encoded = encode(contents)) {
     is Outcome.Success -> encoded
-    is Outcome.Failure -> Outcome.Failure(encoded.error.reason())
+
+    is Outcome.Failure -> Outcome.Failure(
+        when (encoded.error) {
+            is BackupRejection.TooLarge, is BackupRejection.TooManyRecords ->
+                RestoreRejection.TooLarge
+
+            else -> RestoreRejection.InvalidContent
+        }
+    )
 }
 
 internal fun FinancialSnapshot.summary() = BackupSummary(

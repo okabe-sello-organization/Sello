@@ -87,6 +87,15 @@ class RestoreSession(
     private val state = MutableStateFlow<RestoreStep>(RestoreStep.Idle)
     val step: StateFlow<RestoreStep> = state.asStateFlow()
 
+    /**
+     * The start-up expiry forgot a file that had been confirmed. The first look says it
+     * was not restored, as a look finding it would, unless a file chosen since is still
+     * to be checked; either way it is said at most once. Declared before [startUp],
+     * which sets it.
+     */
+    @Volatile
+    private var expiredConfirmed = false
+
     private val startUp: Job = scope.launch {
         // Finished quietly if it can be; only preferences still failing, or gone because
         // the backup's could not be read, are shown.
@@ -95,11 +104,8 @@ class RestoreSession(
         }?.let {
             state.compareAndSet(RestoreStep.Idle, RestoreStep.Restored(it))
         }
-        // A file previewed a day ago goes now, even if Respaldo is never opened again;
-        // one that had been confirmed is said not restored, as a look would say.
-        restores.expireStaged()?.takeIf { it.attempted }?.let {
-            state.compareAndSet(RestoreStep.Idle, RestoreStep.Failed)
-        }
+        // A file previewed a day ago goes now, even if Respaldo is never opened again.
+        expiredConfirmed = restores.expireStaged()?.attempted == true
     }
 
     private val resuming = Mutex()
@@ -121,9 +127,11 @@ class RestoreSession(
                 // Another screen's look may have found it first.
                 if (state.value != RestoreStep.Idle) return@withLock
                 val next = look(chosen)
+                val forgotten = expiredConfirmed.also { expiredConfirmed = false }
                 when {
                     next != null -> state.compareAndSet(RestoreStep.Idle, next)
                     chosen != null -> choose(chosen)
+                    forgotten -> state.compareAndSet(RestoreStep.Idle, RestoreStep.Failed)
                 }
             }
         }

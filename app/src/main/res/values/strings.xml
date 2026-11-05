@@ -911,7 +911,7 @@
     <string name="reset_pending_ordering">Orden de categorías: Más usadas, de mayor a menor</string>
     <string name="reset_pending_investments">Inversiones: Pesos (COP), Mayor valor</string>
     <string name="reset_pending_action">Restablecer preferencias</string>
-    <string name="reset_pending_note">Solo se cambiarán estas preferencias. No se borrará nada más.</string>
+    <string name="reset_pending_note">Solo se cambian preferencias; tus datos ya se borraron.</string>
     <string name="backup_title">Respaldo</string>
     <string name="backup_last">Último respaldo</string>
     <string name="backup_none">Aún no has creado ningún respaldo.</string>

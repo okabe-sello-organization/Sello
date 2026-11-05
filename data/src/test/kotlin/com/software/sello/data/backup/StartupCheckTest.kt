@@ -24,12 +24,12 @@ class StartupCheckTest {
     }
 
     @Test
-    fun aNewerFinanceTrackerFileIsStillNamedForWhatItIs() {
+    fun aNewerFinanceTrackerFileIsNamedNewerAsRespaldoNamesItAndPromisesNoImport() {
         val newer = """{"version": 3, "exportedAt": "2026-10-25 14:01", "preferences": {},
             |"categories": [], "expenses": [], "income": []}
         """.trimMargin().toByteArray()
 
-        assertEquals(RestoreRejection.FinanceTrackerFile, check(newer))
+        assertEquals(RestoreRejection.NewerVersion, check(newer))
     }
 
     @Test
