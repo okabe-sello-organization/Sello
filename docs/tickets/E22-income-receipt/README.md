@@ -14,7 +14,7 @@ and its tear-off stub ("Talón") from the concepts reviewed in conversation, the
   [ADR 0012](../../decisions/0012-budget-guidance-contract.md) BG4 stays as it is. The
   slip takes off spending categories, not Metas or Inversiones.
 - The slip replaces the three receipt lines (Ingresos anotados, Ingresos menos gastos,
-  Sin asignar a categorías) and the two links of the [v2 Resumen](../../design/v2/README.md#resumen).
+  Sin asignar a categorías) and the two links of the [v2 Resumen](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md#resumen).
   Sin asignar stays on the income screen, where it is explained.
 - The stub's halves are centred (owner, after trying it on the phone).
 - After SELLO-123 merged (2026-10-26): "¿Dónde se va?" and the income slip answered the

@@ -11,7 +11,7 @@
 
 - Each line of Aportar varios picks its goal, and each line of Varios movimientos its
   investment, from chips as Anotar varios picks categories. This replaces "one goal" and
-  "one investment" in the [Anotar varios design](../../design/v2/README.md#anotar-varios)
+  "one investment" in the [Anotar varios design](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md#anotar-varios)
   locked on 2026-10-30 ([E23](../E23-bulk-entry/README.md)).
 - Saving stays all or nothing with one operation ID per receipt, now across several goals
   or investments. A goal or investment that changed meanwhile asks to review and save

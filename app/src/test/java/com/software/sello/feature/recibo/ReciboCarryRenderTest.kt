@@ -24,10 +24,10 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 /**
- * Recibo once a category carries (ADR 0020 CP14–CP16, CP27; docs/design/v2/arrastre.html):
- * the month's breakdown, the carrying cells, why a verdict is Excedido, the closed month and
- * a carry that cannot be calculated. Figures are copied from
- * docs/testing/signed-carryover-examples.md; nothing here works one out.
+ * Recibo once a category carries (ADR 0020 CP14–CP16, CP27;
+ * docs/design/system/features/recibo.html#screen-recibo): the month's breakdown, the carrying
+ * cells, why a verdict is Excedido, the closed month and a carry that cannot be calculated. Figures
+ * are copied from docs/testing/signed-carryover-examples.md; nothing here works one out.
  */
 class ReciboCarryRenderTest {
     private val labels = object : MoneyLabels {

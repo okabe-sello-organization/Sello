@@ -146,7 +146,7 @@ class ExpenseEntryGeometryTest {
         state = one
         rule.waitForIdle()
 
-        // v2: the action sits on the pad, not under it.
+        // The action sits on the pad, not under it.
         assertEquals(8f, bounds(ENTRY_KEYPAD_TAG).top - bounds(ENTRY_SUBMIT_TAG).bottom, 0.5f)
     }
 

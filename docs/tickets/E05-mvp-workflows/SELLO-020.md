@@ -45,7 +45,7 @@ cannot accidentally select archived categories. Update related catalog examples.
 Users need to maintain categories without losing source history or rewriting past
 budgets. Inputs are actual category ports from SELLO-013, current detail SELLO-018
 and approved D04/D05/D07. Read
-[category editor](../../design/sello-spec.html#s-catform) and archive/budget example H01.
+[category editor](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-catform) and archive/budget example H01.
 
 ### Implementation plan
 1. Reuse category editor controls but distinguish create/edit/month-limit mode;

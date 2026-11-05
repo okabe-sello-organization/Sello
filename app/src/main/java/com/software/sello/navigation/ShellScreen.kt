@@ -198,7 +198,7 @@ fun ShellScreen(
                 content = detail.content
             )
         } else {
-            // A tab gets the v2 month bar; a pushed screen keeps its titled bar and back arrow.
+            // A tab gets the month bar; a pushed screen keeps its titled bar and back arrow.
             val tab = screenTitle == null && onBack == null
             val bar = monthBarLabel(state, names)
             SelloScaffold(

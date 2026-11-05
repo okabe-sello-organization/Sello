@@ -3,6 +3,7 @@
 **Owner:** project owner (user) · **Updated:** 2026-10-16
 **Status:** approved product direction; implementation and some financial rules
 remain pending. [ADR 0013](0013-sello-v2-design.md) owns the final v2 screen choices.
+Since 2026-11-05 the design source is [ADR 0026](0026-design-system-from-the-built-app.md).
 
 Sello helps people build a realistic, predictable budget and reach personal goals.
 Spending less is not a universal measure of success. The working motto is
@@ -57,7 +58,7 @@ Later inputs include recurrence lifecycle, featured-goal ties/invalid selections
 early-month review-invitation timing,
 goal corrections and recovery of milestone events, and investment ledger,
 return-period, dividend and FX policies. The
-[screen briefs](../design/screen-briefs/README.md) hold the feature-specific questions.
+[screen briefs](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/screen-briefs/README.md) hold the feature-specific questions.
 
 This direction introduces no daily category caps, universal savings target,
 automatic reallocation or bank verification. Exact money, budget history,

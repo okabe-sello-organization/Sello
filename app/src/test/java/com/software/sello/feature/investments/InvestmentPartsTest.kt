@@ -53,7 +53,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
-/** The Inversiones parts SELLO-109 extends (docs/design/v2/gaps/inversiones.md). */
+/**
+ * The Inversiones parts SELLO-109 extends
+ * (docs/design/system/features/investments.html#components).
+ */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class InvestmentPartsTest {

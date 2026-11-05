@@ -25,9 +25,9 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Revisiting Metas, a completed goal's LOGRADA comes down as its row appears (v2
- * celebrations). It is a revisit, not a new result: no haptic, and reduced motion shows
- * the stamp already at rest.
+ * Revisiting Metas, a completed goal's LOGRADA comes down as its row appears
+ * (docs/design/system/features/goals.html). It is a revisit, not a new result: no haptic, and
+ * reduced motion shows the stamp already at rest.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

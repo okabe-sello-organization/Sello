@@ -53,11 +53,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Nueva inversión and Editar inversión as they are drawn (v2 *Agregar / editar
- * inversión*, *Dólares y la tasa*): the currency only when creating, the rate slip only
- * for dollars with no rate, Crear waiting for it, deletion counting the movements, and
- * the longest name and largest amounts whole on narrow and wider
- * windows in all four themes.
+ * Nueva inversión and Editar inversión as they are drawn
+ * (docs/design/system/features/investments.html): the currency only when creating, the rate slip
+ * only for dollars with no rate, Crear waiting for it, deletion counting the movements, and the
+ * longest name and largest amounts whole on narrow and wider windows in all four themes.
  */
 @RunWith(AndroidJUnit4::class)
 class InvestmentEditorScreenTest {

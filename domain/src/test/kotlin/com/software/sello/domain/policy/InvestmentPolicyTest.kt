@@ -126,7 +126,7 @@ class InvestmentPolicyTest {
 
     private fun pierde(tenths: Long) = InvestmentReturn(GainDirection.Loss, tenths)
 
-    // The four investments of the v2 page (IN02–IN05).
+    // The four investments of the investment examples (IN02–IN05).
     private fun parqueadero() = Recorder("Parqueadero").apply {
         aporte(18_000_000, "2025-03-10")
         valor(18_000_000, "2025-03-10")

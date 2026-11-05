@@ -121,7 +121,7 @@ class ExpenseEntryScreenTest {
         rule.onNodeWithText("Escribe un monto.").assertDoesNotExist()
         rule.onNodeWithTag(ENTRY_MISSING_TAG).assertDoesNotExist()
         rule.onNodeWithTag(ENTRY_SUBMIT_TAG).assertIsNotEnabled()
-        // As in v2, nothing previews the month before saving.
+        // Nothing previews the month before saving.
         rule.onNodeWithText("Vista previa, si lo anotas").assertDoesNotExist()
     }
 

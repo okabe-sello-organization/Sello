@@ -122,12 +122,13 @@ sealed interface CatchUpCarry {
 }
 
 /**
- * The notice after catching up (recurrence-examples rule 14; docs/design/v2/fijos.html):
- * every entry catch-up recorded since the person last pressed Listo, across runs, each
- * opening its edit. It is derived from the entries themselves, so one deleted meanwhile
- * leaves it, and only how far Listo reached is kept: the latest stamp it showed, on the
- * audit clock that stamps them. A long catch-up is listed in bounded parts, earliest
- * recorded first (SELLO-165): the rest shows after Listo, and none is marked seen unseen.
+ * The notice after catching up (recurrence-examples rule 14;
+ * docs/design/system/features/recurrence.html#notice-catch-up): every entry catch-up recorded since
+ * the person last pressed Listo, across runs, each opening its edit. It is derived from the entries
+ * themselves, so one deleted meanwhile leaves it, and only how far Listo reached is kept: the
+ * latest stamp it showed, on the audit clock that stamps them. A long catch-up is listed in bounded
+ * parts, earliest recorded first (SELLO-165): the rest shows after Listo, and none is marked seen
+ * unseen.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CatchUpNoticeViewModel(

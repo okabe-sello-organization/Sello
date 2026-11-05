@@ -10,13 +10,13 @@
 The recurrence screens v2 does not show are designed and locked with the owner, like the other v2 pages, before any of them is built.
 
 ### Deliverables
-v2 pages in `docs/design/v2/` for the list of schedules and its editor (create, change, pause, resume, end, delete), the list of upcoming payments that Recibo's footnote opens, and the notice and list after catching up, each with its states; their section in the [v2 README](../../design/v2/README.md) marked locked; new parts added to `components.html` as Exists, Extend or New.
+v2 pages in [`docs/design/v2/`](https://github.com/okabe-sello-organization/Sello/tree/90662770/docs/design/v2) for the list of schedules and its editor (create, change, pause, resume, end, delete), the list of upcoming payments that Recibo's footnote opens, and the notice and list after catching up, each with its states; their section in the [v2 README](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md) marked locked; new parts added to `components.html` as Exists, Extend or New.
 
 ### Acceptance criteria
 - Every screen shows its default, empty, loading, failed-read, large-text and dark states with synthetic figures that follow SELLO-096's approved examples.
 - The pages settle where schedules are reached from and how one is created: on its own screen, or with a **Se repite** control in the locked v2 entry.
 - Editing a recorded occurrence is settled: on its own only, or also "from now on" for its schedule, as v1.1's "Solo este" / "Este y los siguientes".
-- Each page reuses the existing parts the [gap list](../../design/v2/gaps/recurrence.md) names and says what is new and why.
+- Each page reuses the existing parts the [gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/recurrence.md) names and says what is new and why.
 - The owner locks each page; rejected options are recorded, as for the other v2 pages.
 
 ### Tests
@@ -26,7 +26,7 @@ Owner review of the pages; the link check; G1.
 SELLO-100, SELLO-101 and SELLO-103 can be built from locked pages.
 
 ### Context and starting points
-The [gap list](../../design/v2/gaps/recurrence.md) (owner decision, 2026-10-24, one design pass for the three); v1.1 *Lo que se repite* in the [v1.1 snapshot](../../design/sello-spec.html); [ADR 0017](../../decisions/0017-goals-recurrence-investments.md); the v2 pages' `kit.js` and `sello.css`. The earlier SELLO-100 text placed the list in Configuración and an entry's detail; v1.1 placed it in Resumen and Configuración.
+The [gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/recurrence.md) (owner decision, 2026-10-24, one design pass for the three); v1.1 *Lo que se repite* in the [v1.1 snapshot](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html); [ADR 0017](../../decisions/0017-goals-recurrence-investments.md); the v2 pages' `kit.js` and `sello.css`. The earlier SELLO-100 text placed the list in Configuración and an entry's detail; v1.1 placed it in Resumen and Configuración.
 
 ### Implementation plan
 1. Draft the pages from v1.1 and the existing v2 parts.
@@ -50,7 +50,7 @@ Focused tests, then `./scripts/verify-ticket SELLO-114 --retain`.
   siguientes**; the notice is a bar above Anotar that opens a list and stays until
   **Listo**; RE29's Revisar sentence is "Pasaste tu límite por 80.000 y tus pagos previstos
   suman 200.000."
-- **Pages:** `docs/design/v2/fijos.html` (Se repite and its rule sheet, the list, changing,
+- **Pages:** [`docs/design/v2/fijos.html`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/fijos.html) (Se repite and its rule sheet, the list, changing,
   pausing and deleting, editing a recorded entry, upcoming payments, the notice and its
   list, where schedules are reached from), each screen with default, empty, loading,
   failed-read, large-text and dark frames; Recibo gains RE29 and the notice as states.

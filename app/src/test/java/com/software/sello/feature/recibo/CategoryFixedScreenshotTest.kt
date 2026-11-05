@@ -21,9 +21,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Category detail with its fixed payments (SELLO-135, docs/design/v2/categoria-fijos.html),
- * kept as committed images (ADR 0022). Hogar on jue 22 oct 2026: 1.500.000 limit,
- * 950.000 spent, Internet and Servicios públicos (290.000) still to come.
+ * Category detail with its fixed payments (SELLO-135,
+ * docs/design/system/features/category.html#screen-fixed), kept as committed images (ADR 0022).
+ * Hogar on jue 22 oct 2026: 1.500.000 limit, 950.000 spent, Internet and Servicios públicos
+ * (290.000) still to come.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

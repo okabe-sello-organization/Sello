@@ -38,7 +38,7 @@ a new income saved there appears in it.
 ### Context and starting points
 Today: "5. Income history" and "7. Income entry and edit" in the current app
 inventory; the allocated and unallocated figures already exist for Resumen. Reference:
-`docs/design/v2/income.html`, "Income" in the v2 README and the catalog examples.
+[`docs/design/v2/income.html`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/income.html), "Income" in the v2 README and the catalog examples.
 
 ### Implementation plan
 1. Move income entry onto the SELLO-070 form with the green tone.

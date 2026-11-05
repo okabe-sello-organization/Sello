@@ -5,12 +5,10 @@ a deliberately smaller, tested MVP and the Sello visual language.
 
 ## Start here
 
-- [Sello v2 design](docs/design/v2/README.md): the locked screens and shared
-  components, the visual source of truth ([ADR 0013](docs/decisions/0013-sello-v2-design.md)).
+- [Design system](docs/design/system/index.html): foundations, components and every
+  feature as built, the visual source of truth ([ADR 0026](docs/decisions/0026-design-system-from-the-built-app.md)).
 - [Design philosophy](docs/design/philosophy.md): the purpose, working motto and
   principles for new screens, with [superseded decisions and transition](docs/decisions/0011-goal-centered-design.md).
-- [Screen and interaction briefs](docs/design/screen-briefs/README.md): the product
-  intent and open policy behind each v2 screen.
 - [Architecture and guardrails](ARCHITECTURE.md): ownership, financial/recovery
   contracts, technologies, MVP scope and developer tooling requirements.
 - [Tickets](docs/tickets/README.md): one folder per ticket with its handoff;
@@ -37,7 +35,7 @@ a deliberately smaller, tested MVP and the Sello visual language.
   money, write, read, screen and test rules, with Metas as the example.
 - [Quality gates](docs/development/quality-gates.md): `scripts/check`, the gates and
   what CI runs.
-- [Design references](docs/design/README.md): Sello v2, the v1.1 snapshot and provenance.
+- [Design references](docs/design/README.md): the design system, the philosophy and what owns money rules.
 
 The app has four tabs: Recibo, Resumen, Metas and Inversiones. It records expenses and
 incomes in COP (investments also in USD), with categories and monthly limits, fixed

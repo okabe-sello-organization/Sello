@@ -9,8 +9,8 @@
 
 **Owner direction (2026-10-23):** E13 built only what existing data supports and left
 these for separate tickets. Decisions for their open points are in [ADR 0017](../../decisions/0017-goals-recurrence-investments.md); the
-rest of each rule is in the [v2 README](../../design/v2/README.md) and the
-[Resumen and income brief](../../design/screen-briefs/summary-and-income.md).
+rest of each rule is in the [v2 README](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md) and the
+[Resumen and income brief](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/screen-briefs/summary-and-income.md).
 
 **Owner decision (2026-10-23):** SELLO-080, SELLO-081 and SELLO-082 were built before
 the SELLO-079 audit, in owner-directed design work on the running app, and are

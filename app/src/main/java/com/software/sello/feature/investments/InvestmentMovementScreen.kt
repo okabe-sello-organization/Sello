@@ -67,7 +67,7 @@ fun InvestmentMovementRoot(
     InvestmentMovementScreen(state, severalOffered = onSeveral != null, onAction = model::onAction)
 }
 
-/** The kinds in the order the chips offer them (v2 `TYPES`). */
+/** The kinds in the order the chips offer them. */
 private val Kinds = listOf(
     InvestmentMovementKind.Contribution,
     InvestmentMovementKind.Valuation,
@@ -94,10 +94,10 @@ private val MoneyTextValue.written: String
     get() = if (symbol.isEmpty()) digits else "$symbol $digits"
 
 /**
- * Anotar movimiento (v2 Inversiones): the entry screen's layout with one row of type
- * chips above one row of investment chips, the amount in the investment's currency with
- * the type's sign, one plain fact, the date pill and the note, and the ink action.
- * Correcting a movement uses the same form with Borrar; its type and investment are fixed.
+ * Anotar movimiento (docs/design/system/features/investments.html): the entry screen's layout with
+ * one row of type chips above one row of investment chips, the amount in the investment's currency
+ * with the type's sign, one plain fact, the date pill and the note, and the ink action. Correcting
+ * a movement uses the same form with Borrar; its type and investment are fixed.
  */
 @Composable
 fun InvestmentMovementScreen(

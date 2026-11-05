@@ -429,7 +429,7 @@ private fun Movements(
                 }
             )
             MovementRow(
-                // A note names the movement better than its kind (v2 movements, 2026-11-02).
+                // A note names the movement better than its kind (owner, 2026-11-02).
                 title = movement.note ?: kind,
                 detail = movement.note?.let {
                     stringResource(R.string.goal_movement_kind_day, kind, day)

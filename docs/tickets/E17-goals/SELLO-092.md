@@ -11,7 +11,7 @@ Crossing 25/50/75 % earns a stamp with a modest celebration; reaching 100 % offe
 
 ### Deliverables
 Milestone detection, celebrations with reduced-motion equivalents, completion with a 10-second Deshacer.
-Reuses `MilestonePlace` landing, `StampTicket`, `ReachedRow` and `CelebrationOverlay` ([gap list](../../design/v2/gaps/metas.md)); adds the kept stamp's relight and the 10-second Deshacer, longer with TalkBack.
+Reuses `MilestonePlace` landing, `StampTicket`, `ReachedRow` and `CelebrationOverlay` ([gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/metas.md)); adds the kept stamp's relight and the 10-second Deshacer, longer with TalkBack.
 
 ### Acceptance criteria
 - Stamps follow the approved examples, including faded stamps after a withdrawal or target change.

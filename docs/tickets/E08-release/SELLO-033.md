@@ -37,7 +37,7 @@ broken by layout/accessibility fixes.
 ### Context and starting points
 Component-level previews cannot prove complete forms/navigation usable on actual
 devices. Inputs are completed daily-use routes, approved D10 matrix and the catalog.
-Read [Sello v2](../../design/v2/README.md) (large text, reduced motion, exact spoken amounts), the v1.1 [a11y](../../design/sello-spec.html#a11y) section, adaptive/navigation guidance and
+Read [Sello v2](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md) (large text, reduced motion, exact spoken amounts), the v1.1 [a11y](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#a11y) section, adaptive/navigation guidance and
 [process-restoration procedure](../../development/execution-guide.md#device-and-process-restoration).
 
 From SELLO-E12 (2026-10-16): the journeys include the v2 Recibo delivered by

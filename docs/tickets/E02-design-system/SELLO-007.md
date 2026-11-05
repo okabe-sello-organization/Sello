@@ -32,7 +32,7 @@ No component depends on domain/entity types or performs a financial write.
 
 ### Context and starting points
 These primitives make financial UI and errors consistent before entry screens exist.
-Read [paper/money/stamps](../../design/sello-spec.html#c-slip), architecture §6,
+Read [paper/money/stamps](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#c-slip), architecture §6,
 the Money policy/tests from SELLO-010 and tokens from SELLO-006.
 Shared application formatting and design-system rendering have different owners.
 

@@ -41,7 +41,7 @@ data class FieldMessage(val text: String, val tone: FieldTone = FieldTone.Error)
     val isError: Boolean get() = tone == FieldTone.Error
 }
 
-/** The shared look of a [FieldMessage], as the v2 entry's save message. Announced when it appears. */
+/** The shared look of a [FieldMessage], as the entry's save message. Announced when it appears. */
 @Composable
 fun FieldMessageText(message: FieldMessage, modifier: Modifier = Modifier) {
     val colors = SelloTheme.colors

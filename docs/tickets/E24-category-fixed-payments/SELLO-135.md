@@ -31,5 +31,5 @@ and the category's other fixed payments.
 - The category's figures and the month's reservation come from the same read and revision.
 
 ### Notes
-Design: [categoria-fijos.html](../../design/v2/categoria-fijos.html). The rule amends
+Design: [categoria-fijos.html](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/categoria-fijos.html). The rule amends
 [ADR 0015](../../decisions/0015-category-detail-insights.md).

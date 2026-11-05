@@ -31,7 +31,7 @@ Inputs are locally interactive in catalog without a repository or fake saving se
 
 ### Context and starting points
 Expense and income must share controls without sharing an unsafe universal form.
-Inputs are defined at [keypad](../../design/sello-spec.html#c-amountkeypad) and
+Inputs are defined at [keypad](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#c-amountkeypad) and
 the following input components. Use SELLO-010 validators and approved D05 field
 limits, not invented max digits/note lengths.
 

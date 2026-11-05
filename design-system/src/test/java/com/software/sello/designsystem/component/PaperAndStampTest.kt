@@ -102,7 +102,7 @@ class PaperAndStampTest {
     @Test
     fun leaderAndAmountSitOnTheLabelsFirstLineNotTheMiddleOfTheRow() = leaderOnLabel()
 
-    // v1.1 `.ln`: the row aligns on its first baseline, so the amount shares the label's
+    // The row aligns on its first baseline, so the amount shares the label's
     // line and the dots run 5 px above it (`.ld`: 2 px border raised 4 px), however tall
     // the date under the label makes the row.
     private fun leaderOnLabel() {

@@ -120,7 +120,7 @@ and `CommandRunTest.kt`; a feature's contract test (`GoalCommandContractTest`) c
   with its own screenshot test.
 - **Themes.** A theme is data. To add one, follow the recipe in
   [layout-and-charts](layout-and-charts.md#themes); never branch on a theme in a screen.
-- **Look and layout.** Follow the design, [Sello v2](../design/v2/README.md); a mock
+- **Look and layout.** Follow the design, the [design system](../design/system/index.html); a mock
   for approval only when the design doesn't cover the change (AGENTS.md). Reduced motion and tablet/landscape are
   separate tasks unless the ticket asks.
 

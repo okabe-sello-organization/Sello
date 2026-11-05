@@ -107,7 +107,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The v2 entry design's tones (docs/design/v2/sello.css `.save-msg.warn`, `.entry-mid h3`):
+ * The entry tones (docs/design/system/features/expense.html):
  * an unknown outcome is said in the amber warning ink, never in error red (#289, #332), and
  * a form's section headings are in the softer ink, never the theme's ink (#349). Checked
  * by the pixels each draws, in all four themes.

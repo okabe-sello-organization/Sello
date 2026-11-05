@@ -37,7 +37,7 @@ debug data. Extend applicable catalog states and sandbox command scripts.
 ### Context and starting points
 Income powers Resumen but is not a refund/account-transfer classifier. Use the
 operation/undo contracts from SELLO-012/019, entry controls and approved source keys
-(D05). Read [income](../../design/sello-spec.html#s-ingresos), Anotar and I01.
+(D05). Read [income](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-ingresos), Anotar and I01.
 There is no bank/capture import to reinterpret as income.
 
 ### Implementation plan

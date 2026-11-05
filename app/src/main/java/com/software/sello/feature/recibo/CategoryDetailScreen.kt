@@ -509,7 +509,7 @@ private fun ExpenseList(
                 },
                 onClick = onShowAllExpenses,
                 kind = ButtonKind.Text,
-                // Ends at the slip's content edge, over the amounts, as in v1.1.
+                // Ends at the slip's content edge, over the amounts.
                 contentPadding = PaddingValues(start = SelloTheme.spacing.md),
                 modifier = Modifier.testTag(CATEGORY_DETAIL_MORE_TAG)
             )

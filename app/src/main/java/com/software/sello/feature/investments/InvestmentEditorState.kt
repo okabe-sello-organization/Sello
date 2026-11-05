@@ -55,11 +55,12 @@ sealed interface InvestmentEditorResult {
 }
 
 /**
- * Nueva inversión and Editar inversión (v2 *Agregar / editar inversión*, *Dólares y la
- * tasa*). [name] and [description] are exactly what was typed; [firstContribution],
- * [otherValue] and [rate] are what the pad built, null before any key (empty is not
- * zero). [firstReady], [valueReady] and [rateReady] say whether each figure is one that
- * can be saved. [rateNeeded] is a dollar investment while no rate exists (rule 12).
+ * Nueva inversión and Editar inversión
+ * (docs/design/system/features/investments.html#screen-editor). [name] and [description] are
+ * exactly what was typed; [firstContribution], [otherValue] and [rate] are what the pad built, null
+ * before any key (empty is not zero). [firstReady], [valueReady] and [rateReady] say whether each
+ * figure is one that can be saved. [rateNeeded] is a dollar investment while no rate exists (rule
+ * 12).
  */
 @Immutable
 data class InvestmentEditorState(

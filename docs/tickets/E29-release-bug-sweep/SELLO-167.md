@@ -12,7 +12,7 @@ red, and the goal movement's past-date refusal has its own wording.
 
 ### Acceptance criteria
 - `FieldMessage` gains the warning tone of the v2 entry design and the Anotar varios
-  mock (`docs/design/v2/varios.html`, `save-msg warn`); every single and bulk entry
+  mock ([`docs/design/v2/varios.html`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/varios.html), `save-msg warn`); every single and bulk entry
   screen uses it for the unknown outcome. Screenshot baselines updated; before and
   after in the pull request.
 - A goal movement's `LineInvalidDate` refusal no longer uses the future-date wording.
@@ -21,7 +21,7 @@ red, and the goal movement's past-date refusal has its own wording.
   guardó** in the button's place for an unknown outcome), and the full expense list's
   delete-problem slips get a delete-specific title (orchestrator ruling, #332).
 - Entry and movement forms' section headings follow the approved v2 design (uppercase,
-  `--soft` ink, as `docs/design/v2/sello.css` `.entry-mid h3` draws them) on every entry
+  `--soft` ink, as [`docs/design/v2/sello.css`](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/sello.css) `.entry-mid h3` draws them) on every entry
   and movement form, in all four themes (orchestrator ruling, #349).
 - One rule app-wide: every unknown-outcome message ("Aún no sabemos / No sabemos si se
   guardó/borró…") uses the warning tone wherever it is drawn in an error tone, and an

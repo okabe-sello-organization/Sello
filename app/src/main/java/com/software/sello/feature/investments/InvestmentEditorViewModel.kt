@@ -350,7 +350,10 @@ class InvestmentEditorViewModel(
         } ?: InvestmentField.First
     }
 
-    /** Whether [field] is typed with the comma: dollars and the rate (v2 *Dólares y la tasa*). */
+    /**
+     * Whether [field] is typed with the comma: dollars and the rate
+     * (docs/design/system/features/investments.html).
+     */
     private fun decimal(field: InvestmentField, currency: Currency) =
         field == InvestmentField.Rate || currency == Currency.USD
 

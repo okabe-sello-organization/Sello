@@ -7,9 +7,9 @@
 
 Read [ADR 0012](../../decisions/0012-budget-guidance-contract.md),
 [ADR 0013](../../decisions/0013-sello-v2-design.md), the
-[v2 README](../../design/v2/README.md#recibo--home), the
-[v2 Recibo mockup](../../design/v2/home.html) (its "Today's scope" state shows
-the MVP) and the [Home brief](../../design/screen-briefs/home.md). D01 keeps
+[v2 README](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md#recibo--home), the
+[v2 Recibo mockup](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/home.html) (its "Today's scope" state shows
+the MVP) and the [Home brief](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/screen-briefs/home.md). D01 keeps
 v2 as presentation guidance only: goals, recurrence and reservations are not MVP,
 so the goal pill, "Llegó al 100 %" row, reserved-payment footnote, **Sin margen**
 and **Revisar** are out of this epic and must not appear as placeholders.

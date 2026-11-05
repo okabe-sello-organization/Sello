@@ -11,7 +11,7 @@
 steps it takes to bring the app up to date.
 
 - Goals and investments get the same way in as expenses and incomes: the Varios pill on
-  their entry sheets, with no new design; the [Anotar varios](../../design/v2/varios.html)
+  their entry sheets, with no new design; the [Anotar varios](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/varios.html)
   pill and receipts are reused as they are.
 - The expense and income receipt loses its Gasto/Ingreso switch: where it opens from sets
   its kind for good. To change kind, the person closes it and opens the other one. This

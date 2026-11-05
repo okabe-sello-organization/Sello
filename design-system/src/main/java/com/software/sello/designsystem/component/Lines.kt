@@ -215,7 +215,7 @@ private fun LeaderLayout(
         val leader = measurables[1].measure(
             androidx.compose.ui.unit.Constraints.fixed(leaderWidth, 2.dp.roundToPx())
         )
-        // Like v1.1 `.ln`, the row sits on the label's first baseline: the value shares
+        // The row sits on the label's first baseline: the value shares
         // that line and the dots run just above it, even with a caption under the label.
         val startBaseline = startPlaceable[FirstBaseline]
             .takeIf { it != AlignmentLine.Unspecified } ?: (startPlaceable.height / 2)
@@ -249,5 +249,5 @@ private val LeaderGap = 6.dp
 
 private val LeaderMinWidth = 12.dp
 
-/** Centre of the dots above the baseline: v1.1's 2 px border raised 4 px. */
+/** Centre of the dots above the baseline: a 2 px border raised 4 px. */
 private val LeaderRise = 5.dp

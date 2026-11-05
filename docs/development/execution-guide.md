@@ -16,9 +16,9 @@ For the shape of a new feature and its tests, read the [feature guide](feature-g
    adapter just to unblock yourself. Ready work still requires its listed approvals.
 3. Make an acceptance-to-change/test checklist and identify owned files before
    editing. Prefer the established names and packages below to new ones.
-4. For UI work, open [Sello v2](../design/v2/README.md) and its
-   [component catalog](../design/v2/components.html). A ticket's v1.1 anchors apply
-   only to screens v2 does not show (ADR 0013). Never infer money from mockup figures.
+4. For UI work, open the [design system](../design/system/index.html) and its
+   [components catalog](../design/system/components.html) (ADR 0026). Never infer money
+   from the figures in its screenshots.
 5. Use the [setup](setup.md) and
    [toolchain decision](../decisions/0005-toolchain.md). Record unavailable
    devices/keys/approvals as blockers where acceptance requires them; never waive

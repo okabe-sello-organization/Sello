@@ -33,7 +33,7 @@ Catalog remains independently usable; G2 passes.
 ### Context and starting points
 Navigation and month state otherwise become scattered per-screen globals. Use the
 clock ownership from SELLO-005 and adaptive primitives from SELLO-009. Read
-[global structure](../../design/sello-spec.html#navigation), architecture §6 and
+[global structure](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#navigation), architecture §6 and
 [restoration procedure](../../development/execution-guide.md#device-and-process-restoration).
 
 ### Implementation plan

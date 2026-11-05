@@ -27,7 +27,7 @@ import com.software.sello.designsystem.theme.SelloTheme
 enum class ButtonKind { Filled, Outlined, Text }
 
 /**
- * Optional v2 action ink; the default preserves existing consumers. OnBand is for a
+ * Optional action ink; the default preserves existing consumers. OnBand is for a
  * [ButtonKind.Text] action on a coloured band, such as an entry form's Borrar; it is not
  * for a filled button, which would take the tabs' band as its text whatever the band.
  */

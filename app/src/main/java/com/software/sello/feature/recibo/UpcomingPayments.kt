@@ -89,8 +89,8 @@ sealed interface UpcomingState {
 }
 
 /**
- * Pagos previstos (docs/design/v2/fijos.html): the payments the month in progress
- * reserves, from the same snapshot as Recibo's footnote, so the two always agree.
+ * Pagos previstos (docs/design/system/features/recibo.html#screen-upcoming): the payments the month
+ * in progress reserves, from the same snapshot as Recibo's footnote, so the two always agree.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class UpcomingPaymentsViewModel(

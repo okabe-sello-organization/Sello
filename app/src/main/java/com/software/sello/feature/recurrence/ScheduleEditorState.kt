@@ -47,9 +47,10 @@ enum class ScheduleEditorError {
 }
 
 /**
- * One schedule being changed, in the entry's layout (docs/design/v2 Pagos e ingresos
- * fijos). [income] says which kind it is; a payment stays a payment. [start] is the day
- * a changed rule starts from: the stored start while the rule is unchanged.
+ * One schedule being changed, in the entry's layout
+ * (docs/design/system/features/recurrence.html#screen-editor). [income] says which kind it is; a
+ * payment stays a payment. [start] is the day a changed rule starts from: the stored start while
+ * the rule is unchanged.
  */
 data class ScheduleEditorState(
     val loading: Boolean = true,

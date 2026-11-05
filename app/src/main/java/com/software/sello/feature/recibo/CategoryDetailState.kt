@@ -72,7 +72,7 @@ data class DetailSchedule(
     val amount: MoneyTextValue
 )
 
-/** Pagos fijos on category detail (docs/design/v2/categoria-fijos.html). */
+/** Pagos fijos on category detail (docs/design/system/features/category.html#screen-fixed). */
 sealed interface DetailFixedState {
     /** A month that is over, or a category none of whose payments repeat. */
     data object Hidden : DetailFixedState

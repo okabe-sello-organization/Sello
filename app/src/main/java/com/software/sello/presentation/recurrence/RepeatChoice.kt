@@ -8,7 +8,7 @@ import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.SchedulePolicy
 import java.time.LocalDate
 
-/** The four ways Se repite offers (docs/design/v2 Pagos e ingresos fijos). */
+/** The four ways Se repite offers (docs/design/system/features/recurrence.html#sheet-repeat). */
 enum class RepeatKind { Monthly, TwiceMonthly, Weeks, Days }
 
 /**

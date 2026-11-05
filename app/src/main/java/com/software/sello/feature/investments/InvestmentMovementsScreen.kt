@@ -68,7 +68,7 @@ fun InvestmentMovementsRoot(viewModels: ViewModelProvider.Factory, onClosed: () 
     InvestmentMovementsScreen(state, model::onAction)
 }
 
-/** The types in the order the single movement offers them (v2 `TYPES`). */
+/** The types in the order the single movement offers them. */
 private val Kinds = listOf(
     InvestmentMovementKind.Contribution,
     InvestmentMovementKind.Valuation,
@@ -104,12 +104,12 @@ private val MoneyTextValue.written: String
     get() = if (symbol.isEmpty()) digits else "$symbol $digits"
 
 /**
- * Varios movimientos (v2 *Anotar varios*, the investments' receipt): ✕ with the title; the
- * receipt taking the free height, each line with its investment, its type, date and note
- * under it, and its amount in that investment's currency; the investment and type chips and
- * the note of the highlighted line; the ink action; the pad, with the comma while the line
- * is in dollars. The foot says **Aportado**: aportes − retiros, in pesos at today's rate
- * when COP and USD lines mix, or each currency's part when there is no rate.
+ * Varios movimientos (docs/design/system/features/bulk.html, the investments' receipt): ✕ with the
+ * title; the receipt taking the free height, each line with its investment, its type, date and note
+ * under it, and its amount in that investment's currency; the investment and type chips and the
+ * note of the highlighted line; the ink action; the pad, with the comma while the line is in
+ * dollars. The foot says **Aportado**: aportes − retiros, in pesos at today's rate when COP and USD
+ * lines mix, or each currency's part when there is no rate.
  */
 @Composable
 fun InvestmentMovementsScreen(

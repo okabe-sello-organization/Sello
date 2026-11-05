@@ -39,7 +39,7 @@ implemented workflow. Sandbox can now demonstrate real graph growth.
 ### Context and starting points
 Resumen explains actual cash flow and planning allocation; neither is a bank balance.
 Use monthly snapshot contracts from SELLO-014, income history from SELLO-021 and
-chart primitives. Read [Resumen](../../design/sello-spec.html#s-resumen), approved
+chart primitives. Read [Resumen](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-resumen), approved
 scope/examples I01/G01, and architecture §4. Detailed comparisons/records/export are deferred.
 
 ### Implementation plan

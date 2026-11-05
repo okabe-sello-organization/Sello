@@ -98,9 +98,9 @@ fun AdjustBudgetRoot(
 }
 
 /**
- * Ajustar presupuesto (docs/design/v2/ajustar.html): the month's answer with its limit
- * and spending, then every category that explains it. A category opens the limit sheet
- * over the screen; an archived one opens its editor instead.
+ * Ajustar presupuesto (docs/design/system/features/recibo.html#screen-adjust): the month's answer
+ * with its limit and spending, then every category that explains it. A category opens the limit
+ * sheet over the screen; an archived one opens its editor instead.
  */
 @Composable
 fun AdjustBudgetScreen(

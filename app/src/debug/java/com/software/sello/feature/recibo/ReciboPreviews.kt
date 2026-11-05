@@ -11,7 +11,7 @@ import com.software.sello.domain.model.Money
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.ResourceMoneyLabels
 
-/** The answer slip in each state of the v2 Recibo, with one synthetic category. */
+/** The answer slip in each state of Recibo, with one synthetic category. */
 private enum class Answer { Today, Over, NoLimit, Closed }
 
 private fun reciboExample(money: MoneyFormatter, answer: Answer): ReciboState.Month {

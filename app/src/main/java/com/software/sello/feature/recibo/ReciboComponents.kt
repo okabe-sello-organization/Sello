@@ -152,7 +152,7 @@ internal fun CategoryCell(
                     else -> colors.ink
                 }
             )
-            // Under the amount, as in the v2 grid: beside it, it squeezed the amount.
+            // Under the amount, as in the grid: beside it, it squeezed the amount.
             if (carry != null) {
                 MoneyText(
                     value = carry,

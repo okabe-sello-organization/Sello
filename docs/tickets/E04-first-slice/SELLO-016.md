@@ -32,7 +32,7 @@ the next entry screen can use real category IDs.
 ### Context and starting points
 The first category is a real prerequisite for expenses; seed data must not hide an
 unusable fresh install. Use category/limit ports from SELLO-013 and controls from
-SELLO-008. Read [category editor](../../design/sello-spec.html#s-catform) and
+SELLO-008. Read [category editor](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#s-catform) and
 approved D04/D05; use those accepted rules for field bounds and month limits.
 
 ### Implementation plan

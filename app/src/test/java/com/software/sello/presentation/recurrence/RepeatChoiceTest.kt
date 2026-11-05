@@ -10,7 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Se repite's choices (docs/design/v2 Pagos e ingresos fijos) as rules of
+ * Se repite's choices (docs/design/system/features/recurrence.html#sheet-repeat) as rules of
  * docs/testing/recurrence-examples.md. Every expected date was worked out by hand on the
  * 2026 calendar: jue 22 oct, sáb 24 oct, jue 5 nov, lun 30 nov.
  */

@@ -50,10 +50,11 @@ import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.monthNames
 
 /**
- * The Inversiones tab: titled "Inversiones", never a month (v2 page). The **+** and the
- * empty state's dock add an investment ([onAdd]); otherwise the dock is **Anotar
- * movimiento** in ink ([onMove]), distinct from Anotar. Rows open an investment
- * ([onOpen]); the total's rate line opens Dólar ([onOpenRate]).
+ * The Inversiones tab: titled "Inversiones", never a month
+ * (docs/design/system/features/investments.html). The **+** and the empty state's dock add an
+ * investment ([onAdd]); otherwise the dock is **Anotar movimiento** in ink ([onMove]), distinct
+ * from Anotar. Rows open an investment ([onOpen]); the total's rate line opens Dólar
+ * ([onOpenRate]).
  */
 @Composable
 internal fun InversionesDestination(

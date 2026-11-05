@@ -41,9 +41,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Opening after a week (recurrence-examples RE10, rule 14; docs/design/v2/fijos.html),
- * on the sandbox's own data and day: what catch-up recorded since the last Listo is on
- * Recibo's bar, each item opens its edit, and Listo clears it for good.
+ * Opening after a week (recurrence-examples RE10, rule 14;
+ * docs/design/system/features/recurrence.html#notice-catch-up), on the sandbox's own data and day:
+ * what catch-up recorded since the last Listo is on Recibo's bar, each item opens its edit, and
+ * Listo clears it for good.
  */
 @RunWith(AndroidJUnit4::class)
 class CatchUpNoticeJourneyTest {

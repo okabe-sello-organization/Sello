@@ -15,7 +15,7 @@ Examples for each schedule kind (month ends, twice a month vs every 15 days), ca
 ### Acceptance criteria
 - Every ADR 0017 recurrence decision has worked examples with exact dates and amounts.
 - Catch-up bounds and the notice's content are defined.
-- The rules the [gap list](../../design/v2/gaps/recurrence.md) left open are settled with examples: a deleted occurrence is never recorded again; a manual entry is never matched to a schedule; which two days twice a month means; whether catch-up also runs when the financial day changes while Sello is open; what a schedule does when its category is archived; which occurrences count as reserved `Q` and expected `F` (after today, within the selected current month).
+- The rules the [gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/recurrence.md) left open are settled with examples: a deleted occurrence is never recorded again; a manual entry is never matched to a schedule; which two days twice a month means; whether catch-up also runs when the financial day changes while Sello is open; what a schedule does when its category is archived; which occurrences count as reserved `Q` and expected `F` (after today, within the selected current month).
 - The owner approves; open points are listed.
 
 ### Tests

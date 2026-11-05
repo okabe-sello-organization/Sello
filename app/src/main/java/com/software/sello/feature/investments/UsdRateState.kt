@@ -7,7 +7,10 @@ import java.time.LocalDate
 @Immutable
 data class RateModel(val rate: String, val date: LocalDate)
 
-/** Dólar (investment rule 11; v2 *Dólares y la tasa*): the current rate and the earlier ones. */
+/**
+ * Dólar (investment rule 11; docs/design/system/features/investments.html): the current rate and
+ * the earlier ones.
+ */
 sealed interface UsdRateState {
     data object Loading : UsdRateState
 

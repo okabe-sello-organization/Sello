@@ -1,7 +1,7 @@
 # App shell, month session and navigation
 
 **Owner:** SELLO-015 · Rules: [architecture](../../ARCHITECTURE.md) §§2, 6 ·
-Design: [Sello v2](../design/v2/README.md) shells and [components](../design/v2/components.html).
+Design: [shell](../design/system/features/shell.html) and [components](../design/system/components.html).
 
 The frame every screen sits in, and the state that belongs to the whole app instead
 of to one screen. All of it is in `:app`, package `navigation`; every route is declared
@@ -51,12 +51,12 @@ detail screen, then Resumen returns to Recibo, and Back on Recibo leaves the app
 
 `ShellScreen` uses the design system's `SelloScaffold`, which keeps content clear of
 the system bars and hides the dock and tab bar while the keyboard is open. The dock is
-the v2 full-width **+ Anotar** button, read as "Anotar un gasto", and the tab bar is
+the full-width **+ Anotar** button, read as "Anotar un gasto", and the tab bar is
 `SelloNavigationBar`, which marks the selected tab with a `brandSoft` pill behind its icon
 (SELLO-065); in a short or wide window the rail keeps its own "+". Income history
 passes its own dock, **+ Anotar ingreso** (read "Anotar un ingreso"), and its own title,
 "Ingresos de octubre" (SELLO-071); every other screen's dock records an expense. On Recibo
-and Resumen the top bar is the v2 `MonthBar` (SELLO-068): **Octubre** large, a small
+and Resumen the top bar is the `MonthBar` (SELLO-068): **Octubre** large, a small
 **2026** and the chevron; the button keeps the spoken
 "Cambiar de mes. Mes actual: …" label and opens the same picker. Pushed screens with a
 back arrow (Configuración, income history, a category opened on a phone) keep their
@@ -78,7 +78,7 @@ the month the financial clock says is current when it is handled, so a tap just 
 midnight cannot pin the month that has just ended. The ribbon is drawn from the shell's
 selected and current months and keeps nothing of its own: it survives rotation and
 process death with the selection and disappears when the current month is selected,
-including when the month turns. The scaffold draws it on the band under either the v2
+including when the month turns. The scaffold draws it on the band under either the month
 bar or a titled bar, and the band grows with it.
 
 ## What is said about a correction
@@ -109,7 +109,7 @@ leaving the form does.
   "Ingreso borrado. …"), announced when it appears.
 
 After a new expense or income is saved, the form closes and the shell shows the
-approved [v2 save feedback](../design/v2/README.md) in this confirmation look
+[save feedback](../design/system/features/shell.html#screen-notice) in this confirmation look
 (SELLO-066): "Gasto anotado: 48.700 en Comida" or "Ingreso anotado: 150.000", worded
 from the record read back from storage, on whichever screen the form was opened from.
 

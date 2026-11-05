@@ -105,9 +105,9 @@ enum class InvestmentMovementsError {
 }
 
 /**
- * Varios movimientos (v2 *Anotar varios*): movements of one or several investments on one
- * receipt, saved together or not at all. [highlighted] is always a line of [lines], which
- * hold 1 to 30. [removed] is the line just removed while it can still be put back.
+ * Varios movimientos (docs/design/system/features/bulk.html): movements of one or several
+ * investments on one receipt, saved together or not at all. [highlighted] is always a line of
+ * [lines], which hold 1 to 30. [removed] is the line just removed while it can still be put back.
  */
 @Immutable
 data class InvestmentMovementsState(

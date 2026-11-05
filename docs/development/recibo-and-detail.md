@@ -1,8 +1,8 @@
 # Recibo and category detail
 
 Decisions: [D03, D06](../decisions/0001-mvp-contract.md) ·
-Design: [Sello v2 Recibo](../design/v2/home.html); [Detalle de
-categoría](../design/sello-spec.html#s-categoria) (v1.1; not redesigned in v2) ·
+Design: [Recibo](../design/system/features/recibo.html#screen-recibo); [Detalle de
+categoría](../design/system/features/category.html#screen-detail) ·
 Builds on the [monthly snapshot](monthly-snapshot.md), [Anotar](expense-entry.md) and
 the [app shell](app-shell.md).
 
@@ -15,7 +15,7 @@ anything itself.
 `ReciboRenderModel` turns a `SnapshotState` into what both screens draw. It picks the
 sentence, formats the amounts the snapshot already holds and names the verdict:
 
-Recibo's answer slip (the v2 `AnswerSlip`):
+Recibo's answer slip (the [`AnswerSlip`](../design/system/components.html#c-AnswerSlip)):
 
 | Month | With limits | Without any limit |
 | --- | --- | --- |
@@ -48,8 +48,8 @@ lists every category, so the link still helps.
 How full a category's circle is drawn is the only number that is not exact. It is
 geometry: it is never shown as a figure, compared or turned back into money.
 
-The approved [v2 Recibo](../design/v2/home.html) also adds a review invitation early
-in the month; it is not implemented yet.
+[Recibo](../design/system/features/recibo.html#screen-recibo) also shows a review
+invitation early in the month, "Ver cómo cerraste …".
 
 ## Order of the categories
 
@@ -68,7 +68,7 @@ usadas.
 The current task expands the original budget-and-list detail to the reference's
 real category insights. Reading order is **hero → latest expenses → En números →
 Cada semana gastas → Un mes normal aquí**. The owner explicitly changed the
-reference's section order. The immutable v1.1 snapshot is not edited.
+reference's section order.
 
 Latest expenses is a four-row preview with a separate searchable, sortable,
 bounded full list. Editing moves to the toolbar. Exact financial rules and

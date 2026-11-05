@@ -265,7 +265,7 @@ abstract class UiAcceptanceSweep(private val window: Window) {
             val results = mutableListOf<TextLayoutResult>()
             node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
             results.firstOrNull()?.takeIf { it.isCutOff() }?.let { layout ->
-                // The v2 design shortens a category tile's name to one line; its tile
+                // The design shortens a category tile's name to one line; its tile
                 // must still say the whole name to a screen reader.
                 val tile = node.categoryTile()
                 if (tile == null) {

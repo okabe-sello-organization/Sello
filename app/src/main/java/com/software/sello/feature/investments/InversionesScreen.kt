@@ -54,10 +54,10 @@ import com.software.sello.domain.model.InvestmentReturn
 import com.software.sello.presentation.date.DateLabels
 
 /**
- * Inversiones (v2 page, SELLO-109): the value with Gana / Pierde and the signed return,
- * what produced it, when the values were recorded and the rate the total used; then the
- * bar and a row per investment, largest first. Loading and a failed read are never
- * "no investments" or zero. [onOpenRate] and row opening arrive with their screens.
+ * Inversiones (docs/design/system/features/investments.html): the value with Gana / Pierde and the
+ * signed return, what produced it, when the values were recorded and the rate the total used; then
+ * the bar and a row per investment, largest first. Loading and a failed read are never "no
+ * investments" or zero. [onOpenRate] and row opening arrive with their screens.
  */
 @Composable
 fun InversionesScreen(

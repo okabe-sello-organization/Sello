@@ -3,7 +3,7 @@ package com.software.sello.feature.resumen
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-/** The short labels printed on chart columns and the limit line, as the v2 design writes them. */
+/** The short labels printed on chart columns and the limit line. */
 class ChartLabelTest {
     @Test
     fun underAThousandIsWrittenAsItIs() {

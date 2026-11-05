@@ -95,11 +95,11 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Inversiones as it is drawn (docs/design/v2/inversiones.html; investment examples):
- * no month, no Anotar and no dock until its screens exist; the answer, its return and
- * dates; dollars in dollars with the rate named; and every figure whole on a narrow
- * phone, a tablet and an expanded window, in all four
- * themes. Loading and failure are never "no investments".
+ * Inversiones as it is drawn (docs/design/system/features/investments.html#screen-inversiones;
+ * investment examples): no month, no Anotar and no dock until its screens exist; the answer, its
+ * return and dates; dollars in dollars with the rate named; and every figure whole on a narrow
+ * phone, a tablet and an expanded window, in all four themes. Loading and failure are never "no
+ * investments".
  */
 @RunWith(AndroidJUnit4::class)
 class InversionesScreenTest {

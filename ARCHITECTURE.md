@@ -269,7 +269,7 @@ deferred beyond MVP. Remaining implementation inputs are listed in the
   lower priority and keep overall allowance secondary. Keep essential controls visible
   and stable, make amount entry immediately available and use brief confirmed-save
   feedback. Amounts use the compact Sello pad and the note a composer docked to the
-  keyboard, as designed in [Sello v2](docs/design/v2/README.md) (ADR 0013), preserving
+  keyboard, as the [design system](docs/design/system/index.html) shows (ADR 0026), preserving
   stable controls and accessible native input.
   Keep home's content restrained; detailed suggestions belong in Resumen. When
   Metas ships, include a compact user-chosen goal, defaulting to the active goal
@@ -420,24 +420,21 @@ Integration references: [build variants/source sets][build-variants] and
 
 Product/design direction: [Sello design philosophy](docs/design/philosophy.md),
 recorded 2026-10-15, with the explicit supersessions and transition in
-[ADR 0011](docs/decisions/0011-goal-centered-design.md). The visual authority is
-[Sello v2](docs/design/v2/README.md) ([ADR 0013](docs/decisions/0013-sello-v2-design.md)),
-with the [screen/interaction briefs](docs/design/screen-briefs/README.md) holding the
-intent and open policy behind it. The unchanged **Sello v1.1,
-2026-10-08** snapshot, excluding widgets, remains the visual authority for tokens,
-components and layouts v2 does not show. Legacy routes, migration hints, sample figures and
-Kotlin sketches are not a new-app schema or financial oracle. This document's
-explicit scope/financial/safety rules override those sketches; open replacement
-financial definitions need approval before implementation, as described in §4.
+[ADR 0011](docs/decisions/0011-goal-centered-design.md). The visual authority is the
+[design system](docs/design/system/index.html)
+([ADR 0026](docs/decisions/0026-design-system-from-the-built-app.md)), written from the
+built app; its open policy questions are in the philosophy. Sample figures in the pages
+are not a financial oracle. This document's explicit scope/financial/safety rules
+override them; open replacement financial definitions need approval before
+implementation, as described in §4.
 
-- Visual reference: [Sello v2](docs/design/v2/README.md) and its [component catalog](docs/design/v2/components.html)
-- v1.1 source (provenance for the snapshot): `/home/okabe94/.t3/worktrees/FinanceTracker/t3code-5c84db69/docs/design/ui-overhaul/sello-spec.html`
+- Visual reference: the [design system](docs/design/system/index.html) and its [components catalog](docs/design/system/components.html)
 - Historical lessons: `/home/okabe94/AndroidStudioProjects/FinanceTracker/docs/greenfield/PROJECT_LESSONS.md`
 - Prior proposal: `/home/okabe94/AndroidStudioProjects/FinanceTracker/docs/greenfield/ARCHITECTURE_SPEC.md`
 
-These external paths are provenance, not build dependencies. The local
-[design snapshot](docs/design/sello-spec.html) and [provenance](docs/design/README.md)
-are the executor references; no task requires the original worktree. Scope/financial
+These external paths are provenance, not build dependencies. The
+[design references](docs/design/README.md) are the executor references; no task requires
+the original worktree. Scope/financial
 approvals remain explicit SELLO-001 deliverables, not implied by copying the reference.
 
 [android-architecture]: https://developer.android.com/topic/architecture/recommendations

@@ -1,12 +1,12 @@
 # 0013 — Sello v2 is the visual source of truth
 
 **Owner:** project owner (user) · **Updated:** 2026-10-16
-**Status:** approved design; implementation requires scoped work.
+**Status:** superseded by [ADR 0026](0026-design-system-from-the-built-app.md) (2026-11-05); approved design; implementation requires scoped work.
 
-[Sello v2](../design/v2/README.md) is the approved visual reference for Recibo,
+[Sello v2](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md) is the approved visual reference for Recibo,
 entry, Resumen, income, Metas, Inversiones and the
-[shared components](../design/v2/components.html). The
-[v1.1 snapshot](../design/sello-spec.html) covers only what v2 does not show.
+[shared components](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/components.html). The
+[v1.1 snapshot](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html) covers only what v2 does not show.
 Its sample numbers are synthetic. [Architecture](../../ARCHITECTURE.md) and
 ADRs 0001–0012 own money, dates, recovery and safety; design approval adds no code,
 routes, ledger or data model.

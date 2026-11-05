@@ -38,7 +38,7 @@ The design contains sample amounts and legacy migration hints, not approved new
 financial policies. Without this task, separate actors will choose different pace,
 budget history and reset semantics. Read [ADR 0001](../../decisions/0001-mvp-contract.md),
 architecture §§1/4/7/9 and the
-[local design](../../design/sello-spec.html#build). No predecessor implementation exists.
+[local design](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html#build). No predecessor implementation exists.
 
 ### Implementation plan
 1. Create `docs/decisions/0001-mvp-contract.md` using D01–D10 as individual decisions;

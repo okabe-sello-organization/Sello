@@ -1,12 +1,12 @@
 # Anotar: recording an expense
 
 **Owner:** SELLO-017 · Decisions: [D03, D05](../decisions/0001-mvp-contract.md) ·
-Design: [Sello v2 entry](../design/v2/entry.html) · Builds on [commands](commands.md),
+Design: [expense entry](../design/system/features/expense.html) · Builds on [commands](commands.md),
 the [monthly snapshot](monthly-snapshot.md) and the [app shell](app-shell.md).
 
 Its rule: what is shown as saved is only ever what storage confirmed.
 
-This file describes the form as built: the approved v2 entry (SELLO-070), with the short
+This file describes the form as built: the entry of SELLO-070, with the short
 confirmation after a save from SELLO-066.
 
 ## Getting there
@@ -34,7 +34,7 @@ is not, because the slip already shows "Sin monto". The button is read aloud as 
 whole sentence: "Anotar gasto de 48.700 pesos en Alimentación"; while saving it says
 "Guardando…".
 
-There is no live preview of the month, as in v2 (owner decision, 2026-10-20): the
+There is no live preview of the month (owner decision, 2026-10-20): the
 confirmation after saving and Recibo show the real figures. `ExpensePreviewPolicy`
 stays in the domain, unused by this form.
 

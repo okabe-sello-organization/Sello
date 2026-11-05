@@ -20,8 +20,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Back above a kept stamp, the faded stamp lights up again in place (v2 celebrations,
- * "De vuelta en el 50 %"): it starts in the kept ink and ends in the earned green, and
+ * Back above a kept stamp, the faded stamp lights up again in place ("De vuelta
+ * en el 50 %"): it starts in the kept ink and ends in the earned green, and
  * reduced motion shows it lit at once. It is said as earned throughout.
  */
 @RunWith(AndroidJUnit4::class)

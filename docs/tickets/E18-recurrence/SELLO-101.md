@@ -25,7 +25,7 @@ Domain example tests (ADR 0012 BG rows) and screen tests; device tests for `Foot
 Recibo shows the reserved states correctly.
 
 ### Context and starting points
-ADR 0012; v2 Recibo; the [gap list](../../design/v2/gaps/recurrence.md): reuses `AnswerSlip`, `Stamp` (`StampInk.Warn`), `Footnote` and `ReciboScreen`'s **Ajustar presupuesto** link, which today shows only for Excedido.
+ADR 0012; v2 Recibo; the [gap list](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/gaps/recurrence.md): reuses `AnswerSlip`, `Stamp` (`StampInk.Warn`), `Footnote` and `ReciboScreen`'s **Ajustar presupuesto** link, which today shows only for Excedido.
 
 ### Implementation plan
 1. Domain changes.

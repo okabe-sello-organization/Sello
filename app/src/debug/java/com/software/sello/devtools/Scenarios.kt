@@ -278,7 +278,7 @@ object Scenarios {
     )
 
     /**
-     * The four investments of the v2 page from May 2025, each movement on its own day
+     * The four investments of the investment examples from May 2025, each movement on its own day
      * (IN02–IN06), then Acciones EE. UU. in dollars at 4.150,25 on 20 October (IN27,
      * IN28), with a small budget beside them.
      */

@@ -32,7 +32,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Metas' dock is green with a flag, so it cannot be taken for Anotar (v2 Metas): the
+ * Metas' dock is green with a flag, so it cannot be taken for Anotar: the
  * same tone on the full-width dock and on the rail's button, and brand by default.
  */
 @RunWith(AndroidJUnit4::class)

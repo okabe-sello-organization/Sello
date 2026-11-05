@@ -64,11 +64,11 @@ import kotlinx.serialization.Serializable
 
 /**
  * Changes, pauses, resumes or deletes one schedule through [schedules]
- * (docs/design/v2 Pagos e ingresos fijos, recurrence-examples rules 7, 8 and 10). The
- * schedule is read once; the draft, the version it was read at and any command in
- * flight are kept in [saved], so a restart neither loses the draft nor sends twice, and
- * a change is only ever sent against the version this screen showed. Nothing recorded
- * changes: new terms apply from tomorrow, and deleting keeps every recorded entry.
+ * (docs/design/system/features/recurrence.html#screen-editor, recurrence-examples rules 7, 8 and
+ * 10). The schedule is read once; the draft, the version it was read at and any command in flight
+ * are kept in [saved], so a restart neither loses the draft nor sends twice, and a change is only
+ * ever sent against the version this screen showed. Nothing recorded changes: new terms apply from
+ * tomorrow, and deleting keeps every recorded entry.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ScheduleEditorViewModel(

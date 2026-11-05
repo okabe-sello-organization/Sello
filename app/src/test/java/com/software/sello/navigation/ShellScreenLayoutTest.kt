@@ -165,7 +165,7 @@ class ShellScreenLayoutTest {
     fun theTitleIsTheSelectedMonthAndOpensThePicker() {
         showOnThisScreen(pickerOpen = false)
 
-        // The v2 month bar: one button saying the month, not a one-line "Agosto 2026" title.
+        // The month bar: one button saying the month, not a one-line "Agosto 2026" title.
         rule.onNodeWithText("Agosto 2026").assertDoesNotExist()
         rule.onNodeWithTag(MONTH_SWITCHER_TAG).assertIsDisplayed()
             .assert(hasContentDescription("Agosto 2026", substring = true))

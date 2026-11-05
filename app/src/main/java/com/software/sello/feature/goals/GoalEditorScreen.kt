@@ -89,7 +89,7 @@ fun GoalEditorRoot(viewModels: ViewModelProvider.Factory, onFinished: (GoalEdito
 }
 
 /**
- * Nueva meta and Editar meta (v2 create, owner-revised 2026-10-26 to match Nueva categoría):
+ * Nueva meta and Editar meta (owner-revised 2026-10-26 to match Nueva categoría):
  * the icon as a large circle beside the name, opening the icons to choose from; the amount
  * as the big number on the Sello pad, which is always there, with Para cuándo in the
  * slip's corner; and the stamps with the month each could arrive at that pace, centred,

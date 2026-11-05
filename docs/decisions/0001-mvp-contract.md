@@ -3,13 +3,14 @@
 **Owner:** project owner (user) · **Updated:** 2026-10-23
 **Status:** approved product rules; replacement budget guidance has open inputs in
 [ADR 0012](0012-budget-guidance-contract.md). Approval does not mean implementation
-or release verification is complete.
+or release verification is complete. Since 2026-11-05 the visual reference is
+[ADR 0026](0026-design-system-from-the-built-app.md).
 
 ## Authority and execution boundary
 
 [Architecture](../../ARCHITECTURE.md) owns technical and safety rules.
-[Sello v2](../design/v2/README.md), approved in [ADR 0013](0013-sello-v2-design.md),
-is the visual reference. Use [v1.1](../design/sello-spec.html) only where v2 has no
+[Sello v2](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/v2/README.md), approved in [ADR 0013](0013-sello-v2-design.md),
+is the visual reference. Use [v1.1](https://github.com/okabe-sello-organization/Sello/blob/90662770/docs/design/sello-spec.html) only where v2 has no
 coverage. Mockup numbers do not define financial rules.
 
 [ADR 0011](0011-goal-centered-design.md) owns the goal-centered product direction;

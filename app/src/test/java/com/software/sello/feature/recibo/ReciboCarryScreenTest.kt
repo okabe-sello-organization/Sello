@@ -27,9 +27,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * How Recibo tells a carrying category from the others (docs/design/v2 Arrastre): the ↻
- * badge on its circle and its signed carry under the amount; the month's limit as one sum
- * under the per-day line. Figures are those of docs/testing/signed-carryover-examples.md.
+ * How Recibo tells a carrying category from the others
+ * (docs/design/system/features/recibo.html#screen-recibo): the ↻ badge on its circle and its signed
+ * carry under the amount; the month's limit as one sum under the per-day line. Figures are those of
+ * docs/testing/signed-carryover-examples.md.
  */
 @RunWith(AndroidJUnit4::class)
 class ReciboCarryScreenTest {

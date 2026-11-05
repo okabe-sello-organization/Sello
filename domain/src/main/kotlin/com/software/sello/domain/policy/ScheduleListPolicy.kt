@@ -45,7 +45,10 @@ data class SchedulesMonth(
     val active: Int
 )
 
-/** The list of schedules and its month (docs/design/v2 Pagos e ingresos fijos). */
+/**
+ * The list of schedules and its month
+ * (docs/design/system/features/recurrence.html#screen-schedules).
+ */
 object ScheduleListPolicy {
     /** Longer than the longest gap between two occurrences: every 365 days. */
     private const val HORIZON_DAYS = 400L

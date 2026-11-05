@@ -38,7 +38,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The v2 dock and tab bar as the frame draws them, one window dp drawn as one pixel: a
+ * The dock and tab bar as the frame draws them, one window dp drawn as one pixel: a
  * full-width "+ Anotar" button read as "Anotar un gasto", and tabs that say which one is
  * selected, whole at twice the font size on the narrowest phone.
  */
