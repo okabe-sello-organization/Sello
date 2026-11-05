@@ -31,7 +31,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
@@ -683,7 +682,7 @@ class CategoryEditorScreenTest {
     @Test
     fun carryOffIsASwitchInTheLimitSlipThatAsksToTurnItOn() {
         show(editing.copy(carry = CarryCard.Off(october)))
-        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).revealed().assertIsDisplayed()
 
         rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOff().assertIsEnabled()
         rule.onNode(hasTestTag(EDITOR_CARRY_TAG) and hasAnyAncestor(hasTestTag(EDITOR_LIMIT_TAG)))
@@ -699,7 +698,7 @@ class CategoryEditorScreenTest {
     @Test
     fun carryOnSaysSinceWhenWhatItBringsAndThisMonthsLimitAndAsksToTurnItOff() {
         show(editing.copy(carry = carryOn))
-        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).revealed().assertIsDisplayed()
 
         rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOn()
         rule.onNodeWithText("Desde sep 2026 · trae −40.000 · este mes 60.000").assertIsDisplayed()
@@ -711,7 +710,7 @@ class CategoryEditorScreenTest {
     @Test
     fun carryCannotBeSwitchedWhileOtherChangesWaitToBeSaved() {
         show(editing.copy(carry = carryOn, changed = true))
-        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).revealed().assertIsDisplayed()
 
         rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOn().assertIsNotEnabled()
         rule.onNodeWithText("Guarda o descarta tus cambios para cambiar esto.", substring = true)
@@ -722,7 +721,7 @@ class CategoryEditorScreenTest {
     @Test
     fun anUnreadableCarryIsSaidWithoutASwitch() {
         show(editing.copy(carry = CarryCard.Unreadable))
-        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).revealed().assertIsDisplayed()
 
         rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertDoesNotExist()
         rule.onNodeWithText(
@@ -733,7 +732,7 @@ class CategoryEditorScreenTest {
     @Test
     fun anArchivedCategoryStillShowsTheSwitchUnderItsLockedLimit() {
         show(editing.copy(archived = true, limitLocked = true, carry = CarryCard.Off(october)))
-        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).revealed().assertIsDisplayed()
 
         rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsOff().assertIsDisplayed()
     }
@@ -741,7 +740,7 @@ class CategoryEditorScreenTest {
     @Test
     fun aScreenReaderHearsTheCarryAmountsInWords() {
         show(editing.copy(carry = carryOn))
-        rule.onNodeWithTag(EDITOR_CARRY_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_TAG).revealed().assertIsDisplayed()
 
         rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assert(
             SemanticsMatcher.expectValue(

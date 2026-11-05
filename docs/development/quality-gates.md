@@ -57,8 +57,11 @@ group with no results fails its job.
 
 A JVM screen test runs with `@RunWith(AndroidJUnit4::class)` and `createComposeRule()`
 and shows its screen with `showSello(Look(...))` from `app/src/test/.../JvmScreen.kt`.
-Robolectric gives it API 37 and a 320x640 dp screen, smaller than the hosted
-emulator's 412x914 (`app/src/test/resources/robolectric.properties`), a plain
+Robolectric gives it API 37 and the 412x891 dp mdpi screen of a Samsung Galaxy S25
+Ultra, a little shorter than the hosted emulator's 412x914
+(`app/src/test/resources/robolectric.properties`, [ADR 0022](../decisions/0022-jvm-screen-and-screenshot-tests.md)).
+Screenshot tests use that default and pin no whole-screen size; tall component desks
+and window sweeps set their own. It has a plain
 `Application` and no network: the Android framework jar is a locked Gradle dependency
 read in offline mode.
 

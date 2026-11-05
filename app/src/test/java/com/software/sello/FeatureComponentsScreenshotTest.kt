@@ -48,18 +48,18 @@ import org.robolectric.annotation.GraphicsMode
 /** What the components that belong to one feature look like, kept as committed images (ADR 0022): the groups the design system's own captures held before the components moved. Each is in Cobalto light at the normal font size, as before; the host gate compares it with its baseline in `src/test/screenshots/`. */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w320dp-h1200dp-mdpi")
+@Config(qualifiers = "w412dp-h1200dp-mdpi")
 class FeatureComponentsScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
 
-    /** [content] on the desk, 320 dp wide and as tall as it needs, captured as [name]. */
+    /** [content] on the desk, 412 dp wide and as tall as it needs, captured as [name]. */
     private fun capture(name: String, content: @Composable () -> Unit) {
         rule.setContent {
             SelloTheme(reducedMotion = true) {
                 Box(
                     Modifier.requiredWidth(
-                        320.dp
+                        412.dp
                     ).background(SelloTheme.colors.desk).testTag("stage")
                 ) {
                     Column(

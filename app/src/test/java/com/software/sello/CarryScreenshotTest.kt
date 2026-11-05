@@ -5,10 +5,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.component.MoneySign
@@ -224,7 +224,7 @@ class CarryScreenshotTest {
     @Test
     fun editorCarrying() {
         rule.showSello(Look()) { CategoryEditorScreen(carrying, {}) }
-        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).revealed().assertIsDisplayed()
         rule.captureStill("src/test/screenshots/carry-editor-cobalto-light-font1.0.png")
     }
 
@@ -233,7 +233,7 @@ class CarryScreenshotTest {
         rule.showSello(Look()) {
             CategoryEditorScreen(carrying.copy(carry = CarryCard.Off(abr)), {})
         }
-        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).performScrollTo()
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).revealed().assertIsDisplayed()
         rule.captureStill("src/test/screenshots/carry-editor-off-cobalto-light-font1.0.png")
     }
 

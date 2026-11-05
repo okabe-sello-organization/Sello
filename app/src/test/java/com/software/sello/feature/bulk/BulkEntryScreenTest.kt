@@ -25,16 +25,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Anotar varios for expenses, drawn from State given by hand on CI's phone size, and kept
+ * Anotar varios for expenses, drawn from State given by hand on the reference phone, and kept
  * as committed images in Claro and Oscuro (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w412dp-h914dp-mdpi")
 class BulkEntryScreenTest {
     @get:Rule
     val rule = createComposeRule()
@@ -118,7 +116,7 @@ class BulkEntryScreenTest {
         assertEquals(listOf(BulkEntryAction.Retry), sent)
     }
 
-    /** CI's phone, 412 × 914 dp: more lines than fit scroll inside the slip; the total stays. */
+    /** The reference phone, 412 × 891 dp: more lines than fit scroll inside the slip; the total stays. */
     @Test
     fun theReceiptScrollsAfterFiveLinesOnThePhone() {
         val lines = (1..6).map { BulkLineUi("$it", coffee, pesos("4.500"), "Tinto") }

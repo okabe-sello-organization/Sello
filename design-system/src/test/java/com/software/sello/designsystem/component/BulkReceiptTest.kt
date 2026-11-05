@@ -36,13 +36,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /** The bulk receipt highlights, removes and reads its lines as the approved design says. */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w412dp-h914dp-mdpi")
 class BulkReceiptTest {
     @get:Rule
     val rule = createComposeRule()

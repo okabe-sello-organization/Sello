@@ -20,7 +20,6 @@ import com.software.sello.designsystem.theme.SelloTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
@@ -29,7 +28,6 @@ import org.robolectric.annotation.GraphicsMode
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w412dp-h914dp-mdpi")
 class BulkReceiptScreenshotTest {
     @get:Rule
     val rule = createComposeRule()
@@ -328,7 +326,7 @@ class BulkReceiptScreenshotTest {
     @Test fun missingTypeOscuro() = missingType(dark = true)
 
     private companion object {
-        /** About the free height the receipt gets on a 412 × 914 dp phone. */
+        /** About the free height the receipt gets on a 412 × 891 dp phone. */
         val SlipHeight = 400.dp
     }
 }

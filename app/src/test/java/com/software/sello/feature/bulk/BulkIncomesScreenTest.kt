@@ -24,16 +24,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Varios ingresos, drawn from State given by hand on CI's phone size, and
+ * Varios ingresos, drawn from State given by hand on the reference phone, and
  * kept as committed images in Claro and Oscuro (ADR 0022).
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w412dp-h914dp-mdpi")
 class BulkIncomesScreenTest {
     @get:Rule
     val rule = createComposeRule()

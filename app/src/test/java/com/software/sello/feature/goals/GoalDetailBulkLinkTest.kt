@@ -35,13 +35,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /** Aportar varios at the foot of a goal's movements, beside Ver los N, as v2 varios draws it. */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w412dp-h914dp-mdpi")
 class GoalDetailBulkLinkTest {
     @get:Rule
     val rule = createComposeRule()
