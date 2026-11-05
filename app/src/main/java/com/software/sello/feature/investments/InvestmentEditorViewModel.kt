@@ -593,6 +593,7 @@ class InvestmentEditorViewModel(
             movementCount = summary?.history?.movements?.size ?: 0,
             busy = progress.busy,
             saveError = progress.saveError,
+            deleting = submission.step == STEP_DELETE,
             confirmDelete = saved[KEY_CONFIRM] ?: false,
             confirmDiscard = progress.confirmDiscard,
             changed = summary != null && detailsChanged(summary),

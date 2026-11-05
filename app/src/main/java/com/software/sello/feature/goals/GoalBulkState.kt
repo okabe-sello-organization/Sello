@@ -12,7 +12,7 @@ import java.time.LocalDate
  * completed or deleted, so it must be chosen again. [withdrawal] is null until Aportar or
  * Retirar is chosen; [amount] is present only for a valid amount. [available] is what its
  * goal had for this retiro when storage refused it; [futureDate] marks a date storage found
- * after today.
+ * after today, and [invalidDate] one it cannot keep.
  */
 @Immutable
 data class GoalBulkLine(
@@ -24,7 +24,8 @@ data class GoalBulkLine(
     val date: LocalDate,
     val note: String = "",
     val available: MoneyTextValue? = null,
-    val futureDate: Boolean = false
+    val futureDate: Boolean = false,
+    val invalidDate: Boolean = false
 ) {
     /** It has an amount but no type: it blocks saving. */
     val missingType: Boolean get() = amount != null && withdrawal == null
@@ -32,7 +33,7 @@ data class GoalBulkLine(
     /** It has an amount but no active goal: it blocks saving. */
     val missingGoal: Boolean get() = amount != null && goalName == null
 
-    val refused: Boolean get() = available != null || futureDate
+    val refused: Boolean get() = available != null || futureDate || invalidDate
 }
 
 /** The line just removed from the draft, while its Deshacer is offered. */

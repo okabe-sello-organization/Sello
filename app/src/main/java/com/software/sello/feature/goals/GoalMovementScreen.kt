@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,8 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -29,12 +26,14 @@ import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.EntryAmountSlip
+import com.software.sello.designsystem.component.EntryHeading
 import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoreSlip
 import com.software.sello.designsystem.component.SegmentedSwitch
@@ -236,12 +235,7 @@ private fun Amount(state: GoalMovementState, onAction: (GoalMovementAction) -> U
 /** The goals with their percentage, what the chosen one holds, and the note. */
 @Composable
 private fun Choices(state: GoalMovementState, onAction: (GoalMovementAction) -> Unit) {
-    Text(
-        stringResource(R.string.goal_movement_goal),
-        Modifier.semantics { heading() },
-        color = SelloTheme.colors.ink,
-        style = MaterialTheme.typography.titleSmall
-    )
+    EntryHeading(stringResource(R.string.goal_movement_goal))
     if (state.goals.isEmpty()) {
         FactLine(AnnotatedString(stringResource(R.string.goal_movement_no_goals)))
     } else {
@@ -312,6 +306,7 @@ private fun Action(state: GoalMovementState, onAction: (GoalMovementAction) -> U
                         when (error) {
                             GoalMovementError.Unknown -> R.string.expense_entry_unknown
                             GoalMovementError.FutureDate -> R.string.expense_entry_future_date
+                            GoalMovementError.InvalidDate -> R.string.goal_movement_invalid_date
                             GoalMovementError.DataChanged -> R.string.goal_movement_data_changed
                             GoalMovementError.Gone -> R.string.goal_movement_gone
                             GoalMovementError.Changed -> R.string.goal_movement_changed
@@ -319,7 +314,8 @@ private fun Action(state: GoalMovementState, onAction: (GoalMovementAction) -> U
                             GoalMovementError.NotDeleted -> R.string.goal_movement_not_deleted
                             GoalMovementError.NotSaved -> R.string.goal_movement_not_saved
                         }
-                    )
+                    ),
+                    if (error == GoalMovementError.Unknown) FieldTone.Warning else FieldTone.Error
                 ),
                 Modifier.testTag("goal.movement.error")
             )
@@ -331,7 +327,7 @@ private fun Action(state: GoalMovementState, onAction: (GoalMovementAction) -> U
         }
         if (hint != null && !state.busy && state.error == null) {
             FieldMessageText(
-                FieldMessage(stringResource(hint), isError = false),
+                FieldMessage(stringResource(hint), tone = FieldTone.Hint),
                 Modifier.testTag("goal.movement.missing")
             )
         }

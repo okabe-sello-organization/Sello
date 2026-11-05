@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -14,8 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -29,12 +26,14 @@ import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.EntryAmountSlip
+import com.software.sello.designsystem.component.EntryHeading
 import com.software.sello.designsystem.component.EntryLayout
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FactLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.MoreSlip
@@ -251,7 +250,7 @@ private fun Amount(state: InvestmentMovementState, onAction: (InvestmentMovement
 /** The type chips, the investment chips, the fact about the chosen one, and the note. */
 @Composable
 private fun Choices(state: InvestmentMovementState, onAction: (InvestmentMovementAction) -> Unit) {
-    Heading(stringResource(R.string.investment_movement_type))
+    EntryHeading(stringResource(R.string.investment_movement_type))
     ChipRows(Kinds.size, Modifier.testTag(INVESTMENT_MOVEMENT_KINDS_TAG), rows = 1) { index ->
         val kind = Kinds[index]
         SelloChip(
@@ -262,7 +261,7 @@ private fun Choices(state: InvestmentMovementState, onAction: (InvestmentMovemen
             modifier = Modifier.testTag("$INVESTMENT_MOVEMENT_KIND_TAG.${kind.name}")
         )
     }
-    Heading(stringResource(R.string.investment_movement_investment))
+    EntryHeading(stringResource(R.string.investment_movement_investment))
     if (state.investments.isEmpty()) {
         FactLine(AnnotatedString(stringResource(R.string.investment_movement_none)))
     } else {
@@ -289,16 +288,6 @@ private fun Choices(state: InvestmentMovementState, onAction: (InvestmentMovemen
         state.editable,
         { onAction(InvestmentMovementAction.OpenComposer) },
         Modifier.testTag(INVESTMENT_MOVEMENT_NOTE_TAG)
-    )
-}
-
-@Composable
-private fun Heading(text: String) {
-    Text(
-        text,
-        Modifier.semantics { heading() },
-        color = SelloTheme.colors.ink,
-        style = MaterialTheme.typography.titleSmall
     )
 }
 
@@ -438,7 +427,12 @@ private fun Action(state: InvestmentMovementState, onAction: (InvestmentMovement
                             InvestmentMovementError.NotSaved ->
                                 R.string.investment_movement_not_saved
                         }
-                    )
+                    ),
+                    if (error == InvestmentMovementError.Unknown) {
+                        FieldTone.Warning
+                    } else {
+                        FieldTone.Error
+                    }
                 ),
                 Modifier.testTag(INVESTMENT_MOVEMENT_ERROR_TAG)
             )
@@ -453,7 +447,7 @@ private fun Action(state: InvestmentMovementState, onAction: (InvestmentMovement
         }
         if (hint != null && !state.busy && state.error == null) {
             FieldMessageText(
-                FieldMessage(stringResource(hint), isError = false),
+                FieldMessage(stringResource(hint), tone = FieldTone.Hint),
                 Modifier.testTag(INVESTMENT_MOVEMENT_MISSING_TAG)
             )
         }

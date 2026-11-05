@@ -528,7 +528,13 @@ class GoalEditorViewModel(
     /** Not known whether it saved: the confirm slip gives way to Comprobar. */
     private fun unknown() {
         saved[KEY_CONFIRM] = false
-        mutable.update { it.copy(busy = false, saveError = GoalSaveError.Unknown) }
+        mutable.update {
+            it.copy(
+                busy = false,
+                saveError = GoalSaveError.Unknown,
+                deleting = submission.step == STEP_DELETE
+            )
+        }
         render()
     }
 

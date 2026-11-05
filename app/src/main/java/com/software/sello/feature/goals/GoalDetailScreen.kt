@@ -143,21 +143,7 @@ private fun ColumnScope.Ready(
     val goal = state.goal
     // While the replace sheet is open it says what happened itself.
     state.error?.takeIf { state.replacing == null }?.let { error ->
-        ErrorSlip(
-            message = stringResource(
-                when (error) {
-                    GoalDetailError.NotSaved -> R.string.goal_error_not_saved
-                    GoalDetailError.Unknown -> R.string.goal_error_unknown
-                }
-            ),
-            onRetry = { onAction(GoalDetailAction.Retry) },
-            modifier = Modifier.testTag("goal.error"),
-            retryLabel = if (error == GoalDetailError.Unknown) {
-                stringResource(R.string.goal_error_check)
-            } else {
-                stringResource(R.string.goal_error_retry)
-            }
-        )
+        GoalSaveProblem(error, { onAction(GoalDetailAction.Retry) }, Modifier.testTag("goal.error"))
     }
     if (state.stale) {
         ErrorSlip(

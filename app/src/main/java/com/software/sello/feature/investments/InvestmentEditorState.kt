@@ -101,6 +101,8 @@ data class InvestmentEditorState(
     val movementCount: Int = 0,
     val busy: Boolean = false,
     val saveError: InvestmentSaveError? = null,
+    /** The operation whose outcome is [InvestmentSaveError.Unknown] was a deletion. */
+    val deleting: Boolean = false,
     val confirmDelete: Boolean = false,
     val confirmDiscard: Boolean = false,
     /** Editing: something differs from what is stored. */

@@ -525,7 +525,12 @@ private fun ExpenseList(
             Text(
                 text = stringResource(problem.text()),
                 style = MaterialTheme.typography.bodyMedium,
-                color = SelloTheme.colors.semantic.loss,
+                // Whether it was deleted is a doubt to clear, in the warning ink.
+                color = if (problem == DeleteProblem.Unknown) {
+                    SelloTheme.colors.semantic.warn
+                } else {
+                    SelloTheme.colors.semantic.loss
+                },
                 modifier = Modifier
                     .testTag(CATEGORY_DETAIL_DELETE_PROBLEM_TAG)
                     .semantics { liveRegion = LiveRegionMode.Polite }

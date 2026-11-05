@@ -137,7 +137,19 @@ fun CategoryExpensesScreen(
                                 loading = state.checking
                             )
                         } else {
-                            ErrorSlip(message, { onAction(CategoryExpensesAction.Retry) }, tag)
+                            // A delete that did not happen, never titled as a failed read.
+                            ErrorSlip(
+                                message,
+                                { onAction(CategoryExpensesAction.Retry) },
+                                tag,
+                                title = stringResource(
+                                    if (problem == DeleteProblem.Gone) {
+                                        R.string.category_expenses_delete_gone_title
+                                    } else {
+                                        R.string.category_expenses_delete_not_done_title
+                                    }
+                                )
+                            )
                         }
                     }
                 }

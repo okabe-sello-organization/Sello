@@ -15,6 +15,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
@@ -279,9 +280,46 @@ class GoalEditorScreenTest {
         )
 
         rule.onNodeWithTag(MORE_MENU_TAG).assertDoesNotExist()
-        rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).assertIsNotEnabled()
-        rule.onNodeWithText("Comprobar").performClick()
+        // As on Anotar: the message above, Comprobar si se guardó in the button's place,
+        // and nothing says the screen failed to load.
+        rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
+        rule.onNodeWithTag(GOAL_EDITOR_ERROR_TAG)
+            .assertTextEquals("No sabemos si se guardó. Compruébalo antes de seguir.")
+        rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG)
+            .assertTextEquals("Comprobar si se guardó")
+            .performClick()
         assertEquals(listOf(GoalEditorAction.Retry), actions)
+    }
+
+    @Test
+    fun anUnknownDeleteIsSaidInDeleteWords() {
+        show(
+            planned.copy(
+                editing = true,
+                saveError = GoalSaveError.Unknown,
+                deleting = true,
+                unresolved = true
+            )
+        )
+
+        rule.onNodeWithTag(GOAL_EDITOR_ERROR_TAG)
+            .assertTextEquals(
+                "Aún no sabemos si se borró. Compruébalo antes de volver a intentarlo."
+            )
+        rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG)
+            .assertTextEquals("Comprobar si se borró")
+            .performClick()
+        assertEquals(listOf(GoalEditorAction.Retry), actions)
+    }
+
+    @Test
+    fun aSaveThatFailedSaysSoAboveTheButtonNotAsAFailedRead() {
+        show(planned.copy(editing = true, changed = true, saveError = GoalSaveError.NotSaved))
+
+        rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
+        rule.onNodeWithTag(GOAL_EDITOR_ERROR_TAG)
+            .assertTextEquals("No se guardó. Puedes intentarlo de nuevo.")
+        rule.onNodeWithTag(GOAL_EDITOR_SUBMIT_TAG).assertTextEquals("Guardar cambios")
     }
 
     @Test

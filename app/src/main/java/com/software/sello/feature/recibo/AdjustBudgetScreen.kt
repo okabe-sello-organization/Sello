@@ -456,11 +456,18 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
             )
         }
         sheet.error?.let { error ->
+            // An unknown outcome is a doubt to clear, in the warning ink; the rest are errors.
             Text(
                 errorText(error, sheet),
-                color = colors.semantic.loss,
+                color = if (error == LimitSheetError.Unknown) {
+                    colors.semantic.warn
+                } else {
+                    colors.semantic.loss
+                },
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = SelloTheme.spacing.xs)
+                modifier = Modifier
+                    .padding(vertical = SelloTheme.spacing.xs)
+                    .testTag(LIMIT_SHEET_ERROR_TAG)
             )
             if (error == LimitSheetError.Conflict || error == LimitSheetError.DataChanged) {
                 SelloButton(
@@ -573,6 +580,8 @@ private fun errorText(error: LimitSheetError, sheet: LimitSheetState): String = 
 }
 
 const val ADJUST_TAG = "adjust"
+const val LIMIT_SHEET_ERROR_TAG = "limit.sheet.error"
+
 const val LIMIT_SHEET_TAG = "adjust:sheet"
 const val LIMIT_KEYPAD_TAG = "adjust:keypad"
 

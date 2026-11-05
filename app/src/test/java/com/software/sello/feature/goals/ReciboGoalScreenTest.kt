@@ -143,8 +143,30 @@ class ReciboGoalScreenTest {
         )
 
         rule.onNodeWithText("No se guardó el cambio. Puedes intentarlo de nuevo.").assertExists()
+        // Titled as a save, never as a failed read (#332).
+        rule.onNode(hasText("No se guardó") and hasAnyAncestor(hasTestTag(RECIBO_GOAL_ERROR_TAG)))
+            .assertExists()
+        rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
         rule.onNode(hasText("Reintentar") and hasAnyAncestor(hasTestTag(RECIBO_GOAL_ERROR_TAG)))
             .performClick()
+
+        assertEquals(listOf<Any>(ReciboGoalAction.Retry), actions)
+    }
+
+    @Test
+    fun aMarcarWithAnUnknownOutcomeOnlyOffersToCheckIt() {
+        show(
+            ReciboGoalState.Shown(
+                listOf(viaje),
+                curso,
+                CompletionState.Failed(GoalDetailError.Unknown)
+            )
+        )
+
+        val slip = hasAnyAncestor(hasTestTag(RECIBO_GOAL_ERROR_TAG))
+        rule.onNode(hasText("Falta comprobar si se guardó") and slip).assertExists()
+        rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
+        rule.onNode(hasText("Comprobar si se guardó") and slip).performClick()
 
         assertEquals(listOf<Any>(ReciboGoalAction.Retry), actions)
     }

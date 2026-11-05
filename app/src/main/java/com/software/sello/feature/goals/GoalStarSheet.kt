@@ -195,17 +195,24 @@ private fun ChoiceRow(
 @Composable
 private fun SheetError(error: GoalDetailError, count: Int) {
     val colors = SelloTheme.colors
+    // An unknown outcome is a doubt to clear, in the warning tone; a refusal is an error.
+    val unknown = error == GoalDetailError.Unknown
+    val (ink, soft) = if (unknown) {
+        colors.semantic.warn to colors.semantic.warnSoft
+    } else {
+        colors.semantic.loss to colors.semantic.lossSoft
+    }
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .padding(top = 8.dp)
             .fillMaxWidth()
-            .background(colors.semantic.lossSoft, RoundedCornerShape(12.dp))
+            .background(soft, RoundedCornerShape(12.dp))
             .padding(horizontal = 12.dp, vertical = 10.dp)
             .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite }
             .testTag(GOAL_REPLACE_ERROR_TAG)
     ) {
-        Icon(SelloIcon.Error.painter(), null, Modifier.size(20.dp), colors.semantic.loss)
+        Icon(SelloIcon.Error.painter(), null, Modifier.size(20.dp), ink)
         val (lead, rest) = when (error) {
             GoalDetailError.NotSaved ->
                 stringResource(R.string.goal_replace_refused_lead) to

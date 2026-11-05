@@ -16,6 +16,8 @@ import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.feature.goals.CompletionState
+import com.software.sello.feature.goals.GoalDetailError
 import com.software.sello.feature.goals.ReciboGoal
 import com.software.sello.feature.goals.ReciboGoalPill
 import com.software.sello.feature.goals.ReciboGoalState
@@ -162,7 +164,8 @@ class ReciboScreenshotTest {
         pills: List<ReciboGoalPill>,
         forward: Int,
         look: Look,
-        stale: Boolean = false
+        stale: Boolean = false,
+        completion: CompletionState = CompletionState.Idle
     ) {
         rule.showSello(look) {
             Box(Modifier.fillMaxSize().background(SelloTheme.colors.desk)) {
@@ -171,7 +174,12 @@ class ReciboScreenshotTest {
                     {},
                     PaddingValues(12.dp),
                     goal = {
-                        ReciboGoal(ReciboGoalState.Shown(pills, null, stale = stale), {}, {}, {})
+                        ReciboGoal(
+                            ReciboGoalState.Shown(pills, null, completion, stale = stale),
+                            {},
+                            {},
+                            {}
+                        )
                     }
                 )
             }
@@ -195,6 +203,16 @@ class ReciboScreenshotTest {
 
     @Test
     fun oneGoal() = captureGoals("one", listOf(viaje), 0, Look())
+
+    /** Marcar como lograda with an unknown outcome: titled as a save, Comprobar only. */
+    @Test
+    fun markCompleteUnknown() = captureGoals(
+        "mark-unknown",
+        listOf(viaje),
+        0,
+        Look(),
+        completion = CompletionState.Failed(GoalDetailError.Unknown)
+    )
 
     @Test
     fun threeGoalsOnTheSecond() =

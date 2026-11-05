@@ -12,9 +12,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,7 +23,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -47,10 +44,12 @@ import com.software.sello.designsystem.component.BulkTotal
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ChipRows
 import com.software.sello.designsystem.component.ConfirmSlip
+import com.software.sello.designsystem.component.EntryHeading
 import com.software.sello.designsystem.component.EntryLine
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.NoteComposer
 import com.software.sello.designsystem.component.SelloButton
@@ -298,8 +297,8 @@ private fun Receipt(
 private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
     val income = state.kind == BulkKind.Income
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = when {
+        EntryHeading(
+            when {
                 state.lines.size <= 1 -> stringResource(
                     if (income) R.string.bulk_sources_heading else R.string.bulk_categories_heading
                 )
@@ -308,10 +307,7 @@ private fun Choices(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) 
 
                 else ->
                     stringResource(R.string.bulk_categories_heading_line, state.highlighted + 1)
-            }.uppercase(),
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W800),
-            color = SelloTheme.colors.inkSoft,
-            modifier = Modifier.semantics { heading() }
+            }
         )
         when {
             state.readFailed -> {
@@ -408,12 +404,18 @@ private fun Action(state: BulkEntryState, onAction: (BulkEntryAction) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
         when {
             state.atLimit -> FieldMessageText(
-                FieldMessage(stringResource(R.string.expense_entry_amount_limit), isError = false)
+                FieldMessage(
+                    stringResource(R.string.expense_entry_amount_limit),
+                    tone = FieldTone.Hint
+                )
             )
 
             else -> state.error?.let { error ->
                 FieldMessageText(
-                    FieldMessage(stringResource(error.text())),
+                    FieldMessage(
+                        stringResource(error.text()),
+                        if (error == BulkError.Unknown) FieldTone.Warning else FieldTone.Error
+                    ),
                     Modifier.testTag(BULK_ERROR_TAG)
                 )
             }

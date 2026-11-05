@@ -67,6 +67,7 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneyStyle
@@ -495,7 +496,7 @@ private fun Choices(
                 } else {
                     stringResource(R.string.expense_edit_past_months, named[0], named[1])
                 },
-                isError = false
+                tone = FieldTone.Hint
             ),
             Modifier.testTag(ENTRY_PAST_MONTHS_TAG)
         )
@@ -531,7 +532,10 @@ private fun Choices(
 private fun Said(state: ExpenseEntryState) {
     state.error?.let { error ->
         FieldMessageText(
-            FieldMessage(stringResource(error.text(state.editing))),
+            FieldMessage(
+                stringResource(error.text(state.editing)),
+                if (error in Unresolved) FieldTone.Warning else FieldTone.Error
+            ),
             Modifier.testTag(ENTRY_ERROR_TAG)
         )
         // The following payments already changed; only this one is still to save.
@@ -542,7 +546,7 @@ private fun Said(state: ExpenseEntryState) {
     val missing = state.missing?.text()
     if (missing != null && !state.busy && state.error !in Unresolved) {
         FieldMessageText(
-            FieldMessage(stringResource(missing), isError = false),
+            FieldMessage(stringResource(missing), tone = FieldTone.Hint),
             Modifier.testTag(ENTRY_MISSING_TAG)
         )
     }

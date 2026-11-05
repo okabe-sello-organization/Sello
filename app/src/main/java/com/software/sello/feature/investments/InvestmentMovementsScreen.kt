@@ -18,8 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,10 +31,12 @@ import com.software.sello.designsystem.component.BulkReceipt
 import com.software.sello.designsystem.component.BulkTotal
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ChipRows
+import com.software.sello.designsystem.component.EntryHeading
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.component.SelloButton
@@ -373,15 +373,12 @@ private fun Choices(
     state: InvestmentMovementsState,
     onAction: (InvestmentMovementsAction) -> Unit
 ) {
-    Text(
+    EntryHeading(
         if (state.lines.size > 1) {
             stringResource(R.string.investment_movements_investment_line, state.highlighted + 1)
         } else {
             stringResource(R.string.investment_movement_investment)
-        },
-        Modifier.semantics { heading() },
-        color = SelloTheme.colors.ink,
-        style = MaterialTheme.typography.titleSmall
+        }
     )
     if (state.investments.isEmpty()) {
         Text(
@@ -461,7 +458,7 @@ private fun Action(state: InvestmentMovementsState, onAction: (InvestmentMovemen
     Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
         if (state.stale) {
             FieldMessageText(
-                FieldMessage(stringResource(R.string.investment_stale), isError = false),
+                FieldMessage(stringResource(R.string.investment_stale), tone = FieldTone.Hint),
                 Modifier.testTag(INVESTMENT_MOVEMENTS_STALE_TAG)
             )
         }
@@ -483,7 +480,12 @@ private fun Action(state: InvestmentMovementsState, onAction: (InvestmentMovemen
                             InvestmentMovementsError.Changed ->
                                 R.string.investment_movement_changed
                         }
-                    )
+                    ),
+                    if (error == InvestmentMovementsError.Unknown) {
+                        FieldTone.Warning
+                    } else {
+                        FieldTone.Error
+                    }
                 ),
                 Modifier.testTag(INVESTMENT_MOVEMENTS_ERROR_TAG)
             )

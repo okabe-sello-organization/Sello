@@ -55,6 +55,7 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FieldPill
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.FormField
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
@@ -390,7 +391,8 @@ private fun IncomeAction(state: IncomeFormState, onAction: (IncomeFormAction) ->
                             IncomeFormError.FollowingNotSaved -> R.string.following_not_saved
                             else -> R.string.income_not_saved
                         }
-                    )
+                    ),
+                    if (error == IncomeFormError.Unknown) FieldTone.Warning else FieldTone.Error
                 ),
                 Modifier.testTag("income.error")
             )
@@ -410,7 +412,7 @@ private fun IncomeAction(state: IncomeFormState, onAction: (IncomeFormAction) ->
         }
         if (missing != null && !state.busy && state.error != IncomeFormError.Unknown) {
             FieldMessageText(
-                FieldMessage(stringResource(missing), isError = false),
+                FieldMessage(stringResource(missing), tone = FieldTone.Hint),
                 Modifier.testTag("income.missing")
             )
         }

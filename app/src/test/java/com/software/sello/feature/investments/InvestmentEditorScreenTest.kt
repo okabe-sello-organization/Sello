@@ -14,6 +14,7 @@ import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
@@ -110,6 +111,29 @@ class InvestmentEditorScreenTest {
         rule.showSello {
             InvestmentEditorScreen(state) { actions += it }
         }
+    }
+
+    /** As on Anotar: the message above, the check in the button's place, never "No se pudo cargar". */
+    @Test
+    fun anUnknownSaveAndAnUnknownDeleteSayWhichAndOfferToCheck() {
+        var state by mutableStateOf(ecopetrol.copy(saveError = InvestmentSaveError.Unknown))
+        rule.showSello { InvestmentEditorScreen(state) { actions += it } }
+
+        rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
+        rule.onNodeWithTag(INVESTMENT_EDITOR_ERROR_TAG)
+            .assertTextEquals("No sabemos si se guardó. Compruébalo antes de seguir.")
+        rule.onNodeWithTag(INVESTMENT_EDITOR_SUBMIT_TAG).assertTextEquals("Comprobar si se guardó")
+
+        state = state.copy(deleting = true)
+        rule.waitForIdle()
+        rule.onNodeWithTag(INVESTMENT_EDITOR_ERROR_TAG)
+            .assertTextEquals(
+                "Aún no sabemos si se borró. Compruébalo antes de volver a intentarlo."
+            )
+        rule.onNodeWithTag(INVESTMENT_EDITOR_SUBMIT_TAG)
+            .assertTextEquals("Comprobar si se borró")
+            .performClick()
+        assertEquals(listOf<InvestmentEditorAction>(InvestmentEditorAction.Retry), actions)
     }
 
     @Test

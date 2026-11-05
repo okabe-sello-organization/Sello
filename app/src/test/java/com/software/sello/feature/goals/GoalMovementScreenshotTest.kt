@@ -58,4 +58,24 @@ class GoalMovementScreenshotTest {
 
     @Test
     fun violetaDark() = capture(Look(ink = SelloInk.Violeta, dark = true))
+
+    /** A save whose outcome is unknown: only checking again is offered. */
+    private fun captureUnknown(look: Look) {
+        rule.showSello(look) {
+            GoalMovementScreen(aporte.copy(error = GoalMovementError.Unknown)) {}
+        }
+        rule.captureStill("src/test/screenshots/goal-movement-unknown-${look.label}.png")
+    }
+
+    @Test
+    fun unknownCobaltoLight() = captureUnknown(Look())
+
+    @Test
+    fun unknownCobaltoDark() = captureUnknown(Look(dark = true))
+
+    @Test
+    fun unknownVioletaLight() = captureUnknown(Look(ink = SelloInk.Violeta))
+
+    @Test
+    fun unknownVioletaDark() = captureUnknown(Look(ink = SelloInk.Violeta, dark = true))
 }

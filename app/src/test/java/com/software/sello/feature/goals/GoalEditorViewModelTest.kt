@@ -463,6 +463,7 @@ class GoalEditorViewModelTest {
         model.onAction(GoalEditorAction.Submit)
         val operation = commands.sent.single().operationId
         assertEquals(GoalSaveError.Unknown, model.state.value.saveError)
+        assertFalse(model.state.value.deleting)
         model.onAction(GoalEditorAction.Submit)
         assertEquals(1, commands.sent.size)
 
@@ -551,6 +552,8 @@ class GoalEditorViewModelTest {
 
         val unknown = model.state.value
         assertEquals(GoalSaveError.Unknown, unknown.saveError)
+        // Said in delete words: it was a deletion whose outcome is unknown.
+        assertTrue(unknown.deleting)
         assertFalse(unknown.confirmDelete)
         assertFalse(unknown.busy)
         model.onAction(GoalEditorAction.AskToDelete)
