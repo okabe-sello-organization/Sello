@@ -21,3 +21,6 @@ Agents and the owner find the design in one place, the pages under
   commit that had the file.
 - Code comments that cite v2 point at the new pages.
 - The AGENTS.md link change is a separate pull request that the owner merges.
+
+### Progress
+- AGENTS.md link change: #391 (owner merges); this pull request's links check needs it first.
