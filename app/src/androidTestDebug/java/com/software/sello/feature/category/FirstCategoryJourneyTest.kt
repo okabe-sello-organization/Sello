@@ -115,7 +115,7 @@ class FirstCategoryJourneyTest {
         rule.onNodeWithTag(EDITOR_ICON_TAG).press()
         rule.awaitTag(EDITOR_ICONS_TAG)
         // Pressed: the keyboard used for the name may still be moving the screen.
-        rule.onNodeWithContentDescription("Mercado").press()
+        rule.onNodeWithContentDescription("Mercado").assertIsDisplayed().press()
         rule.typeLimit("300.000")
         submit()
 
