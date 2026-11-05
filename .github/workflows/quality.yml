@@ -193,6 +193,22 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # The emulator needs 7373 MB free (120% of the AVD's 6 GiB data partition) or it
+      # exits at once and the action waits out its boot timeout (#354: two AWS-hosted
+      # runners had 7130 and 7349 MB left after the build). The job uses none of these
+      # preinstalled toolchains; 2048 MB more covers the run's own writes.
+      - name: Make room for the emulator
+        run: |
+          df -m "$HOME"
+          sudo rm -rf /usr/share/dotnet /usr/local/.ghcup /opt/ghc /usr/share/swift /opt/hostedtoolcache/CodeQL
+          need=$((7373 + 2048))
+          free=$(df --output=avail -m "$HOME" | tail -n 1 | tr -d ' ')
+          echo "$free MB free in $HOME after removing unused toolchains; the emulator needs $need MB."
+          if [ "$free" -lt "$need" ]; then
+            echo "::error::Not a test failure: $free MB free in $HOME, the emulator needs $need MB to boot. Re-run the failed job."
+            exit 1
+          fi
+
       - name: Run device tests on API 30
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         # A hang fails the job in minutes instead of holding the runner for an hour.

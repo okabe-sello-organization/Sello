@@ -107,7 +107,8 @@ The Quality workflow (`.github/workflows/quality.yml`) has four jobs:
    12 minutes for the whole host gate, longer than the device jobs; each part takes
    about a third of the work. Plain `scripts/check --host` runs every part in one build.
 3. **Device tests** (one job per selected group: `app` and `support`): first
-   ktlint and the test APKs, then a fresh, cold-booted API-30 emulator with a 412x914 dp
+   ktlint and the test APKs, then room on the runner's disk for the emulator
+   (unused preinstalled toolchains are removed), then a fresh, cold-booted API-30 emulator with a 412x914 dp
    phone screen at mdpi and no navigation bar runs the
    group's selected suites, with the plan's scope (`pull-request` or `nightly`). The
    app suite runs whole: its pull-request tests took under two minutes on an API-30
@@ -188,6 +189,8 @@ result of each job, so the jobs that passed are not repeated.
 | `REFUSED: ... is not an API-30 device, or did not answer` | Use an emulator from `scripts/emulator start`. |
 | `REFUSED: ... does not have CI's 412x914 screen at density 160 (it reports ...)` | `wm size` or `wm density` differs from CI's, or overrides it. Use an emulator from `scripts/emulator start`. |
 | A journey passes on CI but fails on your emulator | Your AVD differs from CI's: another screen size, or a phone profile's navigation bar (#224). Stop it and use `scripts/emulator start`. |
+| `Not a test failure: N MB free in /home/runner, the emulator needs 9421 MB to boot` | The runner's disk is too full for the emulator (#354); no test ran. Re-run the failed job. |
+| `Timeout waiting for emulator to boot.` | The emulator never booted; no test ran. Its own `FATAL` or `ERROR` line is near the top of the step's *Launch Emulator* group. |
 | `FAILED: ktlint exited 1` | Run `./gradlew ktlintFormat` and review the diff. |
 | `ExpenseEntryScreenshotTest > ... FAILED` (any `*ScreenshotTest`) | A capture no longer matches its baseline. Open the diff in the host artifact; if the change is intended, run `./gradlew :app:recordRoborazziDebug --no-build-cache --rerun-tasks` (or `:design-system:`) and commit the new images. |
 | `AssertionError: ... is blank: N distinct colours` | The screen drew nothing when captured; nothing was recorded or compared. Check the test shows its content and waits for it, rather than re-recording. |
