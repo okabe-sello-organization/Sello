@@ -211,7 +211,11 @@ class FinancialStorage internal constructor(
     fun carryoverReads(clock: FinancialClock, computation: CoroutineContext): CarryoverReads =
         RoomCarryoverReads(database, clock, computation)
 
-    /** Finishing an erase and committing a restore of this storage take turns on it. */
+    /**
+     * Turns on this storage's recovery: finishing an erase, committing a restore, staging
+     * a file, the expiry at start and applying a restore's preferences each hold it, and
+     * it is always the last lock taken.
+     */
     private val recovery = Mutex()
 
     /**

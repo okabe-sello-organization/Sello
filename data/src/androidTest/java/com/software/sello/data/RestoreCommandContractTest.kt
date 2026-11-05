@@ -1322,17 +1322,43 @@ class RestoreCommandContractTest {
         assertEquals(1, restoreReceipts().size)
     }
 
+    /** A manifest that names no operation, beside a staged file last written two days ago. */
+    private fun unreadableManifestBesideATwoDayOldFile() {
+        File(files.restoreFolder, "staged.properties").writeText("operation=unreadable\n")
+        assertTrue(
+            File(files.restoreFolder, "staged.json")
+                .setLastModified(now.minusSeconds(2 * 24 * 60 * 60).toEpochMilli())
+        )
+    }
+
     @Test
     fun aFileBesideAnUnreadableManifestIsKeptAtStartWhateverItsAge() = runBlocking {
         currentHistory()
         stage()
-        File(files.restoreFolder, "staged.properties").writeText("operation=unreadable\n")
+        unreadableManifestBesideATwoDayOldFile()
         val kept = stagingFiles()
 
         now = now.plusSeconds(2 * 24 * 60 * 60)
 
         assertNull(restores().expireStaged())
         assertEquals(kept, stagingFiles())
+    }
+
+    @Test
+    fun aCommittedFileBesideAnUnreadableManifestIsKeptAtStartAndFinishedAfter() = runBlocking {
+        currentHistory()
+        val staged = committedBeforeTheRename()
+        unreadableManifestBesideATwoDayOldFile()
+        val kept = stagingFiles()
+
+        now = now.plusSeconds(24 * 60 * 60 + 1)
+
+        assertNull(restores().expireStaged())
+        assertEquals(kept, stagingFiles())
+        // Respaldo's look settles it by its receipt; its preferences are then applied.
+        assertEquals(StagedLookup.Replaced(staged.operationId), restores().staged())
+        assertTrue(restores().applyPending() is RestoreOutcome.Restored)
+        assertEquals(1, restoreReceipts().size)
     }
 
     @Test
