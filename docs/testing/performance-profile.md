@@ -165,9 +165,12 @@ Synthetic data only; every figure was worked out by hand before it was read.
 
 No crash or ANR of Sello is in the system's crash records, and the log shows no missing
 class, method or field and no serialization error: the only error from Sello's process is
-the planted unreadable database. No keep rule was needed. The emulator itself stopped
-once, after the erase; its log was lost from 15 October until then, so Resumen, a goal
-page, pausing and resuming, a backup and an erase were walked again with the log on.
+the planted unreadable database. Two warnings, "A resource failed to call release", came
+from the process, one right after the backup save; a read of the backup and restore code
+found every stream, descriptor and cursor it opens closed, so they likely come from the
+framework. No keep rule was needed. The emulator itself stopped once, after the erase;
+its log was lost from 15 October until then, so Resumen, a goal page, pausing and
+resuming, a backup and an erase were walked again with the log on.
 
 ### Before shrinking (part 1)
 
