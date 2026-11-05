@@ -8,6 +8,7 @@ import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
 import com.software.sello.domain.model.ScheduledEntry
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.port.CatchUpBatch
 import com.software.sello.domain.port.CreateSchedule
 import com.software.sello.domain.port.DeleteExpense
@@ -208,13 +209,12 @@ class ScheduleRecordReadsTest {
     /**
      * #340: the notice was marked seen at 13:00 on 24 October up to entries no longer
      * stored. Caught up with the clock at 09:00, October is stamped just after 13:00 and
-     * listed; with the mark unreadable, its last good value holds it the same way.
+     * listed.
      */
     @Test
     fun aBatchIsStampedAfterTheSeenMarkEvenWhenNothingStoredHoldsIt() = runBlocking {
         rentAndSalary()
         notice.seen = Instant.parse("2026-10-24T13:00:00Z")
-        notice.unreadable = true
         ledger.goTo("2026-10-24")
         ledger.audit = Instant.parse("2026-10-24T09:00:00Z")
 
@@ -225,6 +225,39 @@ class ScheduleRecordReadsTest {
             listOf("income|2026-10-02|3000000", "expense|2026-10-05|950000"),
             recordedAfter(notice.seen)
         )
+    }
+
+    /**
+     * The same with the mark unreadable: recording never waits on it, and with nothing
+     * stored to hold 13:00 the batch keeps the clock's 09:00 (ADR 0025's residual).
+     */
+    @Test
+    fun anUnreadableMarkNeverStopsRecording() = runBlocking {
+        rentAndSalary()
+        notice.seen = Instant.parse("2026-10-24T13:00:00Z")
+        notice.unreadable = true
+        ledger.goTo("2026-10-24")
+        ledger.audit = Instant.parse("2026-10-24T09:00:00Z")
+
+        assertEquals(2, catchUp("2026-10-24").size)
+        assertEquals(Instant.parse("2026-10-24T09:00:00Z"), listo(null))
+    }
+
+    /** A mark at the largest moment cannot be followed: the batch is refused, nothing written. */
+    @Test
+    fun aMarkNothingCanFollowRefusesTheBatchWithNothingWritten() = runBlocking {
+        rentAndSalary()
+        notice.seen = Instant.ofEpochMilli(Long.MAX_VALUE)
+        ledger.goTo("2026-10-24")
+        val store = RoomScheduleCatchUp(ledger.database, { ledger.audit }, {
+            uuid(ledger.nextRecord++)
+        }, notice)
+
+        assertEquals(
+            CatchUpBatch.Failed(StorageFailure.Integrity("catch_up", null, "created_at")),
+            store.recordDue(1, d("2026-10-24"), 50)
+        )
+        assertEquals(emptyList<String>(), recordedAfter(null))
     }
 
     /** With the clock never set back, a batch keeps the clock's time: never moved later. */

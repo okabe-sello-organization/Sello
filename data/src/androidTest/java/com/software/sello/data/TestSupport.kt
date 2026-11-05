@@ -154,7 +154,7 @@ fun finite(pesos: Long): BudgetLimit = BudgetLimit.finite(Money.cop(pesos)).valu
 
 /**
  * When the catch-up notice was last dismissed, as a test sets it; [fail] refuses writes,
- * [unreadable] fails reads with [seen] as the last good value.
+ * [unreadable] fails reads at once, with no last good value, as a fresh read does.
  */
 class NoticeSeen : CatchUpNoticePreferences {
     var seen: Instant? = null
@@ -164,7 +164,7 @@ class NoticeSeen : CatchUpNoticePreferences {
 
     override fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>> = flowOf(
         if (unreadable) {
-            PreferenceRead.Failed(PreferenceFailure.Unavailable, seen)
+            PreferenceRead.Failed(PreferenceFailure.Unavailable, null)
         } else {
             PreferenceRead.Ready(seen)
         }

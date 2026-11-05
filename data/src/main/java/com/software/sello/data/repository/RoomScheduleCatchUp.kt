@@ -74,8 +74,10 @@ class RoomScheduleCatchUp internal constructor(
 
     /**
      * How far the notice is marked seen, in epoch milliseconds; null before the first
-     * Listo. Unreadable, its last good value or nothing: recording never waits on the
-     * notice, and the stamps stored (see [stamp]) still hold every mark Listo can make.
+     * Listo. Recording never waits on the notice: unreadable, the mark adds what that read
+     * still knew, which is nothing for a read that fails at once, as each one here starts
+     * afresh. The stamps and receipts stored (see [stamp]) then still hold it, except a
+     * mark up to entries a restore brought that were deleted since (ADR 0025).
      */
     private suspend fun seenMark(): Long? =
         when (val read = notice.observeCatchUpNoticeSeen().first()) {
@@ -87,7 +89,8 @@ class RoomScheduleCatchUp internal constructor(
      * When this batch is recorded: now on the audit clock, unless that is not after the
      * latest of [seen], the newest entry with an origin and the last catch-up or restore,
      * the moments the notice can be marked seen up to. Then one millisecond after it, so
-     * a clock set back never puts what catch-up records before a Listo (#340).
+     * a clock set back never puts what catch-up records before a Listo (#340, ADR 0025).
+     * A moment nothing can follow refuses the batch with nothing written.
      */
     private suspend fun stamp(seen: Long?): Instant {
         val now = audit.now()
@@ -98,7 +101,7 @@ class RoomScheduleCatchUp internal constructor(
             database.operationReceiptDao().lastCommittedAt(OperationKind.CatchUpSchedules.key),
             database.operationReceiptDao().lastCommittedAt(OperationKind.RestoreHistory.key)
         ).maxOrNull() ?: return now
-        val earliest = nextCounter(latest, "expense", null, "created_at")
+        val earliest = nextCounter(latest, BATCH, null, "created_at")
         return if (now.toEpochMilli() >= earliest) now else Instant.ofEpochMilli(earliest)
     }
 
@@ -138,6 +141,11 @@ class RoomScheduleCatchUp internal constructor(
     }
 
     private class Due(val stored: StoredSchedule, val origin: EntryOrigin)
+
+    private companion object {
+        /** What a refused stamp names: the batch, whether its entries are expenses or incomes. */
+        const val BATCH = "catch_up"
+    }
 
     /**
      * Runs inside the transaction. Every return before the first insert writes nothing,
