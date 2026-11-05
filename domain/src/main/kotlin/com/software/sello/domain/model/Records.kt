@@ -7,7 +7,10 @@ import java.time.LocalDate
  * A recorded expense. [date] is the effective day in the financial zone. [sequence]
  * orders records that share a day and never changes once assigned. [createdAt] is the
  * real moment it was first added and is kept through edits; [version] starts at 1.
- * [origin] is present only when a schedule recorded it, and edits never change it.
+ * [origin] is present only when a schedule recorded it, and edits never change it. One a
+ * schedule records is stamped at least 1 ms after the latest moment the catch-up notice
+ * can be marked seen up to, so it can be later than the clock when the clock moved back
+ * (ADR 0025).
  */
 data class Expense(
     val id: ExpenseId,

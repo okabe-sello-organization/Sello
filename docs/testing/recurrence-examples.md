@@ -151,6 +151,7 @@ Each schedule here was created on its start date.
 | RE38 | Catch-up at opening records 2; the notice is not dismissed; the day changes and 1 more is recorded | The notice lists 3. Dismissed: empty and hidden until something new is recorded |
 | RE39 | One of the listed occurrences is deleted from its edit | It leaves the list; the other entries stay |
 | RE40 | Two payments of 999.999.999.999 reserved | `Q` 1.999.999.999.998, a checked sum; an amount of 1.000.000.000.000 is refused when saving the schedule |
+| RE41 | Listo at 13:00; the clock is then set back to 09:00 and catch-up records 2 | The notice lists 2: catch-up stamps them after the Listo, whatever the clock says ([ADR 0025](../decisions/0025-catch-up-stamps-after-the-notice-mark.md), #340) |
 
 ## Open points
 

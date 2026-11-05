@@ -79,7 +79,7 @@ class ScheduleMonthReadsTest {
     private suspend fun catchUp(today: String): List<RecordedOccurrence> {
         val store = RoomScheduleCatchUp(ledger.database, { ledger.audit }, {
             uuid(ledger.nextRecord++)
-        })
+        }, NoticeSeen())
         return (store.recordDue(1, d(today), 50) as CatchUpBatch.Recorded).occurrences
     }
 

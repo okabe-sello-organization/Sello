@@ -93,7 +93,9 @@ class ScheduleChangeContractTest {
     /** Everything due up to [today], as catch-up records it, by date. */
     private suspend fun catchUp(today: String): List<String> {
         val store =
-            RoomScheduleCatchUp(ledger.database, { ledger.audit }, { uuid(ledger.nextRecord++) })
+            RoomScheduleCatchUp(ledger.database, {
+                ledger.audit
+            }, { uuid(ledger.nextRecord++) }, NoticeSeen())
         val recorded = mutableListOf<String>()
         while (true) {
             val batch = store.recordDue(1, d(today), 50)

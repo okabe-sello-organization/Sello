@@ -49,7 +49,7 @@ class ScheduleCatchUpContractTest {
 
     private fun store() = RoomScheduleCatchUp(ledger.database, {
         ledger.audit
-    }, { uuid(ledger.nextRecord++) })
+    }, { uuid(ledger.nextRecord++) }, NoticeSeen())
 
     private suspend fun batch(today: String, limit: Int = CatchUpSchedules.BATCH) =
         store().recordDue(1, d(today), limit)

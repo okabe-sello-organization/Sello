@@ -88,7 +88,8 @@ interface ClosedMonthInvitePreferences {
 
 /**
  * When the catch-up notice was last dismissed with Listo, on the audit clock that also
- * stamps what catch-up records; null before the first time.
+ * stamps what catch-up records; null before the first time. Catch-up stamps what it
+ * records after it, even with the clock set back since (#340).
  */
 interface CatchUpNoticePreferences {
     fun observeCatchUpNoticeSeen(): Flow<PreferenceRead<Instant?>>

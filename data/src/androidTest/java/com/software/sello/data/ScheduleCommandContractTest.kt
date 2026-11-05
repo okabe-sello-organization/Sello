@@ -466,7 +466,9 @@ class ScheduleCommandContractTest {
         ledger.goTo("2026-10-12")
         ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, hogar, 1))
 
-        RoomScheduleCatchUp(ledger.database, { ledger.audit }, { uuid(ledger.nextRecord++) })
+        RoomScheduleCatchUp(ledger.database, {
+            ledger.audit
+        }, { uuid(ledger.nextRecord++) }, NoticeSeen())
             .recordDue(1, LocalDate.parse("2026-10-12"), 50)
         val archived = ledger.categories.submit(ArchiveCategory(ledger.operation(), 1, hogar, 1))
 

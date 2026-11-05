@@ -18,11 +18,15 @@ import com.software.sello.domain.policy.EffectiveDates
 import com.software.sello.domain.policy.SchedulePolicy
 import com.software.sello.domain.port.AuditClock
 import com.software.sello.domain.port.CatchUpBatch
+import com.software.sello.domain.port.CatchUpNoticePreferences
+import com.software.sello.domain.port.PreferenceRead
 import com.software.sello.domain.port.RecordIdSource
 import com.software.sello.domain.port.RecordedOccurrence
 import com.software.sello.domain.port.ScheduleCatchUpStore
 import com.software.sello.domain.port.StoredSchedule
+import java.time.Instant
 import java.time.LocalDate
+import kotlinx.coroutines.flow.first
 
 /**
  * One batch of catch-up in one transaction (docs/testing/recurrence-examples.md, rules
@@ -35,11 +39,16 @@ import java.time.LocalDate
  * is unique, so a batch that committed is never written again. Every check comes before
  * the first write, so a batch refused is a batch with nothing written. A history
  * replaced since the caller's generation is not written to at all.
+ *
+ * A batch is stamped after every moment the catch-up notice may be marked seen up to
+ * ([notice]'s mark, an entry with an origin, a catch-up or a restore), so it is listed
+ * until Listo whatever the wall clock did since (#340).
  */
 class RoomScheduleCatchUp internal constructor(
     private val database: SelloDatabase,
     private val audit: AuditClock,
-    private val ids: RecordIdSource
+    private val ids: RecordIdSource,
+    private val notice: CatchUpNoticePreferences
 ) : ScheduleCatchUpStore {
     override suspend fun recordDue(generation: Long, today: LocalDate, limit: Int): CatchUpBatch {
         // Most runs find nothing due; they read and never take the write lock.
@@ -54,12 +63,47 @@ class RoomScheduleCatchUp internal constructor(
      * The batch's own transaction, which checks [generation] again: a restore or an erase
      * can commit between the read above and it.
      */
-    internal suspend fun recordBatch(generation: Long, today: LocalDate, limit: Int): CatchUpBatch =
-        when (val run = database.runCommand { record(generation, today, limit) }) {
+    internal suspend fun recordBatch(generation: Long, today: LocalDate, limit: Int): CatchUpBatch {
+        val seen = seenMark()
+        return when (val run = database.runCommand { record(generation, today, limit, seen) }) {
             is CommandRun.Finished -> run.value
             is CommandRun.RolledBack -> CatchUpBatch.Failed(run.failure)
             CommandRun.Unknown -> CatchUpBatch.Unknown
         }
+    }
+
+    /**
+     * How far the notice is marked seen, in epoch milliseconds; null before the first
+     * Listo. Recording never waits on the notice: unreadable, the mark adds what that read
+     * still knew, which is nothing for a read that fails at once, as each one here starts
+     * afresh. The stamps and receipts stored (see [stamp]) then still hold it, except a
+     * mark up to entries a restore brought that were deleted since (ADR 0025).
+     */
+    private suspend fun seenMark(): Long? =
+        when (val read = notice.observeCatchUpNoticeSeen().first()) {
+            is PreferenceRead.Ready -> read.value
+            is PreferenceRead.Failed -> read.lastGood
+        }?.toEpochMilli()
+
+    /**
+     * When this batch is recorded: now on the audit clock, unless that is not after the
+     * latest of [seen], the newest entry with an origin and the last catch-up or restore,
+     * the moments the notice can be marked seen up to. Then one millisecond after it, so
+     * a clock set back never puts what catch-up records before a Listo (#340, ADR 0025).
+     * A moment nothing can follow refuses the batch with nothing written.
+     */
+    private suspend fun stamp(seen: Long?): Instant {
+        val now = audit.now()
+        val latest = listOfNotNull(
+            seen,
+            database.expenseDao().newestRecordedAt(),
+            database.incomeDao().newestRecordedAt(),
+            database.operationReceiptDao().lastCommittedAt(OperationKind.CatchUpSchedules.key),
+            database.operationReceiptDao().lastCommittedAt(OperationKind.RestoreHistory.key)
+        ).maxOrNull() ?: return now
+        val earliest = nextCounter(latest, BATCH, null, "created_at")
+        return if (now.toEpochMilli() >= earliest) now else Instant.ofEpochMilli(earliest)
+    }
 
     /**
      * Read without writing: [CatchUpBatch.Stale] for a replaced history, nothing recorded
@@ -98,11 +142,21 @@ class RoomScheduleCatchUp internal constructor(
 
     private class Due(val stored: StoredSchedule, val origin: EntryOrigin)
 
+    private companion object {
+        /** What a refused stamp names: the batch, whether its entries are expenses or incomes. */
+        const val BATCH = "catch_up"
+    }
+
     /**
      * Runs inside the transaction. Every return before the first insert writes nothing,
      * and none comes after it: a refusal there would commit the rows already inserted.
      */
-    private suspend fun record(generation: Long, today: LocalDate, limit: Int): CatchUpBatch {
+    private suspend fun record(
+        generation: Long,
+        today: LocalDate,
+        limit: Int,
+        seen: Long?
+    ): CatchUpBatch {
         val profile = when (val stored = profileFrom(database.profileDao().rows())) {
             is Outcome.Success -> stored.value
             is Outcome.Failure -> return CatchUpBatch.Failed(stored.error)
@@ -141,7 +195,7 @@ class RoomScheduleCatchUp internal constructor(
             }
         }
 
-        val now = audit.now()
+        val now = stamp(seen)
         val recorded = due.map { item ->
             when (val entry = item.stored.schedule.entry) {
                 is ScheduledEntry.Payment -> {
