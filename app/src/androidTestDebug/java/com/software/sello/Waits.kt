@@ -2,18 +2,20 @@ package com.software.sello
 
 import android.app.Activity
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import android.view.Choreographer
 import android.view.WindowInsets
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.printToString
 import androidx.lifecycle.ViewModelProvider
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso
@@ -53,11 +55,22 @@ fun ComposeTestRule.awaitDescription(description: String) =
 /**
  * Presses a control through its accessibility action instead of by screen position.
  * After typing, the system keyboard may still be sliding in and moving things; a
- * press aimed at where the control was a moment ago can miss. It refuses a disabled
- * control, as a real tap would: the click action alone would still run it.
+ * press aimed at where the control was a moment ago can miss. A control that typing
+ * enables may take a moment to show it, so this waits for the control to be enabled,
+ * and fails if it never is: the click action alone would run a disabled control.
  */
-fun SemanticsNodeInteraction.press(): SemanticsNodeInteraction =
-    assertIsEnabled().performSemanticsAction(SemanticsActions.OnClick)
+fun SemanticsNodeInteraction.press(): SemanticsNodeInteraction {
+    val deadline = SystemClock.uptimeMillis() + PATIENCE_MILLIS
+    while (!isEnabled().matches(fetchSemanticsNode())) {
+        val left = deadline - SystemClock.uptimeMillis()
+        if (left <= 0 || !awaitFrame(left)) {
+            throw AssertionError(
+                "Not enabled within $PATIENCE_MILLIS ms, so not pressed:\n${printToString()}"
+            )
+        }
+    }
+    return performSemanticsAction(SemanticsActions.OnClick)
+}
 
 /**
  * Scrolls to this node when a scrolling container holds it, and leaves it be otherwise:
@@ -116,13 +129,7 @@ private fun keyboardShown(): Boolean {
  * A field left puts the keyboard away two frames on, so this lets the app draw three first.
  */
 fun systemKeyboardRequested(): Boolean {
-    repeat(3) {
-        val drawn = CountDownLatch(1)
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            Choreographer.getInstance().postFrameCallback { drawn.countDown() }
-        }
-        check(drawn.await(PATIENCE_MILLIS, TimeUnit.MILLISECONDS)) { "No frame was drawn" }
-    }
+    repeat(3) { check(awaitFrame()) { "No frame was drawn" } }
     val dump = InstrumentationRegistry.getInstrumentation().uiAutomation
         .executeShellCommand("dumpsys input_method")
         .let { ParcelFileDescriptor.AutoCloseInputStream(it) }
@@ -130,6 +137,15 @@ fun systemKeyboardRequested(): Boolean {
         .use { it.readText() }
     check("mInputShown=" in dump) { "dumpsys input_method no longer reports mInputShown" }
     return "mShowRequested=true" in dump || "mInputShown=true" in dump
+}
+
+/** Waits up to [millis] for the app to draw its next frame; whether it did. */
+private fun awaitFrame(millis: Long = PATIENCE_MILLIS): Boolean {
+    val drawn = CountDownLatch(1)
+    InstrumentationRegistry.getInstrumentation().runOnMainSync {
+        Choreographer.getInstance().postFrameCallback { drawn.countDown() }
+    }
+    return drawn.await(millis, TimeUnit.MILLISECONDS)
 }
 
 /** Waits until the installed app's data has opened or failed; see [SelloTestRunner]. */
