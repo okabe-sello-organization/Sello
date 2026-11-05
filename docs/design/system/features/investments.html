@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Investments · Sello design system</title>
+  <link rel="stylesheet" href="../assets/system.css">
+  <script src="../assets/system.js" defer></script>
+</head>
+<body data-page="features/investments">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Feature</p>
+      <h1>Investments</h1>
+      <p class="lede">Write down what is invested, what it is worth now and what moved in or out, in pesos or dollars, and see the total and the return.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section id="purpose">
+      <h2>Purpose</h2>
+      <p>Inversiones lists every investment with its value and signed return and adds them up into one total (dollars converted at a rate the person types in). Each investment has a detail page with a chart of recorded values against what was put in, and its movements. Movements are aportes, values of the day, retiros and dividends, typed one at a time or several on one receipt. Sello never fetches a price or a rate. Every figure stays in its investment's own currency.</p>
+    </section>
+
+    <section id="entry-points">
+      <h2>Entry points</h2>
+      <ul>
+        <li><strong>Inversiones tab</strong> in the bottom navigation: <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:83</code>. Back on the tab goes to Recibo: <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:119</code>.</li>
+        <li><strong>Investment detail</strong> from a row of the list: <code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:248</code>; after creating an investment the editor replaces itself with its detail: <code>…/InvestmentDestinations.kt:297</code>.</li>
+        <li><strong>Nueva inversión</strong> from the title chip or the empty-state dock: <code>…/InvestmentDestinations.kt:251</code>. <strong>Editar inversión</strong> from the detail's pencil: <code>…/InvestmentDestinations.kt:275</code>.</li>
+        <li><strong>Anotar movimiento</strong> from the dock of the list (no investment chosen, <code>…/InvestmentDestinations.kt:253</code>), the dock of a detail (that investment chosen, <code>…:278</code>), "Anotar el valor de hoy" on a detail (kind Valor de hoy, <code>…:278</code> with <code>KIND_VALUATION</code>) and a movement row (its correction, <code>…:283</code>).</li>
+        <li><strong>Varios movimientos</strong> from "Anotar varios" at the list foot (<code>…:256</code>), "Varios movimientos" at the detail foot (<code>…:288</code>) and "Otro movimiento" on Anotar movimiento, which replaces the form and carries what was typed as line one (<code>…:317</code>).</li>
+        <li><strong>Dólar</strong> from the rate line on the list's total (<code>…:250</code>) and from the Dólar row in Configuración (<code>app/src/main/java/com/software/sello/feature/settings/SettingsScreen.kt:318</code>, routed at <code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:42</code>). <strong>Tasa del dólar</strong> from "Cambiar la tasa" or the empty slip's "Anotar la tasa": <code>…/InvestmentDestinations.kt:341</code>.</li>
+        <li>Notices after a save or delete ("Aporte anotado: …", "Movimiento borrado" with Deshacer) arrive on the list and the detail through the shell's notice bar: <code>app/src/main/java/com/software/sello/navigation/CorrectionNoticeBar.kt:417</code>.</li>
+      </ul>
+    </section>
+
+    <section id="screen-inversiones">
+      <h2>Screen: Inversiones</h2>
+
+      <figure data-shot="inversiones" data-module="app"
+              data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
+              data-caption="Loaded: a total that gains, four investments, one in dollars, one without a value"></figure>
+      <figure data-module="app" data-files="inversiones-foot-cobalto-light.png"
+              data-caption="Scrolled to the foot: the rows and Anotar varios"></figure>
+      <figure data-shot="components-goals-and-investments" data-module="app"
+              data-caption="InvestmentRow and PerformanceLine beside the goal parts"></figure>
+
+      <h3>Layout</h3>
+      <ol>
+        <li>Shell: the title "Inversiones" (never a month) and, once there is an investment, the <a href="../components.html#c-BandChip"><code>BandChip</code></a> "Nueva inversión" beside it (<code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:85</code>).</li>
+        <li>The total as an <a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a>: "Tus inversiones valen", the figure, the stamp "Gana" or "Pierde" (none when even), then <code>PerformanceLine</code> (arrow, signed percentage, the gain in words), "En total, desde …", a <a href="../components.html#c-TearLine"><code>TearLine</code></a>, four <a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a>s (Aportaste, Retiraste, Dividendos y rentas, Ganancia in gain or loss ink), a quiet line with the dates of the values and the rate line (<code>app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:143</code>).</li>
+        <li>The list in a plain <a href="../components.html#c-Slip"><code>Slip</code></a>: heading "Dónde está, de mayor a menor", a <a href="../components.html#c-SplitBar"><code>SplitBar</code></a> with each part's percent written inside (gap 3dp, height 22dp), one <code>InvestmentRow</code> per investment whose circle takes the same ink as its part, and "Anotar varios" (<code>…/InversionesScreen.kt:231</code>).</li>
+        <li>Dock: "Agregar inversión" while there are none, otherwise "Anotar movimiento"; both ink with the Add icon so they are never taken for Anotar (brand) or Metas (green) (<code>…/InvestmentDestinations.kt:185</code>).</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s (a full one and a two-line one); no dock, no title chip.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InversionesScreen.kt:85</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> with the TrendingUp icon, "Anota lo que tienes invertido" and the body; the dock reads "Agregar inversión".</td><td><code>…/InversionesScreen.kt:116</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus inversiones" with Reintentar.</td><td><code>…/InversionesScreen.kt:95</code></td><td>no screenshot</td></tr>
+            <tr><td>Stale</td><td>The last good board stays, under an <code>ErrorSlip</code> with "No pudimos leer tus inversiones de nuevo. Te mostramos las de la última lectura." and Reintentar.</td><td><code>…/InversionesScreen.kt:106</code>; kept by <code>LastGoodRead</code> at <code>…/InversionesViewModel.kt:39</code></td><td>no screenshot</td></tr>
+            <tr><td>No total</td><td>Investments exist but none has a value, or a dollar value has no rate: a plain slip "Tus inversiones valen" and a sentence instead of a figure; the list heading becomes "Tus inversiones" and the bar is hidden.</td><td><code>…/InversionesScreen.kt:213</code></td><td>no screenshot</td></tr>
+            <tr><td>Loaded</td><td>Total and rows as above. A row without a value shows a dashed circle, "Sin valor" and "aportaste …".</td><td><code>…/InversionesScreen.kt:125</code></td><td>inversiones (above)</td></tr>
+            <tr><td>Busy, unknown outcome, restored draft, refused</td><td>Do not exist: the screen only reads.</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>A row: <code>InversionesAction.Open(id)</code>; the destination opens the detail. Rows are buttons only when the route passes <code>openRows</code>.</li>
+        <li>Rate line: a <a href="../components.html#c-Footnote"><code>Footnote</code></a> with Autorenew that opens Dólar when the shell gives <code>onOpenRate</code>; otherwise the same text as a quiet, untappable line.</li>
+        <li>"Anotar varios" (<a href="../components.html#c-SelloButton"><code>SelloButton</code></a> Text, ReceiptLong): opens Varios movimientos with no investment chosen.</li>
+        <li>Reintentar on the error or stale slip: <code>InversionesAction.Retry</code> starts a new read.</li>
+        <li>Title chip and dock: open the editor or Anotar movimiento.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Inversiones" (<code>inversiones_title</code>), "Tus inversiones valen" (<code>inversiones_value_label</code>), "Gana" / "Pierde" (<code>investment_stamp_gain</code>, <code>investment_stamp_loss</code>)</li>
+        <li>"%1$s de ganancia" / "%1$s de pérdida" / "sin ganancia ni pérdida" (<code>investment_gain_words</code>, <code>investment_loss_words</code>, <code>investment_even_words</code>), "En total, desde %1$s" (<code>inversiones_since</code>)</li>
+        <li>"Aportaste", "Retiraste", "Dividendos y rentas", "Ganancia" (<code>investment_contributed</code>, <code>investment_withdrawn</code>, <code>investment_dividends</code>, <code>investment_gain</code>)</li>
+        <li>"Valores anotados entre el %1$s y el %2$s" / "Valores anotados el %1$s" (<code>inversiones_valued_between</code>, <code>inversiones_valued_on</code>), "Dólar a %1$s · tasa del %2$s" (<code>inversiones_rate_line</code>)</li>
+        <li>"Dónde está, de mayor a menor" / "Tus inversiones" (<code>inversiones_where</code>, <code>inversiones_list</code>), "&lt;1 %" (<code>investment_share_under_one</code>), "%1$s · valor del %2$s" (<code>investment_row_detail</code>), "sin valor anotado" (<code>investment_row_no_value</code>), "Sin valor" (<code>investment_no_value</code>), "aportaste %1$s" (<code>investment_contributed_row</code>)</li>
+        <li>"Anota lo que tienes invertido" / "Un CDT, un fondo, acciones o un local. Anotas cuánto pusiste y, de vez en cuando, cuánto vale. Sello no se conecta a ningún banco." (<code>inversiones_empty_title</code>, <code>inversiones_empty_body</code>)</li>
+        <li>"Todavía no hay valores anotados. Anota cuánto vale cada una para ver el total." (<code>inversiones_no_values</code>), "Falta la tasa del dólar para sumar tus inversiones en dólares." (<code>inversiones_missing_rate</code>)</li>
+        <li>"No pudimos leer tus inversiones" / "Tus registros siguen guardados. Vuelve a intentarlo." (<code>inversiones_failed_title</code>, <code>inversiones_failed_body</code>), "No pudimos leer tus inversiones de nuevo. Te mostramos las de la última lectura." (<code>inversiones_stale</code>)</li>
+        <li>"Nueva inversión" (<code>inversiones_new</code>), "Agregar inversión" (<code>inversiones_dock_add</code>), "Anotar movimiento" (<code>inversiones_dock_move</code>), "Anotar varios" (<code>inversiones_record_several</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-detail">
+      <h2>Screen: Investment detail</h2>
+
+      <figure data-shot="investment-detail-chart" data-module="app"
+              data-caption="Scrolled to the chart and the short list of movements"></figure>
+      <figure data-shot="investment-detail-movements-all" data-module="app" data-variants="claro"
+              data-caption="Every movement, grouped by month"></figure>
+      <figure data-shot="investment-detail-varios" data-module="app"
+              data-caption="In the shell, after Varios movimientos saved: the notice over the dock"></figure>
+
+      <h3>Layout</h3>
+      <ol>
+        <li>Shell: back arrow, the investment's name as title, the pencil (<code>IconButton</code> with EditNote, "Editar inversión") once loaded, and the ink dock "Anotar movimiento" (<code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:130</code>).</li>
+        <li>The answer: an <code>AnswerSlip</code> "Vale" with the figure and Gana / Pierde, <code>PerformanceLine</code>, "Valor anotado el … · desde …", a <code>TearLine</code>, the four <code>LeaderLine</code>s and an outlined ink <code>SelloButton</code> "Anotar el valor de hoy" (Insights icon). Without a recorded value it is a plain <code>Slip</code>: "Vale", "Sin valor anotado" in headlineSmall, "Desde …", Aportaste and the same button (<code>app/src/main/java/com/software/sello/feature/investments/InvestmentDetailScreen.kt:103</code>).</li>
+        <li>The chart slip "Valor y lo que pusiste": a line above it with the picked value's day, "Vale …" and "Pusiste …"; then <code>RecordedValuesChart</code> (recorded values as dots joined by a line in brand, what was put in as a dashed step line, short amounts at the left, first, middle and last month underneath, a legend) (<code>…/InvestmentDetailScreen.kt:192</code>). Shown only with at least one recorded value.</li>
+        <li>The movements slip "Movimientos": the newest four as <a href="../components.html#c-MovementRow"><code>MovementRow</code></a>s (all of them, with a <a href="../components.html#c-MovementMonthLine"><code>MovementMonthLine</code></a> per month, once asked), then a foot with "Varios movimientos" and "Ver los N" (<code>…/InvestmentDetailScreen.kt:289</code>).</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>One <code>SlipSkeleton</code>; title "Inversiones", no pencil, no dock.</td><td><code>…/InvestmentDetailScreen.kt:73</code></td><td>no screenshot</td></tr>
+            <tr><td>Gone</td><td>The investment is no longer there (deleted): the skeleton shows while the destination leaves at once. No message.</td><td><code>…/InvestmentDetailScreen.kt:73</code>; <code>…/InvestmentDestinations.kt:143</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer esta inversión" / "Tus registros siguen guardados. Vuelve a intentarlo." with Reintentar.</td><td><code>…/InvestmentDetailScreen.kt:76</code></td><td>no screenshot</td></tr>
+            <tr><td>Stale</td><td>The page as last read under an <code>ErrorSlip</code> "No pudimos leer esta inversión de nuevo. Te mostramos la de la última lectura."</td><td><code>…/InvestmentDetailScreen.kt:85</code></td><td>no screenshot</td></tr>
+            <tr><td>No value yet</td><td>The plain "Vale · Sin valor anotado" slip; no chart.</td><td><code>…/InvestmentDetailScreen.kt:122</code></td><td>no screenshot</td></tr>
+            <tr><td>Loaded</td><td>Answer, chart, short movement list.</td><td><code>…/InvestmentDetailScreen.kt:84</code></td><td>investment-detail-chart</td></tr>
+            <tr><td>All movements</td><td>Every movement grouped by month; another year's month says its year.</td><td><code>…/InvestmentDetailScreen.kt:307</code></td><td>investment-detail-movements-all (light only)</td></tr>
+            <tr><td>Restored after process death</td><td>"All movements" and the picked chart value come back from <code>SavedStateHandle</code>.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentDetailViewModel.kt:43</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy, unknown outcome, refused</td><td>Do not exist here: writes happen in the forms.</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>Pencil: opens Editar inversión. Dock: Anotar movimiento with this investment chosen.</li>
+        <li>"Anotar el valor de hoy": <code>RecordValue</code>, opens Anotar movimiento on Valor de hoy.</li>
+        <li>Chart: a tap picks the dot nearest in time (<code>SelectValue</code>); each dot is also a named radio button for screen readers.</li>
+        <li>A movement row: <code>OpenMovement(id)</code>, opens its correction.</li>
+        <li>"Varios movimientos": <code>RecordSeveral</code>, opens the receipt for this investment. "Ver los N": <code>ShowAllMovements</code>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Vale" (<code>investment_value_label</code>), "Sin valor anotado" (<code>investment_no_value_answer</code>), "Desde %1$s" (<code>investment_since</code>), "Valor anotado el %1$s · desde %2$s" (<code>investment_valued_since</code>)</li>
+        <li>"Anotar el valor de hoy" (<code>investment_record_value</code>), "Editar inversión" (<code>investment_edit</code>)</li>
+        <li>"Valor y lo que pusiste" (<code>investment_chart_title</code>), "Valor anotado" / "Lo que pusiste" (<code>investment_chart_values</code>, <code>investment_chart_put</code>), "Vale" / "Pusiste" (<code>investment_chart_picked_value</code>, <code>investment_chart_picked_put</code>), "%1$s mil" / "%1$s M" (<code>investment_axis_thousands</code>, <code>investment_axis_millions</code>)</li>
+        <li>"Movimientos" (<code>investment_movements</code>), "Aporte", "Valor de hoy", "Retiro", "Dividendo" (<code>investment_kind_*</code>), "ganancia", "pérdida", "sin ganancia", "pusiste", "dividendos" (<code>investment_movement_gain</code>, <code>_loss</code>, <code>_even</code>, <code>_put_in</code>, <code>_dividends</code>)</li>
+        <li>"Varios movimientos" (<code>investment_movements_title</code>), "Ver el movimiento" / "Ver los %d" (<code>investment_movements_all</code>)</li>
+        <li>"No pudimos leer esta inversión" (<code>investment_failed_title</code>), "No pudimos leer esta inversión de nuevo. Te mostramos la de la última lectura." (<code>investment_stale</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-editor">
+      <h2>Screen: Nueva inversión / Editar inversión</h2>
+
+      <figure data-shot="investment-editor" data-module="app"
+              data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
+              data-caption="New, ready to create: name, description, Pesos"></figure>
+      <figure data-shot="investment-editor-editing-menu" data-module="app"
+              data-caption="Editing, with the ⋮ menu open on Borrar inversión"></figure>
+      <figure data-shot="investment-editor-unresolved" data-module="app"
+              data-caption="Editing after a save whose outcome is unknown"></figure>
+
+      <h3>Layout</h3>
+      <ol>
+        <li><a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>: ✕ (an inline <code>IconButton</code>, "Cerrar"), the title, and when editing a <a href="../components.html#c-MoreMenu"><code>MoreMenu</code></a> with "Borrar inversión" in loss ink (<code>app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:138</code>).</li>
+        <li>New: an <a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a> with an empty header and amount; everything scrolls in <code>choices</code>, while the button and the pad stay put (<code>…:196</code>):
+          <ul>
+            <li>The identity slip: <a href="../components.html#c-IconPickerCircle"><code>IconPickerCircle</code></a> in ink beside the <a href="../components.html#c-FormField"><code>FormField</code></a> "Nombre" (with a 0/40 counter), "Descripción (opcional)", and a <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> Pesos | Dólares; with Dólares a <a href="../components.html#c-FactLine"><code>FactLine</code></a> says it cannot change later (<code>…:371</code>).</li>
+            <li>"Primer aporte" as an <a href="../components.html#c-EntryAmountSlip"><code>EntryAmountSlip</code></a> with a date <a href="../components.html#c-FieldPill"><code>FieldPill</code></a>, and at its foot "Vale hoy: lo mismo que aportas" with the text button "Otro valor" (<code>…:547</code>).</li>
+            <li>With "Otro valor": a second figure "Vale hoy" with a fact line (<code>…:635</code>).</li>
+            <li>Dollars without a rate: a third figure "¿A cuánto está el dólar?" with its own date; with a rate, one fact line names it (<code>…:657</code>).</li>
+            <li>Above the button, a grey hint for what is missing or the save problem (<a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a>), then the full-width ink button "Crear inversión" (TrendingUp icon) (<code>…:260</code>).</li>
+            <li><a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a>, compact, with the comma key for dollars or the rate. The figure it types into is edged in ink; the others step back to 55 %.</li>
+          </ul>
+        </li>
+        <li>Editing: only the identity slip (no currency switch, no figures, no pad), and "Guardar cambios" (Check icon) at the bottom (<code>…:167</code>).</li>
+        <li>Over the form: the icon sheet (<a href="../components.html#c-RepeatSheet"><code>RepeatSheet</code></a> "Elige un ícono" with <a href="../components.html#c-IconChoiceSheetContent"><code>IconChoiceSheetContent</code></a>, money and investment icons first), the Material date picker, and <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a>s for delete and discard.</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>One <code>SlipSkeleton</code>.</td><td><code>…/InvestmentEditorScreen.kt:177</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> with the default title and "No pudimos leer esta inversión. Tus registros siguen guardados."</td><td><code>…/InvestmentEditorScreen.kt:179</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty (new)</td><td>Name focused with the keyboard up; hint "Elige un ícono." over the disabled button.</td><td><code>…/InvestmentEditorScreen.kt:380</code>, <code>:263</code></td><td>no screenshot</td></tr>
+            <tr><td>Ready</td><td>Name, icon and first aporte given: "Crear inversión" enabled.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentEditorState.kt:123</code></td><td>investment-editor</td></tr>
+            <tr><td>Dollars, no rate</td><td>The rate figure and its date appear; "Anota a cuánto está el dólar." until typed; "La tasa es de 1,00 en adelante" / "La tasa llega hasta 100.000,00" under it.</td><td><code>…/InvestmentEditorScreen.kt:679</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy</td><td>The button keeps its label with a spinner; fields and pad disabled.</td><td><code>…/InvestmentEditorScreen.kt:297</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "No sabemos si se guardó. Compruébalo antes de seguir." and the button "Comprobar si se guardó" (or "Comprobar si se borró"); Back does nothing until it is resolved. ⋮ stays.</td><td><code>…/InvestmentEditorScreen.kt:322</code>; <code>…/InvestmentEditorViewModel.kt:238</code></td><td>investment-editor-unresolved</td></tr>
+            <tr><td>Refused</td><td>An error line above the button: not saved, changed meanwhile, future date, invalid, rate required or unchanged.</td><td><code>…/InvestmentEditorScreen.kt:322</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Typed text, figures, the pad's field, an open date picker, the delete confirm and an operation in flight come back from <code>SavedStateHandle</code>.</td><td><code>…/InvestmentEditorViewModel.kt:106</code></td><td>no screenshot</td></tr>
+            <tr><td>Confirm delete</td><td><code>ConfirmSlip</code> "¿Borrar …?" with "Se borran la inversión y sus N movimientos. Esto no se puede deshacer." (count in bold), "Borrar".</td><td><code>…/InvestmentEditorScreen.kt:236</code></td><td>no screenshot</td></tr>
+            <tr><td>Confirm discard</td><td><code>ConfirmSlip</code> "¿Descartar los cambios?", "Descartar" / "Seguir editando".</td><td><code>…/InvestmentEditorScreen.kt:246</code></td><td>no screenshot</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>✕ and system Back: <code>Back</code>; asks before throwing away a change, closes otherwise.</li>
+        <li>Icon circle: opens the icon sheet; a pick sends <code>IconPicked</code>.</li>
+        <li>Pesos | Dólares: <code>CurrencyPicked</code> (new only).</li>
+        <li>Tapping a figure slip: <code>TypeInto(field)</code>, the pad moves to it and it scrolls into view. Pad keys: <code>Digit</code>, <code>TripleZero</code>, <code>Comma</code>, <code>Backspace</code>, <code>Clear</code>.</li>
+        <li>Date pills: <code>OpenDatePicker(First | Rate)</code>; Aceptar sends <code>DatePicked</code>.</li>
+        <li>"Otro valor" / "Igual al aporte": <code>SameValuePicked</code>.</li>
+        <li>The button: <code>Submit</code>, or <code>Retry</code> when the outcome is unknown. Creating opens the new investment's detail; saving an edit closes.</li>
+        <li>⋮ "Borrar inversión": <code>AskToDelete</code>, then the confirm's "Borrar": <code>Delete</code>; deleting returns to Inversiones.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Nueva inversión" / "Editar inversión" (<code>investment_editor_new</code>, <code>investment_editor_edit</code>), "Nombre" (<code>investment_editor_name</code>), "CDT, fondo, acciones…" (<code>investment_editor_name_hint</code>), "Descripción (opcional)" (<code>investment_editor_description</code>), "Ej. CDT a 360 días" (<code>investment_editor_description_hint</code>)</li>
+        <li>"Pesos" / "Dólares" (<code>investment_editor_pesos</code>, <code>investment_editor_dollars</code>), "Lo que anotes de esta inversión queda en dólares. No se puede cambiar después." (<code>investment_editor_dollars_fact</code>)</li>
+        <li>"Primer aporte" / "Primer aporte en dólares" (<code>investment_editor_first</code>, <code>investment_editor_first_usd</code>), "Vale hoy: lo mismo que aportas" / "Vale hoy: otro valor, abajo" (<code>investment_editor_value_same</code>, <code>investment_editor_value_other</code>), "Otro valor" / "Igual al aporte" (<code>investment_editor_other</code>, <code>investment_editor_same</code>)</li>
+        <li>"¿A cuánto está el dólar?" (<code>investment_editor_rate_ask</code>), "Dólar a %1$s, tasa del %2$s: solo para el total en pesos." (<code>investment_editor_rate_line</code>)</li>
+        <li>"Elige un ícono." / "Escribe un nombre." / "Escribe el primer aporte." / "Escribe cuánto vale hoy." / "Anota a cuánto está el dólar." (<code>investment_editor_missing_*</code>)</li>
+        <li>"Crear inversión" / "Guardar cambios" (<code>investment_editor_create</code>, <code>investment_editor_save</code>), "Comprobar si se guardó" (<code>expense_entry_check_again</code>)</li>
+        <li>"Borrar inversión" (<code>investment_delete_action</code>), "¿Borrar %s?" (<code>investment_delete_confirm_title</code>), "Se borran la inversión y %s. Esto no se puede deshacer." (<code>investment_delete_consequences</code>)</li>
+        <li>"Así reconocerás la inversión en Inversiones." (<code>investment_icon_sheet_note</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-movement">
+      <h2>Screen: Anotar movimiento (and its correction)</h2>
+
+      <figure data-shot="investment-movement" data-module="app"
+              data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0,violeta-dark-font1.0"
+              data-caption="An aporte of 500.000 typed for Ecopetrol"></figure>
+
+      <h3>Layout</h3>
+      <ol>
+        <li><code>SelloScaffold</code> titled "Movimiento" on the dark investment band, ✕ from <code>MovementCloseButton</code>; a correction adds "Borrar" as a text button on the band (<code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementScreen.kt:108</code>).</li>
+        <li><code>EntryLayout</code> on the same band. Amount: <code>EntryAmountSlip</code> "Aporte en pesos" (or "… en dólares") with the type's sign drawn, the investment's icon, the date pill and a paste button for pesos (<code>…:204</code>). Under it, the <a href="../components.html#c-MoreSlip"><code>MoreSlip</code></a> "Otro movimiento" for a new movement.</li>
+        <li>Choices: <a href="../components.html#c-EntryHeading"><code>EntryHeading</code></a> "Tipo" with one row of <a href="../components.html#c-SelloChip"><code>SelloChip</code></a>s (Aporte, Valor de hoy, Retiro, Dividendo o renta) in <a href="../components.html#c-ChipRows"><code>ChipRows</code></a>; "Inversión" with two rows of investment chips, the chosen one first (<a href="../components.html#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>); one fact line about the chosen investment, with figures in bold, and "Anotar el valor de hoy" when a retiro waits for a value; the note line (<code>…:252</code>).</li>
+        <li>Action: what blocks it (before the first aporte, a later retiro left short), the save error, a hint, then the ink button named after the type ("Anotar aporte", "Anotar valor", …) (<code>…:363</code>).</li>
+        <li>Compact <code>AmountKeypad</code>, with the comma for dollars.</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>…/InvestmentMovementScreen.kt:131</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer tus inversiones".</td><td><code>…/InvestmentMovementScreen.kt:135</code></td><td>no screenshot</td></tr>
+            <tr><td>No investments</td><td>Fact line "Todavía no tienes inversiones. Agrega una en Inversiones." instead of chips.</td><td><code>…/InvestmentMovementScreen.kt:266</code></td><td>no screenshot</td></tr>
+            <tr><td>No investment chosen</td><td>Hint "Elige en qué inversión va."; Otro movimiento hidden.</td><td><code>…/InvestmentMovementScreen.kt:441</code></td><td>no screenshot</td></tr>
+            <tr><td>Typed</td><td>Signed amount, fact line, enabled button.</td><td><code>…/InvestmentMovementScreen.kt:144</code></td><td>investment-movement</td></tr>
+            <tr><td>Retiro above the value / no value</td><td>"Más de lo que vale (…)" under the amount, the fact ends "¿Vale más hoy?", and "Anotar el valor de hoy" switches to Valor de hoy.</td><td><code>…/InvestmentMovementScreen.kt:221</code>, <code>:348</code></td><td>no screenshot</td></tr>
+            <tr><td>Blocked</td><td>Error lines above the button for a date before the first aporte or a later retiro left short.</td><td><code>…/InvestmentMovementScreen.kt:366</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy</td><td>The button reads "Guardando…" with a spinner; chips and pad disabled.</td><td><code>…/InvestmentMovementScreen.kt:460</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó"; the draft is locked and Back waits.</td><td><code>…/InvestmentMovementScreen.kt:405</code>; <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementViewModel.kt:318</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused</td><td>Error line: not saved, future date, data changed, gone, changed, currency mismatch, unchanged, last aporte, not deleted.</td><td><code>…/InvestmentMovementScreen.kt:400</code></td><td>no screenshot</td></tr>
+            <tr><td>Correction</td><td>Same form with type and investment fixed, "Guardar cambios", hint "Aún no cambiaste nada." until something changes, and "Borrar" on the band (deletes at once; the list or detail then shows "Movimiento borrado" with Deshacer).</td><td><code>…/InvestmentMovementScreen.kt:118</code>, <code>:444</code>; <code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementNotices.kt:25</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Amount, type, investment, date, note and the open composer survive process death.</td><td><code>…/InvestmentMovementViewModel.kt:127</code>, <code>:157</code></td><td>no screenshot</td></tr>
+            <tr><td>Confirm discard</td><td><code>MovementDiscardSlip</code> "¿Descartar este movimiento?".</td><td><code>…/InvestmentMovementScreen.kt:184</code></td><td>no screenshot</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>Type chips: <code>Kind</code>; investment chips: <code>InvestmentPicked</code> (both fixed in a correction).</li>
+        <li>Pad: <code>Digit</code>, <code>TripleZero</code>, <code>Comma</code> (dollars), <code>Backspace</code>, <code>ClearAmount</code>; paste: <code>Paste</code> (pesos only; a refused paste stays visible with "Escribe un monto entero entre 1 y 999.999.999.999.").</li>
+        <li>Date pill: the shared <code>MovementDatePicker</code>. Note line: the shared note composer.</li>
+        <li>"Anotar el valor de hoy" (text, ink): <code>RecordValueFirst</code>.</li>
+        <li>"Otro movimiento": <code>Several</code>, replaces this form with Varios movimientos and what is typed as line one.</li>
+        <li>The button: <code>Submit</code> or <code>Retry</code>. "Borrar": <code>Delete</code>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Movimiento" (<code>investment_movement_title</code>), "Tipo" / "Inversión" (<code>investment_movement_type</code>, <code>investment_movement_investment</code>), "Aporte", "Valor de hoy", "Retiro", "Dividendo o renta" (<code>investment_movement_contribution</code>, <code>_valuation</code>, <code>_withdrawal</code>, <code>_dividend</code>)</li>
+        <li>"%1$s en pesos" / "%1$s en dólares" (<code>investment_movement_label_pesos</code>, <code>investment_movement_label_dollars</code>), "Más de lo que vale (%1$s)" (<code>investment_movement_over_value</code>), "Máximo 10 dígitos y 2 decimales" (<code>investment_movement_limit_dollars</code>)</li>
+        <li>"Llevas %1$s aportados en %2$s." / "Último valor: %1$s, anotado el %2$s. El nuevo lo reemplaza; no se suma." / "Todavía no tiene un valor anotado. Este será el primero." / "Vale %1$s según el valor del %2$s." / "¿Vale más hoy?" / "Anota el valor de hoy primero." / "Llevas %1$s en dividendos y rentas de %2$s." (<code>investment_movement_fact_*</code>)</li>
+        <li>"No puede ser antes del primer aporte (%1$s)." (<code>investment_movement_before_first</code>), "No se puede: el retiro de %1$s del %2$s sería más de lo que valdría (%3$s). Borra o corrige ese retiro primero." (<code>investment_movement_blocked</code>)</li>
+        <li>"Anotar aporte", "Anotar valor", "Anotar retiro", "Anotar dividendo" (<code>investment_movement_record_*</code>), "Otro movimiento" (<code>entry_more_movement</code>), "Borrar" (<code>expense_edit_delete</code>), "Guardar cambios" (<code>expense_edit_submit</code>)</li>
+        <li>Notices: "Aporte anotado: %1$s", "Valor anotado: %1$s", "Retiro anotado: %1$s", "Dividendo anotado: %1$s" (<code>notice_investment_*</code>), "Movimiento borrado" + "Deshacer", "Movimiento restaurado", "Movimiento actualizado" (<code>investment_movement_deleted</code>, <code>correction_undo</code>, <code>investment_movement_restored</code>, <code>investment_movement_updated</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-varios">
+      <h2>Screen: Varios movimientos</h2>
+
+      <figure data-shot="investment-movements-opening" data-module="app" data-caption="Opening: one empty line"></figure>
+      <figure data-shot="investment-movements-three" data-module="app" data-caption="Three lines, the third highlighted"></figure>
+      <figure data-shot="investment-movements-from-list" data-module="app" data-caption="From the list: a typed line without an investment"></figure>
+      <figure data-shot="investment-movements-missing-type" data-module="app" data-caption="A typed line without a type"></figure>
+      <figure data-shot="investment-movements-refused" data-module="app" data-caption="Refused: a retiro above the value, not saved"></figure>
+      <figure data-shot="investment-movements-saving" data-module="app" data-caption="Busy"></figure>
+      <figure data-shot="investment-movements-unknown" data-module="app" data-caption="Unknown outcome"></figure>
+      <figure data-shot="investment-movements-stale" data-module="app" data-caption="Stale: the last read failed"></figure>
+      <figure data-shot="investment-movements-usd" data-module="app" data-caption="Dollar lines, with the comma key"></figure>
+      <figure data-shot="investment-movements-mixed" data-module="app" data-caption="Pesos and dollars: Aportado in pesos at the rate"></figure>
+      <figure data-shot="investment-movements-mixed-no-rate" data-module="app" data-caption="Pesos and dollars without a rate: each currency on its own"></figure>
+      <figure data-shot="bulk-receipt-investment" data-module="design-system" data-caption="The receipt component with investment lines"></figure>
+
+      <h3>Layout</h3>
+      <ol>
+        <li><code>SelloScaffold</code> "Varios movimientos" with ✕ (<code>MovementCloseButton</code>); no band (<code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsScreen.kt:119</code>).</li>
+        <li>A Column spaced 8dp: the <a href="../components.html#c-BulkReceipt"><code>BulkReceipt</code></a> taking the free height (caption with the count or the first problem; one line per movement: investment, type · date · note, signed amount; the highlighted line's date as a pill; "Otro renglón"; the foot "Aportado") (<code>…:196</code>).</li>
+        <li>Choices: "Inversión" (or "Inversión · renglón N") with the investment chips, then one row of type chips with no heading, then the note line (<code>…:372</code>). A removed line shows a <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> with Deshacer over the choices for four seconds (<code>…:435</code>).</li>
+        <li>Action: the stale hint, the save error, then the ink button "Anotar N movimientos" with Add (<code>…:457</code>). Compact <code>AmountKeypad</code>, with the comma while the line is in dollars.</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>…/InvestmentMovementsScreen.kt:129</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer tus inversiones".</td><td><code>…/InvestmentMovementsScreen.kt:133</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty receipt</td><td>One line, "Sin inversión" / "Sin tipo", Aportado 0, the button disabled.</td><td><code>…/InvestmentMovementsScreen.kt:317</code></td><td>investment-movements-opening</td></tr>
+            <tr><td>Missing investment / type</td><td>Caption "Falta N inversión" / "Falta N tipo" in the problem style; the line says "Elige una inversión" / "Elige un tipo".</td><td><code>…/InvestmentMovementsScreen.kt:208</code>, <code>:333</code></td><td>investment-movements-from-list, investment-movements-missing-type</td></tr>
+            <tr><td>Refused</td><td>"Revisa N renglón" and each refused line's reason; the error "No se guardó. Tu borrador sigue aquí."</td><td><code>…/InvestmentMovementsScreen.kt:224</code>, <code>:339</code></td><td>investment-movements-refused</td></tr>
+            <tr><td>Full</td><td>"Máximo 30 por recibo"; "Otro renglón" disabled.</td><td><code>…/InvestmentMovementsScreen.kt:203</code></td><td>no screenshot</td></tr>
+            <tr><td>Stale</td><td>Grey hint "No pudimos leer esta inversión de nuevo. Te mostramos la de la última lectura." above the button; no retry.</td><td><code>…/InvestmentMovementsScreen.kt:459</code></td><td>investment-movements-stale</td></tr>
+            <tr><td>Busy</td><td>"Guardando…" with a spinner, no icon; the receipt holds still.</td><td><code>…/InvestmentMovementsScreen.kt:498</code></td><td>investment-movements-saving</td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. …" and "Comprobar si se guardó"; nothing can be edited.</td><td><code>…/InvestmentMovementsScreen.kt:473</code></td><td>investment-movements-unknown</td></tr>
+            <tr><td>Mixed currencies</td><td>Aportado in pesos with "En pesos · dólar a …, tasa del …", or both figures with "Sin tasa del dólar: cada moneda por su lado".</td><td><code>…/InvestmentMovementsScreen.kt:268</code></td><td>investment-movements-mixed, investment-movements-mixed-no-rate</td></tr>
+            <tr><td>Line removed</td><td>"Quitaste el renglón de …" with Deshacer for 4 s.</td><td><code>…/InvestmentMovementsScreen.kt:435</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Lines, highlight, note composer and an operation in flight come back after process death.</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentMovementsViewModel.kt:154</code></td><td>no screenshot</td></tr>
+            <tr><td>Confirm discard</td><td><code>MovementDiscardSlip</code> "¿Descartar N renglones?" counting every line.</td><td><code>…/InvestmentMovementsScreen.kt:173</code></td><td>no screenshot</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>A line: <code>Select</code>; its remove: <code>Remove</code>; "Otro renglón": <code>AddLine</code> (once the highlighted line has an amount); Deshacer: <code>UndoRemove</code>.</li>
+        <li>Investment and type chips for the highlighted line: <code>InvestmentPicked</code>, <code>Kind</code>. Date pill, note line and pad as on Anotar movimiento.</li>
+        <li>The button: <code>Submit</code> (all lines together or none), or <code>Retry</code> after an unknown outcome. ✕ / Back: <code>Back</code>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Varios movimientos" (<code>investment_movements_title</code>), "%d renglón" / "%d renglones" (<code>investment_movements_lines</code>), "Aportado" (<code>investment_movements_contributed</code>)</li>
+        <li>"Sin inversión" / "Sin tipo" (<code>investment_movements_no_investment</code>, <code>investment_movements_no_type</code>), "Inversión · renglón %1$d" (<code>investment_movements_investment_line</code>)</li>
+        <li>"Falta %d inversión" / "Faltan %d tipos" / "Revisa %d renglón" / "Máximo 30 por recibo" (<code>investment_movements_missing_investments</code>, <code>_missing</code>, <code>_refused</code>, <code>_full</code>)</li>
+        <li>"Deja corto el retiro de %1$s del %2$s", "Antes del primer aporte (%1$s)", "La fecha no puede ser posterior a hoy", "Escribe un monto mayor que 0", "Este renglón no se puede anotar" (<code>investment_movements_leaves_short</code>, <code>_before_first</code>, <code>_future</code>, <code>_invalid_amount</code>, <code>_other</code>)</li>
+        <li>"Anotar movimiento" / "Anotar %d movimientos" (<code>investment_movements_record</code>), "No se guardó. Tu borrador sigue aquí." (<code>investment_movements_not_saved</code>), "Una inversión del recibo ya no está. No se anotó nada." (<code>investment_movements_gone</code>)</li>
+        <li>"En pesos · dólar a %1$s, tasa del %2$s" (<code>investment_movements_in_pesos</code>), "Sin tasa del dólar: cada moneda por su lado" (<code>investment_movements_no_rate</code>)</li>
+        <li>"Quitaste el renglón de %1$s" (<code>investment_movements_removed</code>), "¿Descartar %d renglones?" (<code>investment_movements_discard</code>), notice "%1$d movimientos anotados en %2$s" (<code>notice_investment_movements</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-usd-rate">
+      <h2>Screen: Dólar</h2>
+
+      <figure data-shot="usd-rate" data-module="app"
+              data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
+              data-caption="A current rate and two earlier ones"></figure>
+
+      <h3>Layout</h3>
+      <ol>
+        <li>Shell with back arrow and the title "Dólar"; no month, no dock, no past-month ribbon (<code>app/src/main/java/com/software/sello/navigation/InvestmentDestinations.kt:196</code>).</li>
+        <li>A pinked <code>Slip</code>: "1 dólar vale", the rate in displayMedium, "pesos · tasa del …", a <code>TearLine</code>, a <code>FactLine</code> on what the rate is for, and the outlined "Cambiar la tasa" (brand, Autorenew) (<code>app/src/main/java/com/software/sello/feature/investments/UsdRateScreen.kt:105</code>).</li>
+        <li>"Tasas anteriores" in a plain slip: one <code>LeaderLine</code> per earlier rate, newest date first (<code>…/UsdRateScreen.kt:85</code>).</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code>.</td><td><code>…/UsdRateScreen.kt:54</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty</td><td><code>EmptySlip</code> with AccountBalance, "Todavía no hay tasa", the body and the action "Anotar la tasa".</td><td><code>…/UsdRateScreen.kt:74</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer la tasa".</td><td><code>…/UsdRateScreen.kt:56</code></td><td>no screenshot</td></tr>
+            <tr><td>Stale</td><td><code>ErrorSlip</code> "No pudimos leer la tasa de nuevo. Te mostramos la de la última lectura." above the last good rates.</td><td><code>…/UsdRateScreen.kt:66</code>; <code>app/src/main/java/com/software/sello/feature/investments/UsdRateViewModel.kt:42</code></td><td>no screenshot</td></tr>
+            <tr><td>Loaded</td><td>Current rate and history.</td><td><code>…/UsdRateScreen.kt:83</code></td><td>usd-rate</td></tr>
+            <tr><td>Busy, unknown outcome, restored draft, refused</td><td>Do not exist: read only. Rates are never deleted.</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>"Cambiar la tasa" or "Anotar la tasa": <code>UsdRateAction.Change</code>, opens Tasa del dólar. Reintentar: <code>Retry</code>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Dólar" (<code>usd_rate_title</code>), "1 dólar vale" (<code>usd_rate_label</code>), "pesos · tasa del %1$s" (<code>usd_rate_caption</code>)</li>
+        <li>"Sello no busca la tasa: la anotas tú. Solo convierte el total de Inversiones; cada inversión en dólares sigue en dólares." (<code>usd_rate_fact</code>)</li>
+        <li>"Cambiar la tasa" (<code>usd_rate_change</code>), "Tasas anteriores" (<code>usd_rate_history</code>)</li>
+        <li>"Todavía no hay tasa" / "La anotas cuando tengas una inversión en dólares. Sello no la busca en internet." / "Anotar la tasa" (<code>usd_rate_empty_title</code>, <code>usd_rate_empty_body</code>, <code>usd_rate_enter</code>)</li>
+        <li>"No pudimos leer la tasa" / "Tus tasas siguen guardadas. Vuelve a intentarlo." (<code>usd_rate_failed_title</code>, <code>usd_rate_failed_body</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-usd-rate-entry">
+      <h2>Screen: Tasa del dólar</h2>
+
+      <figure data-shot="usd-rate-entry-unknown" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="After a save whose outcome is unknown: the pad locked"></figure>
+
+      <h3>Layout</h3>
+      <ol>
+        <li><code>SelloScaffold</code> "Tasa del dólar" with an inline ✕ <code>IconButton</code> (<code>app/src/main/java/com/software/sello/feature/investments/UsdRateEntryScreen.kt:68</code>).</li>
+        <li><code>EntryLayout</code>: <code>EntryAmountSlip</code> "Pesos por 1 dólar" with Autorenew in ink and the date pill (<code>…:122</code>); a <code>FactLine</code> naming the current rate in bold ink, or what the rate is for (<code>…:158</code>); the error line and the ink "Guardar tasa" (<code>…:179</code>); the compact pad with the comma and a dead 000 key.</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td><code>SlipSkeleton</code> in its own padded Column.</td><td><code>…/UsdRateEntryScreen.kt:80</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td><code>ErrorSlip</code> "No pudimos leer la tasa".</td><td><code>…/UsdRateEntryScreen.kt:86</code></td><td>no screenshot</td></tr>
+            <tr><td>Typing / out of range</td><td>"La tasa es de 1,00 en adelante", "La tasa llega hasta 100.000,00" or "Hasta 100.000 y dos decimales" under the figure.</td><td><code>…/UsdRateEntryScreen.kt:135</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy</td><td>"Guardando…" with a spinner.</td><td><code>…/UsdRateEntryScreen.kt:202</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. …", "Comprobar si se guardó", pad and date locked; Back waits.</td><td><code>…/UsdRateEntryScreen.kt:186</code>; <code>app/src/main/java/com/software/sello/feature/investments/UsdRateEntryViewModel.kt:151</code></td><td>usd-rate-entry-unknown (light only)</td></tr>
+            <tr><td>Refused</td><td>"La fecha no puede ser posterior a hoy. …", "Tus datos cambiaron mientras escribías. No se guardó la tasa." or "No se guardó la tasa. Puedes intentarlo de nuevo."</td><td><code>…/UsdRateEntryScreen.kt:181</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>The typed rate, its date and an operation in flight survive process death.</td><td><code>…/UsdRateEntryViewModel.kt:70</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty</td><td>Does not exist as a separate state: no rate yet only changes the fact line.</td><td><code>…/UsdRateEntryScreen.kt:162</code></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>Pad: <code>Digit</code>, <code>Comma</code>, <code>Backspace</code>, <code>Clear</code>. Date pill: its own copy of the past-only picker.</li>
+        <li>"Guardar tasa": <code>Submit</code>, or <code>Retry</code> when unknown. ✕ / Back: closes at once (no discard question).</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Tasa del dólar" (<code>usd_rate_entry_title</code>), "Pesos por 1 dólar" (<code>usd_rate_entry_label</code>), "Guardar tasa" (<code>usd_rate_save</code>)</li>
+        <li>"La de hoy es %1$s, del %2$s. La nueva la reemplaza desde su fecha; la anterior queda en la lista." (<code>usd_rate_entry_fact</code>), "Sello no la busca: la anotas tú, y sirve para sumar tus dólares al total." (<code>usd_rate_entry_first</code>)</li>
+        <li>"La tasa es de 1,00 en adelante" / "La tasa llega hasta 100.000,00" / "Hasta 100.000 y dos decimales" (<code>usd_rate_below</code>, <code>usd_rate_above</code>, <code>usd_rate_limit</code>)</li>
+      </ul>
+    </section>
+
+    <section id="components">
+      <h2>Components</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th>Source</th><th>How used here</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a></td><td><code>:design-system</code> <code>Paper.kt</code></td><td>The total and the detail's "Vale", stamp Gana (Good) / Pierde (Over), <code>lossAmount = false</code>, a spoken description</td><td>The figure stays in ink even at a loss; the stamp and the signed return say the direction</td></tr>
+            <tr><td><a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a> + <a href="../components.html#c-MoneyText"><code>MoneyText</code></a></td><td><code>:design-system</code> <code>Paper.kt</code>, <code>MoneyText.kt</code></td><td>Aportaste, Retiraste, Dividendos y rentas, Ganancia; earlier rates</td><td>What produced the value, read across</td></tr>
+            <tr><td><a href="../components.html#c-TearLine"><code>TearLine</code></a></td><td><code>:design-system</code> <code>TearLine.kt</code></td><td>Between the answer and its breakdown; on Dólar</td><td>Receipt look</td></tr>
+            <tr><td><a href="../components.html#c-Footnote"><code>Footnote</code></a></td><td><code>:design-system</code> <code>Paper.kt</code></td><td>The rate line, icon Autorenew, opens Dólar</td><td>A tappable line at a slip's foot</td></tr>
+            <tr><td><a href="../components.html#c-SplitBar"><code>SplitBar</code></a></td><td><code>:design-system</code> <code>SummaryCharts.kt</code></td><td>One part per valued investment, investment inks, percent labels inside, gap 3dp, height 22dp</td><td>Labels need the taller bar; neighbours never share an ink</td></tr>
+            <tr><td><a href="../components.html#c-Slip"><code>Slip</code></a></td><td><code>:design-system</code> <code>Slip.kt</code></td><td>List, chart, movements, history, no-total and no-value slips (<code>pinked = false</code> for lists)</td><td>Paper surface</td></tr>
+            <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>, <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a>, <a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Loading, failed and stale reads; empty Inversiones and empty Dólar (with action)</td><td>A failed read is never zero or empty</td></tr>
+            <tr><td><a href="../components.html#c-MovementRow"><code>MovementRow</code></a>, <a href="../components.html#c-MovementMonthLine"><code>MovementMonthLine</code></a></td><td><code>:design-system</code> <code>Goals.kt</code></td><td>The detail's movements; tone Value / Out / In, gain ink for aportes and dividends, a figure under the amount; month lines without a net</td><td>"Movements like the goal's"</td></tr>
+            <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td><td>Filled ink submits with <code>loading</code>; outlined ink "Anotar el valor de hoy"; outlined brand "Cambiar la tasa"; text buttons for Anotar varios, Ver los N, Otro valor, Borrar on the band (<code>ButtonTone.OnBand</code>)</td><td>Ink is the investments' tone; loading blocks a double submit</td></tr>
+            <tr><td><a href="../components.html#c-BandChip"><code>BandChip</code></a></td><td><code>:design-system</code> <code>Controls.kt</code></td><td>"Nueva inversión" beside the tab title</td><td>As Metas' "Nueva meta"</td></tr>
+            <tr><td><code>SelloDock</code> (via <code>ShellScreen</code>)</td><td><code>:design-system</code> <code>Navigation.kt</code></td><td><code>tone = ButtonTone.Ink</code>, icon Add</td><td>Never taken for Anotar (brand) or Metas (green)</td></tr>
+            <tr><td><a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a></td><td><code>:design-system</code> <code>SelloScaffold.kt</code></td><td>Forms; Movimiento on <code>investmentBand</code></td><td>Full-screen forms with ✕</td></tr>
+            <tr><td><a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a>, <a href="../components.html#c-EntryAmountSlip"><code>EntryAmountSlip</code></a>, <a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a></td><td><code>:design-system</code></td><td>Editor (figures in <code>choices</code>, <code>active</code> and 55 % idle alpha), movement (sign drawn, paste), rate entry; pad <code>compact</code>, comma only for dollars or rates</td><td>Button and pad stay put as on Anotar</td></tr>
+            <tr><td><a href="../components.html#c-FieldPill"><code>FieldPill</code></a></td><td><code>:design-system</code></td><td>Every date, icon Event</td><td>Opens the date picker</td></tr>
+            <tr><td><a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a></td><td><code>:design-system</code> <code>FieldMessage.kt</code></td><td>Hints (Hint), refusals (Error), unknown outcome (Warning) above the button; Varios' stale hint</td><td>"Said above the button as on Anotar"</td></tr>
+            <tr><td><a href="../components.html#c-FactLine"><code>FactLine</code></a></td><td><code>:design-system</code> <code>Paper.kt</code></td><td>The movement's fact, the editor's dollar and rate facts, Dólar's fact, the rate entry's fact</td><td>One plain sentence, figures bolded by the caller</td></tr>
+            <tr><td><a href="../components.html#c-FormField"><code>FormField</code></a>, <a href="../components.html#c-IconPickerCircle"><code>IconPickerCircle</code></a>, <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a></td><td><code>:design-system</code></td><td>Name and description with counters; the icon circle in ink; Pesos | Dólares</td><td>"Made alike with Nueva categoría and Nueva meta in ink"</td></tr>
+            <tr><td><a href="../components.html#c-RepeatSheet"><code>RepeatSheet</code></a> + <a href="../components.html#c-IconChoiceSheetContent"><code>IconChoiceSheetContent</code></a></td><td><code>:design-system</code></td><td>The icon sheet, titled with <code>category_editor_icon</code>, tone Ink</td><td>The one shared set of 35 icons</td></tr>
+            <tr><td><a href="../components.html#c-MoreMenu"><code>MoreMenu</code></a>, <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code></td><td>⋮ Borrar inversión; delete and discard confirms</td><td>A destructive action is asked first</td></tr>
+            <tr><td><a href="../components.html#c-EntryHeading"><code>EntryHeading</code></a>, <a href="../components.html#c-ChipRows"><code>ChipRows</code></a>, <a href="../components.html#c-SelloChip"><code>SelloChip</code></a>, <a href="../components.html#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a></td><td><code>:design-system</code></td><td>Type chips in one row, investment chips in two with the chosen one first</td><td>"Two rows, as the expense form's categories and the goals"</td></tr>
+            <tr><td><a href="../components.html#c-MoreSlip"><code>MoreSlip</code></a></td><td><code>:design-system</code></td><td>"Otro movimiento" under the amount</td><td>Hands the typed movement to Varios</td></tr>
+            <tr><td><a href="../components.html#c-BulkReceipt"><code>BulkReceipt</code></a></td><td><code>:design-system</code> <code>BulkReceipt.kt</code></td><td>Varios movimientos; marks Add / Insights / ArrowBack; <code>BulkTotal</code> with a second figure and a note for mixed currencies</td><td>Saved together or not at all</td></tr>
+            <tr><td><a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a></td><td><code>:design-system</code> <code>Corrections.kt</code></td><td>Recorded / deleted / restored notices, line removed with Deshacer</td><td>Durable confirmations with undo</td></tr>
+            <tr><td><code>MovementCloseButton</code>, <code>MovementPane</code>, <code>MovementDatePicker</code>, <code>MovementNoteLine</code>, <code>MovementNoteComposer</code>, <code>MovementDiscardSlip</code></td><td><code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:45</code></td><td>Both movement forms</td><td>"These only say the shared parts once" for goal and investment movements</td></tr>
+            <tr><td><code>PerformanceLine</code>, <code>Performance</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:67</code>, <code>…/InversionesScreen.kt:342</code></td><td>Arrow, "+5,6 %" at 20sp W900, the gain in words</td><td>Proportional figures so the decimal comma is not a digit wide</td></tr>
+            <tr><td><code>InvestmentRow</code> (feature-local)</td><td><code>…/InvestmentComponents.kt:126</code></td><td>A row per investment: ink circle (dashed without a value), name, share · kind · date, value and signed return</td><td>The circle uses the same ink as its part of the bar</td></tr>
+            <tr><td><code>RecordedValuesChart</code> (feature-local)</td><td><code>…/InvestmentComponents.kt:263</code></td><td>Dots + line for values, dashed steps for what was put in, 150dp</td><td>"Nothing between recorded points is claimed"</td></tr>
+            <tr><td><code>QuietLine</code> (feature-local)</td><td><code>…/InversionesScreen.kt:400</code></td><td>"Valores anotados…" and the rate line when it cannot open</td><td>"An icon and a sentence, not a link"</td></tr>
+            <tr><td><code>InvestmentIcons</code> (feature-local)</td><td><code>…/InvestmentIcons.kt:13</code></td><td>The shared icon set reordered, six investment names</td><td>"Finca raíz" for the house, etc.</td></tr>
+            <tr><td><code>InvestmentMovementNoticeBar</code> (feature-local)</td><td><code>…/InvestmentMovementNotices.kt:19</code></td><td>Maps each investment notice to a <code>SelloNotice</code></td><td>"As goal movements say it"</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="look-alikes">
+      <h2>Feature-local parts that look like shared ones</h2>
+      <ul>
+        <li><strong><code>InvestmentRow</code> vs <code>MovementRow</code>.</strong> <code>app/src/main/java/com/software/sello/feature/investments/InvestmentComponents.kt:126</code> and <code>design-system/src/main/java/com/software/sello/designsystem/component/Goals.kt:77</code>. Same structure (icon circle, title over detail, amount over a small figure, a rule drawn under). InvestmentRow: min 60dp, circle 36dp with its own fill and a dashed outline without a value, icon 20dp, padding 6dp. MovementRow: min 56dp, circle 32dp, icon 18dp, padding 8dp. Screens: inversiones-cobalto-light-font1.0 vs investment-detail-chart-claro. Finding: <a href="../findings.html#F49">F49</a>.</li>
+        <li><strong><code>QuietLine</code> vs <code>Footnote</code>.</strong> <code>…/InversionesScreen.kt:400</code> and <code>design-system/…/Paper.kt:583</code>. Same 18dp icon and bodySmall inkSoft text; QuietLine is 32dp high with an inkSoft icon and no chevron, Footnote 48dp with a brand icon and chevron. The rate line swaps between them. Finding: <a href="../findings.html#F83">F83</a>.</li>
+        <li><strong><code>FormDatePicker</code> and <code>RateDatePicker</code> vs <code>MovementDatePicker</code>.</strong> <code>…/InvestmentEditorScreen.kt:738</code>, <code>…/UsdRateEntryScreen.kt:219</code> and <code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:144</code>: identical rules and button. Finding: <a href="../findings.html#F26">F26</a>.</li>
+        <li><strong>Inline ✕ vs <code>MovementCloseButton</code>.</strong> <code>…/InvestmentEditorScreen.kt:143</code>, <code>…/UsdRateEntryScreen.kt:71</code> vs <code>…/MovementForm.kt:45</code>. Finding: <a href="../findings.html#F27">F27</a>.</li>
+        <li><strong>NoTotal and the no-value answer vs <code>AnswerSlip</code>.</strong> <code>…/InversionesScreen.kt:213</code> and <code>…/InvestmentDetailScreen.kt:122</code> rebuild the answer slip's label + large line by hand, each differently (bodyLarge vs headlineSmall). Finding: <a href="../findings.html#F14">F14</a>.</li>
+        <li><strong><code>LegendItem</code></strong> (<code>…/InvestmentComponents.kt:420</code>) has no shared counterpart; <code>ColumnsChart</code> (<code>design-system/…/Charts.kt:96</code>) is the only shared chart, used by the goal's Aportes.</li>
+        <li><strong>Bold-part helpers</strong>: <code>bold()</code> (<code>…/InversionesScreen.kt:387</code>), <code>deleteConsequences</code> (<code>…/InvestmentEditorScreen.kt:305</code>), the movement fact (<code>…/InvestmentMovementScreen.kt:337</code>) and the rate fact (<code>…/UsdRateEntryScreen.kt:160</code>, which also inks the part). Finding: <a href="../findings.html#F69">F69</a>.</li>
+      </ul>
+      <p>These and the pattern drifts against goals are decided on the <a href="../findings.html">findings</a> page.</p>
+    </section>
+
+    <section id="gaps">
+      <h2>Gaps</h2>
+      <div class="gaps">
+        <ul>
+          <li>Inversiones: loading, empty, failed, stale and no-total (no values, missing rate) have no screenshot; the shell (title chip, docks) is not in any baseline; the rate line is captured only in its quiet form, not as the Footnote that opens Dólar.</li>
+          <li>Investment detail: loading, failed, stale and the no-value answer have no screenshot; investment-detail-movements-all is light only (no dark screenshot).</li>
+          <li>Editor: loading, failed, empty new form, dollars with the rate slip, Otro valor, busy, refused errors, the icon sheet, the date picker and both confirms have no screenshot; investment-editor-editing-menu and investment-editor-unresolved have no dark screenshot.</li>
+          <li>Anotar movimiento: only the typed aporte is captured; loading, failed, no investments, the facts, retiro over value, blocked, busy, unknown, refused, the correction with Borrar, the note composer, the date picker and the discard confirm have no screenshot. The investment notices are seen only in investment-detail-varios.</li>
+          <li>Varios movimientos: loading, failed, full (30 lines), the removed-line Deshacer, the discard confirm and the composer have no screenshot.</li>
+          <li>Dólar: loading, empty, failed and stale have no screenshot; violeta dark is not recorded.</li>
+          <li>Tasa del dólar: only the unknown outcome, light only; the ready, busy, refused, loading and failed states have no screenshot.</li>
+          <li>Not confirmed from the code: whether a Gone investment's skeleton is ever seen for more than a frame (it depends on navigation timing).</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

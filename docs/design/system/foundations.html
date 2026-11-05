@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Foundations · Sello design system</title>
+  <link rel="stylesheet" href="assets/system.css">
+  <script src="assets/system.js" defer></script>
+</head>
+<body data-page="foundations">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Sello design system</p>
+      <h1>Foundations</h1>
+      <p class="lede">The tokens every screen is built from, read from
+        <code>design-system/src/main/java/com/software/sello/designsystem/theme/</code> and
+        <code>design-system/src/main/res/</code>. Values on this page are copied from the code; the code wins
+        if they ever differ.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section>
+      <h2>Contents</h2>
+      <ul class="toc">
+        <li><a href="#theme">Theme</a></li>
+        <li><a href="#colours">Colours</a></li>
+        <li><a href="#semantic">Semantic colours</a></li>
+        <li><a href="#categories">Category colours</a></li>
+        <li><a href="#investments">Investment colours</a></li>
+        <li><a href="#type">Type</a></li>
+        <li><a href="#shapes">Shapes</a></li>
+        <li><a href="#spacing">Spacing</a></li>
+        <li><a href="#layout">Window layout</a></li>
+        <li><a href="#motion">Motion</a></li>
+        <li><a href="#icons">Icons</a></li>
+      </ul>
+    </section>
+
+    <section id="theme">
+      <h2>Theme</h2>
+      <p><code>SelloTheme(ink, darkTheme, reducedMotion)</code> (<code>Theme.kt:16</code>) is the only theme.
+        The ink is the user's choice (<code>SelloInk</code>: <strong>Cobalto</strong>, the first-run default,
+        and <strong>Violeta</strong>, <code>SelloColors.kt:12</code>); light or dark and reduced motion follow
+        the system unless the caller says otherwise. Wallpaper-derived (dynamic) Material colours are never
+        applied.</p>
+      <p>Components read tokens through <code>SelloTheme.colors</code>, <code>.type</code>,
+        <code>.shapes</code>, <code>.spacing</code> and <code>.reducedMotion</code> (<code>Theme.kt:39</code>).
+        <code>SelloColors.toMaterialColorScheme()</code> (<code>SelloMaterial.kt:13</code>) fills every
+        Material 3 colour slot from Sello tokens, so stock dialogs, pickers and ripples never show a Material
+        baseline colour; the Material slot each role feeds is named in the tables below.</p>
+      <p>The status bar's icon colour follows what the shown screen draws under it:
+        <code>StatusBarInk(ink)</code> (<code>StatusBarInk.kt:64</code>), called by <code>SelloScaffold</code>;
+        the last screen to speak wins.</p>
+    </section>
+
+    <section id="colours">
+      <h2>Colours</h2>
+      <p>Every palette shares every role name (<code>SelloColors</code>, <code>SelloColors.kt:24</code>).
+        Cobalto is defined in full in <code>CobaltoPalette.kt</code>. Violeta is Cobalto with its own brand,
+        paper and line colours (<code>VioletaPalette.kt</code>, a <code>copy()</code> of Cobalto); a value
+        Violeta does not override is shown in <span class="same">italics</span>. "Meant for" comes from the
+        KDoc, the Material mapping and where the code reads the role. "Direct reads" counts
+        <code>colors.&lt;role&gt;</code> in <code>:design-system</code> and <code>:app</code> main code; a
+        role read only through Material shows 0.</p>
+      <div class="table-wrap"><table><thead><tr><th>Role</th><th>Cobalto light</th><th>Cobalto dark</th><th>Violeta light</th><th>Violeta dark</th><th>Meant for</th><th>Direct reads<br>ds / app</th></tr></thead><tbody>
+<tr id="color-brand"><td><code>brand</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#1F3BE0"></span><code>#1F3BE0</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#8FA6FF"></span><code>#8FA6FF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#5B2BD6"></span><code>#5B2BD6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#B79CFF"></span><code>#B79CFF</code></span></td><td>The ink the user picked: filled buttons, the dock, selected marks, the fill of a category circle, chart columns of the current period, links and text actions. Material <code>primary</code>.</td><td>40 / 31</td></tr>
+<tr id="color-onBrand"><td><code>onBrand</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code>#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#06175C"></span><code>#06175C</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code class="same">#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#22085E"></span><code>#22085E</code></span></td><td>Text and icons on <code>brand</code>. Material <code>onPrimary</code>.</td><td>6 / 3</td></tr>
+<tr id="color-brandSoft"><td><code>brandSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#DCE2FF"></span><code>#DCE2FF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#23368F"></span><code>#23368F</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#E6DCFF"></span><code>#E6DCFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#3A1F8F"></span><code>#3A1F8F</code></span></td><td>Quiet brand fill: the selected tab pill, a <code>BandChip</code> on paper, soft marks. Material <code>primaryContainer</code>.</td><td>10 / 4</td></tr>
+<tr id="color-onBrandSoft"><td><code>onBrandSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#0B1C7A"></span><code>#0B1C7A</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#DDE4FF"></span><code>#DDE4FF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#2A0F78"></span><code>#2A0F78</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#E9DFFF"></span><code>#E9DFFF</code></span></td><td>Text and icons on <code>brandSoft</code>. Material <code>onPrimaryContainer</code>.</td><td>12 / 2</td></tr>
+<tr id="color-desk"><td><code>desk</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#D9E1F7"></span><code>#D9E1F7</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#090D1C"></span><code>#090D1C</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#E2DAF6"></span><code>#E2DAF6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#0E0A1C"></span><code>#0E0A1C</code></span></td><td>The background every slip sits on. Material <code>background</code>.</td><td>3 / 2</td></tr>
+<tr id="color-paper"><td><code>paper</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code>#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#151C36"></span><code>#151C36</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code class="same">#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#1A1433"></span><code>#1A1433</code></span></td><td>The slip: the surface that carries figures, dialogs, sheets and the tab bar. Material <code>surface</code>.</td><td>34 / 10</td></tr>
+<tr id="color-paperAlt"><td><code>paperAlt</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#EEF2FC"></span><code>#EEF2FC</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#1D2646"></span><code>#1D2646</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#F3EEFC"></span><code>#F3EEFC</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#231B45"></span><code>#231B45</code></span></td><td>A second paper tone for fills inside a slip (inputs, keypad keys, troughs). Material <code>surfaceVariant</code>, <code>surfaceContainer(Low)</code>.</td><td>4 / 6</td></tr>
+<tr id="color-paperDim"><td><code>paperDim</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#D3DCF3"></span><code>#D3DCF3</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#2A3560"></span><code>#2A3560</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#DCD2F2"></span><code>#DCD2F2</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#30265C"></span><code>#30265C</code></span></td><td>The dimmest paper: empty or neutral marks, skeleton bars. Material <code>surfaceDim</code>, <code>surfaceContainerHigh(est)</code>.</td><td>6 / 7</td></tr>
+<tr id="color-ink"><td><code>ink</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#0E1630"></span><code>#0E1630</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#EEF1FB"></span><code>#EEF1FB</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#150F2E"></span><code>#150F2E</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#F1EEFB"></span><code>#F1EEFB</code></span></td><td>Main text and figures. Material <code>onSurface</code>, <code>onBackground</code>.</td><td>46 / 51</td></tr>
+<tr id="color-inkSoft"><td><code>inkSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#434E72"></span><code>#434E72</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#A9B3D6"></span><code>#A9B3D6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#4A4370"></span><code>#4A4370</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#B3ABD6"></span><code>#B3ABD6</code></span></td><td>Secondary text: captions, labels, unselected tabs, hints. Material <code>onSurfaceVariant</code>.</td><td>61 / 129</td></tr>
+<tr id="color-outline"><td><code>outline</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#6975A0"></span><code>#6975A0</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#8490BA"></span><code>#8490BA</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#75679F"></span><code>#75679F</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#8E82B8"></span><code>#8E82B8</code></span></td><td>Control outlines; a disabled dock and an archived category are drawn in it at full strength rather than faded. Material <code>outline</code>.</td><td>15 / 11</td></tr>
+<tr id="color-rule"><td><code>rule</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#B9C5E6"></span><code>#B9C5E6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#2F3B66"></span><code>#2F3B66</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#C4B7E6"></span><code>#C4B7E6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#372C66"></span><code>#372C66</code></span></td><td>Dividers, dashed rules, tear lines, borders of quiet controls. Material <code>outlineVariant</code>.</td><td>13 / 7</td></tr>
+<tr id="color-band"><td><code>band</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#1F3BE0"></span><code>#1F3BE0</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#2238B8"></span><code>#2238B8</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#5B2BD6"></span><code>#5B2BD6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#4420B0"></span><code>#4420B0</code></span></td><td>The coloured band behind a tab's title row and blotter.</td><td>3 / 9</td></tr>
+<tr id="color-onBand"><td><code>onBand</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code>#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code>#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code class="same">#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code class="same">#FFFFFF</code></span></td><td>Text and icons on any band.</td><td>7 / 13</td></tr>
+<tr id="color-goalBand"><td><code>goalBand</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#0A6B4A"></span><code>#0A6B4A</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#0F5C40"></span><code>#0F5C40</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#0A6B4A"></span><code class="same">#0A6B4A</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#0F5C40"></span><code class="same">#0F5C40</code></span></td><td>The band of the goal forms (Aportar, Retirar): green, as Metas' dock (KDoc).</td><td>0 / 3</td></tr>
+<tr id="color-investmentBand"><td><code>investmentBand</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#0E1630"></span><code>#0E1630</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#2C3454"></span><code>#2C3454</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#150F2E"></span><code>#150F2E</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#2E2750"></span><code>#2E2750</code></span></td><td>The band of the investment forms: the ink of Inversiones' dock, deepened in dark (KDoc).</td><td>0 / 2</td></tr>
+<tr id="color-pastBar"><td><code>pastBar</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#566287"></span><code>#566287</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#A7B2D2"></span><code>#A7B2D2</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#5F5887"></span><code>#5F5887</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#ABA3CF"></span><code>#ABA3CF</code></span></td><td>Columns of finished periods in charts (Resumen). Material <code>secondary</code>.</td><td>1 / 1</td></tr>
+<tr id="color-onPastBar"><td><code>onPastBar</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code>#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#17203C"></span><code>#17203C</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code class="same">#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#17203C"></span><code class="same">#17203C</code></span></td><td>Material <code>onSecondary</code> only; no component reads it directly.</td><td>0 / 0</td></tr>
+<tr id="color-pastBarSoft"><td><code>pastBarSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#E1E7F6"></span><code>#E1E7F6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#2A3560"></span><code>#2A3560</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#E7E1F6"></span><code>#E7E1F6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#30265C"></span><code>#30265C</code></span></td><td>Material <code>secondaryContainer</code> only; no component reads it directly.</td><td>0 / 0</td></tr>
+<tr id="color-onPastBarSoft"><td><code>onPastBarSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#17203C"></span><code>#17203C</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#E1E7F6"></span><code>#E1E7F6</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#17203C"></span><code class="same">#17203C</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#E1E7F6"></span><code class="same">#E1E7F6</code></span></td><td>Material <code>onSecondaryContainer</code> only; no component reads it directly.</td><td>0 / 0</td></tr>
+</tbody></table></div>
+    </section>
+
+    <section id="semantic">
+      <h2>Semantic colours</h2>
+      <p>Meanings that stay the same in both inks, so a stamp reads the same everywhere
+        (<code>SelloSemanticColors</code>, <code>SelloColors.kt:70</code>; values <code>LightSemantic</code>
+        and <code>DarkSemantic</code>). Read as <code>colors.semantic.&lt;role&gt;</code>.</p>
+      <div class="table-wrap"><table><thead><tr><th>Role</th><th>Light (both inks)</th><th>Dark (both inks)</th><th>Meant for</th><th>Direct reads<br>ds / app</th></tr></thead><tbody>
+<tr id="color-gain"><td><code>semantic.gain</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#0A6B4A"></span><code>#0A6B4A</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#4FD6A0"></span><code>#4FD6A0</code></span></td><td>Money in, a goal reached, an income: amounts, the goal dock and stamps of a good verdict. Material <code>tertiary</code>.</td><td>14 / 26</td></tr>
+<tr id="color-onGain"><td><code>semantic.onGain</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code>#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#04382A"></span><code>#04382A</code></span></td><td>Text on <code>gain</code>.</td><td>3 / 3</td></tr>
+<tr id="color-gainSoft"><td><code>semantic.gainSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#CDEFE0"></span><code>#CDEFE0</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#0E4A35"></span><code>#0E4A35</code></span></td><td>Soft green fill: income and aporte marks. Material <code>tertiaryContainer</code>.</td><td>6 / 2</td></tr>
+<tr id="color-onGainSoft"><td><code>semantic.onGainSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#053B28"></span><code>#053B28</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#C9F2E0"></span><code>#C9F2E0</code></span></td><td>Text on <code>gainSoft</code>.</td><td>4 / 1</td></tr>
+<tr id="color-loss"><td><code>semantic.loss</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#B81E2A"></span><code>#B81E2A</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FF8A8A"></span><code>#FF8A8A</code></span></td><td>Overspending and errors: an over-limit circle, error messages, destructive buttons. Material <code>error</code>.</td><td>24 / 27</td></tr>
+<tr id="color-onLoss"><td><code>semantic.onLoss</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFFFFF"></span><code>#FFFFFF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#4D0A0A"></span><code>#4D0A0A</code></span></td><td>Text on <code>loss</code>.</td><td>5 / 0</td></tr>
+<tr id="color-lossSoft"><td><code>semantic.lossSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FBD9DB"></span><code>#FBD9DB</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#5A171B"></span><code>#5A171B</code></span></td><td>Soft red fill. Material <code>errorContainer</code>.</td><td>1 / 1</td></tr>
+<tr id="color-onLossSoft"><td><code>semantic.onLossSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#5C0B12"></span><code>#5C0B12</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFDADA"></span><code>#FFDADA</code></span></td><td>Text on <code>lossSoft</code>.</td><td>1 / 0</td></tr>
+<tr id="color-warn"><td><code>semantic.warn</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#8A4A00"></span><code>#8A4A00</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFB45C"></span><code>#FFB45C</code></span></td><td>Reserved for a review status, never ordinary overspending (<code>StampInk</code> KDoc); also warning field messages.</td><td>2 / 10</td></tr>
+<tr id="color-warnSoft"><td><code>semantic.warnSoft</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#FFE3BF"></span><code>#FFE3BF</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#55340C"></span><code>#55340C</code></span></td><td>Soft amber fill behind a warning.</td><td>0 / 2</td></tr>
+<tr id="color-dividend"><td><code>semantic.dividend</code></td><td><span class="swatch-cell"><span class="swatch" style="background:#6A3FC0"></span><code>#6A3FC0</code></span></td><td><span class="swatch-cell"><span class="swatch" style="background:#B7A0F5"></span><code>#B7A0F5</code></span></td><td>Declared for dividends; nothing reads it today.</td><td>0 / 0</td></tr>
+</tbody></table></div>
+    </section>
+
+    <section id="categories">
+      <h2>Category colours</h2>
+      <p><code>SelloColors.categories</code>: twelve colours per theme (<code>LightCategories</code>,
+        <code>DarkCategories</code>, <code>SelloColors.kt:114</code>), shared by both inks.</p>
+      <p><strong>Light</strong></p><div class="chip-swatches"><span class="swatch-cell"><span class="swatch" style="background:#C4343A"></span><code>#C4343A</code></span><span class="swatch-cell"><span class="swatch" style="background:#B8521A"></span><code>#B8521A</code></span><span class="swatch-cell"><span class="swatch" style="background:#9A6400"></span><code>#9A6400</code></span><span class="swatch-cell"><span class="swatch" style="background:#7C6C00"></span><code>#7C6C00</code></span><span class="swatch-cell"><span class="swatch" style="background:#4F7F18"></span><code>#4F7F18</code></span><span class="swatch-cell"><span class="swatch" style="background:#1B7D45"></span><code>#1B7D45</code></span><span class="swatch-cell"><span class="swatch" style="background:#0B7F73"></span><code>#0B7F73</code></span><span class="swatch-cell"><span class="swatch" style="background:#1773AA"></span><code>#1773AA</code></span><span class="swatch-cell"><span class="swatch" style="background:#4456C4"></span><code>#4456C4</code></span><span class="swatch-cell"><span class="swatch" style="background:#7C4AC4"></span><code>#7C4AC4</code></span><span class="swatch-cell"><span class="swatch" style="background:#B83A84"></span><code>#B83A84</code></span><span class="swatch-cell"><span class="swatch" style="background:#5F6878"></span><code>#5F6878</code></span></div><p><strong>Dark</strong></p><div class="chip-swatches"><span class="swatch-cell"><span class="swatch" style="background:#F2726B"></span><code>#F2726B</code></span><span class="swatch-cell"><span class="swatch" style="background:#F28B4E"></span><code>#F28B4E</code></span><span class="swatch-cell"><span class="swatch" style="background:#E8A63A"></span><code>#E8A63A</code></span><span class="swatch-cell"><span class="swatch" style="background:#D4BC3E"></span><code>#D4BC3E</code></span><span class="swatch-cell"><span class="swatch" style="background:#9CCB5A"></span><code>#9CCB5A</code></span><span class="swatch-cell"><span class="swatch" style="background:#5BC489"></span><code>#5BC489</code></span><span class="swatch-cell"><span class="swatch" style="background:#45C7B8"></span><code>#45C7B8</code></span><span class="swatch-cell"><span class="swatch" style="background:#5AB6EA"></span><code>#5AB6EA</code></span><span class="swatch-cell"><span class="swatch" style="background:#8C9CF2"></span><code>#8C9CF2</code></span><span class="swatch-cell"><span class="swatch" style="background:#B693F0"></span><code>#B693F0</code></span><span class="swatch-cell"><span class="swatch" style="background:#EE82BE"></span><code>#EE82BE</code></span><span class="swatch-cell"><span class="swatch" style="background:#A3ADB8"></span><code>#A3ADB8</code></span></div>
+      <div class="gaps">
+        <p>Nothing in <code>:design-system</code> or <code>:app</code> main code reads
+          <code>colors.categories</code>. <code>CategoryCircle</code>'s KDoc says a category "is known by its
+          icon and name, never by a colour of its own".</p>
+      </div>
+    </section>
+
+    <section id="investments">
+      <h2>Investment colours</h2>
+      <p><code>SelloColors.investmentInk(rank)</code> (<code>SelloColors.kt:58</code>): rank 0 is the brand,
+        then five fills that repeat every six, light and dark fills alternating so neighbours in a bar never
+        share one. The number on each swatch is drawn in the colour written on that fill.</p>
+      <p><strong>Cobalto light</strong></p><div class="chip-swatches"><span class="swatch-cell"><span class="swatch" style="background:#1F3BE0;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">0</span><code>#1F3BE0</code></span><span class="swatch-cell"><span class="swatch" style="background:#B87600;color:#0E1630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">1</span><code>#B87600</code></span><span class="swatch-cell"><span class="swatch" style="background:#3D4A5C;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">2</span><code>#3D4A5C</code></span><span class="swatch-cell"><span class="swatch" style="background:#2A8BCB;color:#0E1630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">3</span><code>#2A8BCB</code></span><span class="swatch-cell"><span class="swatch" style="background:#9C2A6E;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">4</span><code>#9C2A6E</code></span><span class="swatch-cell"><span class="swatch" style="background:#1B9385;color:#0E1630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">5</span><code>#1B9385</code></span></div><p><strong>Cobalto dark</strong></p><div class="chip-swatches"><span class="swatch-cell"><span class="swatch" style="background:#8FA6FF;color:#06175C;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">0</span><code>#8FA6FF</code></span><span class="swatch-cell"><span class="swatch" style="background:#9A6B0E;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">1</span><code>#9A6B0E</code></span><span class="swatch-cell"><span class="swatch" style="background:#A3ADB8;color:#0E1630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">2</span><code>#A3ADB8</code></span><span class="swatch-cell"><span class="swatch" style="background:#2B7CB5;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">3</span><code>#2B7CB5</code></span><span class="swatch-cell"><span class="swatch" style="background:#EE82BE;color:#2A0A1C;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">4</span><code>#EE82BE</code></span><span class="swatch-cell"><span class="swatch" style="background:#1D8174;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">5</span><code>#1D8174</code></span></div><p><strong>Violeta light</strong></p><div class="chip-swatches"><span class="swatch-cell"><span class="swatch" style="background:#5B2BD6;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">0</span><code>#5B2BD6</code></span><span class="swatch-cell"><span class="swatch" style="background:#B87600;color:#0E1630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">1</span><code>#B87600</code></span><span class="swatch-cell"><span class="swatch" style="background:#3D4A5C;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">2</span><code>#3D4A5C</code></span><span class="swatch-cell"><span class="swatch" style="background:#2A8BCB;color:#0E1630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">3</span><code>#2A8BCB</code></span><span class="swatch-cell"><span class="swatch" style="background:#9C2A6E;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">4</span><code>#9C2A6E</code></span><span class="swatch-cell"><span class="swatch" style="background:#1B9385;color:#0E1630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">5</span><code>#1B9385</code></span></div><p><strong>Violeta dark</strong></p><div class="chip-swatches"><span class="swatch-cell"><span class="swatch" style="background:#B79CFF;color:#22085E;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">0</span><code>#B79CFF</code></span><span class="swatch-cell"><span class="swatch" style="background:#9A6B0E;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">1</span><code>#9A6B0E</code></span><span class="swatch-cell"><span class="swatch" style="background:#A3ADB8;color:#0E1630;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">2</span><code>#A3ADB8</code></span><span class="swatch-cell"><span class="swatch" style="background:#2B7CB5;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">3</span><code>#2B7CB5</code></span><span class="swatch-cell"><span class="swatch" style="background:#EE82BE;color:#2A0A1C;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">4</span><code>#EE82BE</code></span><span class="swatch-cell"><span class="swatch" style="background:#1D8174;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">5</span><code>#1D8174</code></span></div>
+    </section>
+
+    <section id="type">
+      <h2>Type</h2>
+      <p>One bundled variable font sets the whole interface: <strong>Schibsted Grotesk</strong>, weights 400
+        to 900 (<code>SchibstedGrotesk</code>, <code>Type.kt:24</code>;
+        <code>res/font/schibsted_grotesk.ttf</code>). <strong>Saira Stencil One</strong> is for stamps only,
+        never running text (<code>Type.kt:35</code>). There are no downloadable fonts.</p>
+      <p>Display, headline and title roles hold figures and turn on tabular figures (<code>tnum</code>);
+        body and label roles hold sentences and do not, because in this font <code>tnum</code> also widens
+        points, commas and colons. 12 sp is the smallest text in the app (<code>Type.kt</code> KDoc). Samples
+        below are drawn in the bundled font at 1 px per sp.</p>
+      <div class="table-wrap"><table><thead><tr><th>Role</th><th>Size / line</th><th>Weight</th><th>Tracking</th><th>Kind</th><th>Sample</th></tr></thead><tbody><tr id="type-displayLarge"><td><code>displayLarge</code><br><span class="muted">Type.kt:59</span></td><td>60.0 sp / 61 sp</td><td>900</td><td>-0.04 em</td><td>figures (<code>tnum</code>)</td><td><p class="type-sample" style="font-size:60.0px;line-height:61px;font-weight:900;letter-spacing:-0.04em;font-variant-numeric:tabular-nums">937.200 · 48.700</p></td></tr>
+<tr id="type-displayMedium"><td><code>displayMedium</code><br><span class="muted">Type.kt:60</span></td><td>44.0 sp / 46 sp</td><td>900</td><td>-0.04 em</td><td>figures (<code>tnum</code>)</td><td><p class="type-sample" style="font-size:44.0px;line-height:46px;font-weight:900;letter-spacing:-0.04em;font-variant-numeric:tabular-nums">937.200 · 48.700</p></td></tr>
+<tr id="type-displaySmall"><td><code>displaySmall</code><br><span class="muted">Type.kt:61</span></td><td>32.0 sp / 34 sp</td><td>900</td><td>-0.035 em</td><td>figures (<code>tnum</code>)</td><td><p class="type-sample" style="font-size:32.0px;line-height:34px;font-weight:900;letter-spacing:-0.035em;font-variant-numeric:tabular-nums">937.200 · 48.700</p></td></tr>
+<tr id="type-headlineLarge"><td><code>headlineLarge</code><br><span class="muted">Type.kt:62</span></td><td>28.0 sp / 32 sp</td><td>800</td><td>-0.02 em</td><td>figures (<code>tnum</code>)</td><td><p class="type-sample" style="font-size:28.0px;line-height:32px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">937.200 · 48.700</p></td></tr>
+<tr id="type-headlineMedium"><td><code>headlineMedium</code><br><span class="muted">Type.kt:63</span></td><td>26.0 sp / 30 sp</td><td>800</td><td>-0.02 em</td><td>figures (<code>tnum</code>)</td><td><p class="type-sample" style="font-size:26.0px;line-height:30px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">937.200 · 48.700</p></td></tr>
+<tr id="type-headlineSmall"><td><code>headlineSmall</code><br><span class="muted">Type.kt:64</span></td><td>23.0 sp / 26 sp</td><td>800</td><td>-0.02 em</td><td>figures (<code>tnum</code>)</td><td><p class="type-sample" style="font-size:23.0px;line-height:26px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums">937.200 · 48.700</p></td></tr>
+<tr id="type-titleLarge"><td><code>titleLarge</code><br><span class="muted">Type.kt:65</span></td><td>19.0 sp / 22 sp</td><td>800</td><td>-0.01 em</td><td>figures (<code>tnum</code>)</td><td><p class="type-sample" style="font-size:19.0px;line-height:22px;font-weight:800;letter-spacing:-0.01em;font-variant-numeric:tabular-nums">937.200 · 48.700</p></td></tr>
+<tr id="type-titleMedium"><td><code>titleMedium</code><br><span class="muted">Type.kt:66</span></td><td>16.0 sp / 20 sp</td><td>800</td><td>0</td><td>figures (<code>tnum</code>)</td><td><p class="type-sample" style="font-size:16.0px;line-height:20px;font-weight:800;letter-spacing:0em;font-variant-numeric:tabular-nums">937.200 · 48.700</p></td></tr>
+<tr id="type-titleSmall"><td><code>titleSmall</code><br><span class="muted">Type.kt:67</span></td><td>14.0 sp / 19 sp</td><td>800</td><td>0</td><td>figures (<code>tnum</code>)</td><td><p class="type-sample" style="font-size:14.0px;line-height:19px;font-weight:800;letter-spacing:0em;font-variant-numeric:tabular-nums">937.200 · 48.700</p></td></tr>
+<tr id="type-bodyLarge"><td><code>bodyLarge</code><br><span class="muted">Type.kt:68</span></td><td>14.0 sp / 19 sp</td><td>400</td><td>0</td><td>text</td><td><p class="type-sample" style="font-size:14.0px;line-height:19px;font-weight:400;letter-spacing:0em;">Gasto en pesos</p></td></tr>
+<tr id="type-bodyMedium"><td><code>bodyMedium</code><br><span class="muted">Type.kt:69</span></td><td>13.5 sp / 18 sp</td><td>400</td><td>0</td><td>text</td><td><p class="type-sample" style="font-size:13.5px;line-height:18px;font-weight:400;letter-spacing:0em;">Gasto en pesos</p></td></tr>
+<tr id="type-bodySmall"><td><code>bodySmall</code><br><span class="muted">Type.kt:70</span></td><td>12.5 sp / 16 sp</td><td>400</td><td>0</td><td>text</td><td><p class="type-sample" style="font-size:12.5px;line-height:16px;font-weight:400;letter-spacing:0em;">Gasto en pesos</p></td></tr>
+<tr id="type-labelLarge"><td><code>labelLarge</code><br><span class="muted">Type.kt:71</span></td><td>17.0 sp / 20 sp</td><td>800</td><td>0</td><td>text</td><td><p class="type-sample" style="font-size:17.0px;line-height:20px;font-weight:800;letter-spacing:0em;">Gasto en pesos</p></td></tr>
+<tr id="type-labelMedium"><td><code>labelMedium</code><br><span class="muted">Type.kt:72</span></td><td>12.5 sp / 16 sp</td><td>400</td><td>0</td><td>text</td><td><p class="type-sample" style="font-size:12.5px;line-height:16px;font-weight:400;letter-spacing:0em;">Gasto en pesos</p></td></tr>
+<tr id="type-labelSmall"><td><code>labelSmall</code><br><span class="muted">Type.kt:73</span></td><td>12.0 sp / 14 sp</td><td>600</td><td>0</td><td>text</td><td><p class="type-sample" style="font-size:12.0px;line-height:14px;font-weight:600;letter-spacing:0em;">Gasto en pesos</p></td></tr>
+<tr id="type-stampSmall"><td><code>SelloType.stampSmall</code><br><span class="muted">Type.kt:79</span></td><td>15 sp</td><td>400</td><td>0.05 em</td><td>stamp (Saira Stencil One)</td><td><p class="type-sample stamp" style="font-size:15px;letter-spacing:0.05em;text-transform:uppercase">Al día</p></td></tr>
+<tr id="type-stampLarge"><td><code>SelloType.stampLarge</code><br><span class="muted">Type.kt:80</span></td><td>34 sp</td><td>400</td><td>0.05 em</td><td>stamp (Saira Stencil One)</td><td><p class="type-sample stamp" style="font-size:34px;letter-spacing:0.05em;text-transform:uppercase">Al día</p></td></tr>
+<tr id="type-stampHero"><td><code>SelloType.stampHero</code><br><span class="muted">Type.kt:81</span></td><td>52 sp</td><td>400</td><td>0.05 em</td><td>stamp (Saira Stencil One)</td><td><p class="type-sample stamp" style="font-size:52px;letter-spacing:0.05em;text-transform:uppercase">Al día</p></td></tr></tbody></table></div>
+      <h3>Amounts</h3>
+      <p>Amounts are drawn by <a href="components.html#c-MoneyText"><code>MoneyText</code></a> with its own
+        <code>MoneyStyle</code> sizes: Hero 60 sp, Total 44 sp, Card 32 sp, Title 19 sp, Line 14 sp
+        (<code>MoneyText.kt:48</code>), and by <a href="components.html#c-FittedMoneyText"><code>FittedMoneyText</code></a>,
+        which steps the size down to fit.</p>
+      <div class="gaps">
+        <p>Sizes set outside the scale in <code>:design-system</code>: dialog titles use
+          <code>headlineSmall.copy(fontSize = 22.sp)</code> five times (<code>Feedback.kt:89</code>,
+          <code>:149</code>, <code>:220</code>, <code>:297</code>, <code>Settings.kt:164</code>); keypad keys
+          <code>titleLarge.copy(fontSize = 22.sp, lineHeight = 26.sp)</code> (<code>AmountKeypad.kt:143</code>);
+          buttons <code>labelLarge.copy(fontSize = 15.sp)</code> (<code>SelloButton.kt:93</code>); a
+          milestone in a movement row 9 sp (<code>Goals.kt:106</code>), below the 12 sp floor.</p>
+      </div>
+    </section>
+
+    <section id="shapes">
+      <h2>Shapes</h2>
+      <p>Corner tokens (<code>SelloShapes</code>, <code>SelloShapes.kt:12</code>). They also feed Material's
+        shapes: <code>extraSmall</code> = bar, <code>small</code> = control, <code>medium</code> = button,
+        <code>large</code> and <code>extraLarge</code> = sheet (<code>SelloMaterial.kt:67</code>). The slip's
+        pinked (zig-zag) bottom edge belongs to the slip component, <code>PinkedBottomShape</code>
+        (<code>Slip.kt:86</code>): 11 dp top corners, 10 dp wide and 5 dp tall teeth.</p>
+      <div class="table-wrap"><table><thead><tr><th>Token</th><th>Corners</th><th>Sample</th></tr></thead><tbody><tr id="shape-control"><td><code>control</code><br><span class="muted">SelloShapes.kt:13</span></td><td><code>10.dp all corners</code></td><td><div class="shape-sample" style="border-radius:10px"></div></td></tr>
+<tr id="shape-button"><td><code>button</code><br><span class="muted">SelloShapes.kt:14</span></td><td><code>13.dp all corners</code></td><td><div class="shape-sample" style="border-radius:13px"></div></td></tr>
+<tr id="shape-bar"><td><code>bar</code><br><span class="muted">SelloShapes.kt:15</span></td><td><code>topStart = 4.dp, topEnd = 4.dp</code></td><td><div class="shape-sample" style="border-radius:4px 4px 0 0"></div></td></tr>
+<tr id="shape-stampSmall"><td><code>stampSmall</code><br><span class="muted">SelloShapes.kt:16</span></td><td><code>8.dp all corners</code></td><td><div class="shape-sample" style="border-radius:8px"></div></td></tr>
+<tr id="shape-stampLarge"><td><code>stampLarge</code><br><span class="muted">SelloShapes.kt:17</span></td><td><code>10.dp all corners</code></td><td><div class="shape-sample" style="border-radius:10px"></div></td></tr>
+<tr id="shape-stampHero"><td><code>stampHero</code><br><span class="muted">SelloShapes.kt:18</span></td><td><code>14.dp all corners</code></td><td><div class="shape-sample" style="border-radius:14px"></div></td></tr>
+<tr id="shape-sheet"><td><code>sheet</code><br><span class="muted">SelloShapes.kt:19</span></td><td><code>topStart = 20.dp, topEnd = 20.dp</code></td><td><div class="shape-sample" style="border-radius:20px 20px 0 0"></div></td></tr></tbody></table></div>
+      <div class="gaps">
+        <p>Corner radii in <code>:design-system</code> that are not tokens: a plain slip 11 dp
+          (<code>Slip.kt:80</code>), a bulk receipt line 12 dp (<code>BulkReceipt.kt:648</code>), an entry
+          line 12 dp (<code>Controls.kt:344</code>), a segmented switch 8 dp (<code>Switches.kt:108</code>).</p>
+      </div>
+    </section>
+
+    <section id="spacing">
+      <h2>Spacing</h2>
+      <p>The code defines spacing tokens: <code>SelloSpacing</code> (<code>SelloShapes.kt:24</code>), "the 4dp
+        grid and the fixed distances the reference names", read through <code>SelloTheme.spacing</code>.
+        <code>SelloTheme</code> does not provide its own instance, so the defaults below are always in use.</p>
+      <div class="table-wrap"><table><thead><tr><th>Token</th><th>Value</th><th>Sample</th></tr></thead><tbody><tr><td><code>xs</code><br><span class="muted">SelloShapes.kt:25</span></td><td>4 dp</td><td><span style="display:inline-block;height:12px;width:4px;background:var(--brand);border-radius:2px"></span></td></tr>
+<tr><td><code>sm</code><br><span class="muted">SelloShapes.kt:26</span></td><td>8 dp</td><td><span style="display:inline-block;height:12px;width:8px;background:var(--brand);border-radius:2px"></span></td></tr>
+<tr><td><code>md</code><br><span class="muted">SelloShapes.kt:27</span></td><td>12 dp</td><td><span style="display:inline-block;height:12px;width:12px;background:var(--brand);border-radius:2px"></span></td></tr>
+<tr><td><code>lg</code><br><span class="muted">SelloShapes.kt:28</span></td><td>16 dp</td><td><span style="display:inline-block;height:12px;width:16px;background:var(--brand);border-radius:2px"></span></td></tr>
+<tr><td><code>minTouchTarget</code><br><span class="muted">SelloShapes.kt:29</span></td><td>48 dp</td><td><span style="display:inline-block;height:12px;width:48px;background:var(--brand);border-radius:2px"></span></td></tr></tbody></table></div>
+      <p>How much they are used, counted in main code on this commit:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th><code>spacing.*</code> reads</th><th>Literal <code>N.dp</code> values</th></tr></thead>
+          <tbody>
+            <tr><td><code>:design-system</code> components</td><td>36</td><td>398</td></tr>
+            <tr><td><code>:app</code></td><td>265</td><td>319</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">Most frequent literals: 6 dp (88), 2 dp (75), 8 dp (64), 4 dp (50), 10 dp (44),
+        12 dp (38), 20 dp (31), 18 dp (27), 14 dp (25), 16 dp (21). Literal 48 dp appears 9 times beside the
+        <code>minTouchTarget</code> token.</p>
+      <p>Slip padding has its own constants: <code>SlipDefaults.Padding</code> (sides 16, top 15, bottom 20 dp
+        so content clears the teeth) and <code>SlipDefaults.PlainPadding</code> (20 × 22 dp, slips without
+        teeth such as dialogs), <code>Slip.kt:33</code>.</p>
+    </section>
+
+    <section id="layout">
+      <h2>Window layout</h2>
+      <p><code>selloWindowLayout(width, height)</code> (<code>WindowLayout.kt:26</code>) picks the arrangement
+        <code>SelloScaffold</code> uses:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Window</th><th>Navigation</th><th>Panes</th><th>Widths</th></tr></thead>
+          <tbody>
+            <tr><td>Height under 480 dp (a phone on its side)</td><td>Rail</td><td>Two</td><td>Split evenly</td></tr>
+            <tr><td>Width 840 dp or more</td><td>Rail</td><td>Two</td><td>List pane 400 dp, side panel 420 dp</td></tr>
+            <tr><td>Width 600 to 839 dp</td><td>Tab bar and dock</td><td>One</td><td>Content capped at 560 dp</td></tr>
+            <tr><td>Narrower (an upright phone)</td><td>Tab bar and dock</td><td>One</td><td>Full width</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Category cells per row (<code>categoryColumns</code>, <code>WindowLayout.kt:55</code>): two, three
+        once the column is 560 dp wide. The rail is 80 dp wide (<code>Navigation.kt:171</code>).
+        The tab bar takes two to four destinations (<code>SelloNavigationBar</code> requires it).</p>
+    </section>
+
+    <section id="motion">
+      <h2>Motion</h2>
+      <p>"Every animation in the app uses one of these specs" (<code>SelloMotion</code>,
+        <code>SelloMotion.kt:13</code>).</p>
+      <div class="table-wrap"><table><thead><tr><th>Spec</th><th>Definition</th><th>For (KDoc)</th></tr></thead><tbody><tr><td><code>SelloMotion.quick()</code><br><span class="muted">SelloMotion.kt:27</span></td><td><code>tween(QUICK_MILLIS, easing = LinearOutSlowInEasing)</code></td><td>A key press, a chip selection.</td></tr>
+<tr><td><code>SelloMotion.standard()</code><br><span class="muted">SelloMotion.kt:30</span></td><td><code>tween(STANDARD_MILLIS, easing = StandardEasing)</code></td><td>Cross-fades, a bar growing, a row appearing.</td></tr>
+<tr><td><code>SelloMotion.emphasized()</code><br><span class="muted">SelloMotion.kt:33</span></td><td><code>tween(EMPHASIZED_MILLIS, easing = EmphasizedEasing)</code></td><td>A sheet rising, a receipt feeding in.</td></tr>
+<tr><td><code>SelloMotion.fill()</code><br><span class="muted">SelloMotion.kt:36</span></td><td><code>spring(dampingRatio = 1f, stiffness = 120f)</code></td><td>Ink rising in a circle: slow, no bounce.</td></tr>
+<tr><td><code>SelloMotion.settle()</code><br><span class="muted">SelloMotion.kt:39</span></td><td><code>spring(dampingRatio = 0.8f, stiffness = 380f)</code></td><td>A line landing in a list.</td></tr>
+<tr><td><code>SelloMotion.stamp()</code><br><span class="muted">SelloMotion.kt:42</span></td><td><code>spring(dampingRatio = 0.55f, stiffness = 700f)</code></td><td>A rubber stamp coming down.</td></tr>
+<tr><td><code>SelloMotion.feed()</code><br><span class="muted">SelloMotion.kt:45</span></td><td><code>tween(FEED_MILLIS, easing = LinearEasing)</code></td><td>A receipt printer advancing one line.</td></tr></tbody></table></div>
+      <h3>Constants</h3>
+      <div class="table-wrap"><table><thead><tr><th>Constant</th><th>Value</th></tr></thead><tbody><tr><td><code>StandardEasing</code></td><td><code>CubicBezierEasing(0.2f, 0f, 0f, 1f)</code></td></tr><tr><td><code>EmphasizedEasing</code></td><td><code>CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)</code></td></tr><tr><td><code>QUICK_MILLIS</code></td><td><code>120</code></td></tr><tr><td><code>STANDARD_MILLIS</code></td><td><code>240</code></td></tr><tr><td><code>EMPHASIZED_MILLIS</code></td><td><code>360</code></td></tr><tr><td><code>FEED_MILLIS</code></td><td><code>150</code></td></tr><tr><td><code>STAMP_INITIAL_SCALE</code></td><td><code>1.6f</code></td></tr><tr><td><code>STAMP_RING_INITIAL_SCALE</code></td><td><code>2.4f</code></td></tr><tr><td><code>STAMP_SETTLE_DEGREES</code></td><td><code>2f</code></td></tr></tbody></table></div>
+      <h3>Reduced motion</h3>
+      <p><code>systemReducedMotion()</code> (<code>ReducedMotion.kt:26</code>) is true when the system's
+        animator duration scale is 0, which is what Android's "Remove animations" sets. It listens for the
+        change, so turning animations off takes effect at once. <code>SelloTheme</code> passes it on as
+        <code>SelloTheme.reducedMotion</code>; when true, every animation cuts to its end state (stamps show at
+        rest, skeleton bars do not pulse, circles show their fill).</p>
+    </section>
+
+    <section id="icons">
+      <h2>Icons</h2>
+      <p>Material Symbols Rounded, weight 500, bundled one vector per icon in
+        <code>design-system/src/main/res/drawable/</code> (licence in
+        <code>res/raw/license_material_symbols.txt</code>). Icons are filled; an outlined drawing exists only
+        where the reference uses it, for unselected tabs (<code>SelloIcon</code>, <code>SelloIcon.kt:13</code>;
+        <code>painter(filled)</code> falls back to the filled one). 72 icons. Each is drawn below
+        from its XML file, so this list is the real drawing; an icon with two drawings shows filled then
+        outlined. Every icon is referenced as <code>SelloIcon.Name</code> somewhere in app or component
+        code on this commit.</p>
+      <div class="icon-grid">
+<div class="icon-cell" id="icon-AccountBalanceWallet" data-drawable="ic_sello_account_balance_wallet"><span class="icon-name">AccountBalanceWallet</span><span class="icon-file">ic_sello_account_balance_wallet.xml</span></div>
+<div class="icon-cell" id="icon-Agriculture" data-drawable="ic_sello_agriculture"><span class="icon-name">Agriculture</span><span class="icon-file">ic_sello_agriculture.xml</span></div>
+<div class="icon-cell" id="icon-AllInclusive" data-drawable="ic_sello_all_inclusive"><span class="icon-name">AllInclusive</span><span class="icon-file">ic_sello_all_inclusive.xml</span></div>
+<div class="icon-cell" id="icon-AccountBalance" data-drawable="ic_sello_account_balance,ic_sello_account_balance_outlined"><span class="icon-name">AccountBalance</span><span class="icon-file">ic_sello_account_balance.xml<br>ic_sello_account_balance_outlined.xml</span></div>
+<div class="icon-cell" id="icon-Apartment" data-drawable="ic_sello_apartment"><span class="icon-name">Apartment</span><span class="icon-file">ic_sello_apartment.xml</span></div>
+<div class="icon-cell" id="icon-Archive" data-drawable="ic_sello_archive"><span class="icon-name">Archive</span><span class="icon-file">ic_sello_archive.xml</span></div>
+<div class="icon-cell" id="icon-CurrencyBitcoin" data-drawable="ic_sello_currency_bitcoin"><span class="icon-name">CurrencyBitcoin</span><span class="icon-file">ic_sello_currency_bitcoin.xml</span></div>
+<div class="icon-cell" id="icon-Flag" data-drawable="ic_sello_flag"><span class="icon-name">Flag</span><span class="icon-file">ic_sello_flag.xml</span></div>
+<div class="icon-cell" id="icon-Close" data-drawable="ic_sello_close"><span class="icon-name">Close</span><span class="icon-file">ic_sello_close.xml</span></div>
+<div class="icon-cell" id="icon-PieChart" data-drawable="ic_sello_pie_chart"><span class="icon-name">PieChart</span><span class="icon-file">ic_sello_pie_chart.xml</span></div>
+<div class="icon-cell" id="icon-Storefront" data-drawable="ic_sello_storefront"><span class="icon-name">Storefront</span><span class="icon-file">ic_sello_storefront.xml</span></div>
+<div class="icon-cell" id="icon-TrendingUp" data-drawable="ic_sello_trending_up"><span class="icon-name">TrendingUp</span><span class="icon-file">ic_sello_trending_up.xml</span></div>
+<div class="icon-cell" id="icon-TrendingDown" data-drawable="ic_sello_trending_down"><span class="icon-name">TrendingDown</span><span class="icon-file">ic_sello_trending_down.xml</span></div>
+<div class="icon-cell" id="icon-Star" data-drawable="ic_sello_star,ic_sello_star_outline"><span class="icon-name">Star</span><span class="icon-file">ic_sello_star.xml<br>ic_sello_star_outline.xml</span></div>
+<div class="icon-cell" id="icon-Add" data-drawable="ic_sello_add"><span class="icon-name">Add</span><span class="icon-file">ic_sello_add.xml</span></div>
+<div class="icon-cell" id="icon-ArrowBack" data-drawable="ic_sello_arrow_back"><span class="icon-name">ArrowBack</span><span class="icon-file">ic_sello_arrow_back.xml</span></div>
+<div class="icon-cell" id="icon-ArrowUpward" data-drawable="ic_sello_arrow_upward"><span class="icon-name">ArrowUpward</span><span class="icon-file">ic_sello_arrow_upward.xml</span></div>
+<div class="icon-cell" id="icon-Autorenew" data-drawable="ic_sello_autorenew"><span class="icon-name">Autorenew</span><span class="icon-file">ic_sello_autorenew.xml</span></div>
+<div class="icon-cell" id="icon-Backspace" data-drawable="ic_sello_backspace"><span class="icon-name">Backspace</span><span class="icon-file">ic_sello_backspace.xml</span></div>
+<div class="icon-cell" id="icon-Backup" data-drawable="ic_sello_backup"><span class="icon-name">Backup</span><span class="icon-file">ic_sello_backup.xml</span></div>
+<div class="icon-cell" id="icon-Block" data-drawable="ic_sello_block"><span class="icon-name">Block</span><span class="icon-file">ic_sello_block.xml</span></div>
+<div class="icon-cell" id="icon-Bolt" data-drawable="ic_sello_bolt"><span class="icon-name">Bolt</span><span class="icon-file">ic_sello_bolt.xml</span></div>
+<div class="icon-cell" id="icon-Check" data-drawable="ic_sello_check"><span class="icon-name">Check</span><span class="icon-file">ic_sello_check.xml</span></div>
+<div class="icon-cell" id="icon-Checkroom" data-drawable="ic_sello_checkroom"><span class="icon-name">Checkroom</span><span class="icon-file">ic_sello_checkroom.xml</span></div>
+<div class="icon-cell" id="icon-ChevronLeft" data-drawable="ic_sello_chevron_left"><span class="icon-name">ChevronLeft</span><span class="icon-file">ic_sello_chevron_left.xml</span></div>
+<div class="icon-cell" id="icon-ChevronRight" data-drawable="ic_sello_chevron_right"><span class="icon-name">ChevronRight</span><span class="icon-file">ic_sello_chevron_right.xml</span></div>
+<div class="icon-cell" id="icon-ChildCare" data-drawable="ic_sello_child_care"><span class="icon-name">ChildCare</span><span class="icon-file">ic_sello_child_care.xml</span></div>
+<div class="icon-cell" id="icon-ContentPaste" data-drawable="ic_sello_content_paste"><span class="icon-name">ContentPaste</span><span class="icon-file">ic_sello_content_paste.xml</span></div>
+<div class="icon-cell" id="icon-Contrast" data-drawable="ic_sello_contrast"><span class="icon-name">Contrast</span><span class="icon-file">ic_sello_contrast.xml</span></div>
+<div class="icon-cell" id="icon-CreditCard" data-drawable="ic_sello_credit_card"><span class="icon-name">CreditCard</span><span class="icon-file">ic_sello_credit_card.xml</span></div>
+<div class="icon-cell" id="icon-CurrencyExchange" data-drawable="ic_sello_currency_exchange"><span class="icon-name">CurrencyExchange</span><span class="icon-file">ic_sello_currency_exchange.xml</span></div>
+<div class="icon-cell" id="icon-Delete" data-drawable="ic_sello_delete"><span class="icon-name">Delete</span><span class="icon-file">ic_sello_delete.xml</span></div>
+<div class="icon-cell" id="icon-DeleteForever" data-drawable="ic_sello_delete_forever"><span class="icon-name">DeleteForever</span><span class="icon-file">ic_sello_delete_forever.xml</span></div>
+<div class="icon-cell" id="icon-DirectionsBus" data-drawable="ic_sello_directions_bus"><span class="icon-name">DirectionsBus</span><span class="icon-file">ic_sello_directions_bus.xml</span></div>
+<div class="icon-cell" id="icon-DirectionsCar" data-drawable="ic_sello_directions_car"><span class="icon-name">DirectionsCar</span><span class="icon-file">ic_sello_directions_car.xml</span></div>
+<div class="icon-cell" id="icon-Download" data-drawable="ic_sello_download"><span class="icon-name">Download</span><span class="icon-file">ic_sello_download.xml</span></div>
+<div class="icon-cell" id="icon-EditNote" data-drawable="ic_sello_edit_note"><span class="icon-name">EditNote</span><span class="icon-file">ic_sello_edit_note.xml</span></div>
+<div class="icon-cell" id="icon-Error" data-drawable="ic_sello_error"><span class="icon-name">Error</span><span class="icon-file">ic_sello_error.xml</span></div>
+<div class="icon-cell" id="icon-Event" data-drawable="ic_sello_event"><span class="icon-name">Event</span><span class="icon-file">ic_sello_event.xml</span></div>
+<div class="icon-cell" id="icon-EventBusy" data-drawable="ic_sello_event_busy"><span class="icon-name">EventBusy</span><span class="icon-file">ic_sello_event_busy.xml</span></div>
+<div class="icon-cell" id="icon-FitnessCenter" data-drawable="ic_sello_fitness_center"><span class="icon-name">FitnessCenter</span><span class="icon-file">ic_sello_fitness_center.xml</span></div>
+<div class="icon-cell" id="icon-Flight" data-drawable="ic_sello_flight"><span class="icon-name">Flight</span><span class="icon-file">ic_sello_flight.xml</span></div>
+<div class="icon-cell" id="icon-Handyman" data-drawable="ic_sello_handyman"><span class="icon-name">Handyman</span><span class="icon-file">ic_sello_handyman.xml</span></div>
+<div class="icon-cell" id="icon-Home" data-drawable="ic_sello_home"><span class="icon-name">Home</span><span class="icon-file">ic_sello_home.xml</span></div>
+<div class="icon-cell" id="icon-Info" data-drawable="ic_sello_info"><span class="icon-name">Info</span><span class="icon-file">ic_sello_info.xml</span></div>
+<div class="icon-cell" id="icon-InkPen" data-drawable="ic_sello_ink_pen"><span class="icon-name">InkPen</span><span class="icon-file">ic_sello_ink_pen.xml</span></div>
+<div class="icon-cell" id="icon-Insights" data-drawable="ic_sello_insights"><span class="icon-name">Insights</span><span class="icon-file">ic_sello_insights.xml</span></div>
+<div class="icon-cell" id="icon-KeyboardArrowDown" data-drawable="ic_sello_keyboard_arrow_down"><span class="icon-name">KeyboardArrowDown</span><span class="icon-file">ic_sello_keyboard_arrow_down.xml</span></div>
+<div class="icon-cell" id="icon-LocalCafe" data-drawable="ic_sello_local_cafe"><span class="icon-name">LocalCafe</span><span class="icon-file">ic_sello_local_cafe.xml</span></div>
+<div class="icon-cell" id="icon-LocalGasStation" data-drawable="ic_sello_local_gas_station"><span class="icon-name">LocalGasStation</span><span class="icon-file">ic_sello_local_gas_station.xml</span></div>
+<div class="icon-cell" id="icon-MedicalServices" data-drawable="ic_sello_medical_services"><span class="icon-name">MedicalServices</span><span class="icon-file">ic_sello_medical_services.xml</span></div>
+<div class="icon-cell" id="icon-MoreVert" data-drawable="ic_sello_more_vert"><span class="icon-name">MoreVert</span><span class="icon-file">ic_sello_more_vert.xml</span></div>
+<div class="icon-cell" id="icon-Pause" data-drawable="ic_sello_pause"><span class="icon-name">Pause</span><span class="icon-file">ic_sello_pause.xml</span></div>
+<div class="icon-cell" id="icon-Payments" data-drawable="ic_sello_payments"><span class="icon-name">Payments</span><span class="icon-file">ic_sello_payments.xml</span></div>
+<div class="icon-cell" id="icon-Pets" data-drawable="ic_sello_pets"><span class="icon-name">Pets</span><span class="icon-file">ic_sello_pets.xml</span></div>
+<div class="icon-cell" id="icon-PhoneIphone" data-drawable="ic_sello_phone_iphone"><span class="icon-name">PhoneIphone</span><span class="icon-file">ic_sello_phone_iphone.xml</span></div>
+<div class="icon-cell" id="icon-PlayArrow" data-drawable="ic_sello_play_arrow"><span class="icon-name">PlayArrow</span><span class="icon-file">ic_sello_play_arrow.xml</span></div>
+<div class="icon-cell" id="icon-ReceiptLong" data-drawable="ic_sello_receipt_long,ic_sello_receipt_long_outlined"><span class="icon-name">ReceiptLong</span><span class="icon-file">ic_sello_receipt_long.xml<br>ic_sello_receipt_long_outlined.xml</span></div>
+<div class="icon-cell" id="icon-Redeem" data-drawable="ic_sello_redeem"><span class="icon-name">Redeem</span><span class="icon-file">ic_sello_redeem.xml</span></div>
+<div class="icon-cell" id="icon-Restaurant" data-drawable="ic_sello_restaurant"><span class="icon-name">Restaurant</span><span class="icon-file">ic_sello_restaurant.xml</span></div>
+<div class="icon-cell" id="icon-Savings" data-drawable="ic_sello_savings"><span class="icon-name">Savings</span><span class="icon-file">ic_sello_savings.xml</span></div>
+<div class="icon-cell" id="icon-School" data-drawable="ic_sello_school"><span class="icon-name">School</span><span class="icon-file">ic_sello_school.xml</span></div>
+<div class="icon-cell" id="icon-Sell" data-drawable="ic_sello_sell"><span class="icon-name">Sell</span><span class="icon-file">ic_sello_sell.xml</span></div>
+<div class="icon-cell" id="icon-Settings" data-drawable="ic_sello_settings"><span class="icon-name">Settings</span><span class="icon-file">ic_sello_settings.xml</span></div>
+<div class="icon-cell" id="icon-ShoppingCart" data-drawable="ic_sello_shopping_cart"><span class="icon-name">ShoppingCart</span><span class="icon-file">ic_sello_shopping_cart.xml</span></div>
+<div class="icon-cell" id="icon-Sort" data-drawable="ic_sello_sort"><span class="icon-name">Sort</span><span class="icon-file">ic_sello_sort.xml</span></div>
+<div class="icon-cell" id="icon-Spa" data-drawable="ic_sello_spa"><span class="icon-name">Spa</span><span class="icon-file">ic_sello_spa.xml</span></div>
+<div class="icon-cell" id="icon-SportsEsports" data-drawable="ic_sello_sports_esports"><span class="icon-name">SportsEsports</span><span class="icon-file">ic_sello_sports_esports.xml</span></div>
+<div class="icon-cell" id="icon-SwapVert" data-drawable="ic_sello_swap_vert"><span class="icon-name">SwapVert</span><span class="icon-file">ic_sello_swap_vert.xml</span></div>
+<div class="icon-cell" id="icon-Theaters" data-drawable="ic_sello_theaters"><span class="icon-name">Theaters</span><span class="icon-file">ic_sello_theaters.xml</span></div>
+<div class="icon-cell" id="icon-UploadFile" data-drawable="ic_sello_upload_file"><span class="icon-name">UploadFile</span><span class="icon-file">ic_sello_upload_file.xml</span></div>
+<div class="icon-cell" id="icon-Wifi" data-drawable="ic_sello_wifi"><span class="icon-name">Wifi</span><span class="icon-file">ic_sello_wifi.xml</span></div>
+</div>
+    </section>
+  </main>
+</body>
+</html>

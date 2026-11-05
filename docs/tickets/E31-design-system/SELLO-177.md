@@ -2,7 +2,7 @@
 
 - **Type:** Task
 - **Priority:** P1
-- **Status:** Backlog
+- **Status:** Done
 - **Depends on:** SELLO-176
 - **Gate:** G0
 
@@ -22,3 +22,8 @@ inconsistency found, ready to decide.
 - A findings page logs each inconsistency with evidence (files, screenshots), offers a
   choice per finding and gives a copyable answer for each choice.
 - Every `src` and `href` on the pages resolves.
+
+### Progress
+- Pages written from the code by seven parallel authors (one per feature group) after
+  a design-system pass; 136 raw findings plus 10 design-system candidates merged into
+  90 (F01–F90) in eight themes. Unrelated defects went to issues #374–#387.

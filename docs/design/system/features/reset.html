@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reset · Sello design system</title>
+  <link rel="stylesheet" href="../assets/system.css">
+  <script src="../assets/system.js" defer></script>
+</head>
+<body data-page="features/reset">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Feature</p>
+      <h1>Reset</h1>
+      <p class="lede">Borrar datos: erase the whole history and return Sello to first run, after two confirmations.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section id="purpose">
+      <h2>Purpose</h2>
+      <p>Lets a person erase every category, expense, income, goal, schedule and investment and put the preferences back to their first-run values. It asks twice: first with the counts of what goes, then with the word BORRAR. Backup files saved outside Sello are never touched. After an erase, every way out restarts the app.</p>
+    </section>
+
+    <section id="entry-points">
+      <h2>Entry points</h2>
+      <ul>
+        <li>"Borrar todos los datos" in Configuración's Tus datos slip: <code>app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:137</code>, navigating with <code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:49</code>.</li>
+        <li>The destination: <code>ShellScreen</code> titled "Borrar datos" (<code>reset_title</code>), no entry dock, no past-month ribbon; the back arrow runs <code>ResetViewModel.back()</code>: <code>app/src/main/java/com/software/sello/navigation/ResetDestinations.kt:25</code>, <code>ResetDestinations.kt:33</code>.</li>
+        <li>An erase an earlier process committed but did not finish is finished when the session is created, and shown only if its preferences still fail: <code>app/src/main/java/com/software/sello/feature/reset/ResetSession.kt:53</code>.</li>
+      </ul>
+    </section>
+
+    <section id="screen-reset">
+      <h2>Screen: Borrar datos</h2>
+
+      <figure data-shot="reset" data-module="app"
+              data-caption="First confirmation: the counts, Continuar and Cancelar"></figure>
+      <figure data-shot="reset" data-module="app" data-variants="violeta-light-font1.0"
+              data-caption="First confirmation, Violeta ink"></figure>
+
+      <h3>Layout</h3>
+      <p>One scrolling <code>Column</code> with <code>spacing.md</code> gaps holding exactly one slip for the current step (<code>app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:90</code>).</p>
+      <ol>
+        <li><strong>First confirmation</strong> (<code>Counts</code>, <code>ResetScreen.kt:144</code>): an unpinned <a href="../components.html#c-Slip"><code>Slip</code></a>; an optional loss-coloured "data changed" note; <code>RestoreHeading</code> "¿Borrar todos tus datos?"; two <code>RestoreBody</code> paragraphs (what goes, as one sentence, and that backups stay); a full-width Loss <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> "Continuar" and, under it, an outlined "Cancelar".</li>
+        <li><strong>Second confirmation</strong> (<code>Word</code>, <code>ResetScreen.kt:192</code>): an unpinned Slip; "Escribe BORRAR"; "Esto no se puede deshacer. Sello quedará como recién instalado."; a <a href="../components.html#c-FormField"><code>FormField</code></a> "Escribe BORRAR para confirmar" (capitals, no autocorrect, Done); a full-width Loss "Borrar todo", enabled only when the trimmed text is exactly BORRAR; an outlined "Cancelar" under it.</li>
+        <li><strong>Done</strong> (<code>Erased</code>, <code>ResetScreen.kt:229</code>): "Tus datos" with a landing <a href="../components.html#c-Stamp"><code>Stamp</code></a> "Borrado" (<code>StampInk.Good</code>), "Sello quedó como recién instalado. Tus respaldos fuera de Sello no se tocaron." and a filled "Empezar de nuevo".</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading (counting)</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>. The screen counts again every time it opens, unless an erase is under way or done.</td><td><code>ResetScreen.kt:99</code>, <code>app/src/main/java/com/software/sello/feature/reset/ResetSession.kt:65</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty</td><td>Does not exist as its own state: with nothing stored the counts read zero and the same confirmation shows.</td><td><code>ResetScreen.kt:109</code></td><td>—</td></tr>
+            <tr><td>Error (counts unreadable)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos contar tus datos" / "No se borró nada. Puedes intentarlo de nuevo." with "Intentar de nuevo" (counts again).</td><td><code>ResetScreen.kt:101</code></td><td>no screenshot</td></tr>
+            <tr><td>First confirmation</td><td>The counts sentence, the backups line, Continuar and Cancelar.</td><td><code>ResetScreen.kt:144</code></td><td><code>reset-cobalto-light-font1.0.png</code> and the dark and Violeta captures</td></tr>
+            <tr><td>Stale (counts changed)</td><td>When the history changed between the counts and the erase, nothing is erased; the first confirmation comes back with "Tus datos cambiaron mientras confirmabas. Estas son las cifras de ahora." in <code>semantic.loss</code> above the heading, announced politely.</td><td><code>ResetScreen.kt:152</code>, <code>ResetSession.kt:129</code></td><td>no screenshot</td></tr>
+            <tr><td>Second confirmation</td><td>The word slip; "Borrar todo" disabled until BORRAR is typed.</td><td><code>ResetScreen.kt:192</code>, <code>app/src/main/java/com/software/sello/feature/reset/ResetViewModel.kt:119</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy (erasing)</td><td>The word slip stays; the field and Cancelar are disabled; the action spins and reads "Borrando…". Back waits.</td><td><code>ResetScreen.kt:115</code>, <code>ResetScreen.kt:209</code>, <code>ResetScreen.kt:76</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused / failed</td><td>ErrorSlip "No se pudo borrar" / "Tus datos no cambiaron." with "Volver", which counts again.</td><td><code>ResetScreen.kt:117</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome</td><td>ErrorSlip "No sabemos si se borró" / "Sello no pudo confirmar si borró tus datos. Compruébalo antes de seguir; no se borrará dos veces." with "Comprobar". Comprobar asks for the same erase again under the same operation, so the screen goes back to the busy word slip ("Borrando…") until the answer comes. Back now restarts the app.</td><td><code>ResetScreen.kt:125</code>, <code>ResetSession.kt:92</code>, <code>ResetViewModel.kt:124</code></td><td>no screenshot</td></tr>
+            <tr><td>Erased</td><td>"Tus datos" + "Borrado" stamp, the body and "Empezar de nuevo" (restarts the app).</td><td><code>ResetScreen.kt:229</code></td><td>no screenshot</td></tr>
+            <tr><td>Erased, preferences pending</td><td>"Tus datos se borraron", "No pudimos devolver estas preferencias a su valor de inicio:", three bullets naming each setting with its first-run value, a filled "Restablecer preferencias" (spins while applying), the note "Solo se cambian preferencias; tus datos ya se borraron." and a Text "Empezar de nuevo".</td><td><code>ResetScreen.kt:255</code>, <code>ResetSession.kt:97</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Which confirmation is open and what was typed are kept in <code>SavedStateHandle</code>, so rotation or process death loses neither; the counts are read again.</td><td><code>ResetViewModel.kt:24</code>, <code>ResetViewModel.kt:76</code></td><td>no screenshot</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Continuar</strong>: <code>ResetAction.Continue</code>, opens the word step (<code>ResetViewModel.kt:46</code>).</li>
+        <li><strong>Cancelar</strong> on the counts: closes the screen (<code>onClose</code>, <code>ResetScreen.kt:182</code>).</li>
+        <li><strong>Word field</strong>: <code>ResetAction.Typed</code>, kept exactly as typed (<code>ResetViewModel.kt:48</code>).</li>
+        <li><strong>Borrar todo</strong>: <code>ResetAction.Confirm</code>; checked again in the ViewModel, which closes the word step and starts the erase with a new operation ID (<code>ResetViewModel.kt:53</code>, <code>ResetSession.kt:80</code>).</li>
+        <li><strong>Cancelar</strong> on the word: <code>ResetAction.Cancel</code>, back to the counts with the field cleared.</li>
+        <li><strong>Intentar de nuevo</strong> / <strong>Volver</strong>: <code>ResetAction.Retry</code>, counts again; <strong>Comprobar</strong>: <code>ResetAction.Check</code>; <strong>Restablecer preferencias</strong>: <code>ResetAction.ApplyPreferences</code>; <strong>Empezar de nuevo</strong>: <code>ResetAction.Leave</code>, restarts the app.</li>
+        <li><strong>Back</strong> (arrow and system, both through <code>ResetViewModel.back()</code>, <code>ResetScreen.kt:72</code>): restarts once erased or unknown, does nothing while erasing, closes the word step, else closes the screen.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Borrar datos" (<code>reset_title</code>)</li>
+        <li>"¿Borrar todos tus datos?" (<code>reset_counts_title</code>); "Se borran %1$s, con sus límites y notas. Vuelven a los de inicio la apariencia, el orden de categorías y, en Inversiones, la moneda y el orden." (<code>reset_counts_body</code>, filled by <code>contentsText</code>, e.g. "3 categorías, 42 gastos y 1 ingreso")</li>
+        <li>"Los respaldos que guardaste fuera de Sello no se borran: siguen donde los guardaste." (<code>reset_backups_stay</code>)</li>
+        <li>"Continuar" (<code>reset_continue</code>), "Cancelar" (<code>reset_cancel</code>)</li>
+        <li>"Escribe BORRAR" (<code>reset_word_title</code>), "Esto no se puede deshacer. Sello quedará como recién instalado." (<code>reset_word_body</code>), "Escribe BORRAR para confirmar" (<code>reset_word_label</code>), "Borrar todo" (<code>reset_confirm</code>), "Borrando…" (<code>reset_erasing</code>)</li>
+        <li>"Tus datos cambiaron mientras confirmabas. Estas son las cifras de ahora." (<code>reset_refreshed</code>)</li>
+        <li>"No pudimos contar tus datos" (<code>reset_unreadable_title</code>), "No se borró nada. Puedes intentarlo de nuevo." (<code>reset_unreadable_body</code>), "Intentar de nuevo" (<code>reset_retry</code>)</li>
+        <li>"No se pudo borrar" (<code>reset_failed_title</code>), "Tus datos no cambiaron." (<code>reset_failed_body</code>), "Volver" (<code>reset_failed_action</code>)</li>
+        <li>"No sabemos si se borró" (<code>reset_unknown_title</code>), <code>reset_unknown_body</code>, "Comprobar" (<code>reset_unknown_action</code>)</li>
+        <li>"Tus datos" (<code>reset_done_title</code>), "Borrado" (<code>reset_done_stamp</code>), "Sello quedó como recién instalado. Tus respaldos fuera de Sello no se tocaron." (<code>reset_done_body</code>), "Empezar de nuevo" (<code>reset_start_again</code>)</li>
+        <li>"Tus datos se borraron" (<code>reset_pending_title</code>), "Apariencia: Sistema, Cobalto", "Orden de categorías: Más usadas, de mayor a menor", "Inversiones: Pesos (COP), Mayor valor" (<code>reset_pending_appearance</code>, <code>reset_pending_ordering</code>, <code>reset_pending_investments</code>), "Restablecer preferencias" (<code>reset_pending_action</code>), <code>reset_pending_note</code></li>
+      </ul>
+    </section>
+
+    <section id="components">
+      <h2>Components</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th>Source</th><th>How used here</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><a href="../components.html#c-Slip"><code>Slip</code></a></td><td><code>:design-system</code> <code>Slip.kt</code></td><td>One unpinned slip per step</td><td>The step is the only thing on the screen</td></tr>
+            <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td><td><code>ButtonTone.Loss</code> for Continuar and Borrar todo (with <code>loading</code> while erasing); <code>ButtonKind.Outlined</code> Cancelar under each; filled or Text "Empezar de nuevo"</td><td>The erase is red twice; loading blocks a second erase</td></tr>
+            <tr><td><a href="../components.html#c-FormField"><code>FormField</code></a></td><td><code>:design-system</code> <code>FormField.kt</code></td><td>The word, capitals keyboard, no autocorrect, disabled while erasing</td><td>"The exact word, then the only button that erases"</td></tr>
+            <tr><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Unreadable counts, failed erase, unknown outcome, each with its own title and action label</td><td>Each says whether anything was erased</td></tr>
+            <tr><td><a href="../components.html#c-Stamp"><code>Stamp</code></a></td><td><code>:design-system</code> <code>Stamp.kt</code></td><td>"Borrado", <code>StampInk.Good</code>, <code>land = true</code>, live region</td><td>The verdict, once</td></tr>
+            <tr><td><a href="../components.html#c-BulletList"><code>BulletList</code></a></td><td><code>:design-system</code> <code>BulletList.kt</code></td><td>The three pending preferences</td><td>Every setting named with what it will be</td></tr>
+            <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>While counting</td><td>Loading</td></tr>
+            <tr><td><code>RestoreHeading</code>, <code>RestoreBody</code>, <code>contentsText</code> (app-shared)</td><td><code>app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:197</code>, <code>:206</code>, <code>:271</code></td><td>Headings, paragraphs and the counts sentence</td><td>Restore's words and type, reused</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="look-alikes">
+      <h2>Feature-local parts that look like shared ones</h2>
+      <ul>
+        <li><strong>The word step</strong> (<code>app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:192</code>) is the same idea as category "Borrar todo", which puts the field in a <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> with <code>confirmEnabled</code> (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:136</code>), and start-up's "Empezar de cero" (<code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:285</code>). All three keep their own <code>CONFIRM_WORD = "BORRAR"</code> and their own copy of "Escribe BORRAR para confirmar". Compare <code>reset-cobalto-light-font1.0.png</code> with <code>category-removal-all-typed-cobalto-light-font1.0.png</code>. Finding: <a href="../findings.html#F16">F16</a>.</li>
+        <li><strong>Button order</strong>: here the red action is on top and Cancelar under it; in every <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> Cancelar comes first (compare <code>carry-drop-cobalto-light-font1.0.png</code>). Finding: <a href="../findings.html#F17">F17</a>.</li>
+        <li><strong>What goes</strong> is one sentence here; category delete-all lists the same kind of facts as <a href="../components.html#c-ChangeRow"><code>ChangeRow</code></a>s (<code>category-removal-all-cobalto-light-font1.0.png</code>). Finding: <a href="../findings.html#F21">F21</a>.</li>
+        <li><strong>"Borrado" heading row</strong> (<code>ResetScreen.kt:231</code>) is the same FlowRow + landing stamp as <code>RestoredSlip</code>'s "Restaurado" (<code>app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:77</code>). Finding: <a href="../findings.html#F86">F86</a>.</li>
+        <li><strong>Refreshed note</strong> (<code>ResetScreen.kt:152</code>) is written again in Restaurar (<code>app/src/main/java/com/software/sello/feature/backup/RestoreSection.kt:171</code>). Finding: <a href="../findings.html#F10">F10</a>.</li>
+        <li><strong>Counting</strong> shows a SlipSkeleton here; category removal counts in a dialog with a spinner and words (<code>CategoryRemovalSlips.kt:93</code>), and shows "Aún no se puede borrar" in a ConfirmSlip when counting fails (<code>category-removal-count-cobalto-light-font1.0.png</code>), where this screen uses an ErrorSlip. Finding: <a href="../findings.html#F08">F08</a>.</li>
+      </ul>
+    </section>
+
+    <section id="gaps">
+      <h2>Gaps</h2>
+      <div class="gaps">
+        <ul>
+          <li>Only the first confirmation has a baseline (Cobalto light and dark, Violeta light). No screenshot of loading, unreadable counts, the refreshed note, the word step (empty or typed), erasing, failed, unknown outcome, erased, or preferences pending.</li>
+          <li>The first-run values in <code>reset_pending_*</code> are written into the strings ("Sistema, Cobalto", "Más usadas, de mayor a menor", "Pesos (COP), Mayor valor"), not read from the preference defaults; this page could not confirm from the code that they match those defaults.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

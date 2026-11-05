@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Backup · Sello design system</title>
+  <link rel="stylesheet" href="../assets/system.css">
+  <script src="../assets/system.js" defer></script>
+</head>
+<body data-page="features/backup">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Feature</p>
+      <h1>Backup</h1>
+      <p class="lede">Respaldo and Tus datos: save a backup file, export to CSV or JSON, and restore a Sello or FinanceTracker backup after a preview.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section id="purpose">
+      <h2>Purpose</h2>
+      <p>Lets a person save their whole history to a file they choose, export it as a readable CSV or JSON file, and replace everything on the phone with a backup (Sello's own, or one from FinanceTracker, translated) after seeing what changes. Saving, exporting and restoring run in process-wide sessions, so leaving the screen never cuts them short.</p>
+    </section>
+
+    <section id="entry-points">
+      <h2>Entry points</h2>
+      <ul>
+        <li><strong>Tus datos</strong> is the first block of Configuración, slotted in by navigation: <code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:44</code>.</li>
+        <li><strong>Respaldo</strong> opens from Tus datos' "Ver qué contiene" link, or after a file is chosen with "Restaurar", or when "Restaurar" is pressed while a restore is already under way: <code>app/src/main/java/com/software/sello/navigation/SettingsDestinations.kt:47</code>, wired in <code>app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:70</code> and <code>TusDatos.kt:78</code>.</li>
+        <li>The Respaldo destination: <code>ShellScreen</code> titled "Respaldo" (<code>backup_title</code>), no entry dock, no past-month ribbon: <code>app/src/main/java/com/software/sello/navigation/BackupDestinations.kt:26</code>.</li>
+        <li>The restored-history slip (<code>RestoredSlip</code>) is also shown at start-up; see the Start-up page.</li>
+      </ul>
+    </section>
+
+    <section id="screen-tus-datos">
+      <h2>Screen: Tus datos (on Configuración)</h2>
+      <p class="note">No baseline exists for this card in any state (see <a href="#gaps">Gaps</a>).</p>
+
+      <h3>Layout</h3>
+      <ol>
+        <li>A save's problem, if any: <code>BackupProblems</code> (an <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> for a failed or unfinished save) and <code>ExportProblems</code> (an ErrorSlip for a failed export) (<code>app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:110</code>).</li>
+        <li>A <a href="../components.html#c-Slip"><code>Slip</code></a> with the title "Tus datos" (<code>titleMedium</code>, inline) (<code>TusDatos.kt:118</code>), holding:
+          <ol>
+            <li>The <strong>backup card</strong> (<code>TusDatos.kt:183</code>): a label row (18 dp <code>Backup</code> icon in <code>brand</code> + "Respaldo" in <code>labelLarge</code>/<code>inkSoft</code>) with a <a href="../components.html#c-Stamp"><code>Stamp</code></a> at the end; a big <code>displaySmall</code> figure (the date, or "Nunca") with a <code>bodyMedium</code> caption (age and file size, or a warning); a <a href="../components.html#c-ButtonPair"><code>ButtonPair</code></a> of a filled "Respaldar" and an outlined "Restaurar"; and a brand-coloured "Ver qué contiene ›" link row.</li>
+            <li>The <strong>Exportar</strong> <a href="../components.html#c-SettingRow"><code>SettingRow</code></a> (<code>app/src/main/java/com/software/sello/feature/backup/ExportControls.kt:106</code>).</li>
+            <li>The <strong>"Borrar todos los datos"</strong> SettingRow in <code>SettingTone.Loss</code> (red icon and title, no chevron) (<code>TusDatos.kt:137</code>).</li>
+          </ol>
+        </li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>A <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> in place of the slip.</td><td><code>TusDatos.kt:115</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty (never backed up)</td><td>Stamp "Sin respaldo" (<code>StampInk.Over</code>, loss red); figure "Nunca"; caption "Si pierdes el teléfono, pierdes tus datos"; the button reads "Crear".</td><td><code>TusDatos.kt:236</code>, <code>TusDatos.kt:307</code></td><td>no screenshot</td></tr>
+            <tr><td>Recent (30 days or fewer)</td><td>Stamp "Guardado" (<code>StampInk.Done</code>, brand); the date; "Hoy · 12 kB", "Ayer · …" or "N días · …".</td><td><code>TusDatos.kt:241</code>, <code>app/src/main/java/com/software/sello/feature/backup/BackupAge.kt:27</code></td><td>no screenshot</td></tr>
+            <tr><td>Old (over 30 days)</td><td>Stamp "Pendiente" (<code>StampInk.Warn</code>).</td><td><code>TusDatos.kt:309</code>, <code>BackupAge.kt:21</code></td><td>no screenshot</td></tr>
+            <tr><td>Error / stale (record unreadable)</td><td>No stamp (age unknown); "No pudimos leer cuándo fue tu último respaldo. Puedes crear uno igual." and a Text button "Intentar de nuevo" (<code>RetryRecord</code>). Both buttons still work.</td><td><code>TusDatos.kt:196</code>, <code>TusDatos.kt:222</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy (saving)</td><td>The create button shows a spinner and "Guardando…"; Restaurar is disabled. While the system picker is being opened the create button is disabled.</td><td><code>TusDatos.kt:260</code>, <code>app/src/main/java/com/software/sello/feature/backup/BackupViewModel.kt:133</code></td><td>no screenshot</td></tr>
+            <tr><td>Just saved</td><td>The "Guardado" stamp lands once.</td><td><code>TusDatos.kt:219</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused (save failed)</td><td>ErrorSlip "No se pudo guardar el respaldo" with a message per cause (write, storage, too large, self-check) and "Intentar de nuevo", which reopens the disclosure dialog.</td><td><code>app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:248</code>, <code>TusDatos.kt:110</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome (process died while saving)</td><td>ErrorSlip "No sabemos si el respaldo terminó" / "Sello se cerró mientras lo guardaba. Ese archivo puede estar incompleto. Crea uno nuevo para estar seguro." with "Crear un respaldo nuevo". A backup file cannot be checked, so the only way forward is a new one.</td><td><code>BackupScreen.kt:264</code>, <code>BackupViewModel.kt:65</code></td><td>no screenshot</td></tr>
+            <tr><td>Exporting / exported</td><td>The Exportar row is disabled with the caption "Exportando…"; after a save it reads "Guardado: {file name}".</td><td><code>ExportControls.kt:110</code></td><td>no screenshot</td></tr>
+            <tr><td>Export failed</td><td>ErrorSlip "No se pudo exportar" with a storage, write or share message and "Intentar de nuevo", which reopens the export dialog.</td><td><code>ExportControls.kt:124</code>, <code>TusDatos.kt:111</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Whether the disclosure or export dialog is open survives recreation; the suggested file name and format are kept while the system picker is open, so its answer reaches a new process.</td><td><code>TusDatos.kt:106</code>, <code>BackupViewModel.kt:83</code>, <code>app/src/main/java/com/software/sello/feature/backup/ExportViewModel.kt:57</code></td><td>no screenshot</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Respaldar / Crear</strong>: opens the "Antes de guardar" disclosure as a <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> (<code>destructive = false</code>) holding the disclosure <a href="../components.html#c-BulletList"><code>BulletList</code></a>; its action "Elegir dónde guardar" sends <code>BackupAction.Create</code>, which opens the system save picker (<code>TusDatos.kt:161</code>, <code>app/src/main/java/com/software/sello/feature/backup/BackupPickers.kt:18</code>). Dismissing the picker does nothing and says nothing.</li>
+        <li><strong>Restaurar</strong>: with no restore under way, opens the system file picker; a chosen file then opens Respaldo, where it is checked. With a restore under way it opens Respaldo directly (<code>TusDatos.kt:78</code>, <code>BackupPickers.kt:39</code>).</li>
+        <li><strong>Ver qué contiene</strong>: opens Respaldo (<code>TusDatos.kt:286</code>).</li>
+        <li><strong>Exportar a CSV o JSON</strong>: opens the export dialog (below).</li>
+        <li><strong>Borrar todos los datos</strong>: opens <a href="reset.html">Borrar datos</a>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Tus datos" (<code>settings_data</code>), "Respaldo" (<code>settings_backup</code>)</li>
+        <li>"Nunca" (<code>settings_backup_never</code>), "Si pierdes el teléfono, pierdes tus datos" (<code>settings_backup_never_caption</code>), "Hoy" / "Ayer" (<code>settings_backup_today</code>, <code>settings_backup_yesterday</code>), plural <code>settings_backup_days</code>, "%1$s · %2$s" (<code>settings_backup_age_size</code>)</li>
+        <li>Stamps: "Sin respaldo" (<code>settings_backup_stamp_none</code>), "Guardado" (<code>backup_saved_stamp</code>), "Pendiente" (<code>settings_backup_stamp_old</code>)</li>
+        <li>"Crear" (<code>settings_backup_create_first</code>), "Respaldar" (<code>settings_backup_create</code>), "Restaurar" (<code>settings_backup_restore</code>), "Ver qué contiene" (<code>settings_backup_contents</code>), "Elegir dónde guardar" (<code>settings_backup_choose</code>)</li>
+        <li>"Exportar a CSV o JSON" (<code>settings_export</code>), "Exportando…" (<code>settings_export_working</code>), "Guardado: %1$s" (<code>settings_export_saved</code>)</li>
+        <li>"Borrar todos los datos" (<code>settings_reset</code>), "Pide confirmación dos veces" (<code>settings_reset_caption</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-export">
+      <h2>Dialog: Exportar tus datos</h2>
+      <p class="note">No baseline.</p>
+      <h3>Layout</h3>
+      <ol>
+        <li>A <a href="../components.html#c-ChoiceSlip"><code>ChoiceSlip</code></a> titled "Exportar tus datos" (<code>app/src/main/java/com/software/sello/feature/backup/ExportControls.kt:152</code>).</li>
+        <li>A <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> CSV / JSON (CSV first), the chosen format's caption, and a <a href="../components.html#c-BulletList"><code>BulletList</code></a> of what the file is and is not.</li>
+        <li>Outlined "Compartir", filled "Guardar", and a Text "Cancelar" under them.</li>
+      </ol>
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Open</td><td>Format CSV by default; the format survives recreation.</td><td><code>ExportControls.kt:151</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading, empty, error, stale, unknown</td><td>Do not exist in the dialog; it closes as soon as an answer is given, and progress or failure shows on the Exportar row and an ErrorSlip.</td><td><code>app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:148</code></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Compartir</strong>: <code>ExportAction.Share</code>; the session writes a file and the system share sheet opens with read access to that one file (<code>ExportControls.kt:84</code>).</li>
+        <li><strong>Guardar</strong>: <code>ExportAction.Save</code>; opens the system save picker with the format's type (<code>ExportControls.kt:73</code>, <code>app/src/main/java/com/software/sello/feature/backup/ExportViewModel.kt:57</code>).</li>
+        <li><strong>Cancelar</strong>, Back, tap outside: close it.</li>
+      </ul>
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Exportar tus datos" (<code>export_title</code>), "CSV" / "JSON" (<code>export_csv</code>, <code>export_json</code>)</li>
+        <li>"Una tabla con cada movimiento, para una hoja de cálculo." (<code>export_csv_caption</code>); "Todo, también categorías, límites, metas, inversiones y lo que se repite, para otros programas." (<code>export_json_caption</code>)</li>
+        <li>"Cualquiera que abra el archivo puede leerlo." + "Muestra tus montos, nombres y notas. No tiene contraseña ni cifrado." (<code>export_readable_lead</code>, <code>export_readable</code>)</li>
+        <li>"No es un respaldo:" + "Sello no puede restaurarlo. Para eso está Respaldar." (<code>export_not_backup_lead</code>, <code>export_not_backup</code>)</li>
+        <li>"Si lo compartes," + "la otra app lo guarda a su manera; Sello no puede borrarlo." (<code>export_shared_lead</code>, <code>export_shared</code>)</li>
+        <li>"Compartir", "Guardar", "Cancelar" (<code>export_share</code>, <code>export_save</code>, <code>export_cancel</code>); chooser title "Compartir tus datos" (<code>export_share_title</code>)</li>
+        <li>Failures: "No se pudo exportar" (<code>export_failed_title</code>), <code>export_failed_storage</code>, <code>export_failed_write</code>, <code>export_failed_share</code>, "Intentar de nuevo" (<code>export_retry</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-respaldo">
+      <h2>Screen: Respaldo</h2>
+      <p class="note">Only the restore section has baselines, captured on their own in Cobalto light (<code>FeatureComponentsScreenshotTest</code>); the screen as a whole has none.</p>
+
+      <h3>Layout</h3>
+      <p>One scrolling <code>Column</code> with <code>spacing.md</code> gaps (<code>app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:91</code>). Top to bottom, when no restore is under way:</p>
+      <ol>
+        <li><code>BackupProblems</code>: the failed-save or unfinished-save ErrorSlip (<code>BackupScreen.kt:107</code>).</li>
+        <li><strong>Último respaldo</strong>: an unpinned <a href="../components.html#c-Slip"><code>Slip</code></a> with a <code>headlineSmall</code> heading and, after a save, a landing "Guardado" <a href="../components.html#c-Stamp"><code>Stamp</code></a> (<code>StampInk.Good</code>); then <a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a>s for Fecha, Categorías, Gastos, Ingresos (and Metas, Pagos e ingresos fijos, Inversiones when there are any), Archivo size, and the file name in <code>bodySmall</code> (<code>BackupScreen.kt:133</code>).</li>
+        <li><strong>Antes de guardar</strong>: an unpinned Slip with the disclosure <a href="../components.html#c-BulletList"><code>BulletList</code></a> (<code>BackupScreen.kt:211</code>).</li>
+        <li>A full-width filled <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> "Crear respaldo" / "Crear otro respaldo" and the caption "Luego eliges dónde guardarlo." (<code>BackupScreen.kt:110</code>).</li>
+        <li>The restore section (below) last.</li>
+      </ol>
+      <p>Once a file is being previewed, refused, replaced or answered, the restore section moves to the top and the screen scrolls there (instantly with reduced motion) (<code>BackupScreen.kt:86</code>, <code>BackupScreen.kt:105</code>). Once the history is replaced, the restore section is the only thing on the screen (<code>BackupScreen.kt:106</code>).</p>
+
+      <h3>States (backup part)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>.</td><td><code>BackupScreen.kt:99</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty</td><td>"Aún no has creado ningún respaldo." under the heading; button "Crear respaldo".</td><td><code>BackupScreen.kt:160</code></td><td>no screenshot</td></tr>
+            <tr><td>Error / stale (record unreadable)</td><td>"No pudimos leer cuándo fue tu último respaldo. Puedes crear uno igual." and a Text "Intentar de nuevo".</td><td><code>BackupScreen.kt:163</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy (saving)</td><td>The button shows a spinner and "Guardando…"; disabled while the picker opens or the save runs.</td><td><code>BackupScreen.kt:113</code></td><td>no screenshot</td></tr>
+            <tr><td>Just saved</td><td>The "Guardado" stamp lands beside the heading and is announced politely.</td><td><code>BackupScreen.kt:148</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused (save failed)</td><td>ErrorSlip "No se pudo guardar el respaldo" with the cause; "Intentar de nuevo" starts a new save.</td><td><code>BackupScreen.kt:248</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome</td><td>ErrorSlip "No sabemos si el respaldo terminó" with "Crear un respaldo nuevo".</td><td><code>BackupScreen.kt:264</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>The suggested name is kept in <code>SavedStateHandle</code> while the save picker is open.</td><td><code>app/src/main/java/com/software/sello/feature/backup/BackupViewModel.kt:89</code></td><td>no screenshot</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Restore section</h3>
+      <figure data-module="app" data-files="components-restore-unknown.png"
+              data-caption="Unknown outcome (top), then the preview shown again after a check found it not replaced"></figure>
+      <figure data-module="app" data-files="components-restore-chosen-set-aside.png"
+              data-caption="Unknown outcome and Restaurado, each saying a file chosen meanwhile was set aside"></figure>
+
+      <p><code>RestoreSection</code> (<code>app/src/main/java/com/software/sello/feature/backup/RestoreSection.kt:59</code>) draws one slip per step of <code>RestoreStep</code> (<code>app/src/main/java/com/software/sello/feature/backup/RestoreSession.kt:26</code>):</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Idle</td><td>Unpinned Slip "Restaurar", "Elige un archivo de respaldo de Sello o de FinanceTracker. Reemplaza todo lo que hay en este teléfono." and an outlined full-width "Elegir archivo".</td><td><code>RestoreSection.kt:61</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy (checking the file)</td><td>The button spins and reads "Revisando el archivo…".</td><td><code>RestoreSection.kt:69</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused (file rejected)</td><td>ErrorSlip "Ese archivo no se puede restaurar" with one of eight reasons, each ending "Tus datos no cambiaron.", and "Elegir otro archivo".</td><td><code>RestoreSection.kt:86</code>, <code>app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:215</code></td><td>no screenshot</td></tr>
+            <tr><td>Preview (confirm)</td><td>Unpinned Slip "¿Reemplazar tus datos?", "Respaldo del {moment}", an Ahora / Respaldo table of counts (rows for goals, schedules, investments and carry chains only when either side has any), the FinanceTracker report when the file is a translated one, the warning, a Loss "Reemplazar con el respaldo" and an outlined "Cancelar" under it.</td><td><code>RestoreSection.kt:147</code>, <code>RestoreSection.kt:210</code></td><td><code>components-restore-unknown.png</code> (lower slip)</td></tr>
+            <tr><td>Stale (counts changed)</td><td>In the preview, "Tus datos cambiaron mientras revisabas. Estas son las cifras de ahora." in <code>semantic.loss</code>, announced politely.</td><td><code>RestoreSection.kt:141</code>, <code>RestoreSection.kt:171</code></td><td>no screenshot</td></tr>
+            <tr><td>Not replaced after a check</td><td>The preview again, with "No se restauró: tus datos no cambiaron. Si aún quieres, confírmalo de nuevo."</td><td><code>RestoreSection.kt:141</code></td><td><code>components-restore-unknown.png</code></td></tr>
+            <tr><td>Busy (replacing)</td><td>The preview stays; the action spins and reads "Restaurando…", both buttons disabled.</td><td><code>RestoreSection.kt:104</code></td><td>no screenshot</td></tr>
+            <tr><td>Failed</td><td>ErrorSlip "No se pudo restaurar" / "Tus datos no cambiaron. Puedes intentarlo de nuevo." with "Volver" (back to Idle).</td><td><code>RestoreSection.kt:94</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome</td><td>ErrorSlip "No sabemos si se restauró" with "Comprobar"; while checking, the button spins and reads "Comprobando…". If a file was chosen meanwhile, a second paragraph says it was set aside. Every way out now restarts the app.</td><td><code>RestoreSection.kt:106</code>, <code>app/src/main/java/com/software/sello/feature/backup/RestoreViewModel.kt:124</code></td><td><code>components-restore-unknown.png</code>, <code>components-restore-chosen-set-aside.png</code></td></tr>
+            <tr><td>Restored</td><td><code>RestoredSlip</code>: "Tus datos" with a landing "Restaurado" stamp (<code>StampInk.Good</code>), "Se restauró el respaldo: {contents}.", and a filled "Ir al recibo", which restarts the app.</td><td><code>app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:75</code></td><td><code>components-restore-chosen-set-aside.png</code> (lower slip)</td></tr>
+            <tr><td>Restored, preferences pending</td><td>"Historial financiero restaurado", the pending preferences as bullets, a filled "Aplicar …" (spins while applying), a note, and a Text "Ir al recibo".</td><td><code>RestoreSlips.kt:119</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored, preferences unreadable</td><td>"Historial financiero restaurado" and a sentence saying the preferences can be chosen in Configuración; "Ir al recibo".</td><td><code>RestoreSlips.kt:108</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>A file being checked when the process died is checked again once; after that only the staged restore stands for it.</td><td><code>RestoreViewModel.kt:38</code></td><td>no screenshot</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Legacy import (FinanceTracker)</h3>
+      <p>When the chosen file is a FinanceTracker backup, the preview adds <code>LegacyReportSection</code> (<code>app/src/main/java/com/software/sello/presentation/restore/LegacyReport.kt:29</code>): a <code>titleMedium</code> heading "Desde FinanceTracker", then either "Sello pudo traer todo lo que tiene el archivo." or bullets under "Ajustado para que encaje en Sello:" and "No se importa:" (one line per kind of record and reason, e.g. "3 gastos: monto fuera de rango"), closing with "Por eso los totales de Sello pueden no coincidir con los de FinanceTracker." No baseline.</p>
+
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Crear respaldo</strong>: <code>BackupAction.Create</code> → save picker → the session saves (<code>BackupViewModel.kt:83</code>).</li>
+        <li><strong>Elegir archivo</strong> / <strong>Elegir otro archivo</strong>: <code>RestoreAction.Choose</code> → file picker → <code>RestoreAction.Chosen</code> → checking (<code>RestoreViewModel.kt:55</code>).</li>
+        <li><strong>Reemplazar con el respaldo</strong>: <code>Confirm</code>; <strong>Cancelar</strong>: <code>Cancel</code>; <strong>Volver</strong>: <code>Dismiss</code>; <strong>Comprobar</strong>: <code>Check</code> (reads the receipt again, never replaces); <strong>Aplicar …</strong>: <code>ApplyPreferences</code>; <strong>Ir al recibo</strong>: <code>Leave</code>, which finishes the session and restarts the app (<code>RestoreViewModel.kt:78</code>).</li>
+        <li><strong>Back</strong> (arrow or system): pops, unless the history is or may be replaced, when it sends <code>Leave</code> (<code>app/src/main/java/com/software/sello/navigation/BackupDestinations.kt:36</code>, <code>BackupScreen.kt:55</code>).</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Respaldo" (<code>backup_title</code>), "Último respaldo" (<code>backup_last</code>), "Aún no has creado ningún respaldo." (<code>backup_none</code>)</li>
+        <li>Leader lines: "Fecha", "Categorías", "Gastos", "Ingresos", "Metas", "Pagos e ingresos fijos", "Inversiones", "Archivo" (<code>backup_date</code> … <code>backup_size</code>); "%1$s, %2$s" (<code>backup_moment</code>)</li>
+        <li>"Antes de guardar" (<code>backup_disclosure_title</code>) and its four bullets (<code>backup_disclosure_readable_lead</code>/<code>_readable</code>, <code>_yours_lead</code>/<code>_yours</code>, <code>_cloud_lead</code>/<code>_cloud</code>, <code>backup_disclosure_reset</code>)</li>
+        <li>"Crear respaldo" (<code>backup_create</code>), "Crear otro respaldo" (<code>backup_create_another</code>), "Luego eliges dónde guardarlo." (<code>backup_create_caption</code>), "Guardando…" (<code>backup_saving</code>)</li>
+        <li>"No se pudo guardar el respaldo" (<code>backup_failed_title</code>), "No sabemos si el respaldo terminó" (<code>backup_unknown_title</code>), "Crear un respaldo nuevo" (<code>backup_unknown_action</code>), "Intentar de nuevo" (<code>backup_retry</code>)</li>
+        <li>Restore: "Restaurar" (<code>restore_title</code>), "Elegir archivo" (<code>restore_choose</code>), "Revisando el archivo…" (<code>restore_checking</code>), "Ese archivo no se puede restaurar" (<code>restore_rejected_title</code>), "¿Reemplazar tus datos?" (<code>restore_preview_title</code>), "Ahora" / "Respaldo" (<code>restore_preview_now</code>, <code>restore_preview_backup</code>), "Todo lo que hay ahora en este teléfono se reemplaza por el respaldo; no se mezclan. También se restauran la zona horaria, la apariencia y el orden del respaldo." (<code>restore_preview_warning</code>), "Reemplazar con el respaldo" (<code>restore_confirm</code>), "Restaurando…" (<code>restore_replacing</code>)</li>
+        <li>"No sabemos si se restauró" (<code>restore_unknown_title</code>), "Sello no pudo confirmar si reemplazó tus datos. Compruébalo antes de seguir; no se reemplazará dos veces." (<code>restore_unknown_body</code>), "Comprobar" / "Comprobando…" (<code>restore_unknown_action</code>, <code>restore_unknown_checking</code>)</li>
+        <li>"Tus datos" + "Restaurado" (<code>restore_done_title</code>, <code>restore_done_stamp</code>), "Ir al recibo" (<code>restore_go_to_recibo</code>), "Historial financiero restaurado" (<code>restore_pending_title</code>)</li>
+      </ul>
+    </section>
+
+    <section id="components">
+      <h2>Components</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th>Source</th><th>How used here</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><a href="../components.html#c-Slip"><code>Slip</code></a></td><td><code>:design-system</code> <code>Slip.kt</code></td><td>Respaldo's slips are <code>pinked = false</code>; Tus datos' slip keeps the default</td><td>Each block is one paper slip</td></tr>
+            <tr><td><a href="../components.html#c-SettingRow"><code>SettingRow</code></a></td><td><code>:design-system</code> <code>Settings.kt</code></td><td>Exportar (caption shows progress, <code>enabled = !busy</code>); "Borrar todos los datos" with <code>SettingTone.Loss</code></td><td>The Loss row is "the one that deletes everything"</td></tr>
+            <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td><td>Filled create (with <code>loading</code>), outlined restore/cancel, <code>ButtonTone.Loss</code> for "Reemplazar con el respaldo", <code>ButtonKind.Text</code> for record retry and "Ir al recibo" when preferences are pending</td><td>Loading blocks a double submit</td></tr>
+            <tr><td><a href="../components.html#c-ButtonPair"><code>ButtonPair</code></a></td><td><code>:design-system</code> <code>Recurrence.kt</code></td><td>Respaldar + Restaurar, equal weights, <code>spacing.sm</code> gap</td><td>Two actions side by side, stacked when they don't fit</td></tr>
+            <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>The card's disclosure, <code>destructive = false</code>, content = the disclosure bullets</td><td>The disclosure is read before anything is asked of the system</td></tr>
+            <tr><td><a href="../components.html#c-ChoiceSlip"><code>ChoiceSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Export: Compartir / Guardar / Cancelar, with the format switch and bullets as content</td><td>"A question with two answers, neither of them destructive"</td></tr>
+            <tr><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Save failure and unknown outcome, export failure, restore rejected / failed / unknown (with <code>loading</code> while checking)</td><td>Each failure says nothing changed and offers one way forward</td></tr>
+            <tr><td><a href="../components.html#c-Stamp"><code>Stamp</code></a></td><td><code>:design-system</code> <code>Stamp.kt</code></td><td>"Guardado" (Good on Respaldo, Done on the card), "Sin respaldo" (Over), "Pendiente" (Warn), "Restaurado" (Good); <code>land</code> after a fresh save or restore</td><td>A verdict for a result that already exists</td></tr>
+            <tr><td><a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a></td><td><code>:design-system</code> <code>Lines.kt</code></td><td>Último respaldo's facts</td><td>Label … value lines</td></tr>
+            <tr><td><a href="../components.html#c-BulletList"><code>BulletList</code></a></td><td><code>:design-system</code> <code>BulletList.kt</code></td><td>Backup disclosure, export points, pending preferences, FinanceTracker lines</td><td>Lead in bold, then the rest</td></tr>
+            <tr><td><a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a></td><td><code>:design-system</code> <code>Switches.kt</code></td><td>CSV / JSON</td><td>The format, always visible</td></tr>
+            <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Loading on both screens</td><td>Loading</td></tr>
+            <tr><td><code>RestoreHeading</code>, <code>RestoreBody</code> (app-shared)</td><td><code>app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:197</code>, <code>:206</code></td><td><code>headlineSmall</code> heading; <code>bodyLarge</code> <code>inkSoft</code> paragraph with <code>spacing.xs</code> top</td><td>Shared by restore, reset and start-up</td></tr>
+            <tr><td><code>RestoredSlip</code> (app-shared)</td><td><code>app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:58</code></td><td>The outcome of a replacement</td><td>"Also shown at start-up"</td></tr>
+            <tr><td><code>LegacyReportSection</code> (app-shared)</td><td><code>app/src/main/java/com/software/sello/presentation/restore/LegacyReport.kt:29</code></td><td>Inside the preview for FinanceTracker files</td><td>What translating changed and left out, before confirming (ADR 0019)</td></tr>
+            <tr><td><code>Counts</code> / <code>Cell</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/backup/RestoreSection.kt:210</code>, <code>:245</code></td><td>Ahora / Respaldo table, 88 dp right-aligned cells, each row read as one</td><td>"Now and backup, side by side"</td></tr>
+            <tr><td><code>BackupCard</code>, <code>BackupStamp</code>, <code>BackupFigure</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/backup/TusDatos.kt:183</code>, <code>:305</code>, <code>:320</code></td><td>The card on Configuración</td><td>When, how old and how big the last backup is</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="look-alikes">
+      <h2>Feature-local parts that look like shared ones</h2>
+      <ul>
+        <li><strong>Heading + landing stamp</strong>: Respaldo's "Último respaldo" row (<code>app/src/main/java/com/software/sello/feature/backup/BackupScreen.kt:138</code>) repeats <code>RestoredSlip</code>'s row (<code>app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:77</code>) and Borrar datos' "Borrado" row (<code>app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:231</code>); the card's own row (<code>TusDatos.kt:203</code>) is a fourth. Compare <code>components-restore-chosen-set-aside.png</code>; Respaldo's own has no baseline. Finding: <a href="../findings.html#F86">F86</a>.</li>
+        <li><strong>Inline headings</strong>: "Último respaldo" and "Antes de guardar" (<code>BackupScreen.kt:143</code>, <code>:214</code>) are <code>RestoreHeading</code> typed out again; "Tus datos" (<code>TusDatos.kt:119</code>) is Settings' <code>SectionTitle</code> typed out again. Finding: <a href="../findings.html#F87">F87</a>.</li>
+        <li><strong>Counts table</strong>: <code>Counts</code>/<code>Cell</code> (<code>RestoreSection.kt:210</code>) shows a before/after per row; other destructive confirmations use <a href="../components.html#c-ChangeRow"><code>ChangeRow</code></a> (category delete-all, carry drop). Compare <code>components-restore-unknown.png</code> with <code>category-removal-all-cobalto-light-font1.0.png</code>. Finding: <a href="../findings.html#F21">F21</a>.</li>
+        <li><strong>"Ver qué contiene ›" link</strong> (<code>TusDatos.kt:286</code>): a hand-built clickable Row with <code>labelLarge</code> brand text and an 18 dp chevron; <a href="../components.html#c-SettingRow"><code>SettingRow</code></a> is the shared row that leads somewhere.</li>
+        <li><strong>Refreshed note</strong>: the loss-coloured live-region note (<code>RestoreSection.kt:171</code>) is the same part as Borrar datos' (<code>ResetScreen.kt:152</code>), written twice; the carry drop's version is warn-coloured. Finding: <a href="../findings.html#F10">F10</a>.</li>
+      </ul>
+    </section>
+
+    <section id="gaps">
+      <h2>Gaps</h2>
+      <div class="gaps">
+        <ul>
+          <li>Tus datos card: no screenshot of any state (never, recent, old, unreadable, saving, export working/saved, failures).</li>
+          <li>Disclosure dialog and Exportar dialog: no screenshot.</li>
+          <li>Respaldo: no screenshot of the screen; only the two restore captures above, Cobalto light only, no dark screenshot.</li>
+          <li>Restore: no screenshot of Idle, Checking, Rejected, Failed, Replacing, the refreshed note, preferences pending or unreadable, or the FinanceTracker report.</li>
+          <li>Start-up's use of <code>RestoredSlip</code> belongs to the Start-up page.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
