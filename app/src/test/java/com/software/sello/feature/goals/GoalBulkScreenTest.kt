@@ -24,17 +24,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Aportar varios as it is drawn on the CI phone (412×914 dp): the receipt's lines scroll
+ * Aportar varios as it is drawn on the reference phone (412×891 dp): the receipt's lines scroll
  * inside it from the third, the button counts the lines, a refused retiro says what is
  * available, and an unknown outcome offers only to ask again.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w412dp-h914dp-mdpi")
 class GoalBulkScreenTest {
     @get:Rule
     val rule = createComposeRule()

@@ -25,9 +25,10 @@ at all beyond a person looking.
   compatibility in 1.56.0; 1.77.0 fixes its verify task under the configuration cache,
   which Sello enables. Kotlin 2.4.20, Gradle 9.5.0 and Compose BOM 2026.02.01 are
   checked by this build, not claimed by either project.
-- Robolectric runs **API 37**, the target SDK, on a 320x640 dp mdpi screen like the
-  hosted emulator (412x891 dp since 2026-11-05, see *Update* below), with a plain `Application` so a screen test starts no storage or
-  Koin (`app/src/test/resources/robolectric.properties`).
+- Robolectric runs **API 37**, the target SDK, on a 412x891 dp mdpi screen, a Samsung
+  Galaxy S25 Ultra (since 2026-11-05, see *Update* below; 320x640 before), with a plain
+  `Application` so a screen test starts no storage or Koin
+  (`app/src/test/resources/robolectric.properties`).
 - **No network at test time.** The framework jar
   (`org.robolectric:android-all-instrumented:17-robolectric-15733970-i7`, Apache-2.0,
   about 240 MB) is a Gradle dependency in its own locked configuration. The test task

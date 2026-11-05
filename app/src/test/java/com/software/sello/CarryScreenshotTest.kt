@@ -224,7 +224,7 @@ class CarryScreenshotTest {
     @Test
     fun editorCarrying() {
         rule.showSello(Look()) { CategoryEditorScreen(carrying, {}) }
-        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).revealed().assertIsDisplayed()
         rule.captureStill("src/test/screenshots/carry-editor-cobalto-light-font1.0.png")
     }
 
@@ -233,7 +233,7 @@ class CarryScreenshotTest {
         rule.showSello(Look()) {
             CategoryEditorScreen(carrying.copy(carry = CarryCard.Off(abr)), {})
         }
-        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).assertIsDisplayed()
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).revealed().assertIsDisplayed()
         rule.captureStill("src/test/screenshots/carry-editor-off-cobalto-light-font1.0.png")
     }
 
