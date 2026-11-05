@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resumen · Sello design system</title>
+  <link rel="stylesheet" href="../assets/system.css">
+  <script src="../assets/system.js" defer></script>
+</head>
+<body data-page="features/resumen">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Feature</p>
+      <h1>Resumen</h1>
+      <p class="lede">How the selected month compares with the one before, where the income went, month-by-month and weekday spending, and at most one suggestion.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section id="purpose">
+      <h2>Purpose</h2>
+      <p>Lets a person read the selected month as a whole, with nothing projected: the difference with the month before over the same days, every category ranked by what it took from the income, history by month and by weekday, and a suggestion to adjust a limit that was passed more than once. It records nothing; Resumen has no Anotar dock.</p>
+    </section>
+
+    <section id="entry-points">
+      <h2>Entry points</h2>
+      <ul>
+        <li>The Resumen tab: <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:81</code>, destination <code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:41</code>.</li>
+        <li>Recibo's invitation "Ver cómo cerraste …": picks the closed month in the shared selection, then selects the tab (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:122</code>).</li>
+        <li>The month shown is the shared selection (<code>app/src/main/java/com/software/sello/navigation/MonthSession.kt:33</code>), the same month Recibo and category detail show; it is changed from the shell's month picker.</li>
+        <li>System Back on Resumen goes to the Recibo tab unless the month picker is open (<code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:61</code>).</li>
+      </ul>
+    </section>
+
+    <section id="screen-resumen">
+      <h2>Screen: Resumen</h2>
+
+      <figure data-shot="resumen" data-module="app" data-caption="Month in progress on day 3, compared with the month before, with income"></figure>
+      <figure data-shot="resumen" data-module="app" data-variants="violeta-light-font1.0" data-caption="Violeta ink"></figure>
+
+      <h3>Layout</h3>
+      <p>Inside the shell (tabs, month in the title, no Anotar dock, the correction notice bar when there is one). One scrolling column, slips spaced <code>spacing.lg</code> with an extra <code>spacing.lg</code> above and below (<code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:80</code>). Where <code>selloWindowLayout</code> says two panes and the width is at least 600 dp, the summary slips and the chart slips are two scrolling columns side by side (<code>ResumenScreen.kt:96</code>).</p>
+      <ol>
+        <li><strong>Older-figures notice</strong>, only when stale: an <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> with the default title and the date the figures run to (<code>ResumenScreen.kt:139</code>).</li>
+        <li><strong>Hero.</strong> Without a comparison: <a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a> with no stamp, neutral ink, the question as label, what was spent as the amount and one or two notes (<code>ResumenScreen.kt:473</code>). With a comparison: the feature-local <code>ComparisonSlip</code> — the question, the difference as a <a href="../components.html#c-FittedMoneyText"><code>FittedMoneyText</code></a>, "más/menos/lo mismo que en …", an arrow and the rate, a <a href="../components.html#c-TearLine"><code>TearLine</code></a>, the basis ("Del 1 al 3 de cada mes") and both months as bars on one scale (<code>app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:53</code>). The current month's bar is brand, the earlier one <code>pastBar</code>.</li>
+        <li><strong>Income slip</strong> (<a href="../components.html#c-Slip"><code>Slip</code></a>, pinked), headed "¿A dónde fue lo que entró?" (<code>ResumenScreen.kt:158</code>):
+          <ul>
+            <li>With income: <a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a> "Entró en octubre", a <a href="../components.html#c-SplitBar"><code>SplitBar</code></a> of spent (solid brand) against the rest (striped), the ranking, a LeaderLine "Gastos", a <a href="../components.html#c-TotalLine"><code>TotalLine</code></a> "Ingresos menos gastos" (loss ink when overspent), the overspent note and "Movimientos anotados hasta el …" (<code>ResumenScreen.kt:221</code>).</li>
+            <li>Without income: "Aún no anotas ingresos en …" in <code>titleMedium</code> W800, a note, the ranking and a TotalLine "Total" with what was spent (<code>ResumenScreen.kt:168</code>).</li>
+            <li>The ranking: a basis line, then one feature-local <code>SpendingRankRow</code> per category with spending — <a href="../components.html#c-CategoryCircle"><code>CategoryCircle</code></a> 36 dp full, name over a 6 dp share bar, amount, chevron (<code>ResumenScreen.kt:277</code>, <code>SummaryComponents.kt:156</code>).</li>
+            <li>Under a TearLine, a <a href="../components.html#c-SlipStub"><code>SlipStub</code></a> with two <a href="../components.html#c-StubButton"><code>StubButton</code></a>s: "Ingresos" with the count of incomes, and "Fijos" (read as "Pagos e ingresos fijos") with the next fixed payment or income (<code>ResumenScreen.kt:187</code>).</li>
+          </ul>
+        </li>
+        <li><strong>Empty</strong> instead of the chart slips: <a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> with the Insights icon and "Anotar un gasto" (<code>ResumenScreen.kt:338</code>).</li>
+        <li><strong>"Mes a mes" slip</strong>: heading, the "Un mes normal" row and its basis, the selected column's label and amount (with <code>CarryBreakdownSection</code> or "Límite de ese mes" under it), then a <a href="../components.html#c-ColumnsChart"><code>ColumnsChart</code></a> that scrolls sideways when columns would be narrower than 48 dp, with the month's limit as a dashed reference line, the current month striped and starred, short value labels on the highest and current columns, the "* Mes en curso" note and the insufficient-history line (<code>ResumenScreen.kt:349</code>).</li>
+        <li><strong>"¿Qué días gastas más?" slip</strong>: the selected weekday's average, or the answer "Los sábados" in <code>headlineSmall</code> W800, the basis, and a 120 dp ColumnsChart Monday first (<code>ResumenScreen.kt:543</code>).</li>
+        <li><strong>Suggestion</strong>: <a href="../components.html#c-SuggestionNote"><code>SuggestionNote</code></a> with evidence, advice, an action and a dismiss (<code>ResumenScreen.kt:440</code>).</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>One <code>SlipSkeleton</code>.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:83</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever loaded)</td><td>ErrorSlip, default title "No se pudo cargar", message "No pudimos leer el resumen. Intenta de nuevo.", outlined "Reintentar".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:87</code></td><td>no screenshot</td></tr>
+            <tr><td>Ready, month in progress</td><td>Hero "¿Cómo va este mes?" with the same-days comparison; income slip; charts.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:95</code></td><td>resumen</td></tr>
+            <tr><td>Ready, closed month</td><td>Hero "¿Cómo cerró septiembre?", whole months compared or what was spent in it.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:467</code></td><td>no screenshot</td></tr>
+            <tr><td>First month (insufficient history)</td><td>Hero without comparison plus "Cuando completes otro mes podrás comparar los mismos días."; the chart slip adds "Con un mes más de datos verás aquí tu historia entre meses. …"</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:488</code>, <code>ResumenScreen.kt:437</code></td><td>no screenshot</td></tr>
+            <tr><td>Stale (older figures)</td><td>An ErrorSlip "No pudimos actualizar. Estas cifras son de la última lectura, hasta el …" above the last good figures, with "Reintentar".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:139</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty (no history)</td><td>The summary slips, then EmptySlip "Aún no hay gastos" with "Anotar un gasto" instead of the charts.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:338</code></td><td>no screenshot</td></tr>
+            <tr><td>No income</td><td>"Aún no anotas ingresos en …" and "Sello funciona sin ingresos. …"; the ranking and a Total line; the Ingresos stub says "Ninguno en …".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:168</code></td><td>no screenshot</td></tr>
+            <tr><td>Overspent income</td><td>"Ingresos menos gastos" in loss ink and "Anotaste … de ingresos y … de gastos."</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:257</code></td><td>no screenshot</td></tr>
+            <tr><td>Next fixed unknown</td><td>The "Fijos" stub shows no fact while the schedules are loading or failed; never "none".</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:309</code></td><td>no screenshot</td></tr>
+            <tr><td>Column selected</td><td>The column's label and amount over the month chart (with its limit or carry), or the weekday's average; cleared after 3 seconds.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:375</code>, <code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:150</code></td><td>no screenshot</td></tr>
+            <tr><td>Carry month</td><td>The limit line reads "Límite del mes …"; a selected carried month shows base, carry and capacity.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:384</code></td><td>no screenshot</td></tr>
+            <tr><td>Suggestion</td><td>SuggestionNote "Una sugerencia"; hidden for this month once dismissed (it comes back next month if it still applies).</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:440</code></td><td>no screenshot</td></tr>
+            <tr><td>Two panes</td><td>Summary slips left, chart slips right, each scrolling.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:96</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored after process death</td><td>The selected column survives in <code>SavedStateHandle</code> and its 3-second timer restarts.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:113</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy, unknown outcome, refused</td><td>Do not exist: the only write is dismissing the suggestion, which is fire-and-forget; the note goes when the stored preference says so.</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenViewModel.kt:128</code></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>"Reintentar" on the error or stale slip: <code>ResumenAction.Retry</code>, a new read of the same month that keeps the last good figures meanwhile.</li>
+        <li>A category in the ranking: opens that category's detail as its own screen (<code>ResumenCategoryRoute</code>, <code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:55</code>); category detail is described on <a href="category.html#screen-detail">Category</a>.</li>
+        <li>"Ingresos" stub: the income list (<code>IncomeHistoryRoute</code>). "Fijos" stub: Pagos e ingresos fijos (<code>SchedulesRoute</code>).</li>
+        <li>"Anotar un gasto" on the empty slip: the expense entry (<code>ExpenseEntryRoute()</code>).</li>
+        <li>A column of either chart: <code>SelectHistory(id)</code> or <code>SelectWeekday(id)</code>.</li>
+        <li>Suggestion action "Ajustar el presupuesto de …": the category's editor on the selected month (<code>CategoryEditRoute</code>, <code>ResumenDestinations.kt:57</code>). Dismiss: <code>DismissSuggestion</code>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"¿Cómo va este mes?" (<code>resumen_hero_question</code>), "¿Cómo cerró %1$s?" (<code>resumen_hero_closed</code>)</li>
+        <li>"más que en %1$s" / "menos que en %1$s" / "lo mismo que en %1$s" (<code>resumen_hero_more</code>, <code>_less</code>, <code>_same</code>)</li>
+        <li>"%1$s %% al mismo día del mes" (<code>resumen_hero_trend_same_day</code>), "%1$s %% que %2$s completo" (<code>resumen_hero_trend_whole</code>)</li>
+        <li>"Del 1 al %1$d de cada mes" (<code>resumen_hero_same_days</code>), "Meses completos" (<code>resumen_hero_whole_months</code>)</li>
+        <li>"gastados del 1 al %1$d" (<code>resumen_hero_spent_through</code>), "Cuando completes otro mes podrás comparar los mismos días." (<code>resumen_hero_first_month</code>)</li>
+        <li>"¿A dónde fue lo que entró?" (<code>resumen_income_question</code>), "Entró en %1$s" (<code>resumen_income_in</code>), "Gastos" (<code>resumen_income_spent</code>), "Ingresos menos gastos" (<code>resumen_net_flow</code>)</li>
+        <li>"Aún no anotas ingresos en %1$s." (<code>resumen_income_none</code>), "Sello funciona sin ingresos. Si los anotas, verás aquí a dónde se fueron." (<code>resumen_income_none_body</code>)</li>
+        <li>"Lo gastado en %1$s, hasta el %2$d" (<code>resumen_where_basis_in_progress</code>), "Movimientos anotados hasta el %1$s" (<code>resumen_actual_through</code>)</li>
+        <li>"Ingresos" (<code>resumen_stub_incomes</code>), "Fijos" (<code>resumen_stub_fixed</code>), "Próximo: hoy" / "Próximo: mañana" / "Próximo: %1$s" (<code>resumen_stub_next_today</code>, <code>_tomorrow</code>, <code>resumen_stub_next</code>), "Ninguno activo" (<code>resumen_stub_none_active</code>)</li>
+        <li>"Mes a mes" (<code>resumen_month_by_month</code>), "Un mes normal" (<code>resumen_normal_month</code>), "Límite %1$s" (<code>resumen_limit_line</code>), "* Mes en curso: lo gastado hasta hoy." (<code>resumen_in_progress_note</code>)</li>
+        <li>"¿Qué días gastas más?" (<code>resumen_weekdays_title</code>), "Los %1$s" (<code>resumen_weekdays_answer</code>)</li>
+        <li>"Aún no hay gastos" (<code>resumen_empty</code>), "Cuando anotes un gasto, aquí verás cómo crece tu historia." (<code>resumen_empty_body</code>), "Anotar un gasto" (<code>resumen_record_expense</code>)</li>
+        <li>"Una sugerencia" (<code>resumen_suggestion_title</code>), "Podrías ajustar su límite para que refleje lo que de verdad gastas." (<code>resumen_suggestion_advice</code>), "Ajustar el presupuesto de %1$s" (<code>resumen_suggestion_action</code>), "Descartar sugerencia" (<code>resumen_suggestion_dismiss</code>)</li>
+        <li>"No pudimos leer el resumen. Intenta de nuevo." (<code>resumen_load_failed</code>), "No pudimos actualizar. Estas cifras son de la última lectura, hasta el %1$s." (<code>resumen_stale</code>)</li>
+      </ul>
+    </section>
+
+    <section id="components">
+      <h2>Components</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th>Source</th><th>How used here</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a></td><td><code>:design-system</code> <code>Paper.kt</code></td><td>Hero without a comparison: <code>stamp = null</code>, <code>StampInk.Neutral</code>, notes in the detail slot</td><td>What was spent is the answer when there is nothing to compare</td></tr>
+            <tr><td><a href="../components.html#c-Slip"><code>Slip</code></a>, <a href="../components.html#c-TearLine"><code>TearLine</code></a></td><td><code>:design-system</code></td><td>Every slip is pinked; tear lines before the stub and the comparison bars</td><td>Receipt look of the summary</td></tr>
+            <tr><td><a href="../components.html#c-FittedMoneyText"><code>FittedMoneyText</code></a></td><td><code>:design-system</code> <code>Paper.kt</code></td><td>The difference in ComparisonSlip</td><td>Large figure that fits its width</td></tr>
+            <tr><td><a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a>, <a href="../components.html#c-TotalLine"><code>TotalLine</code></a></td><td><code>:design-system</code> <code>Lines.kt</code></td><td>Income, spent, net flow (<code>MoneyStyle.Title</code>), a selected month's limit</td><td>Receipt lines with a dotted leader</td></tr>
+            <tr><td><a href="../components.html#c-SplitBar"><code>SplitBar</code></a></td><td><code>:design-system</code> <code>SummaryCharts.kt</code></td><td>Spent solid brand, rest striped brand; exact amounts in the lines around it</td><td>Fractions are geometry only</td></tr>
+            <tr><td><a href="../components.html#c-CategoryCircle"><code>CategoryCircle</code></a></td><td><code>:design-system</code> <code>Category.kt</code></td><td>36 dp, fraction 1, <code>animate = false</code>, in each ranking row</td><td>The category's icon only; the bar carries the share</td></tr>
+            <tr><td><a href="../components.html#c-SlipStub"><code>SlipStub</code></a>, <a href="../components.html#c-StubButton"><code>StubButton</code></a></td><td><code>:design-system</code> <code>SlipStub.kt</code></td><td>Ingresos and Fijos halves, each with a one-line fact</td><td>Two ways out of the income slip</td></tr>
+            <tr><td><a href="../components.html#c-ColumnsChart"><code>ColumnsChart</code></a></td><td><code>:design-system</code> <code>Charts.kt</code></td><td>Month by month: <code>reference</code> = month limit, <code>stripedCurrent</code>, value labels on highest and current; weekdays: <code>height = 120.dp</code></td><td>One chart for all histories; selection is the view model's</td></tr>
+            <tr><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>No history: Insights icon, action "Anotar un gasto"</td><td>Empty is not an error</td></tr>
+            <tr><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Failed read and also the stale notice, default title</td><td>See findings: other screens use <code>StaleSlip</code> for stale</td></tr>
+            <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>One while loading</td><td>Never zeros while reading</td></tr>
+            <tr><td><a href="../components.html#c-SuggestionNote"><code>SuggestionNote</code></a></td><td><code>:design-system</code> <code>Suggestion.kt</code></td><td>One suggestion with evidence, advice, action, dismiss</td><td>At most one piece of advice per month</td></tr>
+            <tr><td><code>CarryBreakdownSection</code> (app-shared)</td><td><code>app/src/main/java/com/software/sello/presentation/carry/Carry.kt:118</code></td><td>A selected carried month, <code>footnote = null</code></td><td>Never the capacity alone (CP27)</td></tr>
+            <tr><td><code>ComparisonSlip</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:53</code></td><td>Hero with a comparison</td><td>A question, the difference and both months on one scale</td></tr>
+            <tr><td><code>SpendingRankRow</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:156</code></td><td>One per category with spending, opens it</td><td>Name and share bar as one block so the amount centres on both</td></tr>
+            <tr><td><code>ResumenHeading</code>, <code>ResumenNote</code>, <code>ChartWidth</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:603</code></td><td>Slip questions (bodyLarge W600 inkSoft), small notes (bodySmall inkSoft), 48 dp per column with sideways scroll</td><td>"v2 asks a small question over each slip's answer"</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="look-alikes">
+      <h2>Feature-local parts that look like shared ones</h2>
+      <ul>
+        <li><strong>ComparisonSlip</strong> (<code>app/src/main/java/com/software/sello/feature/resumen/SummaryComponents.kt:53</code>) rebuilds <a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a>'s header (<code>design-system/src/main/java/com/software/sello/designsystem/component/Paper.kt:534</code>): its question is <code>bodyLarge</code> W600 with 6 dp under it instead of AnswerSlip's plain inkSoft label, and it has no stamp slot. Both in <code>resumen</code>; AnswerSlip in <code>recibo-cobalto-light-font1.0.png</code>. Finding: <a href="../findings.html#F77">F77</a>.</li>
+        <li><strong>ComparisonBars</strong> (<code>SummaryComponents.kt:98</code>) and the bar inside <strong>SpendingRankRow</strong> (<code>SummaryComponents.kt:175</code>) are single-fill bars drawn with Boxes (14 dp with a 4 dp radius; 6 dp with <code>shapes.control</code>) next to the shared <a href="../components.html#c-SplitBar"><code>SplitBar</code></a> (<code>design-system/src/main/java/com/software/sello/designsystem/component/SummaryCharts.kt:43</code>) used one slip below. Finding: <a href="../findings.html#F52">F52</a>.</li>
+        <li><strong>SpendingRankRow</strong> resembles Ajustar's <code>LimitRow</code> (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:356</code>) and the shared <a href="../components.html#c-ScheduleRow"><code>ScheduleRow</code></a>: circle, name, amount, chevron. It is 52 dp tall (LimitRow 56, ScheduleRow 60) and is not merged into one spoken button. Both rows visible in <code>resumen</code> and <code>adjust-budget</code>. Finding: <a href="../findings.html#F48">F48</a>.</li>
+        <li><strong>"Un mes normal"</strong> (<code>ResumenScreen.kt:351</code>) is the same figure as category detail's "Un mes normal aquí" (<code>app/src/main/java/com/software/sello/feature/recibo/CategoryInsightSections.kt:230</code>), drawn as a row here and as label-over-figure there, with two identical plurals. Finding: <a href="../findings.html#F55">F55</a>.</li>
+        <li><strong>The stale notice</strong> uses ErrorSlip, where Recibo and its screens use <code>StaleSlip</code> (<code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code>). Finding: <a href="../findings.html#F01">F01</a>.</li>
+      </ul>
+    </section>
+
+    <section id="gaps">
+      <h2>Gaps</h2>
+      <div class="gaps">
+        <ul>
+          <li>Loading, error, stale: no screenshot.</li>
+          <li>Closed month, first month, no income, overspent income, empty history: no screenshot.</li>
+          <li>A selected column (either chart), carried month, suggestion, two panes: no screenshot.</li>
+          <li>The month-by-month and weekday slips are below the fold of the current 320 × 640 captures; whether they show in the 412 × 891 re-recording is not confirmed.</li>
+          <li>Whether a failed suggestion dismissal tells the person anything: the code ignores the write's result (<code>ResumenViewModel.kt:128</code>); the note stays until the stored preference changes.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

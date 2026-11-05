@@ -13,16 +13,18 @@
     <div class="inner">
       <p class="kicker">Sello design system</p>
       <h1>Findings</h1>
-      <p class="lede">Places where the built app does the same thing in more than one way. For each,
-        pick a variant (or "Both are fine", or "Other" with a note), then press <strong>Copy answers</strong>
-        and paste the lines back.</p>
+      <p class="lede">Places where the built app does one job in more than one way, grouped by theme.
+        Each finding shows its variants with the code and screenshots, and a recommendation.</p>
     </div>
   </header>
   <nav id="sello-nav"></nav>
   <main>
     <section>
-      <p class="muted">Choices are kept in this browser only (localStorage), per finding ID. The copied lines
-        read <code>F01: A — note</code>.</p>
+      <p>For each finding, pick the variant to keep everywhere, or "All are fine" / "Both are fine",
+        or "Other" with a note saying what you want instead; the note is optional for the others.</p>
+      <p>Your answers stay in this browser only (localStorage, per finding ID), so you can stop and come back.</p>
+      <p>When you are done, press <strong>Copy answers</strong> and paste the text in the chat. Each line reads
+        <code>F01: A — note</code>; unanswered ones read <code>(no answer)</code>.</p>
       <div id="findings"></div>
     </section>
   </main>

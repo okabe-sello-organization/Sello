@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Income · Sello design system</title>
+  <link rel="stylesheet" href="../assets/system.css">
+  <script src="../assets/system.js" defer></script>
+</head>
+<body data-page="features/income">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Feature</p>
+      <h1>Income</h1>
+      <p class="lede">Record or correct one income, and see what came in this month and where it went.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section id="purpose">
+      <h2>Purpose</h2>
+      <p>"Anotar ingreso" records one income from a source with the pad, in gain green with a plus; opened on a recorded
+        income it becomes "Editar ingreso" to correct or delete it. "Ingresos de octubre" shows the month's income as
+        Resumen counts it, how much of it budgets hold, the month's plan, and each income, which opens its correction.</p>
+    </section>
+
+    <section id="entry-points">
+      <h2>Entry points</h2>
+      <ul>
+        <li>Income history: Resumen's income slip (<code>app/src/main/java/com/software/sello/feature/resumen/ResumenScreen.kt:147</code>),
+          navigating at <code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:54</code>.</li>
+        <li>Anotar ingreso: the history's dock "Anotar ingreso"
+          (<code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:57</code>) and its empty slip
+          (<code>IncomeDestinations.kt:68</code>); "+" on the incomes tab of Pagos e ingresos fijos, opening with Se repite
+          (<code>app/src/main/java/com/software/sello/navigation/RecurrenceDestinations.kt:55</code>); the "Ingreso" side of the
+          switch on Anotar (<code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:242</code>, hosted by
+          <code>EntryDestination</code> at <code>app/src/main/java/com/software/sello/navigation/ExpenseDestinations.kt:104</code>).</li>
+        <li>Editar ingreso: a row of the history (<code>IncomeDestinations.kt:72</code>) and the catch-up list
+          (<code>app/src/main/java/com/software/sello/navigation/RecurrenceDestinations.kt:69</code>).</li>
+        <li>From the history, "Anotar varios" opens <a href="bulk.html">Varios ingresos</a> (<code>IncomeDestinations.kt:74</code>).</li>
+      </ul>
+    </section>
+
+    <section id="screen-form">
+      <h2>Screen: Anotar ingreso / Editar ingreso</h2>
+
+      <figure data-shot="income-form" data-module="app"
+              data-caption="Ready to record: +5.000.000 from Salario"></figure>
+      <figure data-module="app" data-files="income-form-violeta-light-font1.0.png"
+              data-caption="Ready, Violeta ink"></figure>
+      <figure data-shot="income-form-varios" data-module="app"
+              data-caption="Opened where Anotar varios is reachable: the Otro ingreso slip"></figure>
+      <figure data-shot="income-form-stale" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Stale: a refresh failed, the draft stays"></figure>
+
+      <h3>Layout</h3>
+      <p>The same <a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a> and brand band as
+        <a href="expense.html">Anotar</a> (<code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:174</code>);
+        the comment there keeps the expense band because green is the goals'. Green is carried by the amount and the button.</p>
+      <ol>
+        <li>Top bar (<a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>) on the band: X,
+          "Anotar ingreso" or "Editar ingreso", and "Borrar" while correcting (<code>:147</code>).</li>
+        <li>Header: <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> "Gasto | Ingreso" at index 1,
+          for a new income opened from the expense form's host (<code>:178</code>).</li>
+        <li><a href="../components.html#c-EntryAmountSlip"><code>EntryAmountSlip</code></a> "Ingreso en pesos" in
+          <code>ButtonTone.Gain</code>: a bank icon, the day pill, the amount drawn with a plus (<code>:260</code>).</li>
+        <li><a href="../components.html#c-MoreSlip"><code>MoreSlip</code></a> "Otro ingreso" (<code>:194</code>).</li>
+        <li>Choices (<code>:295</code>): stale notice; source chips, words only, chosen first, in
+          <a href="../components.html#c-ChipRows"><code>ChipRows</code></a>; for "Otro" an
+          <a href="../components.html#c-EntryLine"><code>EntryLine</code></a> "¿De dónde vino?" with "Cambiar"; the note's
+          EntryLine; Se repite's row (new income only); a standing bodySmall line "Puedes corregir ingresos de meses
+          anteriores…"; and, when correcting across months, "Esta corrección afecta los ingresos de …".</li>
+        <li>Action (<code>:375</code>): error or missing message, then one full-width
+          <a href="../components.html#c-SelloButton"><code>SelloButton</code></a> in <code>ButtonTone.Gain</code>.</li>
+        <li><a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a>, <code>compact</code>.</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> in <code>IncomePane</code>.</td>
+              <td><code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:160</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No se pudo cargar" / "No pudimos leer los ingresos. Inténtalo de nuevo." with "Reintentar", new or correcting alike.</td>
+              <td><code>IncomeFormScreen.kt:164</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty</td><td>Does not exist: the five sources are fixed.</td><td>—</td><td>—</td></tr>
+            <tr><td>Ready</td><td>"+5.000.000" in green, Salario chosen, "Anotar ingreso" in green.</td>
+              <td><code>IncomeFormScreen.kt:174</code></td><td>income-form</td></tr>
+            <tr><td>Missing</td><td>A hint: "Escribe el nombre de la fuente.", "Corrige la nota.", the Se repite end problem, or "Aún no cambiaste nada.".</td>
+              <td><code>IncomeFormScreen.kt:406</code></td><td>no screenshot</td></tr>
+            <tr><td>Amount refused</td><td>The slip label becomes "Escribe un monto entero entre 1 y 999.999.999.999 COP." (one text for every problem) or "Máximo 12 dígitos".</td>
+              <td><code>IncomeFormScreen.kt:267</code></td><td>no screenshot</td></tr>
+            <tr><td>Stale</td><td><code>StaleSlip</code> with the shared "No pudimos actualizar…" and "Reintentar".</td>
+              <td><code>IncomeFormScreen.kt:297</code></td><td>income-form-stale (light only)</td></tr>
+            <tr><td>Busy</td><td>"Guardando…" with spinner; chips, pill, lines, switch and pad off; the X stays enabled but Back is ignored.</td>
+              <td><code>IncomeFormScreen.kt:424</code>, <code>app/src/main/java/com/software/sello/feature/income/IncomeFormViewModel.kt:324</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and a green "Comprobar si se guardó". The same text follows a deletion whose outcome is unknown.</td>
+              <td><code>IncomeFormScreen.kt:419</code>, <code>IncomeFormViewModel.kt:756</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused</td><td>An error above the button: "No se pudo guardar el ingreso. Lo que escribiste sigue aquí.", "La fecha no puede ser posterior a hoy. No se anotó nada.", "No se pudo borrar. El ingreso sigue anotado.", the repeat and following-income messages. "Este ingreso ya no existe…" and "Este ingreso cambió mientras lo corregías…" freeze the form.</td>
+              <td><code>IncomeFormScreen.kt:377</code></td><td>no screenshot</td></tr>
+            <tr><td>Data replaced</td><td>As soon as a restore or reset changes the history: "Tus datos cambiaron. No se guardó el ingreso; sal y vuelve a abrirlo." and the form is frozen.</td>
+              <td><code>IncomeFormViewModel.kt:196</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Amount, source, Otro's name, note, open composer and Se repite come back from <code>SavedStateHandle</code>; a save in flight is asked about.</td>
+              <td><code>IncomeFormViewModel.kt:135</code>, <code>:213</code></td><td>no screenshot</td></tr>
+            <tr><td>Saved</td><td>Closes with a long-press haptic, once per recorded income.</td>
+              <td><code>IncomeFormScreen.kt:104</code></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>X and Back: <code>Back</code>; asks before discarding something typed; ignored while busy or pending.</li>
+        <li>"Borrar" (correcting): <code>Delete</code>, no question; Deshacer comes from the correction notice.</li>
+        <li>"Gasto" on the switch: back to <a href="expense.html">Anotar</a> in place.</li>
+        <li>Day pill: <code>OpenDatePicker</code>. Paste: <code>Paste</code>.</li>
+        <li>"Otro ingreso": <code>Several</code>, to <a href="bulk.html">Varios ingresos</a> with source, Otro's name, amount, note and date as line one.</li>
+        <li>A source chip: <code>SourcePicked</code>. "Otro"'s line: <code>OpenComposer(SourceName)</code>. The note line: <code>OpenComposer(Note)</code>.</li>
+        <li>Se repite's row: <code>Repeat(…)</code>; the button: <code>Submit</code>, or <code>Retry</code> when the outcome is unknown.</li>
+        <li>The pad: digits, "000", backspace, long press to clear.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Anotar ingreso" (<code>income_entry_title</code>, also <code>income_save</code> on the button), "Editar ingreso" (<code>income_edit_title</code>)</li>
+        <li>"Ingreso en pesos" (<code>income_amount_label</code>), "Otro ingreso" (<code>entry_more_income</code>)</li>
+        <li>"Salario", "Freelance", "Ingresos pasivos", "Transferencia", "Otro" (<code>income_salary</code> … <code>income_other</code>)</li>
+        <li>"¿De dónde vino?" (<code>income_source_name</code>), "Cambiar" (<code>income_source_change</code>), "Escribe el nombre de la fuente" (<code>income_source_hint</code>)</li>
+        <li>"Guardar ingreso fijo" (<code>repeat_save_income</code>), "Guardar cambios" (<code>expense_edit_submit</code>)</li>
+        <li>"Puedes corregir ingresos de meses anteriores. Su fecha determina el mes que cambia; no cambia tus gastos ni tus límites." (<code>income_history_guidance</code>)</li>
+        <li>"Esta corrección afecta los ingresos de %1$s." (<code>income_past_months</code>)</li>
+        <li>"¿Descartar lo que escribiste?" (<code>income_discard_title</code>) with the expense form's "Lo que escribiste no se guardará." and "Descartar"</li>
+      </ul>
+    </section>
+
+    <section id="dialogs-form">
+      <h2>Dialogs and sheets of the form</h2>
+      <ul>
+        <li>Discard: <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> with its defaults, so
+          "Descartar" is loss red and the other button is "Cancelar"; the same title for a new and a corrected income
+          (<code>IncomeFormScreen.kt:222</code>).</li>
+        <li>Composer: one <a href="../components.html#c-NoteComposer"><code>NoteComposer</code></a> for both the note
+          (60, context "Ingreso · <b>+5.000.000</b>") and Otro's name (24, context "¿De dónde vino?"), with the bank icon
+          (<code>IncomeFormScreen.kt:443</code>). Over the limit: "Máximo 60 caracteres. Tu texto sigue aquí." or
+          "Máximo 24 caracteres. Tu texto sigue aquí."; a line break: "No puede tener saltos de línea ni caracteres de control.".</li>
+        <li>Date picker: Material dialog with "Aceptar"; past only, or today and later while Se repite is on
+          (<code>IncomeFormScreen.kt:498</code>).</li>
+        <li>Se repite and the following incomes: <code>RepeatChoiceSheet</code> and <code>FollowingChoice</code> with
+          <code>income = true</code> (<code>IncomeFormScreen.kt:234</code>, <code>:238</code>).</li>
+      </ul>
+      <p>No screenshots.</p>
+    </section>
+
+    <section id="screen-history">
+      <h2>Screen: Ingresos de octubre (income history)</h2>
+
+      <figure data-shot="income-history" data-module="app"
+              data-caption="Entró en octubre with the split, and the list"></figure>
+      <figure data-module="app" data-files="income-history-violeta-light-font1.0.png"
+              data-caption="Violeta ink"></figure>
+      <figure data-shot="income-history-suggestion" data-module="app"
+              data-caption="With the suggestion to give the unassigned part a category"></figure>
+      <figure data-shot="income-history-stale" data-module="app"
+              data-caption="Stale: figures as last read under an ErrorSlip"></figure>
+      <figure data-shot="income-history-varios" data-module="app"
+              data-caption="With Anotar varios under the total"></figure>
+
+      <h3>Layout</h3>
+      <p>Drawn inside the shell (<code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:45</code>): a back
+        arrow, the title "Ingresos de octubre" (with the year when not the current one), the past-month ribbon over a past month, the dock
+        "Anotar un ingreso" / "Anotar ingreso", and the correction notice bar. The content is a
+        <code>LazyColumn</code> spaced by <code>md</code> (<code>app/src/main/java/com/software/sello/feature/income/IncomeHistoryScreen.kt:72</code>):</p>
+      <ol>
+        <li>Stale notice, when a refresh failed (<code>:175</code>).</li>
+        <li><a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a> "Entró en octubre" with the month's
+          income, neutral ink, no stamp; under a <a href="../components.html#c-TearLine"><code>TearLine</code></a> a
+          <a href="../components.html#c-SplitBar"><code>SplitBar</code></a> (budgets solid, unassigned striped) and two
+          <a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a>s "En presupuestos de categorías" and
+          "Sin asignar" (red when negative), then the over-basis and carry notes (<code>:307</code>).</li>
+        <li>"Plan del mes", a <a href="../components.html#c-PlanSlip"><code>PlanSlip</code></a>: "Anotado", "Esperado",
+          a <a href="../components.html#c-TotalLine"><code>TotalLine</code></a> "Planeado", "Sin asignar en el plan",
+          the <a href="../components.html#c-ExpectedChip"><code>ExpectedChip</code></a>s and the footnote (<code>:240</code>).</li>
+        <li>The suggestion, a <a href="../components.html#c-SuggestionNote"><code>SuggestionNote</code></a> "Una sugerencia"
+          (<code>:196</code>).</li>
+        <li>"Lo que entró": a <a href="../components.html#c-Slip"><code>Slip</code></a> with a titleMedium heading, one
+          LeaderLine per income (source, then "date · note"), "Ver más ingresos", the TotalLine "Total" and a Text button
+          "Anotar varios" with a receipt icon (<code>:116</code>).</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s.</td>
+              <td><code>app/src/main/java/com/software/sello/feature/income/IncomeHistoryScreen.kt:78</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus ingresos" / "Tus registros siguen guardados. Vuelve a intentarlo." with "Reintentar".</td>
+              <td><code>IncomeHistoryScreen.kt:85</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Aún no anotas ingresos en octubre", "Sello funciona sin ingresos…", action "Anotar ingreso"; the plan still shows below.</td>
+              <td><code>IncomeHistoryScreen.kt:94</code></td><td>no screenshot</td></tr>
+            <tr><td>Ready</td><td>Hero, plan, suggestion, list.</td>
+              <td><code>IncomeHistoryScreen.kt:110</code></td><td>income-history</td></tr>
+            <tr><td>Hero pending</td><td>A one-line skeleton in place of "Entró en …" for today's month while the summary is not read; a past month shows its list total.</td>
+              <td><code>IncomeHistoryScreen.kt:316</code></td><td>no screenshot</td></tr>
+            <tr><td>Stale</td><td>An <code>ErrorSlip</code> titled "No se pudo cargar" with "No pudimos leer tus ingresos de nuevo. Te mostramos los de la última lectura." and "Reintentar", above the figures as last read.</td>
+              <td><code>IncomeHistoryScreen.kt:175</code></td><td>income-history-stale</td></tr>
+            <tr><td>Busy (more)</td><td>"Ver más ingresos" shows its spinner.</td>
+              <td><code>IncomeHistoryScreen.kt:144</code></td><td>no screenshot</td></tr>
+            <tr><td>Page failed</td><td>An ErrorSlip "No pudimos leer los ingresos. Inténtalo de nuevo." inside the list, retrying the page.</td>
+              <td><code>IncomeHistoryScreen.kt:139</code></td><td>no screenshot</td></tr>
+            <tr><td>Plan failed</td><td>An ErrorSlip "No pudimos leer lo que esperas recibir. Tus registros siguen guardados." in the plan's place.</td>
+              <td><code>IncomeHistoryScreen.kt:222</code></td><td>no screenshot</td></tr>
+            <tr><td>Over basis</td><td>"Sin asignar" signed and red, and "Tus presupuestos suman …; anotaste …".</td>
+              <td><code>IncomeHistoryScreen.kt:354</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy (write), unknown outcome, refused, restored draft</td><td>Do not exist: the screen only reads; writes happen in the form.</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>An income line: opens Editar ingreso; read as "Editar Salario: 150.000 pesos, Hoy, jue 22 oct".</li>
+        <li>"Ver más ingresos": <code>More</code>. "Reintentar": <code>Retry</code> (or <code>More</code> for a failed page).</li>
+        <li>The suggestion's "Asignar a una categoría ›" opens the category editor with the amount; its × (<code>DismissAssign</code>) hides it for the month.</li>
+        <li>"Anotar varios": <a href="bulk.html">Varios ingresos</a>. Dock and empty action: Anotar ingreso.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Ingresos de %1$s" (<code>income_history_title_month</code>), "Entró en %1$s" (<code>income_came_in</code>)</li>
+        <li>"En presupuestos de categorías" (<code>income_in_budgets</code>), "Sin asignar" (<code>income_unassigned</code>)</li>
+        <li>"Plan del mes" (<code>income_plan_tag</code>), "Incluye lo que esperas recibir", "Anotado", "Esperado", "Planeado", "Lo esperado se anota solo en su fecha."</li>
+        <li>"Lo que entró" (<code>income_list_title</code>), "Ver más ingresos" (<code>income_more</code>), "Total" (<code>income_list_total</code>), "Anotar varios" (<code>income_record_several</code>)</li>
+        <li>"No pudimos leer tus ingresos de nuevo. Te mostramos los de la última lectura." (<code>income_stale</code>)</li>
+      </ul>
+    </section>
+
+    <section id="components">
+      <h2>Components</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th>Source</th><th>How used here</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a>, <a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a></td><td><code>:design-system</code></td>
+              <td>The expense form's layout and brand band</td><td>Green is the goals' band, so the band stays the expense one</td></tr>
+            <tr><td><a href="../components.html#c-EntryAmountSlip"><code>EntryAmountSlip</code></a></td><td><code>:design-system</code> <code>Paper.kt</code></td>
+              <td><code>tone = Gain</code>, plus sign drawn, bank icon</td><td>The plus is drawn; what is read stays the amount</td></tr>
+            <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td>
+              <td>Filled, <code>tone = Gain</code>, one button for save and for checking again</td><td>Income in gain green</td></tr>
+            <tr><td><a href="../components.html#c-ChipRows"><code>ChipRows</code></a> + <a href="../components.html#c-SelloChip"><code>SelloChip</code></a></td><td><code>:design-system</code></td>
+              <td>Source chips, words only, chosen first</td><td>Sources have no icons</td></tr>
+            <tr><td><a href="../components.html#c-EntryLine"><code>EntryLine</code></a>, <a href="../components.html#c-NoteComposer"><code>NoteComposer</code></a></td><td><code>:design-system</code> <code>Controls.kt</code></td>
+              <td>Otro's name and the note share one composer</td><td>The only text input, above the keyboard</td></tr>
+            <tr><td><a href="../components.html#c-FieldPill"><code>FieldPill</code></a>, <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a>, <a href="../components.html#c-MoreSlip"><code>MoreSlip</code></a>, <a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a></td><td><code>:design-system</code></td>
+              <td>As on Anotar</td><td>Same entry pattern</td></tr>
+            <tr><td><a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a></td><td><code>:design-system</code> <code>FieldMessage.kt</code></td>
+              <td>Error, Warning for unknown, Hint for missing</td><td>Said where the button is</td></tr>
+            <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td>
+              <td>Discard, defaults (destructive, "Cancelar")</td><td>Asks before losing a draft</td></tr>
+            <tr><td><a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>, <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a>, <a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td>
+              <td>Form and history loading, failure, history empty; ErrorSlip also for the history's stale notice</td><td>One look for read states</td></tr>
+            <tr><td><a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a>, <a href="../components.html#c-SplitBar"><code>SplitBar</code></a>, <a href="../components.html#c-TearLine"><code>TearLine</code></a>, <a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a>, <a href="../components.html#c-TotalLine"><code>TotalLine</code></a>, <a href="../components.html#c-MoneyText"><code>MoneyText</code></a></td><td><code>:design-system</code></td>
+              <td>"Entró en …" hero and the list</td><td>The same summary Resumen shows</td></tr>
+            <tr><td><a href="../components.html#c-PlanSlip"><code>PlanSlip</code></a>, <a href="../components.html#c-ExpectedChip"><code>ExpectedChip</code></a></td><td><code>:design-system</code> <code>Plan.kt</code></td>
+              <td>Plan del mes in a dashed box</td><td>Expected income is in no total until recorded</td></tr>
+            <tr><td><a href="../components.html#c-SuggestionNote"><code>SuggestionNote</code></a></td><td><code>:design-system</code> <code>Suggestion.kt</code></td>
+              <td>Unassigned income, with a dismiss</td><td>Offers; changes nothing by itself</td></tr>
+            <tr><td><code>StaleSlip</code></td><td><code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code></td>
+              <td>Form only</td><td>Older data said, draft kept</td></tr>
+            <tr><td><code>RepeatRow</code>, <code>RepeatChoiceSheet</code>, <code>FollowingChoice</code></td><td><code>app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:81</code></td>
+              <td><code>income = true</code></td><td>Shared with Anotar</td></tr>
+            <tr><td><code>IncomePane</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250</code></td>
+              <td>Padding and spacing <code>lg</code></td><td>Holds the skeleton or error</td></tr>
+            <tr><td><code>IncomeDatePicker</code> (feature-local)</td><td><code>IncomeFormScreen.kt:498</code></td>
+              <td>Material date picker, "Aceptar"</td><td>Past only, or future only while repeating</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="look-alikes">
+      <h2>Feature-local parts that look like shared ones</h2>
+      <ul>
+        <li><code>IncomePane</code> (<code>IncomeFormScreen.kt:250</code>) is the same code as <code>MovementPane</code>
+          (<code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:53</code>), while the expense
+          form's <code>Pane</code> (<code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:363</code>) differs. Finding: <a href="../findings.html#F28">F28</a>.</li>
+        <li><code>IncomeDatePicker</code> (<code>IncomeFormScreen.kt:498</code>) against <code>MovementDatePicker</code>
+          (<code>MovementForm.kt:144</code>) and the expense form's <code>DayPicker</code>. Finding: <a href="../findings.html#F26">F26</a>.</li>
+        <li>The X (<code>IncomeFormScreen.kt:142</code>) against <code>MovementCloseButton</code> (<code>MovementForm.kt:45</code>). Finding: <a href="../findings.html#F27">F27</a>.</li>
+        <li>Raw <code>Text</code> hints (<code>IncomeFormScreen.kt:356</code>, <code>:363</code>; <code>IncomeHistoryScreen.kt:355</code>,
+          <code>:367</code>, <code>:288</code>) where the expense form uses
+          <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> with the Hint tone. Finding: <a href="../findings.html#F33">F33</a>.</li>
+        <li>The history's stale notice is an <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a>
+          (<code>IncomeHistoryScreen.kt:182</code>) where the income form, Anotar and Recibo use <code>StaleSlip</code>:
+          compare income-history-stale with income-form-stale. Finding: <a href="../findings.html#F01">F01</a>.</li>
+      </ul>
+      <p>The choice for each linked finding is made on the <a href="../findings.html">findings</a> page.</p>
+    </section>
+
+    <section id="gaps">
+      <h2>Gaps</h2>
+      <div class="gaps">
+        <ul>
+          <li>Form: loading, error, busy, unknown outcome, refused, missing, amount refused, data replaced, restored draft,
+            Otro's name line, "Editar ingreso" and the past-months line: no screenshot.</li>
+          <li>Form stale: light Cobalto only, no dark screenshot.</li>
+          <li>Form dialogs (discard, composer, date, Se repite, following incomes): no screenshot.</li>
+          <li>History: loading, error, empty, hero pending, page failed, plan, plan failed, over basis: no screenshot
+            (the baselines are drawn with <code>IncomePlanState.None</code>).</li>
+          <li>The history baselines show the screen without the shell's title, ribbon and dock.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

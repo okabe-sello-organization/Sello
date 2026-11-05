@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Start-up · Sello design system</title>
+  <link rel="stylesheet" href="../assets/system.css">
+  <script src="../assets/system.js" defer></script>
+</head>
+<body data-page="features/startup">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Feature</p>
+      <h1>Start-up</h1>
+      <p class="lede">What the person sees while their data opens, and the way out when it cannot be opened: try again, restore a backup, or start from zero.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section id="purpose">
+      <h2>Purpose</h2>
+      <p>Covers the moment before the app exists: a bare loading desk while the data opens, and, if the data will not open, a screen that holds no figure from that data and offers three ways forward. Nothing is deleted from here without a typed confirmation or a checked backup.</p>
+    </section>
+
+    <section id="entry-points">
+      <h2>Entry points</h2>
+      <ul>
+        <li>App start, while the data is opening (<code>StartupState.Opening</code>): <code>app/src/main/java/com/software/sello/MainActivity.kt:57</code>. Drawn in the default theme, since the stored appearance is not readable yet.</li>
+        <li>App start, when the data could not be opened (<code>StartupState.Failed</code>): <code>app/src/main/java/com/software/sello/MainActivity.kt:76</code>. Also drawn in the default theme. When the data opens (after <em>Intentar de nuevo</em>), <code>StartupState.Ready</code> replaces this screen with the app; there is no navigation call.</li>
+        <li>Leaves through <code>onStartedOver</code> once the data was set aside (<code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:68</code>), and through an app restart after a restore (<code>StartupFailureAction.Leave</code>).</li>
+      </ul>
+    </section>
+
+    <section id="screen-loading">
+      <h2>Screen: Loading at start</h2>
+      <h3>Layout</h3>
+      <ol>
+        <li>A full-screen box filled with <code>SelloTheme.colors.desk</code>. No slip, skeleton, spinner or text on screen.</li>
+        <li>For accessibility services it is one indeterminate progress node described as "Cargando" (<code>sello_loading</code>, <code>:design-system</code>). Source: <code>app/src/main/java/com/software/sello/feature/startup/StartupLoading.kt:22</code>.</li>
+      </ol>
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>The bare desk colour; a screen reader hears "Cargando".</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupLoading.kt:22</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty, error, stale, busy, unknown, restored draft, refused</td><td>Do not exist: this screen only waits.</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Controls</h3>
+      <ul><li>None.</li></ul>
+      <h3>Key copy</h3>
+      <ul><li>"Cargando" (<code>sello_loading</code>, spoken only)</li></ul>
+    </section>
+
+    <section id="screen-failure">
+      <h2>Screen: Data could not be opened</h2>
+
+      <figure data-shot="startup-failure" data-module="app" data-caption="First shown: the explanation and three choices"></figure>
+      <figure data-shot="startup-failure" data-module="app" data-variants="violeta-light-font1.0" data-caption="Violeta ink (always the default theme in the app; the test renders it for coverage)"></figure>
+
+      <h3>Layout</h3>
+      <ol>
+        <li><a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a> titled with the app name (<code>app_name</code>; the debug build shows "Sello Debug"). No tabs, dock or back arrow. The content column scrolls, with the scaffold padding outside the scroll so the keyboard shrinks the visible area (<code>StartupFailureScreen.kt:107</code>).</li>
+        <li><strong>Explanation slip</strong> (<a href="../components.html#c-Slip"><code>Slip</code></a>, pinked edge): heading "No pudimos abrir tus datos" in <code>headlineSmall</code>, body in <code>bodyLarge</code> inkSoft, an optional <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> after a retry that still failed, then three full-width <a href="../components.html#c-SelloButton"><code>SelloButton</code></a>s: "Intentar de nuevo" (filled), "Restaurar un respaldo" (outlined), "Empezar de cero" (outlined). <code>StartupFailureScreen.kt:132</code>.</li>
+        <li><strong>Restore step</strong>, below the choices, scrolled into view when it appears (<code>StartupFailureScreen.kt:185</code>): an <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> for a rejected file or an interrupted restore, a plain preview slip, or the shared <code>RestoredSlip</code> (<code>app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:58</code>, also used by Respaldo).</li>
+        <li>An optional <code>FieldMessageText</code> when the data could not be set aside (<code>StartupFailureScreen.kt:120</code>).</li>
+        <li><strong>Start-over warning slip</strong> (plain <code>Slip</code>), below everything and scrolled into view: heading, two paragraphs, a <a href="../components.html#c-FormField"><code>FormField</code></a> for the word, and a row of two buttons side by side (<code>StartupFailureScreen.kt:285</code>).</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>First shown</td><td>The explanation slip and its three buttons.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:132</code></td><td>startup-failure</td></tr>
+            <tr><td>Still failing</td><td>After "Intentar de nuevo", a field-message line "Todavía no se pueden abrir tus datos." under the body.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:145</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy (retrying or setting aside)</td><td>Nothing changes on screen: <code>busy</code> is set in the view model but the screen never reads it; presses and typing are ignored meanwhile.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureViewModel.kt:42</code></td><td>no screenshot</td></tr>
+            <tr><td>Start-over warning (confirming)</td><td>The warning slip opens; "Empezar de cero" in the explanation slip is disabled; the confirm button stays disabled until the field holds exactly "BORRAR" (trimmed).</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:126</code>, <code>app/src/main/java/com/software/sello/feature/startup/StartupFailureState.kt:99</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Whether the warning is open and the word typed survive process death (<code>KEY_CONFIRMING</code>, <code>KEY_TYPED</code>). A backup preview does not: the file is held only in memory, so the person chooses again.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureViewModel.kt:31</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused: not set aside</td><td>"No pudimos apartar tus datos. No se cambió nada." under the slips.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:120</code></td><td>no screenshot</td></tr>
+            <tr><td>Choosing a file</td><td>"Restaurar un respaldo" turns into "Revisando el archivo…" with a loading indicator while the chosen file is checked; the other choices are disabled.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:160</code></td><td>no screenshot</td></tr>
+            <tr><td>Backup rejected</td><td>ErrorSlip "Ese archivo no se puede restaurar" with the reason and an outlined "Elegir otro archivo".</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:194</code></td><td>no screenshot</td></tr>
+            <tr><td>Backup preview</td><td>Plain slip "¿Restaurar este respaldo?": the backup's date, its counts, what restoring does, a full-width loss-tone "Restaurar el respaldo" over an outlined "Cancelar".</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:230</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy: restoring</td><td>The same preview with "Restaurando…" loading; both buttons disabled; every other choice is disabled from here on and Back waits, then restarts.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:204</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome: interrupted</td><td>ErrorSlip "La restauración no terminó" saying what was kept aside and how to restore again; its button is "Continuar" and restarts the app.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:206</code></td><td>no screenshot (the shared slip has <code>components-restore-unknown</code> in another context)</td></tr>
+            <tr><td>Restored</td><td>The shared RestoredSlip: what was restored, preferences still pending and the way to leave.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:214</code></td><td>no screenshot</td></tr>
+            <tr><td>Loading, empty, stale</td><td>Do not exist on this screen: it shows no figure from the data that would not open.</td><td><code>app/src/main/java/com/software/sello/feature/startup/StartupFailureState.kt:75</code></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>"Intentar de nuevo": <code>StartupFailureAction.Retry</code>; opens the data again. If it opens, the app replaces this screen; if not, the still-failing line shows. Disabled once a restore began.</li>
+        <li>"Restaurar un respaldo": <code>RestoreBackup</code>; asks the root to open the system's document picker (<code>OpenDocument</code>, any type). The answer is <code>Chosen(uri)</code>; a dismissed picker or no picker app is <code>Chosen(null)</code> (<code>StartupFailureScreen.kt:72</code>).</li>
+        <li>"Empezar de cero": <code>StartOver</code>; opens the warning slip.</li>
+        <li>Word field: <code>Typed(text)</code>, kept exactly; characters keyboard, no autocorrect.</li>
+        <li>Warning "Cancelar": <code>Cancel</code>; closes the warning and clears the word. Warning "Empezar de cero": <code>Confirm</code>; sets the data aside, then the activity starts over.</li>
+        <li>Preview "Restaurar el respaldo": <code>ConfirmRestore</code>. Preview "Cancelar": <code>CancelRestore</code>.</li>
+        <li>"Continuar" after an interrupted restore and the RestoredSlip's leave button: <code>Leave</code>, which restarts the app. The RestoredSlip can also send <code>ApplyPreferences</code>.</li>
+        <li>System Back: closes the warning or a preview or rejection first; after a restore began it is <code>Leave</code>; otherwise it leaves the app (<code>StartupFailureScreen.kt:89</code>).</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"No pudimos abrir tus datos" (<code>startup_failure_title</code>)</li>
+        <li>"Sello no pudo leer lo que tienes guardado. No se borró nada." (<code>startup_failure_body</code>)</li>
+        <li>"Todavía no se pueden abrir tus datos." (<code>startup_failure_still_failing</code>)</li>
+        <li>"Intentar de nuevo" (<code>startup_failure_retry</code>), "Restaurar un respaldo" (<code>startup_failure_restore</code>), "Revisando el archivo…" (<code>restore_checking</code>), "Empezar de cero" (<code>startup_failure_start_over</code>)</li>
+        <li>"No pudimos apartar tus datos. No se cambió nada." (<code>startup_failure_not_set_aside</code>)</li>
+        <li>"¿Empezar de cero?" (<code>startup_start_over_title</code>)</li>
+        <li>"Sello se abrirá vacío, sin tus gastos, categorías ni presupuestos. Los datos que no se pudieron abrir no se borran: quedan guardados aparte en este dispositivo, pero Sello todavía no puede recuperarlos." (<code>startup_start_over_body</code>)</li>
+        <li>"Si instalaste una versión anterior de Sello, instala la más reciente antes de empezar de cero." (<code>startup_failure_newer_hint</code>)</li>
+        <li>"Escribe BORRAR para confirmar" (<code>startup_start_over_word</code>), "Cancelar" (<code>startup_start_over_cancel</code>), "Empezar de cero" (<code>startup_start_over_confirm</code>)</li>
+        <li>"Ese archivo no se puede restaurar" (<code>restore_rejected_title</code>), "Elegir otro archivo" (<code>restore_choose_other</code>)</li>
+        <li>"¿Restaurar este respaldo?" (<code>startup_restore_title</code>), "Respaldo del %1$s" (<code>restore_preview_date</code>), "Tiene %1$s." (<code>startup_restore_counts</code>)</li>
+        <li>"Lo que no se pudo abrir queda guardado aparte en este teléfono, como al empezar de cero, y Sello se llena con el respaldo. También se restauran la zona horaria, la apariencia y el orden del respaldo." (<code>startup_restore_warning</code>)</li>
+        <li>"Restaurar el respaldo" (<code>startup_restore_confirm</code>), "Restaurando…" (<code>restore_replacing</code>), "Cancelar" (<code>restore_cancel</code>)</li>
+        <li>"La restauración no terminó" (<code>startup_restore_interrupted_title</code>), "Continuar" (<code>startup_restore_continue</code>)</li>
+        <li>"Lo que no se pudo abrir quedó guardado aparte. Al continuar, Sello se abre de nuevo; si tus datos no aparecen, elige el respaldo otra vez en Configuración → Respaldo." (<code>startup_restore_interrupted_body</code>)</li>
+      </ul>
+    </section>
+
+    <section id="components">
+      <h2>Components</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th>Source</th><th>How used here</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a></td><td><code>:design-system</code> <code>SelloScaffold.kt</code></td><td>Title = app name, no navigation</td><td>There is no app shell yet; the scaffold still handles insets and the keyboard</td></tr>
+            <tr><td><a href="../components.html#c-Slip"><code>Slip</code></a></td><td><code>:design-system</code> <code>Slip.kt</code></td><td>Pinked for the explanation; <code>pinked = false</code> for the warning and the preview</td><td>Only the main answer keeps the pinked edge, as on other screens</td></tr>
+            <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td><td>Filled retry; outlined restore and start-over; <code>ButtonTone.Loss</code> for both destructive confirms; <code>loading</code> while checking a file and while restoring</td><td>One filled action; the loss tone marks what replaces data</td></tr>
+            <tr><td><a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a></td><td><code>:design-system</code> <code>FieldMessage.kt</code></td><td>Still failing; not set aside</td><td>A short outcome line without a full error card</td></tr>
+            <tr><td><a href="../components.html#c-FormField"><code>FormField</code></a></td><td><code>:design-system</code> <code>FormField.kt</code></td><td>The BORRAR word, characters capitalisation, no autocorrect, Done action</td><td>D09 asks for a typed word before data is replaced by nothing</td></tr>
+            <tr><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Rejected file (retry label "Elegir otro archivo"); interrupted restore (retry label "Continuar")</td><td>Reuses the error card with a custom title and action</td></tr>
+            <tr><td><code>RestoredSlip</code>, <code>RestoreHeading</code>, <code>RestoreBody</code> (app-shared)</td><td><code>app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:58</code></td><td>Restored result; preview heading and body</td><td>Same wording and layout as Respaldo's restore</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="look-alikes">
+      <h2>Feature-local parts that look like shared ones</h2>
+      <ul>
+        <li><strong>Start-over warning slip</strong> (<code>app/src/main/java/com/software/sello/feature/startup/StartupFailureScreen.kt:285</code>) is a typed-word confirmation like Reset's word slip (<code>app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:191</code>) and Category removal's (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:433</code>). It differs: a <code>headlineSmall</code> heading instead of <code>RestoreHeading</code>, the two buttons side by side in a <code>Row</code> (Cancelar first) instead of stacked full width, no busy state, and the field never disabled. The same screen's backup preview stacks its buttons like Reset. No screenshot of either slip. Findings: <a href="../findings.html#F16">F16</a>, <a href="../findings.html#F17">F17</a>.</li>
+        <li><strong>Explanation slip</strong> resembles <a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> (a failure with a retry) but is left-aligned with three stacked choices; that difference has a reason (three ways out, not one retry).</li>
+      </ul>
+    </section>
+
+    <section id="gaps">
+      <h2>Gaps</h2>
+      <div class="gaps">
+        <ul>
+          <li>Loading at start: no screenshot.</li>
+          <li>Still failing, not set aside: no screenshot.</li>
+          <li>Start-over warning (empty and with BORRAR typed): no screenshot.</li>
+          <li>Checking a file, rejected file, preview, restoring, interrupted, restored: no screenshot on this screen.</li>
+          <li>Busy (retry or set-aside running): not drawn at all, so there is nothing to capture; see the findings.</li>
+          <li><code>startup-failure</code> is captured in Cobalto and Violeta, light and dark, but the real screen always uses the default theme (<code>app/src/main/java/com/software/sello/MainActivity.kt:74</code>); only the default light/dark captures match what a person can see.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

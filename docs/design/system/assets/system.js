@@ -3,7 +3,7 @@
  * No dependencies. Every path is worked out from where this script lives, so pages in
  * docs/design/system/ and docs/design/system/features/ use the same markup.
  *
- * Markup it reads (see features/TEMPLATE.md):
+ * Markup it reads (as every page under features/ uses it):
  *   <body data-page="index|foundations|components|findings|features/NAME">
  *   <nav id="sello-nav"></nav>
  *   <figure data-shot="NAME" data-module="app|design-system"
@@ -375,6 +375,23 @@
     return card;
   }
 
+  /** "Notices & states" -> "theme-notices-states", the anchor of a theme heading. */
+  function themeId(theme) {
+    return "theme-" + theme.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+
+  /** One line per theme: its name linked to its heading, and the IDs it covers. */
+  function themeIndex(items, themes) {
+    return el("ol", { class: "theme-index" }, themes.map(function (theme) {
+      var ids = items.filter(function (f) { return f.theme === theme; }).map(function (f) { return f.id; });
+      var range = ids.length > 1 ? ids[0] + "–" + ids[ids.length - 1] : ids[0];
+      return el("li", null, [
+        el("a", { href: "#" + themeId(theme), text: theme }),
+        el("span", { class: "muted", text: " · " + range + " (" + ids.length + ")" })
+      ]);
+    }));
+  }
+
   function findings(container, list) {
     var holder = container || document.getElementById("findings");
     if (!holder) return;
@@ -405,7 +422,19 @@
       answered.textContent = done + " of " + items.length + " answered";
     }
     holder.appendChild(el("div", { class: "findings-toolbar" }, [copy, answered, status]));
-    items.forEach(function (finding) { holder.appendChild(findingCard(finding)); });
+    var themes = [];
+    items.forEach(function (finding) {
+      if (finding.theme && themes.indexOf(finding.theme) < 0) themes.push(finding.theme);
+    });
+    if (themes.length) holder.appendChild(themeIndex(items, themes));
+    var shownTheme = null;
+    items.forEach(function (finding) {
+      if (finding.theme && finding.theme !== shownTheme) {
+        shownTheme = finding.theme;
+        holder.appendChild(el("h2", { class: "theme-heading", id: themeId(shownTheme), text: shownTheme }));
+      }
+      holder.appendChild(findingCard(finding));
+    });
     holder.appendChild(el("h2", { text: "Answers" }));
     holder.appendChild(output);
     document.addEventListener("sello-answers-changed", function () { refresh(); count(); });

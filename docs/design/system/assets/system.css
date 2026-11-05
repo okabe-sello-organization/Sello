@@ -560,7 +560,21 @@ button.secondary {
   border: 1.5px solid var(--brand);
 }
 
+.theme-index {
+  margin: 0 0 8px;
+  padding-left: 22px;
+  columns: 2 260px;
+}
+
+.theme-heading {
+  margin: 32px 0 14px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--rule);
+  scroll-margin-top: 16px;
+}
+
 .finding {
+  scroll-margin-top: 16px;
   background: var(--paper);
   border-radius: 14px;
   padding: 18px 22px 20px;

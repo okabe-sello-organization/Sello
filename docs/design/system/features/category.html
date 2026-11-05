@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Category · Sello design system</title>
+  <link rel="stylesheet" href="../assets/system.css">
+  <script src="../assets/system.js" defer></script>
+</head>
+<body data-page="features/category">
+  <header class="page-header">
+    <div class="inner">
+      <p class="kicker">Feature</p>
+      <h1>Category</h1>
+      <p class="lede">One category in a month: what is left of its limit, its expenses and fixed payments, and the form that creates, edits, archives or deletes it.</p>
+    </div>
+  </header>
+  <nav id="sello-nav"></nav>
+  <main>
+    <section id="purpose">
+      <h2>Purpose</h2>
+      <p>A person looks at one category's month (remaining, spent, limit, carry, its latest expenses, its fixed payments and a few numbers about how it is going), opens every expense of it, and creates or changes the category itself: its name, icon, monthly limit and whether it carries what is left over. From the same form they archive it, unarchive it or delete it, with the deletion moving or deleting what it holds after saying exactly what that is.</p>
+      <p class="muted">The detail and the expense list live in <code>feature/recibo</code>; the form, carry and deletion live in <code>feature/category</code>. This page covers both, as one feature.</p>
+    </section>
+
+    <section id="entry-points">
+      <h2>Entry points</h2>
+      <ul>
+        <li><strong>Category detail</strong>: a category cell on Recibo sends <code>ReciboAction.OpenCategory</code> (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:467</code>), turned into <code>ShellAction.OpenCategory</code> (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:348</code>). On a phone it replaces Recibo; where there is room for two it sits beside Recibo and the first category is shown when none is chosen (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:279</code>).</li>
+        <li><strong>Todos los gastos</strong>: "Ver todos" / "Ver los N" on the detail's latest expenses (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:106</code>, route at <code>:138</code>).</li>
+        <li><strong>Nueva categoría</strong> (<code>CategoryEditorRoute</code>, <code>app/src/main/java/com/software/sello/navigation/CategoryDestinations.kt:22</code>):
+          <ul>
+            <li>"Nueva categoría" chip and the first-run "Crear categoría" on Recibo (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:451</code>, <code>:120</code>; navigation <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:136</code>).</li>
+            <li>Creating a category from Anotar (<code>app/src/main/java/com/software/sello/navigation/ExpenseDestinations.kt:39</code>, <code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:84</code>).</li>
+            <li>An income plan's suggested limit (<code>CategoryEditorRoute(limit = …)</code>, <code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:70</code>).</li>
+            <li>Anotar pressed with no category at all: the form opens with "Para anotar un gasto primero necesitas una categoría…" (<code>forEntry</code>, <code>app/src/main/java/com/software/sello/navigation/SelloApp.kt:167</code>); once created, Anotar carries on with it chosen (<code>app/src/main/java/com/software/sello/navigation/CategoryDestinations.kt:37</code>).</li>
+          </ul>
+        </li>
+        <li><strong>Editar categoría</strong> (<code>CategoryEditRoute(id, month)</code>, <code>app/src/main/java/com/software/sello/navigation/CategoryDestinations.kt:45</code>):
+          <ul>
+            <li>The detail's edit action in the title bar, or beside the name when the detail sits beside Recibo (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:395</code>, <code>app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:233</code>).</li>
+            <li>"Editar categoría" in a Recibo cell's actions (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:469</code>, navigation <code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:126</code>).</li>
+            <li>A carry problem's "Ponerle límite a …" (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:131</code>), Ajustar presupuesto (<code>:225</code>) and Resumen (<code>app/src/main/java/com/software/sello/navigation/ResumenDestinations.kt:58</code>, <code>:84</code>, <code>:96</code>, <code>:112</code>).</li>
+          </ul>
+        </li>
+        <li><strong>Archive, unarchive, delete</strong>: the editor's top-bar ⋮ ("Archivar categoría", "Borrar categoría") and the archived slip's "Desarchivar" (<code>app/src/main/java/com/software/sello/feature/category/CategoryEditorScreen.kt:159</code>, <code>:283</code>). A deleted category closes the editor and its detail onto Recibo, where a notice says what happened (<code>app/src/main/java/com/software/sello/navigation/CategoryDestinations.kt:54</code>).</li>
+      </ul>
+    </section>
+
+    <section id="screen-detail">
+      <h2>Screen: Category detail</h2>
+
+      <figure data-shot="category-detail" data-module="app"
+              data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
+              data-caption="Loaded: headline, latest expenses, En números (Cobalto light and dark, Violeta)"></figure>
+      <figure data-shot="category-detail-varios" data-module="app"
+              data-caption="With &quot;Anotar varios&quot; at the foot of the latest expenses"></figure>
+      <figure data-shot="category-detail-delete-unknown" data-module="app" data-variants="claro"
+              data-caption="A deletion whose outcome is not known, with &quot;Comprobar si se borró&quot;"></figure>
+      <figure data-shot="carry-detail" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="A category that carries: the limit shown as base plus carry"></figure>
+
+      <h3>Layout</h3>
+      <p>A <code>ShellScreen</code> detail (<code>ShellDetail</code>) whose title is the category name and whose action is the edit icon; its dock is Anotar in this category, or disabled "Archivada" for an archived one (<code>app/src/main/java/com/software/sello/navigation/ShellScreen.kt:69</code>). The content scrolls (<code>app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:100</code>), top to bottom, spaced by <code>spacing.md</code>:</p>
+      <ol>
+        <li>A carry problem slip, when a carry figure cannot be calculated (<code>CarryProblemSlip</code>), and the older-figures <code>StaleSlip</code> after a failed refresh.</li>
+        <li>The header <a href="../components.html#c-Slip"><code>Slip</code></a> (<code>:225</code>): only beside Recibo, the name in <code>headlineSmall</code> with the edit icon; the headline ("Te quedan aquí", "Te pasaste aquí por", "Te sobraron aquí", "Has gastado aquí") in <code>bodyLarge</code> inkSoft with the verdict <a href="../components.html#c-Stamp"><code>Stamp</code></a> (or a Neutral "Archivada" stamp); a 56 dp <a href="../components.html#c-CategoryCircle"><code>CategoryCircle</code></a> beside the big <a href="../components.html#c-FittedMoneyText"><code>FittedMoneyText</code></a> (44 sp start, loss ink when over); the carry "why" note; Revisar's shortfall note and "Ajustar presupuesto" link when payments are reserved; then either the <code>CarryBreakdownSection</code> under a <a href="../components.html#c-TearLine"><code>TearLine</code></a> or "Gastado …" and "de …" in <code>labelMedium</code>; under a second tear line "Para N días", "Al día" and "Frente a …" (warn when higher, gain when lower); the zero-allowance deficit line; the reserved footnote that scrolls to Pagos fijos.</li>
+        <li>For a month that is over: "… ya terminó. Su límite aún se puede corregir en Editar categoría…" and, once, the past-limit <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> (<code>:155</code>).</li>
+        <li>Pagos fijos (<a href="#screen-fixed">below</a>).</li>
+        <li>The latest expenses (<code>:486</code>): a plain slip with "Últimos gastos" (<code>titleMedium</code>) and a Text-kind "Ver todos"/"Ver los N"; the always-on hint; a delete problem, if any; up to four <code>ActionRow</code>s of <code>ExpenseStubLine</code> separated by <code>HorizontalDivider(paperAlt)</code>; "Anotar varios" as a Text button with the receipt icon.</li>
+        <li>The insight slips (<code>app/src/main/java/com/software/sello/feature/recibo/CategoryInsightSections.kt:43</code>): "En números" (count, average, largest, costliest day), "Cada semana gastas" with a <a href="../components.html#c-ColumnsChart"><code>ColumnsChart</code></a> of weeks and <a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a>s, "Un mes normal aquí" with the monthly chart, its dotted limit line and legend.</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Closed</td><td>Nothing (no category chosen).</td><td><code>app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:109</code></td><td>not a visible state</td></tr>
+            <tr><td>Loading</td><td>A <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>.</td><td><code>…/CategoryDetailScreen.kt:111</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer esta categoría." with Reintentar.</td><td><code>…/CategoryDetailScreen.kt:115</code></td><td>no screenshot</td></tr>
+            <tr><td>Carry failed (nothing read)</td><td><code>CarryProblemSlip</code> alone, with a retry or "Ponerle límite a …".</td><td><code>…/CategoryDetailScreen.kt:121</code></td><td>no screenshot</td></tr>
+            <tr><td>Gone</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Nada aquí este mes" / "Esta categoría no tiene límite ni gastos en este mes.", Block icon.</td><td><code>…/CategoryDetailScreen.kt:127</code></td><td>no screenshot</td></tr>
+            <tr><td>Loaded</td><td>Everything above.</td><td><code>…/CategoryDetailScreen.kt:134</code></td><td>category-detail</td></tr>
+            <tr><td>Stale</td><td><code>StaleSlip</code> "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." over the last month read.</td><td><code>…/CategoryDetailScreen.kt:138</code></td><td>no screenshot</td></tr>
+            <tr><td>Carry problem with figures kept</td><td><code>CarryProblemSlip</code> above the figures.</td><td><code>…/CategoryDetailScreen.kt:135</code></td><td>no screenshot</td></tr>
+            <tr><td>Carrying</td><td>Base, carry and month limit instead of "de …".</td><td><code>…/CategoryDetailScreen.kt:326</code></td><td>carry-detail (light only)</td></tr>
+            <tr><td>Archived</td><td>Neutral "Archivada" stamp instead of the verdict; dock disabled "Archivada".</td><td><code>…/CategoryDetailScreen.kt:247</code></td><td>no screenshot</td></tr>
+            <tr><td>Past month</td><td>The "ya terminó" help and the past-limit notice.</td><td><code>…/CategoryDetailScreen.kt:155</code></td><td>no screenshot</td></tr>
+            <tr><td>List loading / failed / empty</td><td>SlipSkeleton; ErrorSlip "No pudimos leer los gastos de esta categoría."; EmptySlip "Sin gastos en …" with Outlined "Anotar aquí" when the category takes expenses.</td><td><code>…/CategoryDetailScreen.kt:440</code>, <code>:442</code>, <code>:448</code></td><td>no screenshot</td></tr>
+            <tr><td>Insights loading / failed</td><td>SlipSkeleton; ErrorSlip "No pudimos leer las cifras de esta categoría.".</td><td><code>app/src/main/java/com/software/sello/feature/recibo/CategoryInsightSections.kt:50</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy (delete being checked)</td><td>The check button shows its spinner.</td><td><code>…/CategoryDetailScreen.kt:544</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome (delete)</td><td>"No sabemos si el gasto se borró. Compruébalo antes de volver a intentarlo." in warn ink and "Comprobar si se borró".</td><td><code>…/CategoryDetailScreen.kt:524</code></td><td>category-detail-delete-unknown (claro only)</td></tr>
+            <tr><td>Refused (delete)</td><td>One sentence in loss ink, such as "No se pudo borrar. El gasto sigue anotado."</td><td><code>…/CategoryDetailScreen.kt:578</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Does not exist: the detail has no draft; which category is open is the frame's saved state.</td><td><code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:233</code></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>Edit icon (title bar or beside the name): opens Editar categoría for the month shown.</li>
+        <li>Tap an expense: opens its edit. Its row actions "Editar" and "Borrar", swipe away or long-press: <code>CategoryDetailAction.Delete</code>.</li>
+        <li>"Comprobar si se borró": <code>CategoryDetailAction.CheckDelete</code>, the same operation asked again.</li>
+        <li>"Ver todos" / "Ver los N": Todos los gastos. "Anotar varios": bulk entry with this category. "Anotar aquí" (empty list) and the dock: Anotar in this category.</li>
+        <li>Reserved footnote: scrolls Pagos fijos into view. "Ajustar presupuesto": the budget adjuster.</li>
+        <li>Every retry: <code>CategoryDetailAction.Retry</code>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Te quedan aquí" (<code>category_detail_headline_remaining</code>), "Te pasaste aquí por" (<code>category_detail_headline_overspent</code>), "Te sobraron aquí" (<code>category_detail_headline_left_over</code>), "Has gastado aquí" (<code>category_detail_headline_spent</code>)</li>
+        <li>"Gastado" (<code>category_detail_spent</code>), "de" (<code>category_detail_of</code>), "Para" (<code>category_detail_for</code>), "Al día" (<code>category_detail_per_day</code>), "Frente a %1$s" (<code>category_detail_compared_to</code>)</li>
+        <li>"Últimos gastos" (<code>category_detail_latest</code>), "Ver todos" (<code>category_detail_view_every_expense</code>), "Toca un gasto para corregirlo. Para borrarlo, deslízalo o mantenlo presionado." (<code>category_detail_hint</code>), "Anotar varios" (<code>category_detail_record_several</code>)</li>
+        <li>"%1$s ya terminó. Su límite aún se puede corregir en Editar categoría, sin cambiar los demás meses." (<code>category_detail_past_help</code>)</li>
+        <li>"En números" (<code>category_detail_numbers</code>), "Cada semana gastas" (<code>category_detail_weekly</code>), "Un mes normal aquí" (<code>category_detail_normal_month</code>)</li>
+        <li>"Editar categoría" (<code>category_detail_edit</code>), "Archivada" (<code>recibo_category_archived</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-fixed">
+      <h2>Section of the detail: Pagos fijos</h2>
+
+      <figure data-shot="category-fixed-coming" data-module="app"
+              data-variants="cobalto-light-font1.0,cobalto-dark-font1.0"
+              data-caption="Payments still to come this month and the category's other fixed payments"></figure>
+      <figure data-shot="category-fixed-review" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Revisar: the payments to come are more than what is left"></figure>
+      <figure data-shot="category-fixed-failed" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="The list could not be read"></figure>
+
+      <h3>Layout</h3>
+      <ol>
+        <li>A <a href="../components.html#c-Slip"><code>Slip</code></a> titled "Pagos fijos" (<code>titleMedium</code>) (<code>app/src/main/java/com/software/sello/feature/recibo/CategoryFixedPayments.kt:58</code>).</li>
+        <li>The older-list notice and its Text "Reintentar", when stale (<code>:66</code>).</li>
+        <li>An uppercase group heading "POR VENIR EN …" (<code>Group</code>, <code>:162</code>), then each payment still to come as a <a href="../components.html#c-ScheduleRow"><code>ScheduleRow</code></a> with the Event icon and the day (or "Mañana, …") as caption; or, with none left, "Ya no queda nada por venir en …: Al día no separa nada."</li>
+        <li>"MÁS ADELANTE" and the category's other schedules: Autorenew icon, rule and "próximo …" as caption; a paused one dimmed with the Pause icon and "en pausa desde …".</li>
+        <li>A Text-kind "Ver todos los pagos fijos" with no padding, at the slip's content edge.</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Hidden</td><td>No slip: a month that is over, or no fixed payment in the category.</td><td><code>…/CategoryFixedPayments.kt:45</code></td><td>—</td></tr>
+            <tr><td>Loading</td><td>SlipSkeleton.</td><td><code>…/CategoryFixedPayments.kt:47</code></td><td>no screenshot</td></tr>
+            <tr><td>Error</td><td>ErrorSlip "No pudimos leer tus pagos fijos" / "Al día ya descuenta los de …; esta lista no se pudo leer. Vuelve a intentarlo."</td><td><code>…/CategoryFixedPayments.kt:51</code></td><td>category-fixed-failed (light only)</td></tr>
+            <tr><td>Loaded</td><td>The groups above.</td><td><code>…/CategoryFixedPayments.kt:58</code></td><td>category-fixed-coming</td></tr>
+            <tr><td>Stale</td><td>"No pudimos leer tus pagos fijos de nuevo: esta es la última lista que se leyó." in warn ink, then Reintentar.</td><td><code>…/CategoryFixedPayments.kt:66</code></td><td>no screenshot</td></tr>
+            <tr><td>None left this month</td><td>"Ya no queda nada por venir en …".</td><td><code>…/CategoryFixedPayments.kt:82</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty, busy, unknown outcome, restored draft</td><td>Do not exist: the slip only reads.</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>A row: opens that schedule's editor (<code>ScheduleRoute</code>).</li>
+        <li>"Ver todos los pagos fijos": Pagos e ingresos fijos (see <a href="recurrence.html">Recurrence</a>).</li>
+        <li>"Reintentar" and the ErrorSlip: <code>CategoryDetailAction.Retry</code>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Pagos fijos" (<code>category_detail_fixed_title</code>), "Por venir en %1$s" (<code>category_detail_fixed_coming</code>), "Más adelante" (<code>category_detail_fixed_later</code>)</li>
+        <li>"Ya no queda nada por venir en %1$s: Al día no separa nada." (<code>category_detail_fixed_none_left</code>)</li>
+        <li>"No pudimos leer tus pagos fijos de nuevo: esta es la última lista que se leyó." (<code>category_detail_fixed_stale</code>)</li>
+        <li>"Al día ya descuenta los de %1$s; esta lista no se pudo leer. Vuelve a intentarlo." (<code>category_detail_fixed_failed</code>)</li>
+        <li>"Ver todos los pagos fijos" (<code>upcoming_all_schedules</code>), "Mañana, %1$s" (<code>schedules_due_tomorrow</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-expenses">
+      <h2>Screen: Todos los gastos</h2>
+
+      <figure data-shot="category-expenses" data-module="app" data-caption="Every expense of the category, searchable and sorted"></figure>
+      <figure data-shot="category-expenses-stale" data-module="app" data-variants="claro"
+              data-caption="Older rows after a failed refresh"></figure>
+      <figure data-shot="category-expenses-failed" data-module="app" data-variants="claro"
+              data-caption="Nothing ever read"></figure>
+      <figure data-shot="category-expenses-delete-unknown" data-module="app" data-variants="claro"
+              data-caption="A deletion whose outcome is not known"></figure>
+
+      <h3>Layout</h3>
+      <p>A <code>ShellScreen</code> titled with the category's name (month as subtitle) whose dock is Anotar in this category, or disabled "Archivada" (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:148</code>). A lazy list, spaced by <code>spacing.sm</code> (<code>app/src/main/java/com/software/sello/feature/recibo/CategoryExpensesScreen.kt:60</code>):</p>
+      <ol>
+        <li>A plain slip with <a href="../components.html#c-FormField"><code>FormField</code></a> "Buscar por nota" and a <a href="../components.html#c-ChipFlow"><code>ChipFlow</code></a> of <a href="../components.html#c-SelloChip"><code>SelloChip</code></a>s "Fecha", "Valor", "Nombre".</li>
+        <li>The stale slip, the empty slip or the delete problem slip, when they apply.</li>
+        <li>Each expense in its own plain slip (horizontal padding <code>spacing.md</code>) as an <code>ActionRow</code> of <code>ExpenseStubLine</code>.</li>
+        <li>"Se muestran N de M" or the count, a page error, and a Text-kind "Ver más".</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>SlipSkeleton under the filters.</td><td><code>…/CategoryExpensesScreen.kt:96</code></td><td>no screenshot</td></tr>
+            <tr><td>Error</td><td>ErrorSlip "No pudimos leer los gastos de esta categoría."</td><td><code>…/CategoryExpensesScreen.kt:98</code></td><td>category-expenses-failed (claro only)</td></tr>
+            <tr><td>Loaded</td><td>Rows and the count.</td><td><code>…/CategoryExpensesScreen.kt:104</code></td><td>category-expenses</td></tr>
+            <tr><td>Stale</td><td>StaleSlip above the rows as last read.</td><td><code>…/CategoryExpensesScreen.kt:105</code></td><td>category-expenses-stale (claro only)</td></tr>
+            <tr><td>Empty</td><td>EmptySlip "Sin coincidencias" / "Prueba otra búsqueda o anota un gasto en esta categoría."</td><td><code>…/CategoryExpensesScreen.kt:114</code></td><td>no screenshot</td></tr>
+            <tr><td>Busy</td><td>"Ver más" shows a spinner while the next page is read; the check button while a delete is checked.</td><td><code>…/CategoryExpensesScreen.kt:206</code>, <code>:137</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome (delete)</td><td>ErrorSlip titled "Falta comprobar el borrado" whose button is "Comprobar si se borró".</td><td><code>…/CategoryExpensesScreen.kt:127</code></td><td>category-expenses-delete-unknown (claro only)</td></tr>
+            <tr><td>Refused (delete)</td><td>ErrorSlip titled "No se borró" or "Nada que borrar" with the reason.</td><td><code>…/CategoryExpensesScreen.kt:141</code></td><td>no screenshot</td></tr>
+            <tr><td>Page failed</td><td>ErrorSlip "No pudimos leer más gastos. Inténtalo de nuevo."</td><td><code>…/CategoryExpensesScreen.kt:191</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored draft</td><td>Does not exist; the query and order are the view model's.</td><td>—</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>Search field: <code>CategoryExpensesAction.Search</code>. Order chips: <code>Sort</code>.</li>
+        <li>A row: edit the expense. "Editar"/"Borrar", swipe or long-press: <code>Delete</code>. "Comprobar si se borró": <code>CheckDelete</code>.</li>
+        <li>"Ver más": <code>More</code>. Every retry: <code>Retry</code>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Todos los gastos" (<code>category_expenses_title</code>, fallback title), "Buscar por nota" (<code>category_expenses_search</code>)</li>
+        <li>"Fecha" (<code>category_expenses_sort_date</code>), "Valor" (<code>category_expenses_sort_amount</code>), "Nombre" (<code>category_expenses_sort_name</code>)</li>
+        <li>"Se muestran %1$s de %2$s" (<code>category_detail_listed</code>), "Ver más" (<code>category_detail_more</code>)</li>
+        <li>"Falta comprobar el borrado" (<code>category_expenses_delete_unknown_title</code>), "Comprobar si se borró" (<code>expense_edit_check_deleted</code>)</li>
+      </ul>
+    </section>
+
+    <section id="screen-editor">
+      <h2>Screen: Nueva categoría / Editar categoría</h2>
+
+      <figure data-shot="category-editor" data-module="app"
+              data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
+              data-caption="Editar categoría with a change typed (Cobalto light and dark, Violeta)"></figure>
+      <figure data-shot="category-editor-menu" data-module="app"
+              data-variants="cobalto-light-font1.0,cobalto-dark-font1.0"
+              data-caption="The ⋮ menu: Archivar categoría, Borrar categoría"></figure>
+      <figure data-shot="category-editor-archived" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="An archived category: the Archivada slip and the locked limit"></figure>
+      <figure data-shot="category-editor-too-large" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="A pasted limit above the maximum, kept as pasted"></figure>
+      <figure data-shot="category-editor-month-ended" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="The month ended before the limit was saved"></figure>
+      <figure data-shot="carry-editor" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="The carry switch on, with what it carries this month"></figure>
+      <figure data-shot="carry-editor-off" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="The carry switch off"></figure>
+
+      <h3>Layout</h3>
+      <p>One form for both (<code>app/src/main/java/com/software/sello/feature/category/CategoryEditorScreen.kt:138</code>), drawn by <code>CategoryEditorRoot</code> with <code>CategoryEditorViewModel</code> (new) or <code>CategoryManagementRoot</code> with <code>CategoryManagementViewModel</code> (existing).</p>
+      <ol>
+        <li><a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a>: title "Nueva categoría" or "Editar categoría", a ← "Volver" icon button, and for an existing category that was read a <a href="../components.html#c-MoreMenu"><code>MoreMenu</code></a> with "Archivar categoría" and "Borrar categoría" (loss), or only "Borrar categoría" when archived (<code>:146</code>).</li>
+        <li><a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a>, as Anotar: header, amount, choices, action, keypad (<code>:197</code>).</li>
+        <li>Header: with <code>forEntry</code>, the hint "Para anotar un gasto primero necesitas una categoría…"; then a plain slip with <a href="../components.html#c-IconPickerCircle"><code>IconPickerCircle</code></a> ("Elegir ícono" or "Cambiar") beside <a href="../components.html#c-FormField"><code>FormField</code></a> "Nombre" with its counter "N/24" (<code>:374</code>). The name takes focus and the keyboard once. An archived category adds the Archivada slip: label and Neutral stamp "Archivada", "No acepta gastos nuevos; su historia sigue aquí.", Outlined "Desarchivar" (<code>:263</code>).</li>
+        <li>Amount: <a href="../components.html#c-EntryAmountSlip"><code>EntryAmountSlip</code></a> "Límite mensual" with a <code>SwitchRow</code> "Sin límite" in its corner (feature-local switch, <code>app/src/main/java/com/software/sello/feature/category/CategoryComponents.kt:40</code>); suggestions as <a href="../components.html#c-SelloChip"><code>SelloChip</code></a>s in a <a href="../components.html#c-ChipFlow"><code>ChipFlow</code></a>; the month's total line (info icon, "Tu límite total de … pasaría a" and the amount in W700); the scope sentence in <code>bodySmall</code> inkSoft; and the carry switch under a tear line (<code>:470</code>). With Sin límite on, the amount and chips stay but are greyed to 0.38. An archived category shows a locked slip instead: "Está archivada: no tiene límite de aquí en adelante. Desarchívala para ponerle uno." (<code>:472</code>).</li>
+        <li>Carry switch (only on the month in progress): "Pasar lo que sobre al mes siguiente" with, under it, "Si te pasas, se descuenta del mes siguiente. Empieza en 0 este mes." or "Desde … · trae … · este mes …"; "Guarda o descarta tus cambios para cambiar esto." while the form has changes; then the last refusal (warn) or receipt (gain) (<code>app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:134</code>).</li>
+        <li>Choices: what went wrong saving (<a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a>: error, or warning for an unknown outcome), "Se guardó: …" for parts saved before a failure, the month-ended sentence, and "Aún no cambiaste nada." while an existing category is unchanged (<code>:537</code>).</li>
+        <li>Action: "Escribe un nombre." hint, then a full-width <a href="../components.html#c-SelloButton"><code>SelloButton</code></a>: "Crear categoría" (Add icon) or "Guardar cambios"; "Comprobar si se guardó" after an unknown outcome; after a conflict "Volver a cargar" (filled) and "Conservar mis cambios" (outlined) (<code>:572</code>).</li>
+        <li>Keypad: compact <a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a>, disabled under Sin límite, absent when the limit is locked (<code>:221</code>).</li>
+      </ol>
+
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>SlipSkeleton under the top bar.</td><td><code>…/CategoryEditorScreen.kt:184</code></td><td>no screenshot</td></tr>
+            <tr><td>Error (nothing read)</td><td>ErrorSlip "No pudimos preparar el formulario." with Reintentar.</td><td><code>…/CategoryEditorScreen.kt:187</code></td><td>no screenshot</td></tr>
+            <tr><td>Empty (new)</td><td>No name, no icon ("Elegir ícono"), no limit; "Escribe un nombre." above a disabled "Crear categoría".</td><td><code>…/CategoryEditorScreen.kt:574</code></td><td>no screenshot</td></tr>
+            <tr><td>Needed for an entry</td><td>The prerequisite hint above the identity slip.</td><td><code>…/CategoryEditorScreen.kt:381</code></td><td>no screenshot</td></tr>
+            <tr><td>Editing, unchanged / changed</td><td>"Aún no cambiaste nada." and a disabled save / an enabled "Guardar cambios".</td><td><code>…/CategoryEditorScreen.kt:562</code></td><td>category-editor (changed)</td></tr>
+            <tr><td>Field errors</td><td>Name: "Escribe un nombre.", "El nombre puede tener hasta 24 caracteres.", "…caracteres que no se pueden usar.", "Ya tienes una categoría con ese nombre." Limit: "Escribe el límite o activa Sin límite.", "Escribe solo el número…", "El monto es mayor que el máximo de 999.999.999.999 pesos." with the pasted text kept.</td><td><code>…/CategoryEditorScreen.kt:701</code>, <code>:708</code></td><td>category-editor-too-large (light only)</td></tr>
+            <tr><td>Busy</td><td>The save button's spinner; the form, chips, pad and switch are disabled.</td><td><code>…/CategoryEditorScreen.kt:618</code>, <code>app/src/main/java/com/software/sello/feature/category/CategoryEditorState.kt:161</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "No sabemos todavía si se guardó. Compruébalo antes de volver a intentarlo." and "Comprobar si se guardó"; the draft is frozen.</td><td><code>…/CategoryEditorScreen.kt:584</code></td><td>no screenshot</td></tr>
+            <tr><td>Refused</td><td>"No se pudo guardar…", "Tus datos cambiaron mientras tanto…", "Esta categoría ya no existe. No se cambió nada.", the archive-blocked "No se archivó: …", or "Se guardó: … Lo demás no se guardó".</td><td><code>…/CategoryEditorScreen.kt:721</code>, <code>:545</code></td><td>no screenshot</td></tr>
+            <tr><td>Conflict</td><td>"Esta categoría cambió mientras la editabas." with Volver a cargar / Conservar mis cambios.</td><td><code>…/CategoryEditorScreen.kt:592</code></td><td>no screenshot</td></tr>
+            <tr><td>Month ended</td><td>Which month ended, that the limit (or carry) was not saved, and which month the form shows now.</td><td><code>…/CategoryEditorScreen.kt:629</code></td><td>category-editor-month-ended (light only)</td></tr>
+            <tr><td>Past month</td><td>Scope says only that month's limit changes; no carry switch (a carry refusal is said as a field message instead).</td><td><code>…/CategoryEditorScreen.kt:209</code>, <code>:649</code></td><td>no screenshot</td></tr>
+            <tr><td>Archived</td><td>The Archivada slip, the locked limit, no keypad.</td><td><code>…/CategoryEditorScreen.kt:203</code>, <code>:472</code></td><td>category-editor-archived (light only)</td></tr>
+            <tr><td>Carry unreadable</td><td>"No pudimos leer si esta categoría pasa lo que sobra." in loss ink; no switch.</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:140</code></td><td>no screenshot</td></tr>
+            <tr><td>Carry on / off</td><td>The switch with its summary.</td><td><code>…/CategoryCarry.kt:152</code></td><td>carry-editor, carry-editor-off (light only)</td></tr>
+            <tr><td>Restored draft</td><td>Name, icon, limit text and Sin límite come back from <code>SavedStateHandle</code>, compared with the category as first read; a pending save is checked before anything else.</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryManagementViewModel.kt:129</code>, <code>app/src/main/java/com/software/sello/feature/category/CategoryEditorViewModel.kt:57</code></td><td>no screenshot</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Controls</h3>
+      <ul>
+        <li>← and system Back: <code>Back</code>; with changes the discard slip, nothing while saving.</li>
+        <li>Icon circle: opens the icon sheet. Name: <code>NameChanged</code>.</li>
+        <li>Pad digits, 000, backspace, long-press backspace: <code>LimitDigit</code>, <code>LimitTripleZero</code>, <code>LimitBackspace</code>, <code>LimitCleared</code>. Paste: <code>LimitChanged</code>. Chips: <code>SuggestionPicked</code>. Sin límite: <code>UnlimitedChanged</code> (with a carry balance this asks first).</li>
+        <li>Carry switch: <code>EnableCarry</code> / <code>DisableCarry</code>, each asking first; it shows the stored setting, never the tap.</li>
+        <li>Save: <code>Submit</code>; each changed part (name, icon, limit) is its own command. "Comprobar si se guardó": <code>Retry</code>. Conflict buttons: <code>ReloadDiscardingDraft</code> / <code>ReloadKeepingDraft</code>.</li>
+        <li>⋮ "Archivar categoría" and "Desarchivar": <code>Archive</code>, which asks. ⋮ "Borrar categoría": <code>RemovalAction.Start</code>.</li>
+      </ul>
+
+      <h3>Key copy</h3>
+      <ul>
+        <li>"Nueva categoría" (<code>category_editor_title</code>), "Editar categoría" (<code>category_edit_title</code>), "Volver" (<code>category_editor_back</code>)</li>
+        <li>"Nombre" (<code>category_editor_name</code>), "Elegir ícono" (<code>icon_picker_choose</code>), "Cambiar" (<code>icon_picker_change</code>)</li>
+        <li>"Límite mensual" (<code>category_editor_limit</code>), "Sin límite" (<code>category_editor_unlimited</code>)</li>
+        <li>"El límite vale desde este mes. Podrás cambiarlo después sin alterar los meses anteriores." (<code>category_editor_limit_scope</code>), "Vale desde %1$s en adelante. Los meses anteriores no cambian." (<code>category_edit_scope_current</code>), "Cambias solo el límite de %1$s. Los demás meses y el límite habitual no cambian." (<code>category_edit_scope_past</code>)</li>
+        <li>"Tu límite total de %1$s pasaría a" (<code>category_editor_limit_total_changes</code>), "Tu límite total de %1$s es" (<code>category_editor_limit_total_same</code>)</li>
+        <li>"Crear categoría" (<code>category_editor_create</code>), "Guardar cambios" (<code>category_edit_submit</code>), "Comprobar si se guardó" (<code>category_editor_check_again</code>), "Volver a cargar" (<code>category_edit_conflict_reload</code>), "Conservar mis cambios" (<code>category_edit_conflict_keep</code>)</li>
+        <li>"Archivar categoría" (<code>category_menu_archive</code>), "Borrar categoría" (<code>category_menu_delete</code>), "Archivada" (<code>category_edit_archived_label</code>), "No acepta gastos nuevos; su historia sigue aquí." (<code>category_edit_archived</code>), "Desarchivar" (<code>category_edit_unarchive</code>)</li>
+        <li>"Pasar lo que sobre al mes siguiente" (<code>carry_setting</code>), "Desde %1$s · trae %2$s · este mes %3$s" (<code>carry_on_summary</code>), "Guarda o descarta tus cambios para cambiar esto." (<code>carry_wait_changes</code>)</li>
+      </ul>
+    </section>
+
+    <section id="sheet-icons">
+      <h2>Sheet: Elige un ícono</h2>
+      <h3>Layout</h3>
+      <p>A <a href="../components.html#c-RepeatSheet"><code>RepeatSheet</code></a> titled "Elige un ícono" holding <a href="../components.html#c-IconChoiceSheetContent"><code>IconChoiceSheetContent</code></a>: the note "Así reconocerás la categoría en tu recibo.", the icon grid with the chosen one marked, and icons other categories already use dashed, with "Ya lo usa otra categoría; puedes repetirlo." (<code>app/src/main/java/com/software/sello/feature/category/CategoryEditorScreen.kt:442</code>). Whether it is open is <code>rememberSaveable</code> in the screen (<code>:143</code>), not State.</p>
+      <h3>States</h3>
+      <p>Open or closed only; it has no loading, error, busy or unknown state. No screenshot.</p>
+      <h3>Controls</h3>
+      <ul><li>An icon: <code>IconPicked</code> and the sheet closes. Scrim or Back: closes with nothing changed.</li></ul>
+      <h3>Key copy</h3>
+      <ul><li>"Elige un ícono" (<code>category_editor_icon</code>), "Así reconocerás la categoría en tu recibo." (<code>category_icon_sheet_note</code>), "Ya lo usa otra categoría; puedes repetirlo." (<code>category_icon_in_use</code>)</li></ul>
+    </section>
+
+    <section id="slips-editor">
+      <h2>Slips over the editor: discard, archive, carry</h2>
+
+      <figure data-shot="carry-drop" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Turning carry off with a balance: the exact figures before and after"></figure>
+
+      <h3>Layout</h3>
+      <p>Each is a <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a>: title, content, tear line, Cancelar and the action.</p>
+      <ul>
+        <li><strong>Discard</strong> (<code>app/src/main/java/com/software/sello/feature/category/CategoryEditorScreen.kt:244</code>): "¿Descartar los cambios?" / "Lo que escribiste para esta categoría no se guardará.", "Seguir editando" and "Descartar" (red: <code>destructive</code> is left at its default).</li>
+        <li><strong>Archive / unarchive</strong> (<code>:302</code>): "¿Archivar %1$s?" or "¿Desarchivar %1$s?", sentences about new expenses, the budget from next month and what is kept (with the count of this month's expenses when it could be read), "Los cambios sin guardar se descartan." when there are some; the action "Archivar"/"Desarchivar" in brand (<code>destructive = false</code>: nothing is erased).</li>
+        <li><strong>Carry on</strong> (<code>app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:285</code>): "¿Pasar lo que sobre de … desde …?", what starts at 0 and what counts, "Activar".</li>
+        <li><strong>Drop a balance</strong> (<code>:314</code>), for turning carry off, archiving or Sin límite while carrying: "¿Olvidar el sobrante de …?" or "¿Olvidar el faltante de …?", the reason, <a href="../components.html#c-ChangeRow"><code>ChangeRow</code></a>s for Límite del mes, Restante del presupuesto and Límite base; "Apagar", "Archivar" or "Guardar sin límite". If the balance moved meanwhile a warn line says so first.</li>
+        <li><strong>Past-month correction</strong> (<code>:391</code>): "¿Guardar el límite de …?" with the later months it changes (<code>CarryCorrectionContent</code>), "Guardar".</li>
+      </ul>
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Asked</td><td>The slip.</td><td><code>…/CategoryEditorScreen.kt:244</code>, <code>:254</code>, <code>:255</code></td><td>carry-drop (light only); others no screenshot</td></tr>
+            <tr><td>Busy</td><td>Carry slips: the action's spinner, nothing can be pressed or dismissed.</td><td><code>…/CategoryCarry.kt:296</code></td><td>no screenshot</td></tr>
+            <tr><td>Changed meanwhile</td><td>Drop: "Lo de meses anteriores cambió mientras confirmabas…"; correction: the new list with "Tus datos cambiaron mientras revisabas…".</td><td><code>…/CategoryCarry.kt:338</code></td><td>no screenshot</td></tr>
+            <tr><td>Restored</td><td>The question is in State, so it is asked again after a rotation.</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryEditorState.kt:137</code></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Key copy</h3>
+      <ul>
+        <li>"¿Descartar los cambios?" (<code>category_editor_discard_title</code>), "Descartar" (<code>category_editor_discard_confirm</code>), "Seguir editando" (<code>category_editor_discard_keep</code>)</li>
+        <li>"Deja de aceptar gastos nuevos. %1$s conserva su límite; desde %2$s queda sin presupuesto hasta que la desarchives." (<code>category_archive_effect</code>)</li>
+        <li>"Vuelve a aceptar gastos y recupera su último límite desde %1$s. Los meses en que estuvo archivada siguen sin presupuesto." (<code>category_unarchive_resumes</code>)</li>
+        <li>"Activar" (<code>carry_enable_confirm</code>), "Apagar" (<code>carry_drop_confirm</code>), "Guardar sin límite" (<code>carry_drop_confirm_unlimited</code>), "Este mes el límite vuelve a ser el base. No se borra ningún gasto." (<code>carry_drop_body</code>)</li>
+      </ul>
+    </section>
+
+    <section id="flow-delete">
+      <h2>Flow: Borrar categoría</h2>
+
+      <figure data-shot="category-removal-choose" data-module="app"
+              data-variants="cobalto-light-font1.0,cobalto-dark-font1.0,violeta-light-font1.0"
+              data-caption="It holds expenses and a fixed payment: move them, delete all, or archive instead"></figure>
+      <figure data-shot="category-removal-empty" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Nothing in it: one confirmation"></figure>
+      <figure data-shot="category-removal-pick" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Mover: the categories that can take them, with what each has left"></figure>
+      <figure data-shot="category-removal-move" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Mover y borrar: the exact facts"></figure>
+      <figure data-shot="category-removal-all" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Borrar todo: what goes, and the word to type"></figure>
+      <figure data-shot="category-removal-all-typed" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Borrar todo with BORRAR typed"></figure>
+      <figure data-shot="category-removal-checking" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Unknown outcome: Comprobando…"></figure>
+      <figure data-shot="category-removal-changed" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Refused: what it holds changed"></figure>
+      <figure data-shot="category-removal-target" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Refused: the chosen category no longer takes expenses"></figure>
+      <figure data-shot="category-removal-storage" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Refused: storage could not save"></figure>
+      <figure data-shot="category-removal-count" data-module="app" data-variants="cobalto-light-font1.0"
+              data-caption="Its contents could not be counted"></figure>
+
+      <h3>Layout</h3>
+      <p>Each step is a slip or sheet over the editor (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:87</code>), driven by <code>CategoryRemoval</code> (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemoval.kt:71</code>):</p>
+      <ol>
+        <li><strong>Counting</strong>: feature-local <code>RemovalDialog</code> "¿Borrar …?" with a Material spinner and "Contando lo que tiene …" (<code>:93</code>); cannot be dismissed.</li>
+        <li><strong>Empty</strong>: <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> "No tiene gastos ni pagos fijos. Se borran la categoría y su límite. <strong>Esto no se puede deshacer.</strong>", red "Borrar" (<code>:107</code>).</li>
+        <li><strong>Choose</strong>: <code>RemovalDialog</code> with the counts in bold, two feature-local <code>ChoiceRow</code>s (icon circle, title, note, chevron): "Moverlos a otra categoría" and red "Borrar todo"; then the link "¿Solo quieres dejar de usarla? <strong>Archívala</strong>: no se borra nada." (not for an archived category); Outlined "Cancelar" under a tear line (<code>:188</code>).</li>
+        <li><strong>Pick</strong>: <a href="../components.html#c-RepeatSheet"><code>RepeatSheet</code></a> "Mover los gastos de … a" with a caption, then feature-local <code>TargetRow</code>s (icon circle, name, what is left this month) and "Las archivadas no aparecen: no aceptan gastos." (<code>:251</code>).</li>
+        <li><strong>Move</strong>: ConfirmSlip "¿Mover a … y borrar …?" with what moves, that limits and carry go, and <a href="../components.html#c-ChangeRow"><code>ChangeRow</code></a>s for the target's spending and both limits; red "Mover y borrar" (<code>:124</code>).</li>
+        <li><strong>All</strong>: ConfirmSlip "¿Borrar … y todo lo suyo?" with "Se borran para siempre:" and ChangeRows (expenses with their months and total, Pagos fijos, "Sus límites y su arrastre"), "Los meses pasados mostrarán menos gasto. Esto no se puede deshacer.", a <a href="../components.html#c-FormField"><code>FormField</code></a> "Escribe BORRAR para confirmar"; red "Borrar todo" stays off until BORRAR is typed (<code>:136</code>, <code>:397</code>).</li>
+        <li><strong>Correction</strong>: ConfirmSlip with the target's later months that change (<code>CarryCorrectionContent</code>) (<code>:146</code>).</li>
+        <li><strong>Checking</strong>: RemovalDialog "Comprobando…", "Sello no supo si terminó de borrar … y lo está revisando. <strong>No se borrará dos veces.</strong>", Outlined "Comprobar de nuevo" after a failed check (<code>:155</code>).</li>
+        <li><strong>Problem</strong>: ConfirmSlip (brand) with "<strong>No se borró ni se movió nada.</strong>", why, and the way forward: "Revisar", "Elegir otra" or "Reintentar" (<code>:449</code>).</li>
+      </ol>
+      <h3>States</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
+          <tbody>
+            <tr><td>Loading</td><td>Counting slip; in Pick, a centred spinner while the categories are read.</td><td><code>…/CategoryRemovalSlips.kt:93</code>, <code>:283</code></td><td>no screenshot</td></tr>
+            <tr><td>Error</td><td>Counting failed: "Aún no se puede borrar" / "No pudimos contar lo que tiene …". Pick failed: "No pudimos leer tus categorías." and Outlined "Reintentar".</td><td><code>…/CategoryRemovalSlips.kt:545</code>, <code>:273</code></td><td>category-removal-count (light only); pick failed no screenshot</td></tr>
+            <tr><td>Empty</td><td>Nothing in it (one confirmation); in Pick, "No hay otra categoría que acepte gastos…".</td><td><code>…/CategoryRemovalSlips.kt:107</code>, <code>:288</code></td><td>category-removal-empty (light only); no other category no screenshot</td></tr>
+            <tr><td>Busy</td><td>The confirm button's spinner; target rows disabled.</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalState.kt:121</code></td><td>no screenshot</td></tr>
+            <tr><td>Unknown outcome</td><td>Checking slip.</td><td><code>…/CategoryRemovalSlips.kt:155</code></td><td>category-removal-checking (light only)</td></tr>
+            <tr><td>Refused</td><td>Problem slip: changed, target closed, target's carry, storage.</td><td><code>…/CategoryRemovalSlips.kt:449</code></td><td>category-removal-changed, -target, -storage (light only); target carry no screenshot</td></tr>
+            <tr><td>Restored</td><td>The step, choice and typed word are kept in <code>SavedStateHandle</code>; a pending delete is checked first.</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryRemoval.kt:102</code>, <code>:169</code>, <code>:196</code></td><td>no screenshot</td></tr>
+            <tr><td>Done</td><td>The editor and detail close onto Recibo with "… se borró", "… se borró; sus N gastos están en …" or "… y sus N gastos se borraron".</td><td><code>app/src/main/java/com/software/sello/navigation/CategoryDestinations.kt:54</code></td><td>no screenshot</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Controls</h3>
+      <ul>
+        <li>"Moverlos a otra categoría": <code>RemovalAction.Move</code>. "Borrar todo" row: <code>DeleteAll</code>. "Archívala": <code>ArchiveInstead</code> (the archive question).</li>
+        <li>A target row: <code>Pick</code>. The word field: <code>Word</code>. Each confirm: <code>Confirm</code>, sent once. Revisar, Elegir otra, Reintentar, Comprobar de nuevo: <code>Next</code>.</li>
+        <li>Cancelar, Back, a tap outside: <code>Dismiss</code> (not while counting or checking).</li>
+      </ul>
+      <h3>Key copy</h3>
+      <ul>
+        <li>"¿Borrar %1$s?" (<code>category_delete_title</code>), "Contando lo que tiene %1$s…" (<code>category_delete_counting</code>), "Esto no se puede deshacer." (<code>category_delete_undoable</code>)</li>
+        <li>"Moverlos a otra categoría" (<code>category_delete_move</code>), "Los totales de cada mes no cambian." (<code>category_delete_move_note</code>), "Borrar todo" (<code>category_delete_all</code>), "Desaparecen de todos los meses." (<code>category_delete_all_note</code>), "¿Solo quieres dejar de usarla? %1$s: no se borra nada." (<code>category_delete_archive_hint</code>)</li>
+        <li>"Mover los gastos de %1$s a" (<code>category_delete_pick_title</code>), "Las archivadas no aparecen: no aceptan gastos." (<code>category_delete_pick_archived</code>), "Mover y borrar" (<code>category_delete_move_confirm</code>)</li>
+        <li>"Escribe BORRAR para confirmar" (<code>category_delete_word_label</code>), "No se borró ni se movió nada." (<code>category_delete_nothing</code>), "Comprobando…" (<code>category_delete_checking_title</code>), "Comprobar de nuevo" (<code>category_delete_check_again</code>)</li>
+      </ul>
+    </section>
+
+    <section id="components">
+      <h2>Components</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Component</th><th>Source</th><th>How used here</th><th>Why</th></tr></thead>
+          <tbody>
+            <tr><td><a href="../components.html#c-SelloScaffold"><code>SelloScaffold</code></a></td><td><code>:design-system</code> <code>SelloScaffold.kt</code></td><td>Editor top bar with ← and ⋮</td><td>The form is a full screen, not a shell tab</td></tr>
+            <tr><td><a href="../components.html#c-MoreMenu"><code>MoreMenu</code></a></td><td><code>:design-system</code> <code>MoreMenu.kt</code></td><td>Archivar categoría and Borrar categoría (loss), each disabled while something else is saved or asked</td><td>Rarely used actions stay off the form</td></tr>
+            <tr><td><a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a></td><td><code>:design-system</code></td><td>Header, limit, messages, button and pad of the editor</td><td>"As Anotar": identity and limit hold still above what scrolls</td></tr>
+            <tr><td><a href="../components.html#c-EntryAmountSlip"><code>EntryAmountSlip</code></a></td><td><code>:design-system</code></td><td>"Límite mensual", Sin límite in the date corner, <code>amountAlpha</code> 0.38 under Sin límite, rejected paste text</td><td>The limit is typed like an amount</td></tr>
+            <tr><td><a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a></td><td><code>:design-system</code> <code>AmountKeypad.kt</code></td><td><code>compact = true</code>, disabled under Sin límite</td><td>The pad is always there once the keyboard closes</td></tr>
+            <tr><td><a href="../components.html#c-IconPickerCircle"><code>IconPickerCircle</code></a>, <a href="../components.html#c-IconChoiceSheetContent"><code>IconChoiceSheetContent</code></a></td><td><code>:design-system</code> <code>IconPicker.kt</code></td><td>Icon beside the name; the sheet's grid with icons in use dashed</td><td>Same icon choice as goals and investments</td></tr>
+            <tr><td><a href="../components.html#c-RepeatSheet"><code>RepeatSheet</code></a></td><td><code>:design-system</code> <code>Recurrence.kt</code></td><td>Icon sheet and the Pick sheet</td><td>The app's own bottom sheet</td></tr>
+            <tr><td><a href="../components.html#c-FormField"><code>FormField</code></a>, <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a></td><td><code>:design-system</code></td><td>Name with counter; BORRAR; search; hints, errors and the unknown warning</td><td>One field and message style for forms</td></tr>
+            <tr><td><a href="../components.html#c-SelloChip"><code>SelloChip</code></a>, <a href="../components.html#c-ChipFlow"><code>ChipFlow</code></a></td><td><code>:design-system</code> <code>Chips.kt</code></td><td>Limit suggestions; sort chips</td><td>Shortcuts, wrapped</td></tr>
+            <tr><td><a href="../components.html#c-SelloButton"><code>SelloButton</code></a></td><td><code>:design-system</code> <code>SelloButton.kt</code></td><td>Filled save (Add icon when creating), Outlined Desarchivar and Cancelar, Text links</td><td><code>loading</code> blocks a second save</td></tr>
+            <tr><td><a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Discard, archive, carry and most deletion steps; <code>destructive = false</code> for archive, carry and problems</td><td>Asks before a change; busy blocks a double send</td></tr>
+            <tr><td><a href="../components.html#c-Slip"><code>Slip</code></a>, <a href="../components.html#c-TearLine"><code>TearLine</code></a>, <a href="../components.html#c-Stamp"><code>Stamp</code></a></td><td><code>:design-system</code></td><td>Header slip, plain slips, the carry switch's tear, verdict and Archivada stamps</td><td>Sello's paper look</td></tr>
+            <tr><td><a href="../components.html#c-CategoryCircle"><code>CategoryCircle</code></a>, <a href="../components.html#c-FittedMoneyText"><code>FittedMoneyText</code></a>, <a href="../components.html#c-MoneyText"><code>MoneyText</code></a></td><td><code>:design-system</code></td><td>56 dp circle and 44 sp figure in the header; inline amounts</td><td>The same figure Recibo's cell shows</td></tr>
+            <tr><td><a href="../components.html#c-ColumnsChart"><code>ColumnsChart</code></a>, <a href="../components.html#c-LeaderLine"><code>LeaderLine</code></a></td><td><code>:design-system</code></td><td>Weeks and months in the insight slips</td><td>Charts with a spoken point per column</td></tr>
+            <tr><td><a href="../components.html#c-ScheduleRow"><code>ScheduleRow</code></a></td><td><code>:design-system</code> <code>Recurrence.kt</code></td><td>Pagos fijos rows, date in the caption, <code>dimmed</code> when paused</td><td>Same row as the fixed-payment lists</td></tr>
+            <tr><td><a href="../components.html#c-ChangeRow"><code>ChangeRow</code></a></td><td><code>:design-system</code> <code>Carry.kt</code></td><td>Before → after rows in carry and deletion slips</td><td>Exact figures before confirming</td></tr>
+            <tr><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a>, <a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a>, <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>, <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a></td><td><code>:design-system</code> <code>Feedback.kt</code></td><td>Failed reads, empty lists, loading, past-limit notice; ErrorSlip also for delete problems in Todos los gastos</td><td>A failed read is never shown as zero</td></tr>
+            <tr><td><code>StaleSlip</code> (app-shared)</td><td><code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code></td><td>Detail and Todos los gastos after a failed refresh</td><td>Older figures kept, with a notice</td></tr>
+            <tr><td><code>CarryProblemSlip</code>, <code>CarryBreakdownSection</code>, <code>CarryCorrectionContent</code> (app-shared)</td><td><code>app/src/main/java/com/software/sello/presentation/carry/Carry.kt:495</code>, <code>:118</code>, <code>:318</code></td><td>Carry failures, base plus carry, later-month lists</td><td>Shared with Recibo and Anotar</td></tr>
+            <tr><td><code>ActionRow</code>, <code>ExpenseStubLine</code>, <code>KeyValue</code> (Recibo)</td><td><code>app/src/main/java/com/software/sello/feature/recibo/ReciboComponents.kt:220</code>, <code>app/src/main/java/com/software/sello/feature/recibo/ExpenseStubLine.kt:43</code>, <code>ReciboComponents.kt:412</code></td><td>Expense rows with Editar/Borrar and swipe; the planning figures</td><td>Same rows as the month list</td></tr>
+            <tr><td><code>SwitchRow</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryComponents.kt:40</code></td><td>Sin límite and the carry switch</td><td>The only on/off switch in the app; the whole row toggles</td></tr>
+            <tr><td><code>RemovalDialog</code>, <code>ChoiceRow</code>, <code>TargetRow</code>, <code>IconCircle</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:556</code>, <code>:593</code>, <code>:304</code>, <code>:626</code></td><td>Counting, choosing, checking; the move targets</td><td>Steps with one answer or none, which ConfirmSlip cannot draw</td></tr>
+            <tr><td><code>Group</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/recibo/CategoryFixedPayments.kt:162</code></td><td>"POR VENIR EN …", "MÁS ADELANTE"</td><td>Uppercase group headings in the slip</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="look-alikes">
+      <h2>Feature-local parts that look like shared ones</h2>
+      <ul>
+        <li><strong><code>RemovalDialog</code></strong> (<code>app/src/main/java/com/software/sello/feature/category/CategoryRemovalSlips.kt:556</code>) repeats <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a>'s shell (<code>design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:124</code>): the same dialog, 0.55 dim under its own constant, density, plain slip, 22 sp title and tear line; only the buttons differ (one or none). Shots: category-removal-choose and category-removal-checking against category-removal-empty. Finding: <a href="../findings.html#F20">F20</a>.</li>
+        <li><strong><code>TargetRow</code>, <code>ChoiceRow</code>, <code>IconCircle</code></strong> (<code>…/CategoryRemovalSlips.kt:304</code>, <code>:593</code>, <code>:626</code>) redraw <a href="../components.html#c-ScheduleRow"><code>ScheduleRow</code></a>'s 34 dp paperAlt icon circle, bold name and hand-drawn rule (<code>design-system/src/main/java/com/software/sello/designsystem/component/Recurrence.kt:122</code>), at 56 dp instead of 60 dp. Goals has a third copy (<code>app/src/main/java/com/software/sello/feature/goals/GoalStarSheet.kt:135</code>). Shots: category-removal-pick, category-removal-choose, schedules. Finding: <a href="../findings.html#F48">F48</a>.</li>
+        <li><strong>Archivada slip</strong> (<code>app/src/main/java/com/software/sello/feature/category/CategoryEditorScreen.kt:263</code>) is the schedule editor's paused slip (<code>app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:313</code>) with other text styles, and its label repeats the stamp's word. Shot: category-editor-archived; the paused slip has none. Finding: <a href="../findings.html#F41">F41</a>.</li>
+        <li><strong><code>Group</code></strong> (<code>app/src/main/java/com/software/sello/feature/recibo/CategoryFixedPayments.kt:162</code>) is the same uppercase heading Pagos e ingresos fijos draws inline (<code>app/src/main/java/com/software/sello/feature/recurrence/SchedulesScreen.kt:319</code>), except the first one's top padding (10 dp vs 0). Shots: category-fixed-coming, schedules. Finding: <a href="../findings.html#F50">F50</a>.</li>
+        <li><strong>Pagos fijos' stale line</strong> (<code>…/CategoryFixedPayments.kt:66</code>) is a hand-made <code>StaleSlip</code> in warn ink instead of loss, with its own copy. No screenshot. Finding: <a href="../findings.html#F01">F01</a>.</li>
+        <li><strong><code>SwitchRow</code></strong> (<code>app/src/main/java/com/software/sello/feature/category/CategoryComponents.kt:40</code>) has no shared counterpart; <a href="../components.html#c-SettingRow"><code>SettingRow</code></a> is the closest row shape (icon, title, caption, 0.38 when disabled) but has no switch.</li>
+        <li><strong><code>MoneyTextValue.text()</code> / <code>shown()</code></strong> (<code>app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:118</code>, <code>…/CategoryRemovalSlips.kt:858</code>) copy Recibo's internal <code>text()</code> (<code>app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:608</code>). Finding: <a href="../findings.html#F68">F68</a>.</li>
+      </ul>
+    </section>
+
+    <section id="gaps">
+      <h2>Gaps</h2>
+      <div class="gaps">
+        <ul>
+          <li>Category detail: loading, error, carry failed, gone, stale, archived, past month (help and notice), list loading/failed/empty, insights loading/failed, delete refused: no screenshot. Delete unknown: no dark screenshot. Carrying: no dark screenshot.</li>
+          <li>Pagos fijos: loading, stale, none left: no screenshot. Review and failed: no dark screenshot.</li>
+          <li>Todos los gastos: loading, empty, delete refused, page failed, Ver más busy: no screenshot. Stale, failed, delete unknown: no dark screenshot.</li>
+          <li>Editor: loading, error, Nueva categoría (empty), needed for an entry, field errors other than too large, busy, unknown outcome, refused, conflict, past month, carry unreadable, restored draft: no screenshot. Archived, too large, month ended, carry on/off: no dark screenshot.</li>
+          <li>Icon sheet, discard slip, archive and unarchive slips, carry-on slip, past-month correction slip: no screenshot. Drop slip: no dark screenshot.</li>
+          <li>Deletion: counting, pick loading, pick failed, no other category, correction, target's carry, busy, done notice: no screenshot. Every deletion step except Choose: no dark screenshot.</li>
+          <li>The two-pane detail (name and edit icon beside Recibo) has no screenshot; this page could not confirm how it looks at tablet widths.</li>
+          <li>"Sin coincidencias" is the empty text on Todos los gastos even with no search typed (for example after deleting the last expense there); not confirmed on a device.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
