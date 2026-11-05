@@ -1,10 +1,5 @@
 package com.software.sello.feature.goals
 
-import android.os.Build
-import android.view.View
-import android.view.Window
-import android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-import android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.Easing
@@ -32,7 +27,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,7 +49,6 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.paneTitle
@@ -67,13 +60,13 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
 import com.software.sello.designsystem.component.MilestonePlace
 import com.software.sello.designsystem.component.MilestoneSpec
 import com.software.sello.designsystem.component.MoneyText
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
+import com.software.sello.designsystem.theme.DialogBarIcons
 import com.software.sello.designsystem.theme.SelloTheme
 import java.util.Locale
 import kotlin.math.hypot
@@ -226,24 +219,10 @@ internal fun CelebrationOverlay(
             decorFitsSystemWindows = false
         )
     ) {
-        // The system bars' ink follows the reference: the theme's ink on the desk, then
+        // Both bars' ink follows the reference: the theme's ink on the desk, then
         // --ongain once the green has flooded in (white in Claro, dark in Oscuro).
-        val view = LocalView.current
-        val window = (view.parent as? DialogWindowProvider)?.window
         val darkBarIcons = if (t < INK_AT + INK_MS / 2) !colors.isDark else colors.isDark
-        DisposableEffect(window, darkBarIcons) {
-            val apply = { window?.let { setDarkBarIcons(it, darkBarIcons) } }
-            // Android 11 drops an appearance set before the dialog's window is attached.
-            val listener = object : View.OnAttachStateChangeListener {
-                override fun onViewAttachedToWindow(v: View) {
-                    apply()
-                }
-
-                override fun onViewDetachedFromWindow(v: View) = Unit
-            }
-            if (view.isAttachedToWindow) apply() else view.addOnAttachStateChangeListener(listener)
-            onDispose { view.removeOnAttachStateChangeListener(listener) }
-        }
+        DialogBarIcons(darkStatusIcons = darkBarIcons, darkNavigationIcons = darkBarIcons)
         Box(Modifier.fillMaxSize().background(colors.desk).semantics { paneTitle = title }) {
             // Green floods out of the Meta stamp.
             val flood = FloodEasing.transform(beat(t, FLOOD_AT, FLOOD_MS))
@@ -268,25 +247,6 @@ internal fun CelebrationOverlay(
                 Actions(t, doneLabel, viewLabel, onDone, onView, gain, onGain)
             }
             if (!reduced) Confetti(t)
-        }
-    }
-}
-
-/**
- * Asks for dark (or white) status- and navigation-bar icons. Android 11 also needs the
- * older light-bar flags on the decor view, as AndroidX's insets controller sets them.
- */
-@Suppress("DEPRECATION")
-private fun setDarkBarIcons(window: Window, dark: Boolean) {
-    val bars = APPEARANCE_LIGHT_STATUS_BARS or APPEARANCE_LIGHT_NAVIGATION_BARS
-    window.insetsController?.setSystemBarsAppearance(if (dark) bars else 0, bars)
-    if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
-        val flags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-        val decor = window.decorView
-        decor.systemUiVisibility = if (dark) {
-            decor.systemUiVisibility or flags
-        } else {
-            decor.systemUiVisibility and flags.inv()
         }
     }
 }

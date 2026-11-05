@@ -104,6 +104,17 @@ class SystemBarsTest {
     }
 
     @Test
+    fun `the first frame on the band already has white status icons`() {
+        compose.mainClock.autoAdvance = false
+        show({ false }) { BandScreen() }
+
+        // Read before any later frame: what the band said must be applied with it.
+        val window = compose.activity.window
+        val bars = WindowCompat.getInsetsController(window, window.decorView)
+        assertEquals(false, bars.isAppearanceLightStatusBars)
+    }
+
+    @Test
     fun `changing the theme updates the icons at once`() {
         var dark by mutableStateOf(false)
         show({ dark }) { DeskScreen() }

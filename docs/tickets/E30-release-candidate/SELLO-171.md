@@ -17,7 +17,8 @@ is chosen in Sello. A dark phone no longer flashes a light window at start.
   celebration, white in Claro and dark in Oscuro. Changing the choice in Configuración
   updates them at once, without a restart.
 - The navigation-bar icons follow Sello's theme on every screen, in 3-button and gesture
-  navigation.
+  navigation, except the celebration's own window, where both bars follow the flood
+  (`--ongain`), as v2 draws it.
 - On a dark phone, the window before the first frame is the dark desk colour, not light
   paper. A light phone is unchanged.
 - Before and after screenshots of the bars from a new emulator, in the pull request.
@@ -32,3 +33,6 @@ screenshots.
 
 Criteria corrected on 2026-11-05 by the orchestrator to follow v2: the status bar sits on
 the band (`sello.css:40`), not on paper.
+
+Criterion 2 corrected on 2026-11-05 by the orchestrator from review: the celebration's
+window follows the flood.

@@ -6,8 +6,10 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
 import com.software.sello.designsystem.theme.LocalStatusBarInks
 import com.software.sello.designsystem.theme.StatusBarInks
@@ -25,16 +27,30 @@ fun SystemBarsFollowTheme(dark: Boolean, content: @Composable () -> Unit) {
     val inks = remember { StatusBarInks() }
     CompositionLocalProvider(LocalStatusBarInks provides inks, content = content)
     val activity = LocalContext.current as? ComponentActivity ?: return
-    val lightStatusIcons = inks.lightIcons ?: dark
-    DisposableEffect(activity, dark, lightStatusIcons) {
-        activity.enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) {
-                lightStatusIcons
-            },
-            navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) {
-                dark
-            }
-        )
-        onDispose {}
+    val currentDark by rememberUpdatedState(dark)
+    val apply = remember(activity, inks) {
+        val applied = arrayOfNulls<Boolean>(2)
+        fun() {
+            val dark = currentDark
+            // What the shown screen says is under the status bar, or the theme.
+            val lightStatusIcons = inks.lightIcons ?: dark
+            if (applied[0] == lightStatusIcons && applied[1] == dark) return
+            applied[0] = lightStatusIcons
+            applied[1] = dark
+            activity.enableEdgeToEdge(
+                statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) {
+                    lightStatusIcons
+                },
+                navigationBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) {
+                    dark
+                }
+            )
+        }
+    }
+    // Applied in the frame a screen speaks, even while it is being laid out, and in the
+    // frame the theme changes.
+    SideEffect {
+        inks.onChange = apply
+        apply()
     }
 }

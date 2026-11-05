@@ -123,7 +123,7 @@ class CelebrationTest {
     }
 
     @Test
-    fun aDarkDeskKeepsWhiteStatusIconsThroughout() {
+    fun inOscuroTheDarkDeskHasWhiteStatusIconsBeforeTheFlood() {
         rule.mainClock.autoAdvance = false
         show(reduced = false, dark = true)
         rule.mainClock.advanceTimeBy(1_000)
