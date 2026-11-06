@@ -87,7 +87,7 @@ class InvestmentEditorScreenshotTest {
     @Test
     fun editingWithTheMenuOpenDark() = editingWithTheMenuOpen(Look(dark = true))
 
-    /** Editar inversión with a save whose outcome is unknown: only checking again is offered. */
+    /** Editar inversión with a save whose outcome is unknown: only checking again is offered, no ⋮. */
     private fun unresolvedSave(look: Look) {
         rule.showSello(look) {
             InvestmentEditorScreen(
@@ -99,6 +99,7 @@ class InvestmentEditorScreenshotTest {
                     descriptionLength = 8,
                     iconKey = "trending_up",
                     movementCount = 9,
+                    unresolved = true,
                     saveError = InvestmentSaveError.Unknown
                 )
             ) {}

@@ -101,6 +101,8 @@ data class InvestmentEditorState(
     val datePicker: InvestmentField? = null,
     val movementCount: Int = 0,
     val busy: Boolean = false,
+    /** A save or deletion whose outcome is not yet checked: only Comprobar is offered. */
+    val unresolved: Boolean = false,
     val saveError: InvestmentSaveError? = null,
     /** The operation whose outcome is [InvestmentSaveError.Unknown] was a deletion. */
     val deleting: Boolean = false,

@@ -136,6 +136,22 @@ class InvestmentEditorScreenTest {
     }
 
     @Test
+    fun withASaveUnresolvedBorrarIsNotOffered() {
+        // Restored after process death the save is asked about before its error is known.
+        var state by mutableStateOf(ecopetrol.copy(unresolved = true))
+        rule.showSello { InvestmentEditorScreen(state) { actions += it } }
+        rule.onNodeWithTag(MORE_MENU_TAG).assertDoesNotExist()
+
+        state = state.copy(saveError = InvestmentSaveError.Unknown, deleting = true)
+        rule.waitForIdle()
+        rule.onNodeWithTag(MORE_MENU_TAG).assertDoesNotExist()
+
+        state = ecopetrol.copy(saveError = InvestmentSaveError.NotSaved)
+        rule.waitForIdle()
+        rule.onNodeWithTag(MORE_MENU_TAG).assertExists()
+    }
+
+    @Test
     fun theCurrencyIsChosenOnlyWhenCreating() {
         var state by mutableStateOf(creating)
         rule.showSello {
