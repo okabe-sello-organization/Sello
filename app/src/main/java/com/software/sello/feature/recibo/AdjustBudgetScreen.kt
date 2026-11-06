@@ -331,7 +331,8 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
         modifier = Modifier.testTag(LIMIT_SHEET_TAG)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            if (!sheet.loading) {
+            // No icon is known until the category is read.
+            if (!sheet.loading && !sheet.loadFailed) {
                 CategoryCircle(
                     CategoryIcons.iconFor(sheet.iconKey),
                     fraction = null,
