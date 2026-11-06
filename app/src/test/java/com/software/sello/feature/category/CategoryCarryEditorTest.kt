@@ -24,19 +24,20 @@ import com.software.sello.domain.policy.CarryCorrection
 import com.software.sello.domain.policy.CarryMonthChange
 import com.software.sello.domain.policy.MonthBudgetState
 import com.software.sello.domain.port.ArchiveCategory
+import com.software.sello.domain.port.CarrySetting
 import com.software.sello.domain.port.CategoryBudget
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.CommandOutcome
+import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CorrectionConfirmation
-import com.software.sello.domain.port.DisableCarry
-import com.software.sello.domain.port.EnableCarry
-import com.software.sello.domain.port.SetDefaultLimit
-import com.software.sello.domain.port.SetMonthLimit
+import com.software.sello.domain.port.EditCategory
+import com.software.sello.domain.port.LimitEdit
+import com.software.sello.domain.port.ReadState
 import com.software.sello.domain.usecase.CatchUpResult
 import com.software.sello.feature.expense.HandExpenseCommands
 import com.software.sello.feature.expense.categoryId
@@ -52,7 +53,9 @@ import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.carry.carryMonthOf
+import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.presentation.corrections.SavedCarry
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.money.MoneyLabels
 import com.software.sello.testing.HandSnapshots
@@ -60,6 +63,7 @@ import com.software.sello.testing.TestMoneyLabels
 import com.software.sello.testing.testMoney
 import java.time.Instant
 import java.time.YearMonth
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -76,10 +80,11 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * The carry card in Editar categoría (ADR 0020 CP1–CP4, CP9–CP13, CP20, CP28): its own
- * commands and receipts, every drop asked with the figures the command answered, refusals
- * in words, duplicate taps sending once. SC17's figures: Comida base 100.000 on from ene,
- * ene spent 120.000, so feb carries −20.000; 10 feb, 30.000 spent.
+ * The carry card in Editar categoría (ADR 0020 CP1–CP4, CP9–CP13, CP20, CP28; SELLO-188):
+ * the switch and its questions change only the draft, Guardar saves everything in one
+ * command, every drop is asked with the exact figures, refusals are said in words and
+ * duplicate taps send once. SC17's figures: Comida base 100.000 on from ene, ene spent
+ * 120.000, so feb carries −20.000; 10 feb, 30.000 spent.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CategoryCarryEditorTest {
@@ -91,9 +96,16 @@ class CategoryCarryEditorTest {
         val answers = ArrayDeque<CategoryCommandOutcome>()
         var hold: CompletableDeferred<Unit>? = null
 
+        /** The caller is cancelled while this many more sends are in flight. */
+        var cancelled = 0
+
         override suspend fun submit(command: CategoryCommand): CategoryCommandOutcome {
             submitted += command
             hold?.await()
+            if (cancelled > 0) {
+                cancelled--
+                throw CancellationException("left the screen")
+            }
             return answers.removeFirstOrNull() ?: committed(command.operationId)
         }
 
@@ -111,7 +123,7 @@ class CategoryCarryEditorTest {
 
     private fun committed(operation: OperationId) = CommandOutcome.Committed(
         CommittedCategoryChange(
-            OperationReceipt(operation, OperationKind.EnableCarry, 1, 1, Instant.EPOCH),
+            OperationReceipt(operation, OperationKind.EditCategory, 1, 1, Instant.EPOCH),
             categoryId(1)
         ),
         replayed = false
@@ -201,6 +213,20 @@ class CategoryCarryEditorTest {
         }
     )
 
+    private val notices by lazy {
+        Corrections(
+            HandExpenseCommands(),
+            HandIncomeCommands(),
+            HandGoalCommands(),
+            HandInvestmentCommands(),
+            { Duration.ZERO },
+            { uuid(nextId++) },
+            CoroutineScope(Dispatchers.Main),
+            HandCategoryReads(),
+            testMoney()
+        )
+    }
+
     private fun form(month: YearMonth? = null, state: SavedStateHandle = saved(month)) =
         CategoryManagementViewModel(
             state,
@@ -210,22 +236,39 @@ class CategoryCarryEditorTest {
             session,
             { uuid(nextId++) },
             money,
-            Corrections(
-                HandExpenseCommands(),
-                HandIncomeCommands(),
-                HandGoalCommands(),
-                HandInvestmentCommands(),
-                { Duration.ZERO },
-                { uuid(nextId++) },
-                CoroutineScope(Dispatchers.Main),
-                HandCategoryReads(),
-                testMoney()
-            ),
+            notices,
             { CatchUpResult(emptyList(), stopped = null) },
             HandRemovalPreviews()
         )
 
     private val CategoryManagementViewModel.now get() = state.value
+
+    private val edits get() = commands.submitted.filterIsInstance<EditCategory>()
+
+    /** The same saved state, as Android hands it to a new process. */
+    private fun SavedStateHandle.restored() =
+        SavedStateHandle(keys().associateWith { get<Any?>(it) })
+
+    private val sc17Figures = DropFigures(
+        feb,
+        minus("20.000"),
+        plain("100.000"),
+        plain("80.000"),
+        plain("100.000"),
+        plain("50.000"),
+        plain("70.000")
+    )
+
+    /** Turns carry off in the draft, confirming SC17's −20.000. */
+    private fun CategoryManagementViewModel.turnOff() {
+        onAction(CategoryEditorAction.DisableCarry)
+        onAction(CategoryEditorAction.CarryConfirmed)
+    }
+
+    private fun CategoryManagementViewModel.turnOn() {
+        onAction(CategoryEditorAction.EnableCarry)
+        onAction(CategoryEditorAction.CarryConfirmed)
+    }
 
     @Test
     fun theCardShowsTheCarryOfTheMonthInProgress() {
@@ -247,7 +290,7 @@ class CategoryCarryEditorTest {
     }
 
     @Test
-    fun turningOnAsksFirstThenSendsItsOwnCommandOnce() {
+    fun turningOnAsksFirstThenOnlyChangesTheDraftUntilGuardar() {
         publish(carrying = false)
         val form = form()
         assertEquals(CarryCard.Off(feb), form.now.carry)
@@ -255,106 +298,118 @@ class CategoryCarryEditorTest {
         form.onAction(CategoryEditorAction.EnableCarry)
         // Asked with the month and what it already spent (SC07: it counts from day 1).
         assertEquals(CarryQuestion.Enable(feb, plain("30.000")), form.now.carryQuestion)
-        assertTrue(commands.submitted.isEmpty())
-
-        commands.hold = CompletableDeferred()
         form.onAction(CategoryEditorAction.CarryConfirmed)
         form.onAction(CategoryEditorAction.CarryConfirmed)
-        commands.hold!!.complete(Unit)
 
-        assertEquals(1, commands.submitted.size)
-        val sent = commands.submitted.single() as EnableCarry
-        assertEquals(5L, sent.expectedVersion)
-        assertEquals(CarryDone.Enabled, form.now.carryDone)
-        assertNull(form.now.carryQuestion)
-    }
-
-    @Test
-    fun turningOnAfterTheMonthEndedIsRefusedAndTheFormReadsTheNewMonth() {
-        publish(carrying = false)
-        clock.goTo("2027-02-28")
-        val form = form()
-        form.onAction(CategoryEditorAction.EnableCarry)
-        val asked = form.now.carryQuestion
-        clock.goTo("2027-03-01")
-
-        form.onAction(CategoryEditorAction.CarryConfirmed)
-
-        assertEquals(CarryQuestion.Enable(feb, plain("30.000")), asked)
         assertTrue(commands.submitted.isEmpty())
         assertNull(form.now.carryQuestion)
-        assertEquals(SaveError.MonthEnded, form.now.saveError)
-        assertEquals(MonthEnded(feb, carry = true), form.now.monthEnded)
-        assertEquals(YearMonth.of(2027, 3), form.now.targetMonth)
-        // March was never published: its card is not guessed.
-        assertEquals(CarryCard.Unreadable, form.now.carry)
-    }
-
-    @Test
-    fun turningOnFromARestoredFormAfterTheMonthEndedIsRefused() {
-        publish(carrying = false)
-        clock.goTo("2027-02-28")
-        val state = saved()
-        form(state = state)
-        clock.goTo("2027-03-01")
-        val kept = SavedStateHandle(state.keys().associateWith { state.get<Any?>(it) })
-        val restored = form(state = kept)
-        restored.onAction(CategoryEditorAction.EnableCarry)
-
-        restored.onAction(CategoryEditorAction.CarryConfirmed)
-
-        assertTrue(commands.submitted.isEmpty())
-        assertEquals(SaveError.MonthEnded, restored.now.saveError)
-    }
-
-    @Test
-    fun aRefusalIsSaidInTheCardAndNothingTurnsOn() {
-        publish(carrying = false)
-        commands.answers +=
-            rejected(CategoryRejection.CarryRefused(CarryEnableRefusal.DefaultAfterNotFinite))
-        val form = form()
-
-        form.onAction(CategoryEditorAction.EnableCarry)
-        form.onAction(CategoryEditorAction.CarryConfirmed)
-
-        assertEquals(CarryProblemText.DefaultAfterNotFinite, form.now.carryProblem)
-        assertNull(form.now.carryDone)
+        assertEquals(CarryPending(on = true, month = feb, forgets = null), form.now.carryPending)
+        assertTrue(form.now.changed)
+        // The card still says what is stored.
         assertEquals(CarryCard.Off(feb), form.now.carry)
+
+        form.onAction(CategoryEditorAction.Submit)
+
+        val sent = commands.submitted.single() as EditCategory
+        assertEquals(
+            EditCategory(
+                operationId = sent.operationId,
+                generation = 7,
+                categoryId = categoryId(1),
+                expectedVersion = 5,
+                month = feb,
+                carry = CarrySetting.On
+            ),
+            sent
+        )
+        assertEquals(EditorResult.Updated, form.now.result)
+        assertEquals(
+            CorrectionNotice.CategorySaved(null, SavedCarry("Comida", on = true, month = feb)),
+            notices.notice.value
+        )
     }
 
     @Test
-    fun sc17TurningOffShowsTheBalanceAndSendsExactlyTheOneConfirmed() {
+    fun sc17TurningOffAsksWithTheMonthsFiguresAndSendsNothingUntilGuardar() {
         publish(carrying = true)
-        commands.answers += rejected(CategoryRejection.DropUnconfirmed(sc17))
         val form = form()
 
         form.onAction(CategoryEditorAction.DisableCarry)
 
-        assertEquals(
-            CarryQuestion.Drop(
-                DropReason.Disable,
-                DropFigures(
-                    feb,
-                    minus("20.000"),
-                    plain("100.000"),
-                    plain("80.000"),
-                    plain("100.000"),
-                    plain("50.000"),
-                    plain("70.000")
-                )
-            ),
-            form.now.carryQuestion
-        )
-        assertNull((commands.submitted.single() as DisableCarry).confirmedCarryIn)
-
+        assertEquals(CarryQuestion.Drop(DropReason.Disable, sc17Figures), form.now.carryQuestion)
         form.onAction(CategoryEditorAction.CarryConfirmed)
+        assertTrue(commands.submitted.isEmpty())
+        assertEquals(
+            CarryPending(on = false, month = feb, forgets = minus("20.000")),
+            form.now.carryPending
+        )
 
-        assertEquals(cop(-20_000), (commands.submitted.last() as DisableCarry).confirmedCarryIn)
-        assertEquals(CarryDone.Disabled, form.now.carryDone)
+        form.onAction(CategoryEditorAction.Submit)
+
+        val sent = edits.single()
+        assertEquals(CarrySetting.Off, sent.carry)
+        assertEquals(cop(-20_000), sent.confirmedCarryIn)
+        assertEquals(
+            CorrectionNotice.CategorySaved(null, SavedCarry("Comida", on = false, month = feb)),
+            notices.notice.value
+        )
     }
 
     @Test
-    fun aBalanceThatMovedWhileConfirmingIsShownAgainWithWhatItWas() {
+    fun leavingWithAPendingCarryChangeAsksAndDiscardingStoresNothing() {
+        publish(carrying = true)
+        val form = form()
+        form.turnOff()
+
+        form.onAction(CategoryEditorAction.Back)
+        assertTrue(form.now.confirmDiscard)
+        form.onAction(CategoryEditorAction.DiscardConfirmed)
+
+        assertEquals(EditorResult.Discarded, form.now.result)
+        assertTrue(commands.submitted.isEmpty())
+    }
+
+    @Test
+    fun flippingTheSwitchBackLeavesNothingToSave() {
+        publish(carrying = true)
+        val form = form()
+        form.turnOff()
+
+        form.onAction(CategoryEditorAction.EnableCarry)
+
+        assertNull(form.now.carryPending)
+        assertNull(form.now.carryQuestion)
+        assertEquals(false, form.now.changed)
+        assertTrue(commands.submitted.isEmpty())
+    }
+
+    @Test
+    fun carryAndTheOtherChangesAreSavedTogetherInOneCommand() {
+        publish(carrying = true)
+        val form = form()
+
+        form.onAction(CategoryEditorAction.NameChanged("Mercado"))
+        form.onAction(CategoryEditorAction.LimitChanged("150000"))
+        // Carry no longer waits for the other changes to be saved first.
+        assertTrue(form.now.canChangeCarry)
+        form.turnOff()
+        form.onAction(CategoryEditorAction.Submit)
+
+        val sent = edits.single()
+        assertEquals(1, commands.submitted.size)
+        assertEquals("Mercado", sent.name?.value)
+        assertNull(sent.icon)
+        assertEquals(
+            LimitEdit.FromThisMonth((BudgetLimit.finite(cop(150_000)) as Outcome.Success).value),
+            sent.limit
+        )
+        assertEquals(CarrySetting.Off, sent.carry)
+        assertEquals(cop(-20_000), sent.confirmedCarryIn)
+        assertEquals(EditorResult.Updated, form.now.result)
+    }
+
+    @Test
+    fun aBalanceThatMovedBeforeGuardarIsAskedAgainWithWhatItWasAndConfirmingSaves() {
         publish(carrying = true)
         val moved =
             DropPreview(
@@ -366,42 +421,125 @@ class CategoryCarryEditorTest {
                 cop(45_000),
                 cop(70_000)
             )
-        commands.answers += rejected(CategoryRejection.DropUnconfirmed(sc17))
         commands.answers += rejected(CategoryRejection.DropUnconfirmed(moved))
         val form = form()
+        form.turnOff()
 
-        form.onAction(CategoryEditorAction.DisableCarry)
-        form.onAction(CategoryEditorAction.CarryConfirmed)
+        form.onAction(CategoryEditorAction.Submit)
 
         val question = form.now.carryQuestion as CarryQuestion.Drop
         assertEquals(minus("25.000"), question.figures.carry)
         assertEquals(minus("20.000"), question.figures.changedFrom)
-        assertNull(form.now.carryDone)
+        assertNull(form.now.result)
+
+        form.onAction(CategoryEditorAction.CarryConfirmed)
+
+        assertEquals(listOf(cop(-20_000), cop(-25_000)), edits.map { it.confirmedCarryIn })
+        assertEquals(EditorResult.Updated, form.now.result)
     }
 
     @Test
-    fun cancellingADropSendsNothingMore() {
+    fun cancellingTheDropQuestionChangesNothing() {
         publish(carrying = true)
-        commands.answers += rejected(CategoryRejection.DropUnconfirmed(sc17))
         val form = form()
 
         form.onAction(CategoryEditorAction.DisableCarry)
         form.onAction(CategoryEditorAction.CarryDismissed)
 
         assertNull(form.now.carryQuestion)
-        assertEquals(1, commands.submitted.size)
+        assertNull(form.now.carryPending)
+        assertEquals(false, form.now.changed)
+        assertTrue(commands.submitted.isEmpty())
     }
 
     @Test
-    fun carryWaitsWhileTheFormHasChanges() {
-        publish(carrying = true)
+    fun withNothingCarriedInTurningOffAsksNothing() {
+        // On from feb itself: feb's carry-in is 0, so there is nothing to forget (SC18).
+        snapshots.ready(
+            carryMonthOf(
+                "2027-02-10",
+                listOf(comida),
+                listOf(storedExpense(101, 1, "2027-02-05", 30_000)),
+                mapOf(1 to feb)
+            )
+        )
         val form = form()
 
-        form.onAction(CategoryEditorAction.NameChanged("Mercado"))
         form.onAction(CategoryEditorAction.DisableCarry)
 
+        assertNull(form.now.carryQuestion)
+        assertEquals(CarryPending(on = false, month = feb, forgets = null), form.now.carryPending)
+        form.onAction(CategoryEditorAction.Submit)
+        assertNull(edits.single().confirmedCarryIn)
+    }
+
+    @Test
+    fun aPendingCarryChangeIsDroppedWhenTheMonthEndsBeforeGuardar() {
+        publish(carrying = false)
+        clock.goTo("2027-02-28")
+        val form = form()
+        form.turnOn()
+        clock.goTo("2027-03-01")
+
+        form.onAction(CategoryEditorAction.Submit)
+
         assertTrue(commands.submitted.isEmpty())
-        assertEquals(false, form.now.canChangeCarry)
+        assertEquals(SaveError.MonthEnded, form.now.saveError)
+        assertEquals(MonthEnded(feb, carry = true), form.now.monthEnded)
+        assertEquals(YearMonth.of(2027, 3), form.now.targetMonth)
+        // "Empieza en 0 en febrero" is no longer true: it is chosen again for March.
+        assertNull(form.now.carryPending)
+        // March was never published: its card is not guessed.
+        assertEquals(CarryCard.Unreadable, form.now.carry)
+    }
+
+    @Test
+    fun aRestoredFormWithACarryChangeIsNotSavedAfterTheMonthEnded() {
+        publish(carrying = false)
+        clock.goTo("2027-02-28")
+        val state = saved()
+        form(state = state).turnOn()
+        clock.goTo("2027-03-01")
+        val restored = form(state = state.restored())
+
+        restored.onAction(CategoryEditorAction.Submit)
+
+        assertTrue(commands.submitted.isEmpty())
+        assertEquals(SaveError.MonthEnded, restored.now.saveError)
+    }
+
+    @Test
+    fun storageInAnotherMonthRefusesAndTheFormFollowsIt() {
+        publish(carrying = false)
+        commands.answers += rejected(CategoryRejection.MonthMoved(YearMonth.of(2027, 3)))
+        val form = form()
+        form.turnOn()
+        // The session moves on while the save is on its way.
+        commands.hold = CompletableDeferred()
+        form.onAction(CategoryEditorAction.Submit)
+        clock.goTo("2027-03-01")
+        commands.hold!!.complete(Unit)
+
+        assertEquals(SaveError.MonthEnded, form.now.saveError)
+        assertEquals(YearMonth.of(2027, 3), form.now.targetMonth)
+        assertNull(form.now.carryPending)
+        assertNull(form.now.result)
+    }
+
+    @Test
+    fun aRefusalIsSaidInTheCardAndTheDraftKeepsTheChange() {
+        publish(carrying = false)
+        commands.answers +=
+            rejected(CategoryRejection.CarryRefused(CarryEnableRefusal.DefaultAfterNotFinite))
+        val form = form()
+        form.turnOn()
+
+        form.onAction(CategoryEditorAction.Submit)
+
+        assertEquals(CarryProblemText.DefaultAfterNotFinite, form.now.carryProblem)
+        assertNull(form.now.result)
+        assertEquals(CarryCard.Off(feb), form.now.carry)
+        assertEquals(true, form.now.carryPending?.on)
     }
 
     @Test
@@ -421,6 +559,21 @@ class CategoryCarryEditorTest {
     }
 
     @Test
+    fun archivingAsksItsOwnQuestionEvenAfterTurningOffWasConfirmed() {
+        publish(carrying = true)
+        commands.answers += rejected(CategoryRejection.DropUnconfirmed(sc17))
+        val form = form()
+        form.turnOff()
+
+        form.onAction(CategoryEditorAction.Archive)
+        form.onAction(CategoryEditorAction.ArchiveConfirmed)
+
+        // The −20.000 confirmed for Apagar is never sent for Archivar.
+        assertNull(commands.submitted.filterIsInstance<ArchiveCategory>().single().confirmedCarryIn)
+        assertEquals(DropReason.Archive, (form.now.carryQuestion as CarryQuestion.Drop).reason)
+    }
+
+    @Test
     fun sc21SinLimiteWithABalanceAsksForTheDropBeforeSaving() {
         publish(carrying = true)
         commands.answers += rejected(CategoryRejection.DropUnconfirmed(sc17))
@@ -431,10 +584,39 @@ class CategoryCarryEditorTest {
         assertEquals(DropReason.Unlimited, (form.now.carryQuestion as CarryQuestion.Drop).reason)
         form.onAction(CategoryEditorAction.CarryConfirmed)
 
-        val sent = commands.submitted.filterIsInstance<SetDefaultLimit>()
-        assertEquals(listOf(null, cop(-20_000)), sent.map { it.confirmedCarryIn })
-        assertEquals(BudgetLimit.Unlimited, sent.last().limit)
+        assertEquals(listOf(null, cop(-20_000)), edits.map { it.confirmedCarryIn })
+        assertEquals(LimitEdit.FromThisMonth(BudgetLimit.Unlimited), edits.last().limit)
+        assertNull(edits.last().carry)
         assertEquals(EditorResult.Updated, form.now.result)
+    }
+
+    @Test
+    fun turningOffAndSinLimiteTogetherSendTheOneConfirmedBalance() {
+        publish(carrying = true)
+        val form = form()
+        form.turnOff()
+
+        form.onAction(CategoryEditorAction.UnlimitedChanged(true))
+        form.onAction(CategoryEditorAction.Submit)
+
+        val sent = edits.single()
+        assertEquals(CarrySetting.Off, sent.carry)
+        assertEquals(LimitEdit.FromThisMonth(BudgetLimit.Unlimited), sent.limit)
+        assertEquals(cop(-20_000), sent.confirmedCarryIn)
+    }
+
+    @Test
+    fun sinLimiteUndoesADraftTurningCarryOnAndBlocksTheSwitch() {
+        publish(carrying = false)
+        val form = form()
+        form.turnOn()
+
+        form.onAction(CategoryEditorAction.UnlimitedChanged(true))
+
+        assertNull(form.now.carryPending)
+        assertEquals(false, form.now.canChangeCarry)
+        form.onAction(CategoryEditorAction.EnableCarry)
+        assertNull(form.now.carryQuestion)
     }
 
     @Test
@@ -482,11 +664,17 @@ class CategoryCarryEditorTest {
         assertEquals(1, question.list.months)
         assertEquals(plain("180.000"), question.list.groups.single().rows.single().before)
         assertEquals(plain("200.000"), question.list.groups.single().rows.single().after)
-        assertNull((commands.submitted.single() as SetMonthLimit).confirmation)
+        val first = edits.single()
+        assertNull(first.confirmation)
+        assertEquals(
+            LimitEdit.OfMonth(ene, (BudgetLimit.finite(cop(120_000)) as Outcome.Success).value),
+            first.limit
+        )
+        assertNull(first.carry)
 
         form.onAction(CategoryEditorAction.CarryConfirmed)
 
-        assertEquals(confirmation, (commands.submitted.last() as SetMonthLimit).confirmation)
+        assertEquals(confirmation, edits.last().confirmation)
         assertEquals(EditorResult.Updated, form.now.result)
     }
 
@@ -513,56 +701,127 @@ class CategoryCarryEditorTest {
         commands.answers += unknown()
         commands.found = { Outcome.Success(committed(it).value) }
         val form = form()
+        form.turnOn()
 
-        form.onAction(CategoryEditorAction.EnableCarry)
-        form.onAction(CategoryEditorAction.CarryConfirmed)
+        form.onAction(CategoryEditorAction.Submit)
 
         assertEquals(1, commands.submitted.size)
         assertEquals(listOf(commands.submitted.single().operationId), commands.lookups)
-        assertEquals(CarryDone.Enabled, form.now.carryDone)
+        assertEquals(EditorResult.Updated, form.now.result)
     }
 
     @Test
-    fun aCarryChangeInterruptedByProcessDeathIsSettledByTheSameOperationOnRestart() {
+    fun aDoubleTapOnGuardarSendsOnce() {
         publish(carrying = true)
-        // −20.000 is asked, confirmed and sent; its outcome is unknown and asking fails.
-        commands.answers += rejected(CategoryRejection.DropUnconfirmed(sc17))
+        val form = form()
+        form.turnOff()
+
+        commands.hold = CompletableDeferred()
+        form.onAction(CategoryEditorAction.Submit)
+        form.onAction(CategoryEditorAction.Submit)
+        commands.hold!!.complete(Unit)
+
+        assertEquals(1, commands.submitted.size)
+        assertEquals(EditorResult.Updated, form.now.result)
+    }
+
+    @Test
+    fun aCarryChangeNotYetSavedComesBackAfterProcessDeathAndIsSavedByGuardar() {
+        publish(carrying = true)
+        val state = saved()
+        form(state = state).turnOff()
+        assertTrue(commands.submitted.isEmpty())
+
+        val restored = form(state = state.restored())
+
+        assertEquals(
+            CarryPending(on = false, month = feb, forgets = minus("20.000")),
+            restored.now.carryPending
+        )
+        assertTrue(restored.now.changed)
+        restored.onAction(CategoryEditorAction.Submit)
+        assertEquals(cop(-20_000), edits.single().confirmedCarryIn)
+    }
+
+    @Test
+    fun aSaveInterruptedByProcessDeathIsSettledByTheSameOperationOnRestart() {
+        publish(carrying = true)
         commands.answers += unknown()
         commands.found = { Outcome.Failure(StorageFailure.Unavailable("x")) }
         val state = saved()
         val before = form(state = state)
-        before.onAction(CategoryEditorAction.DisableCarry)
-        before.onAction(CategoryEditorAction.CarryConfirmed)
+        before.turnOff()
+        before.onAction(CategoryEditorAction.Submit)
         assertEquals(SaveError.Unknown, before.now.saveError)
-        val sent = commands.submitted.last() as DisableCarry
-        assertEquals(cop(-20_000), sent.confirmedCarryIn)
+        val sent = edits.single()
 
         // The process dies; storage had committed it. The new form only asks.
         publish(carrying = false)
         commands.found = { Outcome.Success(committed(it).value) }
-        val after = form(state = state)
+        val after = form(state = state.restored())
 
-        assertEquals(2, commands.submitted.size)
+        assertEquals(1, commands.submitted.size)
         assertEquals(listOf(sent.operationId), commands.lookups.distinct())
         assertEquals(CarryCard.Off(feb), after.now.carry)
-        assertNull(after.now.saveError)
-        assertEquals(false, after.now.busy)
+        assertNull(after.now.carryPending)
+        assertEquals(EditorResult.Updated, after.now.result)
     }
 
     @Test
-    fun aDoubleTapOnTheDropConfirmationSendsOnce() {
+    fun aCancelledSaveIsAskedAboutWithItsOperationNeverSentAgain() {
         publish(carrying = true)
-        commands.answers += rejected(CategoryRejection.DropUnconfirmed(sc17))
+        commands.cancelled = 1
+        val state = saved()
+        val before = form(state = state)
+        before.turnOff()
+        before.onAction(CategoryEditorAction.Submit)
+        val sent = edits.single()
+        assertNull(before.now.result)
+
+        // Nothing proves it was rolled back: the next form asks with the same operation.
+        commands.found = { Outcome.Success(null) }
+        val after = form(state = state.restored())
+
+        assertEquals(1, commands.submitted.size)
+        assertEquals(listOf(sent.operationId), commands.lookups)
+        assertEquals(SaveError.NotSaved, after.now.saveError)
+        // Not saved: the draft still turns carry off with the balance confirmed.
+        assertEquals(minus("20.000"), after.now.carryPending?.forgets)
+    }
+
+    @Test
+    fun aMonthThatCannotBeReadShowsNoSwitchButKeepsTheChangeInSight() {
+        publish(carrying = true)
+        val state = saved()
+        form(state = state).turnOff()
+        // The month can no longer be read when the form comes back.
+        snapshots.of(feb).value = ReadState.Loading
+
+        val restored = form(state = state.restored())
+
+        assertEquals(CarryCard.Unreadable, restored.now.carry)
+        assertEquals(false, restored.now.canChangeCarry)
+        assertEquals(
+            CarryPending(on = false, month = feb, forgets = minus("20.000")),
+            restored.now.carryPending
+        )
+    }
+
+    @Test
+    fun aStaleVersionKeepsTheCarryChangeWhenTheDraftIsKept() {
+        publish(carrying = true)
+        commands.answers += CommandOutcome.Rejected(CommandRejection.VersionConflict(current = 6))
         val form = form()
-        form.onAction(CategoryEditorAction.DisableCarry)
+        form.turnOff()
 
-        commands.hold = CompletableDeferred()
-        form.onAction(CategoryEditorAction.CarryConfirmed)
-        form.onAction(CategoryEditorAction.CarryConfirmed)
-        commands.hold!!.complete(Unit)
+        form.onAction(CategoryEditorAction.Submit)
+        assertEquals(SaveError.Conflict, form.now.saveError)
+        reads.categories = listOf(stored(version = 6))
+        form.onAction(CategoryEditorAction.ReloadKeepingDraft)
+        form.onAction(CategoryEditorAction.Submit)
 
-        val sent = commands.submitted.filterIsInstance<DisableCarry>()
-        assertEquals(listOf(null, cop(-20_000)), sent.map { it.confirmedCarryIn })
-        assertEquals(CarryDone.Disabled, form.now.carryDone)
+        assertEquals(listOf(5L, 6L), edits.map { it.expectedVersion })
+        assertEquals(listOf(cop(-20_000), cop(-20_000)), edits.map { it.confirmedCarryIn })
+        assertEquals(EditorResult.Updated, form.now.result)
     }
 }

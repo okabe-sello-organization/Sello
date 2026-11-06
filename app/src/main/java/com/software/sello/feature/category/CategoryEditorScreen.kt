@@ -539,14 +539,8 @@ private fun Said(state: CategoryEditorState) {
     val shown = state.targetMonth
     if (state.saveError == SaveError.MonthEnded && ended != null && shown != null) {
         FieldMessageText(
-            FieldMessage(monthEndedText(ended, shown, state.savedParts)),
+            FieldMessage(monthEndedText(ended, shown)),
             Modifier.testTag(EDITOR_SAVE_ERROR_TAG)
-        )
-    } else if (state.savedParts.isNotEmpty() && state.saveError != null) {
-        val saved = state.savedParts.map { stringResource(it.text()) }.joinToString(", ")
-        FieldMessageText(
-            FieldMessage(stringResource(R.string.category_edit_saved_parts, saved)),
-            Modifier.testTag(EDITOR_SAVED_PARTS_TAG)
         )
     } else {
         state.saveError?.let { error ->
@@ -626,21 +620,14 @@ private fun Action(state: CategoryEditorState, onAction: (CategoryEditorAction) 
  * saved, what was (the parts sent before it), and which month the form shows now.
  */
 @Composable
-private fun monthEndedText(ended: MonthEnded, shown: YearMonth, saved: List<EditPart>): String {
+private fun monthEndedText(ended: MonthEnded, shown: YearMonth): String {
     val months = monthNames()
     val was = months.title(ended.month)
     val now = months.title(shown)
-    return when {
-        ended.carry -> stringResource(R.string.category_edit_month_ended_carry, was, now)
-
-        saved.isNotEmpty() -> stringResource(
-            R.string.category_edit_month_ended_saved_parts,
-            saved.map { stringResource(it.text()) }.joinToString(", "),
-            was,
-            now
-        )
-
-        else -> stringResource(R.string.category_edit_month_ended, was, now)
+    return if (ended.carry) {
+        stringResource(R.string.category_edit_month_ended_carry, was, now)
+    } else {
+        stringResource(R.string.category_edit_month_ended, was, now)
     }
 }
 
@@ -711,12 +698,6 @@ private fun LimitError.text() = when (this) {
     LimitError.TooLarge -> R.string.expense_entry_amount_too_large
 }
 
-private fun EditPart.text() = when (this) {
-    EditPart.Name -> R.string.category_edit_part_name
-    EditPart.Icon -> R.string.category_edit_part_icon
-    EditPart.Limit -> R.string.category_edit_part_limit
-}
-
 /** A change that was refused left the category as it was; a new one was not created. */
 private fun SaveError.text(editing: Boolean) = when (this) {
     SaveError.NotSaved ->
@@ -754,7 +735,6 @@ const val EDITOR_MENU_DELETE_TAG = "category-editor:menu.delete"
 const val EDITOR_UNARCHIVE_TAG = "category-editor:unarchive"
 const val EDITOR_ARCHIVED_TAG = "category-editor:archived"
 const val EDITOR_SCOPE_TAG = "category-editor:scope"
-const val EDITOR_SAVED_PARTS_TAG = "category-editor:saved-parts"
 const val EDITOR_NO_CHANGES_TAG = "category-editor:no-changes"
 const val EDITOR_CONFLICT_RELOAD_TAG = "category-editor:conflict-reload"
 const val EDITOR_CONFLICT_KEEP_TAG = "category-editor:conflict-keep"

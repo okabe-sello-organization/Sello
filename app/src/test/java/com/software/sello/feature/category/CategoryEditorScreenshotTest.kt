@@ -202,6 +202,23 @@ class CategoryEditorScreenshotTest {
     fun carryUnreadableDark() =
         shot("carry-unreadable", editing.copy(carry = CarryCard.Unreadable), Look(dark = true))
 
+    /** SELLO-188: the month cannot be read, and the draft still turns carry off. */
+    private val unreadablePending = editing.copy(
+        changed = true,
+        carry = CarryCard.Unreadable,
+        carryPending = CarryPending(on = false, month = YearMonth.of(2026, 10), forgets = null)
+    )
+
+    @Test fun carryUnreadablePendingLight() = shot(
+        "carry-unreadable-pending",
+        unreadablePending,
+        Look()
+    )
+
+    @Test
+    fun carryUnreadablePendingDark() =
+        shot("carry-unreadable-pending", unreadablePending, Look(dark = true))
+
     @Test fun iconSheetLight() = shot("icon-sheet", fresh, Look(), EDITOR_ICON_TAG)
 
     @Test fun iconSheetDark() = shot("icon-sheet", fresh, Look(dark = true), EDITOR_ICON_TAG)

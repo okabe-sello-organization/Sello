@@ -344,12 +344,7 @@
     <string name="category_edit_archived">No acepta gastos nuevos; su historia sigue aquí.</string>
     <string name="category_edit_archived_label">Archivada</string>
     <string name="category_edit_month_ended">%1$s terminó y el límite no se guardó. Ahora ves %2$s: el límite que guardes vale desde ese mes.</string>
-    <string name="category_edit_month_ended_saved_parts">Se guardó: %1$s. %2$s terminó y el límite no se guardó. Ahora ves %3$s: el límite que guardes vale desde ese mes.</string>
-    <string name="category_edit_month_ended_carry">%1$s terminó y no se empezó a pasar lo que sobra. Ahora ves %2$s: si lo activas, empieza en ese mes.</string>
-    <string name="category_edit_saved_parts">Se guardó: %1$s. Lo demás no se guardó; inténtalo de nuevo.</string>
-    <string name="category_edit_part_name">nombre</string>
-    <string name="category_edit_part_icon">ícono</string>
-    <string name="category_edit_part_limit">límite</string>
+    <string name="category_edit_month_ended_carry">%1$s terminó y no se guardó nada. Ahora ves %2$s: vuelve a elegir si pasa lo que sobra, desde ese mes.</string>
     <string name="category_edit_not_saved">No se pudo guardar. La categoría quedó como estaba; inténtalo de nuevo.</string>
     <string name="category_edit_data_changed">Tus datos cambiaron mientras tanto. La categoría no se cambió; sal y vuelve a abrirla.</string>
     <string name="category_edit_conflict_reload">Volver a cargar</string>
@@ -376,6 +371,8 @@
     <string name="category_edit_conflict">Esta categoría cambió mientras la editabas.</string>
     <string name="category_edit_gone">Esta categoría ya no existe. No se cambió nada.</string>
     <string name="category_saved">Categoría actualizada</string>
+    <string name="category_saved_carry_on">Categoría actualizada. %1$s pasa lo que sobra o falta desde %2$s.</string>
+    <string name="category_saved_carry_off">Categoría actualizada. %1$s ya no pasa lo que sobra o falta.</string>
     <string name="category_saved_month">Límite de %1$s actualizado. Sus cifras ya lo usan.</string>
     <string name="category_archived_notice">Categoría archivada</string>
     <string name="category_unarchived_notice">Categoría desarchivada</string>
@@ -1790,9 +1787,9 @@
     <string name="carry_enable_confirm">Activar</string>
     <string name="carry_on_summary">Desde %1$s · trae %2$s · este mes %3$s</string>
     <string name="carry_on_summary_spoken">Desde %1$s. Trae %2$s. Límite de este mes: %3$s.</string>
-    <string name="carry_enabled">%1$s pasa lo que sobra o falta desde %2$s.</string>
-    <string name="carry_disabled">%1$s ya no pasa lo que sobra o falta.</string>
-    <string name="carry_wait_changes">Guarda o descarta tus cambios para cambiar esto.</string>
+    <string name="carry_pending_on">Se activa al guardar: empieza en 0 en %1$s.</string>
+    <string name="carry_pending_off">Se apaga al guardar.</string>
+    <string name="carry_pending_off_forgets">Se apaga al guardar y olvida %1$s de meses anteriores.</string>
     <string name="carry_read_failed">No pudimos leer si esta categoría pasa lo que sobra.</string>
     <string name="carry_refused_default">Para pasar lo que sobra, %1$s necesita un límite mensual. %2$s tiene su propio límite, pero desde %3$s quedaría sin límite y no habría con qué calcularlo. Quita Sin límite y guarda; luego podrás activarlo.</string>
     <string name="carry_refused_unlimited">%1$s no tiene límite este mes. Ponle un límite para poder pasar lo que sobra.</string>

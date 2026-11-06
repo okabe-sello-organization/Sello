@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.software.sello.domain.model.BudgetLimit
+import com.software.sello.domain.model.CarryBreakdown
 import com.software.sello.domain.model.CarryEnableRefusal
 import com.software.sello.domain.model.CategoryId
 import com.software.sello.domain.model.CategoryName
@@ -15,27 +16,24 @@ import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.TextError
 import com.software.sello.domain.policy.CopAmountInput
 import com.software.sello.domain.policy.MonthBudgetState
+import com.software.sello.domain.policy.SignedCarryoverPolicy
 import com.software.sello.domain.port.ArchiveCategory
+import com.software.sello.domain.port.CarrySetting
 import com.software.sello.domain.port.CategoryBudget
-import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.CategoryRemovalPreviews
-import com.software.sello.domain.port.ChangeCategoryIcon
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
 import com.software.sello.domain.port.CorrectionConfirmation
-import com.software.sello.domain.port.DisableCarry
-import com.software.sello.domain.port.EnableCarry
+import com.software.sello.domain.port.EditCategory
+import com.software.sello.domain.port.LimitEdit
 import com.software.sello.domain.port.MonthBudget
 import com.software.sello.domain.port.MonthlySnapshots
 import com.software.sello.domain.port.RecordIdSource
-import com.software.sello.domain.port.RenameCategory
-import com.software.sello.domain.port.SetDefaultLimit
-import com.software.sello.domain.port.SetMonthLimit
 import com.software.sello.domain.port.UnarchiveCategory
 import com.software.sello.domain.usecase.CatchUpNow
 import com.software.sello.navigation.MonthSession
@@ -44,6 +42,7 @@ import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.category.CategoryIcons
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.presentation.corrections.SavedCarry
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.submission.SavedDraft
 import com.software.sello.presentation.submission.Settled
@@ -65,11 +64,10 @@ import kotlinx.serialization.Serializable
  * beside the draft, so a draft restored after the process was killed is compared with
  * and sent against the category as it was when the form opened, and is never read over.
  *
- * Each part that changed is its own command and its own receipt, sent one after the
- * other, each against the version the one before left. If one fails, those before it
- * are saved and stay saved; the form says which, keeps the rest of the draft, and the
- * next attempt sends only what is still different. A change is reported as saved only
- * when its receipt says so.
+ * Guardar sends everything that differs, the carry setting included, as one command
+ * with one operation and one receipt (SELLO-188): it is all saved or none of it is. The
+ * carry switch and its questions only change the draft; leaving without saving changes
+ * nothing. A change is reported as saved only when its receipt says so.
  *
  * Deleting the category (ADR 0024) is [CategoryRemoval]'s, which this form hands the
  * category as it read it, and its own operations through the same [Submission].
@@ -112,7 +110,11 @@ class CategoryManagementViewModel(
         val name: String = "",
         val icon: String = "",
         val unlimited: Boolean = false,
-        val limit: String = ""
+        val limit: String = "",
+        /** Carry as the draft wants it: [CARRY_ON], [CARRY_OFF], or "" for as stored. */
+        val carry: String = "",
+        /** Turning off: the balance the person agreed to forget, in pesos, or "" for none. */
+        val drop: String = ""
     )
 
     /** [Original] as kept in [saved]: the limit as pesos, [UNLIMITED] or none. */
@@ -156,6 +158,15 @@ class CategoryManagementViewModel(
 
     /** What this month already spent in the category, said when turning carry on. */
     private var spentThisMonth: Money? = null
+
+    /** The month's carry as last read, for the question asked before turning it off. */
+    private var carryRead: CarryBreakdown? = null
+
+    /** The drop question was asked by a save's refusal: answering it saves again. */
+    private var dropOnSave = false
+
+    /** The balance the last save sent as confirmed, to say when it has moved since. */
+    private var sentDrop: Money? = null
 
     /** The balance a command asked to confirm before dropping it (CP9, CP10). */
     private var pendingDrop: DropPreview? = null
@@ -332,29 +343,30 @@ class CategoryManagementViewModel(
             CategoryEditorAction.ReloadDiscardingDraft ->
                 if (now.saveError == SaveError.Conflict && !now.busy) reload(resetDraft = true)
 
-            CategoryEditorAction.EnableCarry -> if (now.canChangeCarry &&
-                now.carry is CarryCard.Off
-            ) {
-                mutable.update {
-                    it.copy(
-                        carryProblem = null,
-                        carryDone = null,
-                        carryQuestion = CarryQuestion.Enable(
-                            currentMonth,
-                            spentThisMonth?.takeIf { spent ->
-                                spent.minorUnits > 0
-                            }?.let(money::format)
+            CategoryEditorAction.EnableCarry -> if (now.canChangeCarry) {
+                when {
+                    // Back to what is stored: nothing about carry is left to save.
+                    typed.carry == CARRY_OFF -> setCarry("", null)
+
+                    now.carry is CarryCard.Off && typed.carry.isEmpty() -> mutable.update {
+                        it.copy(
+                            carryProblem = null,
+                            carryQuestion = CarryQuestion.Enable(
+                                currentMonth,
+                                spentThisMonth?.takeIf { spent ->
+                                    spent.minorUnits > 0
+                                }?.let(money::format)
+                            )
                         )
-                    )
+                    }
                 }
             }
 
-            CategoryEditorAction.DisableCarry -> if (now.canChangeCarry &&
-                now.carry is CarryCard.On
-            ) {
-                dropReason = DropReason.Disable
-                confirmedDrop = null
-                sendCarry(enable = false)
+            CategoryEditorAction.DisableCarry -> if (now.canChangeCarry) {
+                when {
+                    typed.carry == CARRY_ON -> setCarry("", null)
+                    now.carry is CarryCard.On && typed.carry.isEmpty() -> askToTurnOff()
+                }
             }
 
             CategoryEditorAction.CarryConfirmed -> if (!now.busy) answerCarry(now.carryQuestion)
@@ -370,19 +382,34 @@ class CategoryManagementViewModel(
         }
     }
 
-    /** Sends what the question shown names, with what the person confirmed. */
+    /**
+     * What the question shown names, with what the person confirmed. Turning carry on or
+     * off only changes the draft; the rest goes on with the save or the archive it asked for.
+     */
     private fun answerCarry(question: CarryQuestion?) {
         when (question) {
             null -> Unit
 
-            is CarryQuestion.Enable -> sendCarry(enable = true)
+            is CarryQuestion.Enable -> setCarry(CARRY_ON, null)
 
             is CarryQuestion.Drop -> {
-                confirmedDrop = pendingDrop?.carryIn ?: return
+                val balance = pendingDrop?.carryIn ?: return
+                pendingDrop = null
                 when (question.reason) {
-                    DropReason.Disable -> sendCarry(enable = false)
-                    DropReason.Archive -> archive()
-                    DropReason.Unlimited -> submit()
+                    DropReason.Disable -> {
+                        setCarry(CARRY_OFF, balance)
+                        if (dropOnSave) submit()
+                    }
+
+                    DropReason.Archive -> {
+                        confirmedDrop = balance
+                        archive()
+                    }
+
+                    DropReason.Unlimited -> {
+                        confirmedDrop = balance
+                        submit()
+                    }
                 }
             }
 
@@ -391,45 +418,51 @@ class CategoryManagementViewModel(
     }
 
     /**
-     * Turns carry on, or off with the balance confirmed, as its own command and receipt
-     * (CP28). Only a receipt changes the card; a refusal says why in it.
+     * Turning carry off asks first, with the exact figures, whenever a balance is carried
+     * in (CP9, CP10): they come from the month as read, never guessed. Nothing is sent;
+     * the save sends the balance confirmed here and storage checks it again.
      */
-    private fun sendCarry(enable: Boolean) {
-        val stored = original ?: return
-        val generation = generation ?: return
-        val id = categoryId ?: return
-        // Turning on is for the month the card shows, and Sello turns it on in today's.
-        if (enable && monthEnded(carry = true)) return
-        mutable.update {
-            it.copy(busy = true, saveError = null, carryProblem = null, carryDone = null)
-        }
-        viewModelScope.launch {
-            val settled = submission.send(commands::find, STEP_CARRY) { operation ->
-                commands.submit(
-                    if (enable) {
-                        EnableCarry(operation, generation, id, stored.version)
-                    } else {
-                        DisableCarry(operation, generation, id, stored.version, confirmedDrop)
-                    }
-                )
+    private fun askToTurnOff() {
+        val carry = carryRead ?: return
+        val spent = spentThisMonth ?: return
+        dropReason = DropReason.Disable
+        dropOnSave = false
+        pendingDrop = null
+        when (val preview = SignedCarryoverPolicy.dropPreview(currentMonth, carry, spent)) {
+            is Outcome.Failure -> render {
+                it.copy(carryQuestion = null, carryProblem = CarryProblemText.DropUnavailable)
             }
-            if (!committed(settled)) return@launch
-            keep(stored.copy(version = stored.version + 1))
-            carryChanged(if (enable) CarryDone.Enabled else CarryDone.Disabled)
+
+            is Outcome.Success -> preview.value?.let { askDrop(it, sent = null) }
+                ?: setCarry(CARRY_OFF, null)
         }
     }
+
+    /** The draft's carry: [CARRY_ON], [CARRY_OFF] or "" for as stored, with what it forgets. */
+    private fun setCarry(carry: String, drop: Money?) {
+        remember(typed.copy(carry = carry, drop = drop?.minorUnits?.toString().orEmpty()))
+        render { it.copy(carryQuestion = null, carryProblem = null) }
+    }
+
+    /** The carry change the draft asks for, only ever for the month in progress. */
+    private fun carryChange(): CarrySetting? = when {
+        targetMonth != currentMonth -> null
+        typed.carry == CARRY_ON -> CarrySetting.On
+        typed.carry == CARRY_OFF -> CarrySetting.Off
+        else -> null
+    }
+
+    /** The balance the draft agreed to forget when turning carry off. */
+    private fun draftDrop(): Money? = typed.drop.toLongOrNull()?.let(Money::cop)
 
     private fun carryReread() {
-        viewModelScope.launch { carryChanged(null) }
-    }
-
-    /** A carry change has its receipt: the card is read again from the month. */
-    private suspend fun carryChanged(done: CarryDone?) {
-        pendingDrop = null
-        confirmedDrop = null
-        dropReason = null
-        readCarry()
-        render { it.copy(busy = false, carryQuestion = null, carryDone = done) }
+        viewModelScope.launch {
+            pendingDrop = null
+            confirmedDrop = null
+            dropReason = null
+            readCarry()
+            render { it.copy(busy = false, carryQuestion = null) }
+        }
     }
 
     /**
@@ -439,13 +472,17 @@ class CategoryManagementViewModel(
     private suspend fun readCarry() {
         if (targetMonth != currentMonth) return
         val card = when (val read = snapshots.read(currentMonth)) {
-            is Outcome.Failure -> CarryCard.Unreadable
+            is Outcome.Failure -> {
+                carryRead = null
+                CarryCard.Unreadable
+            }
 
             is Outcome.Success -> {
                 val line = read.value.categories.firstOrNull { it.category.id == categoryId }
                 spentThisMonth = line?.spent
                 val carry = line?.budget?.carry
                 val since = carry?.chainStart
+                carryRead = carry?.takeIf { since != null }
                 if (carry == null || since == null) {
                     CarryCard.Off(currentMonth)
                 } else {
@@ -464,12 +501,21 @@ class CategoryManagementViewModel(
                 }
             }
         }
+        // A draft that asks for what is stored now has nothing left to save.
+        val stored = when (card) {
+            is CarryCard.On -> CARRY_ON
+            is CarryCard.Off -> CARRY_OFF
+            CarryCard.Unreadable -> null
+        }
+        if (stored != null && typed.carry == stored) remember(typed.copy(carry = "", drop = ""))
         mutable.update { it.copy(carry = card) }
     }
 
-    /** The command answered with the balance to confirm: shown with its figures (CP10). */
-    private fun askDrop(preview: DropPreview) {
-        val before = pendingDrop
+    /**
+     * The balance to confirm, shown with its figures (CP10). [sent] is the balance the save
+     * just sent as confirmed: when it differs, the question says it moved meanwhile.
+     */
+    private fun askDrop(preview: DropPreview, sent: Money?) {
         pendingDrop = preview
         confirmedDrop = null
         val figures = DropFigures(
@@ -480,8 +526,8 @@ class CategoryManagementViewModel(
             capacityAfter = money.format(preview.capacityAfter),
             remainingBefore = money.format(preview.remainingBefore),
             remainingAfter = money.format(preview.remainingAfter),
-            changedFrom = before?.takeIf { it.carryIn != preview.carryIn }
-                ?.let { money.format(it.carryIn, signed = true) }
+            changedFrom = sent?.takeIf { it != preview.carryIn }
+                ?.let { money.format(it, signed = true) }
         )
         render {
             it.copy(
@@ -527,7 +573,9 @@ class CategoryManagementViewModel(
     }
 
     private fun setLimit(unlimited: Boolean, text: String) {
-        remember(typed.copy(unlimited = unlimited, limit = text))
+        // Carry cannot start on an unlimited month (CP3): a draft turning it on gives way.
+        val carry = if (unlimited && typed.carry == CARRY_ON) "" else typed.carry
+        remember(typed.copy(unlimited = unlimited, limit = text, carry = carry))
         val reason = limitReason(unlimited, text)
         render { it.copy(unlimited = unlimited, limitText = text, limitError = reason) }
     }
@@ -561,7 +609,14 @@ class CategoryManagementViewModel(
                 // An archived category has no limit from this month onwards to change.
                 limitLocked = stored != null && stored.archived && targetMonth == currentMonth,
                 limitTotal = figures.total(budget, categoryId, after.unlimited, after.limitText),
-                limitAmount = figures.amount(after.limitText)
+                limitAmount = figures.amount(after.limitText),
+                carryPending = carryChange()?.let { change ->
+                    CarryPending(
+                        on = change == CarrySetting.On,
+                        month = currentMonth,
+                        forgets = draftDrop()?.let { money.format(it, signed = true) }
+                    )
+                }
             )
         }
     }
@@ -584,6 +639,7 @@ class CategoryManagementViewModel(
         if (state.iconKey != stored.icon) add(EditPart.Icon)
         val locked = stored.archived && targetMonth == currentMonth
         if (!locked && draftLimit(state) != stored.limit) add(EditPart.Limit)
+        if (carryChange() != null) add(EditPart.Carry)
     }
 
     private fun savedOriginal(): Original? {
@@ -640,6 +696,8 @@ class CategoryManagementViewModel(
         val unlimited = stored.limit == StoredLimit.Unlimited
         val text = (stored.limit as? StoredLimit.Finite)?.pesos?.toString().orEmpty()
         remember(Draft(stored.name, stored.icon, unlimited, text))
+        pendingDrop = null
+        confirmedDrop = null
         mutable.update {
             it.copy(
                 name = stored.name,
@@ -692,7 +750,7 @@ class CategoryManagementViewModel(
     }
 
     private fun reload(resetDraft: Boolean) {
-        mutable.update { it.copy(saveError = null, savedParts = emptyList()) }
+        mutable.update { it.copy(saveError = null) }
         viewModelScope.launch { load(keepOriginal = false, resetDraft = resetDraft) }
     }
 
@@ -738,72 +796,60 @@ class CategoryManagementViewModel(
             null
         }
         val icon = (IconKey.of(state.iconKey) as? Outcome.Success)?.value ?: return
-        if (EditPart.Limit in pending && monthEnded(carry = false)) return
-        // Making the limit unlimited while carrying drops the balance (CP11): asked first.
-        dropReason = DropReason.Unlimited.takeIf { limit == BudgetLimit.Unlimited }
-        mutable.update {
-            it.copy(
-                busy = true,
-                saveError = null,
-                savedParts = emptyList(),
-                carryProblem = null,
-                carryDone = null
+        val carry = carryChange()
+        if ((EditPart.Limit in pending || carry != null) && monthEnded(carry = carry != null)) {
+            return
+        }
+        // Turning off, or making the limit unlimited while carrying, drops the balance
+        // (CP9–CP11): the draft's confirmed balance goes with it, or the save asks first.
+        dropReason = when {
+            carry == CarrySetting.Off -> DropReason.Disable
+            limit == BudgetLimit.Unlimited -> DropReason.Unlimited
+            else -> null
+        }
+        val confirmed = if (carry == CarrySetting.Off) draftDrop() else confirmedDrop
+        val edit = { operation: OperationId ->
+            EditCategory(
+                operationId = operation,
+                generation = generation,
+                categoryId = id,
+                expectedVersion = stored.version,
+                month = currentMonth,
+                name = name.takeIf { EditPart.Name in pending },
+                icon = icon.takeIf { EditPart.Icon in pending },
+                limit = limit?.let {
+                    if (targetMonth < currentMonth) {
+                        LimitEdit.OfMonth(targetMonth, it)
+                    } else {
+                        LimitEdit.FromThisMonth(it)
+                    }
+                },
+                carry = carry,
+                confirmedCarryIn = confirmed,
+                confirmation = pendingConfirmation
             )
         }
+        mutable.update { it.copy(busy = true, saveError = null, carryProblem = null) }
         viewModelScope.launch {
-            for (part in pending) {
-                // The month can end while the parts before the limit are sent.
-                if (part == EditPart.Limit && monthEnded(carry = false)) return@launch
-                val version = original?.version ?: return@launch
-                val settled = submission.send(commands::find, STEP_EDIT) { operation ->
-                    val command: CategoryCommand = when (part) {
-                        EditPart.Name -> RenameCategory(operation, generation, id, version, name)
-
-                        EditPart.Icon ->
-                            ChangeCategoryIcon(operation, generation, id, version, icon)
-
-                        EditPart.Limit -> if (targetMonth < currentMonth) {
-                            SetMonthLimit(
-                                operation,
-                                generation,
-                                id,
-                                version,
-                                targetMonth,
-                                limit!!,
-                                confirmation = pendingConfirmation
-                            )
-                        } else {
-                            SetDefaultLimit(
-                                operation,
-                                generation,
-                                id,
-                                version,
-                                limit!!,
-                                confirmedCarryIn = confirmedDrop
-                            )
-                        }
-                    }
-                    commands.submit(command)
-                }
-                if (!committed(settled)) return@launch
-                // This part is stored now, at the next version.
-                original?.let { before ->
-                    keep(
-                        when (part) {
-                            EditPart.Name -> before.copy(name = name.value)
-                            EditPart.Icon -> before.copy(icon = icon.value)
-                            EditPart.Limit -> before.copy(limit = draftLimit(state)!!)
-                        }.copy(version = version + 1)
-                    )
-                }
-                if (part == EditPart.Limit) {
-                    pendingConfirmation = null
-                    confirmedDrop = null
-                    pendingDrop = null
-                }
-                render { it.copy(savedParts = it.savedParts + part, carryQuestion = null) }
+            sentDrop = confirmed
+            val settled = submission.send(commands::find, STEP_EDIT) { operation ->
+                commands.submit(edit(operation))
             }
-            finished()
+            if (!committed(settled)) return@launch
+            // Every part is stored now, at the next version.
+            keep(
+                stored.copy(
+                    name = name.value,
+                    icon = icon.value,
+                    limit = if (EditPart.Limit in pending) draftLimit(state)!! else stored.limit,
+                    version = stored.version + 1
+                )
+            )
+            pendingConfirmation = null
+            confirmedDrop = null
+            pendingDrop = null
+            remember(typed.copy(carry = "", drop = ""))
+            finished(carry, limitSaved = EditPart.Limit in pending)
         }
     }
 
@@ -851,6 +897,9 @@ class CategoryManagementViewModel(
         confirmedDrop = null
         dropReason = null
         pendingConfirmation = null
+        // A carry change was asked about the month that ended ("empieza en 0 en …"), so it
+        // is not carried over to the next one: it is chosen again there.
+        remember(typed.copy(carry = "", drop = ""))
         render {
             it.copy(
                 busy = false,
@@ -858,18 +907,21 @@ class CategoryManagementViewModel(
                 historical = false,
                 carry = null,
                 carryQuestion = null,
-                carryProblem = null,
-                carryDone = null
+                carryProblem = null
             )
         }
     }
 
-    /** Every change has its receipt. */
-    private fun finished() {
+    /**
+     * The save has its receipt. [limitSaved] says it set the limit, and [carry] whether it
+     * turned carry on or off: the notice says so.
+     */
+    private fun finished(carry: CarrySetting?, limitSaved: Boolean) {
         notices.categoryChanged(
             CorrectionNotice.CategorySaved(
-                targetMonth.takeIf {
-                    it < currentMonth && EditPart.Limit in mutable.value.savedParts
+                limitOf = targetMonth.takeIf { limitSaved && it < currentMonth },
+                carry = carry?.let {
+                    SavedCarry(original?.name.orEmpty(), it == CarrySetting.On, currentMonth)
                 }
             )
         )
@@ -902,7 +954,18 @@ class CategoryManagementViewModel(
             return false
         }
         val carryProblem = when (val specific = (rejection as? Specific)?.reason) {
-            is CategoryRejection.DropUnconfirmed -> return false.also { askDrop(specific.preview) }
+            // The balance moved since it was confirmed, or the save drops one not asked about.
+            is CategoryRejection.DropUnconfirmed -> return false.also {
+                dropOnSave = true
+                askDrop(specific.preview, sent = sentDrop)
+            }
+
+            // Storage is already in another month: the form follows it and says so.
+            is CategoryRejection.MonthMoved -> return false.also {
+                if (!monthEnded(carry = carryChange() != null)) {
+                    render { it.copy(busy = false, saveError = SaveError.NotSaved) }
+                }
+            }
 
             is CategoryRejection.CorrectionUnconfirmed -> return false.also {
                 askCorrection(specific)
@@ -983,9 +1046,14 @@ class CategoryManagementViewModel(
             return render { it.copy(busy = false, saveError = null) }
         }
         if (committed && step != STEP_EDIT) return archived(unarchived = step == STEP_UNARCHIVE)
+        // What the save asked for, before reading again settles the draft against storage.
+        val carry = carryChange()
+        val limitSaved = mutable.value.let { state ->
+            original?.let { EditPart.Limit in parts(state, it) } ?: false
+        }
         if (!load(keepOriginal = false, resetDraft = false)) return render { it.copy(busy = false) }
         when {
-            committed && !mutable.value.changed -> finished()
+            committed && !mutable.value.changed -> finished(carry, limitSaved)
             committed -> render { it.copy(busy = false) }
             else -> render { it.copy(busy = false, saveError = SaveError.NotSaved) }
         }
@@ -1087,6 +1155,10 @@ class CategoryManagementViewModel(
         private const val STEP_EDIT = "edit"
         private const val STEP_ARCHIVE = "archive"
         private const val STEP_UNARCHIVE = "unarchive"
+
+        /** A step of the carry switch's own command, before SELLO-188: still recovered. */
         private const val STEP_CARRY = "carry"
+        private const val CARRY_ON = "on"
+        private const val CARRY_OFF = "off"
     }
 }

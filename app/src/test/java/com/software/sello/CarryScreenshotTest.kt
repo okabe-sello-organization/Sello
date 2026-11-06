@@ -34,6 +34,7 @@ import com.software.sello.feature.bulk.BulkEntryScreen
 import com.software.sello.feature.bulk.BulkEntryState
 import com.software.sello.feature.bulk.BulkLineUi
 import com.software.sello.feature.category.CarryCard
+import com.software.sello.feature.category.CarryPending
 import com.software.sello.feature.category.CarryQuestion
 import com.software.sello.feature.category.CategoryEditorScreen
 import com.software.sello.feature.category.CategoryEditorState
@@ -276,6 +277,41 @@ class CarryScreenshotTest {
 
     @Test
     fun editorCarryOffDark() = editorCarryOff(Look(dark = true))
+
+    /** SELLO-188: turned off in the draft, forgetting −40.000 once Guardar saves it. */
+    private fun editorPendingOff(look: Look) {
+        val pending = carrying.copy(
+            changed = true,
+            carryPending = CarryPending(on = false, month = abr, forgets = minus("40.000"))
+        )
+        rule.showSello(look) { CategoryEditorScreen(pending, {}) }
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).revealed().assertIsDisplayed()
+        rule.captureStill("src/test/screenshots/carry-editor-pending-off-${look.label}.png")
+    }
+
+    @Test
+    fun editorPendingOffLight() = editorPendingOff(Look())
+
+    @Test
+    fun editorPendingOffDark() = editorPendingOff(Look(dark = true))
+
+    /** SELLO-188: turned on in the draft; it starts at 0 in abr once Guardar saves it. */
+    private fun editorPendingOn(look: Look) {
+        val pending = carrying.copy(
+            changed = true,
+            carry = CarryCard.Off(abr),
+            carryPending = CarryPending(on = true, month = abr, forgets = null)
+        )
+        rule.showSello(look) { CategoryEditorScreen(pending, {}) }
+        rule.onNodeWithTag(EDITOR_CARRY_SWITCH_TAG).revealed().assertIsDisplayed()
+        rule.captureStill("src/test/screenshots/carry-editor-pending-on-${look.label}.png")
+    }
+
+    @Test
+    fun editorPendingOnLight() = editorPendingOn(Look())
+
+    @Test
+    fun editorPendingOnDark() = editorPendingOn(Look(dark = true))
 
     private fun dropQuestion(look: Look) {
         val asked = carrying.copy(

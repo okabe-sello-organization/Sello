@@ -117,9 +117,7 @@ internal fun CorrectionNoticeBar(notice: CorrectionNotice, onUndo: () -> Unit) {
             SelloNotice(stringResource(R.string.correction_updated), tagged)
 
         is CorrectionNotice.CategorySaved -> SelloNotice(
-            message = notice.limitOf?.let {
-                stringResource(R.string.category_saved_month, monthNames().inSentence(it))
-            } ?: stringResource(R.string.category_saved),
+            message = categorySaved(notice),
             modifier = tagged
         )
 
@@ -504,4 +502,25 @@ private fun MoneyTextValue.signedDigits(): String = when (sign) {
     MoneySign.Plus -> "+$digits"
     MoneySign.Minus -> "−$digits"
     MoneySign.None -> digits
+}
+
+/** What a saved category change says: carry turned on or off first, else a past limit. */
+@Composable
+private fun categorySaved(notice: CorrectionNotice.CategorySaved): String {
+    val months = monthNames()
+    val carry = notice.carry
+    return when {
+        carry?.on == true -> stringResource(
+            R.string.category_saved_carry_on,
+            carry.category,
+            months.inSentence(carry.month)
+        )
+
+        carry != null -> stringResource(R.string.category_saved_carry_off, carry.category)
+
+        notice.limitOf != null ->
+            stringResource(R.string.category_saved_month, months.inSentence(notice.limitOf))
+
+        else -> stringResource(R.string.category_saved)
+    }
 }

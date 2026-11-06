@@ -20,14 +20,12 @@ import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
 import com.software.sello.domain.port.CategoryEdit
 import com.software.sello.domain.port.CategoryRejection
-import com.software.sello.domain.port.ChangeCategoryIcon
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommandRejection.Specific
 import com.software.sello.domain.port.CommittedCategoryChange
-import com.software.sello.domain.port.RenameCategory
-import com.software.sello.domain.port.SetDefaultLimit
-import com.software.sello.domain.port.SetMonthLimit
+import com.software.sello.domain.port.EditCategory
+import com.software.sello.domain.port.LimitEdit
 import com.software.sello.domain.port.UnarchiveCategory
 import com.software.sello.domain.usecase.CatchUpResult
 import com.software.sello.domain.usecase.CatchUpStop
@@ -105,7 +103,7 @@ class CategoryManagementViewModelTest {
     }
 
     private fun change(operation: OperationId) = CommittedCategoryChange(
-        OperationReceipt(operation, OperationKind.RenameCategory, 1, 1, Instant.EPOCH),
+        OperationReceipt(operation, OperationKind.EditCategory, 1, 1, Instant.EPOCH),
         id(1)
     )
 
@@ -217,6 +215,14 @@ class CategoryManagementViewModelTest {
 
     private fun versions() = commands.submitted.map { (it as CategoryEdit).expectedVersion }
 
+    /** Every save the form sent: since SELLO-188, one command for all it changes. */
+    private val edits get() = commands.submitted.map { it as EditCategory }
+
+    /** What one save changed: name, icon, limit and carry, null where it changed nothing. */
+    private fun EditCategory.parts() = listOf(name?.value, icon?.value, limit, carry)
+
+    private fun fromThisMonth(pesos: Long) = LimitEdit.FromThisMonth(finite(pesos))
+
     // --- Opening ---
 
     @Test
@@ -303,7 +309,7 @@ class CategoryManagementViewModelTest {
 
         assertNull(typed.nameError)
         assertTrue(typed.changed && typed.canSubmit)
-        assertEquals("CAFE", (commands.submitted.single() as RenameCategory).name.value)
+        assertEquals(listOf("CAFE", null, null, null), edits.single().parts())
     }
 
     @Test
@@ -330,7 +336,7 @@ class CategoryManagementViewModelTest {
         form.save()
 
         assertNull(form.now.nameError)
-        assertEquals(listOf(ChangeCategoryIcon::class), commands.submitted.map { it::class })
+        assertEquals(listOf(null, "restaurant", null, null), edits.single().parts())
         assertEquals(
             "43 61 66 C3 A9 E2 80 8B",
             form.now.name.toByteArray(Charsets.UTF_8).joinToString(" ") { "%02X".format(it) }
@@ -340,29 +346,34 @@ class CategoryManagementViewModelTest {
     // --- Saving ---
 
     @Test
-    fun renamingSendsOnlyARenameOfTheVersionReadAndSaysTheCategoryWasUpdated() {
+    fun renamingSendsOnlyTheNameOfTheVersionReadAndSaysTheCategoryWasUpdated() {
         val form = form()
         form.name("Cafetería")
 
         form.save()
 
-        val sent = commands.submitted.single() as RenameCategory
+        val sent = edits.single()
         assertEquals(
-            listOf(uuid(500), 7L, uuid(1), 5L, "Cafetería"),
+            listOf(uuid(500), 7L, uuid(1), 5L, october),
             listOf(
                 sent.operationId.value,
                 sent.generation,
                 sent.categoryId.value,
                 sent.expectedVersion,
-                sent.name.value
+                sent.month
             )
         )
+        assertEquals(listOf("Cafetería", null, null, null), sent.parts())
         assertEquals(EditorResult.Updated, form.now.result)
         assertEquals(CorrectionNotice.CategorySaved(limitOf = null), notices.notice.value)
     }
 
+    /**
+     * SELLO-188 replaced three commands, each against the version the one before left, by
+     * one: the name, icon and limit are saved together under one operation, or not at all.
+     */
     @Test
-    fun nameIconAndLimitAreThreeChangesEachAgainstTheVersionTheOneBeforeLeft() {
+    fun nameIconAndLimitAreOneChangeOfTheVersionReadUnderOneOperation() {
         val form = form()
         form.name("Cafetería")
         form.onAction(CategoryEditorAction.IconPicked("restaurant"))
@@ -370,20 +381,13 @@ class CategoryManagementViewModelTest {
 
         form.save()
 
-        assertEquals(
-            listOf(RenameCategory::class, ChangeCategoryIcon::class, SetDefaultLimit::class),
-            commands.submitted.map { it::class }
-        )
-        assertEquals(listOf(5L, 6L, 7L), versions())
-        assertEquals(
-            listOf(uuid(500), uuid(501), uuid(502)),
-            commands.submitted.map {
-                it.operationId.value
-            }
-        )
         // In the current month the limit is the one from this month onwards.
-        assertEquals(finite(120_000), (commands.submitted[2] as SetDefaultLimit).limit)
-        assertEquals("restaurant", (commands.submitted[1] as ChangeCategoryIcon).icon.value)
+        assertEquals(
+            listOf("Cafetería", "restaurant", fromThisMonth(120_000), null),
+            edits.single().parts()
+        )
+        assertEquals(listOf(5L), versions())
+        assertEquals(listOf(uuid(500)), commands.submitted.map { it.operationId.value })
         assertEquals(EditorResult.Updated, form.now.result)
     }
 
@@ -429,8 +433,8 @@ class CategoryManagementViewModelTest {
 
         form.save()
 
-        val sent = commands.submitted.single() as SetDefaultLimit
-        assertEquals(finite(150_000), sent.limit)
+        val sent = edits.single()
+        assertEquals(fromThisMonth(150_000) to november, sent.limit to sent.month)
         assertEquals(EditorResult.Updated, form.now.result)
     }
 
@@ -452,22 +456,27 @@ class CategoryManagementViewModelTest {
         assertEquals(november, restored.now.targetMonth)
     }
 
+    /**
+     * SELLO-188: the rename and the limit are one save now, so a month ending while it is on
+     * its way stops both: storage refuses the limit for a month that is over, nothing is
+     * written, and the form says so. It replaces the rename-saved-then-limit-stopped case.
+     */
     @Test
-    fun aMonthEndingWhileTheRenameIsSentStopsBeforeTheLimit() {
+    fun aMonthEndingWhileTheSaveIsSentStopsTheWholeSave() {
         clock.goTo("2026-10-31")
         val form = form()
         form.name("Cafetería")
         form.limit("150000")
+        commands.answer = { rejected(Specific(CategoryRejection.MonthMoved(november))) }
         commands.hold = CompletableDeferred()
         form.save()
         clock.goTo("2026-11-01")
-        val renamed = stored(1, "Cafetería", cafeInNovember.state, version = 6)
-        reads.categories = listOf(renamed, mercado)
+        reads.categories = listOf(cafeInNovember, mercado)
         commands.hold!!.complete(Unit)
 
-        assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
-        // The screen names the rename as saved and only the limit as not.
-        assertEquals(listOf(EditPart.Name), form.now.savedParts)
+        assertEquals(1, commands.submitted.size)
+        assertEquals("Cafetería" to "150000", form.now.name to form.now.limitText)
+        assertNull(form.now.result)
         assertEquals(SaveError.MonthEnded, form.now.saveError)
         assertEquals(MonthEnded(october, carry = false), form.now.monthEnded)
         assertEquals(november, form.now.targetMonth)
@@ -483,7 +492,7 @@ class CategoryManagementViewModelTest {
 
         form.save()
 
-        assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
+        assertEquals(listOf("Cafetería", null, null, null), edits.single().parts())
         assertEquals(EditorResult.Updated, form.now.result)
     }
 
@@ -496,8 +505,7 @@ class CategoryManagementViewModelTest {
 
         form.save()
 
-        val sent = commands.submitted.single() as SetMonthLimit
-        assertEquals(september to finite(150_000), sent.month to sent.limit)
+        assertEquals(LimitEdit.OfMonth(september, finite(150_000)), edits.single().limit)
     }
 
     @Test
@@ -512,10 +520,10 @@ class CategoryManagementViewModelTest {
 
         assertEquals(september to true, opened.targetMonth to opened.historical)
         assertEquals("80000", opened.limitText)
-        val sent = commands.submitted.single() as SetMonthLimit
+        val sent = edits.single()
         assertEquals(
-            listOf(september, finite(90_000), 5L),
-            listOf(sent.month, sent.limit, sent.expectedVersion)
+            listOf(LimitEdit.OfMonth(september, finite(90_000)), 5L),
+            listOf(sent.limit, sent.expectedVersion)
         )
         assertEquals(CorrectionNotice.CategorySaved(limitOf = september), notices.notice.value)
     }
@@ -543,10 +551,7 @@ class CategoryManagementViewModelTest {
         form.save()
 
         assertNull(pasted)
-        assertEquals(
-            finite(999_999_999_999),
-            (commands.submitted.single() as SetDefaultLimit).limit
-        )
+        assertEquals(fromThisMonth(999_999_999_999), edits.single().limit)
     }
 
     @Test
@@ -564,7 +569,7 @@ class CategoryManagementViewModelTest {
         assertEquals("1000000000000", opened.limitText)
         assertEquals("1.000.000.000.000 pesos", opened.limitAmount?.spoken)
         assertNull(repasted)
-        assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
+        assertEquals(listOf("Cafetería", null, null, null), edits.single().parts())
     }
 
     @Test
@@ -612,7 +617,7 @@ class CategoryManagementViewModelTest {
         assertNull(reopened)
         assertNull(restored.now.limitError)
         assertEquals("1000000000000", restored.now.limitText)
-        assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
+        assertEquals(listOf("Cafetería", null, null, null), edits.single().parts())
     }
 
     @Test
@@ -635,7 +640,7 @@ class CategoryManagementViewModelTest {
         form.onAction(CategoryEditorAction.UnlimitedChanged(true))
         form.save()
 
-        assertEquals(BudgetLimit.Unlimited, (commands.submitted.single() as SetDefaultLimit).limit)
+        assertEquals(LimitEdit.FromThisMonth(BudgetLimit.Unlimited), edits.single().limit)
     }
 
     @Test
@@ -669,16 +674,20 @@ class CategoryManagementViewModelTest {
 
         assertEquals(LimitError.Required, withLimit.now.limitError)
         assertEquals("" to false, opened.limitText to opened.unlimited)
-        assertEquals(listOf(RenameCategory::class), commands.submitted.map { it::class })
+        assertEquals(listOf("Cafetería", null, null, null), edits.single().parts())
     }
 
+    /**
+     * SELLO-188: a failed save saved nothing, so the next attempt sends everything again,
+     * against the same version. It replaces the partial save, where the rename stayed saved
+     * and only the limit was sent again.
+     */
     @Test
-    fun whenALaterChangeFailsItSaysWhatWasSavedAndTheNextAttemptSendsOnlyTheRest() {
+    fun whenTheSaveFailsNothingIsSavedAndTheNextAttemptSendsItAllAgain() {
         val form = form()
         form.name("Cafetería")
         form.limit("120000")
-        commands.answer =
-            { if (it is SetDefaultLimit) storageFailed else committed(it.operationId) }
+        commands.answer = { storageFailed }
 
         form.save()
         val stopped = form.now
@@ -686,16 +695,14 @@ class CategoryManagementViewModelTest {
         form.save()
 
         assertEquals(SaveError.NotSaved, stopped.saveError)
-        assertEquals(listOf(EditPart.Name), stopped.savedParts)
         assertNull(stopped.result)
-        assertEquals("120000", stopped.limitText)
+        assertEquals("Cafetería" to "120000", stopped.name to stopped.limitText)
         assertTrue(stopped.changed && stopped.canSubmit)
         assertEquals(
-            listOf(RenameCategory::class, SetDefaultLimit::class, SetDefaultLimit::class),
-            commands.submitted.map { it::class }
+            List(2) { listOf("Cafetería", null, fromThisMonth(120_000), null) },
+            edits.map { it.parts() }
         )
-        // The rename moved the version on; both limit attempts are against that one.
-        assertEquals(listOf(5L, 6L, 6L), versions())
+        assertEquals(listOf(5L, 5L), versions())
         assertEquals(EditorResult.Updated, form.now.result)
     }
 
@@ -801,7 +808,6 @@ class CategoryManagementViewModelTest {
 
         assertEquals(NameError.Taken, form.now.nameError)
         assertNull(form.now.result)
-        assertEquals(emptyList<EditPart>(), form.now.savedParts)
     }
 
     // --- Outcomes that are not known ---
@@ -840,17 +846,41 @@ class CategoryManagementViewModelTest {
         assertNull(form.now.result)
     }
 
+    /**
+     * SELLO-188: the whole save is one operation, so after the process was killed mid-save
+     * it is looked up once and is either all stored or not at all. Replaces the case where
+     * the rename had committed and the limit was sent afterwards as a second command.
+     */
     @Test
-    fun afterTheProcessWasKilledMidSaveTheOutcomeIsLookedUpAndTheDraftIsKept() {
+    fun afterTheProcessWasKilledMidSaveTheOutcomeIsLookedUpAndNothingIsSentAgain() {
         val saved = opening()
         val first = form(saved)
         first.name("Cafetería")
         first.limit("120000")
         commands.hold = CompletableDeferred()
         first.save()
-        // The rename had committed; the limit was never sent.
+        // It had committed: storage holds the name and the limit at the next version.
         commands.found = { Outcome.Success(change(it)) }
-        reads.categories = listOf(stored(1, "Cafetería", limited, version = 6), mercado)
+        val both = MonthBudgetState.Limited(finite(120_000), explicit = false)
+        reads.categories = listOf(stored(1, "Cafetería", both, version = 6), mercado)
+        commands.hold = null
+
+        val restored = form(saved.afterProcessDeath())
+
+        assertEquals(listOf(commands.submitted.single().operationId), commands.looked)
+        assertEquals(EditorResult.Updated, restored.now.result)
+        assertEquals(1, commands.submitted.size)
+    }
+
+    @Test
+    fun afterTheProcessWasKilledMidSaveThatDidNotCommitTheDraftIsKeptWhole() {
+        val saved = opening()
+        val first = form(saved)
+        first.name("Cafetería")
+        first.limit("120000")
+        commands.hold = CompletableDeferred()
+        first.save()
+        commands.found = { Outcome.Success(null) }
         commands.hold = null
 
         val restored = form(saved.afterProcessDeath())
@@ -859,13 +889,12 @@ class CategoryManagementViewModelTest {
 
         assertEquals(listOf(commands.submitted.first().operationId), commands.looked)
         assertEquals(listOf("Cafetería", "120000"), listOf(back.name, back.limitText))
-        assertTrue(back.changed && back.canSubmit)
-        assertNull(back.result)
+        assertEquals(SaveError.NotSaved, back.saveError)
         assertEquals(
-            listOf(RenameCategory::class, SetDefaultLimit::class),
-            commands.submitted.map { it::class }
+            List(2) { listOf("Cafetería", null, fromThisMonth(120_000), null) },
+            edits.map { it.parts() }
         )
-        assertEquals(6L, (commands.submitted.last() as CategoryEdit).expectedVersion)
+        assertEquals(listOf(5L, 5L), versions())
     }
 
     @Test
@@ -1141,8 +1170,11 @@ class CategoryManagementViewModelTest {
         assertTrue(now.state.value.result == EditorResult.Updated)
         assertFalse(past.now.limitLocked)
         assertEquals(
-            listOf(RenameCategory::class, SetMonthLimit::class),
-            commands.submitted.map { it::class }
+            listOf(
+                listOf("Plaza", null, null, null),
+                listOf(null, null, LimitEdit.OfMonth(september, finite(60_000)), null)
+            ),
+            edits.map { it.parts() }
         )
     }
 
