@@ -24,7 +24,9 @@ import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
 import com.software.sello.domain.port.CommittedGoal
 import com.software.sello.domain.port.GoalBoard
+import com.software.sello.domain.port.GoalBoardState
 import com.software.sello.domain.port.GoalCommand
+import com.software.sello.domain.port.GoalReads
 import com.software.sello.domain.port.GoalRejection
 import com.software.sello.domain.port.GoalSummary
 import com.software.sello.domain.port.ReadState
@@ -38,6 +40,7 @@ import com.software.sello.navigation.HandCategoryReads
 import com.software.sello.navigation.HandFinancialClock
 import com.software.sello.presentation.corrections.CorrectionNotice
 import com.software.sello.presentation.corrections.Corrections
+import com.software.sello.testing.TurnsInOrder
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -46,6 +49,7 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -1201,4 +1205,123 @@ class GoalBulkViewModelTest {
 
     private fun SavedStateHandle.afterProcessDeath() =
         SavedStateHandle(keys().associateWith { get<Any?>(it) })
+
+    // A failed refresh (#381)
+
+    private fun failed(): GoalBoardState = ReadState.Failed(StorageFailure.Unavailable("x"), null)
+
+    /** A receipt whose every observation of the board answers the next of [turns]. */
+    private fun reading(
+        turns: TurnsInOrder<GoalBoard, StorageFailure>,
+        saved: SavedStateHandle = SavedStateHandle(mapOf("goalId" to viaje))
+    ) = GoalBulkViewModel(
+        saved,
+        object : GoalReads by reads {
+            override fun observeBoard(): Flow<GoalBoardState> = turns.observe()
+        },
+        commands,
+        clock,
+        ids,
+        money,
+        corrections
+    )
+
+    @Test
+    fun aFailedRefreshKeepsTheGoalsAndTheLinesMarkedOlderAndTheReceiptStillSaves() = runTest {
+        val model = reading(TurnsInOrder(listOf(board(), failed())))
+        model.threeLines()
+
+        val now = model.state.value
+        assertTrue(now.stale)
+        assertFalse(now.loadFailed)
+        assertFalse(now.loading)
+        assertEquals(listOf(viaje, celular), now.goals.map { it.id })
+        assertEquals("Viaje a la costa", now.goalName)
+        assertEquals("130.000", now.total!!.digits)
+        assertTrue(now.canSubmit)
+
+        // Storage checks the generation and versions read; the receipt does not block on it.
+        model.onAction(GoalBulkAction.Submit)
+
+        val sent = commands.sent.single() as RecordGoalMovements
+        assertEquals(mapOf(GoalId.of(viaje).value() to 5L), sent.versions)
+        assertEquals(3L, sent.generation)
+    }
+
+    @Test
+    fun reintentarWhileOlderKeepsTheGoalsIfItFailsAgainAndClearsTheNoticeOnceItReads() = runTest {
+        val turns = TurnsInOrder(
+            listOf(board(), failed()),
+            listOf(failed()),
+            listOf(board(version = 6, generation = 4))
+        )
+        val model = reading(turns)
+        model.threeLines()
+
+        model.onAction(GoalBulkAction.Retry)
+
+        assertEquals(2, turns.subscriptions)
+        assertTrue(model.state.value.stale)
+        assertFalse(model.state.value.loading)
+        assertEquals(listOf(viaje, celular), model.state.value.goals.map { it.id })
+        assertEquals(3, model.state.value.counted)
+
+        model.onAction(GoalBulkAction.Retry)
+
+        assertEquals(3, turns.subscriptions)
+        assertFalse(model.state.value.stale)
+        assertEquals(3, model.state.value.counted)
+        model.onAction(GoalBulkAction.Submit)
+        val sent = commands.sent.single() as RecordGoalMovements
+        assertEquals(mapOf(GoalId.of(viaje).value() to 6L), sent.versions)
+        assertEquals(4L, sent.generation)
+    }
+
+    @Test
+    fun nothingEverReadIsTheErrorNotOlderGoals() = runTest {
+        val model = reading(TurnsInOrder(listOf(failed())))
+
+        assertTrue(model.state.value.loadFailed)
+        assertFalse(model.state.value.stale)
+        assertFalse(model.state.value.canSubmit)
+    }
+
+    @Test
+    fun afterProcessDeathTheLinesComeBackOverOlderGoals() = runTest {
+        val saved = SavedStateHandle(mapOf("goalId" to viaje))
+        model(saved = saved).threeLines()
+
+        val restored =
+            reading(TurnsInOrder(listOf(board(), failed())), saved.afterProcessDeath()).state.value
+
+        assertTrue(restored.stale)
+        assertEquals(
+            listOf("100.000", "80.000", "50.000"),
+            restored.lines.map { it.amount!!.digits }
+        )
+        assertEquals("Viaje a la costa", restored.goalName)
+        assertTrue(restored.canSubmit)
+    }
+
+    @Test
+    fun afterProcessDeathWithNothingReadTheLinesWaitBehindTheError() = runTest {
+        val saved = SavedStateHandle(mapOf("goalId" to viaje))
+        model(saved = saved).threeLines()
+        val turns = TurnsInOrder(listOf(failed()), listOf(board()))
+
+        val restored = reading(turns, saved.afterProcessDeath())
+
+        assertTrue(restored.state.value.loadFailed)
+        assertFalse(restored.state.value.stale)
+
+        restored.onAction(GoalBulkAction.Retry)
+
+        assertEquals(2, turns.subscriptions)
+        assertFalse(restored.state.value.loadFailed)
+        assertFalse(restored.state.value.stale)
+        assertEquals(
+            listOf("100.000", "80.000", "50.000"),
+            restored.state.value.lines.map { it.amount!!.digits }
+        )
+    }
 }

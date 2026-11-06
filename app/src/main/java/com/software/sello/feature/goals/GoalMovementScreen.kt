@@ -240,6 +240,17 @@ private fun Amount(state: GoalMovementState, onAction: (GoalMovementAction) -> U
 @Composable
 private fun Choices(state: GoalMovementState, onAction: (GoalMovementAction) -> Unit) {
     EntryHeading(stringResource(R.string.goal_movement_goal))
+    // A refresh failed: the goals and what they hold are those last read, and the draft stays.
+    if (state.stale) {
+        StatusSlip(
+            kind = StatusKind.Older,
+            message = stringResource(R.string.recibo_stale),
+            modifier = Modifier.testTag(GOAL_MOVEMENT_STALE_TAG),
+            action = StatusAction(StatusSlipDefaults.retryLabel) {
+                onAction(GoalMovementAction.Retry)
+            }
+        )
+    }
     if (state.goals.isEmpty()) {
         FactLine(AnnotatedString(stringResource(R.string.goal_movement_no_goals)))
     } else {
@@ -388,6 +399,7 @@ const val GOAL_MOVEMENT_KIND_TAG = "goal.movement.kind"
 const val GOAL_MOVEMENT_AMOUNT_TAG = "goal.movement.amount"
 const val GOAL_MOVEMENT_DATE_TAG = "goal.movement.date"
 const val GOAL_MOVEMENT_GOALS_TAG = "goal.movement.goals"
+const val GOAL_MOVEMENT_STALE_TAG = "goal.movement.stale"
 const val GOAL_MOVEMENT_NOTE_TAG = "goal.movement.note"
 const val GOAL_MOVEMENT_KEYPAD_TAG = "goal.movement.keypad"
 const val GOAL_MOVEMENT_SUBMIT_TAG = "goal.movement.submit"

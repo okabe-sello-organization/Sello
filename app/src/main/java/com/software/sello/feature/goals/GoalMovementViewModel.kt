@@ -11,6 +11,7 @@ import com.software.sello.domain.model.GoalMovementKind
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.OperationReceipt
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.GoalPolicy
@@ -33,6 +34,7 @@ import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.movement.SavedNoteComposer
+import com.software.sello.presentation.read.LastGoodRead
 import com.software.sello.presentation.submission.AmountDraftSerializer
 import com.software.sello.presentation.submission.LocalDateSerializer
 import com.software.sello.presentation.submission.SavedDraft
@@ -108,7 +110,10 @@ class GoalMovementViewModel(
     )
     private val progress = MutableStateFlow(Progress())
     private val attempts = MutableStateFlow(0)
-    private val board = attempts.flatMapLatest { reads.observeBoard() }
+
+    /** The board last read: a refresh that fails, or a Reintentar, keeps it, marked older. */
+    private val lastGood = LastGoodRead<GoalBoard, StorageFailure>()
+    private val board = attempts.flatMapLatest { lastGood.keep(Unit, reads.observeBoard()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
     private val composer = SavedNoteComposer(saved, PREFIX, viewModelScope)
 
@@ -208,8 +213,8 @@ class GoalMovementViewModel(
             GoalMovementAction.Retry -> if (!now.busy) {
                 if (submission.pending) {
                     viewModelScope.launch { recover() }
-                } else if (now.loadFailed) {
-                    // Reintentar after a failed first read reads the board again.
+                } else if (now.loadFailed || now.stale) {
+                    // Reintentar after a failed read reads the board again.
                     attempts.update { it + 1 }
                 } else {
                     progress.update { it.copy(error = null) }
@@ -266,7 +271,7 @@ class GoalMovementViewModel(
         draft.value.amount != AmountDraft.Empty || draft.value.note.isNotBlank()
     }
 
-    /** The board to work from: the last one read, also after a failed refresh. */
+    /** The board to work from: the last one read, also after a failed refresh (shown stale). */
     private fun readable(state: GoalBoardState): GoalBoard? = when (state) {
         ReadState.Loading -> null
         is ReadState.Ready -> state.value
@@ -345,6 +350,7 @@ class GoalMovementViewModel(
                         saved.get<Boolean>(DRAFTED) != true
                     ),
             loadFailed = board is ReadState.Failed && read == null,
+            stale = board is ReadState.Failed && read != null,
             editing = editing,
             withdrawal = draft.withdrawal,
             amount = amount?.let { money.format(it.money) },

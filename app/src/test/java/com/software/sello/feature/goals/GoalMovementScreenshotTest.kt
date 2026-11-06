@@ -109,6 +109,13 @@ class GoalMovementScreenshotTest {
 
     @Test fun failedDark() = shot("failed", failed, Look(dark = true))
 
+    /** A refresh failed: what the goal holds is as last read, under the notice. */
+    private val stale = aporte.copy(stale = true)
+
+    @Test fun staleLight() = shot("stale", stale, Look())
+
+    @Test fun staleDark() = shot("stale", stale, Look(dark = true))
+
     private val noGoals = loading.copy(loading = false)
 
     @Test fun noGoalsLight() = shot("no-goals", noGoals, Look())

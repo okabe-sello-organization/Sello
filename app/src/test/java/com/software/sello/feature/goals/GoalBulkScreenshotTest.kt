@@ -95,6 +95,13 @@ class GoalBulkScreenshotTest {
 
     @Test fun failedOscuro() = capture("failed", failed, dark = true)
 
+    /** A refresh failed: the goals are as last read, under the notice, and the lines stay. */
+    private val stale = GoalBulkSamples.three.copy(stale = true)
+
+    @Test fun staleClaro() = capture("stale", stale, dark = false)
+
+    @Test fun staleOscuro() = capture("stale", stale, dark = true)
+
     /** No active goal to put a line in. */
     private val noGoals = GoalBulkSamples.opening.copy(goals = emptyList())
 

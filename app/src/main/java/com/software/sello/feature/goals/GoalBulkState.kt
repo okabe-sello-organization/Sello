@@ -77,6 +77,8 @@ data class GoalBulkChoice(val id: String, val name: String, val iconKey: String)
 data class GoalBulkState(
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
+    /** A refresh failed: the goals the lines can name are those last read, marked older. */
+    val stale: Boolean = false,
     val goalName: String? = null,
     val goals: List<GoalBulkChoice> = emptyList(),
     val lines: List<GoalBulkLine>,

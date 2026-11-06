@@ -53,3 +53,33 @@ class AnswersInTurn<T, E>(vararg answers: ReadState<T, E>) {
         emit(left.removeFirst())
     }
 }
+
+/**
+ * A read whose subscriptions answer [turns] in order: Loading, then the reads of its turn,
+ * and the flow ends, as `ObservedReads.observeOn` ends after a database error. A failed read
+ * after a good one in the same turn carries it, as the real one does. Only a new subscription
+ * reads again; [subscriptions] counts them.
+ */
+class TurnsInOrder<T, E>(vararg turns: List<ReadState<T, E>>) {
+    private val left = ArrayDeque(turns.toList())
+    var subscriptions = 0
+        private set
+
+    fun observe(): Flow<ReadState<T, E>> = flow {
+        subscriptions++
+        emit(ReadState.Loading)
+        var lastGood: T? = null
+        left.removeFirst().forEach { read ->
+            when (read) {
+                ReadState.Loading -> Unit
+
+                is ReadState.Ready -> {
+                    lastGood = read.value
+                    emit(read)
+                }
+
+                is ReadState.Failed -> emit(ReadState.Failed(read.failure, lastGood))
+            }
+        }
+    }
+}
