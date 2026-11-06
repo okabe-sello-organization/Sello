@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -163,6 +165,19 @@ class AdjustBudgetScreenTest {
 
         assertEquals(listOf<AdjustBudgetAction>(AdjustBudgetAction.Open("cafe")), actions)
         assertEquals(listOf("viejo"), edited)
+    }
+
+    @Test
+    fun whileTheCategoryIsReadTheSheetShowsItLoadsWithNoNamelessTitleZeroOrKeypad() {
+        sheet = LimitSheetState(october, categoryId = "cafe", loading = true)
+        show(ready)
+
+        val inSheet = hasAnyAncestor(hasTestTag(LIMIT_SHEET_TAG))
+        rule.onNodeWithTag(LIMIT_SHEET_LOADING_TAG).assertIsDisplayed()
+        rule.onNodeWithText("Límite").assertIsDisplayed()
+        rule.onAllNodes(hasText("Límite de", substring = true) and inSheet).assertCountEquals(0)
+        rule.onAllNodes(hasText("0") and inSheet).assertCountEquals(0)
+        rule.onAllNodesWithTag(LIMIT_KEYPAD_TAG).assertCountEquals(0)
     }
 
     @Test

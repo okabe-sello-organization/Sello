@@ -18,6 +18,7 @@ import com.software.sello.domain.port.CategoryBudget
 import com.software.sello.domain.port.CategoryCommand
 import com.software.sello.domain.port.CategoryCommandOutcome
 import com.software.sello.domain.port.CategoryCommands
+import com.software.sello.domain.port.CategoryReads
 import com.software.sello.domain.port.CategoryRejection
 import com.software.sello.domain.port.CommandOutcome
 import com.software.sello.domain.port.CommandRejection
@@ -197,6 +198,44 @@ class LimitSheetViewModelTest {
         )
         assertEquals(LimitScope.ThisMonth, state.scope)
         assertFalse(state.canSave)
+    }
+
+    @Test
+    fun nothingTypedWhileTheCategoryIsReadIsTakenAndItsLimitShowsOnceRead() {
+        val gate = CompletableDeferred<Unit>()
+        val slow = object : CategoryReads {
+            override suspend fun monthBudget(month: YearMonth) =
+                gate.await().let { reads.monthBudget(month) }
+        }
+        val sheet = LimitSheetViewModel(
+            SavedStateHandle(mapOf("month" to "2026-10")),
+            commands,
+            slow,
+            snapshots,
+            session,
+            { uuid(nextId++) },
+            money,
+            notices
+        )
+        sheet.onAction(LimitSheetAction.Open(cafe))
+
+        sheet.type(150_000)
+        sheet.onAction(LimitSheetAction.TripleZero)
+        sheet.onAction(LimitSheetAction.Scope(LimitScope.FromThisMonth))
+        val loading = sheet.state.value
+        gate.complete(Unit)
+        snapshots.ready(excedido)
+        val read = sheet.state.value
+
+        assertTrue(loading.loading)
+        assertNull(loading.amount)
+        assertEquals(LimitScope.ThisMonth, loading.scope)
+        assertFalse(read.loading)
+        assertEquals("Café", read.name)
+        assertEquals("50.000 pesos", read.current?.spoken)
+        assertNull(read.amount)
+        assertEquals(LimitScope.ThisMonth, read.scope)
+        assertFalse(read.canSave)
     }
 
     @Test

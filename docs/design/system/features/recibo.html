@@ -251,6 +251,7 @@
 
       <figure data-shot="limit-sheet-stale" data-module="app" data-caption="Café, Solo octubre, 150.000 typed, older figures"></figure>
       <figure data-shot="limit-sheet-ready" data-module="app" data-caption="Ready"></figure>
+      <figure data-shot="limit-sheet-loading" data-module="app" data-caption="The category is still being read"></figure>
       <figure data-shot="limit-sheet-failed" data-module="app" data-caption="The category could not be read"></figure>
       <figure data-shot="limit-sheet-busy" data-module="app" data-caption="Saving"></figure>
       <figure data-shot="limit-sheet-unknown" data-module="app" data-caption="The save outcome is not known"></figure>
@@ -265,7 +266,7 @@
       <figure data-shot="limit-sheet-carry-unavailable" data-module="app" data-caption="Refused: carry could not be worked out"></figure>
 
       <h3>Layout</h3>
-      <p>A <a href="../components.html#c-SelloSheet"><code>SelloSheet</code></a> over Ajustar presupuesto, titled "Límite de Café" (or "Límite base de …" while it carries) (<code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:317</code>).</p>
+      <p>A <a href="../components.html#c-SelloSheet"><code>SelloSheet</code></a> over Ajustar presupuesto, titled "Límite de Café" (or "Límite base de …" while it carries; just "Límite" until a name is read) (<code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:317</code>).</p>
       <ol>
         <li>A row: 40 dp CategoryCircle, "Gastaste 90.000 de 50.000 en octubre" (or the carry/no-limit variant) in <code>bodySmall</code> inkSoft, and a close <code>IconButton</code>.</li>
         <li>The read failure (loss-ink line and "Reintentar") instead of everything below, or the older-figures line and "Reintentar".</li>
@@ -283,8 +284,8 @@
         <table>
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
-            <tr><td>Loading</td><td>Not drawn: <code>loading</code> is in the state but the sheet does not read it; while the category is read the title has no name, the spent line is empty, the amount shows "0" and Save is disabled.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/LimitSheetViewModel.kt:166</code></td><td>Nothing of its own to capture: the sheet does not draw it (#374)</td></tr>
-            <tr><td>Error (category could not be read)</td><td>"No pudimos leer esta categoría. Vuelve a intentarlo." in loss ink and "Reintentar"; nothing else.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:367</code></td><td><code>limit-sheet-failed</code></td></tr>
+            <tr><td>Loading</td><td>Title "Límite", the close button and a two-line <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>; no circle, switch, amount, chips, Save or keypad. Nothing typed is taken until the category is read.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:366</code>, <code>app/src/main/java/com/software/sello/feature/recibo/LimitSheetViewModel.kt:96</code></td><td><code>limit-sheet-loading</code></td></tr>
+            <tr><td>Error (category could not be read)</td><td>Title "Límite"; "No pudimos leer esta categoría. Vuelve a intentarlo." in loss ink and "Reintentar"; nothing else.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:370</code></td><td><code>limit-sheet-failed</code></td></tr>
             <tr><td>Ready / typing</td><td>Switch, amount, chips, fact, Save enabled when the amount is valid and different.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:387</code></td><td>limit-sheet-stale-claro (with the stale line)</td></tr>
             <tr><td>Stale (older figures)</td><td>bodySmall loss-ink "No pudimos actualizar. …" and a text button "Reintentar" under the header; chips and fact as last read.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:376</code></td><td>limit-sheet-stale-claro</td></tr>
             <tr><td>Busy (saving)</td><td>Save reads "Guardando…" with its loading indicator; switch, chips, keypad and close are disabled.</td><td><code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:490</code></td><td><code>limit-sheet-busy</code></td></tr>
@@ -306,7 +307,7 @@
 
       <h3>Key copy</h3>
       <ul>
-        <li>"Límite de %1$s" (<code>limit_sheet_title</code>), "Límite base de %1$s" (<code>limit_sheet_title_base</code>), "Cerrar" (<code>limit_sheet_close</code>)</li>
+        <li>"Límite de %1$s" (<code>limit_sheet_title</code>), "Límite base de %1$s" (<code>limit_sheet_title_base</code>), "Límite" (<code>limit_sheet_title_unnamed</code>), "Cerrar" (<code>limit_sheet_close</code>)</li>
         <li>"Gastaste %1$s de %2$s en %3$s" (<code>limit_sheet_spent</code>), "Gastaste %1$s en %2$s, sin límite" (<code>limit_sheet_spent_open</code>), "De meses anteriores %1$s · gastaste %2$s en %3$s" (<code>limit_sheet_carry</code>)</li>
         <li>"Solo %1$s" / "Desde %1$s" (<code>limit_sheet_scope_this</code>, <code>_from</code>), "Solo cambia %1$s. Los meses siguientes no cambian." (<code>limit_sheet_scope_this_line</code>), "Desde %1$s, hasta que lo vuelvas a cambiar. Los meses anteriores no cambian." (<code>limit_sheet_scope_from_line</code>)</li>
         <li>"Límite en pesos" (<code>limit_sheet_amount</code>), "Límite base en pesos" (<code>limit_sheet_amount_base</code>), "antes %1$s" (<code>limit_sheet_before</code>), "antes sin límite" (<code>limit_sheet_before_open</code>)</li>
