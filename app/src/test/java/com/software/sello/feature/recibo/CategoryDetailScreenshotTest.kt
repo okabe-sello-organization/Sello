@@ -281,7 +281,7 @@ class CategoryDetailScreenshotTest {
 
     @Test fun archivedOscuro() = shot("archived", archivedFood, dark = true)
 
-    /** September, finished: 900.000 − 812.000 = 88.000 left over, seen on 21 October. */
+    /** The largest expense of the finished September. */
     private val mercado =
         ExpenseRow("4", LocalDate.of(2026, 9, 28), "Mercado", plain("112.000"), false)
 
