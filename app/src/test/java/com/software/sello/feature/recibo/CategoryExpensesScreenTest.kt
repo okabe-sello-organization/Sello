@@ -157,4 +157,42 @@ class CategoryExpensesScreenTest {
             rule.onNodeWithText("No se pudo cargar").assertDoesNotExist()
         }
     }
+
+    private fun showEmpty(query: String) = rule.showSello {
+        CategoryExpensesScreen(
+            state = CategoryExpensesState.Ready(
+                categoryName = "Alimentación",
+                month = YearMonth.of(2026, 10),
+                today = LocalDate.of(2026, 10, 21),
+                rows = emptyList(),
+                more = false,
+                totalCount = 0,
+                query = query
+            ),
+            query = query,
+            order = "Date",
+            onAction = {},
+            onEdit = {},
+            padding = PaddingValues(12.dp)
+        )
+    }
+
+    /** #376: with nothing searched, an empty list is a category with no expenses. */
+    @Test
+    fun anEmptyListWithNothingSearchedSaysTheCategoryHasNoExpenses() {
+        showEmpty("")
+
+        rule.onNodeWithText("Sin gastos en octubre").assertExists()
+        rule.onNodeWithText("Cuando anotes un gasto en esta categoría aparecerá aquí.")
+            .assertExists()
+        rule.onNodeWithText("Sin coincidencias").assertDoesNotExist()
+    }
+
+    @Test
+    fun aSearchThatFindsNothingSaysSinCoincidencias() {
+        showEmpty("Nada así")
+
+        rule.onNodeWithText("Sin coincidencias").assertExists()
+        rule.onNodeWithText("Sin gastos en octubre").assertDoesNotExist()
+    }
 }

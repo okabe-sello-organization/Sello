@@ -198,14 +198,15 @@
               data-caption="Nothing ever read"></figure>
       <figure data-shot="category-expenses-delete-unknown" data-module="app"
               data-caption="A deletion whose outcome is not known"></figure>
-      <figure data-shot="category-expenses-empty" data-module="app" data-caption="No expenses (&quot;Sin coincidencias&quot;)"></figure>
+      <figure data-shot="category-expenses-empty" data-module="app" data-caption="No expenses, nothing searched (&quot;Sin gastos en octubre&quot;)"></figure>
+      <figure data-shot="category-expenses-no-match" data-module="app" data-caption="A search that found nothing (&quot;Sin coincidencias&quot;)"></figure>
       <figure data-shot="category-expenses-page-failed" data-module="app" data-caption="The next page could not be read"></figure>
       <figure data-shot="category-expenses-busy" data-module="app" data-caption="Ver más loading"></figure>
       <figure data-shot="category-expenses-loading" data-module="app" data-caption="Loading, in its frame: the fallback title and the waiting dock"></figure>
       <figure data-shot="category-expenses-delete-refused" data-module="app" data-caption="A deletion refused"></figure>
 
       <h3>Layout</h3>
-      <p>A <code>ShellScreen</code> titled with the category's name (month as subtitle) whose dock is Anotar in this category, or disabled "Archivada" (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:148</code>). A lazy list, spaced by <code>spacing.sm</code> (<code>app/src/main/java/com/software/sello/feature/recibo/CategoryExpensesScreen.kt:62</code>):</p>
+      <p>A <code>ShellScreen</code> titled with the category's name (month as subtitle) whose dock is Anotar in this category, or disabled "Archivada" (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:148</code>). A lazy list, spaced by <code>spacing.sm</code> (<code>app/src/main/java/com/software/sello/feature/recibo/CategoryExpensesScreen.kt:64</code>):</p>
       <ol>
         <li>A plain slip with <a href="../components.html#c-FormField"><code>FormField</code></a> "Buscar por nota" and a <a href="../components.html#c-ChipFlow"><code>ChipFlow</code></a> of <a href="../components.html#c-SelloChip"><code>SelloChip</code></a>s "Fecha", "Valor", "Nombre".</li>
         <li>The stale slip, the empty slip or the delete problem slip, when they apply.</li>
@@ -222,11 +223,12 @@
             <tr><td>Error</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer los gastos de esta categoría."</td><td><code>…/CategoryExpensesScreen.kt:100</code></td><td>category-expenses-failed (claro only)</td></tr>
             <tr><td>Loaded</td><td>Rows and the count.</td><td><code>…/CategoryExpensesScreen.kt:110</code></td><td>category-expenses</td></tr>
             <tr><td>Stale</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older above the rows as last read.</td><td><code>…/CategoryExpensesScreen.kt:111</code></td><td>category-expenses-stale (claro only)</td></tr>
-            <tr><td>Empty</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Empty "Sin coincidencias" / "Prueba otra búsqueda o anota un gasto en esta categoría."</td><td><code>…/CategoryExpensesScreen.kt:123</code></td><td><code>category-expenses-empty</code></td></tr>
-            <tr><td>Busy</td><td>"Ver más" shows a spinner while the next page is read; the check button while a delete is checked.</td><td><code>…/CategoryExpensesScreen.kt:240</code>, <code>:148</code></td><td><code>category-expenses-busy</code></td></tr>
-            <tr><td>Unknown outcome (delete)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Unknown titled "Falta comprobar el borrado" whose button is "Comprobar si se borró".</td><td><code>…/CategoryExpensesScreen.kt:138</code></td><td>category-expenses-delete-unknown (claro only)</td></tr>
-            <tr><td>Refused (delete)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> ActionFailed "No se borró" with the reason, or Gone "Nada que borrar" when the expense was already deleted; both offer "Volver a cargar", which reads the list again.</td><td><code>…/CategoryExpensesScreen.kt:159</code></td><td><code>category-expenses-delete-refused</code></td></tr>
-            <tr><td>Page failed</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer más gastos. Inténtalo de nuevo."</td><td><code>…/CategoryExpensesScreen.kt:221</code></td><td><code>category-expenses-page-failed</code></td></tr>
+            <tr><td>Empty</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Empty, as category detail says it: "Sin gastos en {mes}" / "Cuando anotes un gasto en esta categoría aparecerá aquí."</td><td><code>…/CategoryExpensesScreen.kt:130</code></td><td><code>category-expenses-empty</code></td></tr>
+            <tr><td>No match</td><td>Only when a search finds nothing: <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Empty "Sin coincidencias" / "Prueba otra búsqueda o anota un gasto en esta categoría."</td><td><code>…/CategoryExpensesScreen.kt:141</code></td><td><code>category-expenses-no-match</code></td></tr>
+            <tr><td>Busy</td><td>"Ver más" shows a spinner while the next page is read; the check button while a delete is checked.</td><td><code>…/CategoryExpensesScreen.kt:251</code>, <code>:167</code></td><td><code>category-expenses-busy</code></td></tr>
+            <tr><td>Unknown outcome (delete)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Unknown titled "Falta comprobar el borrado" whose button is "Comprobar si se borró".</td><td><code>…/CategoryExpensesScreen.kt:155</code></td><td>category-expenses-delete-unknown (claro only)</td></tr>
+            <tr><td>Refused (delete)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> ActionFailed "No se borró" with the reason, or Gone "Nada que borrar" when the expense was already deleted; both offer "Volver a cargar", which reads the list again.</td><td><code>…/CategoryExpensesScreen.kt:177</code></td><td><code>category-expenses-delete-refused</code></td></tr>
+            <tr><td>Page failed</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer más gastos. Inténtalo de nuevo."</td><td><code>…/CategoryExpensesScreen.kt:238</code></td><td><code>category-expenses-page-failed</code></td></tr>
             <tr><td>Restored draft</td><td>Does not exist; the query and order are the view model's.</td><td>—</td><td>—</td></tr>
           </tbody>
         </table>

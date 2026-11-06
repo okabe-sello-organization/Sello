@@ -264,6 +264,22 @@ class CategoryExpensesViewModelTest {
         assertEquals(ExpenseOrder.Amount, requests.last().first)
     }
 
+    /** #376: the screen tells an empty category from a search that found nothing. */
+    @Test
+    fun theListedRowsCarryTheSearchTheyWereReadFor() = runTest {
+        val model = started()
+        val unsearched = model.ready.query
+        model.onAction(CategoryExpensesAction.Search("Nada así"))
+        runCurrent()
+        val searched = model.ready
+        model.onAction(CategoryExpensesAction.Search(""))
+        runCurrent()
+
+        assertEquals("", unsearched)
+        assertEquals("Nada así" to 0, searched.query to searched.rows.size)
+        assertEquals("", model.ready.query)
+    }
+
     @Test
     fun aSecondMoreTapWhileReadingAsksForOnlyOneAdditionalPage() = runTest {
         val model = started()

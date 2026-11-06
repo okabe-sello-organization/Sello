@@ -50,7 +50,9 @@ sealed interface CategoryExpensesState {
         /** An unresolved deletion is being asked about again. */
         val checking: Boolean = false,
         /** The month could not be read again: these are the rows as last read. */
-        val stale: Boolean = false
+        val stale: Boolean = false,
+        /** The search these rows were read for; empty when nothing was searched. */
+        val query: String = ""
     ) : CategoryExpensesState
 }
 
@@ -306,7 +308,8 @@ class CategoryExpensesViewModel(
                     )
                 },
                 more,
-                totalCount
+                totalCount,
+                query = request.query
             )
         )
     }

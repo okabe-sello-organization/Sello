@@ -49,7 +49,7 @@ class CategoryExpensesScreenshotTest {
         rule.showSello(look) {
             CategoryExpensesScreen(
                 state = state,
-                query = "",
+                query = (state as? CategoryExpensesState.Ready)?.query.orEmpty(),
                 order = "Date",
                 onAction = {},
                 onEdit = {},
@@ -102,6 +102,14 @@ class CategoryExpensesScreenshotTest {
     @Test fun emptyClaro() = capture(Look(), "category-expenses-empty-claro", empty)
 
     @Test fun emptyOscuro() = capture(Look(dark = true), "category-expenses-empty-oscuro", empty)
+
+    /** A search that found nothing: the only empty list that says "Sin coincidencias" (#376). */
+    private val noMatch = empty.copy(query = "Nada así")
+
+    @Test fun noMatchClaro() = capture(Look(), "category-expenses-no-match-claro", noMatch)
+
+    @Test
+    fun noMatchOscuro() = capture(Look(dark = true), "category-expenses-no-match-oscuro", noMatch)
 
     private val pageFailed = ready.copy(more = true, pageFailed = true)
 
