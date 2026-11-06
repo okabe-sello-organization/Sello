@@ -1,39 +1,13 @@
 package com.software.sello.presentation.restore
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.software.sello.R
-import com.software.sello.designsystem.component.Bullet
-import com.software.sello.designsystem.component.BulletList
-import com.software.sello.designsystem.component.ButtonKind
-import com.software.sello.designsystem.component.ButtonTone
-import com.software.sello.designsystem.component.ErrorSlip
-import com.software.sello.designsystem.component.SelloButton
-import com.software.sello.designsystem.component.Slip
-import com.software.sello.designsystem.component.Stamp
-import com.software.sello.designsystem.component.StampInk
-import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.component.RestorePending
+import com.software.sello.designsystem.component.RestoredSlip as RestoredSlipPart
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.ThemePreference
@@ -41,10 +15,8 @@ import com.software.sello.domain.port.BackupSummary
 import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
-import com.software.sello.domain.port.StagedRestore
 import com.software.sello.presentation.appearance.choice
 import com.software.sello.presentation.count.countText
-import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.investments.label
 import com.software.sello.presentation.investments.newInvestmentLabel
 
@@ -62,155 +34,80 @@ internal fun RestoredSlip(
     onLeave: () -> Unit,
     note: String? = null
 ) {
+    val leave = stringResource(R.string.restore_go_to_recibo)
+    val preferences = outcome.preferences
     if (outcome.preferencesUnreadable) {
-        PreferencesUnreadable(note, onLeave)
-    } else if (outcome.preferences.done) {
-        Restored(outcome.summary, note, onLeave)
-    } else {
-        Pending(outcome.preferences, applying, note, onApply, onLeave)
-    }
-}
-
-@Composable
-private fun Restored(summary: BackupSummary, note: String?, onLeave: () -> Unit) {
-    Slip(Modifier.fillMaxWidth().testTag(RESTORE_DONE_TAG), pinked = false) {
-        FlowRow(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            itemVerticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            RestoreHeading(stringResource(R.string.restore_done_title))
-            Stamp(
-                text = stringResource(R.string.restore_done_stamp),
-                ink = StampInk.Good,
-                land = true,
-                modifier = Modifier.padding(vertical = 6.dp)
-                    .semantics { liveRegion = LiveRegionMode.Polite }
-            )
-        }
-        RestoreBody(
-            stringResource(
+        // D09's heading: the history is restored; the backup's preferences could not be read.
+        RestoredSlipPart(
+            title = stringResource(R.string.restore_pending_title),
+            body = stringResource(R.string.restore_preferences_unreadable),
+            leaveLabel = leave,
+            onLeave = onLeave,
+            modifier = Modifier.testTag(RESTORE_PREFERENCES_UNREADABLE_TAG),
+            note = note
+        )
+    } else if (preferences.done) {
+        val summary = outcome.summary
+        RestoredSlipPart(
+            title = stringResource(R.string.restore_done_title),
+            body = stringResource(
                 R.string.restore_done_body,
                 contentsText(
                     summary,
                     withGoals = summary.goals > 0,
                     withSchedules = summary.schedules > 0
                 )
-            )
-        )
-        note?.let { RestoreBody(it) }
-        GoToRecibo(onLeave)
-    }
-}
-
-/** D09's heading: the history is restored; the backup's preferences could not be read. */
-@Composable
-private fun PreferencesUnreadable(note: String?, onLeave: () -> Unit) {
-    Slip(Modifier.fillMaxWidth().testTag(RESTORE_PREFERENCES_UNREADABLE_TAG), pinked = false) {
-        RestoreHeading(stringResource(R.string.restore_pending_title))
-        RestoreBody(stringResource(R.string.restore_preferences_unreadable))
-        note?.let { RestoreBody(it) }
-        GoToRecibo(onLeave)
-    }
-}
-
-/** D09's approved wording: the history is restored; only these preferences are not. */
-@Composable
-private fun Pending(
-    preferences: PendingPreferences,
-    applying: Boolean,
-    note: String?,
-    onApply: () -> Unit,
-    onLeave: () -> Unit
-) {
-    Slip(Modifier.fillMaxWidth().testTag(RESTORE_PENDING_TAG), pinked = false) {
-        RestoreHeading(stringResource(R.string.restore_pending_title))
-        RestoreBody(stringResource(R.string.restore_pending_body))
-        BulletList(
-            listOfNotNull(
-                preferences.appearance?.let {
-                    Bullet(
-                        null,
-                        stringResource(
-                            R.string.restore_pending_appearance,
-                            stringResource(it.theme.label()),
-                            stringResource(it.ink.choice.label)
-                        )
-                    )
-                },
-                preferences.ordering?.let {
-                    Bullet(
-                        null,
-                        stringResource(
-                            R.string.restore_pending_ordering,
-                            stringResource(it.order.label()),
-                            stringResource(it.direction.label())
-                        )
-                    )
-                },
-                preferences.investments?.let {
-                    Bullet(
-                        null,
-                        stringResource(
-                            R.string.restore_pending_investments,
-                            stringResource(it.newCurrency.newInvestmentLabel()),
-                            stringResource(it.order.label())
-                        )
-                    )
-                }
             ),
-            Modifier.padding(top = SelloTheme.spacing.sm)
+            leaveLabel = leave,
+            onLeave = onLeave,
+            modifier = Modifier.testTag(RESTORE_DONE_TAG),
+            stamp = stringResource(R.string.restore_done_stamp),
+            note = note
         )
-        note?.let { RestoreBody(it) }
-        SelloButton(
-            text = stringResource(
-                applyLabel(preferences)
+    } else {
+        // D09's approved wording: the history is restored; only these preferences are not.
+        RestoredSlipPart(
+            title = stringResource(R.string.restore_pending_title),
+            body = stringResource(R.string.restore_pending_body),
+            leaveLabel = leave,
+            onLeave = onLeave,
+            modifier = Modifier.testTag(RESTORE_PENDING_TAG),
+            note = note,
+            pending = RestorePending(
+                items = pendingItems(preferences),
+                label = stringResource(applyLabel(preferences)),
+                note = stringResource(R.string.restore_pending_note),
+                applying = applying
             ),
-            onClick = onApply,
-            loading = applying,
-            enabled = !applying,
-            modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md)
-                .testTag(RESTORE_APPLY_TAG)
+            onApply = onApply
         )
-        Text(
-            text = stringResource(R.string.restore_pending_note),
-            style = MaterialTheme.typography.bodySmall,
-            color = SelloTheme.colors.inkSoft,
-            modifier = Modifier.padding(top = SelloTheme.spacing.sm)
-        )
-        GoToRecibo(onLeave, kind = ButtonKind.Text)
     }
 }
 
 @Composable
-private fun GoToRecibo(onLeave: () -> Unit, kind: ButtonKind = ButtonKind.Filled) {
-    SelloButton(
-        text = stringResource(R.string.restore_go_to_recibo),
-        onClick = onLeave,
-        kind = kind,
-        modifier = Modifier.fillMaxWidth().padding(top = SelloTheme.spacing.md)
-            .testTag(RESTORE_LEAVE_TAG)
-    )
-}
-
-@Composable
-internal fun RestoreHeading(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.headlineSmall,
-        modifier = Modifier.semantics { heading() }
-    )
-}
-
-@Composable
-internal fun RestoreBody(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodyLarge,
-        color = SelloTheme.colors.inkSoft,
-        modifier = Modifier.padding(top = SelloTheme.spacing.xs)
-    )
-}
+private fun pendingItems(preferences: PendingPreferences): List<String> = listOfNotNull(
+    preferences.appearance?.let {
+        stringResource(
+            R.string.restore_pending_appearance,
+            stringResource(it.theme.label()),
+            stringResource(it.ink.choice.label)
+        )
+    },
+    preferences.ordering?.let {
+        stringResource(
+            R.string.restore_pending_ordering,
+            stringResource(it.order.label()),
+            stringResource(it.direction.label())
+        )
+    },
+    preferences.investments?.let {
+        stringResource(
+            R.string.restore_pending_investments,
+            stringResource(it.newCurrency.newInvestmentLabel()),
+            stringResource(it.order.label())
+        )
+    }
+)
 
 internal fun RestoreRejection.message() = when (this) {
     RestoreRejection.Unreadable -> R.string.restore_rejected_unreadable
@@ -259,8 +156,6 @@ private fun CategoryOrderDirection.label() = when (this) {
 const val RESTORE_DONE_TAG = "restore:done"
 const val RESTORE_PENDING_TAG = "restore:pending"
 const val RESTORE_PREFERENCES_UNREADABLE_TAG = "restore:preferences-unreadable"
-const val RESTORE_APPLY_TAG = "restore:apply"
-const val RESTORE_LEAVE_TAG = "restore:leave"
 
 /**
  * What a backup or the phone holds, in words: "2 categorías, 3 gastos y 1 ingreso",

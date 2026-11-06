@@ -7,6 +7,7 @@ import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.REPEAT_ROW_TAG
 import com.software.sello.designsystem.theme.SelloInk
 import com.software.sello.domain.model.Outcome
 import com.software.sello.domain.model.RepeatRule
@@ -17,7 +18,6 @@ import com.software.sello.presentation.carry.ChangeKind
 import com.software.sello.presentation.carry.VerdictWord
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.recurrence.FollowingSchedule
-import com.software.sello.presentation.recurrence.REPEAT_ROW_TAG
 import com.software.sello.presentation.recurrence.RepeatChoice
 import com.software.sello.presentation.recurrence.RepeatKind
 import com.software.sello.presentation.recurrence.RepeatUi

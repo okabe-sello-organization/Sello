@@ -36,6 +36,7 @@ import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoreSlip
+import com.software.sello.designsystem.component.MovementPane
 import com.software.sello.designsystem.component.SegmentedSwitch
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
@@ -50,7 +51,6 @@ import com.software.sello.presentation.movement.MovementDatePicker
 import com.software.sello.presentation.movement.MovementDiscardSlip
 import com.software.sello.presentation.movement.MovementNoteComposer
 import com.software.sello.presentation.movement.MovementNoteLine
-import com.software.sello.presentation.movement.MovementPane
 
 @Composable
 fun GoalMovementRoot(

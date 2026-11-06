@@ -29,6 +29,8 @@ import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ErrorSlip
+import com.software.sello.designsystem.component.RestoreBody
+import com.software.sello.designsystem.component.RestoreHeading
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.Stamp
@@ -46,8 +48,6 @@ import com.software.sello.domain.port.StagedRestore
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.restore.LegacyReportSection
-import com.software.sello.presentation.restore.RestoreBody
-import com.software.sello.presentation.restore.RestoreHeading
 import com.software.sello.presentation.restore.RestoredSlip
 import com.software.sello.presentation.restore.message
 

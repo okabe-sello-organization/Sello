@@ -15,7 +15,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
-import com.software.sello.presentation.recurrence.REPEAT_ROW_TAG
+import com.software.sello.designsystem.component.REPEAT_ROW_TAG
 import com.software.sello.showSello
 import java.time.LocalDate
 import org.junit.Assert.assertEquals

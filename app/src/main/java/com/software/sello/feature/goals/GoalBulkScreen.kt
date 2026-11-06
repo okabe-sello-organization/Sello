@@ -41,6 +41,7 @@ import com.software.sello.designsystem.component.FieldPill
 import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.MovementPane
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloChip
 import com.software.sello.designsystem.component.SelloNotice
@@ -55,7 +56,6 @@ import com.software.sello.presentation.movement.MovementCloseButton
 import com.software.sello.presentation.movement.MovementDatePicker
 import com.software.sello.presentation.movement.MovementNoteComposer
 import com.software.sello.presentation.movement.MovementNoteLine
-import com.software.sello.presentation.movement.MovementPane
 
 @Composable
 fun GoalBulkRoot(viewModels: ViewModelProvider.Factory, onClosed: () -> Unit) {

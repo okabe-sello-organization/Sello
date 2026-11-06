@@ -36,6 +36,8 @@ import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FormField
+import com.software.sello.designsystem.component.RestoreBody
+import com.software.sello.designsystem.component.RestoreHeading
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
 import com.software.sello.designsystem.component.SlipSkeleton
@@ -44,8 +46,6 @@ import com.software.sello.designsystem.component.StampInk
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.ResetPreview
 import com.software.sello.presentation.count.countText
-import com.software.sello.presentation.restore.RestoreBody
-import com.software.sello.presentation.restore.RestoreHeading
 import com.software.sello.presentation.restore.contentsText
 
 /**

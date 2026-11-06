@@ -43,6 +43,8 @@ import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.FieldMessage
 import com.software.sello.designsystem.component.FieldMessageText
 import com.software.sello.designsystem.component.FormField
+import com.software.sello.designsystem.component.RestoreBody
+import com.software.sello.designsystem.component.RestoreHeading
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SelloScaffold
 import com.software.sello.designsystem.component.Slip
@@ -50,8 +52,6 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.CheckedBackup
 import com.software.sello.presentation.count.countText
 import com.software.sello.presentation.date.dateLabels
-import com.software.sello.presentation.restore.RestoreBody
-import com.software.sello.presentation.restore.RestoreHeading
 import com.software.sello.presentation.restore.RestoredSlip
 import com.software.sello.presentation.restore.contentsText
 import com.software.sello.presentation.restore.message

@@ -1,34 +1,22 @@
 package com.software.sello.presentation.carry
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.CarryBreakdown
+import com.software.sello.designsystem.component.CarryCorrectionContent as CarryCorrectionContentPart
+import com.software.sello.designsystem.component.CarryCorrectionGroup
+import com.software.sello.designsystem.component.CarryCorrectionLine
 import com.software.sello.designsystem.component.CarryLine
-import com.software.sello.designsystem.component.ChangeRow
 import com.software.sello.designsystem.component.ErrorSlip
 import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.icon.painter
-import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.CarryBreakdown as CarryParts
 import com.software.sello.domain.model.CarryMonth
 import com.software.sello.domain.model.CarryVerdict
@@ -322,67 +310,35 @@ fun CarryCorrectionContent(
     saved: Boolean = false
 ) {
     val dates = dateLabels()
-    Column(
-        Modifier.testTag(CARRY_CORRECTION_TAG),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
-    ) {
-        if (changed) {
-            Text(
-                stringResource(R.string.carry_list_changed),
-                style = MaterialTheme.typography.bodyMedium,
-                color = SelloTheme.colors.semantic.warn,
-                modifier = Modifier.padding(bottom = 8.dp).testTag(CARRY_CORRECTION_CHANGED_TAG)
+    val unknown = stringResource(R.string.carry_list_unknown_category)
+    CarryCorrectionContentPart(
+        groups = list.groups.map { group ->
+            CarryCorrectionGroup(
+                name = group.name ?: unknown,
+                icon = group.iconKey?.let(CategoryIcons::iconFor),
+                lines = group.rows.map { changeLine(it, dates) }
             )
-        }
-        what?.let {
-            Text(it, style = MaterialTheme.typography.bodyMedium, color = SelloTheme.colors.inkSoft)
-        }
-        // Already recorded, the heading above says what changed; the lead asks before a save.
-        if (list.months > 0 && !saved) {
-            Text(
-                pluralStringResource(R.plurals.carry_list_lead, list.months, list.months),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(top = 8.dp).semantics { heading() }
-            )
-        }
-        list.groups.forEach { group ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                group.iconKey?.let {
-                    Icon(
-                        CategoryIcons.iconFor(it).painter(),
-                        null,
-                        Modifier.size(18.dp),
-                        SelloTheme.colors.brand
-                    )
-                }
-                Text(
-                    group.name ?: stringResource(R.string.carry_list_unknown_category),
-                    style = MaterialTheme.typography.titleSmall
-                )
+        },
+        footer = stringResource(
+            when {
+                saved -> R.string.carry_list_bases_saved
+                list.totalUnchanged -> R.string.carry_list_total_same
+                else -> R.string.carry_list_bases
             }
-            group.rows.forEach { ChangeLine(it, dates) }
+        ),
+        changed = if (changed) stringResource(R.string.carry_list_changed) else null,
+        what = what,
+        // Already recorded, the heading above says what changed; the lead asks before a save.
+        lead = if (list.months > 0 && !saved) {
+            pluralStringResource(R.plurals.carry_list_lead, list.months, list.months)
+        } else {
+            null
         }
-        Text(
-            stringResource(
-                when {
-                    saved -> R.string.carry_list_bases_saved
-                    list.totalUnchanged -> R.string.carry_list_total_same
-                    else -> R.string.carry_list_bases
-                }
-            ),
-            style = MaterialTheme.typography.bodySmall,
-            color = SelloTheme.colors.inkSoft,
-            modifier = Modifier.padding(top = 8.dp)
-        )
-    }
+    )
 }
 
 @Composable
-private fun ChangeLine(row: CarryChangeRow, dates: DateLabels) {
+private fun changeLine(row: CarryChangeRow, dates: DateLabels): CarryCorrectionLine {
     val month = dates.monthYear(row.month)
     val remaining = if (row.remainingBefore != null && row.remainingAfter != null) {
         stringResource(
@@ -442,12 +398,10 @@ private fun ChangeLine(row: CarryChangeRow, dates: DateLabels) {
         },
         flip
     ).joinToString("") { " $it." }
-    ChangeRow(month, value, spoken, caption = caption, emphasized = flip != null)
+    return CarryCorrectionLine(month, value, spoken, caption = caption, emphasized = flip != null)
 }
 
 const val CARRY_BREAKDOWN_TAG = "carry:breakdown"
-const val CARRY_CORRECTION_TAG = "carry:correction"
-const val CARRY_CORRECTION_CHANGED_TAG = "carry:correction.changed"
 
 /** Why a month's carry has no figures, and what can repair it (ADR 0020 CP8, CP23). */
 enum class CarryProblemKind {
