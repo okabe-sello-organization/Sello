@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -22,6 +23,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -43,8 +45,21 @@ import com.software.sello.designsystem.theme.SelloTheme
  */
 fun Modifier.dashedOutline(color: Color, width: Dp, corner: Dp): Modifier = drawWithContent {
     drawContent()
-    val stroke = width.toPx()
-    val radius = minOf(corner.toPx(), size.height / 2) - stroke / 2
+    drawDashedOutline(color, width.toPx(), corner.toPx())
+}
+
+/**
+ * [dashedOutline] with the corner of a shape token, such as `SelloTheme.shapes.panel`. Only
+ * for shapes with the same radius on every corner: it reads the top-start corner alone.
+ */
+fun Modifier.dashedOutline(color: Color, width: Dp, shape: CornerBasedShape): Modifier =
+    drawWithContent {
+        drawContent()
+        drawDashedOutline(color, width.toPx(), shape.topStart.toPx(size, this))
+    }
+
+private fun DrawScope.drawDashedOutline(color: Color, stroke: Float, corner: Float) {
+    val radius = minOf(corner, size.height / 2) - stroke / 2
     drawRoundRect(
         color = color,
         topLeft = Offset(stroke / 2, stroke / 2),

@@ -82,4 +82,45 @@ class SelloTypographyTest {
         }
         roles.forEach { (role, style) -> assertTrue(role, style.fontFamily != SairaStencilOne) }
     }
+
+    @Test
+    fun repeatedCombinationsAreTheirRoleWithOnlyTheNamedChange() {
+        val type = SelloType()
+        // name to size, line height, weight, tracking in em, worked out from the roles above.
+        val expected = mapOf(
+            "barTitle" to (type.barTitle to listOf(24.0, 26.0, 800.0, -0.02)),
+            "dialogTitle" to (type.dialogTitle to listOf(22.0, 26.0, 800.0, -0.02)),
+            "rowTitle" to (type.rowTitle to listOf(14.0, 19.0, 800.0, 0.0)),
+            "lineTitle" to (type.lineTitle to listOf(13.5, 18.0, 800.0, 0.0)),
+            "groupLabel" to (type.groupLabel to listOf(12.5, 16.0, 800.0, 0.0)),
+            "chipLabel" to (type.chipLabel to listOf(13.5, 18.0, 600.0, 0.0)),
+            "figure" to (type.figure to listOf(16.0, 20.0, 900.0, 0.0)),
+            "figureLarge" to (type.figureLarge to listOf(23.0, 26.0, 900.0, -0.02))
+        )
+        for ((name, pair) in expected) {
+            val (style, v) = pair
+            assertEquals(name, SchibstedGrotesk, style.fontFamily)
+            assertEquals(name, v[0].sp, style.fontSize)
+            assertEquals(name, v[1].sp, style.lineHeight)
+            assertEquals(name, FontWeight(v[2].toInt()), style.fontWeight)
+            assertEquals(name, v[3].em, style.letterSpacing)
+        }
+        // Figures stay tabular; sentence text does not.
+        val tabular =
+            listOf(type.barTitle, type.dialogTitle, type.figure, type.figureLarge)
+        tabular.forEach { assertEquals("tnum", it.fontFeatureSettings) }
+        val sentence =
+            listOf(type.rowTitle, type.lineTitle, type.groupLabel, type.chipLabel)
+        sentence.forEach { assertEquals(null, it.fontFeatureSettings) }
+    }
+
+    @Test
+    fun weightsByRole() {
+        val weight = SelloType().weight
+        assertEquals(
+            listOf(400, 600, 700, 800, 900),
+            listOf(weight.regular, weight.soft, weight.strong, weight.emphasis, weight.figure)
+                .map { it.weight }
+        )
+    }
 }

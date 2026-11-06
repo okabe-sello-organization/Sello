@@ -77,14 +77,17 @@ fun Slip(
     }
 }
 
-private val PlainSlipShape = RoundedCornerShape(11.dp)
+/** A slip's corner radius, with or without the pinked edge. Only slips use it. */
+private val SlipCorner = 11.dp
+
+private val PlainSlipShape = RoundedCornerShape(SlipCorner)
 
 /**
  * Rounded top corners and a zig-zag bottom edge. The teeth are stretched slightly so a
  * whole number of them always fits the width.
  */
 class PinkedBottomShape(
-    private val corner: Dp = 11.dp,
+    private val corner: Dp = SlipCorner,
     private val toothWidth: Dp = 10.dp,
     private val toothHeight: Dp = 5.dp
 ) : Shape {

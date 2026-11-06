@@ -2164,7 +2164,7 @@ window.SELLO_FINDINGS = {
    "id": "C18",
    "component": "Modifier.dashedOutline",
    "ref": null,
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:44",
+   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:46",
    "copies": [
     {
      "id": "C18-1",
@@ -3852,7 +3852,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:162",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:172",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: fontSize = 0.56.em,"
@@ -3951,7 +3951,7 @@ window.SELLO_FINDINGS = {
      "note": "ExpenseStubLine: letterSpacing = 0.6.sp"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:87",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:102",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: letterSpacing = 0.6.sp"
@@ -4041,13 +4041,13 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:165",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:175",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: letterSpacing = 0.em,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:184",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:194",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: withStyle(SpanStyle(letterSpacing = 0.em)) { append(ZERO_WIDTH_SPACE) }"
@@ -4278,7 +4278,7 @@ window.SELLO_FINDINGS = {
      "note": "NoteComposer: fontWeight = if (error != null) FontWeight.W600 else null,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:163",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:173",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: fontWeight = FontWeight.W600,"
@@ -4521,7 +4521,7 @@ window.SELLO_FINDINGS = {
      "note": "MoneyStyle.textStyle: fontWeight = FontWeight.W700,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:144",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:159",
      "area": "design-system:Plan",
      "features": [],
      "note": "ExpectedChip: fontWeight = FontWeight.W700,"
@@ -5153,7 +5153,7 @@ window.SELLO_FINDINGS = {
      "note": "MoreSlip: style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:86",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:101",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: fontWeight = FontWeight.W800,"
@@ -5394,7 +5394,7 @@ window.SELLO_FINDINGS = {
      "note": "Plate: Plate outer border of the celebration stamp (a stamp: stampHero fits)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:76",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:91",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: PlanSlip dashed outline (not a stamp)"
@@ -5539,7 +5539,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:128",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:143",
      "area": "design-system:Plan",
      "features": [],
      "note": "ExpectedChip: ExpectedChip pill outline"
@@ -5710,7 +5710,7 @@ window.SELLO_FINDINGS = {
      "note": "MoreSlip: Spacer(Modifier.width(4.dp))"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:129",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:144",
      "area": "design-system:Plan",
      "features": [],
      "note": "ExpectedChip: .padding(horizontal = 10.dp, vertical = 4.dp)"
@@ -6099,7 +6099,7 @@ window.SELLO_FINDINGS = {
      "note": "Footnote: horizontalArrangement = Arrangement.spacedBy(8.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:80",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:95",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: horizontalArrangement = Arrangement.spacedBy(8.dp),"
@@ -6341,7 +6341,7 @@ window.SELLO_FINDINGS = {
      "note": "StampTicket: .padding(start = 18.dp, top = 12.dp, end = 16.dp, bottom = 12.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:77",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:92",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: .padding(horizontal = 16.dp, vertical = 14.dp)"
@@ -6618,13 +6618,13 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: DISABLED_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/AmountKeypad.kt:178",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/AmountKeypad.kt:181",
      "area": "design-system:AmountKeypad",
      "features": [],
      "note": "RowScope.Key: uses DISABLED_KEY_ALPHA: .alpha(if (enabled) 1f else DISABLED_KEY_ALPHA)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/AmountKeypad.kt:185",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/AmountKeypad.kt:192",
      "area": "design-system:AmountKeypad",
      "features": [],
      "note": "file-level constant: DISABLED_KEY_ALPHA defined"
@@ -6974,7 +6974,7 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: SYMBOL_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:166",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:176",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: uses SYMBOL_ALPHA: color = if (ink.isSpecified) ink.copy(alpha = ink.alpha * SYMBOL_ALPHA) else ink"
