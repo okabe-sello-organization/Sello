@@ -291,6 +291,17 @@ private fun Choices(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
                 stringResource(R.string.goal_bulk_choices)
             }
         )
+        // A refresh failed: the goals are those last read, and the lines stay.
+        if (state.stale) {
+            StatusSlip(
+                kind = StatusKind.Older,
+                message = stringResource(R.string.recibo_stale),
+                modifier = Modifier.testTag(GOAL_BULK_STALE_TAG),
+                action = StatusAction(StatusSlipDefaults.retryLabel) {
+                    onAction(GoalBulkAction.Retry)
+                }
+            )
+        }
         if (state.noActiveGoal) {
             FieldMessageText(
                 FieldMessage(stringResource(R.string.goal_bulk_no_active_goal)),
@@ -419,6 +430,7 @@ const val GOAL_BULK_RECEIPT_TAG = "goal.bulk.receipt"
 const val GOAL_BULK_DATE_TAG = "goal.bulk.date"
 const val GOAL_BULK_GOALS_TAG = "goal.bulk.goals"
 const val GOAL_BULK_NO_GOAL_TAG = "goal.bulk.noGoal"
+const val GOAL_BULK_STALE_TAG = "goal.bulk.stale"
 const val GOAL_BULK_KINDS_TAG = "goal.bulk.kinds"
 const val GOAL_BULK_NOTE_TAG = "goal.bulk.note"
 const val GOAL_BULK_UNDO_TAG = "goal.bulk.undo"

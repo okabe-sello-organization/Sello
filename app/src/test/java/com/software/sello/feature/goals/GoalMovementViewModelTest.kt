@@ -47,6 +47,7 @@ import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.movement.MovementNoteProblem
 import com.software.sello.testing.AnswersInTurn
 import com.software.sello.testing.TestMoneyLabels
+import com.software.sello.testing.TurnsInOrder
 import com.software.sello.testing.pesos
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -621,5 +622,155 @@ class GoalMovementViewModelTest {
         assertFalse(model.state.value.loadFailed)
         assertFalse(model.state.value.loading)
         assertEquals(viaje, model.state.value.goal?.id)
+    }
+
+    // A failed refresh (#381)
+
+    private fun failed(): GoalBoardState =
+        ReadState.Failed(StorageFailure.Unavailable("hand"), null)
+
+    /** Viaje a la costa after one more aporte: 750.000 + 960.000 + 90.000 = 1.800.000. */
+    private fun newer(): GoalBoardState = ReadState.Ready(
+        GoalBoard(
+            4,
+            10,
+            listOf(
+                goal(
+                    viaje,
+                    "Viaje a la costa",
+                    3_000_000,
+                    aporte(11, 750_000),
+                    aporte(12, 960_000),
+                    aporte(13, 90_000)
+                )
+            ),
+            emptySet(),
+            emptyList()
+        )
+    )
+
+    /** A form whose every observation of the board answers the next of [turns]. */
+    private fun reading(
+        turns: TurnsInOrder<GoalBoard, StorageFailure>,
+        saved: SavedStateHandle = SavedStateHandle(mapOf("goalId" to viaje, "withdrawal" to false))
+    ) = GoalMovementViewModel(
+        saved,
+        object : GoalReads by reads {
+            override fun observeBoard(): Flow<GoalBoardState> = turns.observe()
+        },
+        commands,
+        clock,
+        ids,
+        money,
+        corrections
+    )
+
+    private fun SavedStateHandle.afterProcessDeath() =
+        SavedStateHandle(keys().associateWith { get<Any?>(it) })
+
+    @Test
+    fun aFailedRefreshKeepsWhatTheGoalHoldsMarkedOlderAndTheAporteStillSaves() = runTest {
+        val model = reading(TurnsInOrder(listOf(reads.board.value, failed())))
+        model.keys("4", "5", "000")
+
+        val now = model.state.value
+        assertTrue(now.stale)
+        assertFalse(now.loadFailed)
+        assertFalse(now.loading)
+        assertEquals("1.710.000", now.goal!!.saved.digits)
+        assertEquals(3, now.goals.size)
+        assertTrue(now.canSubmit)
+
+        // Storage checks the generation and version read; the form does not block on it.
+        model.onAction(GoalMovementAction.Submit)
+
+        val sent = commands.sent.single() as RecordGoalMovement
+        assertEquals(pesos(45_000), sent.amount)
+        assertEquals(GoalId.of(viaje).value() to 5L, sent.goalId to sent.expectedVersion)
+        assertEquals(3L, sent.generation)
+    }
+
+    @Test
+    fun reintentarWhileOlderKeepsTheFiguresIfItFailsAgainAndClearsTheNoticeOnceItReads() = runTest {
+        val turns =
+            TurnsInOrder(listOf(reads.board.value, failed()), listOf(failed()), listOf(newer()))
+        val model = reading(turns)
+        model.keys("4", "5", "000")
+
+        model.onAction(GoalMovementAction.Retry)
+
+        assertEquals(2, turns.subscriptions)
+        assertTrue(model.state.value.stale)
+        assertFalse(model.state.value.loading)
+        assertEquals("1.710.000", model.state.value.goal!!.saved.digits)
+        assertEquals("45.000", model.state.value.amount!!.digits)
+
+        model.onAction(GoalMovementAction.Retry)
+
+        assertEquals(3, turns.subscriptions)
+        assertFalse(model.state.value.stale)
+        assertEquals("1.800.000", model.state.value.goal!!.saved.digits)
+        assertEquals("45.000", model.state.value.amount!!.digits)
+        model.onAction(GoalMovementAction.Submit)
+        assertEquals(4L, (commands.sent.single() as RecordGoalMovement).generation)
+    }
+
+    @Test
+    fun nothingEverReadIsTheErrorNotOlderFigures() = runTest {
+        val model = reading(TurnsInOrder(listOf(failed())))
+
+        assertTrue(model.state.value.loadFailed)
+        assertFalse(model.state.value.stale)
+        assertFalse(model.state.value.canSubmit)
+    }
+
+    @Test
+    fun aCorrectionKeepsTheMovementAsReadMarkedOlder() = runTest {
+        val model = reading(
+            TurnsInOrder(listOf(reads.board.value, failed())),
+            SavedStateHandle(mapOf("goalId" to viaje, "movementId" to movementId(12).value))
+        )
+
+        assertTrue(model.state.value.stale)
+        assertFalse(model.state.value.loading)
+        assertEquals("960.000", model.state.value.amount!!.digits)
+        assertTrue(model.state.value.canDelete)
+    }
+
+    @Test
+    fun afterProcessDeathTheDraftComesBackOverOlderFigures() = runTest {
+        val saved = SavedStateHandle(mapOf("goalId" to viaje, "withdrawal" to true))
+        model(saved = saved).keys("4", "5", "000")
+
+        val restored = reading(
+            TurnsInOrder(listOf(reads.board.value, failed())),
+            saved.afterProcessDeath()
+        )
+
+        val now = restored.state.value
+        assertTrue(now.stale)
+        assertEquals("45.000", now.amount!!.digits)
+        assertTrue(now.withdrawal)
+        assertEquals("1.710.000", now.goal!!.saved.digits)
+        assertTrue(now.canSubmit)
+    }
+
+    @Test
+    fun afterProcessDeathWithNothingReadTheDraftWaitsBehindTheError() = runTest {
+        val saved = SavedStateHandle(mapOf("goalId" to viaje, "withdrawal" to false))
+        model(saved = saved).keys("4", "5", "000")
+        val turns = TurnsInOrder(listOf(failed()), listOf(reads.board.value))
+
+        val restored = reading(turns, saved.afterProcessDeath())
+
+        assertTrue(restored.state.value.loadFailed)
+        assertFalse(restored.state.value.stale)
+
+        restored.onAction(GoalMovementAction.Retry)
+
+        assertEquals(2, turns.subscriptions)
+        assertFalse(restored.state.value.loadFailed)
+        assertFalse(restored.state.value.stale)
+        assertEquals("45.000", restored.state.value.amount!!.digits)
     }
 }

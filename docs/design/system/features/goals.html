@@ -225,6 +225,7 @@
       <figure data-shot="goal-movement-correcting" data-module="app" data-caption="Correcting a saved aporte"></figure>
       <figure data-shot="goal-movement-loading" data-module="app" data-caption="Loading"></figure>
       <figure data-shot="goal-movement-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="goal-movement-stale" data-module="app" data-caption="Stale: a refresh failed, what the goal holds is as last read"></figure>
       <figure data-shot="goal-movement-no-goals" data-module="app" data-caption="No active goals"></figure>
       <figure data-shot="goal-movement-over" data-module="app" data-caption="A retiro of more than is saved"></figure>
       <figure data-shot="goal-movement-busy" data-module="app" data-caption="Saving"></figure>
@@ -242,7 +243,7 @@
         <li><a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a> (<code>GoalMovementScreen.kt:128</code>): header <a href="../components.html#c-SegmentedSwitch"><code>SegmentedSwitch</code></a> Aportar / Retirar (new movements only); <a href="../components.html#c-EntryAmountSlip"><code>EntryAmountSlip</code></a> "Aporte en pesos" with a green "+" amount and the goal's icon, or "Retiro en pesos" with an ink "−"; the date <a href="../components.html#c-FieldPill"><code>FieldPill</code></a> in its corner.</li>
         <li>"Otro movimiento" <a href="../components.html#c-MoreSlip"><code>MoreSlip</code></a> peeking under the amount (new movements only).</li>
         <li>Choices: <a href="../components.html#c-EntryHeading"><code>EntryHeading</code></a> "Meta", the goals as <a href="../components.html#c-SelloChip"><code>SelloChip</code></a>s with their percentage as trailing text in <a href="../components.html#c-ChipRows"><code>ChipRows</code></a> (chosen first, via <a href="../components.html#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>), a <code>FactLine</code> "Llevas <strong>1.710.000</strong> guardados en esta meta.", the note line.</li>
-        <li>Action: blocking and error <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a>s, a hint, then the full-width button — Gain with the flag for Aportar, Ink for Registrar retiro (<code>GoalMovementScreen.kt:291</code>).</li>
+        <li>Action: blocking and error <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a>s, a hint, then the full-width button — Gain with the flag for Aportar, Ink for Registrar retiro (<code>GoalMovementScreen.kt:302</code>).</li>
         <li>Compact <a href="../components.html#c-AmountKeypad"><code>AmountKeypad</code></a>.</li>
       </ol>
 
@@ -253,12 +254,12 @@
           <tbody>
             <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>GoalMovementScreen.kt:113</code></td><td><code>goal-movement-loading</code></td></tr>
             <tr><td>Error (nothing loaded)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer esta meta" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>GoalMovementScreen.kt:117</code></td><td><code>goal-movement-failed</code></td></tr>
-            <tr><td>Empty</td><td>No active goal: "No tienes metas activas. Crea una en Metas." as a FactLine in place of the chips.</td><td><code>GoalMovementScreen.kt:243</code></td><td><code>goal-movement-no-goals</code></td></tr>
-            <tr><td>Stale</td><td>No notice: the last good goals stay in use.</td><td><code>app/src/main/java/com/software/sello/feature/goals/GoalMovementViewModel.kt:273</code></td><td>Drawn as the form, with no notice (#381): <code>goal-movement</code></td></tr>
-            <tr><td>Invalid input</td><td>Under the amount: "Más de lo guardado (…)", "Máximo 12 dígitos" or "Escribe un monto entero entre 1 y 999.999.999.999." (pasted text); "No se puede: el retiro de … del … usa este aporte. Borra o corrige ese retiro primero."; hints "Elige a qué meta va." and "Aún no cambiaste nada.".</td><td><code>GoalMovementScreen.kt:212</code>, <code>GoalMovementScreen.kt:294</code>, <code>GoalMovementScreen.kt:327</code></td><td><code>goal-movement-over</code>, <code>goal-movement-at-limit</code>, <code>goal-movement-pasted</code>, <code>goal-movement-blocked</code></td></tr>
-            <tr><td>Busy</td><td>Button "Guardando…" with spinner; keypad, chips and switch disabled.</td><td><code>GoalMovementScreen.kt:343</code></td><td><code>goal-movement-busy</code></td></tr>
-            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and the button "Comprobar si se guardó" (still Gain, still the flag); everything else locked.</td><td><code>GoalMovementScreen.kt:322</code>, <code>GoalMovementScreen.kt:338</code></td><td><code>goal-movement-unknown</code></td></tr>
-            <tr><td>Refused</td><td>Error lines: "No se guardó. Puedes intentarlo de nuevo.", "Tus datos cambiaron mientras escribías. No se anotó nada.", "Esta meta o este movimiento ya no está.", "La meta cambió mientras escribías. Revisa y vuelve a intentarlo.", "Esta meta ya está lograda: no se puede cambiar.", "No se borró. El movimiento sigue ahí.", future or invalid date.</td><td><code>GoalMovementScreen.kt:306</code></td><td><code>goal-movement-refused</code></td></tr>
+            <tr><td>Empty</td><td>No active goal: "No tienes metas activas. Crea una en Metas." as a FactLine in place of the chips.</td><td><code>GoalMovementScreen.kt:254</code></td><td><code>goal-movement-no-goals</code></td></tr>
+            <tr><td>Stale</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." with "Reintentar" under "Meta", as on Anotar; the goals and what they hold are those last read, the draft stays and can still be saved (storage checks the version read).</td><td><code>GoalMovementScreen.kt:244</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalMovementViewModel.kt:353</code></td><td><code>goal-movement-stale</code></td></tr>
+            <tr><td>Invalid input</td><td>Under the amount: "Más de lo guardado (…)", "Máximo 12 dígitos" or "Escribe un monto entero entre 1 y 999.999.999.999." (pasted text); "No se puede: el retiro de … del … usa este aporte. Borra o corrige ese retiro primero."; hints "Elige a qué meta va." and "Aún no cambiaste nada.".</td><td><code>GoalMovementScreen.kt:212</code>, <code>GoalMovementScreen.kt:305</code>, <code>GoalMovementScreen.kt:338</code></td><td><code>goal-movement-over</code>, <code>goal-movement-at-limit</code>, <code>goal-movement-pasted</code>, <code>goal-movement-blocked</code></td></tr>
+            <tr><td>Busy</td><td>Button "Guardando…" with spinner; keypad, chips and switch disabled.</td><td><code>GoalMovementScreen.kt:354</code></td><td><code>goal-movement-busy</code></td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and the button "Comprobar si se guardó" (still Gain, still the flag); everything else locked.</td><td><code>GoalMovementScreen.kt:333</code>, <code>GoalMovementScreen.kt:349</code></td><td><code>goal-movement-unknown</code></td></tr>
+            <tr><td>Refused</td><td>Error lines: "No se guardó. Puedes intentarlo de nuevo.", "Tus datos cambiaron mientras escribías. No se anotó nada.", "Esta meta o este movimiento ya no está.", "La meta cambió mientras escribías. Revisa y vuelve a intentarlo.", "Esta meta ya está lograda: no se puede cambiar.", "No se borró. El movimiento sigue ahí.", future or invalid date.</td><td><code>GoalMovementScreen.kt:317</code></td><td><code>goal-movement-refused</code></td></tr>
             <tr><td>Correcting</td><td>Title "Corregir aporte"/"Corregir retiro", no switch, goal chips locked, "Borrar" on the band, button "Guardar cambios". Deleting is immediate with a 6-second Deshacer notice afterwards.</td><td><code>GoalMovementScreen.kt:100</code></td><td><code>goal-movement-correcting</code></td></tr>
             <tr><td>Discard confirm</td><td><code>MovementDiscardSlip</code> "¿Descartar este movimiento?" / "Lo que escribiste no se guardará." / "Descartar".</td><td><code>GoalMovementScreen.kt:176</code></td><td><code>goal-movement-discard</code></td></tr>
             <tr><td>Restored draft</td><td>The typed amount, kind, goal, date and note come back from the saved draft.</td><td><code>GoalMovementViewModel.kt:101</code></td><td>Drawn as the filled form, so not captured again: <code>goal-movement</code></td></tr>
@@ -272,6 +273,7 @@
         <li>Date pill → <code>OpenDatePicker</code> (<code>MovementDatePicker</code>); note line → <code>OpenComposer</code> (<code>MovementNoteComposer</code>).</li>
         <li>Goal chip → <code>GoalPicked(id)</code>; "Otro movimiento" → <code>Several</code>, which swaps this form for Aportar varios.</li>
         <li>Button → <code>Submit</code>, or <code>Retry</code> while the outcome is unknown; "Borrar" → <code>Delete</code>; close/back → <code>Back</code> (asks first when something was typed).</li>
+        <li>"Reintentar" (error or stale) → <code>Retry</code>: reads the goals again; a stale read that fails again keeps the older figures.</li>
       </ul>
 
       <h3>Key copy</h3>
@@ -280,6 +282,7 @@
         <li>"Aporte en pesos" / "Retiro en pesos" (<code>goal_movement_contribution_label</code>, <code>goal_movement_withdrawal_label</code>), "Meta" (<code>goal_movement_goal</code>), "Llevas %s guardados en esta meta." (<code>goal_movement_saved_fact</code>)</li>
         <li>"Aportar" / "Registrar retiro" (<code>goal_movement_record_contribution</code>, <code>goal_movement_record_withdrawal</code>), "Otro movimiento" (<code>entry_more_movement</code>), "Comprobar si se guardó" (<code>expense_entry_check_again</code>), "Guardando…" (<code>expense_entry_saving</code>)</li>
         <li>"Más de lo guardado (%s)" (<code>goal_movement_over_saved</code>), "No tienes metas activas. Crea una en Metas." (<code>goal_movement_no_goals</code>), "¿Descartar este movimiento?" (<code>goal_movement_discard_title</code>)</li>
+        <li>"No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." (<code>recibo_stale</code>, shared with the other entry forms), "Reintentar" (<code>StatusSlipDefaults.retryLabel</code>)</li>
       </ul>
     </section>
 
@@ -370,6 +373,7 @@
       <figure data-shot="bulk-receipt-goal" data-module="design-system" data-caption="The shared BulkReceipt in its goal form (design-system capture)"></figure>
       <figure data-shot="goal-bulk-loading" data-module="app" data-caption="Loading"></figure>
       <figure data-shot="goal-bulk-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="goal-bulk-stale" data-module="app" data-caption="Stale: the goals as last read, the lines stay"></figure>
       <figure data-shot="goal-bulk-no-goals" data-module="app" data-caption="No active goal"></figure>
       <figure data-shot="goal-bulk-discard" data-module="app" data-caption="The discard confirm"></figure>
       <figure data-shot="goal-bulk-removed" data-module="app" data-caption="A line removed: Deshacer"></figure>
@@ -390,12 +394,12 @@
           <tbody>
             <tr><td>Loading</td><td><code>SlipSkeleton</code> in <code>MovementPane</code>.</td><td><code>GoalBulkScreen.kt:92</code></td><td><code>goal-bulk-loading</code></td></tr>
             <tr><td>Error (nothing loaded)</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed "No pudimos leer esta meta" / "Tus registros siguen guardados. Vuelve a intentarlo."</td><td><code>GoalBulkScreen.kt:96</code></td><td><code>goal-bulk-failed</code></td></tr>
-            <tr><td>Empty</td><td>One empty line; with no active goal, "No hay metas activas." in error tone above the (empty) chips.</td><td><code>GoalBulkScreen.kt:294</code></td><td><code>goal-bulk-opening</code></td></tr>
+            <tr><td>Empty</td><td>One empty line; with no active goal, "No hay metas activas." in error tone above the (empty) chips.</td><td><code>GoalBulkScreen.kt:305</code></td><td><code>goal-bulk-opening</code></td></tr>
             <tr><td>Invalid lines</td><td>Caption "Falta 1 meta" / "Falta 1 tipo" / "Máximo 30 por recibo"; per line "Elige una meta", "Elige Aportar o Retirar".</td><td><code>GoalBulkScreen.kt:173</code>, <code>GoalBulkScreen.kt:263</code></td><td><code>goal-bulk-missing-goal</code>, <code>goal-bulk-missing-type</code>, <code>goal-bulk-thirty-lines</code></td></tr>
-            <tr><td>Refused</td><td>Caption "Revisa 2 renglones"; per line "Solo hay … disponibles", "La fecha no puede ser posterior a hoy", "Esa fecha no es válida"; error "No se guardó. Tu borrador sigue aquí." or "Una meta cambió mientras escribías. Revisa y vuelve a anotar."</td><td><code>GoalBulkScreen.kt:174</code>, <code>GoalBulkScreen.kt:350</code></td><td><code>goal-bulk-refused</code></td></tr>
-            <tr><td>Busy</td><td>"Guardando…" with spinner; everything else disabled.</td><td><code>GoalBulkScreen.kt:375</code></td><td><code>goal-bulk-saving</code></td></tr>
-            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó" (Gain, no icon).</td><td><code>GoalBulkScreen.kt:370</code></td><td><code>goal-bulk-unknown</code></td></tr>
-            <tr><td>Stale</td><td>No notice: the last good goals stay in use.</td><td><code>app/src/main/java/com/software/sello/feature/goals/GoalBulkViewModel.kt:395</code></td><td>Drawn as the receipt, with no notice (#381): <code>goal-bulk-three-lines</code></td></tr>
+            <tr><td>Refused</td><td>Caption "Revisa 2 renglones"; per line "Solo hay … disponibles", "La fecha no puede ser posterior a hoy", "Esa fecha no es válida"; error "No se guardó. Tu borrador sigue aquí." or "Una meta cambió mientras escribías. Revisa y vuelve a anotar."</td><td><code>GoalBulkScreen.kt:174</code>, <code>GoalBulkScreen.kt:361</code></td><td><code>goal-bulk-refused</code></td></tr>
+            <tr><td>Busy</td><td>"Guardando…" with spinner; everything else disabled.</td><td><code>GoalBulkScreen.kt:386</code></td><td><code>goal-bulk-saving</code></td></tr>
+            <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and "Comprobar si se guardó" (Gain, no icon).</td><td><code>GoalBulkScreen.kt:381</code></td><td><code>goal-bulk-unknown</code></td></tr>
+            <tr><td>Stale</td><td><a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> Older "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." with "Reintentar" under "Meta y tipo", as on Anotar varios; the goals are those last read, the lines stay and can still be saved (storage checks the versions read).</td><td><code>GoalBulkScreen.kt:295</code>, <code>app/src/main/java/com/software/sello/feature/goals/GoalBulkViewModel.kt:484</code></td><td><code>goal-bulk-stale</code></td></tr>
             <tr><td>Discard confirm</td><td><code>ConfirmSlip</code> "¿Descartar 3 renglones?" / "Se borra lo que escribiste en este recibo. Esto no se puede deshacer." / "Descartar" / "Seguir anotando".</td><td><code>GoalBulkScreen.kt:139</code></td><td><code>goal-bulk-discard</code></td></tr>
             <tr><td>Restored draft</td><td>Lines, highlight and keys are serialised and come back, including drafts saved before each line named its goal.</td><td><code>GoalBulkViewModel.kt:96</code></td><td>Drawn as the filled form, so not captured again: <code>goal-bulk-three-lines</code></td></tr>
           </tbody>
@@ -407,6 +411,7 @@
         <li>A line → <code>Select(index)</code>; its ✕ → <code>Remove(index)</code>, "Deshacer" → <code>UndoRemove</code>; "Otro renglón" → <code>AddLine</code>.</li>
         <li>Goal chip → <code>GoalPicked(id)</code>; "Aportar"/"Retirar" → <code>Kind(withdrawal)</code>; date pill → <code>OpenDatePicker</code>; note → <code>OpenComposer</code>.</li>
         <li>Button → <code>Submit</code>, or <code>Retry</code> when unknown; close/back → <code>Back</code>.</li>
+        <li>"Reintentar" (error or stale) → <code>Retry</code>: reads the goals again; a stale read that fails again keeps the older goals.</li>
       </ul>
 
       <h3>Key copy</h3>
@@ -414,6 +419,7 @@
         <li>"Aportar varios" (<code>goal_bulk_title</code>), "%d renglones" (<code>goal_bulk_lines</code>), "Meta y tipo" / "Meta y tipo · renglón %d" (<code>goal_bulk_choices</code>, <code>goal_bulk_choices_line</code>), "Total" (<code>goal_bulk_total</code>)</li>
         <li>"Sin meta" (<code>goal_bulk_no_goal</code>), "Sin tipo" (<code>goal_bulk_no_kind</code>), "Elige una meta" (<code>goal_bulk_choose_goal</code>), "Elige Aportar o Retirar" (<code>goal_bulk_choose_kind</code>), "Faltan %d metas" (<code>goal_bulk_missing_goals</code>), "Faltan %d tipos" (<code>goal_bulk_missing</code>), "Revisa %d renglones" (<code>goal_bulk_review</code>), "Máximo 30 por recibo" (<code>goal_bulk_limit</code>)</li>
         <li>"Anotar %d movimientos" (<code>goal_bulk_submit</code>), "No se guardó. Tu borrador sigue aquí." (<code>goal_bulk_not_saved</code>), "Seguir anotando" (<code>goal_bulk_keep_editing</code>), "Quitaste el renglón de %s" (<code>goal_bulk_removed</code>)</li>
+        <li>"No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día." (<code>recibo_stale</code>, shared with Anotar varios)</li>
       </ul>
     </section>
 

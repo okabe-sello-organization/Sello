@@ -66,6 +66,8 @@ enum class GoalMovementError {
 data class GoalMovementState(
     val loading: Boolean = true,
     val loadFailed: Boolean = false,
+    /** A refresh failed: the goals and what they hold are those last read, marked older. */
+    val stale: Boolean = false,
     val editing: Boolean = false,
     val withdrawal: Boolean = false,
     val amount: MoneyTextValue? = null,

@@ -112,6 +112,26 @@ class GoalBulkScreenTest {
     }
 
     @Test
+    fun olderGoalsSaySoOfferReintentarAndTheReceiptStillSaves() {
+        show(GoalBulkSamples.three.copy(stale = true))
+
+        rule.onNodeWithTag(GOAL_BULK_STALE_TAG).assertExists()
+        rule.onNodeWithText(
+            "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día."
+        ).assertExists()
+        rule.onNodeWithTag(GOAL_BULK_SUBMIT_TAG).assertIsEnabled()
+        rule.onNodeWithText("Reintentar").performClick()
+        assertEquals(listOf<GoalBulkAction>(GoalBulkAction.Retry), actions)
+    }
+
+    @Test
+    fun freshGoalsHaveNoNotice() {
+        show(GoalBulkSamples.three)
+
+        rule.onNodeWithTag(GOAL_BULK_STALE_TAG).assertDoesNotExist()
+    }
+
+    @Test
     fun aRemovedLineOffersDeshacer() {
         show(GoalBulkSamples.three.copy(removed = RemovedGoalLine(withdrawal = false)))
 

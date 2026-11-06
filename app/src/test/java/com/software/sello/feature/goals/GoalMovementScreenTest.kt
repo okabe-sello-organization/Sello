@@ -111,6 +111,27 @@ class GoalMovementScreenTest {
     }
 
     @Test
+    fun olderFiguresSaySoOfferReintentarAndStillSave() {
+        show(aporte.copy(amount = plain("350.000"), stale = true))
+
+        rule.onNodeWithTag(GOAL_MOVEMENT_STALE_TAG).assertExists()
+        rule.onNodeWithText(
+            "No pudimos actualizar. Esto es lo último que se leyó y puede no estar al día."
+        ).assertExists()
+        rule.onNodeWithText("Llevas 1.710.000 guardados en esta meta.").assertExists()
+        rule.onNodeWithTag(GOAL_MOVEMENT_SUBMIT_TAG).assertIsEnabled()
+        rule.onNodeWithText("Reintentar").performClick()
+        assertEquals(listOf<GoalMovementAction>(GoalMovementAction.Retry), actions)
+    }
+
+    @Test
+    fun freshFiguresHaveNoNotice() {
+        show(aporte)
+
+        rule.onNodeWithTag(GOAL_MOVEMENT_STALE_TAG).assertDoesNotExist()
+    }
+
+    @Test
     fun mt15ACorrectionALaterRetiroNeedsSaysWhichRetiro() {
         show(
             aporte.copy(

@@ -18,6 +18,7 @@ import com.software.sello.domain.model.GoalMovementLine
 import com.software.sello.domain.model.Money
 import com.software.sello.domain.model.Note
 import com.software.sello.domain.model.Outcome
+import com.software.sello.domain.model.StorageFailure
 import com.software.sello.domain.model.TransactionAmount
 import com.software.sello.domain.policy.AmountDraft
 import com.software.sello.domain.policy.GoalPolicy
@@ -39,6 +40,7 @@ import com.software.sello.presentation.corrections.Corrections
 import com.software.sello.presentation.corrections.GoalCelebration
 import com.software.sello.presentation.money.MoneyFormatter
 import com.software.sello.presentation.movement.SavedNoteComposer
+import com.software.sello.presentation.read.LastGoodRead
 import com.software.sello.presentation.submission.AmountDraftSerializer
 import com.software.sello.presentation.submission.LocalDateSerializer
 import com.software.sello.presentation.submission.SavedDraft
@@ -148,7 +150,10 @@ class GoalBulkViewModel(
         MutableStateFlow((drafts.read() ?: oneGoalDraft())?.takeIf(::wellFormed) ?: opening())
     private val progress = MutableStateFlow(Progress())
     private val retries = MutableStateFlow(0)
-    private val board = retries.flatMapLatest { reads.observeBoard() }
+
+    /** The board last read: a refresh that fails, or a Reintentar, keeps it, marked older. */
+    private val lastGood = LastGoodRead<GoalBoard, StorageFailure>()
+    private val board = retries.flatMapLatest { lastGood.keep(Unit, reads.observeBoard()) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, ReadState.Loading)
     private val composer = SavedNoteComposer(saved, PREFIX, viewModelScope)
     private var removal: Job? = null
@@ -235,7 +240,7 @@ class GoalBulkViewModel(
             GoalBulkAction.Retry -> when {
                 now.busy -> Unit
                 submission.pending -> viewModelScope.launch { recover() }
-                now.loadFailed -> retries.update { it + 1 }
+                now.loadFailed || now.stale -> retries.update { it + 1 }
                 else -> progress.update { it.copy(error = null) }
             }
 
@@ -476,6 +481,7 @@ class GoalBulkViewModel(
         return GoalBulkState(
             loading = board is ReadState.Loading,
             loadFailed = board is ReadState.Failed && read == null,
+            stale = board is ReadState.Failed && read != null,
             goalName = named.singleOrNull(),
             goals = active.map {
                 GoalBulkChoice(
