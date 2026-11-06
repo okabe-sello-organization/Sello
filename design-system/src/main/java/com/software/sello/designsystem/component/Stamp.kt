@@ -72,14 +72,19 @@ fun Stamp(
             SelloTheme.type.stampLarge,
             4.dp,
             SelloTheme.shapes.stampLarge,
-            PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 1.dp)
+            PaddingValues(
+                start = SelloTheme.spacing.lg,
+                top = SelloTheme.spacing.xs,
+                end = SelloTheme.spacing.lg,
+                bottom = 1.dp
+            )
         )
 
         StampSize.Hero -> StampSpec(
             SelloTheme.type.stampHero,
             5.dp,
             SelloTheme.shapes.stampHero,
-            PaddingValues(start = 20.dp, top = 4.dp, end = 20.dp)
+            PaddingValues(start = 20.dp, top = SelloTheme.spacing.xs, end = 20.dp)
         )
     }
     val animate = land && !SelloTheme.reducedMotion

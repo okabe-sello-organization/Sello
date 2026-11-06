@@ -36,7 +36,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -220,7 +219,7 @@ fun RepeatChoiceSheet(
 private fun SheetLabel(text: String) {
     Text(
         text,
-        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W800),
+        style = MaterialTheme.typography.labelLarge,
         color = SelloTheme.colors.inkSoft,
         modifier = Modifier.padding(top = SelloTheme.spacing.md, bottom = 6.dp)
     )
@@ -246,7 +245,9 @@ fun FollowingChoice(
 ) {
     val message = buildAnnotatedString {
         append(lead)
-        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = SelloTheme.colors.ink)) {
+        withStyle(
+            SpanStyle(fontWeight = SelloTheme.type.weight.strong, color = SelloTheme.colors.ink)
+        ) {
             append(name)
         }
         append(rest)
@@ -281,7 +282,11 @@ internal fun DayGrid(
 ) {
     val colors = SelloTheme.colors
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val columns = minOf(DAYS_PER_ROW, (maxWidth / DayTarget).toInt().coerceAtLeast(1))
+        val columns =
+            minOf(
+                DAYS_PER_ROW,
+                (maxWidth / SelloTheme.spacing.minTouchTarget).toInt().coerceAtLeast(1)
+            )
         Column {
             (1..DAYS).chunked(columns).forEach { row ->
                 Row {
@@ -291,7 +296,7 @@ internal fun DayGrid(
                             contentAlignment = Alignment.Center,
                             modifier = Modifier
                                 .weight(1f)
-                                .heightIn(min = DayTarget)
+                                .heightIn(min = SelloTheme.spacing.minTouchTarget)
                                 .toggleable(
                                     value = chosen,
                                     enabled = enabled,
@@ -299,7 +304,7 @@ internal fun DayGrid(
                                     onValueChange = { onToggle(day) }
                                 )
                                 .semantics { contentDescription = dayDescription(day) }
-                                .alpha(if (enabled) 1f else DISABLED_ALPHA)
+                                .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
                                 .padding(horizontal = 2.dp, vertical = SelloTheme.spacing.xs)
                                 .fillMaxWidth()
                                 .heightIn(min = 40.dp)
@@ -309,7 +314,7 @@ internal fun DayGrid(
                             Text(
                                 day.toString(),
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontWeight = FontWeight.W700
+                                    fontWeight = SelloTheme.type.weight.strong
                                 ),
                                 color = if (chosen) colors.onBrand else colors.ink,
                                 modifier = Modifier.clearAndSetSemantics {}
@@ -361,7 +366,9 @@ internal fun IntervalStepper(
         StepButton(PLUS, increaseLabel, canIncrease, onIncrease)
         Text(
             unit,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W700),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = SelloTheme.type.weight.strong
+            ),
             color = colors.ink,
             modifier = Modifier.weight(1f).clearAndSetSemantics {}
         )
@@ -374,9 +381,12 @@ private fun StepButton(sign: String, label: String, enabled: Boolean, onClick: (
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .sizeIn(minWidth = DayTarget, minHeight = DayTarget)
-            .alpha(if (enabled) 1f else DISABLED_ALPHA)
-            .clip(StepShape)
+            .sizeIn(
+                minWidth = SelloTheme.spacing.minTouchTarget,
+                minHeight = SelloTheme.spacing.minTouchTarget
+            )
+            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
+            .clip(SelloTheme.shapes.inset)
             .background(colors.brandSoft)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label }
@@ -436,14 +446,8 @@ internal fun RepeatNext(text: String, modifier: Modifier = Modifier) {
 
 private const val DAYS = 31
 
-private const val DISABLED_ALPHA = 0.38f
-
 private const val MINUS = "−"
 
 private const val PLUS = "+"
-
-private val DayTarget = 48.dp
-
-private val StepShape = RoundedCornerShape(12.dp)
 
 private const val DAYS_PER_ROW = 7

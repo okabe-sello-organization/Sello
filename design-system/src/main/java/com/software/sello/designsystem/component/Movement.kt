@@ -19,7 +19,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import com.software.sello.designsystem.R
 import com.software.sello.designsystem.icon.SelloIcon
@@ -125,7 +124,7 @@ fun MovementNoteComposer(
     onDone: () -> Unit,
     onCancel: () -> Unit
 ) {
-    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)
+    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = SelloTheme.type.weight.strong)
     NoteComposer(
         context = buildAnnotatedString {
             append(kind)

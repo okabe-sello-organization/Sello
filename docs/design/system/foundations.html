@@ -184,14 +184,15 @@
 <tr id="weight-emphasis"><td><code>emphasis</code></td><td>800</td><td>A name or a title, or a word stressed in a heading or note.</td></tr>
 <tr id="weight-figure"><td><code>figure</code></td><td>900</td><td>The figure a card or line leads with.</td></tr></tbody></table></div>
       <div class="gaps">
-        <p>Values with no token, on purpose: sizes used once (9, 13, 18, 20, 21, 29, 37 and 48 sp; the
-          celebration plate, a milestone in a movement row, an investment's return, the month switcher), and
-          the amount keypad's 22 / 26 sp keys and a text button's 15 sp label, each named in its own component;
-          the 0.06 / 0.08 / 0.14 em trackings of a single label each; <code>0.56.em</code>, the raised
-          currency code inside <code>MoneyText</code>. A one-off stays in its component, named there.
-          The 0.6 sp tracking is used twice, on two different label styles (the expense stub's weekday,
-          <code>labelSmall</code> at 700, and the plan slip's tag, <code>labelMedium</code> at 800), so it is not
-          yet one role; SELLO-189 decides whether they become one.</p>
+        <p>Screens set no weight, size or tracking by hand: they use a role, a <code>SelloType</code> style
+          or a <code>weight</code> token. Values with no token, on purpose, each a private constant named in its
+          own component: sizes used once (9 and 14 sp milestone labels; 13, 18 / 22, 29, 37 and 48 sp on the
+          celebration plate; 20 sp for an investment's return; 21 / 24 sp for the month switcher), the amount
+          keypad's 22 / 26 sp keys and a text button's 15 sp label; the 0.05 em of <code>EntryHeading</code>,
+          the 0.06 em of a movement month line and the 0.08 / 0.14 em of the plate's stencil lines;
+          <code>0.56.em</code>, the raised currency code inside <code>MoneyText</code>. The 0.6 sp tracking
+          is used twice, on two different roles (the expense stub's weekday, <code>labelSmall</code> at 700,
+          and the plan slip's tag, <code>groupLabel</code>), so each component names its own.</p>
       </div>
     </section>
 
@@ -201,7 +202,7 @@
         shapes: <code>extraSmall</code> = bar, <code>small</code> = control, <code>medium</code> = button,
         <code>large</code> and <code>extraLarge</code> = sheet (<code>SelloMaterial.kt:67</code>). The slip's
         pinked (zig-zag) bottom edge belongs to the slip component, <code>PinkedBottomShape</code>
-        (<code>Slip.kt:89</code>): 11 dp top corners, 10 dp wide and 5 dp tall teeth.</p>
+        (<code>Slip.kt:97</code>): 11 dp top corners, 10 dp wide and 5 dp tall teeth.</p>
       <div class="table-wrap"><table><thead><tr><th>Token</th><th>Corners</th><th>Sample</th></tr></thead><tbody><tr id="shape-control"><td><code>control</code><br><span class="muted">SelloShapes.kt:13</span></td><td><code>10.dp all corners</code></td><td><div class="shape-sample" style="border-radius:10px"></div></td></tr>
 <tr id="shape-button"><td><code>button</code><br><span class="muted">SelloShapes.kt:14</span></td><td><code>13.dp all corners</code></td><td><div class="shape-sample" style="border-radius:13px"></div></td></tr>
 <tr id="shape-bar"><td><code>bar</code><br><span class="muted">SelloShapes.kt:15</span></td><td><code>topStart = 4.dp, topEnd = 4.dp</code></td><td><div class="shape-sample" style="border-radius:4px 4px 0 0"></div></td></tr>
@@ -217,7 +218,8 @@
       <div class="gaps">
         <p>Corners with no token, on purpose: the segmented switch's 8 dp segments sit inside a 10 dp
           control and belong to it; the 6 dp tag behind a future expense and the celebration plate's 9 dp
-          inner border are used once each; the slip's 11 dp corner belongs to the slip
+          inner border are used once each; Resumen's comparison bars lie flat, so all four 4 dp corners round
+          (<code>bar</code> rounds a column's top only); the slip's 11 dp corner belongs to the slip
           (<code>SlipCorner</code> in <code>Slip.kt</code>, shared by the plain and the pinked shape).</p>
       </div>
     </section>
@@ -235,12 +237,13 @@
 <tr id="alpha-bandTint"><td><code>bandTint</code><br><span class="muted">SelloAlpha.kt:21</span></td><td>0.16</td><td>The on-band ink laid over the band as a fill: a trough, a pill behind a label.</td><td><span style="display:inline-block;width:40px;height:16px;background:var(--brand);opacity:0.16;border-radius:4px"></span></td></tr>
 <tr id="alpha-faintFill"><td><code>faintFill</code><br><span class="muted">SelloAlpha.kt:23</span></td><td>0.15</td><td>A faint fill of an ink on paper: a chart's track, a bar's empty part.</td><td><span style="display:inline-block;width:40px;height:16px;background:var(--brand);opacity:0.15;border-radius:4px"></span></td></tr></tbody></table></div>
       <div class="gaps">
-        <p>Values with no token, on purpose: 0.42 (a kept milestone's ring), 0.6 (a busy goal row; the
-          leader dots) and 0.7 (the skeleton's resting pulse) are one role each. Near values that should
-          move onto a token when their screen is refactored: 0.14 and 0.18 on the band (<code>bandTint</code>),
-          0.08 behind an empty icon (<code>faintFill</code>), 0.8 for the year on the band
-          (<code>secondary</code>); a control disabled at 0.5 (<code>disabled</code>). Moving them changes
-          pixels and is reviewed in that pull request.</p>
+        <p>Values with no token, on purpose, each named in its component: 0.42 (a kept milestone's ring),
+          0.6 (the leader dots), 0.7 (the skeleton's resting pulse) and 0.08 behind an empty icon
+          (<code>faintFill</code> would nearly double it and read as a chosen colour). Near values moved onto a
+          token in SELLO-189: 0.14 under a notice's time left and 0.18 behind a picked goal pin
+          (<code>bandTint</code>), 0.8 for the year on the band (<code>secondary</code>), an entry line and an icon
+          circle disabled at 0.5 (<code>disabled</code>) and an idle investment figure at 0.55
+          (<code>muted</code>).</p>
       </div>
     </section>
 
@@ -259,17 +262,19 @@
         <table>
           <thead><tr><th></th><th><code>spacing.*</code> reads</th><th>Literal <code>N.dp</code> values</th></tr></thead>
           <tbody>
-            <tr><td><code>:design-system</code> components</td><td>36</td><td>398</td></tr>
-            <tr><td><code>:app</code></td><td>265</td><td>319</td></tr>
+            <tr><td><code>:design-system</code> components</td><td>160</td><td>307</td></tr>
+            <tr><td><code>:app</code></td><td>265</td><td>245</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="muted">Most frequent literals: 6 dp (88), 2 dp (75), 8 dp (64), 4 dp (50), 10 dp (44),
-        12 dp (38), 20 dp (31), 18 dp (27), 14 dp (25), 16 dp (21). Literal 48 dp appears 9 times beside the
-        <code>minTouchTarget</code> token.</p>
-      <p>Slip padding has its own constants: <code>SlipDefaults.Padding</code> (sides 16, top 15, bottom 20 dp
+      <p class="muted">Most frequent literals: 6 dp (78), 2 dp (74), 10 dp (42), 20 dp (26), 18 dp (24),
+        14 dp (22), 0 dp (22), 1.5 dp (19), 4 dp (18), 56 dp (17). The 4 dp left are mostly dashes, strokes
+        and sizes; every gap the E31 audit listed reads its token. Every 48 dp touch target reads
+        <code>minTouchTarget</code>; the 48 dp left are sizes (a switch track, a goal's circle, the confetti's
+        fall).</p>
+      <p>Slip padding has its own constants: <code>SlipDefaults.Padding</code> (sides <code>spacing.lg</code>, top 15, bottom 20 dp
         so content clears the teeth) and <code>SlipDefaults.PlainPadding</code> (20 × 22 dp, slips without
-        teeth such as dialogs), <code>Slip.kt:33</code>.</p>
+        teeth such as dialogs), <code>Slip.kt:34</code>.</p>
     </section>
 
     <section id="layout">

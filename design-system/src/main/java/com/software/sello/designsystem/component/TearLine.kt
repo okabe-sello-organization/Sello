@@ -19,7 +19,11 @@ import com.software.sello.designsystem.theme.SelloTheme
  * bite the paper's edge. Purely decorative: it has no semantics.
  */
 @Composable
-fun TearLine(modifier: Modifier = Modifier, bleed: Dp = 16.dp, verticalMargin: Dp = 14.dp) {
+fun TearLine(
+    modifier: Modifier = Modifier,
+    bleed: Dp = SelloTheme.spacing.lg,
+    verticalMargin: Dp = 14.dp
+) {
     val rule = SelloTheme.colors.rule
     val desk = SelloTheme.colors.desk
     Canvas(

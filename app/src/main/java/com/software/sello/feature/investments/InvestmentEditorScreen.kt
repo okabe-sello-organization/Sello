@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -315,7 +314,11 @@ private fun deleteConsequences(count: Int): AnnotatedString {
     return buildAnnotatedString {
         append(sentence)
         if (start >= 0) {
-            addStyle(SpanStyle(fontWeight = FontWeight.W800), start, start + movements.length)
+            addStyle(
+                SpanStyle(fontWeight = SelloTheme.type.weight.emphasis),
+                start,
+                start + movements.length
+            )
         }
     }
 }
@@ -541,7 +544,7 @@ private fun FigureSlip(
         error = error,
         date = date,
         limitPulse = if (state.atLimit == field) state.pulse else 0,
-        amountAlpha = if (active) 1f else IDLE_ALPHA,
+        amountAlpha = if (active) 1f else SelloTheme.alpha.muted,
         onClick = if (active || !state.editable) null else choose,
         active = active,
         content = content
@@ -719,9 +722,6 @@ private fun Rate(
         )
     }
 }
-
-/** A figure the pad is not typing into stays readable but steps back. */
-private const val IDLE_ALPHA = 0.55f
 
 @Composable
 private fun limitMessage(state: InvestmentEditorState, field: InvestmentField): FieldMessage? =

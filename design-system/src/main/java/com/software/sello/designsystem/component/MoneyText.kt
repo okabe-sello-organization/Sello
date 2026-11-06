@@ -23,7 +23,9 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.em
+import com.software.sello.designsystem.theme.SelloAlpha
 import com.software.sello.designsystem.theme.SelloTheme
+import com.software.sello.designsystem.theme.SelloWeights
 
 enum class MoneySign { None, Plus, Minus }
 
@@ -115,7 +117,7 @@ private fun MoneyStyle.textStyle(weight: FontWeight?): TextStyle {
         MoneyStyle.Title -> typography.titleLarge
 
         MoneyStyle.Line -> typography.bodyLarge.copy(
-            fontWeight = FontWeight.W700,
+            fontWeight = SelloTheme.type.weight.strong,
             fontFeatureSettings = "tnum"
         )
     }
@@ -130,7 +132,15 @@ private const val GROUP_POINT = '.'
 private const val MARK_GAP = "\u00A0"
 private const val MARK_GAP_EXTRA_EM = 0.2f
 private const val DECIMAL_COMMA = ','
-private const val SYMBOL_ALPHA = 0.72f
+
+/**
+ * The raised currency code: [SelloWeights.soft] at [SelloAlpha.secondary], 0.56 of the figure's
+ * size, untracked. Read from the token defaults: the string is built outside composition.
+ */
+private val MarkWeight = SelloWeights().soft
+private val MarkAlpha = SelloAlpha().secondary
+private val MarkSize = 0.56.em
+private val NoTracking = 0.em
 
 /** How far a thousands point or decimal comma is pulled towards its neighbours, per side. */
 private const val POINT_TIGHTENING_EM = 0.13f
@@ -169,11 +179,11 @@ internal fun moneyAnnotatedString(
     append(signText(value.sign))
     if (style != MoneyStyle.Line && value.symbol.isNotEmpty()) {
         val mark = SpanStyle(
-            fontSize = 0.56.em,
-            fontWeight = FontWeight.W600,
+            fontSize = MarkSize,
+            fontWeight = MarkWeight,
             baselineShift = BaselineShift(0.5f),
-            letterSpacing = 0.em,
-            color = if (ink.isSpecified) ink.copy(alpha = ink.alpha * SYMBOL_ALPHA) else ink
+            letterSpacing = NoTracking,
+            color = if (ink.isSpecified) ink.copy(alpha = ink.alpha * MarkAlpha) else ink
         )
         withStyle(mark) { append(value.symbol) }
         // Full-size and widened: this font's own space is too thin beside a heavy figure.
@@ -191,7 +201,7 @@ internal fun moneyAnnotatedString(
         if (char ==
             GROUP_POINT
         ) {
-            withStyle(SpanStyle(letterSpacing = 0.em)) { append(ZERO_WIDTH_SPACE) }
+            withStyle(SpanStyle(letterSpacing = NoTracking)) { append(ZERO_WIDTH_SPACE) }
         }
     }
 }

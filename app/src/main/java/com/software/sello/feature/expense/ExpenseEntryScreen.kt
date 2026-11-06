@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.withStyle
@@ -624,7 +623,7 @@ private fun NoteSheet(
     onAction: (ExpenseEntryAction) -> Unit
 ) {
     val kind = stringResource(R.string.entry_expense)
-    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)
+    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = SelloTheme.type.weight.strong)
     val category = state.category
     val context = buildAnnotatedString {
         append(kind)

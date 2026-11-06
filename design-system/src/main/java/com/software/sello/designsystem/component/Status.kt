@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -339,7 +340,7 @@ private fun StatusButton(action: StatusAction, kind: ButtonKind, modifier: Modif
         onClick = action.onClick,
         // A text button is drawn 46 dp tall; the touch target is 48 dp (ARCHITECTURE §6).
         modifier = modifier
-            .heightIn(min = 48.dp)
+            .heightIn(min = SelloTheme.spacing.minTouchTarget)
             .semantics { if (action.busy) stateDescription = busy },
         kind = kind,
         loading = action.busy,
@@ -347,6 +348,13 @@ private fun StatusButton(action: StatusAction, kind: ButtonKind, modifier: Modif
     )
 }
 
-private val TextButtonPadding = PaddingValues(start = 0.dp, top = 8.dp, end = 24.dp, bottom = 8.dp)
+private val TextButtonPadding: PaddingValues
+    @Composable @ReadOnlyComposable
+    get() = PaddingValues(
+        start = 0.dp,
+        top = SelloTheme.spacing.sm,
+        end = 24.dp,
+        bottom = SelloTheme.spacing.sm
+    )
 
 private val INLINE_ICON = 24.dp

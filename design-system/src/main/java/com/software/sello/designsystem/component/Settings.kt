@@ -28,7 +28,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.R
@@ -85,7 +84,7 @@ fun SettingRow(
                 }
             }
             .then(interaction)
-            .alpha(if (enabled) 1f else DISABLED_ROW_ALPHA)
+            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
             .heightIn(min = SelloTheme.spacing.minTouchTarget)
             .padding(vertical = 10.dp)
     ) {
@@ -93,7 +92,9 @@ fun SettingRow(
         Column(Modifier.weight(1f)) {
             Text(
                 title,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W600),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = SelloTheme.type.weight.soft
+                ),
                 color = if (tone == SettingTone.Loss) accent else colors.ink
             )
             if (caption != null) {
@@ -117,8 +118,6 @@ fun SettingRow(
 
 /** The value may take up to this share of the row beside a title that takes the rest. */
 private const val VALUE_WEIGHT = 0.8f
-
-private const val DISABLED_ROW_ALPHA = 0.38f
 
 /**
  * Choosing one of a few [options], such as the order of the categories: a [DialogSlip]
@@ -180,7 +179,9 @@ fun OptionSlip(
                     Text(
                         option,
                         style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = if (chosen) FontWeight.W700 else FontWeight.W400
+                            fontWeight = with(SelloTheme.type.weight) {
+                                if (chosen) strong else regular
+                            }
                         ),
                         color = colors.ink
                     )

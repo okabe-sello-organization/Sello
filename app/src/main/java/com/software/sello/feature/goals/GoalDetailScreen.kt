@@ -33,7 +33,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
@@ -188,7 +187,11 @@ internal fun deleteConsequencesText(count: Int): AnnotatedString {
     return buildAnnotatedString {
         append(sentence)
         if (start >= 0) {
-            addStyle(SpanStyle(fontWeight = FontWeight.W800), start, start + movements.length)
+            addStyle(
+                SpanStyle(fontWeight = SelloTheme.type.weight.emphasis),
+                start,
+                start + movements.length
+            )
         }
     }
 }
@@ -217,7 +220,7 @@ private fun Hero(
                 stringResource(R.string.goal_percent, goal.percentage),
                 color = colors.semantic.gain,
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.W900
+                fontWeight = SelloTheme.type.weight.figure
             )
         }
         FittedMoneyText(goal.saved, Modifier.padding(top = SelloTheme.spacing.xs), startSize = 40)
@@ -247,7 +250,7 @@ private fun Hero(
             Text(
                 stringResource(R.string.goal_stamps),
                 Modifier.weight(1f).semantics { heading() },
-                fontWeight = FontWeight.W800
+                fontWeight = SelloTheme.type.weight.emphasis
             )
             Text(
                 stringResource(R.string.goal_stamps_count, goal.earnedCount),
@@ -354,7 +357,7 @@ private fun Aportes(goal: GoalDetailModel, months: MonthNames) {
             stringResource(R.string.goal_aportes_title),
             Modifier.semantics { heading() },
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.W800
+            fontWeight = SelloTheme.type.weight.emphasis
         )
         ColumnsChart(
             points = points,
@@ -385,7 +388,7 @@ private fun Movements(
                 stringResource(R.string.goal_movements_title),
                 Modifier.weight(1f).semantics { heading() },
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.W800
+                fontWeight = SelloTheme.type.weight.emphasis
             )
             if (onWithdraw != null) {
                 SelloButton(

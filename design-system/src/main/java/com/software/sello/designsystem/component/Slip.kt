@@ -13,6 +13,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,8 +32,15 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 
 object SlipDefaults {
-    /** Sides 16, top 15, bottom 20 so content clears the teeth. */
-    val Padding = PaddingValues(start = 16.dp, top = 15.dp, end = 16.dp, bottom = 20.dp)
+    /** Sides 16 (the large space), top 15, bottom 20 so content clears the teeth. */
+    val Padding: PaddingValues
+        @Composable @ReadOnlyComposable
+        get() = PaddingValues(
+            start = SelloTheme.spacing.lg,
+            top = 15.dp,
+            end = SelloTheme.spacing.lg,
+            bottom = 20.dp
+        )
 
     /** For slips without teeth, such as dialogs. */
     val PlainPadding = PaddingValues(horizontal = 20.dp, vertical = 22.dp)

@@ -456,6 +456,10 @@
       var groups = data.hardcoded.filter(function (g) { return g.kind === k; });
       holder.appendChild(el("h3", { id: "hard-" + k, class: "theme-heading", text: KIND_TITLES[k] }));
       if (k === "colour") holder.appendChild(el("p", { class: "muted", text: "Every colour not read from the theme. Those that would stay put under a dynamic scheme come first." }));
+      if (!groups.length) {
+        holder.appendChild(el("p", { text: "None left: every value reads its token, or is a one-off named in its own component (see Foundations)." }));
+        return;
+      }
       holder.appendChild(hardTable(groups, k === "colour"));
     });
 

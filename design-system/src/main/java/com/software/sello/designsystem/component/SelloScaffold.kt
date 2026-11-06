@@ -179,7 +179,11 @@ fun SelloScaffold(
                                     Modifier
                                         .fillMaxWidth()
                                         .background(bandColor)
-                                        .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                                        .padding(
+                                            start = SelloTheme.spacing.lg,
+                                            end = SelloTheme.spacing.lg,
+                                            bottom = SelloTheme.spacing.sm
+                                        )
                                 ) { ribbon() }
                             }
                         }
@@ -206,10 +210,10 @@ fun SelloScaffold(
                     windowInsets.asPaddingValues().calculateBottomPadding()
                 }
                 val padding = PaddingValues(
-                    start = ContentMargin,
-                    end = ContentMargin,
+                    start = SelloTheme.spacing.md,
+                    end = SelloTheme.spacing.md,
                     top = 0.dp,
-                    bottom = ContentMargin + bottomInset
+                    bottom = SelloTheme.spacing.md + bottomInset
                 )
                 Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                     if (layout.twoPane && secondaryPane != null) {
@@ -240,9 +244,9 @@ fun SelloScaffold(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .padding(
-                                    start = ContentMargin,
-                                    end = ContentMargin,
-                                    bottom = NoticeGap + bottomInset
+                                    start = SelloTheme.spacing.md,
+                                    end = SelloTheme.spacing.md,
+                                    bottom = SelloTheme.spacing.sm + bottomInset
                                 )
                                 .testTag(SCAFFOLD_NOTICE_TAG)
                         ) { notice() }
@@ -257,7 +261,10 @@ fun SelloScaffold(
                         icon = dock.icon,
                         enabled = dock.enabled,
                         modifier = Modifier
-                            .padding(horizontal = ContentMargin, vertical = 8.dp)
+                            .padding(
+                                horizontal = SelloTheme.spacing.md,
+                                vertical = SelloTheme.spacing.sm
+                            )
                             .then(
                                 if (showBar) {
                                     Modifier
@@ -306,7 +313,9 @@ private fun TopBar(
 ) {
     val measurer = rememberTextMeasurer()
     val titleStyle = MaterialTheme.typography.titleLarge
-    val margin = if (navigationIcon == null) ContentMargin else 0.dp
+    val contentMargin = SelloTheme.spacing.md
+    val titleGap = SelloTheme.spacing.sm
+    val margin = if (navigationIcon == null) contentMargin else 0.dp
     SubcomposeLayout(modifier.fillMaxWidth().heightIn(min = TopBarHeight)) { constraints ->
         val loose = constraints.copy(minWidth = 0, minHeight = 0)
         val start = margin.roundToPx()
@@ -327,7 +336,7 @@ private fun TopBar(
                 maxLines = TITLE_LINES,
                 constraints = Constraints(maxWidth = beside)
             ).multiParagraph.didExceedMaxLines
-        val titleStart = if (stacked) ContentMargin.roundToPx() else start + navWidth
+        val titleStart = if (stacked) contentMargin.roundToPx() else start + navWidth
         val titleWidth = if (stacked) constraints.maxWidth - titleStart * 2 else beside
         val heading = subcompose(TopBarSlot.Title) {
             Column {
@@ -359,7 +368,7 @@ private fun TopBar(
         } else {
             maxOf(iconsHeight, headingHeight, minHeight)
         }
-        val height = if (stacked) rowHeight + headingHeight + TitleGap.roundToPx() else rowHeight
+        val height = if (stacked) rowHeight + headingHeight + titleGap.roundToPx() else rowHeight
         layout(constraints.maxWidth, height) {
             nav.forEach { it.placeRelative(start, (rowHeight - it.height) / 2) }
             acts.forEach {
@@ -379,10 +388,7 @@ private fun TopBar(
 private enum class TopBarSlot { Navigation, Actions, Title }
 
 private const val TITLE_LINES = 2
-private val TitleGap = 8.dp
 private val TopBarHeight = 50.dp
-private val ContentMargin = 12.dp
-private val NoticeGap = 8.dp
 
 const val SCAFFOLD_BAND_TAG = "sello:scaffold:band"
 const val SCAFFOLD_RAIL_TAG = "sello:scaffold:rail"

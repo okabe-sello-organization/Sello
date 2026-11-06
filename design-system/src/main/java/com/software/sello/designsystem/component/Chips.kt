@@ -32,7 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
@@ -64,7 +63,7 @@ fun SelloChip(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .minimumInteractiveComponentSize()
-            .alpha(if (enabled) 1f else DISABLED_CHIP_ALPHA)
+            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
             .heightIn(min = 36.dp)
             .clip(SelloTheme.shapes.control)
             .background(fill)
@@ -75,7 +74,7 @@ fun SelloChip(
                 role = Role.RadioButton,
                 onClick = onClick
             )
-            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .padding(horizontal = SelloTheme.spacing.md, vertical = SelloTheme.spacing.xs)
     ) {
         if (icon != null) {
             Icon(
@@ -88,7 +87,7 @@ fun SelloChip(
         // A label too long for the row takes a second line, not an ellipsis.
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W600),
+            style = SelloTheme.type.chipLabel,
             color = content,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
@@ -97,15 +96,12 @@ fun SelloChip(
             Text(
                 text = trailing,
                 style = MaterialTheme.typography.bodyMedium,
-                color = content.copy(alpha = TRAILING_ALPHA),
+                color = content.copy(alpha = SelloTheme.alpha.secondary),
                 maxLines = 1
             )
         }
     }
 }
-
-/** A trailing detail, such as a goal's percentage, is softer than the choice it follows. */
-private const val TRAILING_ALPHA = 0.72f
 
 /**
  * The chip that ends a set of choices to create a new one, such as Nueva after the
@@ -125,13 +121,13 @@ fun AddChip(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .minimumInteractiveComponentSize()
-            .alpha(if (enabled) 1f else DISABLED_CHIP_ALPHA)
+            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
             .heightIn(min = 36.dp)
             .clip(SelloTheme.shapes.control)
             .background(colors.paper)
-            .dashedOutline(colors.brand, 1.5.dp, 10.dp)
+            .dashedOutline(colors.brand, 1.5.dp, SelloTheme.shapes.control)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 12.dp)
+            .padding(horizontal = SelloTheme.spacing.md)
     ) {
         Icon(
             painter = SelloIcon.Add.painter(),
@@ -141,7 +137,7 @@ fun AddChip(
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W600),
+            style = SelloTheme.type.chipLabel,
             color = colors.brand,
             maxLines = 1
         )
@@ -159,6 +155,8 @@ fun ChipFlow(
     content: @Composable () -> Unit
 ) {
     if (singleLine) {
+        // The last chips fade out over this much, and the row scrolls clear of it.
+        val trailingFade = SelloTheme.spacing.lg
         Row(
             horizontalArrangement = Arrangement.spacedBy(ChipGap),
             modifier = modifier
@@ -166,7 +164,7 @@ fun ChipFlow(
                 .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                 .drawWithContent {
                     drawContent()
-                    val fade = TrailingFade.toPx()
+                    val fade = trailingFade.toPx()
                     drawRect(
                         brush = Brush.horizontalGradient(
                             colors = listOf(Color.Black, Color.Transparent),
@@ -177,7 +175,7 @@ fun ChipFlow(
                     )
                 }
                 .horizontalScroll(rememberScrollState())
-                .padding(end = TrailingFade)
+                .padding(end = trailingFade)
         ) { content() }
     } else {
         FlowRow(
@@ -208,7 +206,7 @@ fun FieldPill(
             .background(colors.paper)
             .border(1.5.dp, colors.rule, SelloTheme.shapes.control)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 12.dp)
+            .padding(horizontal = SelloTheme.spacing.md)
     ) {
         Icon(
             painter = icon.painter(),
@@ -218,7 +216,7 @@ fun FieldPill(
         )
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W600),
+            style = SelloTheme.type.chipLabel,
             color = if (placeholder) colors.inkSoft else colors.ink,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -227,5 +225,3 @@ fun FieldPill(
 }
 
 private val ChipGap = 6.dp
-private val TrailingFade = 16.dp
-private const val DISABLED_CHIP_ALPHA = 0.38f

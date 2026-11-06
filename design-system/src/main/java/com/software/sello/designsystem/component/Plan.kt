@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerBasedShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -29,7 +30,6 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -88,19 +88,16 @@ fun PlanSlip(
     Column(
         modifier
             .fillMaxWidth()
-            .dashedOutline(colors.outline, 2.dp, 14.dp)
-            .padding(horizontal = 16.dp, vertical = 14.dp)
+            .dashedOutline(colors.outline, 2.dp, SelloTheme.shapes.panel)
+            .padding(horizontal = SelloTheme.spacing.lg, vertical = 14.dp)
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
             modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
         ) {
             Text(
                 text = tag.uppercase(),
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.W800,
-                    letterSpacing = 0.6.sp
-                ),
+                style = SelloTheme.type.groupLabel.copy(letterSpacing = TagTracking),
                 color = colors.brand,
                 modifier = Modifier.alignByBaseline().semantics {
                     heading()
@@ -140,8 +137,8 @@ fun ExpectedChip(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier
             .heightIn(min = 32.dp)
-            .dashedOutline(colors.outline, 1.5.dp, 999.dp)
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .dashedOutline(colors.outline, 1.5.dp, CircleShape)
+            .padding(horizontal = 10.dp, vertical = SelloTheme.spacing.xs)
             .clearAndSetSemantics { contentDescription = spoken }
     ) {
         Icon(SelloIcon.Event.painter(), null, Modifier.size(16.dp), colors.brand)
@@ -156,8 +153,11 @@ fun ExpectedChip(
             amount,
             style = MoneyStyle.Line,
             color = colors.ink,
-            fontWeight = FontWeight.W700,
+            fontWeight = SelloTheme.type.weight.strong,
             textStyle = MaterialTheme.typography.bodySmall
         )
     }
 }
+
+/** The plan tag's spaced capitals; the expense stub's weekday is another role (no type token). */
+private val TagTracking = 0.6.sp

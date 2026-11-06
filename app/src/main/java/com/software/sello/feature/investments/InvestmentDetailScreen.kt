@@ -23,7 +23,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
@@ -208,7 +207,7 @@ private fun Chart(
         Text(
             stringResource(R.string.investment_chart_title),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.W800,
+            fontWeight = SelloTheme.type.weight.emphasis,
             modifier = Modifier.semantics { heading() }.padding(bottom = SelloTheme.spacing.xs)
         )
         Picked(picked, dates)
@@ -270,7 +269,7 @@ private fun Picked(point: ChartPoint, dates: DateLabels) {
                 style = style,
                 color = colors.inkSoft
             )
-            MoneyText(point.amount, textStyle = style, fontWeight = FontWeight.W800)
+            MoneyText(point.amount, textStyle = style, fontWeight = SelloTheme.type.weight.emphasis)
         }
         point.putIn?.let {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -279,7 +278,7 @@ private fun Picked(point: ChartPoint, dates: DateLabels) {
                     style = style,
                     color = colors.inkSoft
                 )
-                MoneyText(it, textStyle = style, fontWeight = FontWeight.W800)
+                MoneyText(it, textStyle = style, fontWeight = SelloTheme.type.weight.emphasis)
             }
         }
     }
@@ -304,7 +303,7 @@ private fun Movements(
         Text(
             stringResource(R.string.investment_movements),
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.W800,
+            fontWeight = SelloTheme.type.weight.emphasis,
             modifier = Modifier.semantics { heading() }
         )
         val shown = if (state.allMovements) state.movements else state.movements.take(SHORT_LIST)

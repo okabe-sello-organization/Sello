@@ -54,7 +54,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -323,11 +322,9 @@ private fun Title(t: Float, title: String, onGain: Color) {
             },
         color = onGain,
         textAlign = TextAlign.Center,
-        style = MaterialTheme.typography.displayMedium.copy(
-            fontSize = 48.sp,
-            lineHeight = 48.sp,
-            fontWeight = FontWeight.W900,
-            letterSpacing = (-0.035).em
+        style = MaterialTheme.typography.displaySmall.copy(
+            fontSize = TitleSize,
+            lineHeight = TitleSize
         )
     )
 }
@@ -348,9 +345,9 @@ private fun Plate(
     val stencil = SelloTheme.type.stampSmall
     val digits = amount.digits.count { it.isDigit() }
     val amountSize = when {
-        digits > 9 -> 29.sp
-        digits > 6 -> 37.sp
-        else -> 48.sp
+        digits > 9 -> AmountSizeLong
+        digits > 6 -> AmountSizeMid
+        else -> AmountSize
     }
     Column(
         Modifier
@@ -365,9 +362,9 @@ private fun Plate(
                 scaleY = scale
                 rotationZ = track(p, stops, listOf(-18f, -4f, -4f), PlateEasing)
             }
-            .border(4.dp, onGain, RoundedCornerShape(14.dp))
+            .border(4.dp, onGain, SelloTheme.shapes.stampHero)
             .padding(5.dp)
-            .border(1.5.dp, onGain, RoundedCornerShape(9.dp))
+            .border(1.5.dp, onGain, PlateInnerShape)
             .padding(horizontal = 14.dp, vertical = SelloTheme.spacing.md),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
@@ -375,7 +372,7 @@ private fun Plate(
         Text(
             plateTitle.uppercase(Locale.ROOT),
             color = onGain,
-            style = stencil.copy(fontSize = 15.sp, letterSpacing = 0.14.em),
+            style = stencil.copy(letterSpacing = PlateTitleTracking),
             textAlign = TextAlign.Center
         )
         Row(
@@ -387,11 +384,11 @@ private fun Plate(
                 name,
                 Modifier.weight(1f, fill = false),
                 color = onGain,
-                fontWeight = FontWeight.W800,
+                fontWeight = SelloTheme.type.weight.emphasis,
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.titleMedium.copy(
-                    fontSize = 18.sp,
-                    lineHeight = 22.sp
+                    fontSize = PlateNameSize,
+                    lineHeight = PlateNameLine
                 )
             )
         }
@@ -425,16 +422,14 @@ private fun Plate(
                 singleLine = true,
                 textStyle = MaterialTheme.typography.displayMedium.copy(
                     fontSize = amountSize,
-                    lineHeight = amountSize * 1.05f,
-                    fontWeight = FontWeight.W900,
-                    letterSpacing = (-0.04).em
+                    lineHeight = amountSize * 1.05f
                 )
             )
         }
         Text(
             detail.uppercase(Locale.ROOT),
             color = onGain,
-            style = stencil.copy(fontSize = 13.sp, letterSpacing = 0.08.em),
+            style = stencil.copy(fontSize = PlateDetailSize, letterSpacing = PlateDetailTracking),
             textAlign = TextAlign.Center
         )
     }
@@ -519,3 +514,15 @@ private fun Confetti(t: Float) {
         }
     }
 }
+
+// The celebration's one-off type and corners: no token covers them.
+private val TitleSize = 48.sp
+private val AmountSize = 48.sp
+private val AmountSizeMid = 37.sp
+private val AmountSizeLong = 29.sp
+private val PlateNameSize = 18.sp
+private val PlateNameLine = 22.sp
+private val PlateDetailSize = 13.sp
+private val PlateTitleTracking = 0.14.em
+private val PlateDetailTracking = 0.08.em
+private val PlateInnerShape = RoundedCornerShape(9.dp)

@@ -42,7 +42,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -98,12 +97,17 @@ fun MovementRow(
                 }
             }
             .heightIn(min = 56.dp)
-            .padding(vertical = 8.dp),
+            .padding(vertical = SelloTheme.spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         if (milestone != null) {
-            MilestonePlace(milestone, diameter = 34.dp, labelSize = 9.sp, innerRing = false)
+            MilestonePlace(
+                milestone,
+                diameter = 34.dp,
+                labelSize = MovementMilestoneLabel,
+                innerRing = false
+            )
         } else {
             val (fill, ink) = when (tone) {
                 MovementTone.In -> colors.semantic.gainSoft to colors.semantic.gain
@@ -118,7 +122,7 @@ fun MovementRow(
             }
         }
         Column(Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.W800)
+            Text(title, fontWeight = SelloTheme.type.weight.emphasis)
             Text(
                 detail,
                 style = MaterialTheme.typography.labelSmall,
@@ -128,13 +132,13 @@ fun MovementRow(
                 Text(
                     it,
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.W700,
+                    fontWeight = SelloTheme.type.weight.strong,
                     color = colors.semantic.gain
                 )
             }
         }
         Column(horizontalAlignment = Alignment.End) {
-            MoneyText(amount, color = amountColor, fontWeight = FontWeight.W800)
+            MoneyText(amount, color = amountColor, fontWeight = SelloTheme.type.weight.emphasis)
             balance?.let {
                 val ink = it.color.takeOrElse { colors.inkSoft }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -164,8 +168,8 @@ fun MovementRow(
 fun MovementMonthLine(name: String, net: MoneyTextValue?, modifier: Modifier = Modifier) {
     val colors = SelloTheme.colors
     val style = MaterialTheme.typography.labelSmall.copy(
-        fontWeight = FontWeight.W800,
-        letterSpacing = 0.06.em
+        fontWeight = SelloTheme.type.weight.emphasis,
+        letterSpacing = MonthLineTracking
     )
     Row(
         modifier
@@ -175,7 +179,7 @@ fun MovementMonthLine(name: String, net: MoneyTextValue?, modifier: Modifier = M
                 val y = size.height - 0.5.dp.toPx()
                 drawLine(colors.rule, Offset(0f, y), Offset(size.width, y), 1.dp.toPx())
             }
-            .padding(top = 12.dp, bottom = 4.dp),
+            .padding(top = SelloTheme.spacing.md, bottom = SelloTheme.spacing.xs),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(name.uppercase(), Modifier.weight(1f), style = style, color = colors.outline)
@@ -210,7 +214,7 @@ fun MilestonePlace(
     ink: Color? = null,
     relight: Boolean = false,
     landDelayMillis: Long = 0,
-    labelSize: TextUnit = 14.sp,
+    labelSize: TextUnit = MilestoneLabel,
     innerRing: Boolean = true
 ) {
     val colors = SelloTheme.colors
@@ -322,7 +326,15 @@ fun MilestonePlace(
     }
 }
 
+/** A kept milestone's faded ring, one role (no alpha token). */
 private const val KEPT_ALPHA = 0.42f
+
+/** A milestone's stamp label, and the smaller one inside a movement row (no type token). */
+private val MilestoneLabel = 14.sp
+private val MovementMilestoneLabel = 9.sp
+
+/** The spaced capitals of a movement month line (no type token). */
+private val MonthLineTracking = 0.06.em
 
 /** Between stamps earned together. */
 private const val LAND_STAGGER_MILLIS = 160L
@@ -350,7 +362,7 @@ fun MilestoneRow(
         )
     }
     if (evenly) {
-        Row(modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Row(modifier.fillMaxWidth().padding(vertical = SelloTheme.spacing.sm)) {
             places.forEachIndexed { index, spec ->
                 Box(Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
                     place(index, spec)
@@ -359,8 +371,10 @@ fun MilestoneRow(
         }
     } else {
         Row(
-            modifier.horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier.horizontalScroll(
+                rememberScrollState()
+            ).padding(vertical = SelloTheme.spacing.sm),
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
         ) {
             places.forEachIndexed { index, spec -> place(index, spec) }
         }
@@ -413,9 +427,14 @@ fun StampTicket(
             .shadow(12.dp, TicketShape, ambientColor = colors.ink, spotColor = colors.ink)
             .background(colors.paper)
             .height(IntrinsicSize.Min)
-            .padding(start = 18.dp, top = 12.dp, end = 16.dp, bottom = 12.dp),
+            .padding(
+                start = 18.dp,
+                top = SelloTheme.spacing.md,
+                end = SelloTheme.spacing.lg,
+                bottom = SelloTheme.spacing.md
+            ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             places.forEachIndexed { index, spec ->
@@ -438,10 +457,10 @@ fun StampTicket(
                         floatArrayOf(4.dp.toPx(), 3.dp.toPx())
                     )
                 )
-            }.padding(start = 12.dp),
+            }.padding(start = SelloTheme.spacing.md),
             verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically)
         ) {
-            Text(title, fontWeight = FontWeight.W800)
+            Text(title, fontWeight = SelloTheme.type.weight.emphasis)
             Text(detail, color = colors.inkSoft, style = MaterialTheme.typography.bodySmall)
         }
     }

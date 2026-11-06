@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,7 +23,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -185,8 +185,14 @@ private fun Summary(
     }
 }
 
-private val CompactStubPadding =
-    PaddingValues(start = 16.dp, top = 15.dp, end = 16.dp, bottom = 12.dp)
+private val CompactStubPadding: PaddingValues
+    @Composable @ReadOnlyComposable
+    get() = PaddingValues(
+        start = SelloTheme.spacing.lg,
+        top = 15.dp,
+        end = SelloTheme.spacing.lg,
+        bottom = SelloTheme.spacing.md
+    )
 
 @Composable
 private fun SummaryTitle(month: YearMonth, income: Boolean) {
@@ -195,7 +201,9 @@ private fun SummaryTitle(month: YearMonth, income: Boolean) {
             if (income) R.string.schedules_summary_incomes else R.string.schedules_summary_payments,
             monthNames().inSentence(month)
         ),
-        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W700),
+        style = MaterialTheme.typography.bodyMedium.copy(
+            fontWeight = SelloTheme.type.weight.strong
+        ),
         color = SelloTheme.colors.inkSoft,
         modifier = Modifier.semantics { heading() }
     )
@@ -296,7 +304,9 @@ private fun Part(label: String, amount: MoneyTextValue, dot: Color) {
         MoneyText(
             amount,
             color = SelloTheme.colors.ink,
-            textStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W700)
+            textStyle = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = SelloTheme.type.weight.strong
+            )
         )
     }
 }

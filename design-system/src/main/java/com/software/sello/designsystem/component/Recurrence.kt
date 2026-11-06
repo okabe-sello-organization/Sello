@@ -42,7 +42,6 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -68,7 +67,7 @@ fun RepeatSheet(
         Box(
             Modifier
                 .fillMaxSize()
-                .background(Scrim)
+                .background(ScrimInk.copy(alpha = SelloTheme.alpha.scrim))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -93,7 +92,12 @@ fun RepeatSheet(
                             WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
                         )
                     )
-                    .padding(start = 12.dp, end = 12.dp, top = 12.dp, bottom = 10.dp)
+                    .padding(
+                        start = SelloTheme.spacing.md,
+                        end = SelloTheme.spacing.md,
+                        top = SelloTheme.spacing.md,
+                        bottom = 10.dp
+                    )
             ) {
                 Text(
                     title,
@@ -148,7 +152,7 @@ fun ScheduleRow(
                 amount,
                 color = amountInk,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = if (soon) FontWeight.W700 else FontWeight.W800
+                    fontWeight = with(SelloTheme.type.weight) { if (soon) strong else emphasis }
                 )
             )
             if (pill != null) DatePill(pill, Modifier.padding(top = 3.dp))
@@ -205,7 +209,7 @@ fun ScheduleRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 name,
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),
+                style = SelloTheme.type.rowTitle,
                 color = if (dimmed || recorded) colors.inkSoft else colors.ink
             )
             Text(caption, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)
@@ -222,7 +226,9 @@ private fun DatePill(text: String, modifier: Modifier = Modifier) {
     val colors = SelloTheme.colors
     Text(
         text,
-        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W700),
+        style = MaterialTheme.typography.labelSmall.copy(
+            fontWeight = SelloTheme.type.weight.strong
+        ),
         color = colors.onBrandSoft,
         modifier = modifier
             .background(colors.brandSoft, CircleShape)
@@ -283,4 +289,4 @@ fun ButtonPair(
 private val SheetTopGap = 24.dp
 
 /** The reference's scrim: the desk's darkest ink at 55 %. */
-private val Scrim = Color(0xFF050814).copy(alpha = 0.55f)
+private val ScrimInk = Color(0xFF050814)

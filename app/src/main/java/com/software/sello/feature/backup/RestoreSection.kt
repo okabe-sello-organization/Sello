@@ -20,7 +20,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
@@ -265,7 +264,7 @@ private fun Cell(text: String, header: Boolean = false, spoken: String? = null) 
     Text(
         text = text,
         style = with(MaterialTheme.typography) { if (header) labelMedium else bodyLarge },
-        fontWeight = if (header) null else FontWeight.W700,
+        fontWeight = if (header) null else SelloTheme.type.weight.strong,
         color = if (header) SelloTheme.colors.inkSoft else SelloTheme.colors.ink,
         textAlign = TextAlign.End,
         modifier = Modifier.width(88.dp).semantics {

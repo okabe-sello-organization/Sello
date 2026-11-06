@@ -18,7 +18,6 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,7 +65,7 @@ fun SelloButton(
         ButtonKind.Outlined, ButtonKind.Text -> Color.Transparent to toneInk
     }
     // A loading button stays at full strength; a disabled one fades to 38 %.
-    val fade = if (loading) 1f else DISABLED_ALPHA
+    val fade = if (loading) 1f else SelloTheme.alpha.disabled
     val isFilled = kind == ButtonKind.Filled
     Button(
         onClick = onClick,
@@ -98,15 +97,17 @@ fun SelloButton(
                 strokeWidth = 2.dp,
                 modifier = Modifier.size(if (compact) 16.dp else 20.dp)
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(SelloTheme.spacing.sm))
         } else if (icon != null) {
             Icon(icon.painter(), contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(SelloTheme.spacing.sm))
         }
         Text(
             text = text,
             style = when {
-                compact -> MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800)
+                compact -> MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = SelloTheme.type.weight.emphasis
+                )
 
                 kind == ButtonKind.Text ->
                     MaterialTheme.typography.labelLarge.copy(fontSize = TextButtonLabelSize)
@@ -134,8 +135,6 @@ internal fun ButtonTone.inks(): Pair<Color, Color> {
         ButtonTone.OnGain -> colors.semantic.onGain to colors.semantic.gain
     }
 }
-
-private const val DISABLED_ALPHA = 0.38f
 
 /** A text button's label is set smaller than a filled or outlined one. */
 private val TextButtonLabelSize = 15.sp

@@ -47,7 +47,6 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
@@ -140,14 +139,16 @@ internal fun CategoryCell(
         Column {
             Text(
                 text = name,
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W600),
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = SelloTheme.type.weight.soft
+                ),
                 color = colors.ink,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             MoneyText(
                 value = amount,
-                fontWeight = FontWeight.W800,
+                fontWeight = SelloTheme.type.weight.emphasis,
                 color = when {
                     over -> colors.semantic.loss
                     amountCaption != null -> colors.inkSoft
@@ -163,7 +164,7 @@ internal fun CategoryCell(
                         MoneySign.Minus -> colors.semantic.loss
                         MoneySign.None -> colors.inkSoft
                     },
-                    fontWeight = FontWeight.W800,
+                    fontWeight = SelloTheme.type.weight.emphasis,
                     textStyle = MaterialTheme.typography.labelSmall
                 )
             } else if (amountCaption != null) {
@@ -292,7 +293,9 @@ private fun SwipeAway(action: MoreMenuItem, line: @Composable () -> Unit) {
             ) {
                 Text(
                     text = action.label,
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W700),
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = SelloTheme.type.weight.strong
+                    ),
                     color = SelloTheme.colors.paper
                 )
             }
@@ -316,8 +319,6 @@ private fun SwipeAway(action: MoreMenuItem, line: @Composable () -> Unit) {
         ) { line() }
     }
 }
-
-private const val BUSY_ALPHA = 0.5f
 
 private const val SWIPE_THRESHOLD = 0.4f
 
@@ -371,14 +372,18 @@ internal fun LimitRow(
             archived = archived
         )
         Column(Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.W700)
+            Text(
+                name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = SelloTheme.type.weight.strong
+            )
             Text(caption, style = MaterialTheme.typography.bodySmall, color = colors.inkSoft)
         }
         amount?.let {
             MoneyText(
                 it,
                 color = if (over) colors.semantic.loss else colors.ink,
-                fontWeight = FontWeight.W800
+                fontWeight = SelloTheme.type.weight.emphasis
             )
         }
         Icon(SelloIcon.ChevronRight.painter(), null, Modifier.size(18.dp), colors.outline)

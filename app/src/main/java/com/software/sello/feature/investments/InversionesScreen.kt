@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -26,7 +27,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
@@ -384,12 +384,14 @@ private fun gainInk(direction: GainDirection) = when (direction) {
 }
 
 /** [text] with each of [parts] in bold, as the design writes dates and the rate. */
+@Composable
+@ReadOnlyComposable
 private fun bold(text: String, vararg parts: String): AnnotatedString = buildAnnotatedString {
     var at = 0
     parts.mapNotNull { part -> text.indexOf(part, at).takeIf { it >= 0 }?.let { it to part } }
         .forEach { (start, part) ->
             append(text.substring(at, start))
-            withStyle(SpanStyle(fontWeight = FontWeight.W800)) { append(part) }
+            withStyle(SpanStyle(fontWeight = SelloTheme.type.weight.emphasis)) { append(part) }
             at = start + part.length
         }
     append(text.substring(at))

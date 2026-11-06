@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -51,7 +50,10 @@ fun SplitBar(
     val summary = segments.joinToString(". ") { it.spoken }
     val measurer = rememberTextMeasurer()
     val paper = SelloTheme.colors.paper
-    val labelStyle = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.W800)
+    val faintFill = SelloTheme.alpha.faintFill
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(
+        fontWeight = SelloTheme.type.weight.emphasis
+    )
     Canvas(
         modifier.fillMaxWidth().height(height).clip(SelloTheme.shapes.control).semantics {
             contentDescription =
@@ -68,7 +70,7 @@ fun SplitBar(
             if (segment.striped) {
                 clipRect(start, 0f, start + width, size.height) {
                     drawRect(
-                        segment.color.copy(alpha = 0.15f),
+                        segment.color.copy(alpha = faintFill),
                         Offset(start, 0f),
                         androidx.compose.ui.geometry.Size(width, size.height)
                     )

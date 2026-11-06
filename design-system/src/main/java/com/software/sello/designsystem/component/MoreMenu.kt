@@ -69,7 +69,7 @@ fun MoreMenuDropdown(
         items.forEach { item ->
             val colors = SelloTheme.colors
             val color = if (item.loss) colors.semantic.loss else colors.ink
-            val tint = if (item.enabled) color else color.copy(alpha = DISABLED_ALPHA)
+            val tint = if (item.enabled) color else color.copy(alpha = SelloTheme.alpha.disabled)
             DropdownMenuItem(
                 text = {
                     Text(item.label, style = MaterialTheme.typography.bodyLarge, color = tint)
@@ -87,6 +87,3 @@ fun MoreMenuDropdown(
 }
 
 const val MORE_MENU_TAG = "sello.more"
-
-/** Material's disabled content alpha. */
-private const val DISABLED_ALPHA = 0.38f

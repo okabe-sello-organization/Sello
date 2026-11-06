@@ -26,11 +26,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.software.sello.designsystem.theme.SelloAlpha
 import com.software.sello.designsystem.theme.SelloMotion
 import com.software.sello.designsystem.theme.SelloTheme
 
@@ -48,7 +48,8 @@ fun SegmentedSwitch(
     band: Color? = null
 ) {
     val colors = SelloTheme.colors
-    val trough = band?.let { bandTrough(it, colors.onBand) } ?: colors.paperDim
+    val trough = band?.let { bandTrough(it, colors.onBand, SelloTheme.alpha.bandTint) }
+        ?: colors.paperDim
     val marker = if (band != null) colors.onBand else colors.paper
     val chosenText = band ?: colors.ink
     val otherText = if (band != null) colors.onBand else colors.inkSoft
@@ -86,11 +87,13 @@ fun SegmentedSwitch(
                     Text(
                         text = option,
                         style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = if (selected) FontWeight.W700 else FontWeight.W600
+                            fontWeight = with(SelloTheme.type.weight) {
+                                if (selected) strong else soft
+                            }
                         ),
                         color = if (selected) chosenText else otherText,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                        modifier = Modifier.padding(horizontal = SelloTheme.spacing.xs)
                     )
                 }
             }
@@ -100,9 +103,14 @@ fun SegmentedSwitch(
 
 private val SegmentInset = 3.dp
 
-/** A switch's trough on [band]: a lighter shade of it, leaning 16 % towards [onBand]. */
-internal fun bandTrough(band: Color, onBand: Color): Color = lerp(band, onBand, 0.16f)
+/**
+ * A switch's trough on [band]: a lighter shade of it, leaning [tint] (the band tint, 16 %)
+ * towards [onBand].
+ */
+internal fun bandTrough(band: Color, onBand: Color, tint: Float = SelloAlpha().bandTint): Color =
+    lerp(band, onBand, tint)
 
 private val SegmentHeight = 42.dp
 
+/** A segment inside the switch's 10dp control trough: the switch's own corner (no token). */
 private val SegmentShape = RoundedCornerShape(8.dp)

@@ -44,7 +44,6 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -128,7 +127,7 @@ internal fun GoalPill(
             Text(
                 name,
                 Modifier.weight(1f),
-                fontWeight = FontWeight.W800,
+                fontWeight = SelloTheme.type.weight.emphasis,
                 color = onSoft,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -136,7 +135,7 @@ internal fun GoalPill(
             Text(
                 percentage,
                 color = colors.ink,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.W900)
+                style = SelloTheme.type.figure
             )
         }
         Box(
@@ -176,10 +175,14 @@ internal fun ReachedRow(
     val colors = SelloTheme.colors
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val nameStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.W800)
-    val messageStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W700)
+    val nameStyle = LocalTextStyle.current.copy(fontWeight = SelloTheme.type.weight.emphasis)
+    val messageStyle = MaterialTheme.typography.bodySmall.copy(
+        fontWeight = SelloTheme.type.weight.strong
+    )
     // SelloButton(compact)'s label, measured to decide whether everything fits on one line.
-    val actionStyle = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.W800)
+    val actionStyle = MaterialTheme.typography.bodySmall.copy(
+        fontWeight = SelloTheme.type.weight.emphasis
+    )
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val widths = with(density) {
             listOf(name to nameStyle, message to messageStyle, actionLabel to actionStyle)
@@ -241,7 +244,12 @@ internal fun ReachedRow(
         if (inline) {
             Row(
                 // 4 dp above and below the pill's 48 dp touch area: it is drawn 44 dp high, 6 dp in.
-                surface.padding(start = 14.dp, top = 4.dp, end = 6.dp, bottom = 4.dp),
+                surface.padding(
+                    start = 14.dp,
+                    top = SelloTheme.spacing.xs,
+                    end = 6.dp,
+                    bottom = SelloTheme.spacing.xs
+                ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
@@ -296,15 +304,12 @@ internal fun GoalCard(
             Text(
                 name,
                 Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.W800)
+                style = MaterialTheme.typography.titleMedium
             )
             Text(
                 percentage,
                 color = colors.semantic.gain,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.W900,
-                    letterSpacing = (-0.02).em
-                )
+                style = SelloTheme.type.figureLarge
             )
         }
         FittedMoneyText(saved, Modifier.padding(top = SelloTheme.spacing.sm), startSize = 34)
@@ -366,7 +371,7 @@ internal fun CompletedGoalRow(
         ) {
             Icon(icon.painter(), null, Modifier.size(24.dp), tint = SelloTheme.colors.ink)
             Column(Modifier.weight(1f)) {
-                Text(name, fontWeight = FontWeight.W800, style = MaterialTheme.typography.bodyLarge)
+                Text(name, style = SelloTheme.type.rowTitle)
                 Text(
                     detail,
                     color = SelloTheme.colors.inkSoft,
@@ -390,7 +395,15 @@ internal fun GoalPinPill(
     Row(
         modifier.clip(
             CircleShape
-        ).background(if (selected) colors.onBand.copy(alpha = 0.18f) else Color.Transparent)
+        ).background(
+            if (selected) {
+                colors.onBand.copy(
+                    alpha = SelloTheme.alpha.bandTint
+                )
+            } else {
+                Color.Transparent
+            }
+        )
             .border(1.5.dp, if (selected) Color.Transparent else colors.onBand, CircleShape)
             // A star turned on and off: a switch, not one choice among others.
             .toggleable(
@@ -405,7 +418,7 @@ internal fun GoalPinPill(
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Icon(SelloIcon.Star.painter(selected), null, tint = colors.onBand)
-        Text(label, color = colors.onBand, fontWeight = FontWeight.W800)
+        Text(label, color = colors.onBand, fontWeight = SelloTheme.type.weight.emphasis)
     }
 }
 

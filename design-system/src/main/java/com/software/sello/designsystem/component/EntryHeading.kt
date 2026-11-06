@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import com.software.sello.designsystem.theme.SelloTheme
 
@@ -20,11 +19,11 @@ import com.software.sello.designsystem.theme.SelloTheme
 fun EntryHeading(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium.copy(
-            fontWeight = FontWeight.W800,
-            letterSpacing = 0.05.em
-        ),
+        style = SelloTheme.type.groupLabel.copy(letterSpacing = HeadingTracking),
         color = SelloTheme.colors.inkSoft,
         modifier = modifier.semantics { heading() }
     )
 }
+
+/** The heading's spaced capitals (no type token: 0.05em is the stamps' tracking, not a role). */
+private val HeadingTracking = 0.05.em

@@ -43,7 +43,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -92,18 +91,16 @@ internal fun MonthBar(
         ) {
             Text(
                 month,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.W800,
-                    letterSpacing = (-0.02).em
-                ),
+                style = SelloTheme.type.barTitle,
                 color = colors.onBand
             )
             Text(
                 year,
                 Modifier.padding(start = 6.dp),
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.W600),
-                color = colors.onBand.copy(alpha = 0.8f)
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = SelloTheme.type.weight.soft
+                ),
+                color = colors.onBand.copy(alpha = SelloTheme.alpha.secondary)
             )
             Icon(SelloIcon.KeyboardArrowDown.painter(), null, tint = colors.onBand)
         }
@@ -138,11 +135,7 @@ internal fun TitleBar(
         Text(
             title,
             Modifier.weight(1f).semantics { heading() },
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontSize = 24.sp,
-                fontWeight = FontWeight.W800,
-                letterSpacing = (-0.02).em
-            ),
+            style = SelloTheme.type.barTitle,
             color = colors.onBand,
             maxLines = 1,
             softWrap = false,
@@ -174,7 +167,7 @@ internal fun PastMonthRibbon(
     val colors = SelloTheme.colors
     Row(
         modifier.fillMaxWidth()
-            .background(colors.onBand.copy(alpha = 0.16f), CircleShape)
+            .background(colors.onBand.copy(alpha = SelloTheme.alpha.bandTint), CircleShape)
             .padding(
                 start = SelloTheme.spacing.md,
                 top = SelloTheme.spacing.xs,
@@ -202,7 +195,7 @@ internal fun PastMonthRibbon(
                 .padding(horizontal = 14.dp)
                 .wrapContentHeight(Alignment.CenterVertically),
             color = if (colors.isDark) colors.ink else colors.band,
-            fontWeight = FontWeight.W800,
+            fontWeight = SelloTheme.type.weight.emphasis,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1
         )
@@ -222,7 +215,10 @@ internal fun MonthSwitcher(label: String, onClick: () -> Unit, modifier: Modifie
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.titleLarge.copy(fontSize = 21.sp, lineHeight = 24.sp),
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontSize = MonthSwitcherSize,
+                lineHeight = MonthSwitcherLine
+            ),
             // A second line before an ellipsis, as for any long screen title.
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
@@ -230,3 +226,7 @@ internal fun MonthSwitcher(label: String, onClick: () -> Unit, modifier: Modifie
         Icon(SelloIcon.KeyboardArrowDown.painter(), null, Modifier.size(22.dp))
     }
 }
+
+/** The month switcher's label, used once (no type token). */
+private val MonthSwitcherSize = 21.sp
+private val MonthSwitcherLine = 24.sp

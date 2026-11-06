@@ -19,7 +19,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import com.software.sello.R
 import com.software.sello.designsystem.component.ChartPeriod
 import com.software.sello.designsystem.component.ChartPoint
@@ -350,7 +349,7 @@ private fun ChartDetail(text: String, heading: Boolean = false) = Text(
         MaterialTheme.typography.labelMedium
     } else {
         MaterialTheme.typography.labelSmall.copy(
-            fontWeight = FontWeight.Normal
+            fontWeight = SelloTheme.type.weight.regular
         )
     },
     color = SelloTheme.colors.inkSoft,

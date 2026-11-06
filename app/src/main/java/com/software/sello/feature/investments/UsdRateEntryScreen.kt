@@ -21,7 +21,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -163,7 +162,8 @@ private fun Amount(state: UsdRateEntryState, onAction: (UsdRateEntryAction) -> U
 @Composable
 private fun Fact(state: UsdRateEntryState) {
     val current = state.current
-    val bold = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.W800)
+    val bold =
+        SpanStyle(color = SelloTheme.colors.ink, fontWeight = SelloTheme.type.weight.emphasis)
     FactLine(
         if (current == null) {
             buildAnnotatedString { append(stringResource(R.string.usd_rate_entry_first)) }

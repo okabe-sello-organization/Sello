@@ -106,7 +106,7 @@ fun GoalBulkScreen(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
 
             else -> Column(
                 Modifier.fillMaxSize().padding(padding),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
             ) {
                 Receipt(state, onAction, Modifier.weight(1f))
                 Box {
@@ -283,7 +283,7 @@ private fun bulkLine(
  */
 @Composable
 private fun Choices(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
         EntryHeading(
             if (state.lines.size > 1) {
                 stringResource(R.string.goal_bulk_choices_line, state.highlighted + 1)
@@ -316,7 +316,7 @@ private fun Choices(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
             }
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm),
             modifier = Modifier.testTag(GOAL_BULK_KINDS_TAG)
         ) {
             SelloChip(

@@ -146,11 +146,11 @@ fun InvestmentMovementsScreen(
 
             else -> Column(
                 Modifier.padding(padding).fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
             ) {
                 Receipt(state, onAction, Modifier.weight(1f))
                 Box {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)) {
                         Choices(state, onAction)
                     }
                     state.removed?.let { removed ->

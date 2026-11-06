@@ -28,7 +28,6 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
@@ -81,7 +80,7 @@ fun LeaderLine(
                     Text(
                         label,
                         style = if (emphasis == LineEmphasis.Strong) {
-                            body.copy(fontWeight = FontWeight.W900)
+                            body.copy(fontWeight = SelloTheme.type.weight.figure)
                         } else {
                             body
                         },
@@ -125,7 +124,7 @@ fun LeaderLine(
         Text(
             text = value,
             style = MaterialTheme.typography.bodyLarge.copy(
-                fontWeight = FontWeight.W700,
+                fontWeight = SelloTheme.type.weight.strong,
                 fontFeatureSettings = "tnum"
             ),
             color = valueColor.takeOrElse { SelloTheme.colors.ink }
@@ -164,12 +163,15 @@ fun TotalLine(
                     drawLine(ink, Offset(0f, line * 2.5f), Offset(size.width, line * 2.5f), line)
                 }
             }
-            .padding(top = 10.dp, bottom = 8.dp)
+            .padding(top = 10.dp, bottom = SelloTheme.spacing.sm)
             .semantics(mergeDescendants = true) {},
         start = {
             val body = MaterialTheme.typography.bodyLarge
             val bold = rule == TotalRule.Double
-            Text(label, style = if (bold) body.copy(fontWeight = FontWeight.W700) else body)
+            Text(
+                label,
+                style = if (bold) body.copy(fontWeight = SelloTheme.type.weight.strong) else body
+            )
         },
         value = value
     )
@@ -185,7 +187,7 @@ private fun LeaderLayout(
     start: @Composable () -> Unit,
     value: @Composable () -> Unit
 ) {
-    val dots = SelloTheme.colors.outline.copy(alpha = 0.6f)
+    val dots = SelloTheme.colors.outline.copy(alpha = LEADER_DOTS_ALPHA)
     Layout(
         modifier = modifier,
         content = {
@@ -251,3 +253,6 @@ private val LeaderMinWidth = 12.dp
 
 /** Centre of the dots above the baseline: a 2 px border raised 4 px. */
 private val LeaderRise = 5.dp
+
+/** The leader dots' fade, one role (no alpha token). */
+private const val LEADER_DOTS_ALPHA = 0.6f

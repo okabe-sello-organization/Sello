@@ -24,7 +24,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.icon.SelloIcon
@@ -52,10 +51,10 @@ fun IconPickerCircle(
     val (fill, onFill) = tone.inks()
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.xs),
         modifier = modifier
             .widthIn(min = CircleSize)
-            .alpha(if (enabled) 1f else DISABLED_ALPHA)
+            .alpha(if (enabled) 1f else SelloTheme.alpha.disabled)
             .clip(SelloTheme.shapes.control)
             .clickable(enabled = enabled, onClick = onClick)
             .clearAndSetSemantics {
@@ -113,7 +112,7 @@ fun IconPickerCircle(
         }
         Text(
             caption,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W800),
+            style = SelloTheme.type.groupLabel,
             color = fill,
             textAlign = TextAlign.Center
         )
@@ -137,7 +136,7 @@ fun IconChoiceSheetContent(
     inUseNote: String? = null
 ) {
     val colors = SelloTheme.colors
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)) {
         if (note != null) {
             Text(note, style = MaterialTheme.typography.bodyMedium, color = colors.inkSoft)
         }
@@ -162,5 +161,9 @@ fun IconChoiceSheetContent(
 }
 
 private val CircleSize = 68.dp
+
+/**
+ * The faint wash behind an empty icon. The faint fill (0.15) nearly doubles it and reads as a
+ * chosen colour, so it stays its own value (no alpha token).
+ */
 private const val EMPTY_TINT = 0.08f
-private const val DISABLED_ALPHA = 0.5f

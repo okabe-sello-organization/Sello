@@ -393,7 +393,9 @@ private fun HeaderSlip(
                     stringResource(R.string.carry_per_day_deficit, deficit.digits),
                     style = MaterialTheme.typography.bodySmall,
                     color = SelloTheme.colors.inkSoft,
-                    modifier = Modifier.padding(top = 4.dp).testTag(CATEGORY_DETAIL_DEFICIT_TAG)
+                    modifier = Modifier.padding(
+                        top = SelloTheme.spacing.xs
+                    ).testTag(CATEGORY_DETAIL_DEFICIT_TAG)
                 )
             }
         }

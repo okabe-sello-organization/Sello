@@ -18,7 +18,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.AnswerSlip
@@ -266,7 +265,7 @@ private fun MonthPlan(plan: IncomePlanView, today: LocalDate) {
         LeaderLine(
             stringResource(R.string.income_plan_expected),
             emphasis = LineEmphasis.Soft
-        ) { MoneyText(plan.expected, fontWeight = FontWeight.W700) }
+        ) { MoneyText(plan.expected, fontWeight = SelloTheme.type.weight.strong) }
         TotalLine(stringResource(R.string.income_plan_planned), rule = TotalRule.Single) {
             MoneyText(plan.planned)
         }
@@ -278,7 +277,7 @@ private fun MonthPlan(plan: IncomePlanView, today: LocalDate) {
             MoneyText(
                 plan.unassigned,
                 color = if (plan.over) colors.semantic.loss else colors.ink,
-                fontWeight = FontWeight.W900
+                fontWeight = SelloTheme.type.weight.figure
             )
         }
         FlowRow(
@@ -385,7 +384,9 @@ private fun CameIn(
                     stringResource(R.string.income_carry_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.inkSoft,
-                    modifier = Modifier.padding(top = 4.dp).testTag("income.carryNote")
+                    modifier = Modifier.padding(
+                        top = SelloTheme.spacing.xs
+                    ).testTag("income.carryNote")
                 )
             }
         }

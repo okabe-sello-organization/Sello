@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.software.sello.designsystem.component.AnswerSlip
@@ -81,7 +80,7 @@ internal fun ComparisonSlip(
             Text(
                 trend,
                 style = typography.bodyMedium,
-                fontWeight = FontWeight.W700,
+                fontWeight = SelloTheme.type.weight.strong,
                 color = colors.inkSoft,
                 modifier = Modifier.padding(top = SelloTheme.spacing.sm)
             )
@@ -89,7 +88,7 @@ internal fun ComparisonSlip(
         TearLine()
         Text(
             basis,
-            style = typography.labelSmall.copy(fontWeight = FontWeight.W400),
+            style = typography.labelSmall.copy(fontWeight = SelloTheme.type.weight.regular),
             color = colors.inkSoft
         )
         ComparisonBars(bars, Modifier.padding(top = SelloTheme.spacing.sm))
@@ -113,7 +112,10 @@ private fun ComparisonBars(bars: List<ComparisonBar>, modifier: Modifier) {
                             .background(if (bar.current) colors.brand else colors.pastBar, BarShape)
                     )
                 }
-                MoneyText(bar.amount, textStyle = style.copy(fontWeight = FontWeight.W800))
+                MoneyText(
+                    bar.amount,
+                    textStyle = style.copy(fontWeight = SelloTheme.type.weight.emphasis)
+                )
             }
         }
     ) { measurables, constraints ->
@@ -152,6 +154,7 @@ private val BarGap = 10.dp
 
 private val RowGap = 10.dp
 
+/** A comparison bar lies flat, so all four corners round (the bar token rounds a column's top). */
 private val BarShape = RoundedCornerShape(4.dp)
 
 @Composable
@@ -173,7 +176,11 @@ internal fun SpendingRankRow(
         CategoryCircle(icon, 1f, size = 36.dp, animate = false)
         // The name and its bar are one block, so the amount beside them is centred on both.
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-            Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.W700)
+            Text(
+                name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = SelloTheme.type.weight.strong
+            )
             Box(
                 Modifier.fillMaxWidth().height(
                     6.dp

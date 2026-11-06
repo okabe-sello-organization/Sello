@@ -34,7 +34,6 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
@@ -80,7 +79,11 @@ internal fun ReplaceStarSheet(
             buildAnnotatedString {
                 append(line)
                 if (at >= 0) {
-                    addStyle(SpanStyle(fontWeight = FontWeight.W800), at, at + goal.length)
+                    addStyle(
+                        SpanStyle(fontWeight = SelloTheme.type.weight.emphasis),
+                        at,
+                        at + goal.length
+                    )
                 }
             },
             style = MaterialTheme.typography.bodySmall,
@@ -172,11 +175,11 @@ private fun ChoiceRow(
             }
             .background(
                 if (picked) colors.paperAlt else Color.Transparent,
-                RoundedCornerShape(12.dp)
+                SelloTheme.shapes.inset
             )
             .selectable(picked, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .semantics(mergeDescendants = true) { contentDescription = spoken }
-            .padding(vertical = 6.dp, horizontal = if (picked) 8.dp else 2.dp)
+            .padding(vertical = 6.dp, horizontal = if (picked) SelloTheme.spacing.sm else 2.dp)
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -184,12 +187,12 @@ private fun ChoiceRow(
         ) { Icon(goalIcon(choice.iconKey).painter(), null, Modifier.size(19.dp), colors.brand) }
         Text(
             choice.name,
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),
+            style = SelloTheme.type.rowTitle,
             modifier = Modifier.weight(1f).clearAndSetSemantics {}
         )
         Text(
             percentage,
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.W800),
+            style = SelloTheme.type.rowTitle,
             modifier = Modifier.clearAndSetSemantics {}
         )
         Icon(SelloIcon.Star.painter(true), null, Modifier.size(20.dp), colors.brand)
@@ -209,7 +212,7 @@ private fun SheetError(error: GoalDetailError, count: Int) {
     }
     FieldMessageText(
         FieldMessage(text, tone),
-        Modifier.padding(top = 8.dp).testTag(GOAL_REPLACE_ERROR_TAG)
+        Modifier.padding(top = SelloTheme.spacing.sm).testTag(GOAL_REPLACE_ERROR_TAG)
     )
 }
 

@@ -35,7 +35,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -442,7 +441,7 @@ private fun IncomeComposerSheet(
 ) {
     val note = what == IncomeComposer.Note
     val limit = if (note) Note.MAX_CODE_POINTS else SourceName.MAX_CODE_POINTS
-    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)
+    val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = SelloTheme.type.weight.strong)
     val context = buildAnnotatedString {
         if (note) {
             append(stringResource(R.string.entry_income))
