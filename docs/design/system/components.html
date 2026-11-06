@@ -44,16 +44,16 @@
 <li><a href="#g-frame">Frame and navigation</a> <span class="muted">(7)</span></li>
 <li><a href="#g-entry">Entry forms</a> <span class="muted">(11)</span></li>
 <li><a href="#g-choices">Buttons and choices</a> <span class="muted">(11)</span></li>
-<li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(11)</span></li>
-<li><a href="#g-categories">Categories and carry</a> <span class="muted">(4)</span></li>
+<li><a href="#g-feedback">Feedback, dialogs and sheets</a> <span class="muted">(18)</span></li>
+<li><a href="#g-categories">Categories and carry</a> <span class="muted">(5)</span></li>
 <li><a href="#g-charts">Charts</a> <span class="muted">(2)</span></li>
-<li><a href="#g-goals">Goals and movements</a> <span class="muted">(5)</span></li>
+<li><a href="#g-goals">Goals and movements</a> <span class="muted">(11)</span></li>
 <li><a href="#g-rows">List rows</a> <span class="muted">(2)</span></li>
 <li><a href="#g-bulk">Bulk receipt</a> <span class="muted">(1)</span></li>
 <li><a href="#g-theme">Theme and helpers</a> <span class="muted">(6)</span></li>
       </ul>
       <div class="gaps">
-        <p>Of 74 components, 25 have a component capture of their own, 41 are shown inside a screen baseline, and 8 are not shown at all: <a href="#c-SelloIconButton"><code>SelloIconButton</code></a> (no capture yet), <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt and the status slip.</p>
+        <p>Of 88 components, 25 have a component capture of their own, 55 are shown inside a screen baseline, and 8 are not shown at all: <a href="#c-SelloIconButton"><code>SelloIconButton</code></a> (no capture yet), <a href="#c-rememberSelectedFirst"><code>rememberSelectedFirst</code></a>, <a href="#c-SelloTheme"><code>SelloTheme</code></a>, <a href="#c-systemReducedMotion"><code>systemReducedMotion</code></a>, <a href="#c-StatusBarInk"><code>StatusBarInk</code></a>, <a href="#c-statusBarLightIconsUnder"><code>statusBarLightIconsUnder</code></a>, <a href="#c-DialogBarIcons"><code>DialogBarIcons</code></a>, <a href="#c-painter"><code>painter</code></a> (theme and helper functions with nothing of their own to draw). No component capture has a dark version except the bulk receipt and the status slip.</p>
       </div>
     </section>
 <section id="g-surfaces">
@@ -63,7 +63,7 @@
 <dl>
 <dt>Purpose</dt><dd>The basic surface: a piece of paper on the desk. Everything that carries a figure sits on one. With <code>onClick</code> the whole slip is a single button for accessibility. An <code>outline</code> edges it, as the figure the Sello pad is typing into.</dd>
 <dt>Variants</dt><dd><code>pinked</code> bottom edge (default) or plain, <code>outline</code>, whole-slip <code>onClick</code>.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 5</a> <a class="tag" href="features/category.html">category · 4</a> <a class="tag" href="features/goals.html">goals · 12</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/shell.html">shell · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 4</span> <a class="tag" href="features/recibo.html">recibo · 10</a> <a class="tag" href="features/recurrence.html">recurrence · 5</a> <a class="tag" href="features/reset.html">reset · 4</a> <a class="tag" href="features/resumen.html">resumen · 4</a> <a class="tag" href="features/settings.html">settings · 4</a> <a class="tag" href="features/startup.html">startup · 3</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Feedback.kt</code>, <code>Paper.kt</code>, <code>Settings.kt</code>.</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 5</a> <a class="tag" href="features/category.html">category · 4</a> <a class="tag" href="features/goals.html">goals · 12</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 8</a> <a class="tag" href="features/shell.html">shell · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recibo.html">recibo · 10</a> <a class="tag" href="features/recurrence.html">recurrence · 5</a> <a class="tag" href="features/reset.html">reset · 4</a> <a class="tag" href="features/resumen.html">resumen · 4</a> <a class="tag" href="features/settings.html">settings · 4</a> <a class="tag" href="features/startup.html">startup · 3</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Feedback.kt</code>, <code>Paper.kt</code>, <code>Restore.kt</code>, <code>Settings.kt</code>.</span></dd>
 </dl>
 <pre><code>fun Slip(
     modifier: Modifier = Modifier,
@@ -306,7 +306,7 @@ fun LeaderLine(
 <dl>
 <dt>Purpose</dt><dd>One word in an outlined, rotated box: the verdict of a screen. It is decoration for a result that already exists; it has no click and cannot cause a write. <code>text</code> is sentence case and is what a screen reader says; it is drawn in capitals. With <code>land</code> the stamp comes down once when it first appears. Pass it only when the verdict has just been confirmed, or with <code>haptic</code> false for a verdict revisited. Reduced motion shows the stamp at rest.</dd>
 <dt>Variants</dt><dd><code>ink</code>: <code>StampInk.Good</code>, <code>Done</code>, <code>Over</code>, <code>Neutral</code>, <code>Warn</code> (review status only). <code>size</code>: <code>StampSize.Small</code> 15 sp, <code>Large</code> 34 sp, <code>Hero</code> 52 sp; angle −6° (Hero −9°). <code>land</code>, <code>inkRing</code>, <code>haptic</code>.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/reset.html">reset · 1</a> <span class="muted">Inside the design system: <code>Paper.kt</code>, <code>Recurrence.kt</code>.</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/reset.html">reset · 1</a> <span class="muted">Inside the design system: <code>Paper.kt</code>, <code>Recurrence.kt</code>, <code>Restore.kt</code>.</span></dd>
 </dl>
 <pre><code>fun Stamp(
     text: String,
@@ -554,7 +554,7 @@ fun LeaderLine(
 <h3><code>EntryLine</code> <span class="src"><code>component/Controls.kt:301</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>A full-width line under the chips that opens an editor, such as the note or an income source's name. Empty, it reads as a quiet <code>text</code> prompt; filled, it shows the value and the brand <code>action</code> (Editar, Cambiar) on the trailing edge.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 2</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 3</span> <a class="tag" href="features/recurrence.html">recurrence · 3</a></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <span class="muted">Inside the design system: <code>Movement.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun EntryLine(
     text: String,
@@ -591,7 +591,7 @@ fun LeaderLine(
 <h3><code>NoteComposer</code> <span class="src"><code>component/Controls.kt:355</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Native text input docked above the IME. <code>context</code> says what the text belongs to, with its facts in bold spans, and <code>contextIcon</code> leads it; <code>contextDescription</code> is what a screen reader hears for the box, with amounts spoken in full. Under the box, <code>hint</code> (such as "Opcional") gives way to <code>error</code>. Validation and draft retention are caller-owned. The paper reaches the screen's edges; its content keeps clear of <code>windowInsets</code> at the sides, such as a navigation bar on the right of a phone held sideways.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <span class="muted">Inside the design system: <code>Movement.kt</code>.</span></dd>
 </dl>
 <pre><code>fun NoteComposer(
     context: AnnotatedString,
@@ -679,7 +679,7 @@ fun LeaderLine(
 <dl>
 <dt>Purpose</dt><dd>Sello's button. While <code>loading</code> it keeps its label and colours, shows a spinner in place of the icon and ignores presses, so a save cannot be submitted twice. <code>contentPadding</code> lets a text button end flush with the content beside it.</dd>
 <dt>Variants</dt><dd><code>kind</code>: <code>ButtonKind.Filled</code> (one per screen), <code>Outlined</code>, <code>Text</code>. <code>tone</code>: <code>ButtonTone.Brand</code>, <code>Gain</code>, <code>Ink</code>, <code>Loss</code> (only inside a confirmation), <code>OnBand</code> (a text action on a band). States: <code>enabled</code>, <code>loading</code> (spinner replaces the icon, presses ignored).</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 8</a> <a class="tag" href="features/bulk.html">bulk · 4</a> <a class="tag" href="features/category.html">category · 8</a> <a class="tag" href="features/expense.html">expense · 4</a> <a class="tag" href="features/goals.html">goals · 16</a> <a class="tag" href="features/income.html">income · 5</a> <a class="tag" href="features/investments.html">investments · 14</a> <a class="tag" href="features/shell.html">shell · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 7</span> <a class="tag" href="features/recibo.html">recibo · 11</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/reset.html">reset · 6</a> <a class="tag" href="features/startup.html">startup · 7</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Controls.kt</code>, <code>Feedback.kt</code>, <code>Settings.kt</code>, <code>Suggestion.kt</code>.</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 8</a> <a class="tag" href="features/bulk.html">bulk · 4</a> <a class="tag" href="features/category.html">category · 8</a> <a class="tag" href="features/expense.html">expense · 4</a> <a class="tag" href="features/goals.html">goals · 16</a> <a class="tag" href="features/income.html">income · 5</a> <a class="tag" href="features/investments.html">investments · 14</a> <a class="tag" href="features/shell.html">shell · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recibo.html">recibo · 11</a> <a class="tag" href="features/recurrence.html">recurrence · 3</a> <a class="tag" href="features/reset.html">reset · 6</a> <a class="tag" href="features/startup.html">startup · 7</a> <span class="muted">Inside the design system: <code>BulkReceipt.kt</code>, <code>Controls.kt</code>, <code>Feedback.kt</code>, <code>Movement.kt</code>, <code>RepeatParts.kt</code>, <code>Restore.kt</code>, <code>Settings.kt</code>, <code>Suggestion.kt</code>.</span></dd>
 </dl>
 <pre><code>fun SelloButton(
     text: String,
@@ -717,7 +717,7 @@ fun LeaderLine(
 <h3><code>ButtonPair</code> <span class="src"><code>component/Recurrence.kt:238</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Two buttons side by side, sharing the width by <code>firstWeight</code> and <code>secondWeight</code>, or one above the other at full width when a word of either label would not fit its share.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <span class="muted">Inside the design system: <code>Feedback.kt</code>.</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <span class="muted">Inside the design system: <code>Feedback.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun ButtonPair(
     firstWeight: Float,
@@ -737,7 +737,7 @@ fun LeaderLine(
 <dl>
 <dt>Purpose</dt><dd>One choice in a set: a category, an income source, a goal with its percentage as <code>trailing</code>. It looks 36dp tall, grows with the font size and always takes a 48dp touch target. Put the set in a <code>ChipFlow</code> so it is announced as one group.</dd>
 <dt>Variants</dt><dd><code>selected</code>, <code>enabled</code>, optional <code>icon</code> and <code>trailing</code> text.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 5</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 3</span> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 1</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 5</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 4</a> <a class="tag" href="features/recibo.html">recibo · 2</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun SelloChip(
     label: String,
@@ -906,7 +906,7 @@ fun LeaderLine(
 <dl>
 <dt>Purpose</dt><dd>A confirmation for something that cannot be undone. <code>message</code> says what is affected and how much, with the consequence in bold. Back and a tap outside cancel. While <code>busy</code> the action shows a spinner and nothing can be pressed or dismissed, so the action is requested once. A slip whose labels are long can narrow <code>buttonPadding</code> so each stays on one line.<br><code>ConfirmSlip</code> with any <code>content</code> under the title, such as points to read before saving a file. The content scrolls when the slip would not fit; the buttons stay in view and go one above the other when a label would not fit. The action stays off until <code>confirmEnabled</code>, such as until a word that confirms it is typed.</dd>
 <dt>Variants</dt><dd>Two overloads: a <code>message</code> (<code>AnnotatedString</code>) or any <code>content</code> with <code>confirmEnabled</code>. <code>destructive</code> (default true), <code>busy</code>.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 10</a> <a class="tag" href="features/expense.html">expense · 2</a> <a class="tag" href="features/goals.html">goals · 4</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/shell.html">shell · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recurrence.html">recurrence · 2</a></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <a class="tag" href="features/bulk.html">bulk · 2</a> <a class="tag" href="features/category.html">category · 10</a> <a class="tag" href="features/expense.html">expense · 2</a> <a class="tag" href="features/goals.html">goals · 4</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 2</a> <a class="tag" href="features/shell.html">shell · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 2</a> <span class="muted">Inside the design system: <code>Movement.kt</code>.</span></dd>
 </dl>
 <pre><code>fun ConfirmSlip(
     title: String,
@@ -942,7 +942,7 @@ fun ConfirmSlip(
 <dl>
 <dt>Purpose</dt><dd>A question with two answers, neither of them destructive, such as whether a change applies to the next ones too: <code>firstLabel</code> outlined, <code>secondLabel</code> filled, and <code>backLabel</code> under them to go back without answering. The slip is <code>ConfirmSlip</code>'s. Back and a tap outside are <code>onBack</code>. The answers stand one above the other when they do not fit side by side. While <code>busy</code> the answer given shows a spinner and nothing can be pressed or dismissed, so it is requested once.<br><code>ChoiceSlip</code> with any <code>content</code> under the title, such as a choice of format and the points to read before acting. The content scrolls when the slip would not fit; the answers stay in view.</dd>
 <dt>Variants</dt><dd>Two overloads: a <code>message</code> or any scrolling <code>content</code>. First answer outlined, second filled, back as text. <code>busy</code>.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 1</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun ChoiceSlip(
     title: String,
@@ -1095,7 +1095,7 @@ fun ChoiceSlip(
 <h3><code>BulletList</code> <span class="src"><code>component/BulletList.kt:28</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Points a person should read before acting, such as what a backup file exposes or what a replacement will remove. Each reads aloud as one sentence, without the dot.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 3</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 2</span> <a class="tag" href="features/reset.html">reset · 1</a></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 3</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/reset.html">reset · 1</a> <span class="muted">Inside the design system: <code>Restore.kt</code>.</span></dd>
 </dl>
 <pre><code>fun BulletList(bullets: List&lt;Bullet&gt;, modifier: Modifier = Modifier)</code></pre>
 
@@ -1107,7 +1107,7 @@ fun ChoiceSlip(
 <h3><code>RepeatSheet</code> <span class="src"><code>component/Recurrence.kt:60</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>The sheet that says how something repeats, over the screen it belongs to: a scrim that closes it when tapped, and paper docked at the bottom with <code>title</code> as its heading and <code>content</code> under it, scrolling when it is taller than the screen. It keeps clear of the system bars. Back is the screen's to handle, as is what lies behind.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 1</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <a class="tag" href="features/recibo.html">recibo · 1</a></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 1</a> <a class="tag" href="features/recibo.html">recibo · 1</a> <span class="muted">Inside the design system: <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun RepeatSheet(
     title: String,
@@ -1118,6 +1118,152 @@ fun ChoiceSlip(
 
 <p class="muted">Also visible in screen baselines: <code>schedule-editor-repeat-monthly</code>.</p>
 <figure data-shot="schedule-editor-repeat-monthly" data-module="app" data-caption="Seen in Se repite's sheet over the schedule editor"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-RepeatChoiceSheet">
+<h3><code>RepeatChoiceSheet</code> <span class="src"><code>component/RepeatParts.kt:132</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The sheet that chooses how it repeats: the kind (<code>kind</code> of <code>RepeatSheetLabels.kinds</code>), then the days or the interval, the end (<code>endDate</code> is the dated chip's text, chosen when <code>ended</code>), when the first one comes (<code>next</code>), and Quitar or Listo, which waits for <code>doneEnabled</code>. The screen shows it while it is open and owns Back.</dd>
+<dt>Inputs</dt><dd>Its words (<code>RepeatSheetLabels</code>), the chosen kind by position, the spacing (<code>RepeatSpacing.MonthDays</code> or <code>Interval</code>), the end chip's text, the next-date line and one lambda per answer.</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/recurrence/RepeatParts.kt</code>), which turns a <code>RepeatUi</code> into words: <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+</dl>
+<pre><code>fun RepeatChoiceSheet(
+    labels: RepeatSheetLabels,
+    kind: Int,
+    spacing: RepeatSpacing,
+    endDate: String,
+    ended: Boolean,
+    next: String,
+    doneEnabled: Boolean,
+    dayDescription: (Int) -&gt; String,
+    onKind: (Int) -&gt; Unit,
+    onDayToggled: (Int) -&gt; Unit,
+    onDecrease: () -&gt; Unit,
+    onIncrease: () -&gt; Unit,
+    onNoEnd: () -&gt; Unit,
+    onPickEnd: () -&gt; Unit,
+    onRemove: () -&gt; Unit,
+    onDone: () -&gt; Unit,
+    onDismiss: () -&gt; Unit
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>expense-entry-repeat-sheet</code>, <code>schedule-editor-repeat-days</code>.</p>
+<figure data-shot="expense-entry-repeat-sheet" data-module="app" data-caption="Seen over the expense form: Cada mes"></figure>
+<figure data-shot="schedule-editor-repeat-days" data-module="app" data-caption="Seen over the schedule editor: every so many days"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-RepeatRow">
+<h3><code>RepeatRow</code> <span class="src"><code>component/RepeatParts.kt:73</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Se repite's row under the note, read as <code>spoken</code>: with an <code>action</code> ("Cambiar"), <code>text</code> says the rule and its next date; without one, <code>text</code> is an invitation like Agregar nota ("Repetir este gasto").</dd>
+<dt>Inputs</dt><dd>The row's text and spoken text, and the action word ("Cambiar") once it repeats; none for the invitation.</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/recurrence/RepeatParts.kt</code>), which turns a <code>RepeatUi</code> into words: <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a></dd>
+</dl>
+<pre><code>fun RepeatRow(
+    text: String,
+    spoken: String,
+    enabled: Boolean,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    action: String? = null
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>expense-entry-repeat-on</code>.</p>
+<figure data-shot="expense-entry-repeat-on" data-module="app" data-caption="Seen in the expense form: Se repite with its rule"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-RepeatEndPicker">
+<h3><code>RepeatEndPicker</code> <span class="src"><code>component/RepeatParts.kt:243</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The date picker for when a repeat ends, opened on <code>initial</code>: a day on or after <code>start</code>; none before it can be picked. <code>confirmLabel</code> picks.</dd>
+<dt>Inputs</dt><dd>The day it opens on, the first day that can be picked and the confirm label.</dd>
+<dt>Used by</dt><dd><span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span> <span class="muted">From <code>RepeatChoiceSheet</code>'s app wrapper while the end picker is open.</span></dd>
+</dl>
+<pre><code>fun RepeatEndPicker(
+    initial: LocalDate,
+    start: LocalDate,
+    confirmLabel: String,
+    onPicked: (LocalDate) -&gt; Unit,
+    onDismiss: () -&gt; Unit
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>schedule-editor-repeat-end-picker</code>.</p>
+<figure data-shot="schedule-editor-repeat-end-picker" data-module="app" data-caption="Seen over the schedule editor: when it ends"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-FollowingChoice">
+<h3><code>FollowingChoice</code> <span class="src"><code>component/RepeatParts.kt:278</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Asked when saving new terms on an entry a schedule recorded, with <code>name</code> (the schedule) in bold between <code>lead</code> and <code>rest</code>: <code>onlyThisLabel</code> ("Solo este"), or <code>alsoLabel</code> ("Este y los siguientes"), and <code>backLabel</code> ("Volver a editar").</dd>
+<dt>Inputs</dt><dd>The title, the message split around the schedule's <code>name</code> (drawn bold) and the three labels.</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/recurrence/RepeatParts.kt</code>), which turns a <code>RepeatUi</code> into words: <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/income.html">income · 1</a></dd>
+</dl>
+<pre><code>fun FollowingChoice(
+    title: String,
+    lead: String,
+    name: String,
+    rest: String,
+    onlyThisLabel: String,
+    alsoLabel: String,
+    backLabel: String,
+    busy: Boolean,
+    onChoose: (alsoFollowing: Boolean) -&gt; Unit,
+    onBack: () -&gt; Unit
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>expense-entry-following</code>.</p>
+<figure data-shot="expense-entry-following" data-module="app" data-caption="Seen over the expense form: ¿Cambiar también los siguientes?"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-RestoredSlip">
+<h3><code>RestoredSlip</code> <span class="src"><code>component/Restore.kt:66</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A replaced history: <code>title</code> and <code>body</code>, with the landing <code>stamp</code> beside the title when everything was applied; with <code>pending</code>, the preferences still to apply and the button that applies them (<code>onApply</code>). <code>note</code>, when given, is one more line before the buttons. <code>leaveLabel</code> leaves for the recibo, filled unless there is something to apply.</dd>
+<dt>Inputs</dt><dd>Title, body, stamp, note and the leave label, written; the pending preferences (<code>RestorePending</code>: items, apply label, note, busy) when some were not applied.</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/restore/RestoreSlips.kt</code>), which words a <code>RestoreOutcome.Restored</code>: <a class="tag" href="features/backup.html">backup · 1</a> <a class="tag" href="features/startup.html">startup · 1</a></dd>
+</dl>
+<pre><code>fun RestoredSlip(
+    title: String,
+    body: String,
+    leaveLabel: String,
+    onLeave: () -&gt; Unit,
+    modifier: Modifier = Modifier,
+    stamp: String? = null,
+    note: String? = null,
+    pending: RestorePending? = null,
+    onApply: () -&gt; Unit = {}
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>backup-restore-restored</code>, <code>backup-restore-pending</code>, <code>backup-restore-unreadable</code>.</p>
+<figure data-shot="backup-restore-restored" data-module="app" data-caption="Seen in Respaldo: Restaurado"></figure>
+<figure data-shot="backup-restore-pending" data-module="app" data-caption="Seen in Respaldo: preferences still to apply"></figure>
+<figure data-shot="backup-restore-unreadable" data-module="app" data-caption="Seen in Respaldo: the preferences could not be read"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-RestoreHeading">
+<h3><code>RestoreHeading</code> <span class="src"><code>component/Restore.kt:28</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A restore or reset slip's heading, read as a heading.</dd>
+<dt>Inputs</dt><dd>The heading's text.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/reset.html">reset · 4</a> <a class="tag" href="features/startup.html">startup · 1</a> <span class="muted">Inside the design system: <code>Restore.kt</code>.</span></dd>
+</dl>
+<pre><code>fun RestoreHeading(text: String)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>backup-restore-pending</code>.</p>
+<figure data-shot="backup-restore-pending" data-module="app" data-caption="Seen in Respaldo: Historial financiero restaurado"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-RestoreBody">
+<h3><code>RestoreBody</code> <span class="src"><code>component/Restore.kt:38</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A paragraph of a restore or reset slip, in soft ink under what comes before it.</dd>
+<dt>Inputs</dt><dd>The paragraph's text.</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 3</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 4</span> <span class="muted">The legacy report.</span> <a class="tag" href="features/reset.html">reset · 5</a> <a class="tag" href="features/startup.html">startup · 3</a> <span class="muted">Inside the design system: <code>Restore.kt</code>.</span></dd>
+</dl>
+<pre><code>fun RestoreBody(text: String)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>backup-restore-pending</code>.</p>
+<figure data-shot="backup-restore-pending" data-module="app" data-caption="Seen in Respaldo: the paragraphs under the heading"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 </section>
@@ -1157,7 +1303,7 @@ fun ChoiceSlip(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-CarryBreakdown">
-<h3><code>CarryBreakdown</code> <span class="src"><code>component/Carry.kt:41</code></span></h3>
+<h3><code>CarryBreakdown</code> <span class="src"><code>component/Carry.kt:50</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>Base, signed carry, capacity and what was spent, as receipt lines (ADR 0020 CP27): the capacity is never shown without the base and the carry beside it. <code>footnote</code> says where the carry comes from and when it was read. Every line is read on its own, "label, amount, caption"; amounts are exact and drawn whole, wrapping under their label at large text.</dd>
 <dt>Used by</dt><dd><span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span></dd>
@@ -1171,10 +1317,10 @@ fun ChoiceSlip(
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
 </article>
 <article class="component" id="c-ChangeRow">
-<h3><code>ChangeRow</code> <span class="src"><code>component/Carry.kt:83</code></span></h3>
+<h3><code>ChangeRow</code> <span class="src"><code>component/Carry.kt:92</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>One change in a list shown before saving, such as a later month whose limit with carry moves: <code>label</code> (the month), <code>value</code> ("180.000 → 200.000 (+20.000)") and an optional <code>caption</code> under it ("Restante 110.000 → 130.000"), stronger when <code>emphasized</code>, as for a verdict that flips. Text is already formatted by the application; <code>spoken</code> is the whole row as a screen reader says it, without arrows.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 8</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 1</span></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/category.html">category · 8</a> <span class="muted">Inside the design system: <code>Carry.kt</code>.</span></dd>
 </dl>
 <pre><code>fun ChangeRow(
     label: String,
@@ -1186,6 +1332,25 @@ fun ChoiceSlip(
 )</code></pre>
 <figure data-module="design-system" data-files="components-carry.png" data-caption="Component capture: components-carry.png (design-system)"></figure>
 <div class="gaps"><p>Component capture is Cobalto light only; no dark capture.</p></div>
+</article>
+<article class="component" id="c-CarryCorrectionContent">
+<h3><code>CarryCorrectionContent</code> <span class="src"><code>component/Carry.kt:164</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>What a correction changes, as the content of a confirmation (ADR 0020 CP20–CP22): <code>changed</code> in warn ink when the list was read again because the data moved, <code>what</code> the correction in words, a <code>lead</code> heading, then each category with its months, and <code>footer</code> under them. Every text arrives written.</dd>
+<dt>Inputs</dt><dd>Every text written: the changed notice, the correction in words, the lead, each category (<code>CarryCorrectionGroup</code>: name, icon) with its months (<code>CarryCorrectionLine</code>), and the footer.</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/carry/Carry.kt</code>), which formats a <code>CarryCorrectionList</code>: <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 2</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/shell.html">shell · 1</a></dd>
+</dl>
+<pre><code>fun CarryCorrectionContent(
+    groups: List&lt;CarryCorrectionGroup&gt;,
+    footer: String,
+    changed: String? = null,
+    what: String? = null,
+    lead: String? = null
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>category-editor-past-correction-changed</code>.</p>
+<figure data-shot="category-editor-past-correction-changed" data-module="app" data-caption="Seen in the category editor: the months a past limit moves, read again"></figure>
+<div class="gaps"><p>No component capture.</p></div>
 </article>
 </section>
 <section id="g-charts">
@@ -1324,6 +1489,119 @@ fun ChoiceSlip(
 
 <p class="muted">Also visible in screen baselines: <code>metas-ticket</code>.</p>
 <figure data-shot="metas-ticket" data-module="app" data-caption="Seen in Metas: the ticket in the notice bar"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-MovementPane">
+<h3><code>MovementPane</code> <span class="src"><code>component/Movement.kt:47</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>A scrolling column for the loading and failed states, padded like the form.</dd>
+<dt>Inputs</dt><dd>The scaffold's padding and the slip to show (a skeleton or an error).</dd>
+<dt>Used by</dt><dd><a class="tag" href="features/goals.html">goals · 4</a> <a class="tag" href="features/investments.html">investments · 4</a></dd>
+</dl>
+<pre><code>fun MovementPane(padding: PaddingValues, content: @Composable () -&gt; Unit)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>goal-movement-loading</code>, <code>goal-movement-failed</code>.</p>
+<figure data-shot="goal-movement-loading" data-module="app" data-caption="Seen in Aportar while it loads"></figure>
+<figure data-shot="goal-movement-failed" data-module="app" data-caption="Seen in Aportar when it could not load"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-MovementCloseButton">
+<h3><code>MovementCloseButton</code> <span class="src"><code>component/Movement.kt:39</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The form's close button, an X read as <code>label</code>.</dd>
+<dt>Inputs</dt><dd>The X's spoken <code>label</code> ("Cerrar") and what it does.</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/movement/MovementForm.kt</code>), which supplies the copy: <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 2</a></dd>
+</dl>
+<pre><code>fun MovementCloseButton(label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>goal-movement</code>.</p>
+<figure data-shot="goal-movement" data-module="app" data-caption="Seen in Aportar: the X in the band"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-MovementNoteLine">
+<h3><code>MovementNoteLine</code> <span class="src"><code>component/Movement.kt:60</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The note line under the choices: the <code>note</code>, or <code>addLabel</code> as an invitation while it is blank; <code>editLabel</code> names the action.</dd>
+<dt>Inputs</dt><dd>The note as typed, the invitation and action words ("Agregar nota", "Editar").</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/movement/MovementForm.kt</code>), which supplies the copy: <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 2</a></dd>
+</dl>
+<pre><code>fun MovementNoteLine(
+    note: String,
+    addLabel: String,
+    editLabel: String,
+    enabled: Boolean,
+    onClick: () -&gt; Unit,
+    modifier: Modifier = Modifier
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>goal-movement</code>.</p>
+<figure data-shot="goal-movement" data-module="app" data-caption="Seen in Aportar: Agregar nota"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-MovementNoteComposer">
+<h3><code>MovementNoteComposer</code> <span class="src"><code>component/Movement.kt:104</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The note composer over the form, its context the movement's <code>kind</code> and, once there is one, its signed <code>figure</code> in bold. <code>spoken</code> names what the note is for when read aloud, followed by <code>amountSpoken</code>. <code>counter</code>, <code>hint</code>, <code>error</code> and the two labels are the <code>NoteComposer</code>'s, already written.</dd>
+<dt>Inputs</dt><dd>The movement's kind and signed figure, the draft, and the composer's counter, hint, error and labels, already written; the app maps a note problem to its message.</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/movement/MovementForm.kt</code>), which supplies the copy: <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 2</a></dd>
+</dl>
+<pre><code>fun MovementNoteComposer(
+    kind: String,
+    figure: String?,
+    draft: String,
+    counter: String,
+    hint: String,
+    error: String?,
+    doneLabel: String,
+    cancelLabel: String,
+    icon: SelloIcon,
+    spoken: String,
+    amountSpoken: String?,
+    onChange: (String) -&gt; Unit,
+    onDone: () -&gt; Unit,
+    onCancel: () -&gt; Unit
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>goal-movement-note</code>.</p>
+<figure data-shot="goal-movement-note" data-module="app" data-caption="Seen in Aportar with the note open"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-MovementDatePicker">
+<h3><code>MovementDatePicker</code> <span class="src"><code>component/Movement.kt:146</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>The date picker of a movement, which offers no day after <code>today</code>; <code>confirmLabel</code> picks.</dd>
+<dt>Inputs</dt><dd>The chosen and today's dates (plain <code>LocalDate</code>s) and the confirm label.</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/movement/MovementForm.kt</code>), which supplies the copy: <a class="tag" href="features/goals.html">goals · 2</a> <a class="tag" href="features/investments.html">investments · 2</a></dd>
+</dl>
+<pre><code>fun MovementDatePicker(
+    date: LocalDate,
+    today: LocalDate,
+    confirmLabel: String,
+    onPicked: (LocalDate) -&gt; Unit,
+    onDismiss: () -&gt; Unit
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>goal-movement-date-picker</code>.</p>
+<figure data-shot="goal-movement-date-picker" data-module="app" data-caption="Seen in Aportar: the date picker"></figure>
+<div class="gaps"><p>No component capture.</p></div>
+</article>
+<article class="component" id="c-MovementDiscardSlip">
+<h3><code>MovementDiscardSlip</code> <span class="src"><code>component/Movement.kt:81</code></span></h3>
+<dl>
+<dt>Purpose</dt><dd>Asks before a typed movement is thrown away: <code>message</code>, then <code>confirmLabel</code> or keep.</dd>
+<dt>Inputs</dt><dd>The form's own title, the message and the confirm label.</dd>
+<dt>Used by</dt><dd>Through the app's wrapper of the same name (<code>presentation/movement/MovementForm.kt</code>), which supplies the copy: <a class="tag" href="features/goals.html">goals · 1</a> <a class="tag" href="features/investments.html">investments · 2</a></dd>
+</dl>
+<pre><code>fun MovementDiscardSlip(
+    title: String,
+    message: String,
+    confirmLabel: String,
+    onConfirm: () -&gt; Unit,
+    onDismiss: () -&gt; Unit
+)</code></pre>
+
+<p class="muted">Also visible in screen baselines: <code>goal-movement-discard</code>.</p>
+<figure data-shot="goal-movement-discard" data-module="app" data-caption="Seen in Aportar: discard what was typed"></figure>
 <div class="gaps"><p>No component capture.</p></div>
 </article>
 </section>
@@ -1471,7 +1749,7 @@ fun ChoiceSlip(
 <h3><code>painter()</code> <span class="src"><code>icon/SelloIcon.kt:92</code></span></h3>
 <dl>
 <dt>Purpose</dt><dd>No KDoc. Resolves a <code>SelloIcon</code> to its filled drawing, or its outlined one when <code>filled</code> is false and one exists.</dd>
-<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 5</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 16</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 7</a> <a class="tag" href="features/shell.html">shell · 9</a> <span class="tag" title="app/src/main/java/com/software/sello/presentation">presentation (shared app code) · 3</span> <a class="tag" href="features/recibo.html">recibo · 8</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a></dd>
+<dt>Used by</dt><dd><a class="tag" href="features/backup.html">backup · 2</a> <a class="tag" href="features/bulk.html">bulk · 1</a> <a class="tag" href="features/category.html">category · 5</a> <a class="tag" href="features/expense.html">expense · 1</a> <a class="tag" href="features/goals.html">goals · 16</a> <a class="tag" href="features/income.html">income · 1</a> <a class="tag" href="features/investments.html">investments · 7</a> <a class="tag" href="features/shell.html">shell · 9</a> <a class="tag" href="features/recibo.html">recibo · 8</a> <a class="tag" href="features/recurrence.html">recurrence · 1</a> <a class="tag" href="features/resumen.html">resumen · 1</a> <span class="muted">Inside the design system: <code>Carry.kt</code>, <code>Movement.kt</code>, <code>RepeatParts.kt</code>.</span></dd>
 </dl>
 <pre><code>fun SelloIcon.painter(filled: Boolean = true): Painter</code></pre>
 

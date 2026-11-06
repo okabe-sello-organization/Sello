@@ -218,13 +218,13 @@
       <figure data-shot="expense-entry-following-busy" data-module="app" data-caption="The following-payments question while saving"></figure>
       <ul>
         <li>Carry correction: a <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> holding
-          <code>CarryCorrectionContent</code> (<code>app/src/main/java/com/software/sello/presentation/carry/Carry.kt:318</code>),
+          <code>CarryCorrectionContent</code> (<code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:164</code>),
           titled "¿Anotar este gasto?" / "¿Guardar el cambio?", confirm "Anotar" / "Guardar", busy while saving
           (<code>ExpenseEntryScreen.kt:329</code>). It lists the later months the save changes before anything is saved.</li>
-        <li>Se repite: <code>RepeatChoiceSheet</code> (<code>app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:133</code>),
+        <li>Se repite: <code>RepeatChoiceSheet</code> (<code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:132</code>),
           drawn on <a href="../components.html#c-RepeatSheet"><code>RepeatSheet</code></a>; Back closes it and keeps the
           choice (<code>ExpenseEntryScreen.kt:150</code>). See the Recurrence page.</li>
-        <li>Following payments: <code>FollowingChoice</code> (<code>RepeatParts.kt:306</code>) asks "¿Cambiar también los siguientes?"
+        <li>Following payments: <code>FollowingChoice</code> (<code>component/RepeatParts.kt:278</code>) asks "¿Cambiar también los siguientes?"
           with "Solo este", "Este y los siguientes", "Volver a editar" when a scheduled expense is corrected
           (<code>ExpenseEntryScreen.kt:351</code>).</li>
       </ul>
@@ -269,9 +269,9 @@
               <td>Past-expense announcement, inline in the choices</td><td>Said once; "Entendido" remembers it</td></tr>
             <tr><td><code>StaleSlip</code></td><td><code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code></td>
               <td>Above the chips when a refresh failed</td><td>Older data said, never passed off as fresh</td></tr>
-            <tr><td><code>RepeatRow</code>, <code>RepeatChoiceSheet</code>, <code>FollowingChoice</code></td><td><code>app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:81</code></td>
+            <tr><td><a href="../components.html#c-RepeatRow"><code>RepeatRow</code></a>, <a href="../components.html#c-RepeatChoiceSheet"><code>RepeatChoiceSheet</code></a>, <a href="../components.html#c-FollowingChoice"><code>FollowingChoice</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:73</code></td>
               <td><code>income = false</code></td><td>Shared with Anotar ingreso and the schedules</td></tr>
-            <tr><td><code>CarryCorrectionContent</code></td><td><code>app/src/main/java/com/software/sello/presentation/carry/Carry.kt:318</code></td>
+            <tr><td><a href="../components.html#c-CarryCorrectionContent"><code>CarryCorrectionContent</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:164</code></td>
               <td>Inside the correction ConfirmSlip</td><td>Lists the later months a save changes</td></tr>
             <tr><td><code>Pane</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:363</code></td>
               <td>Scrolling column, <code>spacedBy(md)</code>, no inner padding</td><td>Holds the skeleton or error before the form</td></tr>
@@ -286,15 +286,15 @@
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
         <li><code>Pane</code> (<code>ExpenseEntryScreen.kt:363</code>) against <code>MovementPane</code>
-          (<code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:53</code>) and its copy
+          (<code>design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:47</code>) and its copy
           <code>IncomePane</code> (<code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250</code>):
           the expense one drops the <code>lg</code> inner padding and spaces by <code>md</code>, so its skeleton and
           ErrorSlip reach the screen edge: compare <code>expense-entry-loading</code>, <code>expense-entry-failed</code> with <code>income-form-loading</code>, <code>income-form-failed</code>. Finding: <a href="../findings.html#C03">C03</a>.</li>
         <li><code>DayPicker</code> (<code>ExpenseEntryScreen.kt:673</code>) against <code>MovementDatePicker</code>
-          (<code>MovementForm.kt:144</code>): the same dialog plus the Se repite range rule. Income and Anotar varios have
+          (<code>component/Movement.kt:146</code>): the same dialog plus the Se repite range rule. Income and Anotar varios have
           their own copies too. Finding: <a href="../findings.html#C01">C01</a>.</li>
         <li>The X (<code>ExpenseEntryScreen.kt:190</code>) against <code>MovementCloseButton</code>
-          (<code>MovementForm.kt:45</code>): identical markup, written inline. Finding: <a href="../findings.html#C02">C02</a>.</li>
+          (<code>component/Movement.kt:39</code>): identical markup, written inline. Finding: <a href="../findings.html#C02">C02</a>.</li>
       </ul>
     </section>
 

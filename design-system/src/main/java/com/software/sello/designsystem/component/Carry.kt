@@ -3,19 +3,28 @@ package com.software.sello.designsystem.component
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.software.sello.designsystem.icon.SelloIcon
+import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 
 /**
@@ -126,3 +135,91 @@ fun ChangeRow(
         }
     }
 }
+
+/** One month of a [CarryCorrectionContent], as a [ChangeRow] draws it; every text is written. */
+@Immutable
+data class CarryCorrectionLine(
+    val label: String,
+    val value: String,
+    val spoken: String,
+    val caption: String? = null,
+    val emphasized: Boolean = false
+)
+
+/** One category of a [CarryCorrectionContent]: its [icon] when known, [name] and [lines]. */
+@Immutable
+data class CarryCorrectionGroup(
+    val name: String,
+    val icon: SelloIcon?,
+    val lines: List<CarryCorrectionLine>
+)
+
+/**
+ * What a correction changes, as the content of a confirmation (ADR 0020 CP20–CP22):
+ * [changed] in warn ink when the list was read again because the data moved, [what] the
+ * correction in words, a [lead] heading, then each category with its months, and
+ * [footer] under them. Every text arrives written.
+ */
+@Composable
+fun CarryCorrectionContent(
+    groups: List<CarryCorrectionGroup>,
+    footer: String,
+    changed: String? = null,
+    what: String? = null,
+    lead: String? = null
+) {
+    Column(
+        Modifier.testTag(CARRY_CORRECTION_TAG),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        if (changed != null) {
+            Text(
+                changed,
+                style = MaterialTheme.typography.bodyMedium,
+                color = SelloTheme.colors.semantic.warn,
+                modifier = Modifier.padding(bottom = 8.dp).testTag(CARRY_CORRECTION_CHANGED_TAG)
+            )
+        }
+        what?.let {
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = SelloTheme.colors.inkSoft)
+        }
+        if (lead != null) {
+            Text(
+                lead,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(top = 8.dp).semantics { heading() }
+            )
+        }
+        groups.forEach { group ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                group.icon?.let {
+                    Icon(it.painter(), null, Modifier.size(18.dp), SelloTheme.colors.brand)
+                }
+                Text(group.name, style = MaterialTheme.typography.titleSmall)
+            }
+            group.lines.forEach {
+                ChangeRow(
+                    it.label,
+                    it.value,
+                    it.spoken,
+                    caption = it.caption,
+                    emphasized = it.emphasized
+                )
+            }
+        }
+        Text(
+            footer,
+            style = MaterialTheme.typography.bodySmall,
+            color = SelloTheme.colors.inkSoft,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+    }
+}
+
+const val CARRY_CORRECTION_TAG = "carry:correction"
+
+const val CARRY_CORRECTION_CHANGED_TAG = "carry:correction.changed"

@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.Look
+import com.software.sello.designsystem.component.RESTORE_LEAVE_TAG
 import com.software.sello.domain.model.CategoryOrder
 import com.software.sello.domain.model.CategoryOrderDirection
 import com.software.sello.domain.model.CategoryOrderingPreference
@@ -21,7 +22,6 @@ import com.software.sello.domain.port.PendingPreferences
 import com.software.sello.domain.port.RestoreOutcome
 import com.software.sello.domain.port.RestoreRejection
 import com.software.sello.presentation.restore.RESTORE_DONE_TAG
-import com.software.sello.presentation.restore.RESTORE_LEAVE_TAG
 import com.software.sello.showSello
 import java.time.Instant
 import java.time.ZoneId

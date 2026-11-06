@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.semantics
 import com.software.sello.R
 import com.software.sello.designsystem.component.Bullet
 import com.software.sello.designsystem.component.BulletList
+import com.software.sello.designsystem.component.RestoreBody
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.port.LegacyImportLine
 import com.software.sello.domain.port.LegacyImportReport

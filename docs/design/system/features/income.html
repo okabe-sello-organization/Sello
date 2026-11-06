@@ -292,7 +292,7 @@
               <td>Unassigned income, with a dismiss</td><td>Offers; changes nothing by itself</td></tr>
             <tr><td><code>StaleSlip</code></td><td><code>app/src/main/java/com/software/sello/presentation/read/StaleSlip.kt:23</code></td>
               <td>Form only</td><td>Older data said, draft kept</td></tr>
-            <tr><td><code>RepeatRow</code>, <code>RepeatChoiceSheet</code>, <code>FollowingChoice</code></td><td><code>app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:81</code></td>
+            <tr><td><a href="../components.html#c-RepeatRow"><code>RepeatRow</code></a>, <a href="../components.html#c-RepeatChoiceSheet"><code>RepeatChoiceSheet</code></a>, <a href="../components.html#c-FollowingChoice"><code>FollowingChoice</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:73</code></td>
               <td><code>income = true</code></td><td>Shared with Anotar</td></tr>
             <tr><td><code>IncomePane</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:250</code></td>
               <td>Padding and spacing <code>lg</code></td><td>Holds the skeleton or error</td></tr>
@@ -307,11 +307,11 @@
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
         <li><code>IncomePane</code> (<code>IncomeFormScreen.kt:250</code>) is the same code as <code>MovementPane</code>
-          (<code>app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:53</code>), while the expense
+          (<code>design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:47</code>), while the expense
           form's <code>Pane</code> (<code>app/src/main/java/com/software/sello/feature/expense/ExpenseEntryScreen.kt:363</code>) differs. Finding: <a href="../findings.html#C03">C03</a>.</li>
         <li><code>IncomeDatePicker</code> (<code>IncomeFormScreen.kt:498</code>) against <code>MovementDatePicker</code>
-          (<code>MovementForm.kt:144</code>) and the expense form's <code>DayPicker</code>. Finding: <a href="../findings.html#C01">C01</a>.</li>
-        <li>The X (<code>IncomeFormScreen.kt:142</code>) against <code>MovementCloseButton</code> (<code>MovementForm.kt:45</code>). Finding: <a href="../findings.html#C02">C02</a>.</li>
+          (<code>component/Movement.kt:146</code>) and the expense form's <code>DayPicker</code>. Finding: <a href="../findings.html#C01">C01</a>.</li>
+        <li>The X (<code>IncomeFormScreen.kt:142</code>) against <code>MovementCloseButton</code> (<code>component/Movement.kt:39</code>). Finding: <a href="../findings.html#C02">C02</a>.</li>
         <li>Raw <code>Text</code> hints (<code>IncomeFormScreen.kt:356</code>, <code>:363</code>; <code>IncomeHistoryScreen.kt:355</code>,
           <code>:367</code>, <code>:288</code>) where the expense form uses
           <a href="../components.html#c-FieldMessageText"><code>FieldMessageText</code></a> with the Hint tone. Finding: <a href="../findings.html#C15">C15</a>.</li>

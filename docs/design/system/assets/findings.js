@@ -328,7 +328,7 @@ window.SELLO_FINDINGS = {
     },
     {
      "id": "M01-17",
-     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:511",
+     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:465",
      "area": "recibo",
      "features": [
       "recibo"
@@ -436,7 +436,7 @@ window.SELLO_FINDINGS = {
      "file": "app/src/main/java/com/software/sello/feature/investments/InvestmentEditorScreen.kt:247"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:83"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:88"
     }
    ],
    "places": [
@@ -575,7 +575,7 @@ window.SELLO_FINDINGS = {
      "file": "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:290"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:97"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:81"
     }
    ],
    "places": [
@@ -623,7 +623,7 @@ window.SELLO_FINDINGS = {
      "file": "app/src/main/java/com/software/sello/feature/recurrence/ScheduleEditorScreen.kt:106"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:47"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:41"
     },
     {
      "file": "app/src/main/java/com/software/sello/navigation/ShellScreen.kt:229"
@@ -665,7 +665,7 @@ window.SELLO_FINDINGS = {
      "file": "app/src/main/java/com/software/sello/feature/reset/ResetScreen.kt:237"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:83"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Restore.kt:85"
     },
     {
      "file": "app/src/main/java/com/software/sello/feature/recibo/ReciboScreen.kt:580"
@@ -751,7 +751,7 @@ window.SELLO_FINDINGS = {
      "file": "design-system/src/main/java/com/software/sello/designsystem/component/Feedback.kt:305"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:497"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:455"
     }
    ],
    "places": [
@@ -1049,7 +1049,7 @@ window.SELLO_FINDINGS = {
      "file": "app/src/main/java/com/software/sello/feature/recibo/CategoryDetailScreen.kt:527"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:333"
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:179"
     },
     {
      "file": "app/src/main/java/com/software/sello/feature/category/CategoryCarry.kt:342"
@@ -1216,8 +1216,8 @@ window.SELLO_FINDINGS = {
   {
    "id": "C01",
    "component": "MovementDatePicker",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:144",
+   "ref": "components.html#c-MovementDatePicker",
+   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:146",
    "copies": [
     {
      "id": "C01-1",
@@ -1330,8 +1330,8 @@ window.SELLO_FINDINGS = {
     },
     {
      "id": "C01-7",
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:267",
-     "area": "recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:243",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -1352,8 +1352,8 @@ window.SELLO_FINDINGS = {
   {
    "id": "C02",
    "component": "MovementCloseButton",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:45",
+   "ref": "components.html#c-MovementCloseButton",
+   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:39",
    "copies": [
     {
      "id": "C02-1",
@@ -1493,8 +1493,8 @@ window.SELLO_FINDINGS = {
   {
    "id": "C03",
    "component": "MovementPane",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:53",
+   "ref": "components.html#c-MovementPane",
+   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:47",
    "copies": [
     {
      "id": "C03-1",
@@ -1539,8 +1539,8 @@ window.SELLO_FINDINGS = {
   {
    "id": "C04",
    "component": "MovementNoteLine",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:63",
+   "ref": "components.html#c-MovementNoteLine",
+   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:60",
    "copies": [
     {
      "id": "C04-1",
@@ -1623,8 +1623,8 @@ window.SELLO_FINDINGS = {
   {
    "id": "C05",
    "component": "MovementDiscardSlip",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:82",
+   "ref": "components.html#c-MovementDiscardSlip",
+   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:81",
    "copies": [
     {
      "id": "C05-1",
@@ -2115,7 +2115,7 @@ window.SELLO_FINDINGS = {
    "id": "C16",
    "component": "CarryBreakdown (CarryBreakdownSection)",
    "ref": "components.html#c-CarryBreakdown",
-   "shared": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:118",
+   "shared": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:106",
    "copies": [
     {
      "id": "C16-1",
@@ -2164,7 +2164,7 @@ window.SELLO_FINDINGS = {
    "id": "C18",
    "component": "Modifier.dashedOutline",
    "ref": null,
-   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:44",
+   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:46",
    "copies": [
     {
      "id": "C18-1",
@@ -2344,7 +2344,7 @@ window.SELLO_FINDINGS = {
    "copies": [
     {
      "id": "C22-1",
-     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:306",
+     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:294",
      "area": "recibo, resumen (carry)",
      "features": [
       "recibo",
@@ -2423,8 +2423,8 @@ window.SELLO_FINDINGS = {
   {
    "id": "C23",
    "component": "RestoreHeading",
-   "ref": null,
-   "shared": "app/src/main/java/com/software/sello/presentation/restore/RestoreSlips.kt:197",
+   "ref": "components.html#c-RestoreHeading",
+   "shared": "design-system/src/main/java/com/software/sello/designsystem/component/Restore.kt:28",
    "copies": [
     {
      "id": "C23-1",
@@ -3852,7 +3852,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:162",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:172",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: fontSize = 0.56.em,"
@@ -3951,7 +3951,7 @@ window.SELLO_FINDINGS = {
      "note": "ExpenseStubLine: letterSpacing = 0.6.sp"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:87",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:102",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: letterSpacing = 0.6.sp"
@@ -4041,13 +4041,13 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:165",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:175",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: letterSpacing = 0.em,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:184",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:194",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: withStyle(SpanStyle(letterSpacing = 0.em)) { append(ZERO_WIDTH_SPACE) }"
@@ -4165,7 +4165,7 @@ window.SELLO_FINDINGS = {
      "note": "ComparisonSlip: style = typography.labelSmall.copy(fontWeight = FontWeight.W400),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:118",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:127",
      "area": "design-system:Carry",
      "features": [],
      "note": "ChangeRow: fontWeight = if (emphasized) FontWeight.W800 else FontWeight.W400,"
@@ -4278,7 +4278,7 @@ window.SELLO_FINDINGS = {
      "note": "NoteComposer: fontWeight = if (error != null) FontWeight.W600 else null,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:163",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:173",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: fontWeight = FontWeight.W600,"
@@ -4443,16 +4443,16 @@ window.SELLO_FINDINGS = {
      "note": "InkSwatches: fontWeight = if (chosen) FontWeight.W700 else FontWeight.W600"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:402",
-     "area": "shared:recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:360",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
      "note": "DayGrid: fontWeight = FontWeight.W700"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:454",
-     "area": "shared:recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:412",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -4477,13 +4477,13 @@ window.SELLO_FINDINGS = {
      "note": "BulletList: withStyle(SpanStyle(color = colors.ink, fontWeight = FontWeight.W700)) {"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:59",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:68",
      "area": "design-system:Carry",
      "features": [],
      "note": "CarryBreakdown: FontWeight.W700"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:108",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:117",
      "area": "design-system:Carry",
      "features": [],
      "note": "ChangeRow: fontWeight = FontWeight.W700,"
@@ -4521,7 +4521,7 @@ window.SELLO_FINDINGS = {
      "note": "MoneyStyle.textStyle: fontWeight = FontWeight.W700,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:144",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:159",
      "area": "design-system:Plan",
      "features": [],
      "note": "ExpectedChip: fontWeight = FontWeight.W700,"
@@ -4600,14 +4600,14 @@ window.SELLO_FINDINGS = {
      "note": "IncomeComposerSheet: val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/movement/MovementForm.kt:111",
-     "area": "shared:movement",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:120",
+     "area": "design-system:Movement",
      "features": [],
      "note": "MovementNoteComposer: val facts = SpanStyle(color = SelloTheme.colors.ink, fontWeight = FontWeight.Bold)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:330",
-     "area": "shared:recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:292",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -5041,8 +5041,8 @@ window.SELLO_FINDINGS = {
      "note": "PastMonthNotice: addStyle(SpanStyle(fontWeight = FontWeight.W800), start, start + viewed.length)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:259",
-     "area": "shared:recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:232",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -5079,13 +5079,13 @@ window.SELLO_FINDINGS = {
      "note": "LineContent: fontWeight = FontWeight.W800,"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:101",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:110",
      "area": "design-system:Carry",
      "features": [],
      "note": "ChangeRow: style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:118",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:127",
      "area": "design-system:Carry",
      "features": [],
      "note": "ChangeRow: fontWeight = if (emphasized) FontWeight.W800 else FontWeight.W400,"
@@ -5153,7 +5153,7 @@ window.SELLO_FINDINGS = {
      "note": "MoreSlip: style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.W800),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:86",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:101",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: fontWeight = FontWeight.W800,"
@@ -5316,7 +5316,7 @@ window.SELLO_FINDINGS = {
      "note": "LineMark: Text(\"?\", fontWeight = FontWeight.W900, color = ink)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:57",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:66",
      "area": "design-system:Carry",
      "features": [],
      "note": "CarryBreakdown: FontWeight.W900"
@@ -5339,8 +5339,8 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:537",
-     "area": "shared:recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:495",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -5394,7 +5394,7 @@ window.SELLO_FINDINGS = {
      "note": "Plate: Plate outer border of the celebration stamp (a stamp: stampHero fits)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:76",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:91",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: PlanSlip dashed outline (not a stamp)"
@@ -5539,7 +5539,7 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:128",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:143",
      "area": "design-system:Plan",
      "features": [],
      "note": "ExpectedChip: ExpectedChip pill outline"
@@ -5618,19 +5618,19 @@ window.SELLO_FINDINGS = {
      "note": "ReceiptFoot: contentPadding = PaddingValues(horizontal = 4.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:46",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:55",
      "area": "design-system:Carry",
      "features": [],
      "note": "CarryBreakdown: Column(modifier.fillMaxWidth().padding(top = 4.dp)) {"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:69",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:78",
      "area": "design-system:Carry",
      "features": [],
      "note": "CarryBreakdown: modifier = Modifier.padding(top = 4.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:95",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:104",
      "area": "design-system:Carry",
      "features": [],
      "note": "ChangeRow: .padding(vertical = 4.dp)"
@@ -5710,7 +5710,7 @@ window.SELLO_FINDINGS = {
      "note": "MoreSlip: Spacer(Modifier.width(4.dp))"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:129",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:144",
      "area": "design-system:Plan",
      "features": [],
      "note": "ExpectedChip: .padding(horizontal = 10.dp, vertical = 4.dp)"
@@ -5887,32 +5887,32 @@ window.SELLO_FINDINGS = {
      "note": "CarryWhyNote: modifier = modifier.padding(top = 8.dp).testTag(RECIBO_CARRY_WHY_TAG)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:334",
-     "area": "shared:carry",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:180",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: modifier = Modifier.padding(bottom = 8.dp).testTag(CARRY_CORRECTION_CHANGED_TAG)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:345",
-     "area": "shared:carry",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:190",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: modifier = Modifier.padding(top = 8.dp).semantics { heading() }"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:351",
-     "area": "shared:carry",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:196",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: horizontalArrangement = Arrangement.spacedBy(8.dp),"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:352",
-     "area": "shared:carry",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:197",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: modifier = Modifier.padding(top = 8.dp)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/carry/Carry.kt:379",
-     "area": "shared:carry",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:218",
+     "area": "design-system:Carry",
      "features": [],
      "note": "CarryCorrectionContent: modifier = Modifier.padding(top = 8.dp)"
     },
@@ -6099,7 +6099,7 @@ window.SELLO_FINDINGS = {
      "note": "Footnote: horizontalArrangement = Arrangement.spacedBy(8.dp)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:80",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:95",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: horizontalArrangement = Arrangement.spacedBy(8.dp),"
@@ -6341,7 +6341,7 @@ window.SELLO_FINDINGS = {
      "note": "StampTicket: .padding(start = 18.dp, top = 12.dp, end = 16.dp, bottom = 12.dp),"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:77",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/Plan.kt:92",
      "area": "design-system:Plan",
      "features": [],
      "note": "PlanSlip: .padding(horizontal = 16.dp, vertical = 14.dp)"
@@ -6382,8 +6382,8 @@ window.SELLO_FINDINGS = {
    "shots": [],
    "places": [
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:535",
-     "area": "shared:recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:493",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
@@ -6594,37 +6594,37 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: DISABLED_ROW_ALPHA defined"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:392",
-     "area": "shared:recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:350",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
      "note": "DayGrid: uses DISABLED_ALPHA: .alpha(if (enabled) 1f else DISABLED_ALPHA)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:468",
-     "area": "shared:recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:426",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
      "note": "StepButton: uses DISABLED_ALPHA: .alpha(if (enabled) 1f else DISABLED_ALPHA)"
     },
     {
-     "file": "app/src/main/java/com/software/sello/presentation/recurrence/RepeatParts.kt:529",
-     "area": "shared:recurrence",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/RepeatParts.kt:487",
+     "area": "design-system:RepeatParts",
      "features": [
       "recurrence"
      ],
      "note": "file-level constant: DISABLED_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/AmountKeypad.kt:178",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/AmountKeypad.kt:181",
      "area": "design-system:AmountKeypad",
      "features": [],
      "note": "RowScope.Key: uses DISABLED_KEY_ALPHA: .alpha(if (enabled) 1f else DISABLED_KEY_ALPHA)"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/AmountKeypad.kt:185",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/AmountKeypad.kt:192",
      "area": "design-system:AmountKeypad",
      "features": [],
      "note": "file-level constant: DISABLED_KEY_ALPHA defined"
@@ -6974,7 +6974,7 @@ window.SELLO_FINDINGS = {
      "note": "file-level constant: SYMBOL_ALPHA defined"
     },
     {
-     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:166",
+     "file": "design-system/src/main/java/com/software/sello/designsystem/component/MoneyText.kt:176",
      "area": "design-system:MoneyText",
      "features": [],
      "note": "moneyAnnotatedString: uses SYMBOL_ALPHA: color = if (ink.isSpecified) ink.copy(alpha = ink.alpha * SYMBOL_ALPHA) else ink"
