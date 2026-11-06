@@ -150,7 +150,8 @@ fun InvestmentEditorScreen(
             )
         },
         actions = {
-            if (state.editing && !state.loading && !state.loadFailed) {
+            // With a save unresolved, only Comprobar is offered: never Borrar inversión.
+            if (state.editing && !state.loading && !state.loadFailed && !state.unresolved) {
                 MoreMenu(
                     listOf(
                         MoreMenuItem(

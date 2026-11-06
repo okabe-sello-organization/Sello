@@ -15,7 +15,9 @@ import com.software.sello.domain.port.DeleteInvestment
 import com.software.sello.domain.port.EditInvestment
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentBoardState
+import com.software.sello.domain.port.InvestmentCommand
 import com.software.sello.domain.port.InvestmentCommandOutcome
+import com.software.sello.domain.port.InvestmentCommands
 import com.software.sello.domain.port.InvestmentReads
 import com.software.sello.domain.port.InvestmentRejection
 import com.software.sello.domain.port.ReadState
@@ -466,6 +468,110 @@ class InvestmentEditorViewModelTest {
         assertEquals(InvestmentSaveError.Unknown, model.state.value.saveError)
         assertTrue(model.state.value.deleting)
         assertEquals(1, commands.sent.size)
+    }
+
+    @Test
+    fun withAnEditUnresolvedBorrarIsNotOfferedUntilItIsChecked() = runTest {
+        reads.board.value = ReadState.Ready(investmentsBoard(listOf(ecopetrol())))
+        commands.answers += CommandOutcome.OutcomeUnknown(operation(1))
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        val model = editing()
+        model.onAction(InvestmentEditorAction.NameChanged("Ecopetrol S.A."))
+        model.onAction(InvestmentEditorAction.Submit)
+        assertEquals(InvestmentSaveError.Unknown, model.state.value.saveError)
+        assertTrue(model.state.value.unresolved)
+
+        // No dead slip: Borrar is not offered while the edit may have saved.
+        model.onAction(InvestmentEditorAction.AskToDelete)
+        assertFalse(model.state.value.confirmDelete)
+        model.onAction(InvestmentEditorAction.Delete)
+        assertTrue(commands.sent.single() is EditInvestment)
+
+        // Checked with its own operation: nothing was written, so the form is free again.
+        commands.found = Outcome.Success(null)
+        model.onAction(InvestmentEditorAction.Retry)
+        assertEquals(listOf(operation(1), operation(1)), commands.asked)
+        assertFalse(model.state.value.unresolved)
+        assertEquals(InvestmentSaveError.NotSaved, model.state.value.saveError)
+        model.onAction(InvestmentEditorAction.AskToDelete)
+        assertTrue(model.state.value.confirmDelete)
+        assertEquals(1, commands.sent.size)
+    }
+
+    @Test
+    fun anUnknownDeleteClosesTheSlipAndIsCheckedWithItsOwnOperation() = runTest {
+        reads.board.value = ReadState.Ready(investmentsBoard(listOf(ecopetrol())))
+        commands.answers += CommandOutcome.OutcomeUnknown(operation(1))
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        val model = editing()
+        model.onAction(InvestmentEditorAction.AskToDelete)
+        model.onAction(InvestmentEditorAction.Delete)
+
+        val unknown = model.state.value
+        assertEquals(InvestmentSaveError.Unknown, unknown.saveError)
+        // The slip gives way to Comprobar: its Borrar could not send anything now.
+        assertFalse(unknown.confirmDelete)
+        assertFalse(unknown.busy)
+        assertTrue(unknown.unresolved)
+        model.onAction(InvestmentEditorAction.AskToDelete)
+        model.onAction(InvestmentEditorAction.Delete)
+        assertFalse(model.state.value.confirmDelete)
+        assertEquals(1, commands.sent.size)
+        // Never closed while the deletion may have happened.
+        model.onAction(InvestmentEditorAction.Back)
+        assertNull(model.state.value.result)
+
+        commands.found = Outcome.Success(
+            committedInvestment(operation(1), OperationKind.DeleteInvestment, ecopetrolId).value
+        )
+        model.onAction(InvestmentEditorAction.Retry)
+        assertEquals(listOf(operation(1), operation(1)), commands.asked)
+        assertEquals(1, commands.sent.size)
+        assertEquals(InvestmentEditorResult.Deleted, model.state.value.result)
+    }
+
+    @Test
+    fun aDeletionCutOffByProcessDeathIsCheckedWithNoSlipLeftOpen() = runTest {
+        reads.board.value = ReadState.Ready(investmentsBoard(listOf(ecopetrol())))
+        val saved = SavedStateHandle()
+        saved[InvestmentEditorViewModel.KEY_INVESTMENT] = ecopetrolId
+        // The process dies while Borrar is on its way: the slip's flag and the
+        // operation are both saved, the answer never arrives.
+        var died: SavedStateHandle? = null
+        val dying = object : InvestmentCommands by commands {
+            override suspend fun submit(command: InvestmentCommand): InvestmentCommandOutcome {
+                died = SavedStateHandle(saved.keys().associateWith { saved.get<Any>(it) })
+                return commands.submit(command)
+            }
+        }
+        val before =
+            InvestmentEditorViewModel(saved, reads, settings, dying, clock, ids, testMoney())
+        before.onAction(InvestmentEditorAction.AskToDelete)
+        before.onAction(InvestmentEditorAction.Delete)
+        val restoredFrom = died!!
+        assertEquals(true, restoredFrom.get<Boolean>("investment.editor.confirmDelete"))
+
+        // Still unknown when asked again: Comprobar is offered, never the dead slip.
+        commands.found = Outcome.Failure(StorageFailure.Unavailable("x"))
+        val after = editor(restoredFrom)
+        assertEquals(listOf(operation(1)), commands.asked)
+        assertEquals(InvestmentSaveError.Unknown, after.state.value.saveError)
+        assertTrue(after.state.value.deleting)
+        assertFalse(after.state.value.confirmDelete)
+        after.onAction(InvestmentEditorAction.Back)
+        assertNull(after.state.value.result)
+
+        // Found not deleted: the person may ask again, and only then is it sent again.
+        commands.found = Outcome.Success(null)
+        after.onAction(InvestmentEditorAction.Retry)
+        assertEquals(InvestmentSaveError.NotSaved, after.state.value.saveError)
+        assertFalse(after.state.value.unresolved)
+        assertEquals(1, commands.sent.size)
+        after.onAction(InvestmentEditorAction.AskToDelete)
+        assertTrue(after.state.value.confirmDelete)
+        after.onAction(InvestmentEditorAction.Back)
+        assertFalse(after.state.value.confirmDelete)
+        assertNull(after.state.value.result)
     }
 
     @Test

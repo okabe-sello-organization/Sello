@@ -234,10 +234,12 @@ class InvestmentEditorViewModel(
                 else -> progress.update { it.copy(saveError = null) }
             }
 
-            // Never closed while a save may be on its way: its outcome comes first.
+            // Never closed while a save may be on its way: its outcome comes first. A
+            // delete slip still open then is only closed.
             InvestmentEditorAction.Back -> when {
-                now.busy || submission.pending -> Unit
+                now.busy -> Unit
                 now.confirmDelete -> set(KEY_CONFIRM, false)
+                submission.pending -> Unit
                 dirty(now) -> progress.update { it.copy(confirmDiscard = true) }
                 else -> finish(InvestmentEditorResult.Discarded)
             }
@@ -250,8 +252,11 @@ class InvestmentEditorViewModel(
             InvestmentEditorAction.KeepEditing ->
                 progress.update { it.copy(confirmDiscard = false) }
 
+            // With a save unresolved, only Comprobar is offered: never Borrar inversión.
             InvestmentEditorAction.AskToDelete ->
-                if (now.editing && editable && stored() != null) set(KEY_CONFIRM, true)
+                if (now.editing && editable && !submission.pending && stored() != null) {
+                    set(KEY_CONFIRM, true)
+                }
 
             InvestmentEditorAction.CancelDelete -> if (!now.busy) set(KEY_CONFIRM, false)
 
@@ -600,6 +605,7 @@ class InvestmentEditorViewModel(
             datePicker = saved.get<String>(KEY_PICKER)?.let(InvestmentField::valueOf),
             movementCount = summary?.history?.movements?.size ?: 0,
             busy = progress.busy,
+            unresolved = submission.pending,
             saveError = progress.saveError,
             deleting = submission.step == STEP_DELETE,
             confirmDelete = saved[KEY_CONFIRM] ?: false,
@@ -693,8 +699,10 @@ class InvestmentEditorViewModel(
 
             is Settled.Committed -> committed(step, settled.value.investmentId)
 
-            is Settled.Unknown -> progress.update {
-                it.copy(busy = false, saveError = InvestmentSaveError.Unknown)
+            // The delete slip gives way to Comprobar: its Borrar could not send now.
+            is Settled.Unknown -> {
+                saved[KEY_CONFIRM] = false
+                progress.update { it.copy(busy = false, saveError = InvestmentSaveError.Unknown) }
             }
 
             Settled.NotCommitted -> notSaved(InvestmentSaveError.NotSaved)
