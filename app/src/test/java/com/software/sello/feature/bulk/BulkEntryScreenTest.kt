@@ -216,4 +216,62 @@ class BulkEntryScreenTest {
     /** A refresh failed: the categories as last read, under the notice; Guardar stays. */
     @Test
     fun staleClaro() = capture("stale", three.copy(stale = true), claro)
+
+    @Test fun staleOscuro() = capture("stale", three.copy(stale = true), oscuro)
+
+    @Test fun loadingClaro() = capture("loading", three.copy(loading = true), claro)
+
+    @Test fun loadingOscuro() = capture("loading", three.copy(loading = true), oscuro)
+
+    @Test fun digitLimitClaro() = capture("digit-limit", three.copy(atLimit = true), claro)
+
+    @Test fun digitLimitOscuro() = capture("digit-limit", three.copy(atLimit = true), oscuro)
+
+    @Test fun removedClaro() = capture(
+        "removed",
+        three.copy(removed = RemovedLine("Transporte")),
+        claro
+    )
+
+    @Test fun removedOscuro() =
+        capture("removed", three.copy(removed = RemovedLine("Transporte")), oscuro)
+
+    @Test fun oneLineClaro() = capture(
+        "one-line",
+        three.copy(
+            lines = three.lines.take(1),
+            highlighted = 0,
+            total = pesos("48.000"),
+            count = 1
+        ),
+        claro
+    )
+
+    @Test fun oneLineOscuro() = capture(
+        "one-line",
+        three.copy(
+            lines = three.lines.take(1),
+            highlighted = 0,
+            total = pesos("48.000"),
+            count = 1
+        ),
+        oscuro
+    )
+
+    @Test fun discardClaro() = capture("discard", three.copy(confirmDiscard = true), claro)
+
+    @Test fun discardOscuro() = capture("discard", three.copy(confirmDiscard = true), oscuro)
+
+    @Test fun datePickerClaro() = capture("date-picker", three.copy(datePickerOpen = true), claro)
+
+    @Test fun datePickerOscuro() = capture("date-picker", three.copy(datePickerOpen = true), oscuro)
+
+    @Test fun noteClaro() =
+        capture("note", three.copy(noteDraft = "Mercado de la semana", noteDraftLength = 20), claro)
+
+    @Test fun noteOscuro() = capture(
+        "note",
+        three.copy(noteDraft = "Mercado de la semana", noteDraftLength = 20),
+        oscuro
+    )
 }

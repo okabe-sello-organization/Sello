@@ -170,5 +170,38 @@ class CategoryFixedScreenshotTest {
     )
 
     @Test
+    fun revisarDark() = capture(
+        "review",
+        ready(
+            home(
+                "1.300.000",
+                CategoryReserved(
+                    BudgetFigure(
+                        ReciboHeadline.ShortForPayments,
+                        plain("90.000"),
+                        ReciboStamp.Review
+                    ),
+                    ReciboReserved(plain("290.000"), 2),
+                    ReciboShortfall(plain("200.000"), false, plain("290.000"))
+                )
+            ),
+            "0",
+            fixed
+        ),
+        Look(dark = true)
+    )
+
+    @Test
     fun listFailed() = capture("failed", enough.copy(fixed = DetailFixedState.Failed))
+
+    @Test
+    fun listFailedDark() =
+        capture("failed", enough.copy(fixed = DetailFixedState.Failed), Look(dark = true))
+
+    @Test
+    fun listLoading() = capture("loading", enough.copy(fixed = DetailFixedState.Loading))
+
+    @Test
+    fun listLoadingDark() =
+        capture("loading", enough.copy(fixed = DetailFixedState.Loading), Look(dark = true))
 }

@@ -156,4 +156,20 @@ class BulkIncomesScreenTest {
 
     @Test
     fun unknownOscuro() = capture("unknown", three.copy(error = BulkError.Unknown), oscuro)
+
+    @Test fun failedReadClaro() = capture("failed-read", three.copy(readFailed = true), claro)
+
+    @Test fun failedReadOscuro() = capture("failed-read", three.copy(readFailed = true), oscuro)
+
+    @Test fun staleClaro() = capture("stale", three.copy(stale = true), claro)
+
+    @Test fun staleOscuro() = capture("stale", three.copy(stale = true), oscuro)
+
+    @Test fun savingClaro() = capture("saving", three.copy(busy = true), claro)
+
+    @Test fun savingOscuro() = capture("saving", three.copy(busy = true), oscuro)
+
+    @Test fun refusedClaro() = capture("refused", three.copy(error = BulkError.NotSaved), claro)
+
+    @Test fun refusedOscuro() = capture("refused", three.copy(error = BulkError.NotSaved), oscuro)
 }

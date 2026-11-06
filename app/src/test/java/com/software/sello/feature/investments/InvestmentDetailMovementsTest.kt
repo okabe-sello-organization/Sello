@@ -39,7 +39,10 @@ import com.software.sello.domain.policy.InvestmentPolicy
 import com.software.sello.domain.port.InvestmentBoard
 import com.software.sello.domain.port.InvestmentSummary
 import com.software.sello.domain.port.ReadState
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.octoberShell
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import com.software.sello.testing.testMoney
 import java.time.Instant
@@ -228,6 +231,9 @@ class InvestmentDetailMovementsTest {
     @Test
     fun theFullListClaro() = still(dark = false, all = true)
 
+    @Test
+    fun theFullListOscuro() = still(dark = true, all = true)
+
     private fun still(dark: Boolean, all: Boolean) {
         show(all, Look(dark = dark))
         rule.onNodeWithTag(
@@ -238,4 +244,59 @@ class InvestmentDetailMovementsTest {
                 "${if (dark) "oscuro" else "claro"}.png"
         )
     }
+
+    private fun shot(name: String, state: InvestmentDetailState, dark: Boolean) {
+        rule.showSello(Look(dark = dark)) {
+            if (state == InvestmentDetailState.Loading) {
+                // As InvestmentDestinations.kt frames it before it is read: the tab's name, no dock.
+                ShellScreen(
+                    octoberShell,
+                    monthNames(),
+                    {},
+                    onBack = {},
+                    titleOnly = "Inversiones",
+                    entryDock = false
+                ) { padding ->
+                    InvestmentDetailScreen(state, {}, dateLabels(), padding)
+                }
+            } else {
+                InvestmentDetailScreen(state, {}, dateLabels(), PaddingValues(16.dp))
+            }
+        }
+        rule.captureStill(
+            "src/test/screenshots/investment-detail-$name-${if (dark) "oscuro" else "claro"}.png"
+        )
+    }
+
+    private fun ready(): InvestmentDetailState.Ready {
+        val summary = summary()
+        val board = InvestmentBoard(
+            1,
+            1,
+            listOf(summary),
+            UsdRateBook(null, emptyList()),
+            InvestmentPolicy.overview(listOf(summary.history to summary.figures), null)
+        )
+        return InvestmentsRenderModel(testMoney()).detail(ReadState.Ready(board), id, today)
+            as InvestmentDetailState.Ready
+    }
+
+    @Test fun loadingClaro() = shot("loading", InvestmentDetailState.Loading, dark = false)
+
+    @Test fun loadingOscuro() = shot("loading", InvestmentDetailState.Loading, dark = true)
+
+    @Test fun failedClaro() = shot("failed", InvestmentDetailState.Failed, dark = false)
+
+    @Test fun failedOscuro() = shot("failed", InvestmentDetailState.Failed, dark = true)
+
+    @Test fun staleClaro() = shot("stale", ready().copy(stale = true), dark = false)
+
+    @Test fun staleOscuro() = shot("stale", ready().copy(stale = true), dark = true)
+
+    /** No value given yet: what it is worth is not answered. */
+    private fun noValue() = ready().copy(value = null, valuedOn = null, gain = null, chart = null)
+
+    @Test fun noValueClaro() = shot("no-value", noValue(), dark = false)
+
+    @Test fun noValueOscuro() = shot("no-value", noValue(), dark = true)
 }

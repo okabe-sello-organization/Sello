@@ -8,6 +8,9 @@ import com.software.sello.Look
 import com.software.sello.captureStill
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.navigation.ShellScreen
+import com.software.sello.navigation.octoberShell
+import com.software.sello.presentation.month.monthNames
 import com.software.sello.showSello
 import java.time.LocalDate
 import java.time.YearMonth
@@ -50,9 +53,24 @@ class UpcomingPaymentsScreenshotTest {
         stale = true
     )
 
-    private fun capture(state: UpcomingState, file: String) {
-        rule.showSello(Look()) {
-            UpcomingPaymentsScreen(state, PaddingValues(12.dp), {}, {}, {})
+    private fun capture(state: UpcomingState, file: String, look: Look = Look()) {
+        rule.showSello(look) {
+            if (state == UpcomingState.Loading) {
+                // As ReciboDestinations.kt frames Pagos previstos.
+                ShellScreen(
+                    octoberShell,
+                    monthNames(),
+                    {},
+                    onBack = {},
+                    screenTitle = "Pagos previstos",
+                    pastMonthRibbon = false,
+                    entryDock = false
+                ) { padding ->
+                    UpcomingPaymentsScreen(state, padding, {}, {}, {})
+                }
+            } else {
+                UpcomingPaymentsScreen(state, PaddingValues(12.dp), {}, {}, {})
+            }
         }
         rule.captureStill("src/test/screenshots/$file.png")
     }
@@ -62,4 +80,28 @@ class UpcomingPaymentsScreenshotTest {
 
     @Test
     fun failedClaro() = capture(UpcomingState.Failed, "upcoming-failed-claro")
+
+    @Test
+    fun olderOscuro() = capture(older, "upcoming-stale-oscuro", Look(dark = true))
+
+    @Test
+    fun failedOscuro() = capture(UpcomingState.Failed, "upcoming-failed-oscuro", Look(dark = true))
+
+    private val ready = older.copy(stale = false)
+
+    @Test fun readyClaro() = capture(ready, "upcoming-ready-claro")
+
+    @Test fun readyOscuro() = capture(ready, "upcoming-ready-oscuro", Look(dark = true))
+
+    @Test fun loadingClaro() = capture(UpcomingState.Loading, "upcoming-loading-claro")
+
+    @Test
+    fun loadingOscuro() =
+        capture(UpcomingState.Loading, "upcoming-loading-oscuro", Look(dark = true))
+
+    private val empty = UpcomingState.Empty(YearMonth.of(2026, 10))
+
+    @Test fun emptyClaro() = capture(empty, "upcoming-empty-claro")
+
+    @Test fun emptyOscuro() = capture(empty, "upcoming-empty-oscuro", Look(dark = true))
 }

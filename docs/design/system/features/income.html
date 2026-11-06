@@ -50,8 +50,17 @@
               data-caption="Ready, Violeta ink"></figure>
       <figure data-shot="income-form-varios" data-module="app"
               data-caption="Opened where Anotar varios is reachable: the Otro ingreso slip"></figure>
-      <figure data-shot="income-form-stale" data-module="app" data-variants="cobalto-light-font1.0"
+      <figure data-shot="income-form-stale" data-module="app"
               data-caption="Stale: a refresh failed, the draft stays"></figure>
+      <figure data-shot="income-form-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="income-form-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="income-form-busy" data-module="app" data-caption="Saving"></figure>
+      <figure data-shot="income-form-unknown" data-module="app" data-caption="The save outcome is not known"></figure>
+      <figure data-shot="income-form-refused" data-module="app" data-caption="Not saved"></figure>
+      <figure data-shot="income-form-otro" data-module="app" data-caption="Otro chosen: its name line and what is missing"></figure>
+      <figure data-shot="income-form-amount-refused" data-module="app" data-caption="Thirteen digits pasted"></figure>
+      <figure data-shot="income-form-replaced" data-module="app" data-caption="The data was replaced meanwhile"></figure>
+      <figure data-shot="income-form-editing" data-module="app" data-caption="&quot;Editar ingreso&quot; of August with the past-months line"></figure>
 
       <h3>Layout</h3>
       <p>The same <a href="../components.html#c-EntryLayout"><code>EntryLayout</code></a> and brand band as
@@ -81,26 +90,26 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Loading</td><td>One <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a> in <code>IncomePane</code>.</td>
-              <td><code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:160</code></td><td>no screenshot</td></tr>
+              <td><code>app/src/main/java/com/software/sello/feature/income/IncomeFormScreen.kt:160</code></td><td><code>income-form-loading</code></td></tr>
             <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No se pudo cargar" / "No pudimos leer los ingresos. Inténtalo de nuevo." with "Reintentar", new or correcting alike.</td>
-              <td><code>IncomeFormScreen.kt:164</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeFormScreen.kt:164</code></td><td><code>income-form-failed</code></td></tr>
             <tr><td>Empty</td><td>Does not exist: the five sources are fixed.</td><td>—</td><td>—</td></tr>
             <tr><td>Ready</td><td>"+5.000.000" in green, Salario chosen, "Anotar ingreso" in green.</td>
               <td><code>IncomeFormScreen.kt:174</code></td><td>income-form</td></tr>
             <tr><td>Missing</td><td>A hint: "Escribe el nombre de la fuente.", "Corrige la nota.", the Se repite end problem, or "Aún no cambiaste nada.".</td>
-              <td><code>IncomeFormScreen.kt:406</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeFormScreen.kt:406</code></td><td><code>income-form-otro</code></td></tr>
             <tr><td>Amount refused</td><td>The slip label becomes "Escribe un monto entero entre 1 y 999.999.999.999 COP." (one text for every problem) or "Máximo 12 dígitos".</td>
-              <td><code>IncomeFormScreen.kt:267</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeFormScreen.kt:267</code></td><td><code>income-form-amount-refused</code></td></tr>
             <tr><td>Stale</td><td><code>StaleSlip</code> with the shared "No pudimos actualizar…" and "Reintentar".</td>
-              <td><code>IncomeFormScreen.kt:297</code></td><td>income-form-stale (light only)</td></tr>
+              <td><code>IncomeFormScreen.kt:297</code></td><td>income-form-stale</td></tr>
             <tr><td>Busy</td><td>"Guardando…" with spinner; chips, pill, lines, switch and pad off; the X stays enabled but Back is ignored.</td>
-              <td><code>IncomeFormScreen.kt:424</code>, <code>app/src/main/java/com/software/sello/feature/income/IncomeFormViewModel.kt:324</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeFormScreen.kt:424</code>, <code>app/src/main/java/com/software/sello/feature/income/IncomeFormViewModel.kt:324</code></td><td><code>income-form-busy</code></td></tr>
             <tr><td>Unknown outcome</td><td>Warning "Aún no sabemos si se guardó. Compruébalo antes de volver a anotar." and a green "Comprobar si se guardó". The same text follows a deletion whose outcome is unknown.</td>
-              <td><code>IncomeFormScreen.kt:419</code>, <code>IncomeFormViewModel.kt:756</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeFormScreen.kt:419</code>, <code>IncomeFormViewModel.kt:756</code></td><td><code>income-form-unknown</code></td></tr>
             <tr><td>Refused</td><td>An error above the button: "No se pudo guardar el ingreso. Lo que escribiste sigue aquí.", "La fecha no puede ser posterior a hoy. No se anotó nada.", "No se pudo borrar. El ingreso sigue anotado.", the repeat and following-income messages. "Este ingreso ya no existe…" and "Este ingreso cambió mientras lo corregías…" freeze the form.</td>
-              <td><code>IncomeFormScreen.kt:377</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeFormScreen.kt:377</code></td><td><code>income-form-refused</code></td></tr>
             <tr><td>Data replaced</td><td>As soon as a restore or reset changes the history: "Tus datos cambiaron. No se guardó el ingreso; sal y vuelve a abrirlo." and the form is frozen.</td>
-              <td><code>IncomeFormViewModel.kt:196</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeFormViewModel.kt:196</code></td><td><code>income-form-replaced</code></td></tr>
             <tr><td>Restored draft</td><td>Amount, source, Otro's name, note, open composer and Se repite come back from <code>SavedStateHandle</code>; a save in flight is asked about.</td>
               <td><code>IncomeFormViewModel.kt:135</code>, <code>:213</code></td><td>no screenshot</td></tr>
             <tr><td>Saved</td><td>Closes with a long-press haptic, once per recorded income.</td>
@@ -136,6 +145,12 @@
 
     <section id="dialogs-form">
       <h2>Dialogs and sheets of the form</h2>
+
+      <figure data-shot="income-form-discard" data-module="app" data-caption="The discard dialog"></figure>
+      <figure data-shot="income-form-note" data-module="app" data-caption="The note composer"></figure>
+      <figure data-shot="income-form-date-picker" data-module="app" data-caption="The date picker (Material's picker: the JVM screen runs in English, and draws it with square corners and no scrim)"></figure>
+      <figure data-shot="income-form-repeat-sheet" data-module="app" data-caption="Se repite&#x27;s sheet"></figure>
+      <figure data-shot="income-form-following" data-module="app" data-caption="¿Cambiar también los siguientes?"></figure>
       <ul>
         <li>Discard: <a href="../components.html#c-ConfirmSlip"><code>ConfirmSlip</code></a> with its defaults, so
           "Descartar" is loss red and the other button is "Cancelar"; the same title for a new and a corrected income
@@ -165,6 +180,14 @@
               data-caption="Stale: figures as last read under an ErrorSlip"></figure>
       <figure data-shot="income-history-varios" data-module="app"
               data-caption="With Anotar varios under the total"></figure>
+      <figure data-shot="income-history-loading" data-module="app" data-caption="Loading"></figure>
+      <figure data-shot="income-history-failed" data-module="app" data-caption="Nothing could be read"></figure>
+      <figure data-shot="income-history-empty" data-module="app" data-caption="No incomes this month"></figure>
+      <figure data-shot="income-history-hero-pending" data-module="app" data-caption="The list read, the hero waiting"></figure>
+      <figure data-shot="income-history-page-failed" data-module="app" data-caption="The next page could not be read"></figure>
+      <figure data-shot="income-history-over" data-module="app" data-caption="More assigned than came in"></figure>
+      <figure data-shot="income-history-plan" data-module="app" data-caption="The month&#x27;s plan"></figure>
+      <figure data-shot="income-history-plan-failed" data-module="app" data-caption="The plan could not be read"></figure>
 
       <h3>Layout</h3>
       <p>Drawn inside the shell (<code>app/src/main/java/com/software/sello/navigation/IncomeDestinations.kt:45</code>): a back
@@ -194,25 +217,25 @@
           <thead><tr><th>State</th><th>What the person sees</th><th>Source</th><th>Screenshot</th></tr></thead>
           <tbody>
             <tr><td>Loading</td><td>Two <a href="../components.html#c-SlipSkeleton"><code>SlipSkeleton</code></a>s.</td>
-              <td><code>app/src/main/java/com/software/sello/feature/income/IncomeHistoryScreen.kt:78</code></td><td>no screenshot</td></tr>
+              <td><code>app/src/main/java/com/software/sello/feature/income/IncomeHistoryScreen.kt:78</code></td><td><code>income-history-loading</code></td></tr>
             <tr><td>Error (nothing ever read)</td><td><a href="../components.html#c-ErrorSlip"><code>ErrorSlip</code></a> "No pudimos leer tus ingresos" / "Tus registros siguen guardados. Vuelve a intentarlo." with "Reintentar".</td>
-              <td><code>IncomeHistoryScreen.kt:85</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeHistoryScreen.kt:85</code></td><td><code>income-history-failed</code></td></tr>
             <tr><td>Empty</td><td><a href="../components.html#c-EmptySlip"><code>EmptySlip</code></a> "Aún no anotas ingresos en octubre", "Sello funciona sin ingresos…", action "Anotar ingreso"; the plan still shows below.</td>
-              <td><code>IncomeHistoryScreen.kt:94</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeHistoryScreen.kt:94</code></td><td><code>income-history-empty</code></td></tr>
             <tr><td>Ready</td><td>Hero, plan, suggestion, list.</td>
               <td><code>IncomeHistoryScreen.kt:110</code></td><td>income-history</td></tr>
             <tr><td>Hero pending</td><td>A one-line skeleton in place of "Entró en …" for today's month while the summary is not read; a past month shows its list total.</td>
-              <td><code>IncomeHistoryScreen.kt:316</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeHistoryScreen.kt:316</code></td><td><code>income-history-hero-pending</code></td></tr>
             <tr><td>Stale</td><td>An <code>ErrorSlip</code> titled "No se pudo cargar" with "No pudimos leer tus ingresos de nuevo. Te mostramos los de la última lectura." and "Reintentar", above the figures as last read.</td>
               <td><code>IncomeHistoryScreen.kt:175</code></td><td>income-history-stale</td></tr>
             <tr><td>Busy (more)</td><td>"Ver más ingresos" shows its spinner.</td>
               <td><code>IncomeHistoryScreen.kt:144</code></td><td>no screenshot</td></tr>
             <tr><td>Page failed</td><td>An ErrorSlip "No pudimos leer los ingresos. Inténtalo de nuevo." inside the list, retrying the page.</td>
-              <td><code>IncomeHistoryScreen.kt:139</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeHistoryScreen.kt:139</code></td><td><code>income-history-page-failed</code></td></tr>
             <tr><td>Plan failed</td><td>An ErrorSlip "No pudimos leer lo que esperas recibir. Tus registros siguen guardados." in the plan's place.</td>
-              <td><code>IncomeHistoryScreen.kt:222</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeHistoryScreen.kt:222</code></td><td><code>income-history-plan-failed</code></td></tr>
             <tr><td>Over basis</td><td>"Sin asignar" signed and red, and "Tus presupuestos suman …; anotaste …".</td>
-              <td><code>IncomeHistoryScreen.kt:354</code></td><td>no screenshot</td></tr>
+              <td><code>IncomeHistoryScreen.kt:354</code></td><td><code>income-history-over</code></td></tr>
             <tr><td>Busy (write), unknown outcome, refused, restored draft</td><td>Do not exist: the screen only reads; writes happen in the form.</td><td>—</td><td>—</td></tr>
           </tbody>
         </table>
@@ -302,12 +325,7 @@
       <h2>Gaps</h2>
       <div class="gaps">
         <ul>
-          <li>Form: loading, error, busy, unknown outcome, refused, missing, amount refused, data replaced, restored draft,
-            Otro's name line, "Editar ingreso" and the past-months line: no screenshot.</li>
-          <li>Form stale: light Cobalto only, no dark screenshot.</li>
-          <li>Form dialogs (discard, composer, date, Se repite, following incomes): no screenshot.</li>
-          <li>History: loading, error, empty, hero pending, page failed, plan, plan failed, over basis: no screenshot
-            (the baselines are drawn with <code>IncomePlanState.None</code>).</li>
+          <li>Form: restored draft (drawn as the form with its values): no screenshot.</li>
           <li>The history baselines show the screen without the shell's title, ribbon and dock.</li>
         </ul>
       </div>
