@@ -1,0 +1,1119 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sello v2 · Tinta propia y del sistema</title>
+  <style>/* Sello v2 design mockups. Tokens mirror design-system/theme/SelloColors.kt. */
+
+
+
+*{box-sizing:border-box}
+body{margin:0;font-family:Schibsted,system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+svg.icon{width:1.72em;height:1.72em;fill:currentColor;flex:none;vertical-align:middle}
+
+/* ---------- Review page chrome (not part of the app) ---------- */
+.review{background:#f4f5f9;color:#0e1630;padding:28px 28px 60px}
+.review header{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:end;justify-content:space-between;max-width:1560px;margin:0 auto 24px}
+.review>header h1{font-size:34px;font-weight:900;letter-spacing:-.03em;margin:0}
+.review>header h1 small{display:block;font-size:13px;font-weight:600;letter-spacing:0;color:#566287;margin-bottom:4px}
+.review>.section h2:not(.slip h2){font-size:20px;font-weight:800;margin:36px 0 4px}
+.review .lede{color:#434e72;max-width:780px;margin:0 0 18px;font-size:14px;line-height:1.5}
+.controls{display:flex;flex-wrap:wrap;gap:10px}
+.controls label{display:grid;gap:4px;font-size:12px;font-weight:700;color:#434e72}
+.controls select{font:inherit;font-size:14px;padding:7px 10px;border-radius:8px;border:1px solid #b9c5e6;background:#fff}
+.section{max-width:1560px;margin:0 auto}
+.frames{display:flex;flex-wrap:wrap;gap:28px 24px;align-items:flex-start}
+.frame-card{width:360px}
+.frame-card>h3{font-size:14px;font-weight:800;margin:0 0 3px}
+.frame-card>p{font-size:12.5px;color:#434e72;margin:0 0 10px;line-height:1.45;min-height:3em}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:99px;background:#dce2ff;color:#0b1c7a;margin-left:6px;vertical-align:2px}
+.notes{max-width:900px;font-size:14px;line-height:1.55;color:#262f52}
+.notes li{margin-bottom:6px}
+
+/* ---------- Device frame ---------- */
+.phone{width:360px;height:780px;border-radius:30px;overflow:hidden;position:relative;box-shadow:0 0 0 8px #11152a,0 18px 40px rgba(14,22,48,.25);margin:8px}
+
+/* ---------- App tokens ---------- */
+.app{--scale:1;--brand:#1f3be0;--onbrand:#fff;--brandsoft:#dce2ff;--onbrandsoft:#0b1c7a;--desk:#d9e1f7;--paper:#fff;--alt:#eef2fc;--dim:#d3dcf3;--ink:#0e1630;--soft:#434e72;--outline:#6975a0;--rule:#b9c5e6;--band:#1f3be0;--gain:#0a6b4a;--gainsoft:#cdefe0;--loss:#b81e2a;--losssoft:#fbd9db;--warn:#8a4a00;
+  font-size:calc(14px * var(--scale));line-height:1.35;color:var(--ink);background:var(--desk);height:100%;display:flex;flex-direction:column;position:relative}
+.app[data-ink=violet]{--brand:#5b2bd6;--brandsoft:#e6dcff;--onbrandsoft:#2a0f78;--desk:#e2daf6;--alt:#f3eefc;--dim:#dcd2f2;--ink:#150f2e;--soft:#4a4370;--outline:#75679f;--rule:#c4b7e6;--band:#5b2bd6}
+.app[data-theme=dark]{--brand:#8fa6ff;--onbrand:#06175c;--brandsoft:#23368f;--onbrandsoft:#dde4ff;--desk:#090d1c;--paper:#151c36;--alt:#1d2646;--dim:#2a3560;--ink:#eef1fb;--soft:#a9b3d6;--outline:#8490ba;--rule:#2f3b66;--band:#2238b8;--gain:#4fd6a0;--gainsoft:#0e4a35;--loss:#ff8a8a;--losssoft:#5a171b;--warn:#ffb45c}
+.app[data-theme=dark][data-ink=violet]{--brand:#b79cff;--onbrand:#22085e;--brandsoft:#3a1f8f;--onbrandsoft:#e9dfff;--desk:#0e0a1c;--paper:#1a1433;--alt:#231b45;--dim:#30265c;--ink:#f1eefb;--soft:#b3abd6;--outline:#8e82b8;--rule:#372c66;--band:#4420b0}
+
+/* ---------- Shell ---------- */
+.top{background:var(--band);color:#fff;flex:none}
+.statusbar{height:28px;padding:8px 20px 0;display:flex;justify-content:space-between;font-size:12px;font-weight:600}
+.topbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 6px 0 16px}
+.month{display:flex;align-items:center;gap:2px;background:none;border:0;padding:0;min-height:48px;font-size:1.5em;font-weight:800;letter-spacing:-.02em;color:#fff}
+.month small{font-size:.6em;font-weight:600;opacity:.8;margin-left:6px;letter-spacing:0}
+.icon-btn{width:48px;height:48px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:inherit;padding:0}
+.more-wrap{position:relative;margin-left:auto}
+.more-pop{position:absolute;right:4px;top:44px;z-index:5;background:var(--paper);border-radius:6px;box-shadow:0 4px 16px #0003;padding:8px 0;min-width:180px}
+.more-pop button{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;padding:0 16px;border:0;background:none;color:var(--loss);font:inherit;font-size:1.05em;text-align:left;white-space:nowrap}
+.more-pop .icon{width:22px;height:22px}
+.content{flex:1;overflow:auto;position:relative;padding:0 12px 16px;scrollbar-width:none}
+.content::before{content:"";position:absolute;inset:0 0 auto 0;height:72px;background:var(--band)}
+.content>*{position:relative}
+
+/* ---------- Paper ---------- */
+.slip{background:var(--paper);border-radius:11px;padding:15px 16px 16px;margin-bottom:14px;position:relative}
+/* v1.1 PinkedBottomShape: 11dp top corners, triangular teeth 10dp wide x 5dp deep. */
+.slip.pinked{border-radius:11px 11px 0 0;padding-bottom:20px;
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x;
+  mask:linear-gradient(#000 0 0) top/100% calc(100% - 5px) no-repeat,conic-gradient(from -45deg at 50% 100%,#000 90deg,transparent 0) bottom/10px 5px repeat-x}
+/* v1.1 TearLine: 2dp dashed rule, 14dp punched notch at each end. */
+.tear{border-top:2px dashed var(--rule);margin:14px -16px;position:relative}
+.tear::before,.tear::after{content:"";position:absolute;top:-8px;width:14px;height:14px;border-radius:50%;background:var(--desk)}
+.tear::before{left:-7px}.tear::after{right:-7px}
+.over-band .tear::before,.over-band .tear::after{background:var(--band)}
+.label{color:var(--soft);font-size:1em;font-weight:500}
+.caption{color:var(--soft);font-size:.86em}
+.money{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";white-space:nowrap}
+.neg{color:var(--loss)}
+
+/* ---------- Stamp ---------- */
+.stamp{font-family:Stencil,Schibsted,sans-serif;text-transform:uppercase;letter-spacing:.05em;border:2.5px solid currentColor;border-radius:8px;padding:3px 8px 1px;transform:rotate(-5deg);font-size:1.02em;line-height:1.2;flex:none;color:var(--gain);text-align:center}
+.stamp.loss{color:var(--loss)}.stamp.warn{color:var(--warn)}.stamp.neutral{color:var(--brand)}
+
+/* ---------- Home: answer slip ---------- */
+.answer-head{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:34px}
+.hero{font-size:4.1em;font-weight:900;letter-spacing:-.045em;line-height:1;margin:10px 0 2px}
+.hero.long{font-size:3.4em}
+.answer-note{margin:8px 0 0;color:var(--soft);font-size:.93em;line-height:1.4}
+.per-day{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.per-day b{font-size:1.5em;font-weight:900;letter-spacing:-.02em}
+.per-day b small{font-size:.6em;font-weight:600;color:var(--soft);letter-spacing:0}
+.text-link{display:inline-flex;align-items:center;gap:4px;border:0;background:none;padding:0;min-height:48px;color:var(--brand);font-weight:800;font-size:1em}
+.text-link .icon{width:1.3em;height:1.3em}
+
+/* ---------- Home: invitation ---------- */
+.invite{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px 14px;border:1.5px dashed var(--rule);border-radius:14px;background:transparent;color:var(--ink);text-align:left;margin-bottom:12px;font-weight:700}
+.invite .icon{color:var(--brand)}
+.invite .chev{margin-left:auto;color:var(--outline)}
+
+/* ---------- Home: categories ---------- */
+.section-head{display:flex;justify-content:space-between;align-items:center;margin:-4px -8px 6px 0}
+.section-head h2{font-size:1.15em;font-weight:800;margin:0}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 10px}
+.cell{display:flex;align-items:center;gap:10px;min-height:60px;border:0;background:none;padding:6px 0;text-align:left;min-width:0}
+.circle{--fill:0%;--c:var(--brand);width:44px;height:44px;min-width:44px;border-radius:50%;border:2.5px solid var(--c);position:relative;overflow:hidden;color:var(--c);display:grid;place-items:center}
+.circle::before{content:"";position:absolute;inset:auto 0 0 0;height:var(--fill);background:var(--c)}
+.circle .icon{width:22px;height:22px;position:relative;mix-blend-mode:normal}
+.circle .on{position:absolute;inset:0;display:grid;place-items:center;color:var(--paper);clip-path:inset(calc(100% - var(--fill)) 0 0 0)}
+.circle.over{--c:var(--loss)}
+.circle.unlimited{border-style:dashed}
+/* No limit on purpose: the dashed ring carries an ∞ badge at its lower right (2026-10-26). */
+.inf-wrap{position:relative;display:inline-grid;flex:none}
+/* Archived: grey ink, in their own section last (2026-10-26). */
+.circle.archived{--c:var(--outline)}
+.circle.archived .on{color:var(--paper)}
+.inf-wrap .circle.archived+.inf{border-color:var(--outline);color:var(--soft)}
+.grid-sub{font-size:.86em;font-weight:800;color:var(--soft);margin:14px 0 4px}
+.inf-wrap .inf{position:absolute;right:-4px;bottom:-4px;width:19px;height:19px;border-radius:50%;background:var(--paper);border:1.5px solid var(--brand);color:var(--brand);font:800 12px/15px system-ui,sans-serif;text-align:center}
+.rank-row .inf-wrap .inf{width:16px;height:16px;font-size:10px;line-height:13px;right:-5px;bottom:-5px}
+.cell-text{display:grid;min-width:0}
+.cell-text span{font-size:.93em;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-text b{font-size:1.08em;font-weight:800}
+.cell-text small{font-size:.8em;color:var(--soft);white-space:nowrap}
+
+/* ---------- Bottom: dock + navigation ---------- */
+.bottom{flex:none;background:var(--paper);border-top:1px solid var(--rule)}
+.dock{padding:10px 12px 4px}
+.primary{width:100%;min-height:52px;border:0;border-radius:14px;background:var(--brand);color:var(--onbrand);font-size:1.15em;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px}
+.nav{display:flex;min-height:64px;padding:0 4px}
+.nav button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.86em;font-weight:700;color:var(--soft);min-width:0}
+.nav button .pill{width:56px;height:30px;border-radius:99px;display:grid;place-items:center}
+.nav button[aria-current] {color:var(--ink)}
+.nav button[aria-current] .pill{background:var(--brandsoft);color:var(--onbrandsoft)}
+.nav .add-slot .pill{width:64px;height:40px;border-radius:14px;background:var(--brand);color:var(--onbrand)}
+.nav .add-slot{color:var(--ink)}
+.gesture{height:18px;display:grid;place-items:center}.gesture::after{content:"";width:108px;height:4px;border-radius:99px;background:var(--ink);opacity:.4}
+
+/* ---------- Async states ---------- */
+.skel{background:var(--dim);border-radius:8px;height:14px;margin:8px 0}
+.skel.big{height:56px;width:70%}
+.empty{text-align:center;padding:28px 20px}
+.empty .icon{width:44px;height:44px;color:var(--brand)}
+.empty h2{font-size:1.3em;font-weight:800;margin:10px 0 6px}
+.empty p{color:var(--soft);margin:0 0 16px}
+.outline-btn{min-height:48px;border-radius:12px;border:2px solid var(--brand);color:var(--brand);background:none;font-weight:800;padding:0 18px}
+.stale{display:flex;align-items:center;gap:8px;background:var(--paper);border-radius:12px;padding:6px 6px 6px 14px;margin-bottom:12px;font-size:.9em;color:var(--soft);border-left:4px solid var(--warn)}
+.stale .text-link{margin-left:auto;padding:0 8px}
+
+/* ---------- Large text ---------- */
+.app.large .grid{grid-template-columns:1fr}
+.app.large .hero{font-size:60px}
+.app.large .month{font-size:26px}.app.large .month small{display:none}
+.app.large .topbar .icon{width:28px;height:28px}
+.app.large .answer-head{flex-wrap:wrap}
+.app.large .per-day{flex-wrap:wrap}
+.app.large .nav button span.t{font-size:.8em}
+
+/* ---------- Home: answer slip lower half ---------- */
+.leader{display:flex;align-items:baseline;gap:6px;min-height:28px;margin:2px 0;width:100%;border:0;background:none;padding:0;text-align:left;color:var(--ink);font-size:1em}
+.leader>span:first-child{display:grid;flex:none}
+.leader small{font-size:.8em;color:var(--soft);font-weight:500}
+.leader .dots{flex:1;border-bottom:2px dotted var(--rule);transform:translateY(-4px);min-width:12px}
+.leader b{font-weight:800;font-size:1.08em}
+.leader.soft{color:var(--soft)}.leader.soft b{color:var(--soft);font-weight:700}
+.leader.big b{font-size:1.4em;font-weight:900;letter-spacing:-.02em}
+.leader .chev{width:1.2em;height:1.2em;color:var(--outline);align-self:center}
+
+.daily-big{display:flex;align-items:baseline;gap:6px;margin:0}
+.daily-big b{font-size:1.9em;font-weight:900;letter-spacing:-.03em}
+.daily-big span{color:var(--soft);font-weight:600}
+.daily-big+.caption{display:block}
+.footnote{display:flex;align-items:center;gap:8px;margin:12px 0 0;padding:0;border:0;background:none;width:100%;text-align:left;color:var(--soft);font-size:.86em;min-height:32px}
+.footnote .icon{width:1.4em;height:1.4em;color:var(--brand)}
+.footnote b{color:var(--ink)}
+.footnote .chev{margin-left:auto;color:var(--outline)}
+
+/* ---------- Home: goal notch (the pill is the progress bar) ---------- */
+.gw-round{width:48px;height:48px;border-radius:50%;border:0;background:var(--brand);color:var(--onbrand);display:grid;place-items:center;flex:none;padding:0}
+.gw-fill{position:relative;display:flex;align-items:center;min-height:56px;border-radius:99px;background:var(--paper);overflow:hidden;margin-bottom:14px;padding:4px}
+.gw-fill::before{content:"";position:absolute;inset:0 auto 0 0;width:var(--p);background:var(--brandsoft);border-right:2px solid var(--brand)}
+.gw-fill-main{position:relative;flex:1;min-width:0;border:0;background:none;display:flex;align-items:center;gap:8px;padding:0 12px 0 14px;min-height:48px;color:var(--onbrandsoft);text-align:left}
+.gw-fill-main .icon{width:1.4em;height:1.4em}
+.gw-fill-main span{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gw-fill-main b{margin-left:auto;font-size:1.1em;font-weight:900;color:var(--ink)}
+.gw-fill .gw-round{position:relative}
+/* At 100 % or more, waiting to be marked lograda (2026-10-26). */
+.gw-fill.reached::before{background:var(--gainsoft);border-right:0;width:100%}
+.gw-fill.reached .gw-fill-main{color:var(--ink)}
+.gw-fill.reached .gw-fill-main .icon{color:var(--gain)}
+.gw-fill.reached .gw-round{background:var(--gain);color:#fff}
+/* Several goals (SELLO-144): the same slot swipes; dots sit just under the pill. */
+.gw-carousel{margin-bottom:10px}
+.gw-carousel .gw-fill{margin-bottom:0}
+.gw-dots{display:flex;justify-content:center;align-items:center;gap:6px;height:14px;margin-top:2px}
+.gw-dots i{width:6px;height:6px;border-radius:99px;background:var(--outline);opacity:.5}
+.gw-dots i.on{width:18px;background:var(--brand);opacity:1}
+/* Keep the reached-row styles (.reached, further down) off the green pill. */
+.gw-fill.reached{background:var(--paper);color:inherit;gap:0;padding:4px;margin:0 0 14px}
+.gw-carousel .gw-fill.reached{margin-bottom:0}
+.app[data-theme] .gw-fill.reached .gw-fill-main{min-height:48px;padding:0 12px 0 14px;border-radius:0;background:none;font-size:inherit;color:var(--ink)}
+.gw-fill.reached .gw-fill-main span{display:block;flex:initial;line-height:inherit}
+.gw-fill.reached .gw-round{min-height:0;padding:0;border-radius:50%}
+
+
+/* ---------- Entry: shared ---------- */
+.phone.small{width:320px;height:640px}
+.frame-card.small{width:320px}
+.entry-top{background:var(--desk);color:var(--ink);flex:none}
+.entry-bar{height:56px;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px}
+.seg{flex:1;display:flex;background:var(--dim);padding:3px;border-radius:12px;max-width:240px;margin:0 auto}
+.seg button{flex:1;min-height:42px;border:0;border-radius:9px;background:none;color:var(--soft);font-weight:800;font-size:1em}
+.seg button[aria-pressed=true]{background:var(--paper);color:var(--ink)}
+.entry-bar .spacer{width:48px;flex:none}
+.amount-slip{margin:0 12px 10px;flex:none}
+.amount-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--soft);font-size:.93em}
+.date-pill{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 10px;margin-right:-6px;border:0;border-radius:99px;background:var(--alt);color:var(--ink);font-weight:700;font-size:.93em}
+.date-pill .icon{width:1.3em;height:1.3em;color:var(--brand)}
+.amount-row{display:flex;align-items:center;gap:12px;margin-top:6px}
+.amount-row .circle{width:48px;height:48px;min-width:48px;--fill:100%}
+.amount-value{font-size:3.2em;font-weight:900;letter-spacing:-.04em;line-height:1.05;flex:1;min-width:0;overflow:hidden;white-space:nowrap}
+.amount-value.placeholder{color:var(--rule)}
+.amount-value.income{color:var(--gain)}
+.caret{display:inline-block;width:3px;height:.8em;background:var(--brand);margin-left:3px;vertical-align:-.04em;border-radius:2px}
+.entry-mid{flex:1;min-height:0;overflow:auto;padding:0 12px 8px;scrollbar-width:none}
+.entry-mid h3{font-size:.86em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--soft);margin:4px 2px 8px}
+/* v1.1 SelloChip: 36dp tall, 10dp corners, 13sp 600, 6dp gaps, 1.5dp rule outline.
+   Two rows at most, scrolling sideways with a 16dp fade at the trailing edge. */
+.chips{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:max-content;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -12px;padding:0 12px;
+  -webkit-mask:linear-gradient(90deg,#000 calc(100% - 16px),transparent);mask:linear-gradient(90deg,#000 calc(100% - 16px),transparent)}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px 0 9px;border-radius:10px;border:1.5px solid var(--rule);background:var(--paper);color:var(--ink);font-weight:600;font-size:.93em;white-space:nowrap}
+.chip .icon{width:1.3em;height:1.3em;color:var(--brand)}
+.chip[aria-pressed=true]{background:var(--brand);border-color:var(--brand);color:var(--onbrand)}
+.chip[aria-pressed=true] .icon{color:var(--onbrand)}
+.chip.add{border-style:dashed;color:var(--brand)}
+.note-pill{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;margin-top:12px;padding:0 14px;border:0;border-radius:12px;background:var(--paper);color:var(--soft);text-align:left;font-size:.93em}
+.note-pill .icon{color:var(--brand);width:1.5em;height:1.5em}
+.note-pill.filled{color:var(--ink);font-weight:600}
+.note-pill .edit{margin-left:auto;color:var(--brand);font-weight:800}
+.entry-action{flex:none;padding:8px 12px;background:var(--desk)}
+.entry-action .primary{min-height:56px}
+.entry-action .primary:disabled{background:var(--dim);color:var(--soft)}
+
+/* ---------- Entry: Sello fixed pad (compact) ---------- */
+.pad{flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 12px 6px;background:var(--desk)}
+.pad button{min-height:44px;border:0;border-radius:10px;background:var(--paper);color:var(--ink);font-size:1.55em;font-weight:800;display:grid;place-items:center;padding:0}
+.pad button .icon{width:1.05em;height:1.05em}
+.pad .k000{font-size:1.15em}
+.pad .del{background:var(--brandsoft);color:var(--onbrandsoft)}
+.pad.locked button{opacity:.45}
+.pad-crop{background:var(--desk);padding:12px 0 6px;border-radius:14px;width:360px}
+
+/* ---------- Entry: amount length ---------- */
+.amount-value.mid{font-size:2.5em}
+.amount-value.long{font-size:1.85em}
+.shake{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+
+/* ---------- Entry: note composer, docked to the keyboard ---------- */
+.note-context{display:flex;align-items:center;gap:6px;color:var(--soft);font-size:.9em;margin:0}
+.note-context .icon{width:1.3em;height:1.3em;color:var(--brand)}
+.note-context b{color:var(--ink)}
+.field-foot{display:flex;justify-content:space-between;gap:8px;font-size:.8em;color:var(--soft);margin:6px 2px 0}
+.field-foot .err{color:var(--loss);font-weight:600}
+.composer{background:var(--paper);color:var(--ink);border-radius:20px 20px 0 0;padding:12px 12px 10px;margin-top:auto}
+.composer-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 2px 10px}
+.composer-head .note-context{margin:0}
+.composer-row{display:flex;align-items:center;gap:8px}
+.composer-row .text-box{flex:1;min-height:48px;border-radius:12px;background:var(--alt);padding:12px 14px;font-weight:600;border:2px solid transparent}
+.composer-row .text-box.error{border-color:var(--loss)}
+.composer .gw-round:disabled{background:var(--dim);color:var(--soft)}
+.composer .field-foot{margin:6px 6px 0}
+/* ---------- Entry: system keyboard illustration (inert) ---------- */
+.ime{flex:none;background:#e8eaed;color:#202124;padding:0 4px 4px;font-family:system-ui,sans-serif}
+.app[data-theme=dark] .ime{background:#202124;color:#e8eaed}
+.ime-tools{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:#5f6368;font-size:14px}
+.app[data-theme=dark] .ime-tools{color:#9aa0a6}
+.ime-num{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ime-num span,.ime-row span,.ime-space{height:48px;border-radius:8px;background:#fff;display:grid;place-items:center;font-size:22px}
+.app[data-theme=dark] .ime-num span,.app[data-theme=dark] .ime-row span,.app[data-theme=dark] .ime-space{background:#3c4043}
+.ime-num span.alt{background:#d2d6dc;font-size:18px}.app[data-theme=dark] .ime-num span.alt{background:#5f6368}
+.ime-num span.go{background:#1a73e8;color:#fff}
+.ime-row{display:flex;gap:4px;justify-content:center;margin-bottom:6px}
+.ime-row span{width:29px;height:44px;font-size:18px}
+.ime-space{height:44px;font-size:14px;margin:0 60px}
+
+.scrim{position:absolute;inset:0;background:rgba(5,8,20,.55);display:flex;flex-direction:column;justify-content:flex-end;z-index:5}
+.scrim .ime{margin-top:0}
+
+/* ---------- Entry: large text ---------- */
+.app.large .amount-value{font-size:44px}
+.app.large .pad button{min-height:52px;font-size:26px}
+.app.large .amount-value.mid{font-size:36px}.app.large .amount-value.long{font-size:28px}
+.app.large .seg button{font-size:.8em}
+
+/* Narrow windows: one more size step so 12 digits still fit (auto-size text on Android). */
+.phone.small .amount-value.mid{font-size:2.2em}
+.phone.small .amount-value.long{font-size:1.5em}
+
+/* ---------- Entry: amount slip spacing and limit message ---------- */
+.amount-slip.pinked{padding-bottom:18px}
+.limit-msg{color:var(--loss);font-weight:700}
+
+/* ---------- Entry: save states ---------- */
+.save-msg{display:flex;align-items:flex-start;gap:8px;margin:0 2px 8px;font-size:.9em;font-weight:600;line-height:1.35}
+.save-msg .icon{width:1.4em;height:1.4em;flex:none}
+.save-msg.warn{color:var(--warn)}.save-msg.loss{color:var(--loss)}
+.spinner{width:18px;height:18px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.entry-action .primary[aria-busy=true]{background:var(--brand);color:var(--onbrand);opacity:.75}
+.frame-link{display:inline-block;margin-top:4px;font-weight:800;color:#1f3be0}
+
+/* ---------- Home: brief confirmation after a save ---------- */
+.toast{position:absolute;left:12px;right:12px;bottom:152px;z-index:4;display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:var(--ink);color:var(--paper);font-weight:700;font-size:.93em}
+.toast .icon{width:1.5em;height:1.5em;color:var(--gain);flex:none}
+.app[data-theme=dark] .toast .icon{color:#0a6b4a}
+
+/* ---------- Resumen: shared ---------- */
+.slip h2.q{font-size:1em;font-weight:600;color:var(--soft);margin:0 0 6px}
+.answer{font-size:2.3em;font-weight:900;letter-spacing:-.035em;line-height:1.05;margin:0}
+.answer small{display:block;font-size:.5em;font-weight:800;letter-spacing:-.01em;margin-top:4px}
+.trend{display:inline-flex;align-items:center;gap:4px;margin:8px 0 0;font-weight:700;color:var(--soft);font-size:.93em}
+.trend .arrow{font-size:1.2em;color:var(--ink)}
+.basis{font-size:.86em;color:var(--soft);margin:2px 0 0}
+.phone.tall{height:auto}
+.phone.tall .app{height:auto}
+.phone.tall .content{overflow:visible}
+
+/* R2: two same-cutoff bars */
+.vs{display:grid;gap:10px;margin-top:8px}
+.vs-row{display:grid;grid-template-columns:84px 1fr auto;align-items:center;gap:10px;font-size:.93em}
+.vs-row .bar{height:14px;border-radius:4px;background:var(--pastbar)}
+.vs-row.now .bar{background:var(--brand)}
+.vs-row b{font-weight:800}
+
+/* ---------- Resumen: column charts (v1.1 Charts: 4dp top corners, pastBar past, brand current) ---------- */
+.app{--pastbar:#566287}
+.app[data-ink=violet]{--pastbar:#5f5887}
+.app[data-theme=dark]{--pastbar:#a7b2d2}
+.app[data-theme=dark][data-ink=violet]{--pastbar:#aba3cf}
+.chart{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;align-items:end;gap:8px;height:150px;margin:14px 0 4px;border-bottom:1.5px solid var(--rule)}
+.col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;border:0;background:none;padding:0;min-width:0}
+.col .v{font-size:.78em;font-weight:800;margin-bottom:4px;white-space:nowrap;position:relative;z-index:1;background:var(--paper);padding:0 3px;border-radius:4px}
+.col .b{width:100%;max-width:34px;border-radius:4px 4px 0 0;background:var(--pastbar)}
+.col.now .b{background:var(--brand)}
+.col.partial .b{background:repeating-linear-gradient(45deg,var(--brand) 0 3px,transparent 3px 7px);box-shadow:inset 0 0 0 1.5px var(--brand)}
+.col.sel .b{outline:2px solid var(--ink);outline-offset:2px}
+.axis{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;font-size:.8em;color:var(--soft);text-align:center}
+.axis .now{color:var(--ink);font-weight:800}
+.limit-line{position:absolute;left:0;right:0;border-top:1.5px dashed var(--ink);pointer-events:none}
+.limit-line span{position:absolute;left:0;top:-11px;background:var(--paper);font-size:.75em;font-weight:700;padding:0 4px;border-radius:4px}
+.chart-note{font-size:.8em;color:var(--soft);margin:6px 0 0}
+.chart-pick{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0}
+.chart-pick b{font-size:1.15em;font-weight:900}
+
+/* ---------- Resumen: ranking ---------- */
+.rank{display:grid;gap:2px;margin-top:8px}
+.rank-row{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;min-height:52px;border:0;background:none;padding:0;text-align:left;color:var(--ink)}
+.rank-row .circle{width:36px;height:36px;min-width:36px}
+.rank-row .circle .icon{width:18px;height:18px}
+.rank-main{display:grid;gap:5px;min-width:0}
+.rank-main span{font-weight:700;font-size:.93em}
+.share{height:6px;border-radius:99px;background:var(--dim);overflow:hidden}
+.share i{display:block;height:100%;background:var(--brand);border-radius:99px}
+.rank-row b{font-weight:800}
+.rank-row .chev{width:1.2em;height:1.2em;color:var(--outline)}
+.total-line{display:flex;justify-content:space-between;border-top:2px solid var(--ink);margin-top:8px;padding-top:8px;font-weight:800}
+
+/* ---------- Resumen: suggestion ---------- */
+.idea{border-left:4px solid var(--brand)}
+.idea p{margin:0 0 4px;line-height:1.4}
+.idea p.muted{color:var(--soft);font-size:.93em}
+
+/* ---------- Resumen: income entry ---------- */
+.income-slip .leader{min-height:30px}
+.income-slip .text-link{margin-top:2px}
+
+/* ---------- Resumen: suggestion (a tinted note: Sello suggesting, not a printed fact) ---------- */
+.sug{border-radius:14px;padding:14px 16px;margin-bottom:14px;color:var(--ink)}
+.sug p{margin:0 0 6px;line-height:1.4}
+.sug-tint{background:var(--brandsoft);color:var(--onbrandsoft)}
+.sug-fact{font-size:.93em}
+.sug-advice{font-weight:800}
+.sug-head{display:flex;align-items:center;gap:10px;margin:-6px -10px 6px 0}
+.sug-head b{flex:1}
+.sug-icon{width:36px;height:36px;border-radius:50%;background:var(--paper);color:var(--brand);display:grid;place-items:center}
+.sug-icon .icon{width:20px;height:20px}
+.sug-tint .text-link{color:var(--onbrandsoft)}
+
+/* ---------- Shell: viewing a past month ---------- */
+.past-ribbon{display:flex;align-items:center;gap:8px;margin:0 12px 10px;padding:4px 4px 4px 12px;border-radius:99px;background:rgba(255,255,255,.16);color:#fff;font-size:.93em}
+.past-ribbon .icon{width:1.3em;height:1.3em;flex:none}
+.past-ribbon span{flex:1;min-width:0}
+.past-ribbon button{min-height:40px;padding:0 14px;border:0;border-radius:99px;background:#fff;color:var(--band);font-weight:800;font-size:.93em;white-space:nowrap}
+.app[data-theme=dark] .past-ribbon button{background:var(--paper);color:var(--ink)}
+.closed-note{margin:8px 0 0;color:var(--soft);font-size:.93em}
+
+/* ---------- Sub-screen top bar ---------- */
+.topbar.sub{justify-content:flex-start;gap:4px;padding:0 8px 0 4px}
+.sub-title{margin:0;font-size:1.45em;font-weight:800;letter-spacing:-.02em;color:#fff}
+
+/* ---------- Income ---------- */
+.split{display:flex;height:16px;border-radius:5px;overflow:hidden;margin:10px 0 8px;background:var(--dim)}
+.split i{display:block;height:100%}
+.split .assigned{background:var(--brand)}
+.split .free{background:repeating-linear-gradient(45deg,var(--brand) 0 2px,transparent 2px 6px);box-shadow:inset 0 0 0 1.5px var(--brand)}
+.legend{display:flex;gap:14px;font-size:.8em;color:var(--soft);margin:0 0 6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;background:var(--brand)}
+.legend i.free{background:repeating-linear-gradient(45deg,var(--brand) 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 1.5px var(--brand)}
+.leader.neg b{color:var(--loss)}
+.leader.plan{color:var(--soft)}
+.leader.plan b{font-weight:700;color:var(--soft)}
+.plan-slip{border:2px dashed var(--outline);background:transparent;border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.plan-tag{display:inline-flex;align-items:center;gap:6px;font-size:.8em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--brand);margin-bottom:6px}
+.plan-tag .icon{width:1.3em;height:1.3em}
+.inc-row{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;min-height:56px;width:100%;border:0;border-bottom:1px solid var(--rule);background:none;padding:6px 0;text-align:left;color:var(--ink)}
+.inc-row:last-child{border-bottom:0}
+.inc-row span{display:grid;gap:2px;min-width:0}
+.inc-row span b{font-weight:800}
+.inc-row span small{color:var(--soft);font-size:.86em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inc-row>b{font-weight:800}
+.inc-row .chev{width:1.2em;height:1.2em;color:var(--outline)}
+.inc-row.last{border-bottom:0}
+.plan-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.plan-head .plan-tag{margin:0}
+.exp-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.exp-chip{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border-radius:99px;border:1.5px dashed var(--outline);font-size:.86em;color:var(--soft)}
+.exp-chip .icon{width:1.2em;height:1.2em;color:var(--brand)}
+.exp-chip b{color:var(--ink)}
+.plan-foot{margin:8px 0 0;font-size:.8em;color:var(--soft)}
+.plan-total{border-top:2px solid var(--ink);margin-top:4px;padding-top:2px}
+.leader.strong b,.leader.strong span{font-weight:900}
+
+/* ---------- Tab title (screens not tied to a month) ---------- */
+.tab-title{margin:0;font-size:1.5em;font-weight:800;letter-spacing:-.02em;color:#fff}
+.top-actions{display:flex}
+
+
+/* ---------- Metas: v1.1 stamp cards ---------- */
+.goals-band{display:grid;gap:2px;padding:0 16px 14px;color:#fff}
+.goals-band span{font-size:.93em;opacity:.85}
+.goals-band .band-row{display:flex;align-items:center;justify-content:space-between;gap:8px;opacity:1}
+.goals-band .band-row>span{opacity:.85}
+.band-chip{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 14px 0 8px;margin:-6px -2px -6px 0;border:0;border-radius:99px;background:#fff;color:var(--band);font-weight:800;font-size:.93em;white-space:nowrap}
+.band-chip .icon{width:1.4em;height:1.4em}
+.app[data-theme=dark] .band-chip{background:var(--paper);color:var(--ink)}
+/* The same pill on paper (Recibo's + Nueva categoría, 2026-10-26). */
+.band-chip.paper{background:var(--brandsoft);color:var(--onbrandsoft);margin:0}
+.app[data-theme=dark] .band-chip.paper{background:var(--brandsoft);color:var(--onbrandsoft)}
+.goals-band b{font-size:2.6em;font-weight:900;letter-spacing:-.04em;line-height:1.05}
+.goals-band small{display:inline-flex;align-items:center;gap:4px;font-weight:700;font-size:.9em}
+.goals-band small .icon{width:1.3em;height:1.3em;background:var(--gain);color:#fff;border-radius:50%;padding:2px}
+.app[data-theme=dark] .goals-band small .icon{color:#06175c}
+.goal-card{display:block;width:100%;border:0;background:none;padding:0;text-align:left;color:var(--ink);font:inherit}
+.v1-head{display:flex;align-items:center;gap:8px}
+.v1-head .icon{width:1.5em;height:1.5em;color:var(--gain)}
+.v1-head b{flex:1;font-size:1.08em;font-weight:800}
+.v1-pct{font-size:1.5em;font-weight:900;letter-spacing:-.02em}
+.v1-saved{display:block;font-size:2.15em;font-weight:900;letter-spacing:-.035em;line-height:1.1;margin-top:8px}
+.v1-meta{display:flex;justify-content:space-between;align-items:center;font-size:.86em;color:var(--soft);margin:2px 0 8px}
+.v1-meta span:last-child{display:inline-flex;align-items:center;gap:4px}
+.v1-meta .icon{width:1.2em;height:1.2em}
+.v1-track{display:block;height:9px;border-radius:99px;background:var(--dim);overflow:hidden}
+.v1-track i{display:block;height:100%;background:var(--gain)}
+.v1-places{display:flex;justify-content:space-between;gap:6px;margin:12px 0 0}
+.v1-place{width:60px;height:60px;border-radius:50%;border:2px dashed var(--outline);display:grid;place-items:center;font-family:Stencil,Schibsted,sans-serif;font-size:.92em;color:var(--soft);text-align:center;line-height:1.05}
+.v1-place.done{border:2.5px solid var(--gain);color:var(--gain);box-shadow:inset 0 0 0 3px var(--paper),inset 0 0 0 4.5px var(--gain);transform:rotate(-8deg)}
+.v1-done .goal-card{display:flex;align-items:center;gap:10px}
+.v1-done .goal-card>.icon{width:1.5em;height:1.5em;color:var(--ink)}
+.v1-done .goal-card>span:not(.stamp){flex:1;display:grid}
+.v1-done small{color:var(--soft);font-size:.86em}
+.v1-done .stamp{font-size:.95em}
+.primary.goal{background:var(--gain);color:#fff}
+.app[data-theme=dark] .primary.goal{color:#06231a}
+.sub-title{flex:1}
+.sub-action{color:#fff}
+
+/* ---------- Goal detail ---------- */
+.gd-head{display:flex;justify-content:space-between;align-items:baseline}
+.gd-head .label{font-weight:600}
+.gd-head b{font-size:1.5em;font-weight:900;color:var(--gain)}
+.gd-saved{font-size:3em;font-weight:900;letter-spacing:-.04em;line-height:1.05;margin:4px 0 2px}
+.gd-sub{display:flex;justify-content:space-between;color:var(--soft);font-size:.93em;margin-bottom:10px}
+.gd-stamps-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+.gd-stamps-head b{font-weight:800}
+.gd-next{display:flex;align-items:center;gap:6px;margin:12px 0 0;font-size:.93em;color:var(--soft)}
+.gd-next .icon{width:1.3em;height:1.3em;color:var(--gain)}
+.gd-next b{color:var(--ink)}
+.v1-place.kept{border:2.5px solid var(--gain);color:var(--gain);opacity:.55;transform:rotate(-8deg);box-shadow:inset 0 0 0 3px var(--paper),inset 0 0 0 4.5px var(--gain)}
+.mov-head{display:flex;justify-content:space-between;align-items:center}
+.mov-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;min-height:56px;border-bottom:1px solid var(--rule)}
+.mov-row.last{border-bottom:0}
+.mov-row .mi{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--gainsoft);color:var(--gain)}
+.mov-row .mi .icon{width:18px;height:18px}
+.mov-row.out .mi{background:var(--dim);color:var(--soft)}
+.mov-row span{display:grid}
+.mov-row small{color:var(--soft);font-size:.86em}
+.mov-row b{font-weight:800}
+.text-btn{display:inline-flex;align-items:center;gap:4px;min-height:44px;border:0;background:none;color:var(--brand);font-weight:800;font-size:.93em;padding:0 4px}
+.text-btn .icon{width:1.2em;height:1.2em}
+.mi-stamp{background:var(--paper)!important;border:2.5px solid var(--gain);color:var(--gain)!important;font-family:Stencil,Schibsted,sans-serif;font-size:.62em;transform:rotate(-8deg);width:34px!important;height:34px!important}
+.ms-line{color:var(--gain)!important;font-weight:700}
+/* Owner 2026-11-02: the amount at the end with the saldo under it; a bold heading; month lines in the full list. */
+.slip h2.q.strong{font-size:1.15em;font-weight:800;color:var(--ink)}
+.mov-row .mov-amt{text-align:right;justify-items:end}
+.mov-row .mov-amt b{font-variant-numeric:tabular-nums}
+.mov-row .mov-amt b.in{color:var(--gain)}
+.mov-month{display:flex;justify-content:space-between;font-size:.78em;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--outline);padding:12px 0 4px;border-bottom:1px solid var(--rule)}
+.band-pin{padding:0 16px 12px}
+.pin-band{display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:0 12px 0 8px;border-radius:99px;border:1.5px solid rgba(255,255,255,.6);background:none;color:#fff;font-weight:800;font-size:.86em}
+.pin-band .icon{width:1.3em;height:1.3em}
+.pin-band.on{background:rgba(255,255,255,.18);border-color:transparent}
+/* The replace sheet (SELLO-144): the five starred goals, pick one. */
+.star-sheet{padding:14px 16px 16px}
+.star-sheet h2{margin:0 2px 4px;font-size:1.15em;font-weight:800}
+.star-sheet .fx-row .fx-ic{color:var(--brand)}
+.star-sheet .fx-row>b{font-variant-numeric:tabular-nums}
+.star-sheet .fx-row>.icon{width:1.2em;height:1.2em;color:var(--brand)}
+.star-sheet .rule-actions{grid-template-columns:1fr;margin-top:10px}
+.star-sheet .err{display:flex;gap:8px;align-items:flex-start;margin:8px 2px 0;padding:10px 12px;border-radius:12px;background:var(--losssoft);color:var(--ink);font-size:.9em;line-height:1.35}
+.star-sheet .err .icon{width:1.3em;height:1.3em;color:var(--loss);flex:none}
+.star-sheet .fx-row[aria-checked=true]{background:var(--alt);border-radius:12px;padding-left:8px;padding-right:8px}
+
+/* ---------- Aportar / Retirar ---------- */
+.amount-value.goal-in{color:var(--gain)}
+.goal-chip-pct{font-weight:800;opacity:.75;margin-left:2px}
+.goal-fact{margin:10px 2px 0;font-size:.86em;color:var(--soft)}
+.goal-fact b{color:var(--ink)}
+
+/* ---------- Create / edit a goal (category editor + entry parts) ---------- */
+.form-slip{padding:14px 16px}
+.form-label{display:block;font-size:.86em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--soft);margin:0 0 6px}
+.form-field{border-bottom:1.5px solid var(--rule);padding:6px 2px 8px;font-size:1.1em;font-weight:600;min-height:40px}
+.form-field.focus{border-color:var(--brand);border-bottom-width:2px}
+.form-field.placeholder{color:var(--outline);font-weight:500}
+.form-field.error{border-color:var(--loss)}
+.form-msg{display:flex;justify-content:space-between;font-size:.8em;color:var(--soft);margin:5px 2px 0}
+.form-msg .err{color:var(--loss);font-weight:600}
+.icon-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 6px;justify-items:center}
+.icon-choice{width:52px;height:52px;border-radius:50%;border:2px solid var(--rule);background:var(--paper);color:var(--brand);display:grid;place-items:center;padding:0}
+.icon-choice .icon{width:24px;height:24px}
+.icon-choice[aria-pressed=true]{background:var(--gain);border-color:var(--gain);color:#fff}
+.amount-slip.tap .amount-value{cursor:pointer}
+.date-row{display:flex;gap:8px;flex-wrap:wrap}
+.monthly{display:flex;gap:8px;align-items:center;margin:12px 2px 0;font-size:.9em;color:var(--soft)}
+.monthly .icon{width:1.3em;height:1.3em;color:var(--gain);flex:none}
+.monthly b{color:var(--ink)}
+.preview-card{pointer-events:none}
+.pad-done{display:flex;justify-content:flex-end;padding:0 12px 4px;background:var(--desk)}
+.entry-mid .amount-slip{margin:0 0 14px}
+
+/* ---------- Create a goal, round 2 (v1.1 blend) ---------- */
+.ident{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:end}
+.ident-icon{width:64px;height:64px;border-radius:50%;background:var(--gain);color:#fff;display:grid;place-items:center}
+.ident-icon.empty{background:var(--paper);color:var(--outline);border:2px dashed var(--outline)}
+.ident-icon .icon{width:32px;height:32px}
+.pick{display:grid;justify-items:center;gap:4px;border:0;background:none;padding:0;color:var(--gain);font-weight:800;font-size:.8em}
+.pick .ident-icon.pick-empty{border:2.5px dashed currentColor;color:currentColor;background:color-mix(in srgb,currentColor 8%,var(--paper))}
+.pick .ident-icon.pick-empty .icon{color:inherit}
+.icon-strip{display:flex;gap:8px;overflow-x:auto;margin:14px -16px 0;padding:0 16px 2px;scrollbar-width:none;-webkit-mask:linear-gradient(90deg,#000 calc(100% - 16px),transparent);mask:linear-gradient(90deg,#000 calc(100% - 16px),transparent)}
+.icon-strip .icon-choice{width:46px;height:46px;flex:none}
+.icon-strip .icon-choice .icon{width:22px;height:22px}
+.plan-amount{font-size:3.1em;font-weight:900;letter-spacing:-.04em;line-height:1.05;margin:6px 0 0}
+.plan-amount.placeholder{color:var(--rule)}
+.plan-amount.mid{font-size:2.4em}
+.plan-amount .caret{height:.75em}
+.plan-label{display:flex;justify-content:space-between;align-items:center}
+.stamps-plan .v1-place{width:62px;height:62px;flex-direction:column}
+.stamps-plan .v1-places{margin-top:10px}
+.stamp-when{display:grid;justify-items:center;gap:4px;font-size:.78em;color:var(--soft);font-weight:700}
+.stamp-when .v1-place{font-size:.92em}
+.done-ask h2{margin:0 0 4px;font-size:1.05em;font-weight:800}
+.done-ask p{margin:0 0 12px;color:var(--soft);font-size:.9em;line-height:1.4}
+.outline-btn.loss{border-color:var(--loss);color:var(--loss)}
+.outline-btn.gain{border-color:var(--gain);color:var(--gain)}
+.outline-btn.wide{width:100%}
+.confirm{background:var(--paper);color:var(--ink);border-radius:11px;margin:auto 16px;padding:18px 16px 16px}
+.confirm h2{margin:0 0 8px;font-size:1.4em;font-weight:800;letter-spacing:-.01em}
+.confirm p{margin:0;color:var(--soft);line-height:1.45}
+.confirm p b{color:var(--ink)}
+.confirm .tear{margin:16px -16px 14px}
+.confirm .tear::before,.confirm .tear::after{background:color-mix(in srgb,var(--desk) 45%,#050814)}
+.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.confirm-actions button{min-height:48px;border-radius:12px;font-weight:800;font-size:1em}
+.confirm-actions .ghost{border:2px solid var(--outline);background:none;color:var(--ink)}
+.confirm-actions .del{border:0;background:var(--loss);color:#fff}
+.app[data-theme=dark] .confirm-actions .del{color:#3a0a0d}
+.scrim.center{justify-content:center}
+
+/* ---------- Home: a goal reached while another is on Recibo ---------- */
+.reached{display:flex;align-items:center;gap:10px;min-height:56px;padding:6px 6px 6px 14px;border-radius:99px;background:var(--gainsoft);color:var(--gain);margin:-6px 0 14px}
+.reached .icon{width:1.4em;height:1.4em;flex:none}
+.reached span{flex:1;min-width:0;display:grid;line-height:1.2}
+.reached span b{color:var(--ink);font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reached span small{font-weight:700;font-size:.8em}
+.reached button{min-height:44px;padding:0 14px;border:0;border-radius:99px;background:var(--gain);color:#fff;font-weight:800;font-size:.86em;white-space:nowrap}
+.app[data-theme=dark] .reached button{color:#06231a}
+
+/* ---------- Celebrations ---------- */
+/* Base styles are the final state; keyframes only describe the way in, so reduced motion
+   (animation: none) lands directly on the same readable result. */
+.app{--ongain:#fff}
+.app[data-theme=dark]{--ongain:#06231a}
+.v1-place{position:relative}
+.v1-place.land{animation:stamp-land .42s cubic-bezier(.3,1.5,.5,1) var(--d,0ms) both}
+.v1-place.land::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:3px solid var(--gain);opacity:0;animation:ink-ring .6s ease-out calc(var(--d,0ms) + .3s) both;pointer-events:none}
+.v1-place.land.from-kept{animation-name:stamp-relight}
+/* 100 % reached, not yet marked: the Meta place waits in green for the person to stamp it. */
+.v1-place.ready{border:2.5px dashed var(--gain);color:var(--gain);animation:ready-pulse 1.8s ease-in-out infinite}
+@keyframes stamp-land{0%{opacity:0;transform:scale(2.4) rotate(-24deg)}60%{opacity:1;transform:scale(.9) rotate(-8deg)}82%{transform:scale(1.05) rotate(-8deg)}100%{opacity:1;transform:scale(1) rotate(-8deg)}}
+@keyframes stamp-relight{0%{opacity:.55;transform:scale(1) rotate(-8deg)}40%{opacity:1;transform:scale(1.18) rotate(-12deg)}100%{opacity:1;transform:scale(1) rotate(-8deg)}}
+@keyframes ink-ring{0%{opacity:.55;transform:scale(1)}100%{opacity:0;transform:scale(1.7)}}
+@keyframes ready-pulse{50%{transform:scale(1.07)}}
+@keyframes rise{0%{opacity:0;transform:translateY(24px)}100%{opacity:1;transform:none}}
+@keyframes fade{0%{opacity:0}100%{opacity:1}}
+
+/* S2 (from Metas or Recibo): the save toast becomes a paper ticket; the stamp lands on it. */
+.ticket-wrap{position:absolute;left:12px;right:12px;bottom:150px;z-index:4;filter:drop-shadow(0 6px 14px rgba(5,8,20,.28));animation:rise .25s ease-out both}
+.stamp-ticket{display:flex;align-items:center;gap:12px;padding:12px 16px 12px 18px;background:var(--paper);color:var(--ink);border-radius:10px;
+  -webkit-mask:radial-gradient(circle 8px at 0 50%,transparent 97%,#000) left/51% 100% no-repeat,radial-gradient(circle 8px at 100% 50%,transparent 97%,#000) right/51% 100% no-repeat;
+  mask:radial-gradient(circle 8px at 0 50%,transparent 97%,#000) left/51% 100% no-repeat,radial-gradient(circle 8px at 100% 50%,transparent 97%,#000) right/51% 100% no-repeat}
+.stamp-ticket .v1-place{width:54px;height:54px;font-size:.85em;flex:none}
+.stamp-ticket .pair{display:flex;gap:2px;flex:none}
+.stamp-ticket .pair .v1-place{width:46px;height:46px;font-size:.75em}
+.stamp-ticket>span:last-child{display:grid;gap:2px;padding-left:12px;border-left:2px dashed var(--rule);min-width:0}
+.stamp-ticket b{font-weight:800;font-size:1.02em;line-height:1.2}
+.stamp-ticket small{color:var(--soft);font-size:.84em;line-height:1.3}
+.goal-v1 .primary.goal,.gd-mark{margin-top:14px}
+
+/* The big moment, after Marcar como lograda. Desk first: the four stamps land in the middle;
+   the Meta stamp floods the screen green; the stamps rise, the title and the plate land. */
+.celebrate{position:absolute;inset:0;z-index:6;background:var(--desk);display:flex;flex-direction:column;overflow:hidden}
+.celebrate .statusbar{position:relative;z-index:1;color:var(--ongain);animation:ink-from .3s 1.9s both}
+.flood{position:absolute;inset:0;background:var(--gain);clip-path:circle(150% at 87% 49%);animation:flood .6s cubic-bezier(.5,0,.3,1) 1.75s both}
+@keyframes flood{0%{clip-path:circle(0 at 87% 49%)}100%{clip-path:circle(150% at 87% 49%)}}
+@keyframes ink-from{0%{color:var(--ink)}100%{color:var(--ongain)}}
+@keyframes ink-from-gain{0%{color:var(--gain)}100%{color:var(--ongain)}}
+.fin-body{position:relative;z-index:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 18px 12px}
+.fin-stamps{width:100%;max-width:300px;margin:0;animation:fin-up .55s cubic-bezier(.4,0,.2,1) 2.05s both}
+@keyframes fin-up{0%{transform:translateY(190px) scale(1.15)}100%{transform:none}}
+.fin .v1-place{width:66px;height:66px}
+.fin .v1-place.done{color:var(--ongain);border-color:currentColor;box-shadow:inset 0 0 0 3px transparent,inset 0 0 0 4.5px currentColor;animation:stamp-land .42s cubic-bezier(.3,1.5,.5,1) var(--d,0ms) both,ink-from-gain .3s 1.9s both}
+.fin-title{margin:30px 0 0;font-size:3em;font-weight:900;letter-spacing:-.035em;line-height:1;color:var(--ongain);text-align:center;animation:rise .35s ease-out 2.4s both}
+/* The plate: a rubber stamp that grows with its content, so long names wrap and long amounts
+   step down like the entry amount. */
+.plate{width:100%;max-width:316px;margin:30px 0 0;color:var(--ongain);border:4px solid currentColor;border-radius:14px;padding:5px;transform:rotate(-4deg);animation:plate-slam .36s cubic-bezier(.3,1.4,.5,1) 2.75s both}
+@keyframes plate-slam{0%{opacity:0;transform:scale(2.4) rotate(-18deg)}65%{opacity:1;transform:scale(.95) rotate(-4deg)}100%{opacity:1;transform:rotate(-4deg)}}
+.plate-in{border:1.5px solid currentColor;border-radius:9px;padding:12px 14px 12px;display:grid;justify-items:center;gap:8px;text-align:center}
+.pl-top,.pl-foot{font-family:Stencil,Schibsted,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:.95em}
+.pl-foot{font-size:.82em;letter-spacing:.08em}
+.pl-name{display:flex;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:1.12em;line-height:1.2}
+.pl-name .icon{width:1.4em;height:1.4em}
+.pl-amount{width:100%;padding:8px 0 6px;border-top:2px dashed currentColor;border-bottom:2px dashed currentColor;font-size:3em;font-weight:900;letter-spacing:-.04em;line-height:1.05}
+.pl-amount.mid{font-size:2.3em}.pl-amount.long{font-size:1.8em}
+.confetti{position:absolute;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.chad{position:absolute;top:-24px;display:block;background:var(--c);animation:chad-fall var(--t) cubic-bezier(.25,.55,.45,1) var(--dl) both}
+.chad.hole{border-radius:50%}
+.chad.tooth{clip-path:polygon(0 0,100% 0,50% 100%)}
+@keyframes chad-fall{0%{opacity:0;transform:translate(0,0) rotate(0)}8%{opacity:1}100%{opacity:1;transform:translate(var(--x),840px) rotate(var(--r))}}
+.final-actions{display:grid;gap:4px;padding:10px 14px 14px;position:relative;z-index:3;animation:fade .3s ease-out 3.1s both}
+.final-actions .text-btn{justify-self:center;color:var(--ongain)}
+.fin .final-actions .primary{background:var(--ongain);color:var(--gain)}
+/* Review-only: the first beat frozen, before the flood. */
+.phase1 *,.phase1 *::after{animation:none!important}
+.phase1 .flood,.phase1 .confetti{display:none}
+.phase1 .fin-title,.phase1 .plate,.phase1 .final-actions{visibility:hidden}
+.phase1 .statusbar{color:var(--ink)}
+.phase1 .fin-stamps{transform:translateY(190px) scale(1.15)}
+.phase1 .fin .v1-place.done,.phase1 .v1-place.done{color:var(--gain)}
+
+/* Revisit: the completed goal's main slip. */
+.final-amount{font-size:2.6em;font-weight:900;letter-spacing:-.04em;line-height:1.05;margin:2px 0 4px}
+.lograda-hero{position:relative}
+.stamp.big{position:absolute;top:50px;right:18px;font-size:1.05em;letter-spacing:.08em;padding:5px 10px 2px;border-width:3px;transform:rotate(-12deg);animation:slam .32s cubic-bezier(.3,1.4,.5,1) var(--d,.25s) both}
+@keyframes slam{0%{opacity:0;transform:scale(3) rotate(-30deg)}65%{opacity:1;transform:scale(.94) rotate(-12deg)}100%{opacity:1;transform:scale(1) rotate(-12deg)}}
+
+/* Reduced motion: no movement, a short fade at most, no confetti. Same text, same final state. */
+.app.reduced *,.app.reduced *::after{animation:none!important}
+.app.reduced .celebrate,.app.reduced .ticket-wrap{animation:fade .15s both!important}
+.app.reduced .confetti{display:none}
+.toast .undo{margin-left:auto;min-height:44px;padding:0 4px;border:0;background:none;color:var(--brandsoft);font-weight:800;flex:none}
+.toast span{min-width:0}
+
+/* ---------- Inversiones ---------- */
+.primary.inv{background:var(--ink);color:var(--paper)}
+.pos{color:var(--gain)}
+.perf{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;margin:8px 0 0;font-weight:900;font-size:1.25em}
+.perf.gain{color:var(--gain)}.perf.loss{color:var(--loss)}
+.perf .icon{width:1.3em;height:1.3em}
+.perf .perf-gain{font-size:.72em;font-weight:800}
+.inv-since{margin:2px 0 0}
+.inv-gain{font-size:1.5em;font-weight:900;letter-spacing:-.02em}
+.inv-split{height:14px;gap:2px;background:none}
+.inv-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;width:100%;min-height:60px;padding:6px 0;border:0;border-bottom:1px solid var(--rule);background:none;text-align:left;color:var(--ink)}
+.inv-row:last-child{border-bottom:0}
+.inv-ic{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--c);color:var(--paper)}
+.inv-ic .icon{width:20px;height:20px}
+.inv-row>span:nth-child(2){display:grid;gap:2px;min-width:0}
+.inv-row b{font-weight:800}
+.inv-row small{color:var(--soft);font-size:.84em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-right{display:grid;justify-items:end;gap:2px}
+.inv-right small{display:inline-flex;align-items:center;gap:3px;font-weight:800;font-size:.86em}
+.inv-right small .icon{width:1.2em;height:1.2em}
+.inv-right small.pos{color:var(--gain)}.inv-right small.neg{color:var(--loss)}
+.inv-update{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:6px}
+.inv-update .icon{width:1.3em;height:1.3em}
+.inv-chart{display:block;width:100%;height:auto}
+.inv-chart .put{fill:none;stroke:var(--outline);stroke-width:2;stroke-dasharray:5 4}
+.inv-chart .val{fill:none;stroke:var(--brand);stroke-width:2}
+.inv-chart .dots circle{fill:var(--brand);stroke:var(--paper);stroke-width:2}
+.legend i.val{border-radius:50%;background:var(--brand)}
+.legend i.put{height:0;border-top:2px dashed var(--outline);background:none;border-radius:0}
+.inv-chart .grid line{stroke:var(--rule);stroke-width:1}
+.inv-chart .grid text{fill:var(--outline);font-size:9px}
+.inv-chart .guide{stroke:var(--ink);stroke-width:1;stroke-dasharray:2 3}
+.inv-chart .dots circle.sel{fill:var(--ink)}
+.inv-picked{display:flex;gap:12px;font-size:.86em;color:var(--soft);margin:0 0 4px}
+.inv-picked span:first-child{flex:1}
+.inv-picked b{color:var(--ink);font-weight:800}
+.inv-axis{padding-left:34px}
+.mov-amt small.gain{color:var(--gain)}
+.mov-amt small.loss{color:var(--loss)}
+.mov-row.val .mi{background:var(--brandsoft);color:var(--onbrandsoft)}
+.inv-ic.none{background:none;border:2px dashed var(--outline);color:var(--soft)}
+.inv-none{color:var(--soft)}
+.ident-icon.inv{background:var(--ink);color:var(--paper)}
+.plan-amount.small{font-size:1.9em;margin-top:8px}
+.form-label small{font-weight:500;text-transform:none;letter-spacing:0}
+.inv-ident .icon-choice[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chips.one-row{grid-template-rows:auto}
+.text-btn.inline{min-height:32px;padding:0;font-size:1em}
+
+/* ---------- Review page: component catalog (not part of the app) ---------- */
+.cmp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+.cmp{background:#fff;border:1px solid #dfe4f2;border-radius:14px;padding:14px;display:flex;flex-direction:column}
+.cmp-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cmp-head h3{margin:0;font-size:15px;font-weight:800}
+.cmp-status{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px}
+.cmp-status.exists{background:#dff3ea;color:#0a6b4a}.cmp-status.extend{background:#fff1d6;color:#8a5a00}.cmp-status.new{background:#dce2ff;color:#1f3be0}
+.cmp-code{margin:4px 0 0;font-size:12px;color:#566287}
+.cmp-note{margin:6px 0 0;font-size:12.5px;color:#434e72;line-height:1.45}
+.cmp-used{margin:4px 0 10px;font-size:12px;color:#566287}
+.app.cmp-stage{display:block;height:auto;padding:14px;border-radius:12px;margin-top:auto}
+.app.cmp-stage .slip:last-child{margin-bottom:0}
+.review>.section .cmp-stage .confirm h2{font-size:1.4em;margin:0 0 8px}
+.cmp-sws{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.cmp-sw{display:grid;grid-template-columns:28px 1fr;grid-template-rows:auto auto;column-gap:8px;align-items:center;font-size:.9em}
+.cmp-sw i{grid-row:span 2;width:28px;height:28px;border-radius:8px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.cmp-sw small{color:var(--soft);font-size:.8em}
+
+/* Recurrence (SELLO-114): Se repite, the rule sheet, schedule rows, the notice and the choice. */
+.toast.notice .icon{color:var(--brandsoft)}
+.app[data-theme=dark] .toast.notice .icon{color:var(--brand)}
+.rep-pill .icon{color:var(--brand)}
+.rule-sheet h2{margin:0 2px 10px;font-size:1.1em;font-weight:800}
+.rule-sheet .chips{flex-wrap:wrap;max-height:none;margin-bottom:10px}
+.rule-sheet .form-label{display:block;margin:6px 2px 6px;font-size:.86em;font-weight:800;color:var(--soft)}
+.day-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 6px}
+.day-grid button{min-height:36px;border:0;border-radius:99px;background:var(--alt);color:var(--ink);font-weight:700;font-size:.93em}
+.day-grid button[aria-pressed=true]{background:var(--brand);color:var(--onbrand)}
+.stepper{display:flex;align-items:center;gap:12px;margin:0 2px 8px;font-weight:700}
+.stepper button{width:44px;height:44px;border:0;border-radius:12px;background:var(--brandsoft);color:var(--onbrandsoft);font-size:1.3em;font-weight:800}
+.stepper b{min-width:2ch;text-align:center;font-size:1.3em}
+.rule-next{display:flex;gap:8px;align-items:center;margin:8px 2px 12px;color:var(--soft);font-size:.9em}
+.rule-next .icon{width:1.3em;height:1.3em;color:var(--brand);flex:none}
+.rule-next b{color:var(--ink)}
+.rule-actions{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.rule-actions button{min-height:48px;border-radius:12px;font-weight:800;font-size:1em}
+.rule-actions .ghost{border:2px solid var(--outline);background:none;color:var(--ink)}
+.rule-actions .go{border:0;background:var(--brand);color:var(--onbrand)}
+.fx-row{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;min-height:60px;width:100%;border:0;border-bottom:1px solid var(--rule);background:none;padding:6px 0;text-align:left;color:var(--ink)}
+.fx-row.last{border-bottom:0}
+.fx-row .fx-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--alt);color:var(--brand)}
+.fx-row .fx-ic .icon{width:19px;height:19px}
+.fx-row span.fx-text{display:grid;gap:2px;min-width:0}
+.fx-row span.fx-text b{font-weight:800}
+.fx-row small{color:var(--soft);font-size:.86em}
+.fx-row>b{font-weight:800}
+.fx-row.soon>b{color:var(--soft);font-weight:700}
+.fx-row.income>b{color:var(--gain)}
+.fx-row.paused{opacity:.72}
+.fx-row .chev{width:1.2em;height:1.2em;color:var(--outline)}
+.stamp.small{font-size:.72em;padding:2px 6px 0;border-width:2px}
+.fx-group{margin:14px 2px 2px;font-size:.86em;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--soft)}
+.confirm-actions .go{border:0;background:var(--brand);color:var(--onbrand)}
+.confirm .back-link{display:block;margin:10px auto 0;min-height:44px;border:0;background:none;color:var(--brand);font-weight:800}
+.setting-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;min-height:56px;width:100%;border:0;background:none;padding:4px 0;text-align:left;color:var(--ink)}
+.setting-row .icon{width:1.4em;height:1.4em;color:var(--brand)}
+.setting-row span{display:grid}
+.setting-row small{color:var(--soft);font-size:.86em}
+.setting-row .chev{color:var(--outline)}
+.app.large .fx-row{grid-template-columns:auto 1fr auto}
+.app.large .fx-row>b{grid-column:2}
+.app.large .day-grid{grid-template-columns:repeat(4,1fr)}
+
+.app.large .plan-slip .leader{flex-wrap:wrap}
+.app.large .plan-slip .leader .dots{display:none}
+.app.large .plan-slip .leader b{margin-left:auto}
+.fx-row .stamp.small{justify-self:end}
+.app.large .fx-row .stamp.small{grid-column:2;justify-self:start}
+.inv-ages{display:flex;align-items:center;gap:8px;margin:12px 0 0}
+.inv-ages .icon{width:1.4em;height:1.4em;color:var(--soft)}
+.inv-ages b{color:var(--ink)}
+</style>
+  <style>
+    .srow{display:flex;align-items:center;gap:12px;min-height:44px}
+    .srow>.icon{width:22px;height:22px;color:var(--soft)}
+    .srow b{display:block;font-weight:700}
+    .srow small{display:block;color:var(--soft);font-size:.86em}
+    .swatches{display:flex;gap:12px;margin:8px 0 2px 2px}
+    .sw{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:none;padding:4px;min-width:64px}
+    .ring{width:56px;height:56px;border-radius:50%;border:2.5px solid var(--paper);display:grid;place-items:center;position:relative}
+    .ring.on{border-color:var(--ink)}
+    .dot{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:#fff}
+    .dot.rainbow{background:conic-gradient(#d23a6a,#c2410c,#a16207,#4d7c0f,#0f766e,#0369a1,#1f3be0,#6d28d9,#a21caf,#d23a6a)}
+    .dot .icon{width:26px;height:26px;filter:drop-shadow(0 0 2px #0006)}
+    .badge{position:absolute;right:-4px;bottom:-4px;width:22px;height:22px;border-radius:50%;background:var(--paper);border:1.5px solid var(--rule);display:grid;place-items:center;color:var(--soft)}
+    .badge .icon{width:14px;height:14px}
+    .sw-t{font-size:.86em;font-weight:600;color:var(--soft)}
+    .sw[aria-checked=true] .sw-t{color:var(--ink);font-weight:800}
+    .sw-note{margin:6px 2px 0;color:var(--soft);font-size:.86em;line-height:1.4}
+    .picker{padding:12px 16px 16px}
+    .minis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .mini{height:auto;border-radius:12px;overflow:hidden;font-size:11px;background:var(--desk);display:block}
+    .mini-band{background:var(--band);color:#fff;display:flex;justify-content:space-between;align-items:center;padding:8px 10px 18px}
+    .mini-band .icon{width:16px;height:16px}
+    .mini-desk{padding:0 8px 8px;margin-top:-12px}
+    .mini-slip{background:var(--paper);border-radius:8px;padding:8px}
+    .mini-head{display:flex;justify-content:space-between;align-items:center;color:var(--soft)}
+    .mini-head .stamp{font-size:.8em;padding:1px 4px 0;border-width:1.5px}
+    .mini-hero{display:block;font-size:2em;font-weight:900;letter-spacing:-.04em;margin-top:2px}
+    .mini-btn{margin-top:8px;width:100%;min-height:30px;border:0;border-radius:8px;background:var(--brand);color:var(--onbrand);font-weight:800;display:flex;align-items:center;justify-content:center;gap:4px;font-size:1em}
+    .mini-btn .icon{width:14px;height:14px}
+    .mini-t{display:block;text-align:center;padding:0 0 6px;color:var(--soft);font-weight:700}
+    .hue-name{margin:14px 0 6px;font-size:1.3em;font-weight:800;text-align:center}
+    .hue{position:relative;height:48px;display:flex;align-items:center}
+    .track{position:relative;width:100%;height:28px;border-radius:14px;overflow:hidden}
+    .zone{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(-45deg,rgba(255,255,255,.82) 0 4px,rgba(255,255,255,.55) 4px 8px)}
+    .thumb{position:absolute;top:50%;width:34px;height:34px;border-radius:50%;transform:translate(-50%,-50%);border:4px solid #fff;box-shadow:0 1px 6px #0007}
+    .hue-why{margin:6px 2px 12px;line-height:1.4}
+    .hue-why.hot{color:var(--ink)}
+    .hue-err{display:flex;align-items:center;gap:6px;margin:-4px 2px 12px;color:var(--loss);font-weight:700}
+    .hue-err .icon{width:1.3em;height:1.3em}
+    .confirm-actions .go{border:0;background:var(--brand);color:var(--onbrand)}
+    .gstrip{display:flex;gap:4px;margin:10px 0;padding:10px;border-radius:12px;overflow-x:auto}
+    .gstrip.light{background:#fff}.gstrip.dark{background:#0b0e1a;color:#dde}
+    .gcol{display:flex;flex-direction:column;gap:3px;min-width:52px;font-size:11px;text-align:center}
+    .gcol span{height:22px;border-radius:5px}
+    .gcol.blocked{opacity:.35}
+    .board header{display:none}.board .frames{gap:24px 0}.board .frame-card{width:364px}.board .frame-card>p{font-size:15px;min-height:5.8em}.board .section{display:flex;flex-wrap:wrap;gap:20px 0}.board .part,.board .frames{display:contents}.board .part>h2{display:none}.board .part[data-part=gen]{display:block;width:100%}.board .part[data-part=gen]>h2{display:block;margin:4px 0}.board .frame-card>h3{font-size:18px}.board{padding:8px 0 20px}.board .gstrip .gcol{min-width:56px;font-size:12px}
+    #hueOut{font-size:13px;font-weight:700;color:#434e72;align-self:end;padding-bottom:8px}
+  </style>
+</head>
+<body class="review">
+  <script>// Generated from design-system/src/main/res/drawable (ic_sello_*.xml).
+// flag, close, trending_up, trending_down, star and star_outline are mock-only Material Symbols shapes, not yet bundled.
+// autorenew, pause, play_arrow and event_busy are bundled (Material Symbols Rounded, filled).
+document.body.insertAdjacentHTML('afterbegin', "<svg width=\"0\" height=\"0\" style=\"position:absolute\" aria-hidden=\"true\"><symbol id=\"i-account_balance\" viewBox=\"0 0 960 960\"><path d=\"M192.59,638.8L192.59,446.22Q192.59,427.78 205.28,415.21Q217.98,402.63 236.41,402.63Q254.85,402.63 267.42,415.21Q280,427.78 280,446.22L280,639.04Q280,657.48 267.42,670.05Q254.85,682.63 236.41,682.63Q217.98,682.63 205.28,669.93Q192.59,657.24 192.59,638.8ZM436.41,639.04L436.41,446.22Q436.41,427.78 448.99,415.21Q461.57,402.63 480,402.63Q498.43,402.63 511.01,415.21Q523.59,427.78 523.59,446.22L523.59,639.04Q523.59,657.48 511.01,670.05Q498.43,682.63 480,682.63Q461.57,682.63 448.99,670.05Q436.41,657.48 436.41,639.04ZM117.37,846.22Q98.22,846.22 85.04,833.04Q71.87,819.87 71.87,800.72Q71.87,781.57 85.04,768.39Q98.22,755.22 117.37,755.22L842.63,755.22Q861.78,755.22 874.96,768.39Q888.13,781.57 888.13,800.72Q888.13,819.87 874.96,833.04Q861.78,846.22 842.63,846.22L117.37,846.22ZM680,638.8L680,446.22Q680,427.78 692.7,415.21Q705.39,402.63 723.83,402.63Q742.26,402.63 754.84,415.21Q767.41,427.78 767.41,446.22L767.41,639.04Q767.41,657.48 754.84,670.05Q742.26,682.63 723.83,682.63Q705.39,682.63 692.7,669.93Q680,657.24 680,638.8ZM841.67,329.8L113.61,329.8Q96.22,329.8 84.04,317.63Q71.87,305.46 71.87,288.07L71.87,262.24Q71.87,249.8 78.21,240.25Q84.54,230.7 94.98,224.98L439.22,52.98Q458.37,43.54 480,43.54Q501.63,43.54 520.78,52.98L862.54,223.74Q874.98,229.46 881.55,241.01Q888.13,252.57 888.13,265.72L888.13,283.11Q888.13,302.74 874.72,316.27Q861.3,329.8 841.67,329.8Z\"/></symbol><symbol id=\"i-account_balance_outlined\" viewBox=\"0 0 960 960\"><path d=\"M192.59,638.8L192.59,446.22Q192.59,427.78 205.28,415.21Q217.98,402.63 236.41,402.63Q254.85,402.63 267.42,415.21Q280,427.78 280,446.22L280,639.04Q280,657.48 267.42,670.05Q254.85,682.63 236.41,682.63Q217.98,682.63 205.28,669.93Q192.59,657.24 192.59,638.8ZM436.41,639.04L436.41,446.22Q436.41,427.78 448.99,415.21Q461.57,402.63 480,402.63Q498.43,402.63 511.01,415.21Q523.59,427.78 523.59,446.22L523.59,639.04Q523.59,657.48 511.01,670.05Q498.43,682.63 480,682.63Q461.57,682.63 448.99,670.05Q436.41,657.48 436.41,639.04ZM117.37,846.22Q98.22,846.22 85.04,833.04Q71.87,819.87 71.87,800.72Q71.87,781.57 85.04,768.39Q98.22,755.22 117.37,755.22L842.63,755.22Q861.78,755.22 874.96,768.39Q888.13,781.57 888.13,800.72Q888.13,819.87 874.96,833.04Q861.78,846.22 842.63,846.22L117.37,846.22ZM680,638.8L680,446.22Q680,427.78 692.7,415.21Q705.39,402.63 723.83,402.63Q742.26,402.63 754.84,415.21Q767.41,427.78 767.41,446.22L767.41,639.04Q767.41,657.48 754.84,670.05Q742.26,682.63 723.83,682.63Q705.39,682.63 692.7,669.93Q680,657.24 680,638.8ZM841.67,329.8L113.61,329.8Q96.22,329.8 84.04,317.63Q71.87,305.46 71.87,288.07L71.87,262.24Q71.87,249.8 78.21,240.25Q84.54,230.7 94.98,224.98L439.22,52.98Q458.37,43.54 480,43.54Q501.63,43.54 520.78,52.98L862.54,223.74Q874.98,229.46 881.55,241.01Q888.13,252.57 888.13,265.72L888.13,283.11Q888.13,302.74 874.72,316.27Q861.3,329.8 841.67,329.8ZM270.44,238.8L480,238.8L689.56,238.8L270.44,238.8ZM270.44,238.8L689.56,238.8L480,135.02Q480,135.02 480,135.02Q480,135.02 480,135.02L270.44,238.8Z\"/></symbol><symbol id=\"i-add\" viewBox=\"0 0 960 960\"><path d=\"M434.5,525.5L237.37,525.5Q218.22,525.5 205.04,512.33Q191.87,499.15 191.87,480Q191.87,460.85 205.04,447.67Q218.22,434.5 237.37,434.5L434.5,434.5L434.5,237.37Q434.5,218.22 447.67,205.04Q460.85,191.87 480,191.87Q499.15,191.87 512.33,205.04Q525.5,218.22 525.5,237.37L525.5,434.5L722.63,434.5Q741.78,434.5 754.96,447.67Q768.13,460.85 768.13,480Q768.13,499.15 754.96,512.33Q741.78,525.5 722.63,525.5L525.5,525.5L525.5,722.63Q525.5,741.78 512.33,754.96Q499.15,768.13 480,768.13Q460.85,768.13 447.67,754.96Q434.5,741.78 434.5,722.63L434.5,525.5Z\"/></symbol><symbol id=\"i-arrow_back\" viewBox=\"0 0 960 960\"><path d=\"M326.15,525.5L512.83,712.17Q526.5,725.85 526.12,744.24Q525.74,762.63 512.07,776.3Q498.39,788.98 480,789.36Q461.61,789.74 447.93,776.07L183.93,512.07Q177.22,505.35 174.12,497.15Q171.02,488.96 171.02,480Q171.02,471.04 174.12,462.85Q177.22,454.65 183.93,447.93L448.17,183.7Q461.09,170.78 479.74,170.78Q498.39,170.78 512.07,183.7Q525.74,197.37 525.74,216.14Q525.74,234.91 512.07,248.59L326.15,434.5L762.63,434.5Q781.78,434.5 794.96,447.67Q808.13,460.85 808.13,480Q808.13,499.15 794.96,512.33Q781.78,525.5 762.63,525.5L326.15,525.5Z\"/></symbol><symbol id=\"i-backspace\" viewBox=\"0 0 960 960\"><path d=\"M363.35,768.13Q340.96,768.13 321.18,758.17Q301.41,748.22 288.98,730.07L149.41,532.46Q132.5,508.59 132.5,480Q132.5,451.41 149.41,427.54L288.98,229.93Q301.41,212.02 321.18,201.95Q340.96,191.87 363.35,191.87L757.13,191.87Q794.67,191.87 821.4,218.6Q848.13,245.33 848.13,282.87L848.13,677.13Q848.13,714.67 821.4,741.4Q794.67,768.13 757.13,768.13L363.35,768.13ZM560.24,540.07L628.83,608.65Q640.78,620.61 658.86,620.49Q676.93,620.37 688.89,608.41Q700.85,596.46 700.85,578.38Q700.85,560.3 688.89,548.35L620.3,480L688.89,411.41Q700.85,399.46 700.85,381.38Q700.85,363.3 688.89,351.35Q676.93,339.39 658.86,339.39Q640.78,339.39 628.83,351.35L560.24,419.93L491.65,351.35Q479.7,339.39 461.74,339.39Q443.78,339.39 431.83,351.35Q419.87,363.3 419.87,381.38Q419.87,399.46 431.83,411.41L500.17,480L431.59,548.59Q419.63,560.54 419.75,578.5Q419.87,596.46 431.83,608.41Q443.78,620.37 461.86,620.37Q479.93,620.37 491.89,608.41L560.24,540.07Z\"/></symbol><symbol id=\"i-check\" viewBox=\"0 0 960 960\"><path d=\"M382,597.87L716.7,263.17Q730.37,249.5 748.76,249.5Q767.15,249.5 780.83,263.17Q794.5,276.85 794.5,295.62Q794.5,314.39 780.83,328.07L414.07,695.59Q400.39,709.26 382,709.26Q363.61,709.26 349.93,695.59L178.41,524.07Q164.74,510.39 165.12,491.62Q165.5,472.85 179.17,459.17Q192.85,445.5 211.62,445.5Q230.39,445.5 244.07,459.17L382,597.87Z\"/></symbol><symbol id=\"i-checkroom\" viewBox=\"0 0 960 960\"><path d=\"M256.02,717.13L704.22,717.13L480.24,550.52L256.02,717.13ZM427.39,277.43Q421.91,289.87 410.98,297.83Q400.04,305.78 385.37,305.78Q366.22,305.78 353.04,292.61Q339.87,279.43 339.87,260.28Q339.87,254.8 340.49,250.59Q341.11,246.37 343.35,241.89Q361.3,201.5 398.46,176.68Q435.61,151.87 480.24,151.87Q541.83,151.87 585.34,194.88Q628.85,237.89 628.85,299.48Q628.85,347.91 600.27,385.87Q571.7,423.83 525.5,439.26L525.5,470.72L869.98,726.33Q878.93,732.28 883.65,741.86Q888.37,751.43 888.37,762.63Q888.37,781.78 875.08,794.96Q861.78,808.13 842.63,808.13L117.61,808.13Q98.46,808.13 85.16,794.96Q71.87,781.78 71.87,762.63Q71.87,751.43 76.59,741.86Q81.3,732.28 90.26,726.33L434.74,470.72L434.74,403.11Q434.74,383.96 448.29,370.9Q461.85,357.85 481,357.85Q505.04,357.85 521.45,340.68Q537.85,323.52 537.85,299.48Q537.85,275.67 520.95,259.27Q504.04,242.87 480.24,242.87Q462.96,242.87 448.55,252.01Q434.15,261.15 427.39,277.43Z\"/></symbol><symbol id=\"i-chevron_left\" viewBox=\"0 0 960 960\"><path d=\"M439.65,480L591.83,632.17Q604.5,644.85 604.5,664Q604.5,683.15 591.83,695.83Q579.15,708.5 560,708.5Q540.85,708.5 528.17,695.83L344.41,512.07Q337.7,505.35 334.6,497.15Q331.5,488.96 331.5,480Q331.5,471.04 334.6,462.85Q337.7,454.65 344.41,447.93L528.17,264.17Q540.85,251.5 560,251.5Q579.15,251.5 591.83,264.17Q604.5,276.85 604.5,296Q604.5,315.15 591.83,327.83L439.65,480Z\"/></symbol><symbol id=\"i-chevron_right\" viewBox=\"0 0 960 960\"><path d=\"M496.35,480L344.17,327.83Q331.5,315.15 331.5,296Q331.5,276.85 344.17,264.17Q356.85,251.5 376,251.5Q395.15,251.5 407.83,264.17L591.59,447.93Q598.3,454.65 601.4,462.85Q604.5,471.04 604.5,480Q604.5,488.96 601.4,497.15Q598.3,505.35 591.59,512.07L407.83,695.83Q395.15,708.5 376,708.5Q356.85,708.5 344.17,695.83Q331.5,683.15 331.5,664Q331.5,644.85 344.17,632.17L496.35,480Z\"/></symbol><symbol id=\"i-child_care\" viewBox=\"0 0 960 960\"><path d=\"M580,473.35Q601.8,473.35 616.86,458.29Q631.91,443.24 631.91,421.43Q631.91,399.63 616.86,384.58Q601.8,369.52 580,369.52Q558.2,369.52 543.14,384.58Q528.09,399.63 528.09,421.43Q528.09,443.24 543.14,458.29Q558.2,473.35 580,473.35ZM380,473.35Q401.8,473.35 416.86,458.29Q431.91,443.24 431.91,421.43Q431.91,399.63 416.86,384.58Q401.8,369.52 380,369.52Q358.2,369.52 343.14,384.58Q328.09,399.63 328.09,421.43Q328.09,443.24 343.14,458.29Q358.2,473.35 380,473.35ZM480.03,680Q540.96,680 590.17,646.28Q639.39,612.57 661.91,557.13L298.09,557.13Q320.61,612.57 369.86,646.28Q419.11,680 480.03,680ZM480,848.13Q403.57,848.13 336.51,819.03Q269.46,789.93 219.76,740.24Q170.07,690.54 140.97,623.49Q111.87,556.43 111.87,480Q111.87,403.57 140.97,336.51Q170.07,269.46 219.76,219.76Q269.46,170.07 336.51,140.97Q403.57,111.87 480,111.87Q556.43,111.87 623.49,140.97Q690.54,170.07 740.24,219.76Q789.93,269.46 819.03,336.51Q848.13,403.57 848.13,480Q848.13,556.43 819.03,623.49Q789.93,690.54 740.24,740.24Q690.54,789.93 623.49,819.03Q556.43,848.13 480,848.13ZM496.48,342.15Q515.63,342.15 536.41,334.82Q557.2,327.48 557.2,305.2Q557.2,292.48 548.48,283.24Q539.76,274 527.33,274Q519.04,274 511.47,277Q503.89,280 494.8,280Q475.24,280 461.58,266.46Q447.91,252.91 447.91,232.63Q447.91,222.35 451.29,214.97Q454.67,207.59 461.2,203.63Q442.03,205.69 423.87,208.78Q405.72,211.87 388.24,218.87Q387,222.35 386.5,226.47Q386,230.59 386,234.07Q386,278.28 418.26,310.22Q450.52,342.15 496.48,342.15Z\"/></symbol><symbol id=\"i-content_paste\" viewBox=\"0 0 960 960\"><path d=\"M202.87,848.13Q165.33,848.13 138.6,821.4Q111.87,794.67 111.87,757.13L111.87,202.87Q111.87,165.33 138.6,138.6Q165.33,111.87 202.87,111.87L360.78,111.87Q373.22,76.15 406.72,53.41Q440.22,30.67 480,30.67Q521.2,30.67 554.37,53.41Q587.54,76.15 600.22,111.87L757.13,111.87Q794.67,111.87 821.4,138.6Q848.13,165.33 848.13,202.87L848.13,757.13Q848.13,794.67 821.4,821.4Q794.67,848.13 757.13,848.13L202.87,848.13ZM202.87,757.13L757.13,757.13Q757.13,757.13 757.13,757.13Q757.13,757.13 757.13,757.13L757.13,202.87Q757.13,202.87 757.13,202.87Q757.13,202.87 757.13,202.87L678.8,202.87L678.8,281.2Q678.8,300.35 665.63,313.52Q652.46,326.7 633.3,326.7L326.7,326.7Q307.54,326.7 294.37,313.52Q281.2,300.35 281.2,281.2L281.2,202.87L202.87,202.87Q202.87,202.87 202.87,202.87Q202.87,202.87 202.87,202.87L202.87,757.13Q202.87,757.13 202.87,757.13Q202.87,757.13 202.87,757.13ZM480,199.28Q497,199.28 508.5,187.78Q520,176.28 520,159.28Q520,142.28 508.5,130.78Q497,119.28 480,119.28Q463,119.28 451.5,130.78Q440,142.28 440,159.28Q440,176.28 451.5,187.78Q463,199.28 480,199.28Z\"/></symbol><symbol id=\"i-directions_bus\" viewBox=\"0 0 960 960\"><path d=\"M320.72,773.15L320.72,788.85Q320.72,815.64 301.96,834.4Q283.21,853.15 256.41,853.15Q229.74,853.15 210.8,834.22Q191.87,815.28 191.87,788.61L191.87,726.13Q173.87,705.37 162.87,679.93Q151.87,654.5 151.87,625.02L151.87,242.15Q151.87,155.09 230.9,114.55Q309.93,74.02 480.1,74.02Q656.42,74.02 732.27,112.9Q808.13,151.78 808.13,242.15L808.13,625.02Q808.13,654.5 797.13,679.93Q786.13,705.37 768.13,726.13L768.13,788.85Q768.13,815.64 749.38,834.4Q730.62,853.15 703.83,853.15Q677.15,853.15 658.22,834.22Q639.28,815.28 639.28,788.61L639.28,773.15L320.72,773.15ZM242.87,405.02L717.13,405.02L717.13,285.02L242.87,285.02L242.87,405.02ZM341.43,643.59Q366.43,643.59 383.93,626.09Q401.43,608.59 401.43,583.59Q401.43,558.59 383.93,541.09Q366.43,523.59 341.43,523.59Q316.43,523.59 298.93,541.09Q281.43,558.59 281.43,583.59Q281.43,608.59 298.93,626.09Q316.43,643.59 341.43,643.59ZM618.57,643.59Q643.57,643.59 661.07,626.09Q678.57,608.59 678.57,583.59Q678.57,558.59 661.07,541.09Q643.57,523.59 618.57,523.59Q593.57,523.59 576.07,541.09Q558.57,558.59 558.57,583.59Q558.57,608.59 576.07,626.09Q593.57,643.59 618.57,643.59Z\"/></symbol><symbol id=\"i-edit_note\" viewBox=\"0 0 960 960\"><path d=\"M197.37,577.7Q178.22,577.7 165.04,564.52Q151.87,551.35 151.87,532.2Q151.87,513.04 165.04,499.87Q178.22,486.7 197.37,486.7L400.96,486.7Q420.11,486.7 433.28,499.87Q446.46,513.04 446.46,532.2Q446.46,551.35 433.28,564.52Q420.11,577.7 400.96,577.7L197.37,577.7ZM197.37,410.28Q178.22,410.28 165.04,397.11Q151.87,383.93 151.87,364.78Q151.87,345.63 165.04,332.46Q178.22,319.28 197.37,319.28L557.37,319.28Q576.52,319.28 589.7,332.46Q602.87,345.63 602.87,364.78Q602.87,383.93 589.7,397.11Q576.52,410.28 557.37,410.28L197.37,410.28ZM197.37,242.87Q178.22,242.87 165.04,229.7Q151.87,216.52 151.87,197.37Q151.87,178.22 165.04,165.04Q178.22,151.87 197.37,151.87L557.37,151.87Q576.52,151.87 589.7,165.04Q602.87,178.22 602.87,197.37Q602.87,216.52 589.7,229.7Q576.52,242.87 557.37,242.87L197.37,242.87ZM518.57,762.63L518.57,697.59Q518.57,688.39 522.04,680.05Q525.52,671.72 532.24,665L741,457Q750.72,447.28 762.55,442.92Q774.39,438.57 786.35,438.57Q799.3,438.57 811.14,443.42Q822.98,448.28 832.7,458L869.7,495Q878.41,504.72 883.27,516.55Q888.13,528.39 888.13,540.35Q888.13,552.54 883.77,564.76Q879.41,576.98 869.7,586.7L661.7,794.7Q654.98,801.41 646.64,804.77Q638.3,808.13 629.11,808.13L564.07,808.13Q544.91,808.13 531.74,794.96Q518.57,781.78 518.57,762.63ZM788.74,576.96L823.35,540.35L786.35,503.35L750.74,538.96L788.74,576.96ZM583.35,743.35L621.35,743.35L741.39,622.3L723.39,603.3L704.39,585.3L583.35,705.35L583.35,743.35ZM583.35,743.35L583.35,705.35L704.39,585.3L741.39,622.3L621.35,743.35L583.35,743.35Z\"/></symbol><symbol id=\"i-error\" viewBox=\"0 0 960 960\"><path d=\"M479.95,688.13Q499.87,688.13 513.4,674.65Q526.93,661.17 526.93,641.25Q526.93,621.33 513.46,607.67Q499.98,594.02 480.05,594.02Q460.13,594.02 446.6,607.67Q433.07,621.33 433.07,641.25Q433.07,661.17 446.54,674.65Q460.02,688.13 479.95,688.13ZM480,520.48Q499.15,520.48 512.33,507.3Q525.5,494.13 525.5,474.98L525.5,320.48Q525.5,301.33 512.33,288.15Q499.15,274.98 480,274.98Q460.85,274.98 447.67,288.15Q434.5,301.33 434.5,320.48L434.5,474.98Q434.5,494.13 447.67,507.3Q460.85,520.48 480,520.48ZM480,888.13Q395.09,888.13 320.66,856.01Q246.22,823.89 191.16,768.84Q136.11,713.78 103.99,639.34Q71.87,564.91 71.87,480Q71.87,395.09 103.99,320.66Q136.11,246.22 191.16,191.16Q246.22,136.11 320.66,103.99Q395.09,71.87 480,71.87Q564.91,71.87 639.34,103.99Q713.78,136.11 768.84,191.16Q823.89,246.22 856.01,320.66Q888.13,395.09 888.13,480Q888.13,564.91 856.01,639.34Q823.89,713.78 768.84,768.84Q713.78,823.89 639.34,856.01Q564.91,888.13 480,888.13Z\"/></symbol><symbol id=\"i-event\" viewBox=\"0 0 960 960\"><path d=\"M580,720Q538,720 509,691Q480,662 480,620Q480,578 509,549Q538,520 580,520Q622,520 651,549Q680,578 680,620Q680,662 651,691Q622,720 580,720ZM202.87,888.13Q165.09,888.13 138.48,861.52Q111.87,834.91 111.87,797.13L111.87,242.87Q111.87,205.09 138.48,178.48Q165.09,151.87 202.87,151.87L240,151.87L240,114.5Q240,96.54 252.46,84.21Q264.91,71.87 282.87,71.87Q300.83,71.87 313.16,84.21Q325.5,96.54 325.5,114.5L325.5,151.87L634.5,151.87L634.5,114.5Q634.5,96.54 646.96,84.21Q659.41,71.87 677.37,71.87Q695.33,71.87 707.66,84.21Q720,96.54 720,114.5L720,151.87L757.13,151.87Q794.91,151.87 821.52,178.48Q848.13,205.09 848.13,242.87L848.13,797.13Q848.13,834.91 821.52,861.52Q794.91,888.13 757.13,888.13L202.87,888.13ZM202.87,797.13L757.13,797.13Q757.13,797.13 757.13,797.13Q757.13,797.13 757.13,797.13L757.13,400L202.87,400L202.87,797.13Q202.87,797.13 202.87,797.13Q202.87,797.13 202.87,797.13Z\"/></symbol><symbol id=\"i-fitness_center\" viewBox=\"0 0 960 960\"><path d=\"M283.43,347.09L172.07,458.46Q159.63,470.89 141.82,471.15Q124,471.41 110.8,458.22Q98.37,445.78 97.99,427.85Q97.61,409.91 110.04,396.72L135.93,370.07L112,346.13Q98.33,332.46 98.33,314.07Q98.33,295.67 112,282L164.41,229.59L139.48,203.89Q126.8,191.22 126.8,172.45Q126.8,153.67 140.24,140.24Q152.91,127.57 171.68,127.18Q190.46,126.8 203.89,139.48L229.59,164.41L282,112Q295.67,98.33 314.07,98.33Q332.46,98.33 346.13,112L370.07,135.93L396.96,109.8Q409.39,97.37 427.33,97.37Q445.26,97.37 458.46,110.57Q470.89,123 470.89,141.32Q470.89,159.63 458.46,172.07L347.09,283.43L676.57,612.91L787.93,501.54Q800.37,489.11 818.3,488.73Q836.24,488.35 849.43,501.54Q861.87,513.98 862.25,531.91Q862.63,549.85 850.2,563.04L824.07,589.93L848,613.87Q861.67,627.54 861.67,645.93Q861.67,664.33 848,678L795.59,730.41L820.52,756.11Q833.2,768.78 833.2,787.55Q833.2,806.33 819.76,819.76Q807.09,832.43 788.32,832.82Q769.54,833.2 756.11,820.52L730.41,795.59L678,848Q664.33,861.67 645.93,861.67Q627.54,861.67 613.87,848L589.93,824.07L563.04,850.2Q550.61,862.63 532.79,862.51Q514.98,862.39 501.78,849.2Q489.35,836.76 489.35,818.45Q489.35,800.13 501.78,787.7L612.91,676.57L283.43,347.09Z\"/></symbol><symbol id=\"i-flight\" viewBox=\"0 0 960 960\"><path d=\"M480,846.7L376.76,875.7Q360.61,880.41 347.2,870.24Q333.78,860.07 333.78,843.67Q333.78,829.52 337.26,820.95Q340.74,812.37 346.93,807.65L414.5,758.09L414.5,546.46L127.33,631.02Q105.93,636.74 88.9,624.18Q71.87,611.63 71.87,589.24Q71.87,572.09 77.59,560.89Q83.3,549.7 93.5,543.98L414.5,355.46L414.5,137.37Q414.5,109.98 433.55,90.92Q452.61,71.87 480,71.87Q507.39,71.87 526.45,90.92Q545.5,109.98 545.5,137.37L545.5,355.46L866.5,543.98Q876.7,549.7 882.41,560.89Q888.13,572.09 888.13,589.24Q888.13,611.63 871.1,624.18Q854.07,636.74 832.67,631.02L545.5,546.46L545.5,758.09L613.07,807.65Q619.26,812.37 622.74,820.95Q626.22,829.52 626.22,843.67Q626.22,860.07 612.8,870.24Q599.39,880.41 583.24,875.7L480,846.7Z\"/></symbol><symbol id=\"i-home\" viewBox=\"0 0 960 960\"><path d=\"M151.87,757.13L151.87,401.43Q151.87,379.8 161.45,360.53Q171.02,341.26 188.17,328.59L425.3,150.74Q449.41,132.35 480,132.35Q510.59,132.35 534.7,150.74L771.83,328.59Q788.98,341.26 798.55,360.53Q808.13,379.8 808.13,401.43L808.13,757.13Q808.13,794.91 781.52,821.52Q754.91,848.13 717.13,848.13L607.41,848.13Q588.26,848.13 575.09,834.96Q561.91,821.78 561.91,802.63L561.91,603.59Q561.91,584.43 548.74,571.26Q535.57,558.09 516.41,558.09L443.59,558.09Q424.43,558.09 411.26,571.26Q398.09,584.43 398.09,603.59L398.09,802.63Q398.09,821.78 384.91,834.96Q371.74,848.13 352.59,848.13L242.87,848.13Q205.09,848.13 178.48,821.52Q151.87,794.91 151.87,757.13Z\"/></symbol><symbol id=\"i-insights\" viewBox=\"0 0 24 24\"><path d=\"M3.1,20.1Q2.175,20.1 1.538,19.462Q0.9,18.825 0.9,17.9Q0.9,17 1.55,16.363Q2.2,15.725 3.1,15.725Q3.25,15.725 3.388,15.725Q3.525,15.725 3.65,15.775L7.875,11.575Q7.825,11.425 7.825,11.287Q7.825,11.15 7.825,11Q7.825,10.1 8.463,9.462Q9.1,8.825 10,8.825Q10.9,8.825 11.538,9.462Q12.175,10.1 12.175,11Q12.175,11.1 12.125,11.55L14.45,13.875Q14.6,13.825 14.725,13.825Q14.85,13.825 15,13.825Q15.15,13.825 15.288,13.825Q15.425,13.825 15.55,13.875L18.775,10.65Q18.725,10.525 18.725,10.387Q18.725,10.25 18.725,10.1Q18.725,9.2 19.363,8.55Q20,7.9 20.9,7.9Q21.825,7.9 22.463,8.537Q23.1,9.175 23.1,10.1Q23.1,11 22.45,11.637Q21.8,12.275 20.9,12.275Q20.75,12.275 20.613,12.275Q20.475,12.275 20.35,12.225L17.125,15.45Q17.175,15.575 17.175,15.712Q17.175,15.85 17.175,16Q17.175,16.9 16.538,17.538Q15.9,18.175 15,18.175Q14.1,18.175 13.463,17.538Q12.825,16.9 12.825,16Q12.825,15.85 12.825,15.712Q12.825,15.575 12.875,15.425L10.575,13.125Q10.425,13.175 10.288,13.175Q10.15,13.175 10,13.175Q9.9,13.175 9.45,13.125L5.225,17.35Q5.275,17.5 5.275,17.625Q5.275,17.75 5.275,17.9Q5.275,18.8 4.638,19.45Q4,20.1 3.1,20.1ZM4,10.125 L3.325,8.675 1.875,8 3.325,7.325 4,5.875 4.675,7.325 6.125,8 4.675,8.675ZM15,9.225 L13.975,7.025 11.775,6 13.975,4.975 15,2.775 16.025,4.975 18.225,6 16.025,7.025Z\"/></symbol><symbol id=\"i-keyboard_arrow_down\" viewBox=\"0 0 960 960\"><path d=\"M480,604.5Q471.04,604.5 462.85,601.4Q454.65,598.3 447.93,591.59L264.17,407.83Q251.5,395.15 251.5,376Q251.5,356.85 264.17,344.17Q276.85,331.5 296,331.5Q315.15,331.5 327.83,344.17L480,496.35L632.17,344.17Q644.85,331.5 664,331.5Q683.15,331.5 695.83,344.17Q708.5,356.85 708.5,376Q708.5,395.15 695.83,407.83L512.07,591.59Q505.35,598.3 497.15,601.4Q488.96,604.5 480,604.5Z\"/></symbol><symbol id=\"i-local_cafe\" viewBox=\"0 0 960 960\"><path d=\"M197.37,848.13Q178.22,848.13 165.04,834.96Q151.87,821.78 151.87,802.63Q151.87,783.48 165.04,770.3Q178.22,757.13 197.37,757.13L762.63,757.13Q781.78,757.13 794.96,770.3Q808.13,783.48 808.13,802.63Q808.13,821.78 794.96,834.96Q781.78,848.13 762.63,848.13L197.37,848.13ZM318.33,681.91Q249.46,681.91 200.66,633.12Q151.87,584.33 151.87,515.46L151.87,202.87Q151.87,165.09 178.48,138.48Q205.09,111.87 242.87,111.87L797.37,111.87Q834.91,111.87 861.52,138.6Q888.13,165.33 888.13,202.63L888.13,322.63Q888.13,359.93 861.52,386.66Q834.91,413.39 797.37,413.39L721.91,413.39L721.91,515.46Q721.91,584.33 673,633.12Q624.09,681.91 555.22,681.91L318.33,681.91ZM721.91,322.63L797.13,322.63Q797.13,322.63 797.13,322.63Q797.13,322.63 797.13,322.63L797.13,202.63Q797.13,202.63 797.13,202.63Q797.13,202.63 797.13,202.63L721.91,202.63L721.91,322.63Z\"/></symbol><symbol id=\"i-medical_services\" viewBox=\"0 0 960 960\"><path d=\"M162.87,888.13Q125.09,888.13 98.48,861.52Q71.87,834.91 71.87,797.13L71.87,326.7Q71.87,288.91 98.48,262.3Q125.09,235.7 162.87,235.7L312.59,235.7L312.59,155.7Q312.59,117.91 339.2,91.3Q365.8,64.7 403.59,64.7L556.41,64.7Q594.2,64.7 620.8,91.3Q647.41,117.91 647.41,155.7L647.41,235.7L797.13,235.7Q834.91,235.7 861.52,262.3Q888.13,288.91 888.13,326.7L888.13,797.13Q888.13,834.91 861.52,861.52Q834.91,888.13 797.13,888.13L162.87,888.13ZM403.59,235.7L556.41,235.7L556.41,155.7Q556.41,155.7 556.41,155.7Q556.41,155.7 556.41,155.7L403.59,155.7Q403.59,155.7 403.59,155.7Q403.59,155.7 403.59,155.7L403.59,235.7ZM434.5,607.41L434.5,681.91Q434.5,701.07 447.67,714.24Q460.85,727.41 480,727.41Q499.15,727.41 512.33,714.24Q525.5,701.07 525.5,681.91L525.5,607.41L600,607.41Q619.15,607.41 632.33,594.24Q645.5,581.07 645.5,561.91Q645.5,542.76 632.33,529.59Q619.15,516.41 600,516.41L525.5,516.41L525.5,441.91Q525.5,422.76 512.33,409.59Q499.15,396.41 480,396.41Q460.85,396.41 447.67,409.59Q434.5,422.76 434.5,441.91L434.5,516.41L360,516.41Q340.85,516.41 327.67,529.59Q314.5,542.76 314.5,561.91Q314.5,581.07 327.67,594.24Q340.85,607.41 360,607.41L434.5,607.41Z\"/></symbol><symbol id=\"i-pets\" viewBox=\"0 0 960 960\"><path d=\"M173.3,481.41Q130.6,481.41 101.12,451.86Q71.63,422.3 71.63,379.5Q71.63,336.7 101.12,307.14Q130.61,277.59 173.31,277.59Q216.02,277.59 245.62,307.14Q275.22,336.7 275.22,379.5Q275.22,422.3 245.66,451.86Q216.11,481.41 173.3,481.41ZM357.37,318.3Q314.67,318.3 285.18,288.82Q255.7,259.33 255.7,216.62Q255.7,173.91 285.18,144.32Q314.67,114.72 357.38,114.72Q400.09,114.72 429.68,144.27Q459.28,173.83 459.28,216.63Q459.28,259.33 429.73,288.82Q400.17,318.3 357.37,318.3ZM602.62,318.3Q559.91,318.3 530.32,288.82Q500.72,259.33 500.72,216.62Q500.72,173.91 530.27,144.32Q559.83,114.72 602.63,114.72Q645.33,114.72 674.82,144.27Q704.3,173.83 704.3,216.63Q704.3,259.33 674.82,288.82Q645.33,318.3 602.62,318.3ZM786.69,481.41Q743.98,481.41 714.38,451.86Q684.78,422.3 684.78,379.5Q684.78,336.7 714.34,307.14Q743.89,277.59 786.7,277.59Q829.4,277.59 858.88,307.14Q888.37,336.7 888.37,379.5Q888.37,422.3 858.88,451.86Q829.39,481.41 786.69,481.41ZM263.85,890.02Q217.41,890.02 186.2,854.68Q154.98,819.35 154.98,770.91Q154.98,717.96 191.2,678.6Q227.41,639.24 262.41,600.28Q291.17,568.33 312.65,531.71Q334.13,495.09 363.37,462.85Q385.83,436.23 415.44,418.82Q445.04,401.41 480,401.41Q514.96,401.41 544.55,417.89Q574.15,434.37 596.87,460.85Q625.15,493.14 646.87,530.47Q668.59,567.8 697.59,600.28Q732.59,639.24 768.8,678.6Q805.02,717.96 805.02,770.91Q805.02,819.35 773.8,854.68Q742.59,890.02 696.15,890.02Q641.43,890.02 588.08,880.9Q534.72,871.78 480,871.78Q425.28,871.78 371.92,880.9Q318.57,890.02 263.85,890.02Z\"/></symbol><symbol id=\"i-phone_iphone\" viewBox=\"0 0 960 960\"><path d=\"M283.59,927.41Q245.8,927.41 219.2,900.8Q192.59,874.2 192.59,836.41L192.59,123.59Q192.59,85.8 219.2,59.2Q245.8,32.59 283.59,32.59L676.41,32.59Q714.2,32.59 740.8,59.2Q767.41,85.8 767.41,123.59L767.41,836.41Q767.41,874.2 740.8,900.8Q714.2,927.41 676.41,927.41L283.59,927.41ZM480,816.41Q497,816.41 508.5,804.91Q520,793.41 520,776.41Q520,759.41 508.5,747.91Q497,736.41 480,736.41Q463,736.41 451.5,747.91Q440,759.41 440,776.41Q440,793.41 451.5,804.91Q463,816.41 480,816.41ZM283.59,636.41L676.41,636.41L676.41,243.59L283.59,243.59L283.59,636.41Z\"/></symbol><symbol id=\"i-receipt_long\" viewBox=\"0 0 960 960\"><path d=\"M241.2,894.59Q186.61,894.59 148.4,856.38Q110.2,818.17 110.2,763.59L110.2,681.2Q110.2,662.04 123.37,648.87Q136.54,635.7 155.7,635.7L233.78,635.7L233.78,101.61Q233.78,93.65 240.62,90.67Q247.46,87.7 253.17,93.41L280.02,120.26Q286.74,126.98 295.93,126.86Q305.13,126.74 311.85,120.02L341.46,90.41Q348.17,83.7 357.37,83.7Q366.57,83.7 373.28,90.41L402.89,120.02Q409.61,126.74 418.8,126.74Q428,126.74 434.72,120.02L464.57,90.41Q471.28,83.7 480.48,83.7Q489.67,83.7 496.39,90.41L526,120.02Q532.72,126.74 541.91,126.74Q551.11,126.74 557.83,120.02L587.43,90.41Q594.15,83.7 603.35,83.7Q612.54,83.7 619.26,90.41L648.87,120.02Q655.59,126.74 664.78,126.74Q673.98,126.74 680.7,120.02L710.3,90.41Q717.02,83.7 726.22,83.7Q735.41,83.7 742.13,90.41L771.74,120.02Q778.46,126.74 787.65,126.86Q796.85,126.98 803.57,120.26L830.41,93.41Q836.13,87.7 842.97,90.67Q849.8,93.65 849.8,101.61L849.8,763.59Q849.8,818.17 811.6,856.38Q773.39,894.59 718.8,894.59L241.2,894.59ZM718.8,803.59Q735.8,803.59 747.3,792.09Q758.8,780.59 758.8,763.59L758.8,206.7L324.78,206.7L324.78,635.7L633.3,635.7Q652.46,635.7 665.63,648.87Q678.8,662.04 678.8,681.2L678.8,763.59Q678.8,780.59 690.3,792.09Q701.8,803.59 718.8,803.59ZM404.78,288.61L558.8,288.61Q575.8,288.61 587.3,300.11Q598.8,311.61 598.8,328.61Q598.8,345.61 587.3,357.11Q575.8,368.61 558.8,368.61L404.78,368.61Q387.78,368.61 376.28,357.11Q364.78,345.61 364.78,328.61Q364.78,311.61 376.28,300.11Q387.78,288.61 404.78,288.61ZM404.78,408.61L558.8,408.61Q575.8,408.61 587.3,420.11Q598.8,431.61 598.8,448.61Q598.8,465.61 587.3,477.11Q575.8,488.61 558.8,488.61L404.78,488.61Q387.78,488.61 376.28,477.11Q364.78,465.61 364.78,448.61Q364.78,431.61 376.28,420.11Q387.78,408.61 404.78,408.61ZM678.8,368.61Q661.8,368.61 650.3,357.11Q638.8,345.61 638.8,328.61Q638.8,311.61 650.3,300.11Q661.8,288.61 678.8,288.61Q695.8,288.61 707.3,300.11Q718.8,311.61 718.8,328.61Q718.8,345.61 707.3,357.11Q695.8,368.61 678.8,368.61ZM678.8,488.61Q661.8,488.61 650.3,477.11Q638.8,465.61 638.8,448.61Q638.8,431.61 650.3,420.11Q661.8,408.61 678.8,408.61Q695.8,408.61 707.3,420.11Q718.8,431.61 718.8,448.61Q718.8,465.61 707.3,477.11Q695.8,488.61 678.8,488.61Z\"/></symbol><symbol id=\"i-receipt_long_outlined\" viewBox=\"0 0 960 960\"><path d=\"M241.2,894.59Q186.61,894.59 148.4,856.38Q110.2,818.17 110.2,763.59L110.2,681.2Q110.2,662.04 123.37,648.87Q136.54,635.7 155.7,635.7L233.78,635.7L233.78,101.61Q233.78,93.65 240.62,90.67Q247.46,87.7 253.17,93.41L280.02,120.26Q286.74,126.98 295.93,126.86Q305.13,126.74 311.85,120.02L341.46,90.41Q348.17,83.7 357.37,83.7Q366.57,83.7 373.28,90.41L402.89,120.02Q409.61,126.74 418.8,126.74Q428,126.74 434.72,120.02L464.57,90.41Q471.28,83.7 480.48,83.7Q489.67,83.7 496.39,90.41L526,120.02Q532.72,126.74 541.91,126.74Q551.11,126.74 557.83,120.02L587.43,90.41Q594.15,83.7 603.35,83.7Q612.54,83.7 619.26,90.41L648.87,120.02Q655.59,126.74 664.78,126.74Q673.98,126.74 680.7,120.02L710.3,90.41Q717.02,83.7 726.22,83.7Q735.41,83.7 742.13,90.41L771.74,120.02Q778.46,126.74 787.65,126.86Q796.85,126.98 803.57,120.26L830.41,93.41Q836.13,87.7 842.97,90.67Q849.8,93.65 849.8,101.61L849.8,763.59Q849.8,818.17 811.6,856.38Q773.39,894.59 718.8,894.59L241.2,894.59ZM718.8,803.59Q735.8,803.59 747.3,792.09Q758.8,780.59 758.8,763.59L758.8,206.7L324.78,206.7L324.78,635.7L633.3,635.7Q652.46,635.7 665.63,648.87Q678.8,662.04 678.8,681.2L678.8,763.59Q678.8,780.59 690.3,792.09Q701.8,803.59 718.8,803.59ZM404.78,288.61L558.8,288.61Q575.8,288.61 587.3,300.11Q598.8,311.61 598.8,328.61Q598.8,345.61 587.3,357.11Q575.8,368.61 558.8,368.61L404.78,368.61Q387.78,368.61 376.28,357.11Q364.78,345.61 364.78,328.61Q364.78,311.61 376.28,300.11Q387.78,288.61 404.78,288.61ZM404.78,408.61L558.8,408.61Q575.8,408.61 587.3,420.11Q598.8,431.61 598.8,448.61Q598.8,465.61 587.3,477.11Q575.8,488.61 558.8,488.61L404.78,488.61Q387.78,488.61 376.28,477.11Q364.78,465.61 364.78,448.61Q364.78,431.61 376.28,420.11Q387.78,408.61 404.78,408.61ZM678.8,368.61Q661.8,368.61 650.3,357.11Q638.8,345.61 638.8,328.61Q638.8,311.61 650.3,300.11Q661.8,288.61 678.8,288.61Q695.8,288.61 707.3,300.11Q718.8,311.61 718.8,328.61Q718.8,345.61 707.3,357.11Q695.8,368.61 678.8,368.61ZM678.8,488.61Q661.8,488.61 650.3,477.11Q638.8,465.61 638.8,448.61Q638.8,431.61 650.3,420.11Q661.8,408.61 678.8,408.61Q695.8,408.61 707.3,420.11Q718.8,431.61 718.8,448.61Q718.8,465.61 707.3,477.11Q695.8,488.61 678.8,488.61ZM241.2,803.59L587.8,803.59L587.8,726.7L201.2,726.7L201.2,763.59Q201.2,780.59 212.7,792.09Q224.2,803.59 241.2,803.59ZM201.2,803.59Q201.2,803.59 201.2,792.09Q201.2,780.59 201.2,763.59L201.2,726.7L201.2,726.7L201.2,803.59L201.2,803.59Z\"/></symbol><symbol id=\"i-restaurant\" viewBox=\"0 0 960 960\"><path d=\"M276.41,356.41L276.41,120Q276.41,101.48 288.94,88.94Q301.48,76.41 320,76.41Q338.52,76.41 351.06,88.94Q363.59,101.48 363.59,120L363.59,356.41L403.59,356.41L403.59,120Q403.59,101.48 416.28,88.94Q428.98,76.41 447.41,76.41Q465.85,76.41 478.42,88.94Q491,101.48 491,120L491,356.41Q491,415.57 453.63,459.94Q416.26,504.3 363.59,518.3L363.59,840Q363.59,858.52 351.06,871.06Q338.52,883.59 320,883.59Q301.48,883.59 288.94,871.06Q276.41,858.52 276.41,840L276.41,518.3Q223.74,504.3 186.37,459.94Q149,415.57 149,356.41L149,120Q149,101.48 161.7,88.94Q174.39,76.41 192.83,76.41Q211.26,76.41 223.84,88.94Q236.41,101.48 236.41,120L236.41,356.41L276.41,356.41ZM687.41,563.59L612.91,563.59Q593.76,563.59 580.59,550.41Q567.41,537.24 567.41,518.09L567.41,280Q567.41,209.28 619.99,142.85Q672.57,76.41 728.04,76.41Q748.2,76.41 761.39,92.33Q774.59,108.24 774.59,129.63L774.59,840Q774.59,858.52 762.06,871.06Q749.52,883.59 731,883.59Q712.48,883.59 699.94,871.06Q687.41,858.52 687.41,840L687.41,563.59Z\"/></symbol><symbol id=\"i-school\" viewBox=\"0 0 960 960\"><path d=\"M839.52,639.76L839.52,408.07L523.26,579.96Q502.63,591.15 480,591.27Q457.37,591.39 436.74,579.96L106.15,399.78Q93.72,393.07 88.38,382.75Q83.04,372.43 83.04,360Q83.04,347.57 88.38,337.25Q93.72,326.93 106.15,320.22L436.74,140.28Q446.93,134.57 457.75,131.71Q468.57,128.85 480,128.85Q491.43,128.85 502.25,131.71Q513.07,134.57 523.26,140.28L903.07,347.33Q914.26,353.04 920.6,363.86Q926.93,374.67 926.93,387.11L926.93,640Q926.93,658.43 914.36,671.01Q901.78,683.59 883.35,683.59Q864.91,683.59 852.22,670.89Q839.52,658.2 839.52,639.76ZM436.74,819.72L244.39,716.02Q221.76,703.59 209.21,682.08Q196.65,660.57 196.65,635.46L196.65,493.5L436.74,623.54Q457.37,634.74 480,634.74Q502.63,634.74 523.26,623.54L763.35,493.5L763.35,635.46Q763.35,660.57 750.79,682.08Q738.24,703.59 715.61,716.02L523.26,819.72Q513.07,825.43 502.25,828.17Q491.43,830.91 480,830.91Q468.57,830.91 457.75,828.17Q446.93,825.43 436.74,819.72Z\"/></symbol><symbol id=\"i-settings\" viewBox=\"0 0 960 960\"><path d=\"M428.46,888.13Q400.26,888.13 379.92,869.53Q359.59,850.93 355.59,823.74L346.59,757.5Q335.5,753.22 325.55,747.17Q315.61,741.13 306.04,734.33L244.28,760.33Q218.33,771.57 192.13,762.45Q165.93,753.33 151.46,729.13L99.91,638.76Q85.43,614.8 91.55,587.73Q97.67,560.65 119.63,543.17L172.39,503.17Q171.63,497.13 171.63,491.59Q171.63,486.04 171.63,480Q171.63,473.96 171.63,468.41Q171.63,462.87 172.39,456.83L119.63,417.07Q97.43,399.59 91.43,372.51Q85.43,345.43 99.91,321.24L151.46,231.11Q165.93,207.15 192.01,197.91Q218.09,188.67 244.04,199.91L306.52,225.91Q316.09,219.11 326.17,213.18Q336.26,207.26 346.59,202.98L355.59,136.5Q359.59,109.07 379.92,90.47Q400.26,71.87 428.46,71.87L531.54,71.87Q559.74,71.87 580.08,90.47Q600.41,109.07 604.41,136.5L613.41,202.98Q624.5,207.26 634.45,213.18Q644.39,219.11 653.96,225.91L715.72,199.91Q741.67,188.67 767.87,197.91Q794.07,207.15 808.54,231.11L860.09,321.24Q874.57,345.43 868.57,372.51Q862.57,399.59 840.37,417.07L787.37,456.83Q788.13,462.87 788.13,468.41Q788.13,473.96 788.13,480Q788.13,486.04 788.01,491.59Q787.89,497.13 786.37,503.17L839.37,542.93Q861.57,560.41 867.57,587.49Q873.57,614.57 859.09,638.76L806.54,729.13Q792.07,753.09 765.99,762.33Q739.91,771.57 713.96,760.33L653.48,734.33Q643.91,741.13 633.83,747.17Q623.74,753.22 613.41,757.5L604.41,823.74Q600.41,850.93 580.08,869.53Q559.74,888.13 531.54,888.13L428.46,888.13ZM481.28,620Q539.28,620 580.28,579Q621.28,538 621.28,480Q621.28,422 580.28,381Q539.28,340 481.28,340Q422.52,340 381.9,381Q341.28,422 341.28,480Q341.28,538 381.9,579Q422.52,620 481.28,620Z\"/></symbol><symbol id=\"i-shopping_cart\" viewBox=\"0 0 960 960\"><path d=\"M280,883.59Q247,883.59 223.5,860.09Q200,836.59 200,803.59Q200,770.59 223.5,747.09Q247,723.59 280,723.59Q313,723.59 336.5,747.09Q360,770.59 360,803.59Q360,836.59 336.5,860.09Q313,883.59 280,883.59ZM680,883.59Q647,883.59 623.5,860.09Q600,836.59 600,803.59Q600,770.59 623.5,747.09Q647,723.59 680,723.59Q713,723.59 736.5,747.09Q760,770.59 760,803.59Q760,836.59 736.5,860.09Q713,883.59 680,883.59ZM210.15,156.41L791.07,156.41Q818.28,156.41 832.48,180.5Q846.67,204.59 833.52,229.41L697.02,476.09Q685.54,496.8 666.22,508.4Q646.89,520 623.91,520L328.07,520L286.22,596.41Q286.22,596.41 286.22,596.41Q286.22,596.41 286.22,596.41L720,596.41Q738.52,596.41 751.06,608.94Q763.59,621.48 763.59,640Q763.59,658.52 751.06,671.06Q738.52,683.59 720,683.59L280,683.59Q232.37,683.59 208.41,642.17Q184.46,600.76 206.65,560.09L259.93,464L117.85,163.59L80,163.59Q61.48,163.59 48.94,151.06Q36.41,138.52 36.41,120Q36.41,101.48 48.94,88.94Q61.48,76.41 80,76.41L143.57,76.41Q156.24,76.41 167.58,83.22Q178.92,90.03 184.59,102.52L210.15,156.41Z\"/></symbol><symbol id=\"i-theaters\" viewBox=\"0 0 960 960\"><path d=\"M241.91,769.09L241.91,801.91Q241.91,820.44 229.38,832.97Q216.85,845.5 198.33,845.5Q179.89,845.5 167.2,832.8Q154.5,820.11 154.5,801.67L154.5,158.09Q154.5,139.56 167.2,127.03Q179.89,114.5 198.33,114.5Q216.76,114.5 229.34,127.03Q241.91,139.56 241.91,158.09L241.91,190.91L318.09,190.91L318.09,160Q318.09,140.85 331.26,127.67Q344.43,114.5 363.59,114.5L596.41,114.5Q615.57,114.5 628.74,127.67Q641.91,140.85 641.91,160L641.91,190.91L718.09,190.91L718.09,158.09Q718.09,139.56 730.78,127.03Q743.48,114.5 761.91,114.5Q780.35,114.5 792.92,127.03Q805.5,139.56 805.5,158.09L805.5,801.91Q805.5,820.44 792.97,832.97Q780.44,845.5 761.91,845.5Q743.48,845.5 730.78,832.8Q718.09,820.11 718.09,801.67L718.09,769.09L641.91,769.09L641.91,800Q641.91,819.15 628.74,832.33Q615.57,845.5 596.41,845.5L363.59,845.5Q344.43,845.5 331.26,832.33Q318.09,819.15 318.09,800L318.09,769.09L241.91,769.09ZM241.91,681.91L318.09,681.91L318.09,605.5L241.91,605.5L241.91,681.91ZM241.91,518.09L318.09,518.09L318.09,441.91L241.91,441.91L241.91,518.09ZM241.91,354.5L318.09,354.5L318.09,278.09L241.91,278.09L241.91,354.5ZM641.91,681.91L718.09,681.91L718.09,605.5L641.91,605.5L641.91,681.91ZM641.91,518.09L718.09,518.09L718.09,441.91L641.91,441.91L641.91,518.09ZM641.91,354.5L718.09,354.5L718.09,278.09L641.91,278.09L641.91,354.5Z\"/></symbol><symbol id=\"i-flag\" viewBox=\"0 -960 960 960\"><path d=\"M240-400v280h-80v-680h372l20 80h208v400H500l-20-80H240Z\"/></symbol><symbol id=\"i-close\" viewBox=\"0 -960 960 960\"><path d=\"m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z\"/></symbol><symbol id=\"i-trending_down\" viewBox=\"0 -960 960 960\"><path d=\"M640-240v-80h104L536-526 376-366 80-664l56-56 240 240 160-160 264 264v-104h80v240H640Z\"/></symbol><symbol id=\"i-trending_up\" viewBox=\"0 -960 960 960\"><path d=\"m136-240-56-56 296-298 160 160 208-206H640v-80h240v240h-80v-104L536-320 376-480 136-240Z\"/></symbol><symbol id=\"i-star\" viewBox=\"0 -960 960 960\"><path d=\"m233-120 65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Z\"/></symbol><symbol id=\"i-star_outline\" viewBox=\"0 -960 960 960\"><path d=\"m354-287 126-76 126 77-33-144 111-96-146-13-58-136-58 135-146 13 111 97-33 143ZM233-120l65-281L80-590l288-25 112-265 112 265 288 25-218 189 65 281-247-149-247 149Zm247-350Z\"/></symbol><symbol id=\"i-autorenew\" viewBox=\"0 -960 960 960\"><path d=\"M240-478q0 16 2 31.5t7 30.5q5 17-1 32.5T227-361q-16 8-31.5 1.5T175-383q-8-23-11.5-47t-3.5-48q0-134 93-228t227-94h7l-36-36q-11-11-11-28t11-28q11-11 28-11t28 11l104 104q12 12 12 28t-12 28L507-628q-11 11-28 11t-28-11q-11-11-11-28t11-28l36-36h-7q-100 0-170 70.5T240-478Zm480-4q0-16-2-31.5t-7-30.5q-5-17 1-32.5t21-22.5q16-8 31.5-1.5T785-577q8 23 11.5 47t3.5 48q0 134-93 228t-227 94h-7l36 36q11 11 11 28t-11 28q-11 11-28 11t-28-11L349-172q-12-12-12-28t12-28l104-104q11-11 28-11t28 11q11 11 11 28t-11 28l-36 36h7q100 0 170-70.5T720-482Z\"/></symbol><symbol id=\"i-pause\" viewBox=\"0 -960 960 960\"><path d=\"M640-200q-33 0-56.5-23.5T560-280v-400q0-33 23.5-56.5T640-760q33 0 56.5 23.5T720-680v400q0 33-23.5 56.5T640-200Zm-320 0q-33 0-56.5-23.5T240-280v-400q0-33 23.5-56.5T320-760q33 0 56.5 23.5T400-680v400q0 33-23.5 56.5T320-200Z\"/></symbol><symbol id=\"i-play_arrow\" viewBox=\"0 -960 960 960\"><path d=\"M320-273v-414q0-17 12-28.5t28-11.5q5 0 10.5 1.5T381-721l326 207q9 6 13.5 15t4.5 19q0 10-4.5 19T707-446L381-239q-5 3-10.5 4.5T360-233q-16 0-28-11.5T320-273Z\"/></symbol><symbol id=\"i-event_busy\" viewBox=\"0 -960 960 960\"><path d=\"m480-304-64 64q-11 11-28 11t-28-11q-11-11-11-28t11-28l64-64-64-64q-11-11-11-28t11-28q11-11 28-11t28 11l64 64 64-64q11-11 28-11t28 11q11 11 11 28t-11 28l-64 64 64 64q11 11 11 28t-11 28q-11 11-28 11t-28-11l-64-64ZM200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-40q0-17 11.5-28.5T280-880q17 0 28.5 11.5T320-840v40h320v-40q0-17 11.5-28.5T680-880q17 0 28.5 11.5T720-840v40h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Z\"/></symbol><symbol id=\"i-more_vert\" viewBox=\"0 -960 960 960\"><path d=\"M480.12-149q-34.55 0-59.13-24.55-24.58-24.56-24.58-59.04 0-34.58 24.56-59.2 24.55-24.62 59.03-24.62 34.67 0 59.13 24.59 24.46 24.6 24.46 59.13 0 34.54-24.46 59.11Q514.67-149 480.12-149Zm0-247.41q-34.55 0-59.13-24.56-24.58-24.55-24.58-59.03 0-34.67 24.56-59.13 24.55-24.46 59.03-24.46 34.67 0 59.13 24.46t24.46 59.01q0 34.55-24.46 59.13-24.46 24.58-59.01 24.58Zm0-247.18q-34.55 0-59.13-24.64-24.58-24.64-24.58-59.25t24.56-59.06Q445.52-811 480-811q34.67 0 59.13 24.46 24.46 24.45 24.46 59.06t-24.46 59.25q-24.46 24.64-59.01 24.64Z\"/></symbol><symbol id=\"i-delete\" viewBox=\"0 -960 960 960\"><path d=\"M277.37-111.87q-37.78 0-64.39-26.61t-26.61-64.39v-514.5q-19.15 0-32.33-13.17-13.17-13.18-13.17-32.33t13.17-32.33q13.18-13.17 32.33-13.17H354.5q0-19.15 13.17-32.33 13.18-13.17 32.33-13.17h159.52q19.15 0 32.33 13.17 13.17 13.18 13.17 32.33h168.61q19.15 0 32.33 13.17 13.17 13.18 13.17 32.33t-13.17 32.33q-13.18 13.17-32.33 13.17v514.5q0 37.78-26.61 64.39t-64.39 26.61H277.37Zm151.49-180.71q12.34-12.33 12.34-30.29v-274.74q0-17.96-12.34-30.29-12.34-12.34-30.29-12.34-17.96 0-30.42 12.34-12.45 12.33-12.45 30.29v274.74q0 17.96 12.45 30.29 12.46 12.34 30.42 12.34 17.95 0 30.29-12.34Zm163.11 0q12.33-12.33 12.33-30.29v-274.74q0-17.96-12.33-30.29-12.34-12.34-30.3-12.34-17.95 0-30.41 12.34-12.46 12.33-12.46 30.29v274.74q0 17.96 12.46 30.29 12.46 12.34 30.41 12.34 17.96 0 30.3-12.34Z\"/></symbol></svg>");
+</script>
+  <header>
+    <h1><small>Sello v2 · approved by the owner 2026-11-06 (E37)</small>Tinta propia y del sistema</h1>
+    <form class="controls" onsubmit="return false" aria-label="Review controls">
+      <label>Theme<select id="theme"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+      <label>Tuya: hue<input id="hue" type="range" min="0" max="359" value="200"></label>
+      <label>Wallpaper accent<select id="wall"><option value="240">Azul (240°)</option><option value="320">Morado (320°)</option><option value="80">Naranja (80°)</option><option value="24">Rojo (24°)</option></select></label>
+      <span id="hueOut"></span>
+    </form>
+  </header>
+  <div class="section">
+    <p class="lede">Two more inks in Configuración › Apariencia › Tinta: <b>Tuya</b>, a hue the person picks, and <b>Sistema</b>, the phone's accent colour (Android 12+). Both go through one generator that turns Cobalto to the new hue, keeping each colour's lightness, so every contrast stays Cobalto's. Every hue can be chosen; red and green get a note. Synthetic data.</p>
+    <div class="part" data-part="today"><h2>0 · Today</h2>
+    <div class="frames" id="today"></div></div>
+    <div class="part" data-part="flow"><h2>1 · Picking Tuya</h2>
+    <div class="frames" id="flow"></div></div>
+    <div class="part" data-part="system"><h2>2 · Sistema</h2>
+    <div class="frames" id="system"></div></div>
+    <div class="part" data-part="fail"><h2>3 · When it does not happen</h2>
+    <div class="frames" id="fail"></div></div>
+    <div class="part" data-part="gen"><h2>4 · The generator, every 15°</h2>
+    <p class="lede">Rows: band, brandSoft, desk, paperAlt. At Cobalto's hue (267°) the generator returns Cobalto exactly; at every hue, each contrast pair stays within 1% of Cobalto's (swept at every 1°).</p>
+    <div id="gen"></div></div>
+  </div>
+  <script>// Shared helpers for the Sello v2 mockups. Money is exact COP text, never computed policy.
+const fmt = n => (n < 0 ? "−" : "") + Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+const spoken = n => (n < 0 ? "menos " : "") + fmt(Math.abs(n)) + " pesos";
+const icon = (name, cls = "") => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
+// The top bar's ⋮ (MoreMenu, owner 2026-10-31): deleting lives here, out of the screen's way.
+const moreMenu = (label, open = false) => `<span class="more-wrap"><button class="icon-btn" aria-label="Más opciones" aria-expanded="${open}">${icon("more_vert")}</button>${open ? `<span class="more-pop" role="menu"><button role="menuitem">${icon("delete")}${label}</button></span>` : ""}</span>`;
+const money = (n, cls = "") => `<span class="money ${n < 0 ? "neg" : ""} ${cls}" aria-label="${spoken(n)}">${fmt(n)}</span>`;
+const statusbar = () => `<div class="statusbar"><span>9:41</span><span>▲ ● ▮</span></div>`;
+const reviewOptions = ids => Object.fromEntries(ids.map(id => [id, document.getElementById(id).value]));
+
+// App frame shared by the tab screens: month bar, scrolling content, Anotar dock and tabs.
+// The gear is Recibo's only (owner, 2026-10-26): other tabs pass settings: false, and a
+// "+ Nueva …" chip sits beside their title.
+function appShell({ month = "Octubre", body, tabs = 3, active = 0, toast, notice, current, title, addLabel, chip, settings = true, band = "", dock = "Anotar", dockClass = "" }) {
+  const all = [["receipt_long", "Recibo"], ["insights", "Resumen"], ["flag", "Metas"], ["account_balance", "Inversiones"]].slice(0, tabs);
+  const nav = all.map(([ic, t], i) => `<button ${i === active ? 'aria-current="page"' : ""}><span class="pill">${icon(ic)}</span><span class="t">${t}</span></button>`).join("");
+  return `<div class="top">${statusbar()}<div class="topbar">${title ? `<h1 class="tab-title">${title}</h1>` : `<button class="month" aria-label="Cambiar mes, ${month} 2026">${month}<small>2026</small>${icon("keyboard_arrow_down")}</button>`}<span class="top-actions">${chip ? `<button class="band-chip" style="margin:0 6px 0 0" aria-label="${chip}">${icon("add")}${chip}</button>` : ""}${addLabel ? `<button class="icon-btn" aria-label="${addLabel}">${icon("add")}</button>` : ""}${settings ? `<button class="icon-btn" aria-label="Configuración">${icon("settings")}</button>` : ""}</span></div>${current ? pastRibbon(month, current) : ""}${band}</div><main class="content">${body}</main><div class="bottom"><div class="dock"><button class="primary ${dockClass}">${dockClass === "goal" ? icon("flag") : dockClass === "plain" ? "" : icon("add")}${dock}</button></div><nav class="nav">${nav}</nav><div class="gesture"></div></div>${toast ? `<div class="toast" role="status">${icon("check")}${toast}</div>` : ""}${notice ? noticeBar(notice) : ""}`;
+}
+
+// What catch-up recorded, above Anotar on Recibo until the person dismisses it (SELLO-114).
+const noticeBar = text => `<div class="toast notice" role="status">${icon("autorenew")}<span>${text}</span><button class="undo">Ver</button></div>`;
+
+// Shown on every tab screen while the selected month is not the current one.
+const pastRibbon = (month, current) => `<div class="past-ribbon" role="status">${icon("event")}<span>Estás viendo <b>${month.toLowerCase()}</b></span><button>Volver a ${current}</button></div>`;
+
+// Frame for a screen pushed inside a tab: back arrow and title, same dock and tabs.
+function subShell({ title, body, tabs = 3, active = 1, dock = "Anotar", dockClass = "", month = "Octubre", current, action, band = "" }) {
+  const all = [["receipt_long", "Recibo"], ["insights", "Resumen"], ["flag", "Metas"], ["account_balance", "Inversiones"]].slice(0, tabs);
+  const nav = all.map(([ic, t], i) => `<button ${i === active ? 'aria-current="page"' : ""}><span class="pill">${icon(ic)}</span><span class="t">${t}</span></button>`).join("");
+  return `<div class="top">${statusbar()}<div class="topbar sub"><button class="icon-btn" aria-label="Volver">${icon("arrow_back")}</button><h1 class="sub-title">${title}</h1>${(action ? (Array.isArray(action[0]) ? action : [action]) : []).map(([ic, label, pressed]) => `<button class="icon-btn sub-action" aria-label="${label}" ${pressed !== undefined ? `aria-pressed="${pressed}"` : ""}>${icon(ic)}</button>`).join("")}</div>${current ? pastRibbon(month, current) : ""}${band}</div><main class="content">${body}</main><div class="bottom">${dock ? `<div class="dock"><button class="primary ${dockClass}">${dockClass === "goal" ? icon("flag") : dockClass === "plain" ? "" : icon("add")}${dock}</button></div>` : ""}<nav class="nav">${nav}</nav><div class="gesture"></div></div>`;
+}
+
+// A category without a limit on purpose: dashed ring and ∞ badge (mock: the badge is
+// text; the app draws Material's all_inclusive icon).
+const unlimitedCircle = (ic, archived = false) => `<span class="inf-wrap"><span class="circle unlimited ${archived ? "archived" : ""}" aria-hidden="true">${icon(ic)}</span><span class="inf" aria-hidden="true">∞</span></span>`;
+</script>
+  <script>// Sello · Tinta generator prototype (mock only; the app's generator is Kotlin in :design-system).
+// One hue in, a whole palette out. Each token keeps Cobalto's luminance exactly (so every
+// contrast ratio in SelloPaletteTest is Cobalto's, at any hue) and Cobalto's chroma where the
+// sRGB gamut allows; only the hue turns. Neutral tokens (white paper, white on-colours) stay.
+
+const REF = {
+  light: {
+    brand: "1F3BE0", onBrand: "FFFFFF", brandSoft: "DCE2FF", onBrandSoft: "0B1C7A",
+    desk: "D9E1F7", paper: "FFFFFF", paperAlt: "EEF2FC", paperDim: "D3DCF3",
+    ink: "0E1630", inkSoft: "434E72", outline: "6975A0", rule: "B9C5E6",
+    band: "1F3BE0", investmentBand: "0E1630", pastBar: "566287", onPastBar: "FFFFFF",
+    pastBarSoft: "E1E7F6", onPastBarSoft: "17203C"
+  },
+  dark: {
+    brand: "8FA6FF", onBrand: "06175C", brandSoft: "23368F", onBrandSoft: "DDE4FF",
+    desk: "090D1C", paper: "151C36", paperAlt: "1D2646", paperDim: "2A3560",
+    ink: "EEF1FB", inkSoft: "A9B3D6", outline: "8490BA", rule: "2F3B66",
+    band: "2238B8", investmentBand: "2C3454", pastBar: "A7B2D2", onPastBar: "17203C",
+    pastBarSoft: "2A3560", onPastBarSoft: "E1E7F6"
+  }
+};
+
+// Meanings that never move with the ink.
+const FIXED = {
+  light: { gain: "0A6B4A", loss: "B81E2A", warn: "8A4A00" },
+  dark: { gain: "4FD6A0", loss: "FF8A8A", warn: "FFB45C" }
+};
+
+const toLin = c => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+const toGam = c => (c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+const hexToLin = h => [0, 2, 4].map(i => toLin(parseInt(h.slice(i, i + 2), 16) / 255));
+const linToHex = rgb => rgb.map(c => Math.round(Math.min(1, Math.max(0, toGam(c))) * 255).toString(16).padStart(2, "0")).join("").toUpperCase();
+const lum = rgb => 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+const contrast = (a, b) => { const x = lum(hexToLin(a)), y = lum(hexToLin(b)); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+
+function linToOklab([r, g, b]) {
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+}
+function oklabToLin([L, a, b]) {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+}
+const lch = hex => { const [L, a, b] = linToOklab(hexToLin(hex)); return { L, C: Math.hypot(a, b), h: ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360 }; };
+const fromLch = (L, C, h) => oklabToLin([L, C * Math.cos((h * Math.PI) / 180), C * Math.sin((h * Math.PI) / 180)]);
+const inGamut = rgb => rgb.every(c => c >= -1e-6 && c <= 1 + 1e-6);
+
+// The OKLab lightness whose colour at (C, h) has luminance Y.
+function lightnessFor(Y, C, h) {
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 40; i++) { const mid = (lo + hi) / 2; if (lum(fromLch(mid, C, h)) < Y) lo = mid; else hi = mid; }
+  return (lo + hi) / 2;
+}
+// Exact luminance, the most chroma up to `C` that stays inside sRGB.
+function solve(Y, C, h) {
+  const at = c => fromLch(lightnessFor(Y, c, h), c, h);
+  if (inGamut(at(C))) return at(C);
+  let lo = 0, hi = C;
+  for (let i = 0; i < 30; i++) { const mid = (lo + hi) / 2; if (inGamut(at(mid))) lo = mid; else hi = mid; }
+  return at(lo);
+}
+
+const BRAND_HUE = lch(REF.light.brand).h; // Cobalto's own hue: the generator reproduces it there.
+
+function palette(hue, mode) {
+  const out = {};
+  for (const [k, hex] of Object.entries(REF[mode])) {
+    const r = lch(hex);
+    if (r.C < 0.004) { out[k] = hex; continue; }
+    const h = (hue + (r.h - BRAND_HUE) + 720) % 360;
+    out[k] = linToHex(solve(lum(hexToLin(hex)), r.C, h));
+  }
+  return out;
+}
+
+// Hues that also carry a meaning, as [from, to) in OKLCH degrees: loss red, and gain green
+// (also the goal forms' band). Owner 2026-11-06: nothing is blocked; these hues get a note.
+const SEM_HUES = { loss: lch(FIXED.light.loss).h, gain: lch(FIXED.light.gain).h };
+const ZONES = { loss: [0, 50], gain: [122, 196] };
+const MARGIN = 0;
+const nearMeaning = hue => Object.entries(ZONES).find(([, [a, b]]) => hue >= a && hue < b)?.[0] ?? null;
+const blockedBy = () => null;
+const allowed = hue => hue;
+
+const NAMES = [[12, "Rosa"], [45, "Rojo"], [70, "Naranja"], [92, "Ámbar"], [112, "Amarillo"], [135, "Lima"], [168, "Verde"], [200, "Turquesa"], [225, "Petróleo"], [250, "Azul"], [282, "Añil"], [305, "Violeta"], [330, "Morado"], [352, "Fucsia"], [361, "Rosa"]];
+const hueName = h => NAMES.find(([end]) => ((h % 360) + 360) % 360 < end)[1];
+
+if (typeof module !== "undefined") module.exports = { REF, FIXED, palette, contrast, lch, BRAND_HUE, SEM_HUES, ZONES, MARGIN, nearMeaning, blockedBy, allowed, hueName };
+</script>
+  <script>// Sello v2 · Tinta propia y del sistema (proposal, 2026-11-05). Mock only: palettes come from
+// gen.js, the prototype of the generator. Synthetic data, as home.js's default scene.
+
+document.body.insertAdjacentHTML("afterbegin", `<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<symbol id="i-contrast" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm0 2v16a8 8 0 0 1 0-16Z"/></symbol>
+<symbol id="i-ink_pen" viewBox="0 0 24 24"><path fill="currentColor" d="M15.6 3.4a2 2 0 0 1 2.8 0l2.2 2.2a2 2 0 0 1 0 2.8L10 19H5v-5L15.6 3.4ZM4 21h16v2H4z"/></symbol>
+<symbol id="i-wallpaper" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h7V2H4a2 2 0 0 0-2 2v7h2V4Zm6 9-4 5h12l-3-4-2.03 2.71L10 13Zm7-4.5a1.5 1.5 0 1 0-3 0 1.5 1.5 0 0 0 3 0ZM20 2h-7v2h7v7h2V4a2 2 0 0 0-2-2Zm0 18h-7v2h7a2 2 0 0 0 2-2v-7h-2v7ZM4 13H2v7a2 2 0 0 0 2 2h7v-2H4v-7Z"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z"/></symbol>
+</svg>`);
+
+const COBALTO = 266.6, VIOLETA = 290;
+const NOTE = "El rojo y el verde también marcan excesos y metas.";
+const vars = (hue, theme) => {
+  const p = palette(hue, theme);
+  return `--brand:#${p.brand};--onbrand:#${p.onBrand};--brandsoft:#${p.brandSoft};--onbrandsoft:#${p.onBrandSoft};--desk:#${p.desk};--paper:#${p.paper};--alt:#${p.paperAlt};--dim:#${p.paperDim};--ink:#${p.ink};--soft:#${p.inkSoft};--outline:#${p.outline};--rule:#${p.rule};--band:#${p.band}`;
+};
+// Cobalto and Violeta keep their hand-made palettes (sello.css); a hue draws a generated one.
+const phone = (o, inner, hue) => `<div class="phone"><div class="app" data-ink="${o.ink ?? "cobalt"}" data-theme="${o.theme}" ${hue !== undefined ? `style="${vars(hue, o.theme)}"` : ""}>${inner}</div></div>`;
+const card = (title, note, inner) => `<div class="frame-card"><h3>${title}</h3><p>${note}</p>${inner}</div>`;
+const lightBand = hue => "#" + palette(hue, "light").band;
+
+// ---------- Configuración › Apariencia ----------
+const swatch = ({ label, fill, chosen, badge, rainbow }) => `<button class="sw" role="radio" aria-checked="${chosen}"><span class="ring ${chosen ? "on" : ""}"><span class="dot ${rainbow ? "rainbow" : ""}" style="${fill ? `background:${fill}` : ""}">${rainbow ? icon("add") : ""}</span>${badge ? `<span class="badge">${icon(badge)}</span>` : ""}</span><span class="sw-t">${label}</span></button>`;
+
+function appearance({ choice = "cobalto", hue, systemHue, api31 = true, legacy = false, note }) {
+  const sw = [
+    swatch({ label: "Cobalto", fill: "#1f3be0", chosen: choice === "cobalto" }),
+    swatch({ label: "Violeta", fill: "#5b2bd6", chosen: choice === "violeta" })
+  ];
+  if (!legacy && api31) sw.push(swatch({ label: "Sistema", fill: lightBand(allowed(systemHue)), chosen: choice === "sistema", badge: "wallpaper" }));
+  if (!legacy) sw.push(hue === undefined ? swatch({ label: "Tuya", rainbow: true, chosen: false }) : swatch({ label: "Tuya", fill: lightBand(hue), chosen: choice === "tuya", badge: "edit" }));
+  return `<section class="slip"><div class="section-head"><h2>Apariencia</h2></div>
+    <div class="srow">${icon("contrast")}<div><b>Tema</b></div></div>
+    <div class="seg" style="max-width:none"><button aria-pressed="true">Sistema</button><button aria-pressed="false">Claro</button><button aria-pressed="false">Oscuro</button></div>
+    <div class="srow" style="margin-top:12px">${icon("ink_pen")}<div><b>Tinta</b><small>El color de los sellos, la franja y los botones</small></div></div>
+    <div class="swatches" role="radiogroup">${sw.join("")}</div>${note ? `<p class="sw-note">${note}</p>` : ""}</section>`;
+}
+
+const settings = (o, body, overlay = "") => `<div class="top">${statusbar()}<div class="topbar sub"><button class="icon-btn" aria-label="Volver">${icon("arrow_back")}</button><h1 class="sub-title">Configuración</h1></div></div><main class="content">
+  <section class="slip"><div class="section-head"><h2>Lo que se repite</h2></div><div class="srow">${icon("autorenew")}<div><b>Pagos fijos e ingresos</b><small>3 activos</small></div></div></section>
+  ${body}
+  <section class="slip"><div class="section-head"><h2>Recibo</h2></div><div class="srow">${icon("receipt_long")}<div><b>Orden de las categorías</b><small>Como las ordenaste</small></div></div></section>
+</main><div class="gesture" style="background:var(--desk)"></div>${overlay}`;
+
+// ---------- The picker sheet ----------
+const mini = (hue, theme) => `<div class="mini app" data-theme="${theme}" style="${vars(hue, theme)}"><div class="mini-band"><b>Octubre</b>${icon("settings")}</div><div class="mini-desk"><div class="mini-slip"><div class="mini-head"><span>Restante</span><span class="stamp">Al día</span></div><b class="mini-hero">350.000</b></div><button class="mini-btn">${icon("add")}Anotar</button></div><span class="mini-t">${theme === "light" ? "Claro" : "Oscuro"}</span></div>`;
+
+function track(hue) {
+  const stops = [];
+  for (let h = 0; h <= 360; h += 6) stops.push(`${lightBand(h % 360)} ${(h / 360 * 100).toFixed(2)}%`);
+  const zones = "";
+  return `<div class="hue" role="slider" aria-label="Tono de tu tinta" aria-valuetext="${hueName(hue)}"><div class="track" style="background:linear-gradient(90deg,${stops.join(",")})">${zones}</div><span class="thumb" style="left:${hue / 360 * 100}%;background:${lightBand(hue)}"></span></div>`;
+}
+
+function sheet({ hue, failed = false }) {
+  const why = nearMeaning(hue) ? `<p class="caption hue-why hot">${NOTE}</p>` : `<p class="caption hue-why">&nbsp;</p>`;
+  const err = failed ? `<p class="hue-err" role="alert">${icon("error")}No se pudo guardar. Sigues con Cobalto.</p>` : "";
+  return `<div class="scrim"><div class="composer picker" role="dialog" aria-label="Tu tinta"><div class="composer-head"><b style="font-size:1.15em">Tu tinta</b><button class="icon-btn" aria-label="Cerrar">${icon("close")}</button></div>
+    <div class="minis">${mini(hue, "light")}${mini(hue, "dark")}</div>
+    <p class="hue-name">${hueName(hue)}</p>${track(hue)}${why}${err}
+    <div class="confirm-actions"><button class="ghost">Cancelar</button><button class="go">${failed ? "Reintentar" : "Usar esta tinta"}</button></div></div></div>`;
+}
+
+// ---------- Recibo, to show the result ----------
+const GRID = [["Hogar", "home", 400000, 200000], ["Comida", "restaurant", 200000, 140000], ["Transporte", "directions_bus", 100000, 40000], ["Salud", "medical_services", 80000, 0], ["Ocio", "theaters", 100000, 120000], ["Ropa", "checkroom", 70000, 0]];
+const recibo = `<section class="slip pinked"><div class="answer-head"><span class="label">Restante del presupuesto</span><span class="stamp">Al día</span></div><div class="hero">${money(350000)}</div><div class="tear" aria-hidden="true"></div><p class="daily-big"><b>${money(35000)}</b><span>por día</span></p><span class="caption">10 días, incluido hoy</span></section><section class="slip"><div class="section-head"><h2>Tus categorías</h2><button class="band-chip paper">${icon("add")}Nueva categoría</button></div><div class="grid">${GRID.map(([n, ic, lim, spent]) => `<button class="cell"><span class="circle ${spent > lim ? "over" : ""}" style="--fill:${Math.min(100, Math.round(100 * spent / lim))}%">${icon(ic)}<span class="on">${icon(ic)}</span></span><span class="cell-text"><span>${n}</span><b>${money(lim - spent)}</b></span></button>`).join("")}</div></section>`;
+
+// ---------- Generator strip ----------
+function strip(theme) {
+  const cols = [];
+  for (let h = 0; h < 360; h += 15) {
+    const p = palette(h, theme), blocked = false;
+    cols.push(`<div class="gcol ${blocked ? "blocked" : ""}" title="${h}°"><span style="background:#${p.band}"></span><span style="background:#${p.brandSoft}"></span><span style="background:#${p.desk}"></span><span style="background:#${p.paperAlt}"></span><small>${h}°</small><small>${blocked ? "—" : hueName(h)}</small></div>`);
+  }
+  return `<div class="gstrip ${theme}">${cols.join("")}</div>`;
+}
+
+function render() {
+  const o = { theme: document.getElementById("theme").value };
+  const hue = Number(document.getElementById("hue").value);
+  const wall = Number(document.getElementById("wall").value);
+  document.getElementById("hueOut").textContent = `${hue}° · ${hueName(hue)}${nearMeaning(hue) ? " (note)" : ""}`;
+  const h = allowed(hue);
+  const sysNote = `Toma el color de tu fondo de pantalla: ${hueName(wall).toLowerCase()}. Cambia cuando lo cambies.${nearMeaning(wall) ? " " + NOTE : ""}`;
+
+  document.getElementById("today").innerHTML =
+    card("Today", "Configuración › Apariencia as shipped: two hand-made inks.", phone({ ...o, ink: "cobalt" }, settings(o, appearance({ legacy: true, choice: "cobalto" }))));
+
+  document.getElementById("flow").innerHTML =
+    card("1 · Two new swatches", "After Cobalto and Violeta: Sistema (Android 12+, the wallpaper's colour) and Tuya, a rainbow + until it is set.", phone(o, settings(o, appearance({ choice: "cobalto", systemHue: wall })))) +
+    card("2 · Tuya opens the sheet", "A live preview in both themes, the colour's name, and a hue slider drawn in the colours it will give. Nothing changes until Usar esta tinta.", phone(o, settings(o, appearance({ choice: "cobalto", systemHue: wall }), sheet({ hue: h })))) +
+    card("3 · Red or green: a note", "Every hue can be picked. On red or green hues one line says they also mark overspending and goals. TalkBack reads the colour's name.", phone(o, settings(o, appearance({ choice: "cobalto", systemHue: wall }), sheet({ hue: 22 })))) +
+    card("4 · Saved", "The whole app changes at once, Configuración included. Tuya is selected; its badge reopens the sheet.", phone(o, settings(o, appearance({ choice: "tuya", hue: h, systemHue: wall, note: `${hueName(h)}. Toca Tuya para cambiarla.` })), h)) +
+    card("5 · Recibo in Tuya", "Band, buttons, rings and paper follow the hue; stamps, red and green don't move.", phone(o, appShell({ body: recibo, tabs: 4, active: 0 }), h)) +
+    card("6 · The other theme", "One choice gives both themes; contrast is Cobalto's, by construction.", phone({ theme: o.theme === "light" ? "dark" : "light" }, appShell({ body: recibo, tabs: 4, active: 0 }), h));
+
+  document.getElementById("system").innerHTML =
+    card("Sistema chosen", "The phone's accent colour, through the same generator: Sello's own shades in that hue, not Material's.", phone(o, settings(o, appearance({ choice: "sistema", systemHue: wall, note: sysNote })), allowed(wall))) +
+    card("A red wallpaper", "Sistema uses the wallpaper's hue as it is; on red or green it adds the same note.", phone(o, settings(o, appearance({ choice: "sistema", systemHue: 24, note: `Toma el color de tu fondo de pantalla: rojo. Cambia cuando lo cambies. ${NOTE}` })), 24)) +
+    card("Android 11", "No accent colour on Android 11: Sistema isn't offered. A backup with Sistema restores as Cobalto here.", phone(o, settings(o, appearance({ choice: "cobalto", api31: false, systemHue: wall }))));
+
+  document.getElementById("fail").innerHTML =
+    card("Couldn't save", "The sheet stays open with the chosen hue; the app keeps its ink.", phone(o, settings(o, appearance({ choice: "cobalto", systemHue: wall }), sheet({ hue: h, failed: true }))));
+
+  document.getElementById("gen").innerHTML = strip("light") + strip("dark");
+}
+document.querySelectorAll(".controls select, .controls input").forEach(s => s.addEventListener("input", render));
+render();
+</script>
+  <script>{const q=new URLSearchParams(location.search);const show=q.get("show");if(show){document.body.classList.add("board");document.querySelector(".lede").remove();document.querySelectorAll(".part").forEach(e=>{if(!show.split(",").includes(e.dataset.part))e.remove()})}}</script>
+</body>
+</html>
