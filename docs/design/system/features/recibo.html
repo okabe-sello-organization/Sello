@@ -20,7 +20,7 @@
     <section id="purpose">
       <h2>Purpose</h2>
       <p>Recibo answers "how much is left this month" as one signed figure with a verdict stamp, then shows each category as a circle with what it has left. From it a person opens a category's detail and expenses, sees the payments the month reserves, and adjusts limits when the month is over budget. The code for all of these lives in <code>app/src/main/java/com/software/sello/feature/recibo/</code>; the goal pill drawn inside Recibo belongs to the goals feature, the notice bars to the shell and recurrence.</p>
-      <p>Every figure comes from one monthly snapshot of the shared selected month (<code>app/src/main/java/com/software/sello/navigation/MonthSession.kt:33</code>), so Recibo, category detail, Ajustar presupuesto and Pagos previstos always agree. A failed read never turns into zero: the last good figures stay with an older-figures notice.</p>
+      <p>Every figure comes from one monthly snapshot (<code>app/src/main/java/com/software/sello/navigation/MonthSession.kt:33</code>), so Recibo, category detail, Ajustar presupuesto and Pagos previstos always agree. Recibo and category detail show the shared selected month; Ajustar presupuesto keeps the month it was opened on and Pagos previstos the month in progress, each named under its title with no month picker. A failed read never turns into zero: the last good figures stay with an older-figures notice.</p>
     </section>
 
     <section id="entry-points">
@@ -156,7 +156,7 @@
       <figure data-shot="upcoming-empty" data-module="app" data-caption="Nothing left to come"></figure>
 
       <h3>Layout</h3>
-      <p>Its own screen inside the shell: title "Pagos previstos", back arrow, no tabs, no past-month ribbon, no Anotar dock (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:176</code>). Always the month in progress, from the same snapshot as Recibo's footnote. A <code>LazyColumn</code> spaced <code>spacing.md</code> (<code>app/src/main/java/com/software/sello/feature/recibo/UpcomingPayments.kt:171</code>).</p>
+      <p>Its own screen inside the shell: title "Pagos previstos" with the month in progress under it ("Octubre 2026"), back arrow, no month picker, no tabs, no past-month ribbon, no Anotar dock (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:230</code>). Always the month in progress, the next one from midnight on its last day, from the same snapshot as Recibo's footnote. A <code>LazyColumn</code> spaced <code>spacing.md</code> (<code>app/src/main/java/com/software/sello/feature/recibo/UpcomingPayments.kt:171</code>).</p>
       <ol>
         <li>An Older StatusSlip when stale.</li>
         <li><a href="../components.html#c-AnswerSlip"><code>AnswerSlip</code></a> "Separado en octubre" with the total, no stamp; under it "2 pagos previstos, hasta el sáb 31 oct", a TearLine and one <a href="../components.html#c-ScheduleRow"><code>ScheduleRow</code></a> per payment (category icon, "Categoría · día").</li>
@@ -206,7 +206,7 @@
       <figure data-shot="adjust-budget-carry" data-module="app" data-caption="Carry: the month limit with base and carry"></figure>
 
       <h3>Layout</h3>
-      <p>Its own screen inside the shell: title "Ajustar presupuesto", back arrow, no tabs, no ribbon, no dock (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:202</code>). For the month it was opened on. Scrolling column spaced <code>spacing.md</code>; the limit sheet is drawn over it (<code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:112</code>).</p>
+      <p>Its own screen inside the shell: title "Ajustar presupuesto" with the month it was opened on under it ("Octubre 2026"), back arrow, no month picker, no tabs, no ribbon, no dock (<code>app/src/main/java/com/software/sello/navigation/ReciboDestinations.kt:255</code>). For that month, whatever month is picked elsewhere afterwards. Scrolling column spaced <code>spacing.md</code>; the limit sheet is drawn over it (<code>app/src/main/java/com/software/sello/feature/recibo/AdjustBudgetScreen.kt:112</code>).</p>
       <ol>
         <li>An Older StatusSlip when stale.</li>
         <li><strong>Month slip</strong>: <code>AnswerSlip</code> with Recibo's label, stamp and amount; the shortfall facts in Revisar; a TearLine; a <code>LeaderLine</code> "Límite de octubre" (with the caption "base X · de meses anteriores ±Y" while a category carries); a LeaderLine "Gastado"; and the reserved <code>Footnote</code> (<code>AdjustBudgetScreen.kt:170</code>).</li>

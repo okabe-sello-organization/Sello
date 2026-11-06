@@ -37,6 +37,7 @@ import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.designsystem.theme.statusBarLightIconsUnder
 import com.software.sello.presentation.month.MonthNames
+import java.time.YearMonth
 
 /**
  * Whether a detail fits beside what it is the detail of: a window laid out in two
@@ -135,6 +136,10 @@ internal fun PastMonthNotice(
  * A screen not tied to a month, as Metas and a goal are, passes [titleOnly]: its whole
  * title, with no month bar, month switcher or past-month ribbon. Its [band], if any,
  * sits on the band under that title.
+ *
+ * A screen tied to a month of its own rather than the shared selected one, as Ajustar
+ * presupuesto and Pagos previstos are, passes [ownMonth]: its [screenTitle] with that month
+ * under it, as [showMonthAsSubtitle] draws it, and no month switcher or past-month ribbon.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -155,6 +160,7 @@ fun ShellScreen(
     dock: SelloDock? = null,
     entryDock: Boolean = true,
     titleOnly: String? = null,
+    ownMonth: YearMonth? = null,
     band: (@Composable () -> Unit)? = null,
     titleChip: (@Composable (compact: Boolean) -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit
@@ -163,6 +169,8 @@ fun ShellScreen(
     // Over a past month, every screen that shows it says so and offers the way back.
     val ribbon: (@Composable () -> Unit)? = when {
         titleOnly != null -> band
+
+        ownMonth != null -> null
 
         pastMonthRibbon && state.selectedMonth != state.currentMonth -> {
             { PastMonthNotice(state, names, onAction) }
@@ -206,7 +214,12 @@ fun ShellScreen(
             val bar = monthBarLabel(state, names)
             SelloScaffold(
                 title = titleOnly ?: screenTitle ?: title,
-                subtitle = if (showMonthAsSubtitle && titleOnly == null) title else null,
+                subtitle = when {
+                    titleOnly != null -> null
+                    ownMonth != null -> names.title(ownMonth)
+                    showMonthAsSubtitle -> title
+                    else -> null
+                },
                 topBar = if (tab && titleOnly != null) {
                     { TitleBar(titleOnly, chip = titleChip, actions = actions) }
                 } else if (tab) {
@@ -236,7 +249,7 @@ fun ShellScreen(
                     }
                 },
                 actions = actions,
-                titleContent = if (showMonthAsSubtitle || titleOnly != null) {
+                titleContent = if (showMonthAsSubtitle || titleOnly != null || ownMonth != null) {
                     null
                 } else {
                     {
