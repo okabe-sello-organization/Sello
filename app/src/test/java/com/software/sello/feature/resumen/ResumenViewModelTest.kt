@@ -35,6 +35,7 @@ import com.software.sello.navigation.HandMonotonicClock
 import com.software.sello.navigation.MonthSession
 import com.software.sello.testing.asNewObservation
 import com.software.sello.testing.testDateLabels
+import com.software.sello.testing.testMonthNames
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
@@ -79,6 +80,7 @@ class ResumenViewModelTest {
         session,
         resumenMoney(),
         testDateLabels(),
+        testMonthNames(),
         suggestions,
         schedules,
         clock

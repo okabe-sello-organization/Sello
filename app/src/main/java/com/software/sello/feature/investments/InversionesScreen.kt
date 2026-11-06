@@ -48,6 +48,7 @@ import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
+import com.software.sello.designsystem.component.signedText
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -190,28 +191,23 @@ private fun Total(
         }
         val from = dates.shortDay(total.valuedFrom, state.today)
         val to = dates.shortDay(total.valuedTo, state.today)
-        QuietLine(
-            SelloIcon.Event,
+        Footnote(
             if (from == to) {
                 bold(stringResource(R.string.inversiones_valued_on, from), from)
             } else {
                 bold(stringResource(R.string.inversiones_valued_between, from, to), from, to)
             },
-            Modifier.testTag("inversiones.valued")
+            onClick = null,
+            modifier = Modifier.testTag("inversiones.valued")
         )
         rate?.let {
             val day = dates.shortDay(it.date, state.today)
-            val text = bold(stringResource(R.string.inversiones_rate_line, it.rate, day), it.rate)
-            if (onOpenRate == null) {
-                QuietLine(SelloIcon.Autorenew, text, Modifier.testTag("inversiones.rate"))
-            } else {
-                Footnote(
-                    text,
-                    onOpenRate,
-                    Modifier.testTag("inversiones.rate"),
-                    SelloIcon.Autorenew
-                )
-            }
+            Footnote(
+                bold(stringResource(R.string.inversiones_rate_line, it.rate, day), it.rate),
+                onOpenRate,
+                Modifier.testTag("inversiones.rate"),
+                SelloIcon.Autorenew
+            )
         }
     }
 }
@@ -353,8 +349,8 @@ internal fun Performance(
     modifier: Modifier = Modifier
 ) {
     val words = when (`return`.direction) {
-        GainDirection.Gain -> stringResource(R.string.investment_gain_words, signed(gain))
-        GainDirection.Loss -> stringResource(R.string.investment_loss_words, signed(gain))
+        GainDirection.Gain -> stringResource(R.string.investment_gain_words, gain.signedText())
+        GainDirection.Loss -> stringResource(R.string.investment_loss_words, gain.signedText())
         GainDirection.Even -> stringResource(R.string.investment_even_words)
     }
     PerformanceLine(
@@ -378,12 +374,6 @@ internal fun percent(`return`: InvestmentReturn): String {
     return stringResource(R.string.investment_percent, sign + number)
 }
 
-private fun signed(value: MoneyTextValue): String = when (value.sign) {
-    MoneySign.Plus -> "+${value.digits}"
-    MoneySign.Minus -> "−${value.digits}"
-    MoneySign.None -> value.digits
-}
-
 @Composable
 private fun gainInk(direction: GainDirection) = when (direction) {
     GainDirection.Gain -> SelloTheme.colors.semantic.gain
@@ -401,19 +391,6 @@ private fun bold(text: String, vararg parts: String): AnnotatedString = buildAnn
             at = start + part.length
         }
     append(text.substring(at))
-}
-
-/** A quiet line at the slip's foot: an icon and a sentence, not a link. */
-@Composable
-private fun QuietLine(icon: SelloIcon, text: AnnotatedString, modifier: Modifier = Modifier) {
-    Row(
-        modifier.fillMaxWidth().heightIn(min = 32.dp).padding(top = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.sm)
-    ) {
-        Icon(icon.painter(), null, Modifier.size(18.dp), SelloTheme.colors.inkSoft)
-        Text(text, style = MaterialTheme.typography.bodySmall, color = SelloTheme.colors.inkSoft)
-    }
 }
 
 const val INVERSIONES_LIST_TAG = "inversiones.list"

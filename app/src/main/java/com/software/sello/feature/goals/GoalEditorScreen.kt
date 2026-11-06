@@ -79,6 +79,7 @@ import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
 import com.software.sello.presentation.month.MonthNames
 import com.software.sello.presentation.month.monthNames
+import com.software.sello.presentation.movement.MovementCloseButton
 import java.time.YearMonth
 
 /** The form's root: its result closes it, and Back asks before a draft is thrown away. */
@@ -111,12 +112,10 @@ fun GoalEditorScreen(state: GoalEditorState, onAction: (GoalEditorAction) -> Uni
             if (state.editing) R.string.goal_editor_edit else R.string.goal_editor_new
         ),
         navigationIcon = {
-            IconButton(
-                onClick = { onAction(GoalEditorAction.Back) },
-                modifier = Modifier.testTag(GOAL_EDITOR_CLOSE_TAG)
-            ) {
-                Icon(SelloIcon.Close.painter(), stringResource(R.string.goal_editor_close))
-            }
+            MovementCloseButton(
+                { onAction(GoalEditorAction.Back) },
+                Modifier.testTag(GOAL_EDITOR_CLOSE_TAG)
+            )
         },
         actions = {
             // With a save unresolved, only Comprobar is offered: never Borrar meta.

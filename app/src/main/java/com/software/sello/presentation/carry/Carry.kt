@@ -19,6 +19,7 @@ import com.software.sello.designsystem.component.StatusAction
 import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
+import com.software.sello.designsystem.component.signedText
 import com.software.sello.domain.model.CarryBreakdown as CarryParts
 import com.software.sello.domain.model.CarryMonth
 import com.software.sello.domain.model.CarryVerdict
@@ -292,13 +293,6 @@ private fun verdictText(word: VerdictWord) = stringResource(
     }
 )
 
-/** The figure as a list writes it, with a true minus, and a plus when it is a change. */
-private fun MoneyTextValue.text() = when (sign) {
-    MoneySign.Minus -> "−$digits"
-    MoneySign.Plus -> "+$digits"
-    else -> digits
-}
-
 /**
  * The list, as the content of a confirmation: a lead line, then each category with its
  * months. [changed] says the list was read again because the data moved (SC34). With
@@ -345,8 +339,8 @@ private fun changeLine(row: CarryChangeRow, dates: DateLabels): CarryCorrectionL
     val remaining = if (row.remainingBefore != null && row.remainingAfter != null) {
         stringResource(
             R.string.carry_list_remaining,
-            row.remainingBefore.text(),
-            row.remainingAfter.text()
+            row.remainingBefore.signedText(),
+            row.remainingAfter.signedText()
         )
     } else {
         null
@@ -363,9 +357,9 @@ private fun changeLine(row: CarryChangeRow, dates: DateLabels): CarryCorrectionL
     val value = when (row.kind) {
         ChangeKind.Later, ChangeKind.Settled -> stringResource(
             R.string.carry_list_change_by,
-            row.before.text(),
-            row.after.text(),
-            row.change.text()
+            row.before.signedText(),
+            row.after.signedText(),
+            row.change.signedText()
         )
 
         ChangeKind.Edited -> stringResource(R.string.carry_list_edited)

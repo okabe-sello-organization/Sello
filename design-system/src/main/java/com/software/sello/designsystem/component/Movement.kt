@@ -10,12 +10,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -24,7 +23,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import com.software.sello.designsystem.R
 import com.software.sello.designsystem.icon.SelloIcon
-import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
 import java.time.Instant
 import java.time.LocalDate
@@ -36,12 +34,15 @@ import java.time.ZoneOffset
  * text arrives written; the application chooses it.
  */
 
-/** The form's close button, an X read as [label]. */
+/** The form's close button, an X read as [label]; not [enabled] while the form saves. */
 @Composable
-fun MovementCloseButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    IconButton(onClick = onClick, modifier = modifier) {
-        Icon(SelloIcon.Close.painter(), label)
-    }
+fun MovementCloseButton(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    SelloIconButton(SelloIcon.Close, label, onClick, modifier, enabled = enabled)
 }
 
 /** A scrolling column for the loading and failed states, padded like the form. */
@@ -147,34 +148,47 @@ fun MovementNoteComposer(
     )
 }
 
-/** The date picker of a movement, which offers no day after [today]; [confirmLabel] picks. */
+/**
+ * The date picker of a form, opened on [date]: only days from [first] to [last] can be
+ * picked, either end open when null. [confirmLabel] picks. It works in whole days, with
+ * no time or zone.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MovementDatePicker(
     date: LocalDate,
-    today: LocalDate,
     confirmLabel: String,
     onPicked: (LocalDate) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    first: LocalDate? = null,
+    last: LocalDate? = null
 ) {
     val picker = rememberDatePickerState(
         initialSelectedDateMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
         selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) =
-                !Instant.ofEpochMilli(utcTimeMillis)
-                    .atZone(ZoneOffset.UTC).toLocalDate().isAfter(today)
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val day = day(utcTimeMillis)
+                return (first == null || !day.isBefore(first)) &&
+                    (last == null || !day.isAfter(last))
+            }
 
-            override fun isSelectableYear(year: Int) = year <= today.year
+            override fun isSelectableYear(year: Int) =
+                (first == null || year >= first.year) && (last == null || year <= last.year)
         }
     )
     DatePickerDialog(
         onDismissRequest = onDismiss,
         confirmButton = {
-            SelloButton(confirmLabel, {
-                picker.selectedDateMillis?.let {
-                    onPicked(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate())
-                } ?: onDismiss()
-            })
+            SelloButton(
+                text = confirmLabel,
+                onClick = { picker.selectedDateMillis?.let(::day)?.let(onPicked) ?: onDismiss() },
+                modifier = Modifier.testTag(MOVEMENT_DATE_CONFIRM_TAG)
+            )
         }
     ) { DatePicker(picker) }
 }
+
+private fun day(utcMillis: Long): LocalDate =
+    Instant.ofEpochMilli(utcMillis).atZone(ZoneOffset.UTC).toLocalDate()
+
+const val MOVEMENT_DATE_CONFIRM_TAG = "movement:date-confirm"

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -36,7 +37,9 @@ import com.software.sello.R
 import com.software.sello.designsystem.component.BulletList
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.ButtonPair
+import com.software.sello.designsystem.component.ButtonTone
 import com.software.sello.designsystem.component.ConfirmSlip
+import com.software.sello.designsystem.component.SectionTitle
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.SettingRow
 import com.software.sello.designsystem.component.SettingTone
@@ -116,13 +119,7 @@ fun TusDatos(
             SlipSkeleton(Modifier.testTag(BACKUP_CARD_TAG))
         } else {
             Slip(Modifier.fillMaxWidth()) {
-                Text(
-                    text = stringResource(R.string.settings_data),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .padding(bottom = SelloTheme.spacing.sm)
-                        .semantics { heading() }
-                )
+                SectionTitle(stringResource(R.string.settings_data))
                 BackupCard(
                     backup = backup,
                     onBackupAction = onBackupAction,
@@ -283,21 +280,17 @@ private fun BackupCard(
                 )
             }
         )
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        SelloButton(
+            text = stringResource(R.string.settings_backup_contents),
+            onClick = onOpenBackup,
+            kind = ButtonKind.Text,
+            trailingIcon = SelloIcon.ChevronRight,
+            // Starts at the card's content edge, under the buttons.
+            contentPadding = PaddingValues(0.dp),
             modifier = Modifier
                 .padding(top = SelloTheme.spacing.xs)
-                .heightIn(min = SelloTheme.spacing.minTouchTarget)
-                .clickable(role = Role.Button, onClick = onOpenBackup)
                 .testTag(BACKUP_CARD_CONTENTS_TAG)
-        ) {
-            Text(
-                stringResource(R.string.settings_backup_contents),
-                style = MaterialTheme.typography.labelLarge,
-                color = colors.brand
-            )
-            Icon(SelloIcon.ChevronRight.painter(), null, Modifier.size(18.dp), colors.brand)
-        }
+        )
     }
 }
 

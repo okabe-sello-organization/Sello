@@ -40,6 +40,9 @@ import com.software.sello.designsystem.component.AnswerSlip
 import com.software.sello.designsystem.component.ButtonKind
 import com.software.sello.designsystem.component.CategoryCircle
 import com.software.sello.designsystem.component.FactLine
+import com.software.sello.designsystem.component.FieldMessage
+import com.software.sello.designsystem.component.FieldMessageText
+import com.software.sello.designsystem.component.FieldTone
 import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyStyle
@@ -56,6 +59,7 @@ import com.software.sello.designsystem.component.StatusKind
 import com.software.sello.designsystem.component.StatusSlip
 import com.software.sello.designsystem.component.StatusSlipDefaults
 import com.software.sello.designsystem.component.TearLine
+import com.software.sello.designsystem.component.signedText
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.icon.painter
 import com.software.sello.designsystem.theme.SelloTheme
@@ -251,7 +255,11 @@ private fun CategoryRow(row: AdjustRow, onOpen: (AdjustRow) -> Unit) {
         row.archived -> stringResource(R.string.adjust_archived_caption)
 
         limit != null && row.carried ->
-            stringResource(R.string.adjust_row_carry_caption, row.spent.digits, limit.text())
+            stringResource(
+                R.string.adjust_row_carry_caption,
+                row.spent.digits,
+                limit.signedText(showPlus = false)
+            )
 
         limit != null -> stringResource(R.string.adjust_row_caption, row.spent.digits, limit.digits)
 
@@ -459,15 +467,12 @@ private fun LimitSheet(sheet: LimitSheetState, onSheet: (LimitSheetAction) -> Un
         }
         sheet.error?.let { error ->
             // An unknown outcome is a doubt to clear, in the warning ink; the rest are errors.
-            Text(
-                errorText(error, sheet),
-                color = if (error == LimitSheetError.Unknown) {
-                    colors.semantic.warn
-                } else {
-                    colors.semantic.loss
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
+            FieldMessageText(
+                FieldMessage(
+                    errorText(error, sheet),
+                    if (error == LimitSheetError.Unknown) FieldTone.Warning else FieldTone.Error
+                ),
+                Modifier
                     .padding(vertical = SelloTheme.spacing.xs)
                     .testTag(LIMIT_SHEET_ERROR_TAG)
             )
@@ -545,7 +550,7 @@ private fun factText(fact: LimitFact, month: String, spoken: Boolean): String {
     }
     val capacity = fact.capacity
     if (capacity != null) {
-        val figure = if (spoken) capacity.spoken else capacity.text()
+        val figure = if (spoken) capacity.spoken else capacity.signedText(showPlus = false)
         return stringResource(R.string.limit_sheet_fact_capacity, month, figure) + " " + outcome
     }
     return stringResource(R.string.limit_sheet_fact_total, month, total) + " " + outcome
@@ -588,10 +593,3 @@ const val LIMIT_SHEET_TAG = "adjust:sheet"
 const val LIMIT_KEYPAD_TAG = "adjust:keypad"
 
 fun adjustRowTag(id: String) = "adjust:row:$id"
-
-/** A carry as a sentence writes it: "+80.000", "−150.000". */
-private fun MoneyTextValue.signedText(): String = when (sign) {
-    MoneySign.Minus -> "−$digits"
-    MoneySign.Plus -> "+$digits"
-    MoneySign.None -> digits
-}

@@ -10,6 +10,7 @@ import com.software.sello.domain.port.ResumenSnapshotState
 import com.software.sello.presentation.carry.carryFigures
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.money.MoneyFormatter
+import com.software.sello.presentation.month.MonthNames
 import java.math.BigDecimal
 import java.math.BigInteger
 import java.math.RoundingMode
@@ -19,7 +20,11 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** [labels] writes months as the rest of the app does: "sep 2026", never "sept.". */
-class ResumenRenderModel(private val money: MoneyFormatter, private val labels: DateLabels) {
+class ResumenRenderModel(
+    private val money: MoneyFormatter,
+    private val labels: DateLabels,
+    private val months: MonthNames
+) {
     /** [current] is the financial month in progress; a date from another year shows its year. */
     fun render(state: ResumenSnapshotState, current: YearMonth): ResumenState = when (state) {
         ReadState.Loading -> ResumenState.Loading
@@ -189,11 +194,9 @@ class ResumenRenderModel(private val money: MoneyFormatter, private val labels: 
         )
     }
 
-    private fun monthName(month: YearMonth) = month.format(monthNameFormat).lowercase(locale)
+    private fun monthName(month: YearMonth) = months.inSentence(month)
 
-    private fun monthTitle(month: YearMonth) = monthName(month).replaceFirstChar {
-        it.titlecase(locale)
-    }
+    private fun monthTitle(month: YearMonth) = months.name(month)
 
     /** Tenths of a per cent as written: "11,1". */
     private fun percent(tenths: BigInteger): String =
@@ -208,7 +211,6 @@ class ResumenRenderModel(private val money: MoneyFormatter, private val labels: 
 
     private companion object {
         val locale: Locale = Locale.forLanguageTag("es-CO")
-        val monthNameFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("LLLL", locale)
         val sentenceDate: DateTimeFormatter = DateTimeFormatter.ofPattern("d 'de' MMMM", locale)
         val sentenceDateWithYear: DateTimeFormatter =
             DateTimeFormatter.ofPattern("d 'de' MMMM 'de' uuuu", locale)

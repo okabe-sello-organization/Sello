@@ -7,12 +7,12 @@ import androidx.compose.ui.res.stringResource
 import com.software.sello.R
 import com.software.sello.designsystem.component.FollowingChoice as FollowingChoicePart
 import com.software.sello.designsystem.component.RepeatChoiceSheet as RepeatChoiceSheetPart
-import com.software.sello.designsystem.component.RepeatEndPicker
 import com.software.sello.designsystem.component.RepeatRow as RepeatRowPart
 import com.software.sello.designsystem.component.RepeatSheetLabels
 import com.software.sello.designsystem.component.RepeatSpacing
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.income.incomeSourceLabel
+import com.software.sello.presentation.movement.MovementDatePicker
 import java.time.LocalDate
 
 /*
@@ -121,12 +121,11 @@ fun RepeatChoiceSheet(
     )
     if (repeat.endPickerOpen) {
         // An end on or after [start]; none before it can be picked.
-        RepeatEndPicker(
-            initial = sheet.end ?: start,
-            start = start,
-            confirmLabel = stringResource(R.string.expense_entry_date_confirm),
+        MovementDatePicker(
+            sheet.end ?: start,
             onPicked = { onAction(RepeatAction.EndPicked(it)) },
-            onDismiss = { onAction(RepeatAction.CloseEndPicker) }
+            onDismiss = { onAction(RepeatAction.CloseEndPicker) },
+            first = start
         )
     }
 }

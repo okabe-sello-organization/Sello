@@ -30,13 +30,16 @@ enum class ButtonKind { Filled, Outlined, Text }
  * Optional action ink; the default preserves existing consumers. OnBand is for a
  * [ButtonKind.Text] action on a coloured band, such as an entry form's Borrar; it is not
  * for a filled button, which would take the tabs' band as its text whatever the band.
+ * OnGain is for a button on the gain colour itself, such as the celebration's Listo:
+ * filled, it is the on-gain ink with gain text.
  */
-enum class ButtonTone { Brand, Gain, Ink, Loss, OnBand }
+enum class ButtonTone { Brand, Gain, Ink, Loss, OnBand, OnGain }
 
 /**
  * Sello's button. While [loading] it keeps its label and colours, shows a spinner in
  * place of the icon and ignores presses, so a save cannot be submitted twice.
- * [contentPadding] lets a text button end flush with the content beside it.
+ * [contentPadding] lets a text button end flush with the content beside it. [trailingIcon]
+ * follows the label, as the chevron of a link that opens another screen.
  */
 @Composable
 fun SelloButton(
@@ -48,7 +51,8 @@ fun SelloButton(
     enabled: Boolean = true,
     loading: Boolean = false,
     tone: ButtonTone = ButtonTone.Brand,
-    contentPadding: PaddingValues = ButtonDefaults.ContentPadding
+    contentPadding: PaddingValues = ButtonDefaults.ContentPadding,
+    trailingIcon: SelloIcon? = null
 ) {
     val (toneInk, onTone) = tone.inks()
     val (container, content) = when (kind) {
@@ -96,6 +100,9 @@ fun SelloButton(
             },
             textAlign = TextAlign.Center
         )
+        if (trailingIcon != null) {
+            Icon(trailingIcon.painter(), contentDescription = null, modifier = Modifier.size(20.dp))
+        }
     }
 }
 
@@ -109,6 +116,7 @@ internal fun ButtonTone.inks(): Pair<Color, Color> {
         ButtonTone.Ink -> colors.ink to colors.paper
         ButtonTone.Loss -> colors.semantic.loss to colors.semantic.onLoss
         ButtonTone.OnBand -> colors.onBand to colors.band
+        ButtonTone.OnGain -> colors.semantic.onGain to colors.semantic.gain
     }
 }
 

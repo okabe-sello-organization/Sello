@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.height
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyTextValue
+import com.software.sello.designsystem.component.MoreMenuItem
 import com.software.sello.designsystem.icon.SelloIcon
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.inEveryScheme
@@ -129,7 +130,12 @@ class CategorySemanticsTest {
                     "Alimentación. Quedan 287.600 pesos.",
                     { done += "open" },
                     Modifier.testTag("cell"),
-                    actions = listOf(LineAction("Editar categoría") { done += "edit" })
+                    actions = listOf(
+                        MoreMenuItem("Editar categoría", SelloIcon.EditNote, {
+                            done +=
+                                "edit"
+                        })
+                    )
                 )
             }
         }

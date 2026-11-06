@@ -529,6 +529,8 @@ private val PinnedAmountMinHeight = 600.dp
  * loss ink when [lossAmount] (by default when [ink] is [StampInk.Over]). Inversiones'
  * Pierde keeps the value in ink: a value is not an overrun. With [description], the
  * label, stamp and amount are read as that one sentence; [detail] is read on its own.
+ * [heading], such as a category's name, comes first; [leading], such as the category's
+ * circle, stands beside the amount, or above it when the slip is too narrow.
  */
 @Composable
 fun AnswerSlip(
@@ -539,9 +541,12 @@ fun AnswerSlip(
     modifier: Modifier = Modifier,
     description: String? = null,
     lossAmount: Boolean = ink == StampInk.Over,
+    heading: @Composable () -> Unit = {},
+    leading: (@Composable () -> Unit)? = null,
     detail: @Composable () -> Unit = {}
 ) {
     Slip(modifier.fillMaxWidth()) {
+        heading()
         val answer = if (description == null) {
             Modifier
         } else {
@@ -556,18 +561,43 @@ fun AnswerSlip(
                     Stamp(stamp, ink, Modifier.padding(vertical = 8.dp), angle = -5f)
                 }
             }
-            FittedMoneyText(
-                amount,
-                color = if (lossAmount) {
-                    SelloTheme.colors.semantic.loss
-                } else {
-                    SelloTheme.colors.ink
+            val figure = @Composable {
+                FittedMoneyText(
+                    amount,
+                    color = if (lossAmount) {
+                        SelloTheme.colors.semantic.loss
+                    } else {
+                        SelloTheme.colors.ink
+                    }
+                )
+            }
+            if (leading == null) {
+                figure()
+            } else {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    if (maxWidth < AnswerBesideMinWidth) {
+                        Column {
+                            leading()
+                            figure()
+                        }
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(SelloTheme.spacing.md)
+                        ) {
+                            leading()
+                            Column(Modifier.weight(1f)) { figure() }
+                        }
+                    }
                 }
-            )
+            }
         }
         detail()
     }
 }
+
+/** Narrower than this, [AnswerSlip]'s leading part goes above the amount. */
+private val AnswerBesideMinWidth = 240.dp
 
 @Composable
 fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier) {
@@ -579,17 +609,27 @@ fun FactLine(text: AnnotatedString, modifier: Modifier = Modifier) {
     )
 }
 
+/**
+ * A quiet line at a slip's foot: [icon] and [text]. With [onClick] it opens something and
+ * ends in a chevron; without, it only says something.
+ */
 @Composable
 fun Footnote(
     text: AnnotatedString,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     icon: SelloIcon = SelloIcon.Event
 ) {
     Row(
-        modifier.fillMaxWidth().heightIn(
-            min = 48.dp
-        ).clickable(role = Role.Button, onClick = onClick),
+        modifier.fillMaxWidth().heightIn(min = 48.dp).then(
+            if (onClick ==
+                null
+            ) {
+                Modifier
+            } else {
+                Modifier.clickable(role = Role.Button, onClick = onClick)
+            }
+        ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -600,6 +640,8 @@ fun Footnote(
             style = MaterialTheme.typography.bodySmall,
             color = SelloTheme.colors.inkSoft
         )
-        Icon(SelloIcon.ChevronRight.painter(), null, tint = SelloTheme.colors.outline)
+        if (onClick != null) {
+            Icon(SelloIcon.ChevronRight.painter(), null, tint = SelloTheme.colors.outline)
+        }
     }
 }

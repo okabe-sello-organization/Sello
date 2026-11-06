@@ -86,6 +86,8 @@ import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.domain.model.Currency
 import com.software.sello.presentation.date.DateLabels
 import com.software.sello.presentation.date.dateLabels
+import com.software.sello.presentation.movement.MovementCloseButton
+import com.software.sello.presentation.movement.MovementDatePicker
 import java.time.Instant
 import java.time.ZoneOffset
 
@@ -143,12 +145,10 @@ fun InvestmentEditorScreen(
             if (state.editing) R.string.investment_editor_edit else R.string.investment_editor_new
         ),
         navigationIcon = {
-            IconButton(
-                onClick = { onAction(InvestmentEditorAction.Back) },
-                modifier = Modifier.testTag(INVESTMENT_EDITOR_CLOSE_TAG)
-            ) {
-                Icon(SelloIcon.Close.painter(), stringResource(R.string.expense_entry_close))
-            }
+            MovementCloseButton(
+                { onAction(InvestmentEditorAction.Back) },
+                Modifier.testTag(INVESTMENT_EDITOR_CLOSE_TAG)
+            )
         },
         actions = {
             if (state.editing && !state.loading && !state.loadFailed) {
@@ -739,37 +739,17 @@ private fun limitMessage(state: InvestmentEditorState, field: InvestmentField): 
         null
     }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FormDatePicker(
     state: InvestmentEditorState,
     onAction: (InvestmentEditorAction) -> Unit
 ) {
-    val shown = if (state.datePicker == InvestmentField.Rate) state.rateDate else state.date
-    val picker = rememberDatePickerState(
-        initialSelectedDateMillis = shown.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long) =
-                !Instant.ofEpochMilli(utcTimeMillis)
-                    .atZone(ZoneOffset.UTC).toLocalDate().isAfter(state.today)
-
-            override fun isSelectableYear(year: Int) = year <= state.today.year
-        }
+    MovementDatePicker(
+        if (state.datePicker == InvestmentField.Rate) state.rateDate else state.date,
+        onPicked = { onAction(InvestmentEditorAction.DatePicked(it)) },
+        onDismiss = { onAction(InvestmentEditorAction.CloseDatePicker) },
+        last = state.today
     )
-    DatePickerDialog(
-        onDismissRequest = { onAction(InvestmentEditorAction.CloseDatePicker) },
-        confirmButton = {
-            SelloButton(stringResource(R.string.expense_entry_date_confirm), {
-                picker.selectedDateMillis?.let {
-                    onAction(
-                        InvestmentEditorAction.DatePicked(
-                            Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
-                        )
-                    )
-                } ?: onAction(InvestmentEditorAction.CloseDatePicker)
-            })
-        }
-    ) { DatePicker(picker) }
 }
 
 const val INVESTMENT_EDITOR_TAG = "investment.editor"

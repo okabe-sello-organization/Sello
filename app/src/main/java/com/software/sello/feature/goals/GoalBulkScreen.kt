@@ -154,9 +154,9 @@ fun GoalBulkScreen(state: GoalBulkState, onAction: (GoalBulkAction) -> Unit) {
     if (state.datePickerOpen) {
         MovementDatePicker(
             state.line.date,
-            state.today,
             { onAction(GoalBulkAction.DatePicked(it)) },
-            { onAction(GoalBulkAction.CloseDatePicker) }
+            { onAction(GoalBulkAction.CloseDatePicker) },
+            last = state.today
         )
     }
     if (state.composerOpen) Composer(state, onAction)

@@ -28,6 +28,7 @@ import com.software.sello.designsystem.component.LeaderLine
 import com.software.sello.designsystem.component.LineEmphasis
 import com.software.sello.designsystem.component.MoneySign
 import com.software.sello.designsystem.component.MoneyText
+import com.software.sello.designsystem.component.signedText
 import com.software.sello.designsystem.theme.SelloTheme
 import com.software.sello.presentation.carry.CarryDirection
 import com.software.sello.presentation.carry.CarryFigures
@@ -93,7 +94,7 @@ private fun CarrySumCaption(figures: CarryFigures) {
         figures.carryMagnitude.spoken
     )
     val text = buildAnnotatedString {
-        append(stringResource(R.string.carry_sum_base, figures.base.text()))
+        append(stringResource(R.string.carry_sum_base, figures.base.signedText(showPlus = false)))
         append(' ')
         // Kept together: a wrap never leaves the sign at the end of a line.
         withStyle(SpanStyle(color = ink, fontWeight = FontWeight.W800)) {

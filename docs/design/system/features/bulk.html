@@ -231,8 +231,8 @@
               <td>Under the heading</td><td>Older categories said; the lines stay</td></tr>
             <tr><td><a href="../components.html#c-CarryCorrectionContent"><code>CarryCorrectionContent</code></a></td><td><code>design-system/src/main/java/com/software/sello/designsystem/component/Carry.kt:164</code></td>
               <td>In the correction slip</td><td>Lists the later months the receipt changes</td></tr>
-            <tr><td><code>DayPicker</code> (feature-local)</td><td><code>app/src/main/java/com/software/sello/feature/bulk/BulkEntryScreen.kt:566</code></td>
-              <td>Material date picker, past only</td><td>One date per receipt</td></tr>
+            <tr><td><a href="../components.html#c-MovementDatePicker"><code>MovementDatePicker</code></a></td><td><code>:design-system</code> <code>Movement.kt</code></td>
+              <td>Material date picker, <code>last</code> = today</td><td>One date per receipt</td></tr>
           </tbody>
         </table>
       </div>
@@ -241,14 +241,10 @@
     <section id="look-alikes">
       <h2>Feature-local parts that look like shared ones</h2>
       <ul>
-        <li><code>DayPicker</code> (<code>BulkEntryScreen.kt:566</code>) is the same dialog as <code>MovementDatePicker</code>
-          (<code>design-system/src/main/java/com/software/sello/designsystem/component/Movement.kt:146</code>). Finding: <a href="../findings.html#C01">C01</a>.</li>
         <li>The read-failure pair, an error <code>FieldMessageText</code> plus an Outlined "Reintentar"
           (<code>BulkEntryScreen.kt:322</code>), rebuilds what a <a href="../components.html#c-StatusSlip"><code>StatusSlip</code></a> LoadFailed
           draws; the goal receipt uses that StatusSlip for the same case
           (<code>app/src/main/java/com/software/sello/feature/goals/GoalBulkScreen.kt:93</code>). See bulk-expenses-failed-read.</li>
-        <li>The X (<code>BulkEntryScreen.kt:116</code>) against <code>MovementCloseButton</code> (<code>component/Movement.kt:39</code>),
-          here with <code>enabled = !busy</code>. Finding: <a href="../findings.html#C02">C02</a>.</li>
         <li>The removal notice sits in the scaffold's notice slot for 6 s; the goal and investment receipts lay the same
           <a href="../components.html#c-SelloNotice"><code>SelloNotice</code></a> over their chips for 4 s with
           <code>confirmation = true</code> (<code>GoalBulkScreen.kt:110</code>,
@@ -261,7 +257,6 @@
       <p class="muted">Places in this feature on the <a href="../findings.html">findings</a> page; shared parts it uses are listed there under their own files.</p>
       <ul>
         <li><strong>Misuse:</strong> <a href="../findings.html#M10">M10</a> <code>ButtonTone (the kind&#x27;s tone on a record button)</code>: <a href="../findings.html#M10-1">M10-1 (unsure)</a>.</li>
-        <li><strong>Copies:</strong> <a href="../findings.html#C01">C01</a> <code>MovementDatePicker</code>: <a href="../findings.html#C01-3">C01-3</a>; <a href="../findings.html#C02">C02</a> <code>MovementCloseButton</code>: <a href="../findings.html#C02-3">C02-3</a>; <a href="../findings.html#C04">C04</a> <code>MovementNoteLine</code>: <a href="../findings.html#C04-3">C04-3</a>; <a href="../findings.html#C08">C08</a> <code>MoreMenu</code>: <a href="../findings.html#C08-2">C08-2</a>; <a href="../findings.html#C18">C18</a> <code>Modifier.dashedOutline</code>: <a href="../findings.html#C18-4">C18-4</a>.</li>
         <li><strong>Hard-coded type:</strong> <a href="../findings.html#H47">H47</a> <code>fontWeight = FontWeight.Bold</code> (2 places).</li>
         <li><strong>Hard-coded spacing:</strong> <a href="../findings.html#H60">H60</a> <code>8.dp</code> (2 places).</li>
       </ul>

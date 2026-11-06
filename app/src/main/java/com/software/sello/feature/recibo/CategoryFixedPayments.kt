@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.software.sello.R
 import com.software.sello.designsystem.component.ButtonKind
+import com.software.sello.designsystem.component.EntryHeading
 import com.software.sello.designsystem.component.ScheduleRow
 import com.software.sello.designsystem.component.SelloButton
 import com.software.sello.designsystem.component.Slip
@@ -179,14 +180,7 @@ private fun FixedPaymentsSlip(
 
 @Composable
 private fun Group(text: String, first: Boolean) {
-    Text(
-        text.uppercase(),
-        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.W800),
-        color = SelloTheme.colors.inkSoft,
-        modifier = Modifier
-            .padding(top = if (first) 10.dp else 14.dp, bottom = 2.dp)
-            .semantics { heading() }
-    )
+    EntryHeading(text, Modifier.padding(top = if (first) 10.dp else 14.dp, bottom = 2.dp))
 }
 
 const val CATEGORY_DETAIL_FIXED_TAG = "detail:fixed"
